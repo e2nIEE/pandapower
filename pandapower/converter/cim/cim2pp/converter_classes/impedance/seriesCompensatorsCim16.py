@@ -34,12 +34,23 @@ class SeriesCompensatorsCim16:
         else:
             ser_comp = self.cimConverter.cim['eq']['SeriesCompensator']
 
-        ser_comp = pd.merge(ser_comp,
-                            pd.concat([self.cimConverter.cim['eq']['BaseVoltage'],
-                                       self.cimConverter.cim['eq_bd']['BaseVoltage']],
-                                      ignore_index=True)[['rdfId','nominalVoltage']].rename(
-                                columns={'rdfId': 'BaseVoltage'}),
-                            how='left', on='BaseVoltage')
+        if self.cimConverter.cim_version == 'ltds':
+            vl = self.cimConverter.cim['eq']['VoltageLevel'][['rdfId', 'BaseVoltage']].rename(
+                columns={'rdfId': 'EquipmentContainer'})
+            vl = pd.merge(vl,
+                          pd.concat([self.cimConverter.cim['eq']['BaseVoltage'],
+                                     self.cimConverter.cim['eq_bd']['BaseVoltage']],
+                                    ignore_index=True)[['rdfId', 'nominalVoltage']].rename(
+                              columns={'rdfId': 'BaseVoltage'}),
+                          how='left', on='BaseVoltage')
+            ser_comp = pd.merge(ser_comp, vl, how='left', on='EquipmentContainer')
+        else:
+            ser_comp = pd.merge(ser_comp,
+                                pd.concat([self.cimConverter.cim['eq']['BaseVoltage'],
+                                           self.cimConverter.cim['eq_bd']['BaseVoltage']],
+                                          ignore_index=True)[['rdfId','nominalVoltage']].rename(
+                                    columns={'rdfId': 'BaseVoltage'}),
+                                how='left', on='BaseVoltage')
         # fill the r21 and x21 values for impedance creation
         ser_comp['r21'] = ser_comp['r'].copy()
         ser_comp['x21'] = ser_comp['x'].copy()
@@ -110,7 +121,14 @@ class SeriesCompensatorsCim16:
         ser_comp['bf_pu'] = 0.
         ser_comp['gt_pu'] = 0.
         ser_comp['bt_pu'] = 0.
-        ser_comp['in_service'] = ser_comp.connected & ser_comp.connected2
+        if self.cimConverter.cim_version == '3.0':
+            ser_comp['in_service'] = ser_comp.connected & ser_comp.connected2
+        elif self.cimConverter.cim_version == 'ltds':
+            mapping = self.cimConverter.cim['ssh']['Equipment'][['rdfId', 'inService']]
+            mapping = mapping.set_index('rdfId').to_dict()['inService']
+            ser_comp['in_service'] = ser_comp['rdfId'].map(mapping)
+        else:
+            ser_comp['in_service'] = ser_comp.connected & ser_comp.connected2
         ser_comp = ser_comp.rename(columns={'rdfId_Terminal': sc['t_from'], 'rdfId_Terminal2': sc['t_to'],
                                             'rdfId': sc['o_id'], 'index_bus': 'from_bus', 'index_bus2': 'to_bus'})
         return ser_comp

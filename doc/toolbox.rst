@@ -47,6 +47,8 @@ Result Information
 
 .. autofunction:: pandapower.toolbox.clear_result_tables
 
+.. autofunction:: pandapower.toolbox.compute_switch_flows
+
 .. autofunction:: pandapower.toolbox.res_power_columns
 
 ====================================
@@ -84,6 +86,8 @@ Item/Element Selection
 .. autofunction:: pandapower.toolbox.count_elements
 
 .. autofunction:: pandapower.toolbox.get_gc_objects_dict
+
+.. autofunction:: pandapower.toolbox.get_all_elements
 
 ====================================
 Data Modification

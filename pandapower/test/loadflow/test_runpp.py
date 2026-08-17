@@ -14,6 +14,7 @@ import pytest
 
 from pandapower import pp_dir
 from pandapower.auxiliary import _check_connectivity, _add_ppc_options, lightsim2grid_available
+from pandapower.control import _create_trafo_characteristics, SplineCharacteristic
 from pandapower.create import create_bus, create_empty_network, create_ext_grid, create_dcline, create_load, \
     create_sgen, create_switch, create_transformer, create_xward, create_transformer3w, create_gen, create_shunt, \
     create_line_from_parameters, create_line, create_impedance, create_storage, create_buses, \
@@ -34,7 +35,8 @@ from pandapower.test.control.test_shunt_control import simple_test_net_shunt_con
 from pandapower.test.helper_functions import add_grid_connection, create_test_line, assert_net_equal, assert_res_equal
 from pandapower.test.loadflow.result_test_network_generator import add_test_xward, add_test_trafo3w, \
     add_test_line, add_test_oos_bus_with_is_element, result_test_network_generator, add_test_trafo
-from pandapower.toolbox import nets_equal, drop_elements
+from pandapower.toolbox.comparison import nets_equal
+from pandapower.toolbox.grid_modification import drop_elements
 from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
 
 import logging
@@ -47,6 +49,13 @@ try:
     numba_installed = True
 except ImportError:
     numba_installed = False
+
+try:
+    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
+    helmpy_available = True
+except ImportError:
+    helmpy_available = False
+
 
 
 def test_minimal_net(**kwargs):
@@ -522,6 +531,40 @@ def test_bsfw_algorithm():
 
     assert np.allclose(vm_nr, vm_alg)
     assert np.allclose(va_nr, va_alg)
+
+
+@pytest.mark.skipif(not helmpy_available, reason="HELMpy is not installed")
+def test_helm_algorithm_simple():
+    import pandapower.networks as nw
+    net = nw.case9()
+
+    runpp(net)
+    vm_nr = copy.copy(net.res_bus.vm_pu)
+    va_nr = copy.copy(net.res_bus.va_degree)
+
+    runpp(net, algorithm='helm')
+    vm_alg = net.res_bus.vm_pu
+    va_alg = net.res_bus.va_degree
+
+    assert np.allclose(vm_nr, vm_alg, atol=1e-5)
+    assert np.allclose(va_nr, va_alg, atol=1e-2)
+
+
+@pytest.mark.skipif(not helmpy_available, reason="HELMpy is not installed")
+def test_helm_algorithm_complex():
+    import pandapower.networks as nw
+    net = nw.case118()
+
+    runpp(net)
+    vm_nr = copy.copy(net.res_bus.vm_pu)
+    va_nr = copy.copy(net.res_bus.va_degree)
+
+    runpp(net, algorithm='helm')
+    vm_alg = net.res_bus.vm_pu
+    va_alg = net.res_bus.va_degree
+
+    assert np.allclose(vm_nr, vm_alg, atol=1e-5)
+    assert np.allclose(va_nr, va_alg, atol=1e-2)
 
 
 @pytest.mark.xfail(reason="unknown")

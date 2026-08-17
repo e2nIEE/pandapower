@@ -137,7 +137,7 @@ class CreateMeasurements:
         busses_temp = self.net.bus[['name', 'vn_kv', sc['ct']]].copy()
         busses_temp = busses_temp.reset_index(level=0)
         busses_temp = busses_temp.rename(columns={'index': 'element', sc['ct']: 'TopologicalNode'})
-        sv_sv_voltages = pd.merge(self.cim['sv']['SvVoltage'][['rdfId', 'TopologicalNode', 'v']], busses_temp,
+        sv_sv_voltages = pd.merge(self.cim['sv']['SvVoltage'][['rdfId', 'TopologicalNode', 'v', 'angle']], busses_temp,
                                   how='left', on='TopologicalNode')
         # drop all the rows mit vn_kv == np.nan (no measurements available for that bus)
         sv_sv_voltages = sv_sv_voltages.dropna(subset=['vn_kv'])
@@ -161,8 +161,15 @@ class CreateMeasurements:
         sv_sv_voltages[sc['desc']] = None
         sv_sv_voltages[sc['a_id']] = None
         sv_sv_voltages = sv_sv_voltages.rename(columns={'rdfId': sc['o_id']})
-
         self._copy_to_measurement(sv_sv_voltages)
+
+        # the angle
+        sv_sv_voltages_angle = sv_sv_voltages.copy()
+        sv_sv_voltages_angle['value'] = sv_sv_voltages_angle['angle']
+        sv_sv_voltages_angle['measurement_type'] = 'angle'
+        sv_sv_voltages_angle['std_dev'] = .001
+        self._copy_to_measurement(sv_sv_voltages_angle)
+
 
         # ---------------------------------------measure: line---------------------------------------------------
         sigma_line = 0.03
@@ -345,3 +352,44 @@ class CreateMeasurements:
         self._set_measurement_element_datatype()
 
         self.logger.info("Needed time for creating the measurements: %ss" % (time.time() - time_start))
+
+    def map_sv_data_from_assets(self):
+        self.logger.info("--------------------------- Updating assets from SV ---------------------------")
+        time_start = time.time()
+        sc = cim_tools.get_pp_net_special_columns_dict()
+        # get the measurements from the sv profile and set the Terminal as index
+        sv_powerflow_g = self.cim['sv']['SvPowerFlow'][['Terminal', 'p', 'q']]
+        sv_powerflow_g['p'] *= -1
+        sv_powerflow_g['q'] *= -1
+        sv_powerflow_g = sv_powerflow_g.set_index('Terminal').to_dict()
+        sv_powerflow_l = self.cim['sv']['SvPowerFlow'][['Terminal', 'p', 'q']].set_index('Terminal').to_dict()
+
+        # update sgen
+        self.net.sgen.p_mw = self.net.sgen[sc['t']].map(sv_powerflow_g['p']).fillna(self.net.sgen.p_mw)
+        self.net.sgen.q_mvar = self.net.sgen[sc['t']].map(sv_powerflow_g['q']).fillna(self.net.sgen.q_mvar)
+        # update gen
+        self.net.gen.p_mw = self.net.gen[sc['t']].map(sv_powerflow_g['p']).fillna(self.net.gen.p_mw)
+
+        # update load
+        self.net.load.p_mw = self.net.load[sc['t']].map(sv_powerflow_l['p']).fillna(self.net.load.p_mw)
+        self.net.load.q_mvar = self.net.load[sc['t']].map(sv_powerflow_l['q']).fillna(self.net.load.q_mvar)
+
+        # update ward
+        self.net.ward.ps_mw = self.net.ward[sc['t']].map(sv_powerflow_l['p']).fillna(self.net.ward.ps_mw)
+        self.net.ward.qs_mvar = self.net.ward[sc['t']].map(sv_powerflow_l['q']).fillna(self.net.ward.qs_mvar)
+        # update xward
+        self.net.xward.ps_mw = self.net.xward[sc['t']].map(sv_powerflow_l['p']).fillna(self.net.xward.ps_mw)
+        self.net.xward.qs_mvar = self.net.xward[sc['t']].map(sv_powerflow_l['q']).fillna(self.net.xward.qs_mvar)
+
+        # update shunts
+        sv_scs = self.cim['sv']['SvShuntCompensatorSections'][['ShuntCompensator', 'sections']]
+        sv_scs = sv_scs.set_index('ShuntCompensator')
+        self.net.shunt.step = self.net.shunt[sc['o_id']].map(sv_scs['sections']).fillna(self.net.shunt.step)
+
+        # update trafo tap changer position
+        sv_ts = self.cim['sv']['SvTapStep'][['TapChanger', 'position']].set_index('TapChanger')
+        self.net.trafo.tap_pos = self.net.trafo[sc['tc_id']].map(sv_ts['position']).fillna(self.net.trafo.tap_pos)
+        self.net.trafo.tap2_pos = self.net.trafo[sc['tc2_id']].map(sv_ts['position']).fillna(self.net.trafo.tap2_pos)
+        self.net.trafo3w.tap_pos = self.net.trafo3w[sc['tc_id']].map(sv_ts['position']).fillna(self.net.trafo3w.tap_pos)
+
+        self.logger.info(f"Needed time for updating the assets: {time.time() - time_start}s")

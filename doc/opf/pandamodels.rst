@@ -8,32 +8,38 @@ Optimization with PandaModels.jl
 Introduction
 --------------------
 
-`PandaModels.jl <https://github.com/e2nIEE/PandaModels.jl>`_ (pandapower + PowerModels.jl) is an interface (Julia package) enabling the connection of pandapower and PowerModels in a stable and functional way. Except for calling the implemented optimization models in PowerModels, users can create custom optimization models with PandaModels. Presently, users can solve some reactive power optimization problems with PandaModels.
+`PandaModels.jl <https://github.com/e2nIEE/PandaModels.jl>`__ (pandapower + PowerModels.jl) is an interface
+(Julia package) enabling the connection of pandapower and PowerModels in a stable and functional way. Except for calling
+the implemented optimization models in PowerModels, users can create custom optimization models with PandaModels.
+Presently, users can solve some reactive power optimization problems with PandaModels.
 
 
 Installation
 --------------
 
-If you are not yet using `Julia <https://julialang.org/downloads/>`_, install it. For the interface to work, note that you need a version that is supported by PowerModels, PyCall and pyjulia. Currently, Former julia versions are available `here <https://julialang.org/downloads/oldreleases/>`__.
+If you are not yet using `Julia <https://julialang.org/downloads/>`__, install it. For the interface to work, note that
+you need a version that is supported by PowerModels, PyCall and pyjulia. Currently, Former julia versions are available
+`here <https://julialang.org/downloads/oldreleases/>`__.
 
-.. note:: You don't necessarily need a Julia IDE if you are using PandaModels through pandapower, but it might help for debugging to install an IDE such as `Juno <http://docs.junolab.org/latest/man/installation>`_. Also, PyCharm has a Julia Plugin.
+.. note:: You don't necessarily need a Julia IDE if you are using PandaModels through pandapower, but it might help for
+    debugging to install an IDE such as `Juno <https://docs.junolab.org/latest/man/installation/>`__. Also, PyCharm has
+    a Julia Plugin.
 
-1. Add the Julia binary folder (e.g. `C:\Users\username\AppData\Local\Programs\Julia-1.8.0\bin\` on Windows or `/Applications/Julia-1.5.app/Contents/Resources/julia/bin` on MacOS) to the `system variable PATH <https://www.computerhope.com/issues/ch000549.htm>`_. Providing the path is correct, you can now enter the julia prompt by executing :code:`julia` in your shell (on Windows, rebooting the system is needed to take advantage of changes to the :code:`PATH`.
+1. Add the Julia binary folder
+    (e.g. `C:\\Users\\username\\AppData\\Local\\Programs\\Julia-1.8.0\\bin\\` on Windows or
+    `/Applications/Julia-1.5.app/Contents/Resources/julia/bin` on MacOS) to the
+    `system variable PATH <https://www.computerhope.com/issues/ch000549.htm>`_. Providing the path is correct, you can
+    now enter the julia prompt by executing :code:`julia` in your shell (on Windows, rebooting the system is needed to
+    take advantage of changes to the :code:`PATH`.
 
-2. The library `PyCall <https://github.com/JuliaPy/PyCall.jl#installation>`__ allows to use Python from inside julia. By default, PyCall uses the Conda.jl package to install a Miniconda distribution private to Julia. To use an already installed Python distribution (e.g. Anaconda), set the :literal:`PYTHON` environment variable inside the Julia prompt.
+2. The library `PythonCall.jl <https://github.com/JuliaPy/PythonCall.jl>`__ allows to use Python from inside julia.
+    By default, PythonCall uses the CondaPkg.jl package to create an environment private to each Julia project.
 
-   On Windows:
-
-    :code:`ENV["PYTHON"]=raw"C:\\Anaconda3\\python.exe"`
-
-   On MacOS:
-
-    :code:`ENV["PYTHON"]="/Users/%Username/opt/anaconda3/bin/python"`
-
+.. FIXME: Anything past this point needs to be converted to PythonCall + JuliaCall
 
 3. Access the package manager by typing :code:`]`. Now install the packages: :code:`add Ipopt PowerModels PyCall`. To pass the python environment variable, running :code:`build PyCall` inside the julia package manager may be necessary.
 
-4. Inside package manager, test your `PowerModels <https://lanl-ansi.github.io/PowerModels.jl/stable/#Installation-1>`_ installation by executing :code:`test PowerModels`. Alternatively, you can call :code:`using Pkg` and then :code:`Pkg.test("PowerModels")` outside the package manager directly as julia expression. Then, test whether calling Python from Julia works, as described `here <https://github.com/JuliaPy/PyCall.jl#usage>`__.
+4. Inside package manager, test your `PowerModels <https://lanl-ansi.github.io/PowerModels.jl/stable/#Installation-1>`__ installation by executing :code:`test PowerModels`. Alternatively, you can call :code:`using Pkg` and then :code:`Pkg.test("PowerModels")` outside the package manager directly as julia expression. Then, test whether calling Python from Julia works, as described `here <https://github.com/JuliaPy/PyCall.jl#usage>`__.
 
 .. note:: If you cannot plot using PyCall and PyPlot in Julia, see the workarounds offered `here <https://github.com/JuliaPy/PyCall.jl/issues/665>`__.
 
@@ -108,6 +114,41 @@ The usage is explained in the `PandaModels tutorial <https://github.com/e2nIEE/p
 .. autofunction:: pandapower.runpm_dc_opf
 
 .. autofunction:: pandapower.runpm
+
+
+Redispatch
+------------
+
+A simple redispatch optimization is available via :code:`runpm_redispatch`. Starting from a base
+dispatch (the generator setpoints of a previously computed power flow), it adjusts the participating
+generators as little as possible - or at minimal cost - so that all network constraints (branch
+loading, bus voltage limits, generator limits) are satisfied.
+
+Only controllable ``gen`` and ``sgen`` participate. An element is selected for redispatch if it is
+``controllable`` **and** has a ``poly_cost`` entry with (non-NaN) ``redispatch_up_eur_per_mw`` and
+``redispatch_down_eur_per_mw``. These two coefficients are added to
+:code:`create_poly_cost`/:code:`create_poly_costs`:
+
+::
+
+    pp.create_poly_cost(net, gen_idx, "gen", cp1_eur_per_mw=cp1,
+                        redispatch_up_eur_per_mw=cost_up,
+                        redispatch_down_eur_per_mw=cost_down)
+
+Two objective modes are available:
+
+- ``redispatch_cost=False`` (default): minimize the squared deviation from the base dispatch
+  (``sum((pg - pg0)^2)``) - the "least redispatch" that satisfies the constraints.
+- ``redispatch_cost=True``: minimize the total redispatch cost, splitting each generator's
+  adjustment into an upward and downward part weighted by ``redispatch_up_eur_per_mw`` and
+  ``redispatch_down_eur_per_mw``.
+
+The base dispatch is read from the result tables, so a power flow result must be present. By default
+(``init_pq="results"``) the generator setpoints are taken from a previously run power flow. Both
+``ACPPowerModel`` (default) and ``DCPPowerModel`` are supported.
+
+.. autofunction:: pandapower.runpm_redispatch
+
 
 The TNEP optimization is explained in the `PandaModels TNEP tutorial <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/pandamodels_tnep.ipynb>`_. Additional packages including "juniper"
 

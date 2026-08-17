@@ -376,7 +376,7 @@ def create_load_from_cosphi(  # no index ?
         sn_mva: rated power of the load
         cos_phi: power factor cos_phi
         mode:
-        
+
             - "underexcited" (Q absorption, decreases voltage)
             - "overexcited" (Q injection, increases voltage)
 
@@ -389,7 +389,7 @@ def create_load_from_cosphi(  # no index ?
     positive, reactive power will be positive for underexcited behavior (Q absorption, decreases voltage) and negative
     for overexcited behavior (Q injection, increases voltage).
     """
-    from pandapower.toolbox import pq_from_cosphi
+    from pandapower.toolbox.power_factor import pq_from_cosphi
 
     p_mw, q_mvar = pq_from_cosphi(sn_mva, cos_phi, qmode=mode, pmode="load")
     return create_load(net, bus, sn_mva=sn_mva, p_mw=p_mw, q_mvar=q_mvar, **kwargs)
@@ -409,7 +409,7 @@ def create_load_dc(
 ):
     """
     Creates a dc voltage source in a dc grid with an adjustable set point
-    
+
     Parameters:
         net: The pandapower network in which the element is created
         bus_dc: index of the dc bus the dc load is connected to

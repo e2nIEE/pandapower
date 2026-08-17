@@ -9,6 +9,8 @@ import pytest
 
 from pandapower.plotting.colormaps import cmap_discrete, cmap_continuous, cmap_logarithmic
 
+matplotlib = pytest.importorskip("matplotlib.colors", reason="colormaps require matplotlib")
+
 
 def test_cmap_discrete():
     cmap_list = [((0, 10), "green"), ((10, 30), "yellow"), ((30, 100), "red")]

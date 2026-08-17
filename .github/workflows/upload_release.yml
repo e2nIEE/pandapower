@@ -17,6 +17,10 @@ on:
           - 'testpypi'
           - 'pypi'
 
+permissions:
+  contents: read
+  id-token: none
+
 # A workflow run is made up of one or more jobs that can run sequentially or in parallel
 jobs:
   upload:
@@ -26,13 +30,17 @@ jobs:
     permissions:
       id-token: write
 
+    environment:
+      name: pypi
+      url: https://pypi.org/p/pandapower/
+
     # Steps represent a sequence of tasks that will be executed as part of the job
     steps:
       # Checks-out your repository under $GITHUB_WORKSPACE, so your job can access it
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       # Sets up python3
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.10'
 
@@ -66,8 +74,8 @@ jobs:
       - name: Build and Upload to PyPI
         if: ${{ inputs.upload_server == 'pypi' }}
         uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e #release/v1
-        with:
-          repository-url: https://upload.pypi.org/legacy/
+        #with:
+        #  repository-url: https://upload.pypi.org/legacy/
         #run: |
         #  python3 -m build
         #  python3 -m twine check dist/* --strict

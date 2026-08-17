@@ -50,7 +50,7 @@ class LPAlgorithm(BaseAlgorithm):
                 cur_it += 1
                 current_error = np.max(np.abs(d_E))
                 self.logger.debug("Current error: {:.7f}".format(current_error))
-            except np.linalg.linalg.LinAlgError:  # pragma: no cover
+            except np.linalg.LinAlgError:  # pragma: no cover
                 self.logger.error("A problem appeared while using the linear algebra methods."
                                   "Check and change the measurement set.")
                 return False
@@ -96,7 +96,7 @@ class LPAlgorithm(BaseAlgorithm):
             d_x = np.array(res['x'][:n]).ravel() - np.array(res['x'][n:2 * n]).ravel()
             return d_x
         else:  # pragma: no cover
-            raise np.linalg.linalg.LinAlgError
+            raise np.linalg.LinAlgError
 
 
     @staticmethod
@@ -159,6 +159,6 @@ class LPAlgorithm(BaseAlgorithm):
             return d_x[:n_E] - d_x[n_E:2*n_E]
         else:
             # No solution found...
-            raise np.linalg.linalg.LinAlgError
+            raise np.linalg.LinAlgError
 
 

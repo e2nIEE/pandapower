@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -8,16 +6,16 @@ import copy
 import inspect
 import re
 import sys
-from typing import Callable, TYPE_CHECKING, Optional, Tuple
+import math
+from typing import Callable, TYPE_CHECKING, Optional, Tuple, Literal
 
 import geojson
 import pandas as pd
 
-if TYPE_CHECKING:
-    from matplotlib.colors import Normalize, Colormap
 from itertools import combinations
 from typing_extensions import deprecated
 
+import logging
 import numpy as np
 from pandas import isnull, Series, DataFrame
 
@@ -30,6 +28,12 @@ try:
     from matplotlib.transforms import Affine2D
 
     MATPLOTLIB_INSTALLED = True
+
+    # Depends on matplotlib:
+    from pandapower.plotting.patch_makers import (
+        load_patches, node_patches, gen_patches, sgen_patches, ext_grid_patches, trafo_patches, storage_patches,
+        ward_patches, xward_patches, vsc_patches
+    )
 except ImportError:
     MATPLOTLIB_INSTALLED = False
 
@@ -38,12 +42,16 @@ except ImportError:
         pass
 
 from pandapower.auxiliary import soft_dependency_error, pandapowerNet
-from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches, \
-    sgen_patches, ext_grid_patches, trafo_patches, storage_patches, ward_patches, xward_patches, vsc_patches
 from pandapower.plotting.plotting_toolbox import _rotate_dim2, coords_from_node_geodata, \
     position_on_busbar, get_index_array
 
-import logging
+if TYPE_CHECKING:
+    from matplotlib.colors import Normalize, Colormap
+    from matplotlib.collections import LineCollection, PatchCollection, Collection
+    from matplotlib.font_manager import FontProperties
+    from matplotlib.patches import Circle, Rectangle, PathPatch
+    from matplotlib.textpath import TextPath
+    from matplotlib.transforms import Affine2D
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +87,7 @@ class CustomTextPath(TextPath):
         size : font size
         prop : font property
         """
+        super().__init__(xy, s, size, prop, _interpolation_steps, usetex)
         if not MATPLOTLIB_INSTALLED:
             soft_dependency_error("class CustomTextPath", "matplotlib")
         if prop is None:
@@ -98,14 +107,14 @@ class CustomTextPath(TextPath):
                               _interpolation_steps=self._interpolation_steps, usetex=self.usetex)
 
 
-def create_annotation_collection(texts, coords, size, prop=None, **kwargs):
+def create_annotation_collection(texts, coords, size: float | list[float], prop=None, **kwargs):
     """
     Creates PatchCollection of Texts shown at the given coordinates
 
     Parameters:
         texts (iterable of strings): The texts to be
         coords (iterable of tuples): Coordinates to place the texts
-        size (int): Size of the texts
+        size: Size of the texts
         prop: FontProperties being passed to the TextPatches
 
     Keyword Arguments:
@@ -244,6 +253,7 @@ def _create_line2d_collection(coords, indices, infos=None, picker=False, **kwarg
 def _create_node_element_collection(node_coords, patch_maker, size=1., infos=None,
                                     repeat_infos=(1, 1), orientation=np.pi, picker=False,
                                     patch_facecolor="w", patch_edgecolor="k", line_color="k",
+                                    patch_type=None, unique_angles=None, draw_by_type=None,
                                     **kwargs):
     """
     Creates matplotlib collections of node elements. All node element collections usually consist of
@@ -251,12 +261,14 @@ def _create_node_element_collection(node_coords, patch_maker, size=1., infos=Non
     the element to the respective node.
 
     :param node_coords: the coordinates (x, y) of the nodes with shape (N, 2)
-    :type node_coords: iterable
+    :type node_coords: iterable[tuple[float, float]]
     :param patch_maker: a function to generate the patches of which the collections consist (cf. \
         the patch_maker module)
     :type patch_maker: function
     :param size: patch size
     :type size: float, default 1
+    :param unique_angles: angles for patches
+    :type unique_angles: dict
     :param infos: list of infos belonging to each of the elements (can be displayed when hovering \
         over them)
     :type infos: iterable, default None
@@ -276,16 +288,17 @@ def _create_node_element_collection(node_coords, patch_maker, size=1., infos=Non
     :type line_color: matplotlib color, "k"
     :param kwargs: key word arguments are passed to the patch function
     :type kwargs:
-    :return: Return values:\
-        - patch_coll - patch collection representing the element\
-        - line_coll - connecting line collection
+    :return:
+        - patch collection representing the element\
+        - connecting line collection
+    :rtype: tuple
 
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
     angles = orientation if hasattr(orientation, '__iter__') else [orientation] * len(node_coords)
-    assert len(node_coords) == len(angles), \
-        "The length of coordinates does not match the length of the orientation angles!"
+    if len(node_coords) != len(angles):
+        raise AssertionError("The length of coordinates does not match the length of the orientation angles!")
     if infos is None:
         infos_pc = []
         infos_lc = []
@@ -298,8 +311,16 @@ def _create_node_element_collection(node_coords, patch_maker, size=1., infos=Non
     linewidths = kwargs.pop("lw", linewidths)
 
     lines, polys, popped_keywords = patch_maker(
-        node_coords, size, angles, patch_facecolor=patch_facecolor, patch_edgecolor=patch_edgecolor,
-        **kwargs)
+        node_coords=node_coords,
+        size=size,
+        angles=angles,
+        patch_type=patch_type,
+        unique_angles=unique_angles,
+        draw_by_type=draw_by_type,
+        patch_facecolor=patch_facecolor,
+        patch_edgecolor=patch_edgecolor,
+        **kwargs
+    )
     for kw in set(popped_keywords) & set(kwargs.keys()):
         kwargs.pop(kw)
     patch_coll = PatchCollection(polys, match_original=True, picker=picker, linewidth=linewidths,
@@ -386,7 +407,7 @@ def create_bus_collection(
         buses: The buses for which the collections are created. If None, all buses in the network are considered.
         size: patch size
         patch_type: patch type, can be
-        
+
             - "circle" for a circle
             - "rect" for a rectangle
             - "poly<n>" for a polygon with n edges
@@ -403,7 +424,7 @@ def create_bus_collection(
         clim (tuple of floats, None): setting the norm limits for image scaling
         bus_table (str, "bus"): element table to use for the buses ("bus", "bus_dc")
         plot_colormap (bool, True): flag whether the colormap is actually drawn
-    
+
     Keyword Arguments:
          are passed to the patch function
 
@@ -535,8 +556,8 @@ def create_dcline_collection(net, dclines=None, line_geodata=None, infofunc=None
     Parameters:
         net (pandapowerNet): The pandapower network
         dclines (list, None): The dclines for which the collections are created. If None,
-        all dclines in the network are considered.
-        bus_geodata (DataFrame, None): coordinates to use for plotting If None, net["bus_geodata"] is used
+            all dclines in the network are considered.
+        line_geodata (DataFrame, None): coordinates in geo column to use for plotting If None, net.bus.geo is used
         infofunc (function, None): infofunction for the patch element
         cmap: colormap for the patch colors
         norm (matplotlib norm object, None): matplotlib norm object
@@ -546,12 +567,13 @@ def create_dcline_collection(net, dclines=None, line_geodata=None, infofunc=None
         cbar_title (str, "Line Loading [%]"): colormap bar title in case of given cmap
         clim (tuple of floats, None): setting the norm limits for image scaling
         plot_colormap (bool, True): flag whether the colormap is actually drawn
-    
+
     Keyword Arguments:
         **kwargs: are passed to the patch function
 
     Returns:
         line collection
+        :param line_geodata:
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
@@ -563,19 +585,21 @@ def create_dcline_collection(net, dclines=None, line_geodata=None, infofunc=None
         return None
 
     if use_bus_geodata:
+        bus_coords = net.bus.geo
         coords, lines_with_geo = coords_from_node_geodata(
-            lines, net.dcline.from_bus.loc[lines].values, net.dcline.to_bus.loc[lines].values,
-            net["bus_geodata"], "line")
+            lines, net.dcline.from_bus.loc[lines].values, net.dcline.to_bus.loc[lines].values, bus_coords, "line"
+        )
 
-    if len(lines_with_geo) == 0:
-        return None
+        if len(lines_with_geo) == 0:
+            return None
+
+        line_geodata = pd.DataFrame(pd.DataFrame(coords, columns=["geo"])["geo"].apply(_get_coords_from_geojson))
 
     infos = [infofunc(line) for line in line_geodata.index] if infofunc else []
 
-    lc = _create_line2d_collection(coords, lines_with_geo, infos=infos, picker=picker, **kwargs)
+    lc = _create_line2d_collection(line_geodata["geo"], lines_with_geo, infos=infos, picker=picker, **kwargs)
 
-    loading_percent = \
-        100 * net.res_dcline[["p_from_mw", "p_to_mw"]].abs().max(axis=1) / net.dcline.p_mw.abs()
+    loading_percent = 100 * net.res_dcline[["p_from_mw", "p_to_mw"]].abs().max(axis=1) / net.dcline.p_mw.abs()
 
     if cmap is not None:
         if z is None:
@@ -597,7 +621,7 @@ def create_impedance_collection(net, impedances=None, bus_geodata=None, infofunc
         bus_geodata (DataFrame, None): coordinates to use for plotting. If None, net["bus_geodata"] is used
          infofunc (function, None): infofunction for the patch element
         picker (bool, False): picker argument passed to the line collection
-    
+
     Keyword Arguments:
         **kwargs: are passed to the patch function
 
@@ -646,7 +670,7 @@ def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infof
             net.res_line.loading_percent is used.
         cbar_title (str, "Line Loading [%]"): colormap bar title in case of given cmap
         picker (bool, False): picker argument passed to the line collection
-        
+
     Keyword Arguments:
         **kwargs: are passed to the patch function
 
@@ -696,7 +720,7 @@ def create_trafo3w_connection_collection(net, trafos=None, bus_geodata=None, inf
             the network are considered.
         bus_geodata (DataFrame, None): coordinates to use for plotting. If None, net["bus_geodata"] is used
         infofunc (function, None): infofunction for the patch element
-    
+
     Keyword Arguments:
         **kwargs: are passed to the patch function
 
@@ -747,7 +771,7 @@ def create_trafo_collection(net, trafos=None, picker=False, size=None, infofunc=
         picker (bool, False): picker argument passed to the patch collection
         size (int, None): size of transformer symbol circles. Should be > 0 and < 0.35*bus_distance
         infofunc (function, None): infofunction for the patch element
-    
+
     Keyword Arguments:
          **kwargs: are passed to the patch function
 
@@ -807,7 +831,7 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, c
             winding transformers in the network are considered.
         picker (bool, False): picker argument passed to the patch collection
         infofunc (function, None): infofunction for the patch element
-    
+
     Keyword Arguments:
          **kwargs: are passed to the patch function
 
@@ -904,7 +928,7 @@ def create_vsc_collection(net, vscs=None, picker=False, size=None, infofunc=None
         picker (bool, False): picker argument passed to the patch collection
         size (int, None): size of VSC symbol squares. Should be > 0 and < 0.35*bus_distance
         infofunc (function, None): infofunction for the patch element
-    
+
     Keyword Arguments:
          **kwargs: are passed to the patch function
 
@@ -1035,7 +1059,7 @@ def create_busbar_collection(net, buses=None, infofunc=None, cmap=None, norm=Non
             net.res_line.loading_percent is used.
         cbar_title (str, "Line Loading [%]"): colormap bar title in case of given cmap
         clim (tuple of floats, None): setting the norm limits for image scaling
-        
+
     Keyword Arguments:
         **kwargs: key word arguments are passed to the patch function
 
@@ -1062,7 +1086,7 @@ def create_busbar_collection(net, buses=None, infofunc=None, cmap=None, norm=Non
 
 
 def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=np.pi, picker=False,
-                           **kwargs):
+                           unique_angles=None, **kwargs):
     """
     Creates a matplotlib patch collection of pandapower loads.
 
@@ -1074,61 +1098,138 @@ def create_load_collection(net, loads=None, size=1., infofunc=None, orientation=
         orientation (float, np.pi): orientation of load collection. pi is directed downwards, increasing values lead to
             clockwise direction changes.
         picker (bool, False): picker argument passed to the patch collection
-        
+        unique_angles (dict): angles for patches
+
     Keyword Arguments:
          are passed to the patch function
 
     Returns:
         patch collection, line collection
     """
+    from pandapower.plotting.simple_plot import calculate_unique_angles
+
+    # if unique_angles == None:
+    #     unique_angles = calculate_unique_angles(net)
     loads = get_index_array(loads, net.load.index)
     infos = [infofunc(i) for i in range(len(loads))] if infofunc is not None else []
-    node_coords = net.bus.loc[net.load.loc[loads, "bus"].values, "geo"].apply(geojson.loads).apply(
-        geojson.utils.coords).apply(next).to_list()
+    buses = net.load.loc[loads, "bus"].values
+    node_coords = net.bus.loc[buses, "geo"].apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()
 
     color = kwargs.pop("color", "k")
 
+    if unique_angles is not None:
+        angles = [unique_angles[b]["load"] for b in buses]
+    else:
+        angles = orientation
+
     load_pc, load_lc = _create_node_element_collection(
-        node_coords, load_patches, size=size, infos=infos, orientation=orientation,
-        picker=picker, line_color=color, **kwargs)
+        node_coords=node_coords,
+        patch_maker=load_patches,
+        size=size,
+        infos=infos,
+        orientation=angles,
+        picker=picker,
+        line_color=color,
+        **kwargs
+    )
     return load_pc, load_lc
 
 
-def create_gen_collection(net, gens=None, size=1., infofunc=None, orientation=np.pi, picker=False,
-                          **kwargs):
+def _create_gen_or_sgen_collection(
+        net: pandapowerNet,
+        indices,
+        size: float,
+        infofunc,
+        orientation,
+        picker: bool,
+        patch_type,
+        unique_angles,
+        draw_by_type: bool,
+        attribute: Literal["sgen", "gen"],
+        **kwargs
+):
+    df = net[attribute]
+    indices = get_index_array(indices, df.index)
+    infos = [infofunc(i) for i in indices] if infofunc is not None else []
+    buses = df.loc[indices, "bus"]
+    node_coords = net.bus.loc[buses, "geo"].apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()
+    if draw_by_type:
+        if unique_angles is None:
+            raise AttributeError(
+                f'unique_angles was not passed to create_{attribute}_collection, but draw_by_type was set to True'
+            )
+        if patch_type is None:
+            patch_type = df.loc[indices, "type"].to_list()
+            angles = [unique_angles[b][attribute][t if t else "none"] for b, t in zip(buses, patch_type)]
+        else:
+            angles = [unique_angles[b][attribute][patch_type] for b in buses]
+    else:
+        angles = orientation
+
+    color = kwargs.pop("color", "k")
+    return _create_node_element_collection(
+        node_coords=node_coords,
+        patch_maker=sgen_patches if attribute == "sgen" else gen_patches,
+        size=size,
+        infos=infos,
+        orientation=angles,
+        picker=picker,
+        line_color=color,
+        patch_type=patch_type,
+        draw_by_type=draw_by_type,
+        **kwargs
+    )
+
+
+def create_gen_collection(
+        net: pandapowerNet,
+        gens=None,
+        size: float = 1.,
+        infofunc=None,
+        orientation=math.pi,
+        picker: bool = False,
+        patch_type=None,
+        unique_angles=None,
+        draw_by_type: bool = False,
+        **kwargs):
     """
     Creates a matplotlib patch collection of pandapower gens.
 
     Parameters:
         net (pandapowerNet): The pandapower network
-        gens (list of ints, None): the generators to include in the collection
+        gens (list[int], None): the generators to include in the collection
         size (float, 1): patch size
         infofunc (function, None): infofunction for the patch element
-        orientation (float or list of floats, np.pi): orientation of gen collection. pi is directed downwards,
+        orientation (float or list[float], np.pi): orientation of gen collection. pi is directed downwards,
             increasing values lead to clockwise direction changes.
         picker (bool, False): picker argument passed to the patch collection
-    
+        patch_type (iterable[str], None): patch types to use for each patch or a single type for all patches
+        unique_angles (dict): angles for patches
+        draw_by_type (bool, False): should gens be drawn grouped by type or as one patch
+
     Keyword Arguments:
         **kwargs: are passed to the patch function
 
     Returns:
         patch collection, line collection
     """
-    gens = get_index_array(gens, net.gen.index)
-    infos = [infofunc(i) for i in range(len(gens))] if infofunc is not None else []
-    node_coords = net.bus.loc[net.gen.loc[gens, "bus"].values, "geo"].apply(geojson.loads).apply(
-        geojson.utils.coords).apply(next).to_list()
-
-    color = kwargs.pop("color", "k")
-
-    gen_pc, gen_lc = _create_node_element_collection(
-        node_coords, gen_patches, size=size, infos=infos, orientation=orientation,
-        picker=picker, line_color=color, **kwargs)
-    return gen_pc, gen_lc
+    return _create_gen_or_sgen_collection(
+        net, gens, size, infofunc, orientation, picker, patch_type, unique_angles, draw_by_type, "gen", **kwargs
+    )
 
 
-def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=np.pi, picker=False,
-                           **kwargs):
+def create_sgen_collection(
+        net: pandapowerNet,
+        sgens=None,
+        size: float = 1.,
+        infofunc=None,
+        orientation=math.pi,
+        picker: bool = False,
+        patch_type=None,
+        unique_angles=None,
+        draw_by_type = False,
+        **kwargs
+):
     """
     Creates a matplotlib patch collection of pandapower sgen.
 
@@ -1140,6 +1241,9 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
         picker (bool, False): picker argument passed to the patch collection
         orientation (float, np.pi): orientation of static generator collection. pi is directed downwards, increasing
             values lead to clockwise direction changes.
+        patch_type (str or iterable[str], None) patch types to use for each patch or a single type for all patches
+        unique_angles (dict): angles for patches
+        draw_by_type (bool, False): should sgens be drawn grouped by type or as one patch
 
     Keyword Arguments:
         **kwargs: are passed to the patch function
@@ -1147,17 +1251,9 @@ def create_sgen_collection(net, sgens=None, size=1., infofunc=None, orientation=
     Returns:
         patch collection, line collection
     """
-    sgens = get_index_array(sgens, net.sgen.index)
-    infos = [infofunc(i) for i in range(len(sgens))] if infofunc is not None else []
-    node_coords = net.bus.loc[net.sgen.loc[sgens, "bus"].values, "geo"].apply(geojson.loads).apply(
-        geojson.utils.coords).apply(next).to_list()
-
-    color = kwargs.pop("color", "k")
-
-    sgen_pc, sgen_lc = _create_node_element_collection(
-        node_coords, sgen_patches, size=size, infos=infos, orientation=orientation,
-        picker=picker, line_color=color, **kwargs)
-    return sgen_pc, sgen_lc
+    return _create_gen_or_sgen_collection(
+        net, sgens, size, infofunc, orientation, picker, patch_type, unique_angles, draw_by_type, "sgen", **kwargs
+    )
 
 
 def create_storage_collection(net, storages=None, size=1., infofunc=None, orientation=np.pi,
@@ -1173,7 +1269,7 @@ def create_storage_collection(net, storages=None, size=1., infofunc=None, orient
         picker (bool, False): picker argument passed to the patch collection
         orientation (float, np.pi): orientation of static generator collection. pi is directed downwards, increasing
             values lead to clockwise direction changes.
-        
+
     Keyword Arguments:
          **kwargs: are passed to the patch function
 
@@ -1207,10 +1303,10 @@ def create_ext_grid_collection(net, ext_grids=None, size=1., infofunc=None, orie
             clockwise direction changes.
         picker (bool, False): picker argument passed to the patch collection
         ext_grid_buses (np.ndarray, None): buses to be used as ext_grid locations
-    
+
     Keyword Arguments:
         are passed to the patch function
-        
+
     Returns:
         patch collection, patch collection
     """
@@ -1283,7 +1379,7 @@ def create_line_switch_collection(net, switches=None, size=1, distance_to_bus=3,
 
         if use_line_geodata:
             if line.name in net.line.geo.dropna().index:
-                line_coords = net.line.loc[line.name, "geo"]
+                line_coords = _get_coords_from_geojson(net.line.loc[line.name, "geo"])
                 # check, which end of the line is nearer to the switch bus
                 intersection = position_on_busbar(net, sb, busbar_coords=line_coords)
                 if intersection is not None:
@@ -1342,7 +1438,7 @@ def create_bus_bus_switch_collection(net, size=1., helper_line_style=':', helper
         helper_line_color (string, "gray") - Line color of the "helper" line being plotted between two buses connected
             by a bus-bus switch
         switches (list, []): switches to include in the collection
-        
+
     Keyword Arguments:
         are passed to the patch function
 
@@ -1404,7 +1500,7 @@ def create_ward_collection(net, wards=None, ward_buses=None, size=5., bus_geodat
         picker (bool, False): picker argument passed to the patch collection
         orientation (float, np.pi): orientation of static generator collection. pi is directed downwards, increasing
             values lead to clockwise direction changes.
-        
+
     Keyword Arguments:
         **kwargs: are passed to the patch function
 
@@ -1444,7 +1540,7 @@ def create_xward_collection(net, xwards=None, xward_buses=None, size=5., bus_geo
         picker (bool, False): picker argument passed to the patch collection
         orientation (float, np.pi): orientation of static generator collection. pi is directed downwards, increasing
             values lead to clockwise direction changes.
-        
+
     Keyword Arguments:
         **kwargs: are passed to the patch function
 

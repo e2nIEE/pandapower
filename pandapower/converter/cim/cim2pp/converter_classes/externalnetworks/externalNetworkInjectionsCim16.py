@@ -59,10 +59,10 @@ class ExternalNetworkInjectionsCim16:
                     (eni_slacks.index.size, eni_gens.index.size, eni_sgens.index.size, time.time() - time_start)))
 
     def _prepare_external_network_injections_cim16(self) -> pd.DataFrame:
-        if 'sc' in self.cimConverter.cim:
+        if 'sc' in self.cimConverter.cim:  # CGMES 3.0
             eni = self.cimConverter.merge_eq_other_profiles(['ssh', 'sc'], 'ExternalNetworkInjection',
                                                         add_cim_type_column=True)
-        else:
+        else:  # CGMES 2.4.25
             eni = self.cimConverter.merge_eq_ssh_profile('ExternalNetworkInjection', add_cim_type_column=True)
 
         # merge with buses
@@ -83,6 +83,9 @@ class ExternalNetworkInjectionsCim16:
         # ignore targetValues with mode != voltage
         eni.loc[eni['mode'] != 'voltage', 'vm_pu'] = np.nan
         eni['vm_pu'] = eni['vm_pu'].fillna(eni['v'] / eni['vn_kv'])  # voltage from measurement
+        if eni['vm_pu'].isna().any():
+            self.logger.warning(f"Missing target voltage for the following external network injections: "
+                                f"{eni.loc[eni['vm_pu'].isna(), 'rdfId']}. Setting voltages to 1 pu.")
         eni['vm_pu'] = eni['vm_pu'].fillna(1.)  # default voltage
         eni['angle'] = eni['angle'].fillna(0.)  # default angle
         eni['ratedU'] = eni['targetValue'][:]  # targetValue in kV
@@ -90,21 +93,21 @@ class ExternalNetworkInjectionsCim16:
         eni['ratedU'] = eni['ratedU'].fillna(eni['vn_kv'])
         eni['s_sc_max_mva'] = 3 ** .5 * eni['ratedU'] * (eni['maxInitialSymShCCurrent'] / 1e3)
         eni['s_sc_min_mva'] = 3 ** .5 * eni['ratedU'] * (eni['minInitialSymShCCurrent'] / 1e3)
+        eni['x0x_max'] = ((eni['maxR1ToX1Ratio'] + 1j) /
+                          (eni['maxR0ToX0Ratio'] + 1j)).abs() * eni['maxZ0ToZ1Ratio']
         # get the substations
-        eni = pd.merge(eni,
-                       self.cimConverter.net.bus[[sc['o_id'], 'zone']].rename({sc['o_id']: 'b_id'}, axis=1),
+        eni = pd.merge(eni, self.cimConverter.net.bus[[sc['o_id'], 'zone']].rename({sc['o_id']: 'b_id'}, axis=1),
                        how='left', left_on='ConnectivityNode', right_on='b_id')
         
         eni['referencePriority'] = eni['referencePriority'].astype(float)
         eni['slack_weight'] = eni['referencePriority'][:]
         eni.loc[eni['slack_weight'] == 0, 'slack_weight'] = np.nan
         eni['RegulatingControl.mode'] = eni['mode'][:]
+        # toggle sign (load sign convention in CGMES)
         eni['p'] = -eni['p']
         eni['q'] = -eni['q']
-        eni['x0x_max'] = ((eni['maxR1ToX1Ratio'] + 1j) /
-                          (eni['maxR0ToX0Ratio'] + 1j)).abs() * eni['maxZ0ToZ1Ratio']
 
-        if 'inService' in eni.columns:
+        if 'inService' in eni.columns:  # CGMES 3.0
             eni['connected'] = eni['connected'] & eni['inService']
 
         eni = eni.rename(columns={'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'zone': sc['sub'],

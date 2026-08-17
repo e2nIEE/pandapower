@@ -26,7 +26,7 @@ def d2AIbr_dV2(dIbr_dVa, dIbr_dVm, Ibr, Ybr, V, lam):
     [TN2]  R. D. Zimmerman, I{"AC Power Flows, Generalized OPF Costs and
     their Derivatives using Complex Matrix Notation"}, MATPOWER
     Technical Note 2, February 2010.
-    U{http://www.pserc.cornell.edu/matpower/TN2-OPF-Derivatives.pdf}
+    U{https://matpower.org/docs/TN2-OPF-Derivatives.pdf}
 
     @see: L{dIbr_dV}.
 

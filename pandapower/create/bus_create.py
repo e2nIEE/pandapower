@@ -1,12 +1,10 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from __future__ import annotations
 
 import logging
-from typing import Final, Iterable
+from typing import Iterable
 
 from numpy import nan
 import numpy.typing as npt
@@ -16,7 +14,6 @@ from pandapower.plotting.geo import _is_valid_number
 from pandapower.pp_types import BusType, Int
 from pandapower.create._utils import (
     _add_to_entries_if_not_nan,
-    _geodata_to_geo_series,
     _get_index_with_check,
     _get_multiple_index_with_check,
     _set_entries,
@@ -26,7 +23,43 @@ from pandapower.create._utils import (
 
 logger = logging.getLogger(__name__)
 
-BUSBAR_WARNING: Final[str] = "busbar plotting is not implemented fully and will likely be removed in the future"
+
+def _geodata_to_geo_series(
+        data: Iterable[tuple[float, float]] | None,
+        coords: Iterable[list[list[float]]] | None,
+        nr_buses: int
+) -> list[str] | str | None:
+    if data is None and coords is None:
+        return None
+    if data is not None and coords is not None:
+        raise ValueError("Cannot specify both geodata and coords")
+    geo = []
+    if data is not None:
+        for g in data:
+            if isinstance(g, tuple):
+                if len(g) != 2:
+                    raise ValueError("geodata tuples must be of length 2")
+                elif not _is_valid_number(g[0]):
+                    raise UserWarning("geodata x must be a valid number")
+                elif not _is_valid_number(g[1]):
+                    raise UserWarning("geodata y must be a valid number")
+                else:
+                    x, y = g
+                    geo.append(f'{{"coordinates": [{x}, {y}], "type": "Point"}}')
+            else:
+                raise ValueError("geodata must be iterable of tuples of (x, y) coordinates")
+        if len(geo) == 1:
+            geo = [geo[0]] * nr_buses
+        if len(geo) != nr_buses:
+            raise ValueError("geodata must be a single point or have the same length as nr_buses")
+    else:
+        logger.warning(
+            "There is no support for LineString geodata on a bus. Some functionality might not work as intended."
+            " Use at your own risk."
+        )
+        logger.warning("coords will not be verified.")
+        geo = [f'{{"coordinates":{str(c)}, "type":"LineString"}}' for c in coords]
+    return geo if nr_buses > 1 else geo[0]
 
 
 def create_bus(
@@ -40,7 +73,7 @@ def create_bus(
     in_service: bool = True,
     max_vm_pu: float = nan,
     min_vm_pu: float = nan,
-    coords: list[tuple[float, float]] | None = None,  # TODO: remove
+    coords: list[list[float]] | None = None,
     **kwargs,
 ) -> Int:
     """
@@ -60,7 +93,7 @@ def create_bus(
         in_service: True for in_service or False for out of service
         max_vm_pu: Maximum bus voltage in p.u. - necessary for OPF
         min_vm_pu: Minimum bus voltage in p.u. - necessary for OPF
-        coords: list (len=2) of tuples (len=2) busbar coordinates to plot the bus with multiple points.
+        coords: (no support) list (len=2) of list (len=2) busbar coordinates to plot the bus with multiple points.
             coords is typically a list of tuples (start and endpoint of the busbar) - Example: [(x1, y1), (x2, y2)]
 
     Returns:
@@ -71,22 +104,7 @@ def create_bus(
     """
     index = _get_index_with_check(net, "bus", index)
 
-    if geodata is not None:
-        if isinstance(geodata, tuple):
-            if len(geodata) != 2:
-                raise UserWarning("geodata must be given as (x, y) tuple")
-            elif not _is_valid_number(geodata[0]):
-                raise UserWarning("geodata x must be a valid number")
-            elif not _is_valid_number(geodata[1]):
-                raise UserWarning("geodata y must be a valid number")
-            geo = f'{{"coordinates":[{geodata[0]},{geodata[1]}], "type":"Point"}}'
-        else:
-            raise UserWarning("geodata must be a valid coordinate tuple")
-    else:
-        geo = None
-
-    if coords is not None:
-        raise UserWarning(BUSBAR_WARNING)
+    geo = _geodata_to_geo_series([geodata] if geodata else None, [coords] if coords else None, 1)
 
     entries = {"name": name, "vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "geo": geo, **kwargs}
     _set_entries(net, "bus", index, True, entries=entries)
@@ -109,7 +127,7 @@ def create_bus_dc(
     in_service: bool = True,
     max_vm_pu: float = nan,
     min_vm_pu: float = nan,
-    coords: list[tuple[float, float]] | None = None,  # TODO: remove
+    coords: list[list[float]] | None = None,
     **kwargs,
 ) -> Int:
     """
@@ -141,23 +159,7 @@ def create_bus_dc(
     """
     index = _get_index_with_check(net, "bus_dc", index)
 
-    if geodata is not None:
-        if isinstance(geodata, tuple):
-            if len(geodata) != 2:
-                raise UserWarning("geodata must be given as (x, y) tuple")
-            elif not _is_valid_number(geodata[0]):
-                raise UserWarning("geodata x must be a valid number")
-            elif not _is_valid_number(geodata[1]):
-                raise UserWarning("geodata y must be a valid number")
-            else:
-                geo = f'{{"coordinates":[{geodata[0]},{geodata[1]}], "type":"Point"}}'
-        else:
-            raise UserWarning("geodata must be a valid coordinate tuple")
-    else:
-        geo = None
-
-    if coords is not None:
-        raise UserWarning(BUSBAR_WARNING)
+    geo = _geodata_to_geo_series([geodata] if geodata else None, [coords] if coords else None, 1)
 
     entries = {"name": name, "vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "geo": geo, **kwargs}
     _set_entries(net, "bus_dc", index, True, entries=entries)
@@ -181,7 +183,7 @@ def create_buses(
     in_service: bool | Iterable[bool] = True,
     max_vm_pu: float | Iterable[float] = nan,
     min_vm_pu: float | Iterable[float] = nan,
-    coords: list[list[tuple[float, float]]] | None = None,  # TODO: remove
+    coords: list[list[list[float]]] | None = None,
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
@@ -215,15 +217,12 @@ def create_buses(
 
     if geodata:
         if isinstance(geodata, tuple) and (isinstance(geodata[0], int) or isinstance(geodata[0], float)):
-            geo = _geodata_to_geo_series([geodata], nr_buses)
+            geo = _geodata_to_geo_series([geodata], coords, nr_buses)
         else:
             assert hasattr(geodata, "__iter__"), "geodata must be an iterable"
-            geo = _geodata_to_geo_series(geodata, nr_buses)  # type: ignore
+            geo = _geodata_to_geo_series(geodata, coords, nr_buses)  # type: ignore
     else:
-        geo = [None] * nr_buses  # type: ignore[list-item,assignment]
-
-    if coords:
-        raise UserWarning(BUSBAR_WARNING)
+        geo = _geodata_to_geo_series(geodata, coords, nr_buses)
 
     entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo, **kwargs}
     _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
@@ -231,7 +230,6 @@ def create_buses(
     _set_multiple_entries(net, "bus", index, entries=entries)
     if "geo" in net.bus.columns:
         net.bus.loc[net.bus.geo == "", "geo"] = None  # overwrite
-
     return index
 
 
@@ -247,7 +245,7 @@ def create_buses_dc(
     in_service: bool | Iterable[bool] = True,
     max_vm_pu: float | Iterable[float] = nan,
     min_vm_pu: float | Iterable[float] = nan,
-    coords: list[list[tuple[float, float]]] | None = None,  # TODO: remove
+    coords: list[list[list[float]]] | None = None,
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
@@ -283,15 +281,12 @@ def create_buses_dc(
 
     if geodata:
         if isinstance(geodata, tuple) and (isinstance(geodata[0], int) or isinstance(geodata[0], float)):
-            geo = _geodata_to_geo_series([geodata], nr_buses_dc)
+            geo = _geodata_to_geo_series([geodata], coords, nr_buses_dc)
         else:
             assert hasattr(geodata, "__iter__"), "geodata must be an iterable"
-            geo = _geodata_to_geo_series(geodata, nr_buses_dc)
+            geo = _geodata_to_geo_series(geodata, coords, nr_buses_dc)  # type: ignore
     else:
-        geo = [None] * nr_buses_dc  # type: ignore[list-item,assignment]
-
-    if coords:
-        raise UserWarning(BUSBAR_WARNING)
+        geo = _geodata_to_geo_series(geodata, coords, nr_buses_dc)
 
     entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo, **kwargs}
     _add_to_entries_if_not_nan(net, "bus_dc", entries, index, "min_vm_pu", min_vm_pu)

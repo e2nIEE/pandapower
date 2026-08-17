@@ -44,27 +44,26 @@ def create_pwl_cost(
      - Dcline
      - Storage
 
-    INPUT:
-        **element** (int) - ID of the element in the respective element table
+    Parameters:
+        net: the pandapower network
+        element: ID of the element in the respective element table
+        et: element type, one of "gen", "sgen", "ext_grid", "load", "dcline", "storage"
+        points: list of lists with [[p1, p2, c1], [p2, p3, c2], …] where c(n) defines the costs between p(n) and p(n+1)
+        power_type: Type of cost ["p", "q"] are allowed for active or reactive power
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        check: raises UserWarning if costs already exist to this element.
 
-        **et** (string) - element type, one of "gen", "sgen", "ext_grid", "load",
-                                "dcline", "storage"
+    Keyword Arguments:
+        are added as columns to the dataframe
 
-        **points** - (list) list of lists with [[p1, p2, c1], [p2, p3, c2], ...] where c(n) \
-                            defines the costs between p(n) and p(n+1)
+    Returns:
+        The unique ID of created cost entry
 
-    OPTIONAL:
-        **power_type** - (string) - Type of cost ["p", "q"] are allowed for active or reactive power
+    Raises:
+        UserWarning: if check is enabled and the element has a cost accociated
 
-        **index** (int, index) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
-
-        **check** (bool, True) - raises UserWarning if costs already exist to this element.
-
-    OUTPUT:
-        **index** (int) - The unique ID of created cost entry
-
-    EXAMPLE:
+    Example:
         The cost function is given by the x-values p1 and p2 with the slope m between those points.\
         The constant part b of a linear function y = m*x + b can be neglected for OPF purposes. \
         The intervals have to be continuous (the starting point of an interval has to be equal to \
@@ -72,7 +71,7 @@ def create_pwl_cost(
 
         To create a gen with costs of 1€/MW between 0 and 20 MW and 2€/MW between 20 and 30:
 
-        create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
+        >>> create_pwl_cost(net, 0, "gen", [[0, 20, 1], [20, 30, 2]])
     """
     if isinstance(element, (list, tuple)):
         element = element[0]
@@ -105,37 +104,31 @@ def create_pwl_costs(
      - Dcline
      - Storage
 
-    INPUT:
-        **elements** (iterable of integers) - IDs of the elements in the respective element table
+    Parameters:
+        net: the pandapower network
+        elements: IDs of the elements in the respective element table
+        et: element type, one of "gen", "sgen", "ext_grid", "load", "dcline", "storage"
+        points: [[p1, p2, c1], [p2, p3, c2], …] for each element where c(n) defines the costs between p(n) and p(n+1)
+        power_type: Type of cost ["p", "q"] are allowed for active or reactive power
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        check: raises UserWarning if costs already exist to this element.
 
-        **et** (string or iterable) - element type, one of "gen", "sgen", "ext_grid", "load",
-                                "dcline", "storage"
+    Returns:
+        The unique ID of created cost entry
 
-        **points** - (list of lists of lists) with [[p1, p2, c1], [p2, p3, c2], ...] for each element
-        where c(n) defines the costs between p(n) and p(n+1)
+    Raises:
+        UserWarning: if check is enabled and the element has a cost accociated
 
-    OPTIONAL:
-        **power_type** - (string or iterable) - Type of cost ["p", "q"] are allowed for active or
-        reactive power
-
-        **index** (int, index) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
-
-        **check** (bool, True) - raises UserWarning if costs already exist to this element.
-
-    OUTPUT:
-        **index** (int) - The unique ID of created cost entry
-
-    EXAMPLE:
+    Example:
         The cost function is given by the x-values p1 and p2 with the slope m between those points.\
         The constant part b of a linear function y = m*x + b can be neglected for OPF purposes. \
-        The intervals have to be continuous (the starting point of an interval has to be equal to \
-        the end point of the previous interval).
+        The intervals have to be continuous (the starting point of an interval has to be equal to the end point of the
+            previous interval).
 
         To create a gen with costs of 1€/MW between 0 and 20 MW and 2€/MW between 20 and 30:
 
-        create_pwl_costs(net, [0, 1], ["gen", "sgen"], [[[0, 20, 1], [20, 30, 2]], \
-            [[0, 20, 1], [20, 30, 2]]])
+        >>> create_pwl_costs(net, [0, 1], ["gen", "sgen"], [[[0, 20, 1], [20, 30, 2]], [[0, 20, 1], [20, 30, 2]]])
     """
     if not hasattr(elements, "__iter__") and not isinstance(elements, str):
         raise ValueError(f"An iterable is expected for elements, not {elements}.")
@@ -162,11 +155,13 @@ def create_poly_cost(
     element: Int | Iterable[Int],
     et: CostElementType,
     cp1_eur_per_mw: float,
-    cp0_eur: float = 0,
-    cq1_eur_per_mvar: float = 0,
-    cq0_eur: float = 0,
-    cp2_eur_per_mw2: float = 0,
-    cq2_eur_per_mvar2: float = 0,
+    cp0_eur: float = 0.,
+    cq1_eur_per_mvar: float = 0.,
+    cq0_eur: float = 0.,
+    cp2_eur_per_mw2: float = 0.,
+    cq2_eur_per_mvar2: float = 0.,
+    redispatch_up_eur_per_mw: float = np.nan,
+    redispatch_down_eur_per_mw: float = np.nan,
     index: int | None = None,
     check: bool = True,
     **kwargs,
@@ -180,38 +175,36 @@ def create_poly_cost(
      - Dcline ("dcline")
      - Storage ("storage")
 
-    INPUT:
-        **element** (int) - ID of the element in the respective element table
+    Parameters:
+        net: the pandapower network
+        element: ID of the element in the respective element table
+        et: Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] are possible
+        cp1_eur_per_mw: Linear costs per MW
+        cp0_eur: Offset active power costs in euro
+        cq1_eur_per_mvar: Linear costs per Mvar
+        cq0_eur: Offset reactive power costs in euro
+        cp2_eur_per_mw2: Quadratic costs per MW
+        cq2_eur_per_mvar2: Quadratic costs per Mvar
+        redispatch_up_eur_per_mw: Cost per MW of upward redispatch (increasing active power above the
+            base dispatch). Only used by the redispatch OPF (:func:`runpm_redispatch`). Leave as NaN
+            if the element should not participate in redispatch.
+        redispatch_down_eur_per_mw: Cost per MW of downward redispatch (decreasing active power below
+            the base dispatch). Only used by the redispatch OPF (:func:`runpm_redispatch`). Leave as
+            NaN if the element should not participate in redispatch.
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        check: raises UserWarning if costs already exist to this element.
 
-        **et** (string) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"]
-        are possible
+    Returns:
+        The unique ID of created cost entry
 
-        **cp1_eur_per_mw** (float) - Linear costs per MW
+    Raises:
+        UserWarning: if check is enabled and the element has a cost accociated
 
-        **cp0_eur=0** (float) - Offset active power costs in euro
-
-        **cq1_eur_per_mvar=0** (float) - Linear costs per Mvar
-
-        **cq0_eur=0** (float) - Offset reactive power costs in euro
-
-        **cp2_eur_per_mw2=0** (float) - Quadratic costs per MW
-
-        **cq2_eur_per_mvar2=0** (float) - Quadratic costs per Mvar
-
-    OPTIONAL:
-
-        **index** (int, index) - Force a specified ID if it is available. If None, the index one
-        higher than the highest already existing index is selected.
-
-        **check** (bool, True) - raises UserWarning if costs already exist to this element.
-
-    OUTPUT:
-        **index** (int) - The unique ID of created cost entry
-
-    EXAMPLE:
+    Example:
         The polynomial cost function is given by the linear and quadratic cost coefficients.
 
-        create_poly_cost(net, 0, "load", cp1_eur_per_mw=0.1)
+        >>> create_poly_cost(net, 0, "load", cp1_eur_per_mw=0.1)
     """
     if isinstance(element, (list, tuple)):
         element = element[0]
@@ -229,6 +222,8 @@ def create_poly_cost(
         "cq1_eur_per_mvar": cq1_eur_per_mvar,
         "cp2_eur_per_mw2": cp2_eur_per_mw2,
         "cq2_eur_per_mvar2": cq2_eur_per_mvar2,
+        "redispatch_up_eur_per_mw": redispatch_up_eur_per_mw,
+        "redispatch_down_eur_per_mw": redispatch_down_eur_per_mw,
         **kwargs,
     }
     _set_entries(net, "poly_cost", index, entries=entries)
@@ -245,6 +240,8 @@ def create_poly_costs(
     cq0_eur: float | Iterable[float] = 0,
     cp2_eur_per_mw2: float | Iterable[float] = 0,
     cq2_eur_per_mvar2: float | Iterable[float] = 0,
+    redispatch_up_eur_per_mw: float | Iterable[float] = np.nan,
+    redispatch_down_eur_per_mw: float | Iterable[float] = np.nan,
     index: int | None = None,
     check: bool = True,
     **kwargs,
@@ -258,40 +255,36 @@ def create_poly_costs(
      - Dcline ("dcline")
      - Storage ("storage")
 
-    INPUT:
-        **elements** (iterable of integers) - IDs of the elements in the respective element table
+    Parameters:
+        net: the pandapower network
+        elements: IDs of the elements in the respective element table
+        et: Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] are possible
+        cp1_eur_per_mw: Linear costs per MW
+        cp0_eur: Offset active power costs in euro
+        cq1_eur_per_mvar: Linear costs per Mvar
+        cq0_eur: Offset reactive power costs in euro
+        cp2_eur_per_mw2: Quadratic costs per MW
+        cq2_eur_per_mvar2: Quadratic costs per Mvar
+        redispatch_up_eur_per_mw: Cost per MW of upward redispatch. Only used by the redispatch OPF
+            (:func:`runpm_redispatch`). Leave as NaN for elements that should not participate.
+        redispatch_down_eur_per_mw: Cost per MW of downward redispatch. Only used by the redispatch
+            OPF (:func:`runpm_redispatch`). Leave as NaN for elements that should not participate.
+        index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
+            index is selected.
+        check: raises UserWarning if costs already exist to this element.
 
-        **et** (string or iterable) - Type of element ["gen", "sgen", "ext_grid", "load", "dcline",
-            "storage"] are possible
+    Returns:
+        The unique ID of created cost entry
 
-        **cp1_eur_per_mw** (float or iterable) - Linear costs per MW
+    Raises:
+        UserWarning: if check is enabled and the element has a cost accociated
 
-        **cp0_eur=0** (float or iterable) - Offset active power costs in euro
-
-        **cq1_eur_per_mvar=0** (float or iterable) - Linear costs per Mvar
-
-        **cq0_eur=0** (float or iterable) - Offset reactive power costs in euro
-
-        **cp2_eur_per_mw2=0** (float or iterable) - Quadratic costs per MW
-
-        **cq2_eur_per_mvar2=0** (float or iterable) - Quadratic costs per Mvar
-
-    OPTIONAL:
-
-        **index** (int, index) - Force a specified ID if it is available. If None, the index one \
-            higher than the highest already existing index is selected.
-
-        **check** (bool, True) - raises UserWarning if costs already exist to this element.
-
-    OUTPUT:
-        **index** (int) - The unique ID of created cost entry
-
-    EXAMPLE:
+    Example:
         The polynomial cost function is given by the linear and quadratic cost coefficients.
         If the first two loads have active power cost functions of the kind
         c(p) = 0.5 + 1 * p + 0.1 * p^2, the costs are created as follows:
 
-        create_poly_costs(net, [0, 1], "load", cp0_eur=0.5, cp1_eur_per_mw=1, cp2_eur_per_mw2=0.1)
+        >>> create_poly_costs(net, [0, 1], "load", cp0_eur=0.5, cp1_eur_per_mw=1, cp2_eur_per_mw2=0.1)
     """
     if not hasattr(elements, "__iter__") and not isinstance(elements, str):
         raise ValueError(f"An iterable is expected for elements, not {elements}.")
@@ -311,6 +304,8 @@ def create_poly_costs(
         "cq1_eur_per_mvar": cq1_eur_per_mvar,
         "cp2_eur_per_mw2": cp2_eur_per_mw2,
         "cq2_eur_per_mvar2": cq2_eur_per_mvar2,
+        "redispatch_up_eur_per_mw": redispatch_up_eur_per_mw,
+        "redispatch_down_eur_per_mw": redispatch_down_eur_per_mw,
         **kwargs,
     }
     _set_multiple_entries(net, "poly_cost", index, entries=entries)

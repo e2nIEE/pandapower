@@ -5,13 +5,15 @@
 
 import gc
 import warnings
+from collections.abc import Collection
+from typing import Iterable
 
 import numpy as np
 import pandas as pd
 from packaging.version import Version
 
 from pandapower._version import __version__
-from pandapower.auxiliary import ets_to_element_types
+from pandapower.auxiliary import ets_to_element_types, pandapowerNet
 
 import logging
 
@@ -45,27 +47,27 @@ def get_element_index(net, element_type, name, exact_match=True):
         return net[element_type][net[element_type]["name"].str.contains(name)].index
 
 
-def get_element_indices(net, element_type, name, exact_match=True):
+def get_element_indices(
+    net: pandapowerNet,
+    element_type: str | Collection[str],
+    name: str | Collection[str],
+    exact_match: bool = True
+) -> list[int] | list[pd.Index]:
     """
-    Returns a list of element(s) identified by a name or regex and its element-table -> Wrapper
-    function of get_element_index()
+    Returns a list of element(s) identified by a name or regex and its element-table -> Wrapper function of
+    get_element_index()
 
-    INPUT:
-      **net** - pandapower network
-
-      **element_type** (str, string iterable) - Element table to get indices from
-      ("line", "bus", "trafo" etc.).
-
-      **name** (str) - Name of the element to match.
-
-    OPTIONAL:
-      **exact_match** (boolean, True)
+    Parameters:
+        net: the pandapower network
+        element_type: Element table to get indices from ("line", "bus", "trafo" etc.).
+        name: Name of the element to match.
+        exact_match:
 
           - True: Expects exactly one match, raises UserWarning otherwise.
           - False: returns all indices containing the name
 
-    OUTPUT:
-      **index** (list) - List of the indices of matching element(s).
+    Returns:
+        List of the indices of matching element(s).
 
     EXAMPLE:
         >>> from pandapower.networks.create_examples import example_multivoltage
@@ -95,25 +97,23 @@ def get_element_indices(net, element_type, name, exact_match=True):
     return idx
 
 
-def next_bus(net, bus, element_id, et='line', **kwargs):
+def next_bus(
+    net: pandapowerNet,
+    bus: int,
+    element_id: int,
+    et: str ='line',
+) -> int:
     """
     Returns the index of the second bus an element is connected to, given a
     first one. E.g. the from_bus given the to_bus of a line.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        pandapower net
-    bus : int
-        index of bus
-    element_id : int
-        index of element
-    et : str, optional
-        which branch element type to consider, by default 'line'
+    Parameters:
+        net: the pandapower net
+        bus: index of bus
+        element_id: index of element
+        et: which branch element type to consider, by default 'line'
 
-    Returns
-    -------
-    int
+    Returns:
         index of next connected bus
     """
     # todo: what to do with trafo3w?
@@ -145,7 +145,7 @@ def get_connected_elements(net, element_type, buses, respect_switches=True, resp
             - False: open switches will be ignored
 
         respect_in_service (bool, False):
-        
+
             - True: in_service status of connected lines will be respected
             - False: in_service status will be ignored
 
@@ -461,34 +461,28 @@ def get_connected_switches(net, buses, consider=('b', 'l', 't', 't3', 'i'), stat
 
 
 def get_connected_elements_dict(
-        net, buses, respect_switches=True, respect_in_service=False, include_empty_lists=False,
-        element_types=None, **kwargs):
+        net: pandapowerNet, buses, respect_switches: bool = True, respect_in_service: bool = False,
+        include_empty_lists: bool = False,
+        element_types=None, **kwargs) -> dict[str, Collection]:
     """
     Returns a dict of lists of connected elements.
 
-    Parameters
-    ----------
-    net : _type_
-        _description_
-    buses : iterable of buses
-        buses as origin to search for connected elements
-    respect_switches : bool, optional
-        _description_, by default True
-    respect_in_service : bool, optional
-        _description_, by default False
-    include_empty_lists : bool, optional
-        if True, the output doesn't have values of empty lists but may lack of element types as
-        keys, by default False
-    element_types : iterable of strings, optional
-        types elements which are analyzed for connection. If not given, all pandapower element types
-        are analyzed. That list of all element types can also be restricted by key word arguments
-        "connected_buses", "connected_bus_elements", "connected_branch_elements" and
-        "connected_other_elements", by default None
+    Parameters:
+        net: The pandapower network
+        buses: buses as origin to search for connected elements
+        respect_switches:
+        respect_in_service:
+        include_empty_lists: if True, the output doesn't have values of empty lists but may lack of element types as
+            keys, by default False
+        element_types: types elements which are analysed for connection. If not given, all pandapower element types
+            are analysed. That list of all element types can also be restricted by key word arguments
 
-    Returns
-    -------
-    dict[str,list]
-        elements connected to given buses
+    Keyword arguments:
+        "connected_buses", "connected_bus_elements", "connected_branch_elements" and
+        "connected_other_elements"
+
+    Returns:
+        elements connected to given buses as dict with element type as key
     """
     if element_types is None:
         element_types = pp_elements(
@@ -499,7 +493,7 @@ def get_connected_elements_dict(
             cost_tables=False,
             res_elements=False)
 
-    connected = {}
+    connected: dict[str, Collection] = {}
     for et in element_types:
         if et == "bus":
             conn = get_connected_buses(net, buses, respect_switches=respect_switches,
@@ -508,8 +502,8 @@ def get_connected_elements_dict(
             conn = get_connected_switches(net, buses)
         else:
             conn = get_connected_elements(
-                net, et, buses, respect_switches=respect_switches,
-                respect_in_service=respect_in_service)
+                net, et, buses, respect_switches=respect_switches, respect_in_service=respect_in_service
+            )
         if include_empty_lists or len(conn):
             connected[et] = list(conn)
     return connected
@@ -540,8 +534,8 @@ def get_connecting_branches(net, buses1, buses2, branch_elements=None):
 def get_gc_objects_dict():
     """
     This function is based on the code in mem_top module
-    Summarize object types that are tracket by the garbage collector in the moment.
-    Useful to test if there are memoly leaks.
+    Summarize object types that are tracked by the garbage collector at the moment.
+    Useful to test if there are memory leaks.
     :return: dictionary with keys corresponding to types and values to the number of objects of the
     type
     """
@@ -684,7 +678,7 @@ def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=Fal
 
 
 def count_elements(net, return_empties=False, **kwargs):
-    """Counts how much elements of which element type exist in the pandapower net
+    """Counts how many elements of which element type exist in the pandapower net
 
     Parameters
     ----------
@@ -719,3 +713,61 @@ def count_elements(net, return_empties=False, **kwargs):
     """
     return pd.Series({et: net[et].shape[0] for et in pp_elements(**kwargs) if return_empties or \
                       bool(net[et].shape[0])}, dtype=np.int64)
+
+
+def get_all_elements(net, include_results=False):
+    """
+    Create a combined overview of all elements in a pandapower network
+    as a single DataFrame.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        The pandapower network object or a dict-like structure whose
+        values (partially) are pandas.DataFrames containing element data
+        (e.g. 'bus', 'line', 'trafo', 'load', ...).
+    include_results : bool, optional
+        If False (default), result tables whose keys start with
+        ``'res_'`` (e.g. ``'res_bus'``, ``'res_line'``) are ignored.
+        If True, these tables are also included in the overview.
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame with one row per element from all considered tables.
+        Contains at least the columns:
+
+        - ``'pp_type'`` : name of the original table (e.g. ``'bus'``,
+
+          ``'line'``)
+        - ``'pp_idx'`` : original index of the element in that table
+
+        In addition, all columns from all original tables are included
+        (union of columns); missing values are filled with NaN.
+    """
+    frames = []
+
+    for name, table in net.items():
+        # only DataFrame
+        if not isinstance(table, pd.DataFrame):
+            continue
+
+        # res_ optional (res_bus, res_line, ...)
+        if not include_results and name.startswith("res_"):
+            continue
+
+        if table.empty:
+            continue
+
+        df = table.copy()
+        # save type and index
+        df.insert(0, "pp_type", name)
+        df.insert(1, "pp_idx", df.index)
+
+        # reset index
+        frames.append(df.reset_index(drop=True))
+
+    if not frames:
+        return pd.DataFrame(columns=["pp_type", "pp_idx"])
+
+    return pd.concat(frames, ignore_index=True, sort=False)

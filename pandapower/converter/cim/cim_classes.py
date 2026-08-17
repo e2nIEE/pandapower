@@ -29,8 +29,8 @@ class CimParser:
         """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.cgmes_version = '2.4.15' if cgmes_version is None else cgmes_version
-        self.__cim_blueprint: MappingProxyType[str, MappingProxyType[str, pd.DataFrame]] =\
-            self._initialize_cim_data_structure(self.cgmes_version)
+        self.__cim_blueprint: MappingProxyType[str, MappingProxyType[str, pd.DataFrame]] =(
+            self._initialize_cim_data_structure(self.cgmes_version))
         self.cim: dict[str, dict[str, pd.DataFrame]] = cim if cim is not None else self.get_cim_data_structure()
         self.file_names: dict[str, str] = {}
         self.report_container = ReportContainer()
@@ -311,7 +311,8 @@ class CimParser:
                 'Terminal': pd.DataFrame(
                     columns=['rdfId', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
                 'EnergySource': pd.DataFrame(columns=['rdfId', 'name', 'nominalVoltage', 'EnergySchedulingType']),
-                'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name'])
+                'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name']),
+                'GeographicalRegion': pd.DataFrame(columns=['rdfId', 'name'])
             }),
             'ssh': MappingProxyType({
                 'ControlArea': pd.DataFrame(columns=['rdfId', 'netInterchange']),
@@ -384,16 +385,18 @@ class CimParser:
     def _parse_element(self, element, parsed=None):
         if parsed is None:
             parsed = {}
-        for key in element.keys():
-            combined_key = element.tag + '-' + key
+        tag = element.tag
+        for key, value in element.attrib.items():
+            combined_key = tag + '-' + key
             if combined_key not in parsed:
-                parsed[combined_key] = element.attrib.get(key)
+                parsed[combined_key] = value
             else:
-                if not isinstance(parsed[combined_key], list):
-                    parsed[combined_key] = [parsed[combined_key]]
-                parsed[combined_key].append(element.attrib.get(key))
-        if element.tag not in parsed and element.text is not None and element.text.strip(' \t\n\r'):
-            parsed[element.tag] = element.text
+                existing = parsed[combined_key]
+                if not isinstance(existing, list):
+                    existing = parsed[combined_key] = [existing]
+                existing.append(value)
+        if tag not in parsed and element.text is not None and element.text.strip(' \t\n\r'):
+            parsed[tag] = element.text
         for child in element:
             self._parse_element(child, parsed)
         return parsed
@@ -439,8 +442,9 @@ class CimParser:
         if not isinstance(profile_list, list):
             profile_list = [profile_list]
         for one_profile in profile_list:
-            if '/EquipmentCore/' in one_profile or '/EquipmentOperation/' in one_profile or \
-                    '/EquipmentShortCircuit/' in one_profile or '/CoreEquipment-EU/' in one_profile:
+            if ('/EquipmentCore/' in one_profile or '/EquipmentOperation/' in one_profile or
+                    '/EquipmentShortCircuit/' in one_profile or '/CoreEquipment-EU/' in one_profile or
+                    '/LTDS/Equipment/' in one_profile):
                 return 'eq'
             elif '/SteadyStateHypothesis/' in one_profile or '/SteadyStateHypothesis-EU/' in one_profile:
                 return 'ssh'
@@ -474,7 +478,7 @@ class CimParser:
                                                  message="The CGMES profile could not be parsed from the XML."))
             raise Exception("The CGMES profile could not be parsed from the XML.")
 
-    def _parse_source_file(self, file: str, output: dict, encoding: str | None, profile_name: str | None = None):
+    def _parse_source_file(self, file: str, output: dict, encoding: str | None):
         self.logger.info(f"Parsing file: {file}")
         if not self._check_file(file):
             return
@@ -499,28 +503,28 @@ class CimParser:
             return
         parser = etree.XMLParser(encoding=encoding, resolve_entities=False, remove_comments=True)
         xml_tree = etree.parse(file, parser)
-        if profile_name is None:
-            prf = self._get_cgmes_profile_from_xml(xml_tree.getroot())
-        else:
-            prf = profile_name
+        prf = self._get_cgmes_profile_from_xml(xml_tree.getroot())
         self.file_names[prf] = file
         self._parse_xml_tree(xml_tree.getroot(), prf, output)
 
     def _parse_xml_tree(self, xml_tree, profile_name: str, output: dict | None = None):
         output = self.cim if output is None else output
-        # get all CIM elements to parse
-        element_types = pd.Series([ele.tag for ele in xml_tree])
-        element_types = element_types.drop_duplicates()
+        # group the direct children by tag in a single pass; dict insertion order matches the previous
+        # drop_duplicates ordering while avoiding a separate findall scan of the tree per element type
+        elements_by_type: dict[str, list] = {}
+        for ele in xml_tree:
+            tag = ele.tag
+            if not isinstance(tag, str):
+                continue
+            elements_by_type.setdefault(tag, []).append(ele)
         prf_content: dict[str, pd.DataFrame] = {}
         ns_dict = {}
         prf = profile_name
         if prf not in ns_dict:
             ns_dict[prf] = {}
-        for _, element_type in element_types.items():
-            if not isinstance(element_type, str):
-                continue
+        for element_type, elements in elements_by_type.items():
             element_type_c = re.sub('{.*}', '', element_type)
-            prf_content[element_type_c] = self._get_df(xml_tree.findall(element_type))
+            prf_content[element_type_c] = self._get_df(elements)
             # rename the columns (remove the namespaces)
             if element_type_c not in ns_dict[prf]:
                 ns_dict[prf][element_type_c] = {}
@@ -587,7 +591,7 @@ class CimParser:
     ) -> MappingProxyType[str, MappingProxyType[str, pd.DataFrame]]:
         if cgmes_version == '2.4.15':
             return self._initialize_cim16_data_structure()
-        if cgmes_version == '3.0':
+        if cgmes_version == '3.0' or cgmes_version.lower() == 'ltds':
             return self._initialize_cim100_data_structure()
         raise NotImplementedError(f"CGMES version {cgmes_version} is not supported.")
 
@@ -614,7 +618,8 @@ class CimParser:
                     'rdfId', 'name', 'description', 'minP', 'maxP', 'minQ', 'maxQ', 'BaseVoltage', 'EquipmentContainer',
                     'RegulatingControl', 'governorSCD']),
                 'ACLineSegment': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'length', 'r', 'x', 'bch', 'gch', 'BaseVoltage', 'EquipmentContainer']),
+                    'rdfId', 'name', 'description', 'length', 'r', 'x', 'bch', 'gch', 'BaseVoltage',
+                    'EquipmentContainer']),
                 'Terminal': pd.DataFrame(columns=[
                     'rdfId', 'name', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
                 'OperationalLimitSet': pd.DataFrame(columns=['rdfId', 'name', 'Terminal']),
@@ -649,11 +654,16 @@ class CimParser:
                 'StationSupply': pd.DataFrame(columns=['rdfId', 'name', 'description', 'BaseVoltage']),
                 'GeneratingUnit': pd.DataFrame(columns=[
                     'rdfId', 'name', 'nominalP', 'minOperatingP', 'maxOperatingP', 'EquipmentContainer', 'governorSCD']),
-                'WindGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
-                'HydroGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
-                'SolarGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
-                'ThermalGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
-                'NuclearGeneratingUnit': pd.DataFrame(columns=['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
+                'WindGeneratingUnit': pd.DataFrame(columns=[
+                    'rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
+                'HydroGeneratingUnit': pd.DataFrame(columns=[
+                    'rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
+                'SolarGeneratingUnit': pd.DataFrame(columns=[
+                    'rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
+                'ThermalGeneratingUnit': pd.DataFrame(columns=[
+                    'rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
+                'NuclearGeneratingUnit': pd.DataFrame(columns=[
+                    'rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']),
                 'RegulatingControl': pd.DataFrame(columns=['rdfId', 'name', 'mode', 'Terminal']),
                 'SynchronousMachine': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'GeneratingUnit', 'EquipmentContainer', 'ratedU', 'ratedS', 'type',
@@ -664,8 +674,13 @@ class CimParser:
                     'rdfId', 'name', 'description', 'nominalVoltage', 'EnergySchedulingType',
                     'EquipmentContainer']),
                 'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name']),
+                'PowerElectronicsConnection': pd.DataFrame(columns=['rdfId', 'name', 'PowerElectronicsUnit']),
+                'PhotoVoltaicUnit': pd.DataFrame(columns=['rdfId', 'name', 'maxP']),
+                'BatteryUnit': pd.DataFrame(columns=['rdfId', 'name', 'maxP']),
+                'PowerElectronicsWindUnit': pd.DataFrame(columns=['rdfId', 'name', 'maxP']),
                 'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'name', 'description', 'voltageSetPoint','sVCControlMode']),
-                'PowerTransformer': pd.DataFrame(columns=['rdfId', 'name', 'description', 'EquipmentContainer']),
+                'PowerTransformer': pd.DataFrame(columns=[
+                    'rdfId', 'name', 'description', 'EquipmentContainer', 'inService']),
                 'PowerTransformerEnd': pd.DataFrame(columns=[
                     'rdfId', 'name', 'PowerTransformer', 'endNumber', 'Terminal', 'ratedS', 'ratedU',
                     'r', 'x', 'b', 'g', 'BaseVoltage', 'connectionKind']),
@@ -700,9 +715,10 @@ class CimParser:
                     'rdfId', 'description', 'NonlinearShuntCompensator', 'sectionNumber', 'b', 'g']),
                 'EquivalentBranch': pd.DataFrame(columns=[
                     'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x', 'r21', 'x21']),
-                'EquivalentInjection': pd.DataFrame(columns=['rdfId', 'name', 'description', 'BaseVoltage']),
+                'EquivalentInjection': pd.DataFrame(columns=['rdfId', 'name', 'description', 'BaseVoltage',
+                                                             'EquipmentContainer']),
                 'SeriesCompensator': pd.DataFrame(columns=[
-                    'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x']),
+                    'rdfId', 'name', 'description', 'BaseVoltage', 'r', 'x', 'EquipmentContainer']),
                 'MeasurementValueSource': pd.DataFrame(columns=['rdfId', 'name']),
                 'PetersenCoil': pd.DataFrame(columns=['rdfId', 'name', 'description']),
                 'ReactiveCapabilityCurve': pd.DataFrame(columns=['rdfId', 'name', 'curveStyle', 'xUnit', 'y1Unit',
@@ -715,7 +731,8 @@ class CimParser:
                 'Terminal': pd.DataFrame(
                     columns=['rdfId', 'ConnectivityNode', 'ConductingEquipment', 'sequenceNumber']),
                 'EnergySource': pd.DataFrame(columns=['rdfId', 'nominalVoltage']),
-                'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name'])
+                'EnergySchedulingType': pd.DataFrame(columns=['rdfId', 'name']),
+                'GeographicalRegion': pd.DataFrame(columns=['rdfId', 'name'])
             }),
             'op': MappingProxyType({  # TODO: value attributes from AnalogValue and DiscreteValue need clarification
                 'Analog': pd.DataFrame(columns=[
@@ -746,6 +763,7 @@ class CimParser:
                 'SeriesCompensator': pd.DataFrame(columns=['rdfId', 'r0', 'x0']),
             }),
             'ssh': MappingProxyType({
+                'Equipment': pd.DataFrame(columns=['rdfId', 'inService']),
                 'ControlArea': pd.DataFrame(columns=['rdfId', 'netInterchange']),
                 'ExternalNetworkInjection': pd.DataFrame(columns=[
                     'rdfId', 'p', 'q', 'referencePriority', 'controlEnabled', 'inService']),
@@ -771,6 +789,7 @@ class CimParser:
                 'AsynchronousMachine': pd.DataFrame(columns=['rdfId', 'p', 'q', 'inService']),
                 'EnergySource': pd.DataFrame(columns=[
                     'rdfId', 'activePower', 'reactivePower', 'inService', 'voltageAngle', 'voltageMagnitude']),
+                'PowerElectronicsConnection': pd.DataFrame(columns=['rdfId', 'p', 'q', 'controlEnabled', 'inService']),
                 'StaticVarCompensator': pd.DataFrame(columns=['rdfId', 'q', 'inService']),
                 'TapChangerControl': pd.DataFrame(columns=[
                     'rdfId', 'discrete', 'enabled', 'targetValue', 'targetValueUnitMultiplier', 'targetDeadband']),

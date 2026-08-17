@@ -1,17 +1,17 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
+from collections.abc import Collection
 from itertools import chain
+import logging
 
 import numpy as np
 import pandas as pd
-from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
-from pandapower.toolbox import pp_elements
 
-import logging
+from pandapower.auxiliary import pandapowerNet
+from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
+from pandapower.toolbox.element_selection import pp_elements
 
 logger = logging.getLogger(__name__)
 
@@ -65,20 +65,18 @@ def opf_task(net, delta_pq=1e-3, keep=False, log=True):
     return opf_task_overview
 
 
-def _determine_flexibilities_dict(net, data, delta_pq, **kwargs):
+def _determine_flexibilities_dict(net: pandapowerNet, data: dict, delta_pq: float, **kwargs):
     """
     Determines which flexibilities exists in the net.
 
-    INPUT:
-        **net** - panpdapower net
+    Parameters:
+        net: the panpdapower net
+        data: to store flexibilities information
+        delta_pq: if (abs(max - min) <= delta_pq) the variable is not assumed as flexible, since the range is as small
+            as delta_pq (should be small, too).
 
-        **data** (dict) - to store flexibilities information
-
-        **delta_pq** (float) - if (abs(max - min) <= delta_pq) the variable is not assumed as
-        flexible, since the range is as small as delta_pq (should be small, too).
-
-    OPTIONAL:
-        **kwargs**** - for comparing constraint columns with numpy.isclose(): rtol and atol
+    Keyword Arguments:
+        for comparing constraint columns with numpy.isclose(): rtol and atol
     """
     flex_elements = ["ext_grid", "gen", "dcline", "sgen", "load", "storage"]
     flex_tuple = tuple(zip(flex_elements, [True] * 3 + [False] * 3))
@@ -164,17 +162,16 @@ def _find_idx_without_numerical_difference(df, column1, column2, delta, idx=None
         return idx.difference(idx_no_delta)
 
 
-def _determine_network_constraints_dict(net, data, **kwargs):
+def _determine_network_constraints_dict(net: pandapowerNet, data: dict, **kwargs):
     """
     Determines which flexibilities exists in the net.
 
-    INPUT:
-        **net** - panpdapower net
+    Parameters:
+        net: the panpdapower net
+        data: to store constraints information
 
-        **data** (dict) - to store constraints information
-
-    OPTIONAL:
-        **kwargs**** - for comparing constraint columns with numpy.isclose(): rtol and atol
+    Keyword Arguments:
+         for comparing constraint columns with numpy.isclose(): rtol and atol
     """
 
     const_tuple = [("VMbus", "bus", ["min_vm_pu", "max_vm_pu"]),
@@ -196,17 +193,15 @@ def _determine_network_constraints_dict(net, data, **kwargs):
                 data[key].columns = shorted
 
 
-def _determine_costs_dict(net, opf_task_overview):
+def _determine_costs_dict(net: pandapowerNet, opf_task_overview: dict):
     """
     Determines which flexibilities do not have costs in the net. Each element is considered as one,
     i.e. if ext_grid 0, for instance,  is flexible in both, P and Q, and has one cost entry for P,
     it is not considered as 'flexibilities_without_costs'.
 
-    INPUT:
-        **net** - panpdapower net
-
-        **opf_task_overview** (dict of dicts) - both, "flexibilities_without_costs" and
-        "flexibilities" must be in opf_task_overview.keys()
+    Parameters:
+        net: the panpdapower net
+        opf_task_overview: both, "flexibilities_without_costs" and "flexibilities" must be in opf_task_overview.keys()
     """
 
     cost_dfs = [df for df in ["poly_cost", "pwl_cost"] if net[df].shape[0]]
@@ -242,46 +237,45 @@ def _determine_costs_dict(net, opf_task_overview):
             opf_task_overview["flexibilities_without_costs"][flex_element] = list(idx_without_cost)
 
 
-def _cluster_same_floats(df, subset=None, **kwargs):
+def _cluster_same_floats(df: pd.DataFrame, subset: Collection[str] | None = None, **kwargs) -> pd.DataFrame:
     """
     Clusters indices with close values. The values of df[subset] must be numericals.
 
-    INPUT:
-        **df** (DataFrame)
+    Parameters:
+        df: DataFrame on which the clustering should be done
+        subset: list of columns of df which should be considered to cluster
 
-    OPTIONAL:
-        **subset** (iterable, None) - list of columns of df which should be considered to cluster
+    Keyword Arguments:
+        used for numpy.isclose(): rtol and atol
 
-        **kwargs**** - for numpy.isclose(): rtol and atol
-
-    OUTPUT:
-        **cluster_df** (DataFrame) - table of clustered values and corresponding lists of indices
+    Returns:
+        DataFrame of clustered values and corresponding lists of indices
     """
     if df.index.duplicated().any():
         logger.error("There are duplicated indices in df. Clusters will be determined but remain " +
                      "ambiguous.")
-    subset = subset if subset is not None else df.select_dtypes(include=[
-        np.number]).columns.tolist()
-    uniq = ~df.duplicated(subset=subset).values
+    if subset is None:
+        subset = df.select_dtypes(include=[np.number]).columns.tolist()
+    uniq: list[bool] = [not x for x in df.duplicated(subset=subset)]
 
     # prepare cluster_df
-    cluster_df = pd.DataFrame(np.empty((sum(uniq), len(subset) + 1)), columns=["index"] + subset)
+    cluster_df = pd.DataFrame(np.empty((sum(uniq), len(subset) + 1)), columns=["index"] + list(subset))
     cluster_df["index"] = cluster_df["index"].astype(object)
     cluster_df[subset] = df.loc[uniq, subset].values
 
     if sum(uniq) == df.shape[0]:  # fast return if df has no duplicates
         for i1, idx in enumerate(df.index):
-            cluster_df.at[i1, "index"] = [idx]
-    else:  # determine index clusters
-        i2 = 0
-        for i1, uni in enumerate(uniq):
-            if uni:
-                cluster_df.at[i2, "index"] = list(df.index[np.isclose(
-                    df[subset].values.astype(float),
-                    df[subset].iloc[[i1]].values.astype(float),
-                    equal_nan=True, **kwargs).all(axis=1)])
-                i2 += 1
+            # assignment is safe because "index" column has been converted to object and the index is now added as list
+            cluster_df.at[i1, "index"] = [idx]  # type: ignore[assignment]
+        return cluster_df
 
+    i2 = 0
+    for i1, uni in enumerate(uniq):
+        if uni:
+            cluster_df.at[i2, "index"] = list(df.index[np.isclose(  # type: ignore[assignment] # see comment above
+                df[subset].astype(float), df[subset].iloc[[i1]].astype(float), equal_nan=True, **kwargs
+            ).all(axis=1)])  # type: ignore[call-overload] # for some reason mypy does not like the axis=1 part.
+            i2 += 1
     return cluster_df
 
 
@@ -296,12 +290,14 @@ def _check_overlapping_constraints(opf_task_overview):
             max_col = [col for col in df.columns if "max" in col]
             n_col = min(len(min_col), len(max_col))
             for i_col in range(n_col):
-                assert min_col[i_col].replace("min", "") == max_col[i_col].replace("max", "")
+                if min_col[i_col].replace("min", "") != max_col[i_col].replace("max", ""):
+                    raise AssertionError("min and max are not equal.")
                 if (df[min_col[i_col]] > df[max_col[i_col]]).any():
                     overlap.append(key)
     if len(overlap):
-        logger.error("At these variables, there is a minimum constraint exceeding the maximum " +
-                     "constraint value: " + str(overlap))
+        logger.error(
+            "At these variables, there is a minimum constraint exceeding the maximum constraint value: " + str(overlap)
+        )
 
 
 def _log_opf_task_overview(opf_task_overview):
@@ -311,15 +307,18 @@ def _log_opf_task_overview(opf_task_overview):
     s = ""
     for dict_key, data in opf_task_overview.items():
         if isinstance(data, str):
-            assert dict_key == "flexibilities_without_costs"
+            if dict_key != "flexibilities_without_costs":
+                raise AssertionError("dict_key is not 'flexibilities_without_costs'")
             s += "\n\n%s flexibilities without costs" % data
             continue
         else:
-            assert isinstance(data, dict)
+            if not isinstance(data, dict):
+                raise AssertionError("data is not a dict")
         heading_logged = False
         keys, elms = _get_keys_and_elements_from_opf_task_dict(data)
         for key, elm in zip(keys, elms):
-            assert elm in key
+            if elm not in key:
+                raise AssertionError('elm should be in key')
             df = data[key]
 
             if dict_key in ["flexibilities", "network_constraints"]:
@@ -411,6 +410,245 @@ def clear_result_tables(net):
     for key in net:
         if isinstance(net[key], pd.DataFrame) and key.startswith("res") and net[key].shape[0]:
             net[key] = net[key].drop(net[key].index)
+
+
+def compute_switch_flows(net):
+    """Compute power flow through zero-impedance bus-bus switches via nodal balance.
+
+    After a converged load flow, switches with ``z_ohm=0`` (the default) have
+    ``NaN`` values in ``res_switch`` because Pandapower fuses the adjacent buses
+    into a single internal node.  This function reconstructs the individual
+    switch flows by calculating the net local injection at each bus within a
+    fused group and propagating the residual through the switch tree.
+
+    The function writes ``p_from_mw``, ``q_from_mvar``, ``p_to_mw``,
+    ``q_to_mvar``, and ``i_ka`` into ``net.res_switch`` for every closed
+    bus-bus switch that has ``z_ohm <= 0``.  Results for open switches are set
+    to zero.  Switches that already have results (``z_ohm > 0``) are not
+    modified.
+
+    **Assumption:** Within each fused-bus group the zero-impedance switches
+    must form a *tree* (no parallel zero-impedance paths between the same pair
+    of buses).  If a cycle is detected a ``ValueError`` is raised, since the
+    flow split is physically indeterminate without impedance information.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        A pandapower network with valid load flow results
+        (``net.converged is True``).
+
+    Raises
+    ------
+    UserWarning
+        If ``net.converged`` is ``False``.
+    ValueError
+        If zero-impedance bus-bus switches form a cycle within a fused group.
+
+    Examples
+    --------
+    >>> import pandapower as pp
+    >>> import pandapower.networks as pn
+    >>> net = pn.example_simple()
+    >>> pp.runpp(net)
+    >>> from pandapower.toolbox import compute_switch_flows
+    >>> compute_switch_flows(net)
+    >>> net.res_switch  # p_from_mw, q_from_mvar etc. now populated
+    """
+    from collections import defaultdict
+
+    if not net.converged:
+        raise UserWarning("Power flow did not converge, results are invalid.")
+
+    if len(net.switch) == 0:
+        return
+
+    bus_lookup = getattr(net, "_pd2ppc_lookups", {}).get("bus")
+    if bus_lookup is None:
+        return
+
+    # Identify fused-bus groups: ppc_bus_id -> set of original bus indices
+    fused_groups = defaultdict(set)
+    for orig_bus, ppc_bus in enumerate(bus_lookup):
+        fused_groups[int(ppc_bus)].add(orig_bus)
+
+    multi_groups = {k: v for k, v in fused_groups.items() if len(v) > 1}
+    if not multi_groups:
+        return
+
+    # Per-bus net local consumption: positive = power leaving the bus
+    bus_p = defaultdict(float)
+    bus_q = defaultdict(float)
+
+    _bus_element_names = [
+        ("load", 1.0), ("motor", 1.0),
+        ("shunt", 1.0), ("ward", 1.0), ("xward", 1.0),
+        ("ext_grid", -1.0), ("gen", -1.0), ("sgen", -1.0), ("storage", -1.0),
+    ]
+    for tbl_name, sign in _bus_element_names:
+        tbl = net.get(tbl_name)
+        res = net.get("res_%s" % tbl_name)
+        if tbl is None or res is None or len(tbl) == 0 or len(res) == 0:
+            continue
+        in_service = tbl["in_service"].values if "in_service" in tbl.columns else np.ones(len(tbl), dtype=bool)
+        buses = tbl["bus"].values
+        for i, idx in enumerate(tbl.index):
+            if not in_service[i]:
+                continue
+            b = int(buses[i])
+            try:
+                bus_p[b] += sign * float(res.at[idx, "p_mw"])
+                bus_q[b] += sign * float(res.at[idx, "q_mvar"])
+            except (KeyError, ValueError):
+                pass
+
+    # Map every bus to its fused group
+    bus_to_group = {}
+    for grp_id, buses in fused_groups.items():
+        for b in buses:
+            bus_to_group[b] = grp_id
+
+    # Add power carried by branches that leave the fused group
+    _branch_specs = [
+        ("line", "res_line", [("from_bus", "p_from_mw", "q_from_mvar"),
+                              ("to_bus", "p_to_mw", "q_to_mvar")]),
+        ("trafo", "res_trafo", [("hv_bus", "p_hv_mw", "q_hv_mvar"),
+                                ("lv_bus", "p_lv_mw", "q_lv_mvar")]),
+        ("trafo3w", "res_trafo3w", [("hv_bus", "p_hv_mw", "q_hv_mvar"),
+                                    ("mv_bus", "p_mv_mw", "q_mv_mvar"),
+                                    ("lv_bus", "p_lv_mw", "q_lv_mvar")]),
+        ("impedance", "res_impedance", [("from_bus", "p_from_mw", "q_from_mvar"),
+                                        ("to_bus", "p_to_mw", "q_to_mvar")]),
+        ("dcline", "res_dcline", [("from_bus", "p_from_mw", "q_from_mvar"),
+                                  ("to_bus", "p_to_mw", "q_to_mvar")]),
+    ]
+    for tbl_name, res_name, bus_pairs in _branch_specs:
+        tbl = net.get(tbl_name)
+        res = net.get(res_name)
+        if tbl is None or res is None or len(tbl) == 0 or len(res) == 0:
+            continue
+        in_service = tbl["in_service"].values if "in_service" in tbl.columns else np.ones(len(tbl), dtype=bool)
+        for i, idx in enumerate(tbl.index):
+            if not in_service[i]:
+                continue
+            ends = [(int(tbl.at[idx, bc]), pc, qc) for bc, pc, qc in bus_pairs]
+            for j, (this_bus, p_col, q_col) in enumerate(ends):
+                this_grp = bus_to_group.get(this_bus)
+                if this_grp is None or this_grp not in multi_groups:
+                    continue
+                other_buses = [ends[k][0] for k in range(len(ends)) if k != j]
+                if all(bus_to_group.get(ob) == this_grp for ob in other_buses):
+                    continue
+                try:
+                    bus_p[this_bus] += float(res.at[idx, p_col])
+                    bus_q[this_bus] += float(res.at[idx, q_col])
+                except (KeyError, ValueError):
+                    pass
+
+    # Index closed zero-impedance bus-bus switches by fused group
+    sw_by_group = defaultdict(list)
+    z_ohm = net.switch["z_ohm"].values if "z_ohm" in net.switch.columns else np.zeros(len(net.switch))
+    for sw_idx in net.switch.index:
+        row = net.switch.loc[sw_idx]
+        if row["et"] != "b" or not row["closed"] or z_ohm[sw_idx] > 0:
+            continue
+        a = int(row["bus"])
+        b = int(row["element"])
+        grp = bus_to_group.get(a)
+        if grp is not None and grp in multi_groups:
+            sw_by_group[grp].append((sw_idx, a, b))
+
+    computed_switches = set()
+
+    # For each fused group, build the coupler subgraph and compute flows
+    for grp_id, grp_buses in multi_groups.items():
+        couplers = sw_by_group.get(grp_id, [])
+        if not couplers:
+            continue
+
+        # Skip de-energized fused groups (vm ≈ 0)
+        sample_bus = next(iter(grp_buses))
+        if sample_bus in net.res_bus.index:
+            vm_pu = net.res_bus.at[sample_bus, "vm_pu"]
+            if vm_pu == 0 or np.isnan(vm_pu):
+                continue
+
+        adj = defaultdict(list)
+        coupler_buses = set()
+        for sw_idx, a, b in couplers:
+            adj[a].append((b, sw_idx))
+            adj[b].append((a, sw_idx))
+            coupler_buses.add(a)
+            coupler_buses.add(b)
+
+        # A tree with N nodes has exactly N-1 edges; more means a cycle
+        if len(couplers) >= len(coupler_buses):
+            raise ValueError(
+                "Zero-impedance bus-bus switches form a cycle in fused "
+                "group containing buses %s. The flow split is "
+                "indeterminate without impedance values." % sorted(grp_buses))
+
+        # DFS to build tree order
+        root = next(iter(grp_buses))
+        visited = set()
+        stack = [(root, None, None)]
+        order = []
+        while stack:
+            bus, parent, parent_sw = stack.pop()
+            if bus in visited:
+                continue
+            visited.add(bus)
+            order.append((bus, parent, parent_sw))
+            for nb, sw_idx in adj.get(bus, []):
+                if nb not in visited:
+                    stack.append((nb, bus, sw_idx))
+
+        # Accumulate subtree demand from leaves to root
+        subtree_p = {}
+        subtree_q = {}
+        for bus, parent, parent_sw in reversed(order):
+            sp = bus_p.get(bus, 0.0)
+            sq = bus_q.get(bus, 0.0)
+            for nb, sw_idx in adj.get(bus, []):
+                if nb != parent and nb in subtree_p:
+                    sp += subtree_p[nb]
+                    sq += subtree_q[nb]
+            subtree_p[bus] = sp
+            subtree_q[bus] = sq
+            if parent_sw is not None:
+                sw_bus_col = int(net.switch.at[parent_sw, "bus"])
+                sw_elem_col = int(net.switch.at[parent_sw, "element"])
+                if bus == sw_elem_col:
+                    p_from, q_from = sp, sq
+                else:
+                    p_from, q_from = -sp, -sq
+                p_to, q_to = -p_from, -q_from
+
+                net.res_switch.at[parent_sw, "p_from_mw"] = p_from
+                net.res_switch.at[parent_sw, "q_from_mvar"] = q_from
+                net.res_switch.at[parent_sw, "p_to_mw"] = p_to
+                net.res_switch.at[parent_sw, "q_to_mvar"] = q_to
+
+                # Derive current from apparent power and bus voltage
+                s_mva = np.sqrt(p_from ** 2 + q_from ** 2)
+                b_from = int(net.switch.at[parent_sw, "bus"])
+                vm_pu = net.res_bus.at[b_from, "vm_pu"] if b_from in net.res_bus.index else np.nan
+                vn_kv = net.bus.at[b_from, "vn_kv"] if b_from in net.bus.index else np.nan
+                vm_kv = vm_pu * vn_kv
+                if vm_kv > 0:
+                    i_ka = s_mva / (vm_kv * np.sqrt(3))
+                else:
+                    i_ka = np.nan
+                net.res_switch.at[parent_sw, "i_ka"] = i_ka
+                computed_switches.add(parent_sw)
+
+    if computed_switches and "in_ka" in net.switch.columns and \
+            "loading_percent" in net.res_switch.columns:
+        for sw_idx in computed_switches:
+            in_val = net.switch.at[sw_idx, "in_ka"]
+            if not np.isnan(in_val) and in_val > 0:
+                i_val = net.res_switch.at[sw_idx, "i_ka"]
+                net.res_switch.at[sw_idx, "loading_percent"] = i_val / in_val * 100
 
 
 def res_power_columns(element_type, side=0):

@@ -32,11 +32,15 @@ class LinearShuntCompensatorCim16:
     def _prepare_linear_shunt_compensator_cim16(self) -> pd.DataFrame:
         eqssh_shunts = self.cimConverter.merge_eq_ssh_profile('LinearShuntCompensator', add_cim_type_column=True)
         eqssh_shunts = pd.merge(eqssh_shunts, self.cimConverter.bus_merge, how='left', on='rdfId')
-        if 'inService' in eqssh_shunts.columns:
-            eqssh_shunts['connected'] = eqssh_shunts['connected'] & eqssh_shunts['inService']
+        if self.cimConverter.cim_version == '3.0':
+           eqssh_shunts['in_service'] = eqssh_shunts.connected & eqssh_shunts.inService
+        elif self.cimConverter.cim_version == 'ltds':
+           eqssh_shunts['in_service'] = eqssh_shunts.inService
+        else:
+           eqssh_shunts['in_service'] = eqssh_shunts.connected
         eqssh_shunts = eqssh_shunts.rename(columns={
-            'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'connected': 'in_service', 'index_bus': 'bus',
-            'nomU': 'vn_kv', 'sections': 'step', 'maximumSections': 'max_step'})
+            'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t'], 'index_bus': 'bus', 'nomU': 'vn_kv', 'sections': 'step',
+            'maximumSections': 'max_step'})
         # complex conductance
         y = eqssh_shunts['gPerSection'] + eqssh_shunts['bPerSection'] * 1j
         # apparent power

@@ -160,7 +160,7 @@ def get_cim_schema(cgmes_version: str = '2.4.15') -> Dict[str, Dict[str, Dict[st
     Parses the CIM schema from the serialized CIM schema json files which have been created from the RDF schema files.
     The schema is parsed for the serializer from the CIM data structure used by the cim2pp and pp2cim converters.
 
-    :param cgmes_version: CIM version to use, '2.4.15' or '3.0', default '2.4.15'
+    :param cgmes_version: CIM version to use, '2.4.15', '3.0' or LTDS, default '2.4.15'
     :return: The CIM schema as dictionary.
     """
     path_with_serialized_schemas = os.path.dirname(__file__) + os.sep + 'serialized_schemas'
@@ -173,7 +173,7 @@ def get_cim_schema(cgmes_version: str = '2.4.15') -> Dict[str, Dict[str, Dict[st
             with open(path_to_schema, encoding='UTF-8', mode='r') as f:
                 cim_schema = json.load(f)
             return cim_schema
-        elif one_file.lower().startswith('cim100_') and cgmes_version == '3.0':
+        elif one_file.lower().startswith('cim100_') and (cgmes_version == '3.0' or cgmes_version.lower() == 'ltds'):
             logger.info("Parsing the schema from CIM 100 from disk: %s" % path_to_schema)
             with open(path_to_schema, encoding='UTF-8', mode='r') as f:
                 cim_schema = json.load(f)
