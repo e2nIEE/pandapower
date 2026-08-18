@@ -14,6 +14,8 @@ logger = pplog.getLogger(__name__)
 
 
 class OutputStreamer(OutputWriter):
+    json_excludes = ["self", "__class__", "net"]
+
     """The OutputStreamer class is used to cyclically store and format specific outputs from a time series calculation.
 
     For a detailed documentation, please refer to the parent OutputWriter class.
@@ -105,9 +107,9 @@ class OutputStreamer(OutputWriter):
             recycle_options (dict, optional): Recycle options used in OutputWriter. Defaults to None.
         """
         # call original save_results method from OutputWriter
-        super().save_results(net, time_step, pf_converged, ctrl_converged)
+        super().save_results(net, time_step, pf_converged, ctrl_converged, recycle_options=recycle_options)
 
-        if time_step > 0 and self.save_interval > 0 and time_step % self.save_interval == 0:
+        if self.save_interval > 0 and time_step > 0 and time_step % self.save_interval == 0:
             self.time_step = time_step
             # dump simulation output to file
             self.dump_to_file(net)

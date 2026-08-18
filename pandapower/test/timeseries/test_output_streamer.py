@@ -207,7 +207,7 @@ def test_output_streamer_eval_simple(simple_test_net):
     assert len(output_streamer.output["res_bus.vm_pu"]["max"]) == n_timesteps
 
 
-def test_output_stremer_multiple_index_definition(simple_test_net):
+def test_output_streamer_multiple_index_definition(simple_test_net):
     net = simple_test_net
 
     n_timesteps = 1
@@ -247,20 +247,20 @@ def test_output_stremer_multiple_index_definition(simple_test_net):
 def test_remove_variable(simple_test_net):
     net = simple_test_net
 
-    output_streammer = OutputStreamer(net)
+    output_streamer = OutputStreamer(net)
     # test printing
-    logger.info(output_streammer)
-    assert len(output_streammer.log_variables) == 2
-    assert output_streammer.log_variables[0][0] == "res_bus" and output_streammer.log_variables[0][1] == "vm_pu"
+    logger.info(output_streamer)
+    assert len(output_streamer.log_variables) == 2
+    assert output_streamer.log_variables[0][0] == "res_bus" and output_streamer.log_variables[0][1] == "vm_pu"
     assert (
-        output_streammer.log_variables[1][0] == "res_line" and output_streammer.log_variables[1][1] == "loading_percent"
+        output_streamer.log_variables[1][0] == "res_line" and output_streamer.log_variables[1][1] == "loading_percent"
     )
-    output_streammer.remove_log_variable("res_bus")
+    output_streamer.remove_log_variable("res_bus")
     assert (
-        output_streammer.log_variables[0][0] == "res_line" and output_streammer.log_variables[0][1] == "loading_percent"
+        output_streamer.log_variables[0][0] == "res_line" and output_streamer.log_variables[0][1] == "loading_percent"
     )
-    output_streammer.remove_log_variable("res_line", "loading_percent")
-    assert len(output_streammer.log_variables) == 0
+    output_streamer.remove_log_variable("res_line", "loading_percent")
+    assert len(output_streamer.log_variables) == 0
 
 
 def test_store_and_load(simple_test_net):
@@ -351,13 +351,13 @@ def test_output_streamer_index():
     )
     ConstControl(net, element="ext_grid", variable="vm_pu", element_index=0, data_source=ds_v, profile_name="0")
 
-    ow = OutputStreamer(net)
-    ow.log_variable("res_bus", "vm_pu")
-    ow.log_variable("res_line", "loading_percent")
+    output_streamer = OutputStreamer(net)
+    output_streamer.log_variable("res_bus", "vm_pu")
+    output_streamer.log_variable("res_line", "loading_percent")
 
     run_timeseries(net, time_steps=p_data.index, verbose=False)
 
-    assert np.all(ow.output["res_line.loading_percent"].index == p_data.index)
+    assert np.all(output_streamer.output["res_line.loading_percent"].index == p_data.index)
 
 
 def test_equal_eval_name_warning_and_costs():
