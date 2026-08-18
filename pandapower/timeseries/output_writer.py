@@ -3,19 +3,24 @@
 import copy
 import functools
 import os
+from collections.abc import Iterable
 from time import perf_counter
 from types import FunctionType
 
 import numpy as np
 import pandas as pd
-from collections.abc import Iterable
-from pandapower.io_utils import JSONSerializableClass
-from pandapower.io_utils import mkdirs_if_not_existent
+
+from pandapower.io_utils import JSONSerializableClass, mkdirs_if_not_existent
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.pypower.idx_bus import VM, VA, NONE, BUS_TYPE
+from pandapower.pypower.idx_bus import BUS_TYPE, NONE, VA, VM
 from pandapower.run import _init_runpp_options
-from pandapower.timeseries.read_batch_results import v_to_i_s, get_batch_line_results, get_batch_trafo3w_results, \
-    get_batch_trafo_results, get_batch_bus_results
+from pandapower.timeseries.read_batch_results import (
+    get_batch_bus_results,
+    get_batch_line_results,
+    get_batch_trafo3w_results,
+    get_batch_trafo_results,
+    v_to_i_s,
+)
 
 try:
     import pandaplan.core.pplog as pplog
@@ -239,8 +244,7 @@ class OutputWriter(JSONSerializableClass):
                 elif "csv" in self.output_file_type.split("."):
                     self._save_separate(append)
                 else:
-                    raise UserWarning(
-                        "Specify output file with .csv, .csv.*, .xls, .xlsx, .p or .json ending")
+                    raise UserWarning("Specify output file with .csv, .csv.*, .xls, .xlsx, .p or .json ending")
                 if append:
                     self._init_output()
 
@@ -314,6 +318,79 @@ class OutputWriter(JSONSerializableClass):
         # init output container again
         self._init_np_results()
 
+    # def log_variable(self, table, variable, index=None, eval_function=None, eval_name=None):
+    #     """
+    #     Adds a variable to log during simulation and appends it to output_list.
+
+    #     Parameters:
+    #         table (str): The DataFrame table where the variable is located as a string (e.g. "res_bus")
+    #         variable (str): variable that should be logged as string (e.g. "p_mw")
+    #         index (iterable, None): Can be either one index or a list of indices, or a numpy array of indices, or a
+    #             pandas Index, or a pandas Series (e.g. net.load.bus) for which the variable will be logged. If no index
+    #             is given, the variable will be logged for all elements in the table
+    #         eval_function (function, None): A function to be applied on the table / variable / index combination.
+    #             example: pd.min or pd.mean
+    #         eval_name (str, None): The name for an applied function. It *must* be unique. If the name is None the name
+    #             consists of the table, variable, index and eval function. example: "max_load_p_mw_values"
+
+    #     Example:
+    #         >>> ow.log_variable('res_bus', 'vm_pu') # add logging for bus voltage magnitudes
+    #         >>> ow.log_variable('res_line', 'loading_percent', index=[0, 2, 5]) # add logging for line loading of lines with indices 0, 2, 5
+    #         >>> ow.log_variable('res_line', 'loading_percent', eval_function=pd.max) # get the highest line loading only
+
+    #         # Getting the cost function slope for each time step:
+    #         >>> def cost_logging(result, n_columns=2):
+    #         >>>      return array([result[i][0][2] for i in range(len(result))])
+    #         >>> ow.log_variable("pwl_cost", "points", eval_function=cost_logging)
+    #     """
+    #     # Check for duplicate eval_name
+    #     for log_args in self.log_variables:
+    #         if len(log_args) > 4 and eval_name is not None and log_args[4] == eval_name:
+    #             logger.warning(
+    #                 "eval_name '{}' already exists for table '{}' and variable '{}'. " "Please choose a unique eval_name. " "I'll use the default instead.".format(eval_name, log_args[0], log_args[1])
+    #             )
+    #             eval_name = None
+    #             break
+
+    #     # Find if this table/variable combination already exists in log_variables
+    #     existing_entry_idx = None
+    #     for i, log_args in enumerate(self.log_variables):
+    #         if log_args[0] == table and log_args[1] == variable:
+    #             # Check if both entries have no eval_function/eval_name
+    #             if eval_function is None and eval_name is None and (len(log_args) <= 4 or log_args[4] is None):
+    #                 existing_entry_idx = i
+    #                 break
+
+    #     if existing_entry_idx is not None:
+    #         # A matching entry exists without eval_function/eval_name
+    #         existing_entry = self.log_variables[existing_entry_idx]
+
+    #         if len(existing_entry) == 2:
+    #             # Existing entry logs everything (no index)
+    #             # if index is not None:
+    #             # Replace generic entry with specific indices
+    #             self.log_variables[existing_entry_idx] = (table, variable, index, None, None)
+    #         elif len(existing_entry) >= 3 and existing_entry[2] is not None:
+    #             # Existing entry has specific indices
+    #             if index is not None:
+    #                 # Merge indices
+    #                 existing_index = existing_entry[2] if isinstance(existing_entry[2], list) else list(existing_entry[2])
+    #                 # Handle scalar index (single integer) vs iterable
+    #                 if isinstance(index, (list, tuple, np.ndarray)):
+    #                     new_index = list(index)
+    #                 elif hasattr(index, "__iter__") and not isinstance(index, str):
+    #                     new_index = list(index)
+    #                 else:
+    #                     new_index = [index]  # single scalar value
+    #                 existing_index.extend(new_index)
+    #                 merged_index = list(dict.fromkeys(existing_index))  # remove duplicates while maintaining order
+    #                 # Replace the tuple with updated index
+    #                 self.log_variables[existing_entry_idx] = (table, variable, merged_index) + existing_entry[3:]
+    #             # else: index is None, keep existing entry as is
+    #     else:
+    #         # No matching entry or new entry with eval_function/eval_name
+    #         self.log_variables.append((table, variable, index, eval_function, eval_name))
+
     def log_variable(self, table, variable, index=None, eval_function=None, eval_name=None):
         """
         Adds a variable to log during simulation and appends it to output_list.
@@ -339,56 +416,38 @@ class OutputWriter(JSONSerializableClass):
             >>>      return array([result[i][0][2] for i in range(len(result))])
             >>> ow.log_variable("pwl_cost", "points", eval_function=cost_logging)
         """
-        # Check for duplicate eval_name
-        for log_args in self.log_variables:
+        del_indices = []
+        append_args = set()
+        append = True
+        # check if new log_variable is already in log_variables. If so either append or delete
+        for i, log_args in enumerate(self.log_variables):
             if len(log_args) > 4 and eval_name is not None and log_args[4] == eval_name:
                 logger.warning(
-                    "eval_name '{}' already exists for table '{}' and variable '{}'. "
-                    "Please choose a unique eval_name. "
-                    "I'll use the default instead.".format(eval_name, log_args[0], log_args[1])
+                    "eval_name '{}' already exists for table '{}' and variable '{}'. " "Please choose a unique eval_name. " "I'll use the default instead.".format(eval_name, log_args[0], log_args[1])
                 )
                 eval_name = None
-                break
-
-        # Find if this table/variable combination already exists in log_variables
-        existing_entry_idx = None
-        for i, log_args in enumerate(self.log_variables):
             if log_args[0] == table and log_args[1] == variable:
-                # Check if both entries have no eval_function/eval_name
-                if eval_function is None and eval_name is None and (len(log_args) <= 4 or log_args[4] is None):
-                    existing_entry_idx = i
-                    break
+                # table and variable exist in log_variables
+                if eval_function is not None or eval_name is not None:
+                    append = True
+                    continue
+                if len(log_args) == 2 and eval_function is None:
+                    # everything from table / variable is logged
+                    append = False
+                    continue
+                if log_args[2] is not None and index is not None and eval_function is None:
+                    # if index is given and an index was given before extend the index and get unique
+                    log_args[2] = set(log_args[2].extend(index))
+                else:
+                    del_indices.append(i)
+                    append_args.add((table, variable))
+                    append = False
 
-        if existing_entry_idx is not None:
-            # A matching entry exists without eval_function/eval_name
-            existing_entry = self.log_variables[existing_entry_idx]
-
-            if len(existing_entry) == 2:
-                # Existing entry logs everything (no index)
-                if index is not None:
-                    # Replace generic entry with specific indices
-                    self.log_variables[existing_entry_idx] = (table, variable, index, None, None)
-            elif len(existing_entry) >= 3 and existing_entry[2] is not None:
-                # Existing entry has specific indices
-                if index is not None:
-                    # Merge indices
-                    existing_index = (
-                        existing_entry[2] if isinstance(existing_entry[2], list) else list(existing_entry[2])
-                    )
-                    # Handle scalar index (single integer) vs iterable
-                    if isinstance(index, (list, tuple, np.ndarray)):
-                        new_index = list(index)
-                    elif hasattr(index, "__iter__") and not isinstance(index, str):
-                        new_index = list(index)
-                    else:
-                        new_index = [index]  # single scalar value
-                    existing_index.extend(new_index)
-                    merged_index = list(dict.fromkeys(existing_index))  # remove duplicates while maintaining order
-                    # Replace the tuple with updated index
-                    self.log_variables[existing_entry_idx] = (table, variable, merged_index) + existing_entry[3:]
-                # else: index is None, keep existing entry as is
-        else:
-            # No matching entry or new entry with eval_function/eval_name
+        for i in del_indices:
+            del self.log_variables[i]
+        for log_arg in append_args:
+            self.log_variables.append(log_arg)
+        if append:
             self.log_variables.append((table, variable, index, eval_function, eval_name))
 
     def _init_ppc_logging(self, table, variable, net, eval_function, eval_name):

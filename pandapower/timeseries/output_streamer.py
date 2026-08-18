@@ -79,7 +79,7 @@ class OutputStreamer(OutputWriter):
         # initialize time step to 0
         self.time_step = 0
         # initialize the last time step to 0
-        self.last_time_step = self.time_step
+        self.last_time_step = 0
 
     def __update_csv_header(self, data: pd.DataFrame, table: str):
         """Updates the header of the element's dataframe.
@@ -93,9 +93,7 @@ class OutputStreamer(OutputWriter):
             mapping = self.net[element_type].name.to_dict()
             data.rename(columns=mapping, inplace=True)
 
-    def save_results(
-        self, net: pandapowerNet, time_step: int, pf_converged: bool, ctrl_converged: bool, recycle_options: dict = None
-    ):
+    def save_results(self, net: pandapowerNet, time_step: int, pf_converged: bool, ctrl_converged: bool, recycle_options: dict = None):
         """Saves the results of the current time step to a matrix
         and stores it to the disk in a after save_interval time steps.
 
@@ -109,10 +107,10 @@ class OutputStreamer(OutputWriter):
         # call original save_results method from OutputWriter
         super().save_results(net, time_step, pf_converged, ctrl_converged, recycle_options=recycle_options)
 
-        if self.save_interval > 0 and time_step > 0 and time_step % self.save_interval == 0:
+        if self.save_interval > 0 and (time_step + 1) % self.save_interval == 0:
             self.time_step = time_step
-            # dump simulation output to file
             self.dump_to_file(net)
+            self.last_time_step = time_step + 1
 
     def _get_data_since_last_save(self, data: pd.DataFrame) -> pd.DataFrame:
         """Filters the data DataFrame for the new data since the last dump.
@@ -123,12 +121,15 @@ class OutputStreamer(OutputWriter):
         Returns:
             DataFrame: Filtered data.
         """
-        # filter data from the latest time step on
+        # Number of rows that have already been saved
+        start = self.last_time_step
+
         if self.time_step == self.time_steps[-1]:
-            data = data.iloc[self.last_time_step + 1 :]
-        else:
-            data = data.iloc[self.time_step - self.save_interval + 1 :]
-        return data
+            return data.iloc[start:]
+
+        end = start + self.save_interval
+
+        return data.iloc[start:end]
 
     def _save_excel(self, file_path: str, data: pd.DataFrame, sheet_name: str = "Sheet1") -> None:
         """Saves the new simulation data to an excel file.
