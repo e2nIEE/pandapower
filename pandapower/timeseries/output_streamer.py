@@ -1,6 +1,7 @@
 import os
 
 import pandas as pd
+
 from pandapower.auxiliary import pandapowerNet
 from pandapower.io_utils import mkdirs_if_not_existent
 from pandapower.timeseries.output_writer import OutputWriter
@@ -54,8 +55,8 @@ class OutputStreamer(OutputWriter):
     def __init__(
         self,
         net,
-        save_interval: int = 0,
         time_steps=None,
+        save_interval: int = 0,
         output_path=None,
         output_file_type=".p",
         log_variables=None,
@@ -81,7 +82,7 @@ class OutputStreamer(OutputWriter):
     def __update_csv_header(self, data: pd.DataFrame, table: str):
         """Updates the header of the element's dataframe.
 
-        Args:
+        Parameters:
             data (DataFrame): Data to be updated.
             table (str): Name of the DataFrame table (example: "res_bus")
         """
@@ -96,7 +97,7 @@ class OutputStreamer(OutputWriter):
         """Saves the results of the current time step to a matrix
         and stores it to the disk in a after save_interval time steps.
 
-        Args:
+        Parameters:
             net (pandapowerNet): The pandapower format network.
             time_step (int): Current time step.
             pf_converged (bool): Flag that checks if power flow is converged.
