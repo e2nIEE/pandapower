@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -300,8 +298,8 @@ def _create_node_element_collection(node_coords, patch_maker, size=1., infos=Non
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
     angles = orientation if hasattr(orientation, '__iter__') else [orientation] * len(node_coords)
-    assert len(node_coords) == len(angles), \
-        "The length of coordinates does not match the length of the orientation angles!"
+    if len(node_coords) != len(angles):
+        raise AssertionError("The length of coordinates does not match the length of the orientation angles!")
     if infos is None:
         infos_pc = []
         infos_lc = []
@@ -559,8 +557,8 @@ def create_dcline_collection(net, dclines=None, line_geodata=None, infofunc=None
     Parameters:
         net (pandapowerNet): The pandapower network
         dclines (list, None): The dclines for which the collections are created. If None,
-        all dclines in the network are considered.
-        bus_geodata (DataFrame, None): coordinates to use for plotting If None, net["bus_geodata"] is used
+            all dclines in the network are considered.
+        line_geodata (DataFrame, None): coordinates in geo column to use for plotting If None, net.bus.geo is used
         infofunc (function, None): infofunction for the patch element
         cmap: colormap for the patch colors
         norm (matplotlib norm object, None): matplotlib norm object
@@ -576,6 +574,7 @@ def create_dcline_collection(net, dclines=None, line_geodata=None, infofunc=None
 
     Returns:
         line collection
+        :param line_geodata:
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
@@ -587,19 +586,21 @@ def create_dcline_collection(net, dclines=None, line_geodata=None, infofunc=None
         return None
 
     if use_bus_geodata:
+        bus_coords = net.bus.geo
         coords, lines_with_geo = coords_from_node_geodata(
-            lines, net.dcline.from_bus.loc[lines].values, net.dcline.to_bus.loc[lines].values,
-            net["bus_geodata"], "line")
+            lines, net.dcline.from_bus.loc[lines].values, net.dcline.to_bus.loc[lines].values, bus_coords, "line"
+        )
 
-    if len(lines_with_geo) == 0:
-        return None
+        if len(lines_with_geo) == 0:
+            return None
+
+        line_geodata = pd.DataFrame(pd.DataFrame(coords, columns=["geo"])["geo"].apply(_get_coords_from_geojson))
 
     infos = [infofunc(line) for line in line_geodata.index] if infofunc else []
 
-    lc = _create_line2d_collection(coords, lines_with_geo, infos=infos, picker=picker, **kwargs)
+    lc = _create_line2d_collection(line_geodata["geo"], lines_with_geo, infos=infos, picker=picker, **kwargs)
 
-    loading_percent = \
-        100 * net.res_dcline[["p_from_mw", "p_to_mw"]].abs().max(axis=1) / net.dcline.p_mw.abs()
+    loading_percent = 100 * net.res_dcline[["p_from_mw", "p_to_mw"]].abs().max(axis=1) / net.dcline.p_mw.abs()
 
     if cmap is not None:
         if z is None:

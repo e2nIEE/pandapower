@@ -62,5 +62,5 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
     about/authors
     about/changelog
     about/license
-    about/contributing
     about/deprecating
+    Contribute ☍ <https://github.com/e2nIEE/pandapower?tab=contributing-ov-file>

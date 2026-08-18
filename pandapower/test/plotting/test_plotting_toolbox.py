@@ -92,7 +92,7 @@ def test_simple_hl_plot():
     net = case9()
     load_buses = net.load.bus.values
     load_lines = net.line.loc[net.line.from_bus.isin(load_buses) | net.line.to_bus.isin(load_buses)].index
-    ax = simple_plot(net, highlight_lines=load_lines, highlight_buses=load_buses)
+    ax = simple_plot(net, highlight_lines=load_lines, highlight_buses=load_buses, show_plot=False)
 
     assert ax is not None
 

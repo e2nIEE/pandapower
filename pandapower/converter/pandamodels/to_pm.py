@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -57,7 +55,8 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
                      check_connectivity=True, pp_to_pm_callback=None, pm_model="ACPPowerModel",
                      pm_solver="ipopt",
                      pm_mip_solver="cbc", pm_nl_solver="ipopt", opf_flow_lim="S", pm_tol=1e-8,
-                     voltage_depend_loads=False, from_time_step=None, to_time_step=None, init_vm_pu="flat", init_va_degree="flat", **kwargs):
+                     voltage_depend_loads=False, from_time_step=None, to_time_step=None, init_vm_pu="flat",
+                     init_va_degree="flat", init_pq="flat", **kwargs):
     """
     Converts a pandapower net to a PowerModels.jl datastructure and saves it to a json file
     INPUT:
@@ -112,17 +111,40 @@ def convert_pp_to_pm(net, pm_file_path=None, correct_pm_network_data=True,
 
     net._options = {}
 
-    _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
-                     trafo_model=trafo_model, check_connectivity=check_connectivity,
-                     mode="opf", switch_rx_ratio=2, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree, enforce_p_lims=False,
-                     enforce_q_lims=True, recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
-                     voltage_depend_loads=voltage_depend_loads, delta=delta,
-                     trafo3w_losses=trafo3w_losses)
-    _add_opf_options(net, trafo_loading='power', ac=ac, init="flat", numba=True,
-                     pp_to_pm_callback=pp_to_pm_callback, pm_solver=pm_solver, pm_model=pm_model,
-                     correct_pm_network_data=correct_pm_network_data, silence=silence,
-                     pm_mip_solver=pm_mip_solver,
-                     pm_nl_solver=pm_nl_solver, opf_flow_lim=opf_flow_lim, pm_tol=pm_tol)
+    _add_ppc_options(
+        net,
+        calculate_voltage_angles=calculate_voltage_angles,
+        trafo_model=trafo_model,
+        check_connectivity=check_connectivity,
+        mode="opf",
+        switch_rx_ratio=2,
+        init_vm_pu=init_vm_pu,
+        init_va_degree=init_va_degree,
+        enforce_p_lims=False,
+        enforce_q_lims=True,
+        recycle={'_is_elements': False, 'ppc': False, 'Ybus': False},
+        voltage_depend_loads=voltage_depend_loads,
+        delta=delta,
+        trafo3w_losses=trafo3w_losses
+    )
+
+    _add_opf_options(
+        net,
+        trafo_loading='power',
+        ac=ac,
+        numba=True,
+        pp_to_pm_callback=pp_to_pm_callback,
+        pm_solver=pm_solver,
+        pm_model=pm_model,
+        correct_pm_network_data=correct_pm_network_data,
+        silence=silence,
+        pm_mip_solver=pm_mip_solver,
+        pm_nl_solver=pm_nl_solver,
+        opf_flow_lim=opf_flow_lim,
+        pm_tol=pm_tol,
+        init_pq=init_pq,
+        **kwargs
+    )
 
     net, pm, _, _ = convert_to_pm_structure(net, from_time_step=from_time_step,
                                                  to_time_step=to_time_step)
@@ -155,6 +177,9 @@ def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_
     net["_ppc_opf"] = ppci
     pm = ppc_to_pm(net, ppci)
     # todo: somewhere here should RATE_A be converted to 0., because only PowerModels uses 0 as no limits (pypower opf converts the zero to inf)
+
+    if net["_options"].get("init_pq") == "results":
+        add_pm_gen_start_values_from_results(net, pm)
     pm = add_pm_options(pm, net)
     pm = add_params_to_pm(net, pm)
     if from_time_step is not None and to_time_step is not None:
@@ -162,6 +187,42 @@ def convert_to_pm_structure(net, opf_flow_lim="S", from_time_step=None, to_time_
     pm = allow_multi_ext_grids(net, pm)
     net._pm = pm
     return net, pm, ppc, ppci
+
+def add_pm_gen_start_values_from_results(net, pm):
+    pm_gens = pm.get("gen", {})
+    if not pm_gens:
+        return None
+
+    lookup_table_name= {"ext_grid": "res_ext_grid", "gen": "res_gen", "sgen_controllable": "res_sgen"}
+    for lookup_name, table_name in lookup_table_name.items():
+
+        if table_name not in net or lookup_name not in net._pd2pm_lookups:
+            continue
+
+        result_table = net[table_name]
+        lookup = net._pd2pm_lookups[lookup_name]
+        if result_table is None or len(result_table) == 0:
+            continue
+
+        for pp_index, row in result_table.iterrows():
+
+            pm_index = lookup[int(pp_index)]
+            if pm_index is None:
+                continue
+
+            pm_gen = pm_gens.get(str(pm_index))
+            if pm_gen is None:
+                continue
+
+            p_mw = row.get("p_mw")
+            if p_mw is not None:
+                pm_gen["pg_start"] = p_mw
+
+            q_mvar = row.get("q_mvar")
+            if q_mvar is not None:
+                pm_gen["qg_start"] = q_mvar
+
+    return None
 
 
 def dump_pm_json(pm, buffer_file=None):
@@ -552,13 +613,148 @@ def add_params_to_pm(net, pm):
     
     # add objective factors for multi optimization
     if "obj_factors" in net.keys():
-        assert isinstance(net.obj_factors, list)
-        assert sum(net.obj_factors) <= 1
+        if not isinstance(net.obj_factors, list):
+            raise AssertionError("net.obj_factors is not a list")
+        if sum(net.obj_factors) > 1:
+            raise AssertionError("sum of net.obj_factors is greater than 1")
         dic = {}
         for i, k in enumerate(net.obj_factors):
             dic["fac_"+str(i+1)] = k        
         pm["user_defined_params"]["obj_factors"] = dic
 
+    return pm
+
+
+def _get_redispatch_elements(net):
+    """
+    Returns a list of (element_type, pp_index, cost_up, cost_down) tuples for every controllable
+    gen / sgen that is selected for redispatch, i.e. that is controllable and has a poly_cost entry
+    with non-NaN redispatch up/down costs.
+    """
+    selected = []
+    if "poly_cost" not in net or len(net.poly_cost) == 0:
+        return selected
+    pc = net.poly_cost
+    if "redispatch_up_eur_per_mw" not in pc.columns or "redispatch_down_eur_per_mw" not in pc.columns:
+        return selected
+    for elm in ["gen", "sgen"]:
+        if elm not in net or len(net[elm]) == 0:
+            continue
+        if "controllable" not in net[elm].columns:
+            continue
+        rows = pc[(pc["et"] == elm) &
+                  pc["redispatch_up_eur_per_mw"].notna() &
+                  pc["redispatch_down_eur_per_mw"].notna()]
+        for _, row in rows.iterrows():
+            pp_idx = int(row["element"])
+            if pp_idx not in net[elm].index:
+                continue
+            if not bool(net[elm].at[pp_idx, "controllable"]):
+                continue
+            selected.append((elm, pp_idx,
+                             float(row["redispatch_up_eur_per_mw"]),
+                             float(row["redispatch_down_eur_per_mw"])))
+    return selected
+
+
+def _get_controllable_gen_elements(net):
+    """
+    Returns a list of (element_type, pp_index) tuples for every controllable gen / sgen. These are
+    exactly the gens / sgens that become free PowerModels generators (non-controllable sgens are
+    converted to fixed loads and non-controllable gens are pinned via tight bounds already).
+    """
+    elements = []
+    for elm in ["gen", "sgen"]:
+        if elm not in net or len(net[elm]) == 0:
+            continue
+        if "controllable" not in net[elm].columns:
+            continue
+        for pp_idx in net[elm].index[net[elm]["controllable"].fillna(False).astype(bool)]:
+            elements.append((elm, int(pp_idx)))
+    return elements
+
+
+def _pm_gen_index_for(net, elm, pp_idx):
+    """
+    Maps a pandapower gen / controllable-sgen index to the PowerModels gen index (1-based) using the
+    lookups built during conversion. Returns None if the element has no PowerModels gen.
+    """
+    lookup_name = "gen" if elm == "gen" else "sgen_controllable"
+    if lookup_name not in net._pd2pm_lookups:
+        return None
+    lookup = net._pd2pm_lookups[lookup_name]
+    if pp_idx >= len(lookup):
+        return None
+    pm_idx = int(lookup[pp_idx])
+    return None if pm_idx == -1 else pm_idx
+
+
+def _redispatch_base_p_mw(net, elm, pp_idx, res_lookup):
+    """base dispatch p_mw of a gen / sgen from its result table (raises if no power flow result)."""
+    res_table = res_lookup[elm]
+    if res_table not in net or pp_idx not in net[res_table].index:
+        raise ValueError("redispatch base dispatch requires a prior power flow result: "
+                         "%s[%d] missing. Run a power flow or use init_pq='results'."
+                         % (res_table, pp_idx))
+    return float(net[res_table].at[pp_idx, "p_mw"])
+
+
+def add_redispatch_params(net, ppci, pm, redispatch_cost=False):
+    """
+    pp_to_pm_callback for :func:`runpm_redispatch`. Writes the base dispatch (pg0) and, in cost mode,
+    per-generator up/down redispatch costs into pm["user_defined_params"].
+
+    Only controllable gens / sgens that have a poly_cost entry with non-NaN redispatch up/down costs
+    (see :func:`_get_redispatch_elements`) participate in the redispatch: their active power is free
+    and driven towards pg0. Every other controllable gen / sgen keeps its base dispatch fixed
+    (pg == pg0) via ``fixed_pg`` - non-controllable gens / sgens are already fixed during conversion
+    (sgens become fixed loads, gens are pinned by tight bounds), and the ext_grid / slack stays free.
+
+    The base dispatch pg0 is taken from the result tables (res_gen / res_sgen), so a power flow (or
+    init_pq="results") must have populated them before conversion.
+    """
+    if "user_defined_params" not in pm:
+        pm["user_defined_params"] = {}
+
+    baseMVA = pm["baseMVA"]
+    res_lookup = {"gen": "res_gen", "sgen": "res_sgen"}
+
+    # participating (priced) redispatch generators -> free pg, driven towards pg0
+    base_pg = {}
+    cost_up = {}
+    cost_down = {}
+    participating = set()
+    for elm, pp_idx, c_up, c_down in _get_redispatch_elements(net):
+        pm_idx = _pm_gen_index_for(net, elm, pp_idx)
+        if pm_idx is None:
+            logger.warning("redispatch: %s %d has no PowerModels gen (is it controllable and "
+                           "in service?) - skipped", elm, pp_idx)
+            continue
+        p_mw = _redispatch_base_p_mw(net, elm, pp_idx, res_lookup)
+        # PowerModels works in per unit (baseMVA), same convention as pg in ppci->pm conversion
+        base_pg[str(pm_idx)] = p_mw / baseMVA
+        cost_up[str(pm_idx)] = c_up
+        cost_down[str(pm_idx)] = c_down
+        participating.add(pm_idx)
+
+    # controllable but non-participating gens / sgens -> pin pg to the base dispatch
+    fixed_pg = {}
+    for elm, pp_idx in _get_controllable_gen_elements(net):
+        pm_idx = _pm_gen_index_for(net, elm, pp_idx)
+        if pm_idx is None or pm_idx in participating:
+            continue
+        p_mw = _redispatch_base_p_mw(net, elm, pp_idx, res_lookup)
+        fixed_pg[str(pm_idx)] = p_mw / baseMVA
+
+    pm["user_defined_params"]["base_pg"] = base_pg
+    if fixed_pg:
+        pm["user_defined_params"]["fixed_pg"] = fixed_pg
+    # The redispatch mode is inferred on the Julia side from the presence of the cost dicts:
+    # if redispatch_cost_up / redispatch_cost_down are present -> cost objective, else deviation.
+    # (every user_defined_params value must be a Dict, so we do not pass a plain bool flag here.)
+    if redispatch_cost:
+        pm["user_defined_params"]["redispatch_cost_up"] = cost_up
+        pm["user_defined_params"]["redispatch_cost_down"] = cost_down
     return pm
 
 

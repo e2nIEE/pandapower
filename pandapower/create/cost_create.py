@@ -45,6 +45,7 @@ def create_pwl_cost(
      - Storage
 
     Parameters:
+        net: the pandapower network
         element: ID of the element in the respective element table
         et: element type, one of "gen", "sgen", "ext_grid", "load", "dcline", "storage"
         points: list of lists with [[p1, p2, c1], [p2, p3, c2], …] where c(n) defines the costs between p(n) and p(n+1)
@@ -104,6 +105,7 @@ def create_pwl_costs(
      - Storage
 
     Parameters:
+        net: the pandapower network
         elements: IDs of the elements in the respective element table
         et: element type, one of "gen", "sgen", "ext_grid", "load", "dcline", "storage"
         points: [[p1, p2, c1], [p2, p3, c2], …] for each element where c(n) defines the costs between p(n) and p(n+1)
@@ -153,11 +155,13 @@ def create_poly_cost(
     element: Int | Iterable[Int],
     et: CostElementType,
     cp1_eur_per_mw: float,
-    cp0_eur: float = 0,
-    cq1_eur_per_mvar: float = 0,
-    cq0_eur: float = 0,
-    cp2_eur_per_mw2: float = 0,
-    cq2_eur_per_mvar2: float = 0,
+    cp0_eur: float = 0.,
+    cq1_eur_per_mvar: float = 0.,
+    cq0_eur: float = 0.,
+    cp2_eur_per_mw2: float = 0.,
+    cq2_eur_per_mvar2: float = 0.,
+    redispatch_up_eur_per_mw: float = np.nan,
+    redispatch_down_eur_per_mw: float = np.nan,
     index: int | None = None,
     check: bool = True,
     **kwargs,
@@ -172,6 +176,7 @@ def create_poly_cost(
      - Storage ("storage")
 
     Parameters:
+        net: the pandapower network
         element: ID of the element in the respective element table
         et: Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] are possible
         cp1_eur_per_mw: Linear costs per MW
@@ -180,6 +185,12 @@ def create_poly_cost(
         cq0_eur: Offset reactive power costs in euro
         cp2_eur_per_mw2: Quadratic costs per MW
         cq2_eur_per_mvar2: Quadratic costs per Mvar
+        redispatch_up_eur_per_mw: Cost per MW of upward redispatch (increasing active power above the
+            base dispatch). Only used by the redispatch OPF (:func:`runpm_redispatch`). Leave as NaN
+            if the element should not participate in redispatch.
+        redispatch_down_eur_per_mw: Cost per MW of downward redispatch (decreasing active power below
+            the base dispatch). Only used by the redispatch OPF (:func:`runpm_redispatch`). Leave as
+            NaN if the element should not participate in redispatch.
         index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
             index is selected.
         check: raises UserWarning if costs already exist to this element.
@@ -211,6 +222,8 @@ def create_poly_cost(
         "cq1_eur_per_mvar": cq1_eur_per_mvar,
         "cp2_eur_per_mw2": cp2_eur_per_mw2,
         "cq2_eur_per_mvar2": cq2_eur_per_mvar2,
+        "redispatch_up_eur_per_mw": redispatch_up_eur_per_mw,
+        "redispatch_down_eur_per_mw": redispatch_down_eur_per_mw,
         **kwargs,
     }
     _set_entries(net, "poly_cost", index, entries=entries)
@@ -227,6 +240,8 @@ def create_poly_costs(
     cq0_eur: float | Iterable[float] = 0,
     cp2_eur_per_mw2: float | Iterable[float] = 0,
     cq2_eur_per_mvar2: float | Iterable[float] = 0,
+    redispatch_up_eur_per_mw: float | Iterable[float] = np.nan,
+    redispatch_down_eur_per_mw: float | Iterable[float] = np.nan,
     index: int | None = None,
     check: bool = True,
     **kwargs,
@@ -241,6 +256,7 @@ def create_poly_costs(
      - Storage ("storage")
 
     Parameters:
+        net: the pandapower network
         elements: IDs of the elements in the respective element table
         et: Type of element ["gen", "sgen", "ext_grid", "load", "dcline", "storage"] are possible
         cp1_eur_per_mw: Linear costs per MW
@@ -249,6 +265,10 @@ def create_poly_costs(
         cq0_eur: Offset reactive power costs in euro
         cp2_eur_per_mw2: Quadratic costs per MW
         cq2_eur_per_mvar2: Quadratic costs per Mvar
+        redispatch_up_eur_per_mw: Cost per MW of upward redispatch. Only used by the redispatch OPF
+            (:func:`runpm_redispatch`). Leave as NaN for elements that should not participate.
+        redispatch_down_eur_per_mw: Cost per MW of downward redispatch. Only used by the redispatch
+            OPF (:func:`runpm_redispatch`). Leave as NaN for elements that should not participate.
         index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
             index is selected.
         check: raises UserWarning if costs already exist to this element.
@@ -284,6 +304,8 @@ def create_poly_costs(
         "cq1_eur_per_mvar": cq1_eur_per_mvar,
         "cp2_eur_per_mw2": cp2_eur_per_mw2,
         "cq2_eur_per_mvar2": cq2_eur_per_mvar2,
+        "redispatch_up_eur_per_mw": redispatch_up_eur_per_mw,
+        "redispatch_down_eur_per_mw": redispatch_down_eur_per_mw,
         **kwargs,
     }
     _set_multiple_entries(net, "poly_cost", index, entries=entries)
