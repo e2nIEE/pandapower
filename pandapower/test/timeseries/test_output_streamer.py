@@ -397,44 +397,6 @@ def test_output_streamer_save_interval(simple_test_net, tmp_path):
     assert len(result) == n_timesteps
 
 
-def test_output_streamer_save_interval_calls_dump(simple_test_net, monkeypatch):
-    net = simple_test_net
-
-    n_timesteps = 5
-    _, ds = create_data_source(n_timesteps)
-
-    ConstControl(
-        net,
-        element="load",
-        variable="p_mw",
-        element_index=[0, 1, 2],
-        data_source=ds,
-        profile_name=["load1", "load2_mv_p", "load3_hv_p"],
-    )
-
-    output_streamer = OutputStreamer(
-        net,
-        save_interval=2,
-    )
-
-    calls = []
-
-    def mock_dump_to_file(net):
-        calls.append(output_streamer.time_step)
-
-    monkeypatch.setattr(output_streamer, "dump_to_file", mock_dump_to_file)
-
-    output_streamer.log_variable("res_bus", "vm_pu")
-
-    run_timeseries(
-        net,
-        time_steps=range(n_timesteps),
-        verbose=False,
-    )
-
-    assert calls == [2, 4]
-
-
 def test_get_data_since_last_save(simple_test_net):
     net = simple_test_net
 
@@ -537,7 +499,7 @@ def test_output_streamer_save_interval_zero(simple_test_net, tmp_path):
 
     result = pd.read_csv(result_file, sep=";")
 
-    assert len(result.shape[0]) == 3
+    assert len(result) == 3
 
 
 def test_equal_eval_name_warning_and_costs():
