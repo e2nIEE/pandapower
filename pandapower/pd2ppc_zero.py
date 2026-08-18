@@ -280,7 +280,13 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         # z0_k = (r_sc + x_sc * 1j) / parallel * vn_trafo_hv / vn_bus_hv
         # z0_k = (r_sc + x_sc * 1j) / parallel * tap_hv
         z0_k = (r_sc + x_sc * 1j) / parallel
-        z_n_ohm = trafos["xn_ohm"].fillna(0).values
+        xn_ohm = trafos["xn_ohm"].fillna(0).values
+        # Neutral earthing impedance Z_N (e.g. an earthing transformer star point
+        # grounded through a neutral earthing resistor/reactor). xn_ohm carries
+        # the reactance, rn_ohm the resistance.
+        rn_ohm = (trafos["rn_ohm"].fillna(0).values
+                   if "rn_ohm" in trafos.columns else np.zeros_like(xn_ohm))
+        zn_ohm = rn_ohm + 1j * xn_ohm
         k_st_tr = trafos["k_st"].fillna(1).values
 
         if mode == "sc":  # or trafo_model == "pi":
@@ -298,8 +304,29 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
                 * (np.square(vn_trafo_hv) / sn_trafo_mva)
                 / parallel
             )
-            z0_k_psu = (z_othv * k_st_tr + 3j * z_n_ohm) / ((vn_bus_hv**2) / net.sn_mva)
+            z0_k_psu = (z_othv * k_st_tr + 3 * zn_ohm) / ((vn_bus_hv**2) / net.sn_mva)
             z0_k = np.where(power_station_unit, z0_k_psu, z0_k)
+
+        # Neutral earthing impedance for ordinary earthed-star transformers (not
+        # only power-station units): the single-phase earth-fault return current
+        # sees 3*Z_N, so add it in series with the zero-sequence impedance. The
+        # neutral sits on the earthed-star winding, so Z_N is referred to the
+        # per-unit base via that winding's bus voltage. Added after the IEC
+        # transformer correction factor kt (the NER is not part of the
+        # transformer impedance and must not be scaled by kt).
+        _earthed_hv = ("ynd", "yny", "ynyn", "znyn", "znd", "zny", "zd")
+        _zigzag = ("znyn", "znd", "zny", "zd")
+        zn_pu = np.zeros(len(trafos), dtype=np.complex128)
+        if np.any(np.abs(zn_ohm) > 0) and vector_group.lower() in (
+                "dyn", "ynd", "yyn", "ynyn", "yny", "yzn",
+                "znyn", "znd", "zny", "zd"):
+            vn_earth = vn_bus_hv if vector_group.lower() in _earthed_hv else vn_bus_lv
+            zn_pu = 3 * zn_ohm / ((vn_earth ** 2) / net.sn_mva)
+            # Ordinary earthed-star groups: add 3*Z_N in series with z0_k here.
+            # Zigzag groups place 3*Z_N at the star-point node in their own branch
+            # below (so z0_k stays the bare leakage for the si0 split).
+            if vector_group.lower() not in _zigzag:
+                z0_k = np.where(power_station_unit, z0_k, z0_k + zn_pu)
 
         y0_k = 1 / z0_k  # adding admittance for "pi" model
         # y0_k = 1 / (z0_k * k_st_tr + 3j * z_n_ohm)  # adding admittance for "pi" model
@@ -398,6 +425,34 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             #            y= (za+zb+zc)/((za+zc)*zb).astype(complex)* int(ppc["baseMVA"])#pi model
             y = (YAB_AN + YBN).astype(complex)
             y_asym = (1.1547) * y * in_service.values * ppc["baseMVA"] * 2
+
+        elif vector_group.lower() in ("znyn", "znd", "zny", "zd"):
+            # Zigzag earthing transformer. The zigzag (ZN) winding presents a low
+            # zero-sequence impedance as a SHUNT to ground at its (HV-side)
+            # terminal, and -- per the IEC / PowerFactory transformer reference --
+            # "a zig-zag winding completely decouples the primary and secondary
+            # sides of the zero sequence system". So the HV and LV zero sequences
+            # are INDEPENDENT shunts-to-ground; the series HV-LV branch stays open
+            # (positive/negative sequence still couple via the normal model).
+            # Per the YNzn T-model (PF TechRef Fig 8.3, J&P App.5): the HV zigzag
+            # shunt = the HV-WINDING leakage portion (si0_hv_partial) in series
+            # with 3*Z_N at the star-point node -- NOT the full HV+LV leakage.
+            z0_leak = z0_k          # for zigzag groups z0_k is the bare leakage
+            z0_hv = si0_hv_partial * z0_leak + zn_pu
+            ys_hv = (ppc["baseMVA"] * in_service.values / z0_hv).astype(complex)
+            np.add.at(ppc["bus"][:, GS], hv_buses_ppc, ys_hv.real)
+            np.add.at(ppc["bus"][:, BS], hv_buses_ppc, ys_hv.imag)
+            # An earthed-wye secondary (ZNyn) has its OWN zero-sequence path to
+            # ground = LV leakage + zero-sequence magnetising impedance (the
+            # primary being decoupled). A delta / unearthed-wye secondary (ZNd /
+            # ZNy) has no LV zero-sequence path.
+            if vector_group.lower() == "znyn":
+                z0_lv = z0_mag + (1.0 - si0_hv_partial) * z0_leak
+                ys_lv = (ppc["baseMVA"] * in_service.values / z0_lv).astype(complex)
+                np.add.at(ppc["bus"][:, GS], lv_buses_ppc, ys_lv.real)
+                np.add.at(ppc["bus"][:, BS], lv_buses_ppc, ys_lv.imag)
+            y_sym = np.zeros(len(trafos), dtype=np.complex128)
+            y_asym = np.zeros(len(trafos), dtype=np.complex128)
 
         elif vector_group[-1].isdigit():
             raise ValueError(

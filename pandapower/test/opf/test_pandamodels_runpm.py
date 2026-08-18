@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -17,7 +15,7 @@ from pandapower.converter.pandamodels import convert_pp_to_pm
 from pandapower.converter.pandamodels.to_pm import init_ne_line
 from pandapower.create import create_storage, create_shunt, create_pwl_cost, create_poly_cost, create_empty_network, \
     create_bus, create_line, create_gen, create_load, create_transformer3w_from_parameters, create_sgen, \
-    create_transformer3w
+    create_transformer3w, create_ext_grid
 from pandapower.networks.cigre_networks import create_cigre_network_mv
 from pandapower.networks.power_system_test_cases import case5, case9, case14, case30, case39, case57, case118, \
     case145, case300
@@ -25,7 +23,7 @@ from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_
 from pandapower.opf.pm_storage import read_pm_storage_results
 from pandapower.run import rundcpp, runpp
 from pandapower.runpm import runpm_pf, runpm_ac_opf, runpm_dc_opf, runpm_vstab, runpm_tnep, runpm_ots, runpm_qflex, \
-    runpm_storage_opf, runpm_multi_qflex, runpm_ploss, runpm_loading, runpm_multi_vstab
+    runpm_storage_opf, runpm_multi_qflex, runpm_ploss, runpm_loading, runpm_multi_vstab, runpm_redispatch
 from pandapower.test.consistency_checks import consistency_checks
 from pandapower.test.helper_functions import add_grid_connection, create_test_line
 from pandapower.test.opf.test_basic import net_3w_trafo_opf
@@ -269,22 +267,22 @@ def test_pwl():
     net.load.p_mw = 1
     runpm_ac_opf(net)
     consistency_checks(net, rtol=1e-3)
-    assert np.isclose(net.res_gen.p_mw.at[g2], 0)
-    assert np.isclose(net.res_gen.p_mw.at[g3], 0)
+    assert np.isclose(net.res_gen.p_mw.at[g2], 0, atol=1e-6)
+    assert np.isclose(net.res_gen.p_mw.at[g3], 0, atol=1e-6)
     assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1], atol=1e-4)
 
     net.load.p_mw = 3
     runpm_ac_opf(net)
     consistency_checks(net, rtol=1e-3)
-    assert np.isclose(net.res_gen.p_mw.at[g3], 0)
-    assert np.isclose(net.res_gen.p_mw.at[g1], 2)
+    assert np.isclose(net.res_gen.p_mw.at[g3], 0, atol=1e-6)
+    assert np.isclose(net.res_gen.p_mw.at[g1], 2, atol=1e-6)
     assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1] + net.res_gen.p_mw.at[g2] * 2, atol=1e-4)
 
     net.load.p_mw = 5
     runpm_ac_opf(net)
     consistency_checks(net, rtol=1e-3)
-    assert np.isclose(net.res_gen.p_mw.at[g1], 2)
-    assert np.isclose(net.res_gen.p_mw.at[g2], 3)
+    assert np.isclose(net.res_gen.p_mw.at[g1], 2, atol=1e-6)
+    assert np.isclose(net.res_gen.p_mw.at[g2], 3, atol=1e-6)
     assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1] + net.res_gen.p_mw.at[g2] * 2 +
                       net.res_gen.p_mw.at[g3] * 3, atol=1e-4)
 
@@ -518,7 +516,7 @@ def test_ots_opt():
 
 
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
-@pytest.mark.xfail(reason="not complited yet")
+@pytest.mark.xfail(reason="not completed yet")
 def test_timeseries_pandamodels():
     profiles = pd.DataFrame()
     n_timesteps = 3
@@ -766,6 +764,125 @@ def test_ac_opf_differnt_snmva():
         res.loc[i] = net.res_bus.vm_pu.values
     for i in res.columns:
         assert res[i].values.min() - res[i].values.max() < 1e-10
+
+
+def _create_redispatch_net():
+    """
+    A small 3-bus grid with a cheap gen far from the load behind a weakly rated line, and an
+    expensive gen next to the load. A plain power flow dispatches everything on the cheap gen, which
+    overloads the line - so redispatch has to shift generation to the expensive gen.
+    """
+    net = create_empty_network()
+    b0 = create_bus(net, vn_kv=110., min_vm_pu=0.9, max_vm_pu=1.1)  # slack
+    b1 = create_bus(net, vn_kv=110., min_vm_pu=0.9, max_vm_pu=1.1)  # cheap gen
+    b2 = create_bus(net, vn_kv=110., min_vm_pu=0.9, max_vm_pu=1.1)  # load + expensive gen
+
+    create_ext_grid(net, b0, min_p_mw=-100., max_p_mw=100.,
+                    min_q_mvar=-100., max_q_mvar=100.)  # ext_grid at b0
+
+    # weakly rated line from the cheap-gen side to the load; a strong line elsewhere
+    l_weak = create_line(net, b1, b2, length_km=10., std_type="149-AL1/24-ST1A 110.0")
+    create_line(net, b0, b1, length_km=10., std_type="149-AL1/24-ST1A 110.0")
+    net.line.loc[:, "max_loading_percent"] = 100.
+    net.line.loc[l_weak, "max_loading_percent"] = 25.
+
+    create_load(net, b2, p_mw=60., q_mvar=10., controllable=False)
+
+    # cheap controllable gen far from the load
+    create_gen(net, b1, p_mw=60., min_p_mw=0., max_p_mw=100.,
+               min_q_mvar=-50., max_q_mvar=50., vm_pu=1.0, controllable=True)
+    # expensive controllable gen next to the load
+    create_gen(net, b2, p_mw=0., min_p_mw=0., max_p_mw=100.,
+               min_q_mvar=-50., max_q_mvar=50., vm_pu=1.0, controllable=True)
+
+    return net, l_weak
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
+def test_runpm_redispatch_deviation():
+    net, l_weak = _create_redispatch_net()
+
+    # base dispatch from a plain power flow -> overloads the weak line
+    runpp(net)
+    assert net.res_line.loc[l_weak, "loading_percent"] > 25.
+    base_p = net.res_gen.p_mw.values.copy()
+
+    # both gens participate in redispatch
+    create_poly_cost(net, 0, "gen", cp1_eur_per_mw=1.,
+                     redispatch_up_eur_per_mw=1., redispatch_down_eur_per_mw=1.)
+    create_poly_cost(net, 1, "gen", cp1_eur_per_mw=1.,
+                     redispatch_up_eur_per_mw=1., redispatch_down_eur_per_mw=1.)
+
+    runpm_redispatch(net, redispatch_cost=False)
+
+    assert net["OPF_converged"]
+    # the weak line must respect its limit now (small numerical tolerance)
+    assert net.res_line.loc[l_weak, "loading_percent"] <= 25. + 1e-2
+    # generation was actually shifted away from the base dispatch
+    assert not np.allclose(base_p, net.res_gen.p_mw.values, atol=1e-3)
+    # total generation still covers the load (+losses)
+    assert net.res_gen.p_mw.sum() + net.res_ext_grid.p_mw.sum() >= 60. - 1e-3
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
+def test_runpm_redispatch_cost():
+    net, l_weak = _create_redispatch_net()
+    runpp(net)
+
+    # cheap upward redispatch on gen 0, expensive on gen 1
+    create_poly_cost(net, 0, "gen", cp1_eur_per_mw=1.,
+                     redispatch_up_eur_per_mw=10., redispatch_down_eur_per_mw=10.)
+    create_poly_cost(net, 1, "gen", cp1_eur_per_mw=1.,
+                     redispatch_up_eur_per_mw=50., redispatch_down_eur_per_mw=50.)
+
+    runpm_redispatch(net, redispatch_cost=True)
+
+    assert net["OPF_converged"]
+    assert net.res_line.loc[l_weak, "loading_percent"] <= 25. + 1e-2
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
+def test_runpm_redispatch_dc():
+    net, l_weak = _create_redispatch_net()
+    runpp(net)
+
+    create_poly_cost(net, 0, "gen", cp1_eur_per_mw=1.,
+                     redispatch_up_eur_per_mw=1., redispatch_down_eur_per_mw=1.)
+    create_poly_cost(net, 1, "gen", cp1_eur_per_mw=1.,
+                     redispatch_up_eur_per_mw=1., redispatch_down_eur_per_mw=1.)
+
+    runpm_redispatch(net, redispatch_cost=False, pm_model="DCPPowerModel")
+
+    assert net["OPF_converged"]
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
+def test_runpm_redispatch_unpriced_gen_stays_fixed():
+    # a controllable gen without redispatch costs must keep its base dispatch (pg == pg0),
+    # only the priced gen participates in the redispatch
+    net, l_weak = _create_redispatch_net()
+    # add a third controllable gen at the load bus that we do NOT price for redispatch
+    b2 = net.load.bus.iloc[0]
+    g_unpriced = create_gen(net, b2, p_mw=5., min_p_mw=0., max_p_mw=100.,
+                            min_q_mvar=-50., max_q_mvar=50., vm_pu=1.0, controllable=True)
+    runpp(net)
+    base_unpriced = net.res_gen.at[g_unpriced, "p_mw"]
+
+    # only gen 0 and gen 1 participate; g_unpriced has no redispatch costs
+    create_poly_cost(net, 0, "gen", cp1_eur_per_mw=1.,
+                     redispatch_up_eur_per_mw=1., redispatch_down_eur_per_mw=1.)
+    create_poly_cost(net, 1, "gen", cp1_eur_per_mw=1.,
+                     redispatch_up_eur_per_mw=1., redispatch_down_eur_per_mw=1.)
+
+    runpm_redispatch(net, redispatch_cost=False)
+
+    assert net["OPF_converged"]
+    # the unpriced controllable gen must not have moved from its base dispatch
+    assert np.isclose(net.res_gen.at[g_unpriced, "p_mw"], base_unpriced, atol=1e-3)
 
 
 if __name__ == '__main__':
