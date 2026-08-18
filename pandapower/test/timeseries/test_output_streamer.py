@@ -360,6 +360,186 @@ def test_output_streamer_index():
     assert np.all(output_streamer.output["res_line.loading_percent"].index == p_data.index)
 
 
+def test_output_streamer_save_interval(simple_test_net, tmp_path):
+    net = simple_test_net
+
+    n_timesteps = 6
+    _, ds = create_data_source(n_timesteps)
+
+    ConstControl(
+        net,
+        element="load",
+        variable="p_mw",
+        element_index=[0, 1, 2],
+        data_source=ds,
+        profile_name=["load1", "load2_mv_p", "load3_hv_p"],
+    )
+
+    output_streamer = OutputStreamer(
+        net,
+        output_path=str(tmp_path),
+        output_file_type=".csv",
+        save_interval=2,
+    )
+
+    output_streamer.log_variable("res_bus", "vm_pu")
+
+    time_steps = range(n_timesteps)
+    run_timeseries(net, time_steps, verbose=False)
+
+    result_file = tmp_path / "res_bus" / "vm_pu.csv"
+
+    assert result_file.exists()
+
+    result = pd.read_csv(result_file, sep=";")
+
+    # Alle 6 Zeitschritte müssen am Ende vorhanden sein
+    assert len(result) == n_timesteps
+
+
+def test_output_streamer_save_interval_calls_dump(simple_test_net, monkeypatch):
+    net = simple_test_net
+
+    n_timesteps = 5
+    _, ds = create_data_source(n_timesteps)
+
+    ConstControl(
+        net,
+        element="load",
+        variable="p_mw",
+        element_index=[0, 1, 2],
+        data_source=ds,
+        profile_name=["load1", "load2_mv_p", "load3_hv_p"],
+    )
+
+    output_streamer = OutputStreamer(
+        net,
+        save_interval=2,
+    )
+
+    calls = []
+
+    def mock_dump_to_file(net):
+        calls.append(output_streamer.time_step)
+
+    monkeypatch.setattr(output_streamer, "dump_to_file", mock_dump_to_file)
+
+    output_streamer.log_variable("res_bus", "vm_pu")
+
+    run_timeseries(
+        net,
+        time_steps=range(n_timesteps),
+        verbose=False,
+    )
+
+    assert calls == [2, 4]
+
+
+def test_get_data_since_last_save(simple_test_net):
+    net = simple_test_net
+
+    output_streamer = OutputStreamer(
+        net,
+        time_steps=range(10),
+        save_interval=3,
+    )
+
+    data = pd.DataFrame(
+        {"value": range(10)},
+        index=range(10),
+    )
+
+    # Simuliere ersten Save bei timestep 3
+    output_streamer.time_step = 3
+    output_streamer.last_time_step = 0
+
+    result = output_streamer._get_data_since_last_save(data)
+
+    assert list(result["value"]) == [0, 1, 2]
+
+
+def test_get_data_since_last_save_second_chunk(simple_test_net):
+    net = simple_test_net
+
+    output_streamer = OutputStreamer(
+        net,
+        time_steps=range(10),
+        save_interval=3,
+    )
+
+    data = pd.DataFrame(
+        {"value": range(10)},
+        index=range(10),
+    )
+
+    output_streamer.time_step = 6
+    output_streamer.last_time_step = 3
+
+    result = output_streamer._get_data_since_last_save(data)
+
+    assert list(result["value"]) == [3, 4, 5]
+
+
+def test_get_data_since_last_save_last_chunk(simple_test_net):
+    net = simple_test_net
+
+    output_streamer = OutputStreamer(
+        net,
+        time_steps=range(10),
+        save_interval=3,
+    )
+
+    data = pd.DataFrame(
+        {"value": range(10)},
+        index=range(10),
+    )
+
+    output_streamer.time_step = 9
+    output_streamer.last_time_step = 9
+
+    result = output_streamer._get_data_since_last_save(data)
+
+    assert list(result["value"]) == [9]
+
+
+def test_output_streamer_save_interval_zero(simple_test_net, tmp_path):
+    net = simple_test_net
+
+    output_streamer = OutputStreamer(
+        net,
+        output_path=str(tmp_path),
+        output_file_type=".csv",
+        save_interval=0,
+    )
+
+    output_streamer.log_variable("res_bus", "vm_pu")
+
+    _, ds = create_data_source(3)
+
+    ConstControl(
+        net,
+        element="load",
+        variable="p_mw",
+        element_index=[0, 1, 2],
+        data_source=ds,
+        profile_name=["load1", "load2_mv_p", "load3_hv_p"],
+    )
+
+    run_timeseries(
+        net,
+        time_steps=range(3),
+        verbose=False,
+    )
+
+    result_file = tmp_path / "res_bus" / "vm_pu.csv"
+
+    assert result_file.exists()
+
+    result = pd.read_csv(result_file, sep=";")
+
+    assert len(result.shape[0]) == 3
+
+
 def test_equal_eval_name_warning_and_costs():
     net = case5()
     net.poly_cost = net.poly_cost.iloc[0:0]
