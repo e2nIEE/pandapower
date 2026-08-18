@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -93,7 +91,7 @@ class UCTEParser:
 
     def _parse_date_str(self, date_str: str):
         try:
-            self.date = datetime.datetime.strptime(date_str, "%Y%m%d_%H%M")
+            self.date = datetime.strptime(date_str, "%Y%m%d_%H%M")
         except Exception:
             self.logger.info(
                 f"The given {date_str=} couldn't be parsed as '%Y%m%d_%H%M'.")
