@@ -93,7 +93,9 @@ class OutputStreamer(OutputWriter):
             mapping = self.net[element_type].name.to_dict()
             data.rename(columns=mapping, inplace=True)
 
-    def save_results(self, net: pandapowerNet, time_step: int, pf_converged: bool, ctrl_converged: bool, recycle_options: dict = None):
+    def save_results(
+        self, net: pandapowerNet, time_step: int, pf_converged: bool, ctrl_converged: bool, recycle_options: dict = None
+    ):
         """Saves the results of the current time step to a matrix
         and stores it to the disk in a after save_interval time steps.
 
@@ -107,10 +109,10 @@ class OutputStreamer(OutputWriter):
         # call original save_results method from OutputWriter
         super().save_results(net, time_step, pf_converged, ctrl_converged, recycle_options=recycle_options)
 
-        if self.save_interval > 0 and (time_step + 1) % self.save_interval == 0:
-            self.time_step = time_step
-            self.dump_to_file(net)
-            self.last_time_step = time_step + 1
+        if self.save_interval > 0 and time_step < self.time_steps[-1] and (time_step + 1) % self.save_interval == 0:
+            self.time_step = time_step + 1
+            self.dump(net)
+            self.last_time_step = self.time_step
 
     def _get_data_since_last_save(self, data: pd.DataFrame) -> pd.DataFrame:
         """Filters the data DataFrame for the new data since the last dump.
@@ -157,22 +159,24 @@ class OutputStreamer(OutputWriter):
                 # append data to the end without header
                 data.to_excel(writer, sheet_name=sheet_name, index=False, header=False, startrow=start_row)
 
-    def _save_csv(self, file_path: str, data: pd.DataFrame, table: str) -> None:
+    def _save_csv(self, file_path: str, data: pd.DataFrame, table: str, append: bool = False) -> None:
         """Saves the new simulation data to a csv file.
 
         Parameters:
             file_path (str): Path to the excel file
             data (pd.DataFrame): Data to be saved or appended.
             table (str): Name of the network element.
+            append (bool): If True, append only new rows; otherwise rewrite the full output.
         """
-        if self.time_step > self.save_interval:
+        if append:
             data = self._get_data_since_last_save(data)
-            header = False
+            header = self.last_time_step == 0
+            if header:
+                self.__update_csv_header(data, table)
+            data.to_csv(file_path, sep=self.csv_separator, mode="a", header=header)
         else:
             self.__update_csv_header(data, table)
-            header = True
-        # append data to the csv
-        data.to_csv(file_path, sep=self.csv_separator, mode="a", header=header)
+            data.to_csv(file_path, sep=self.csv_separator, mode="w", header=True)
 
     def _save_separate(self, append):
 
@@ -215,5 +219,5 @@ class OutputStreamer(OutputWriter):
                         else:
                             raise ValueError(e)
                 elif "csv" in self.output_file_type.split("."):
-                    self._save_csv(file_path, data, table)
+                    self._save_csv(file_path, data, table, append=append)
         self.last_time_step = self.time_step
