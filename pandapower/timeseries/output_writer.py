@@ -5,24 +5,19 @@
 import copy
 import functools
 import os
-from collections.abc import Iterable
 from time import perf_counter
 from types import FunctionType
 
 import numpy as np
 import pandas as pd
-
-from pandapower.io_utils import JSONSerializableClass, mkdirs_if_not_existent
+from collections.abc import Iterable
+from pandapower.io_utils import JSONSerializableClass
+from pandapower.io_utils import mkdirs_if_not_existent
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.pypower.idx_bus import BUS_TYPE, NONE, VA, VM
+from pandapower.pypower.idx_bus import VM, VA, NONE, BUS_TYPE
 from pandapower.run import _init_runpp_options
-from pandapower.timeseries.read_batch_results import (
-    get_batch_bus_results,
-    get_batch_line_results,
-    get_batch_trafo3w_results,
-    get_batch_trafo_results,
-    v_to_i_s,
-)
+from pandapower.timeseries.read_batch_results import v_to_i_s, get_batch_line_results, get_batch_trafo3w_results, \
+    get_batch_trafo_results, get_batch_bus_results
 
 try:
     import pandaplan.core.pplog as pplog
@@ -325,7 +320,7 @@ class OutputWriter(JSONSerializableClass):
     def log_variable(self, table, variable, index=None, eval_function=None, eval_name=None):
         """
         Adds a variable to log during simulation and appends it to output_list.
-
+        
         Parameters:
             table (str): The DataFrame table where the variable is located as a string (e.g. "res_bus")
             variable (str): variable that should be logged as string (e.g. "p_mw")
@@ -399,7 +394,6 @@ class OutputWriter(JSONSerializableClass):
             # No matching entry or new entry with eval_function/eval_name
             self.log_variables.append((table, variable, index, eval_function, eval_name))
 
-
     def _init_ppc_logging(self, table, variable, net, eval_function, eval_name):
         var_name = self._get_output_name(table, variable)
         ppc = net["_ppc"]
@@ -412,7 +406,7 @@ class OutputWriter(JSONSerializableClass):
             _init_runpp_options(net, **options)
             ppc, _ = _pd2ppc(net)
             net["_ppc"] = ppc
-        index = list(range(sum(ppc["bus"][:, BUS_TYPE] != NONE)))
+        index = list(range(sum(ppc['bus'][:, BUS_TYPE] != NONE)))
         self._append_output_list(table, variable, net, index, eval_function, eval_name, var_name, func=self._log_ppc)
         return index
 
