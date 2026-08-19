@@ -145,22 +145,34 @@ class OutputStreamer(OutputWriter):
             data (pd.DataFrame): Data to be saved or appended.
             sheet_name (str, optional): Name of the excel sheet. Defaults to "Sheet1".
         """
-        if not os.path.exists(file_path):
-            # create new file if it doesn't exist
-            data.to_excel(file_path, sheet_name=sheet_name, index=False)
-        else:
-            # append to file if it exists
-            with pd.ExcelWriter(file_path, engine="openpyxl", mode="a", if_sheet_exists="overlay") as writer:
-                # load the existing sheet to find its end
-                try:
-                    # set start row to the end of the file
-                    start_row = writer.book[sheet_name].max_row
-                except KeyError:
-                    # set the start row to 0 in case the sheet doesn't exist
-                    start_row = 0
+        try:
+            if self.time_step > self.save_interval:
+                data = self._get_data_since_last_save(data)
+            if not os.path.exists(file_path):
+                # create new file if it doesn't exist
+                data.to_excel(file_path, sheet_name=sheet_name, index=False)
+            else:
+                # append to file if it exists
+                with pd.ExcelWriter(file_path, engine="openpyxl", mode="a", if_sheet_exists="overlay") as writer:
+                    # load the existing sheet to find its end
+                    try:
+                        # set start row to the end of the file
+                        start_row = writer.book[sheet_name].max_row
+                    except KeyError:
+                        # set the start row to 0 in case the sheet doesn't exist
+                        start_row = 0
 
-                # append data to the end without header
-                data.to_excel(writer, sheet_name=sheet_name, index=False, header=False, startrow=start_row)
+                    # append data to the end without header
+                    data.to_excel(writer, sheet_name=sheet_name, index=False, header=False, startrow=start_row)
+        except ValueError as e:
+            if data.shape[1] > 255:
+                raise ValueError(
+                    "pandas.to_excel() is not capable to handle large data"
+                    + "with more than 255 columns. Please use other "
+                    + "file_extensions instead, e.g. 'json'."
+                )
+            else:
+                raise ValueError(e)
 
     def _save_csv(self, file_path: str, data: pd.DataFrame, table: str, append: bool = False) -> None:
         """Saves the new simulation data to a csv file.
@@ -208,19 +220,7 @@ class OutputStreamer(OutputWriter):
                 elif self.output_file_type == ".p":
                     data.to_pickle(file_path)
                 elif self.output_file_type in [".xls", ".xlsx"]:
-                    try:
-                        if self.time_step > self.save_interval:
-                            data = self._get_data_since_last_save(data)
-                        self._save_excel(file_path, data)
-                    except ValueError as e:
-                        if data.shape[1] > 255:
-                            raise ValueError(
-                                "pandas.to_excel() is not capable to handle large data"
-                                + "with more than 255 columns. Please use other "
-                                + "file_extensions instead, e.g. 'json'."
-                            )
-                        else:
-                            raise ValueError(e)
+                    self._save_excel(file_path, data, table)
                 elif "csv" in self.output_file_type.split("."):
                     self._save_csv(file_path, data, table, append=append)
         self.last_time_step = self.time_step
