@@ -1,7 +1,6 @@
 import os
 
 import pandas as pd
-
 from pandapower.auxiliary import pandapowerNet
 from pandapower.io_utils import mkdirs_if_not_existent
 from pandapower.timeseries.output_writer import OutputWriter
@@ -111,7 +110,7 @@ class OutputStreamer(OutputWriter):
 
         if self.save_interval > 0 and time_step < self.time_steps[-1] and (time_step + 1) % self.save_interval == 0:
             self.time_step = time_step + 1
-            self.dump(net)
+            self.dump_to_file(net)
             self.last_time_step = self.time_step
 
     def _get_data_since_last_save(self, data: pd.DataFrame) -> pd.DataFrame:
