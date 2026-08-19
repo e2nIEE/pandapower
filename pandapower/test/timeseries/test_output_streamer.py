@@ -2,8 +2,6 @@
 
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
-
 import copy
 import logging
 import os
@@ -25,9 +23,9 @@ from pandapower.timeseries.output_streamer import OutputStreamer
 from pandapower.timeseries.run_time_series import run_timeseries
 
 logger = logging.getLogger(__name__)
-ow_logger = logging.getLogger("hp.control.output_writer")
+output_streamer_logger = logging.getLogger("hp.control.output_streamer")
 logger.setLevel(logging.ERROR)
-ow_logger.setLevel(logging.CRITICAL)
+output_streamer_logger.setLevel(logging.CRITICAL)
 
 
 def test_output_streamer_log(simple_test_net):
@@ -252,13 +250,9 @@ def test_remove_variable(simple_test_net):
     logger.info(output_streamer)
     assert len(output_streamer.log_variables) == 2
     assert output_streamer.log_variables[0][0] == "res_bus" and output_streamer.log_variables[0][1] == "vm_pu"
-    assert (
-        output_streamer.log_variables[1][0] == "res_line" and output_streamer.log_variables[1][1] == "loading_percent"
-    )
+    assert output_streamer.log_variables[1][0] == "res_line" and output_streamer.log_variables[1][1] == "loading_percent"
     output_streamer.remove_log_variable("res_bus")
-    assert (
-        output_streamer.log_variables[0][0] == "res_line" and output_streamer.log_variables[0][1] == "loading_percent"
-    )
+    assert output_streamer.log_variables[0][0] == "res_line" and output_streamer.log_variables[0][1] == "loading_percent"
     output_streamer.remove_log_variable("res_line", "loading_percent")
     assert len(output_streamer.log_variables) == 0
 
@@ -317,9 +311,7 @@ def test_ppc_log(simple_test_net):
     output_streamer.log_variable("ppc_bus", "vm")
     output_streamer.log_variable("ppc_bus", "va")
     runpp(net, only_v_results=True, recycle={"bus_pq": True, "gen": False, "trafo": False})
-    run_timeseries(
-        net, time_steps, recycle={"bus_pq": True, "gen": False, "trafo": False}, only_v_results=True, verbose=False
-    )
+    run_timeseries(net, time_steps, recycle={"bus_pq": True, "gen": False, "trafo": False}, only_v_results=True, verbose=False)
     assert len(output_streamer.output["ppc_bus.vm"]) == n_timesteps
     assert len(output_streamer.output["ppc_bus.va"]) == n_timesteps
 
