@@ -97,7 +97,7 @@ class OutputStreamer(OutputWriter):
             data.rename(columns=mapping, inplace=True)
 
     def save_results(
-        self, net: pandapowerNet, time_step: int, pf_converged: bool, ctrl_converged: bool, recycle_options: dict = None
+        self, net: pandapowerNet, time_step: int, pf_converged: bool, ctrl_converged: bool, recycle_options = None
     ):
         """Saves the results of the current time step to a matrix
         and stores it to the disk in a after save_interval time steps.
