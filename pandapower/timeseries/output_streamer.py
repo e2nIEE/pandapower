@@ -139,6 +139,18 @@ class OutputStreamer(OutputWriter):
 
         return data.iloc[start:end]
 
+    @staticmethod
+    def _get_table_and_variable(partial):
+        if isinstance(partial, tuple):
+            # if batch output is used
+            table = partial[0]
+            variable = partial[1]
+        else:
+            # if output_list contains functools.partial
+            table = partial.args[0]
+            variable = partial.args[1]
+        return table, variable
+
     def _save_excel(self, file_path: str, data: pd.DataFrame, sheet_name: str = "Sheet1") -> None:
         """
         Saves the new simulation data to an excel file.
@@ -201,14 +213,7 @@ class OutputStreamer(OutputWriter):
     def _save_separate(self, append):
 
         for partial in self.output_list:
-            if isinstance(partial, tuple):
-                # if batch output is used
-                table = partial[0]
-                variable = partial[1]
-            else:
-                # if output_list contains functools.partial
-                table = partial.args[0]
-                variable = partial.args[1]
+            table, variable = self._get_table_and_variable(partial)
             if table != "Parameters":
                 file_path = os.path.join(self.output_path, table)
                 mkdirs_if_not_existent(file_path)
