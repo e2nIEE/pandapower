@@ -5,6 +5,7 @@
 import os
 
 import pandas as pd
+
 from pandapower.auxiliary import pandapowerNet
 from pandapower.io_utils import mkdirs_if_not_existent
 from pandapower.timeseries.output_writer import OutputWriter
@@ -17,9 +18,8 @@ logger = pplog.getLogger(__name__)
 
 
 class OutputStreamer(OutputWriter):
-    json_excludes = ["self", "__class__", "net"]
-
-    """The OutputStreamer class is used to cyclically store and format specific outputs from a time series calculation.
+    """
+    The OutputStreamer class is used to cyclically store and format specific outputs from a time series calculation.
 
     For a detailed documentation, please refer to the parent OutputWriter class.
 
@@ -85,7 +85,8 @@ class OutputStreamer(OutputWriter):
         self.last_time_step = 0
 
     def __update_csv_header(self, data: pd.DataFrame, table: str):
-        """Updates the header of the element's dataframe.
+        """
+        Updates the header of the element's dataframe.
 
         Parameters:
             data (DataFrame): Data to be updated.
@@ -99,7 +100,8 @@ class OutputStreamer(OutputWriter):
     def save_results(
         self, net: pandapowerNet, time_step: int, pf_converged: bool, ctrl_converged: bool, recycle_options = None
     ):
-        """Saves the results of the current time step to a matrix
+        """
+        Saves the results of the current time step to a matrix
         and stores it to the disk in a after save_interval time steps.
 
         Parameters:
@@ -118,7 +120,8 @@ class OutputStreamer(OutputWriter):
             self.last_time_step = self.time_step
 
     def _get_data_since_last_save(self, data: pd.DataFrame) -> pd.DataFrame:
-        """Filters the data DataFrame for the new data since the last dump.
+        """
+        Filters the data DataFrame for the new data since the last dump.
 
         Parameters:
             data (DataFrame): Data to be filtered.
@@ -137,7 +140,8 @@ class OutputStreamer(OutputWriter):
         return data.iloc[start:end]
 
     def _save_excel(self, file_path: str, data: pd.DataFrame, sheet_name: str = "Sheet1") -> None:
-        """Saves the new simulation data to an excel file.
+        """
+        Saves the new simulation data to an excel file.
         Appends the new data if the file already exists.
 
         Parameters:
@@ -175,7 +179,8 @@ class OutputStreamer(OutputWriter):
                 raise ValueError(e)
 
     def _save_csv(self, file_path: str, data: pd.DataFrame, table: str, append: bool = False) -> None:
-        """Saves the new simulation data to a csv file.
+        """
+        Saves the new simulation data to a csv file.
 
         Parameters:
             file_path (str): Path to the excel file
