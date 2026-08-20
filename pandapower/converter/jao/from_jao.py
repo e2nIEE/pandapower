@@ -444,8 +444,8 @@ def _invent_connections_between_grid_groups(
     connected_vn_kvs_by_trafos = (
         pd.DataFrame(
             {
-                "hv": net.bus.vn_kv.loc[net.trafo.hv_bus],
-                "lv": net.bus.vn_kv.loc[net.trafo.lv_bus],
+                "hv": net.bus.vn_kv.loc[net.trafo.hv_bus].to_list(),
+                "lv": net.bus.vn_kv.loc[net.trafo.lv_bus].to_list(),
                 "index": net.trafo.index,
             }
         )
