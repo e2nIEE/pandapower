@@ -4242,7 +4242,12 @@ def create_stactrl(net, item, top, top_all, **kwargs):
 
         elif element_class[0] == "ElmZpu":
             res_element_table = "res_impedance"
-            variable.append("q_from_mvar" if q_control_side[0] == 0 else "q_to_mvar")
+            for i, element in enumerate(q_control_element):
+                if element not in impedance_dict:
+                    logger.error(f"{item}: measured impedance {element.loc_name} was not imported, skipping")
+                    return
+                res_element_index.append(impedance_dict[element])
+                variable.append("q_from_mvar" if q_control_side[i] == 0 else "q_to_mvar")
 
 
         elif element_class[0] == "ElmCoup":
