@@ -37,7 +37,7 @@ class PandapowerDiagnostic:
             'impedance': 'impedance', 'impedances': 'impedance', 'dcline': 'dcline', 'dclines': 'dcline',
             'ward': 'ward', 'wards': 'ward', 'xward': 'xward', 'xwards': 'xward'}
         if isinstance(input_obj, list):
-            return_obj = []
+            return_obj: list = []
             for one_input_obj in input_obj:
                 if isinstance(one_input_obj, list) or isinstance(one_input_obj, dict):
                     return_obj.append(self._rec_replace_pp_diagnostic_with_cim_ids(one_input_obj, element_type))

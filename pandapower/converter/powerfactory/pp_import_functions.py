@@ -40,7 +40,7 @@ trafo_dict: dict = {}
 trafo3w_dict: dict = {}
 switch_dict: dict = {}
 bus_dict: dict = {}
-grf_map = {}
+grf_map: dict = {}
 
 
 def ga(element, attr):

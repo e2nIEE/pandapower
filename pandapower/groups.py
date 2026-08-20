@@ -949,6 +949,7 @@ def elements_connected_to_group(
     # switch -> branch connections
     group_sw = group_element_index(net, index, "bus")
     sw_bra_types = ["line", "trafo", "trafo3w"]
+    et: str
     for et in sw_bra_types:
         if et not in element_types:
             continue
@@ -986,8 +987,7 @@ def elements_connected_to_group(
                 continue
             for bus_col in bed[et]:
                 if et == "switch" and bus_col == "element":
-                    bed_buses = net[et][bus_col].loc[net.switch.index[
-                        net.switch.et == "b"].intersection(e_id)]
+                    bed_buses = net[et][bus_col].loc[net.switch.index[net.switch.et == "b"].intersection(e_id)]
                 else:
                     bed_buses = net[et][bus_col].loc[e_id]
                 if respect_in_service and "in_service" in net[et].columns:
@@ -1003,9 +1003,10 @@ def elements_connected_to_group(
                         if switches.shape[0]:
                             if switches.bus.duplicated().any():
                                 raise ValueError(
-                                    f"There are multiple {et} switches connecting the same "
-                                    "element and bus. respect_switches is not possible due to "
-                                    "multiple possible values.")
+                                    f"There are multiple {et} switches connecting the same "  # type: ignore[str-bytes-safe]
+                                    f"element and bus. respect_switches is not possible due to "
+                                    f"multiple possible values."
+                                )
                             switches_: pd.Series = switches.set_index("bus").closed
                             in_sw = bed_buses.isin(switches_.index).values
                             closed[in_sw] = switches_.loc[bed_buses.loc[in_sw]]
@@ -1016,7 +1017,7 @@ def elements_connected_to_group(
             conn_buses = set(conn_index[net.bus.in_service.loc[conn_index].to_numpy()])
         connected["bus"] = conn_buses
 
-    connected: dict[str, Collection[int]] = {
+    connected: dict[str, Collection[int]] = {  # type: ignore[no-redef]
         et: sorted(pd.Index(conn).difference(group_element_index(net, index, et))) for et, conn in connected.items()
     }
     if include_empty_lists:

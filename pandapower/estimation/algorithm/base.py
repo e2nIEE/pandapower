@@ -129,7 +129,7 @@ class WLSAlgorithm(BaseAlgorithm):
                     d_E = d_E*0.35/current_error  # type: ignore[assignment]
 
                 # Update E with d_E
-                E += d_E.ravel()  # type: ignore[attr-defined]
+                E += d_E.ravel()  # type: ignore[union-attr]
                 eppci.update_E(E)
 
                 if debug_mode:
@@ -334,7 +334,7 @@ class AFWLSAlgorithm(BaseAlgorithm):
                 d_E = spsolve(G_m, H.T * (r_inv * r))
 
                 # Update E with d_E
-                E += d_E.ravel()  # type: ignore[attr-defined]
+                E += d_E.ravel()  # type: ignore[union-attr]
 
                 # log data 
                 current_error = np.max(np.abs(d_E))

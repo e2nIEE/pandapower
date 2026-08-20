@@ -102,6 +102,9 @@ typing = [
     "pandera[mypy]~=0.32",
     "psycopg~=3.2",
     "types-geopandas~=1.1.4",
+    "types-python-dateutil",
+    "types-seaborn",
+    "types-xlrd"
 ]
 
 all = ["pandapower[plotting,performance,fileio,converter,pgm,control,helm,opendss]"]
