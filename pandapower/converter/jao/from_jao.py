@@ -362,7 +362,7 @@ def _create_transformers_and_buses(
     trafo_connections = _allocate_trafos_to_buses_and_create_buses(
         net, data, bus_idx, vn_hv_kv, vn_lv_kv, **kwargs)
     max_i_a = data[key].loc[:, ("Maximum Current Imax (A) primary", "Fixed")]
-    empty_i_idx = max_i_a.index[max_i_a.isnull()]
+    empty_i_idx = max_i_a.index[max_i_a.isnull()]  # type: ignore[call-overload]
     max_i_a.loc[empty_i_idx] = data[key].loc[empty_i_idx, (
         "Maximum Current Imax (A) primary", "Max")].values
     sn_mva = np.sqrt(3) * max_i_a * vn_hv_kv / 1e3
@@ -441,10 +441,17 @@ def _invent_connections_between_grid_groups(
 
     # --- add Transformers between equally named buses that have different voltage level and lay in
     # --- different groups
-    connected_vn_kvs_by_trafos = pd.DataFrame({
-        "hv": net.bus.vn_kv.loc[net.trafo.hv_bus.values].values,
-        "lv": net.bus.vn_kv.loc[net.trafo.lv_bus.values].values,
-        "index": net.trafo.index}).set_index(["hv", "lv"]).sort_index()
+    connected_vn_kvs_by_trafos = (
+        pd.DataFrame(
+            {
+                "hv": net.bus.vn_kv.loc[net.trafo.hv_bus],
+                "lv": net.bus.vn_kv.loc[net.trafo.lv_bus],
+                "index": net.trafo.index,
+            }
+        )
+        .set_index(["hv", "lv"])
+        .sort_index()
+    )
     dupl_location_names = location_names[location_names.duplicated()]
 
     for location_name in dupl_location_names:
@@ -479,9 +486,9 @@ def _invent_connections_between_grid_groups(
         # copy transformer data
         duplicated_row = net.trafo.loc[[tr_to_be_copied]].copy()
         duplicated_row.index = [net.trafo.index.max() + 1]  # adjust index
-        duplicated_row.hv_bus = vn_kvs.index[0]  # adjust hv_bus, lv_bus
-        duplicated_row.lv_bus = vn_kvs.index[1]  # adjust hv_bus, lv_bus
-        duplicated_row.name = "additional transformer to connect the grid"
+        duplicated_row.hv_bus = vn_kvs.index[0]  # type: ignore[attr-defined] # adjust hv_bus, lv_bus
+        duplicated_row.lv_bus = vn_kvs.index[1]  # type: ignore[attr-defined] # adjust hv_bus, lv_bus
+        duplicated_row.name = "additional transformer to connect the grid"  # type: ignore[attr-defined]
         net.trafo = pd.concat([net.trafo, duplicated_row])
 
         bus_grid_groups.loc[bus_grid_groups == grid_groups_at_location.iat[1]] = \
@@ -629,7 +636,7 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
         take_from_name = ((is_dupl.EIC | is_missing.EIC) & (
             ~is_dupl.name & ~is_missing.name)).values
         access_vals.loc[take_from_name, "col_name"] = "name"
-        access_vals.loc[take_from_name, "identifier"] = line_excerpt.name.loc[take_from_name].values
+        access_vals.loc[take_from_name, "identifier"] = line_excerpt.name.loc[take_from_name].values  # type: ignore[index]
         keep = (~(is_dupl | is_missing)).any(axis=1).values
         if np.all(is_missing):
             log_msg = (f"For bus {bus} (name {net.bus.at[bus, 'name']}), {n_connected_line_ends} "
@@ -644,7 +651,7 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
             logger.info(f"For {bus=}, all EIC_Codes and names of connected lines are ambiguous. "
                         "No geo data is dropped at this point.")
             keep[(~is_missing).any(axis=1)] = True  # type: ignore[index]
-        access_vals = access_vals.loc[keep]
+        access_vals = access_vals.loc[keep]  # type: ignore[index]
 
         # --- get this_bus_geo from EIC_Code or name with regard to access_vals
         this_bus_geo = lgd_bus.loc[iSl[
@@ -671,7 +678,7 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
 
         return None
 
-    net.bus.geo = [_add_bus_geo_inner(bus) for bus in net.bus.index]
+    net.bus["geo"] = [_add_bus_geo_inner(bus) for bus in net.bus.index]
 
 
 # --- tertiary functions ---------------------------------------------------------------------------
@@ -891,7 +898,7 @@ def _drop_duplicates_and_join_TSO(bus_df: pd.DataFrame) -> pd.DataFrame:
     bus_df = bus_df.drop_duplicates(ignore_index=True)
     # just keep one bus per name and vn_kv. If there are multiple buses of different TSOs, join the
     # TSO strings:
-    bus_df = bus_df.groupby(["name", "vn_kv"], as_index=False).agg({"TSO": lambda x: '/'.join(x)})
+    bus_df = bus_df.groupby(["name", "vn_kv"], as_index=False).agg({"TSO": lambda x: "/".join(x)})  # type: ignore[misc]
     if bus_df.duplicated(["name", "vn_kv"]).any():
         raise AssertionError("bus_df contains duplicate names with identical vn_kv")
     return bus_df
@@ -929,18 +936,22 @@ def _lng_lat_to_df(dict_: dict, line_EIC: str, line_name: str) -> pd.DataFrame:
 
 def _fill_geo_at_one_sided_branches_without_geo_extent(net: pandapowerNet):
 
-    def _check_geo_availablitiy(net: pandapowerNet) -> dict[str, Union[pd.Index, int]]:
-        av = {}  # availablitiy of geodata
+    def _check_geo_availablitiy(net: pandapowerNet) -> dict[str, pd.Index | int]:
+        av: dict[str, pd.Index | int] = {}  # availablitiy of geodata
         av["bus_with_geo"] = net.bus.index[~net.bus.geo.isnull()]
-        av["lines_fbw_tbwo"] = net.line.index[net.line.from_bus.isin(av["bus_with_geo"]) &
-                                              (~net.line.to_bus.isin(av["bus_with_geo"]))]
-        av["lines_fbwo_tbw"] = net.line.index[(~net.line.from_bus.isin(av["bus_with_geo"])) &
-                                              net.line.to_bus.isin(av["bus_with_geo"])]
-        av["trafos_hvbw_lvbwo"] = net.trafo.index[net.trafo.hv_bus.isin(av["bus_with_geo"]) &
-                                                  (~net.trafo.lv_bus.isin(av["bus_with_geo"]))]
-        av["trafos_hvbwo_lvbw"] = net.trafo.index[(~net.trafo.hv_bus.isin(av["bus_with_geo"])) &
-                                                  net.trafo.lv_bus.isin(av["bus_with_geo"])]
-        av["n_lines_one_side_geo"] = len(av["lines_fbw_tbwo"])+len(av["lines_fbwo_tbw"])
+        av["lines_fbw_tbwo"] = net.line.index[
+            net.line.from_bus.isin(av["bus_with_geo"]) & (~net.line.to_bus.isin(av["bus_with_geo"]))  # type: ignore[arg-type]
+        ]
+        av["lines_fbwo_tbw"] = net.line.index[
+            (~net.line.from_bus.isin(av["bus_with_geo"])) & net.line.to_bus.isin(av["bus_with_geo"])  # type: ignore[arg-type]
+        ]
+        av["trafos_hvbw_lvbwo"] = net.trafo.index[
+            net.trafo.hv_bus.isin(av["bus_with_geo"]) & (~net.trafo.lv_bus.isin(av["bus_with_geo"]))  # type: ignore[arg-type]
+        ]
+        av["trafos_hvbwo_lvbw"] = net.trafo.index[
+            (~net.trafo.hv_bus.isin(av["bus_with_geo"])) & net.trafo.lv_bus.isin(av["bus_with_geo"])  # type: ignore[arg-type]
+        ]
+        av["n_lines_one_side_geo"] = len(av["lines_fbw_tbwo"]) + len(av["lines_fbwo_tbw"])  # type: ignore[assignment,arg-type]
         return av
 
     geo_avail = _check_geo_availablitiy(net)

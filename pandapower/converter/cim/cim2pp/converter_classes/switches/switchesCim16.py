@@ -68,7 +68,7 @@ class SwitchesCim16:
                 message="Something went wrong at switches, seems like that terminals for connection with "
                         "connectivity nodes are missing!"))
             dups = eqssh_switches.pivot_table(index=['rdfId'], aggfunc='size')  # type: ignore[arg-type]
-            dups = dups.loc[dups != 2]
+            dups = dups.loc[dups != 2]  # type: ignore[call-overload]
             for rdfId, count in dups.items():
                 self.logger.warning("The switch with RDF ID %s has %s Terminals!" % (rdfId, count))
                 self.logger.warning("The switch data: \n%s" % eqssh_switches[eqssh_switches['rdfId'] == rdfId])

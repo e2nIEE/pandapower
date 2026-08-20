@@ -361,7 +361,7 @@ def from_pf(
         if "pf_area" not in net.bus.columns:
             net.bus["pf_area"] = None
         cols = ["pf_area", "pf_zone"]
-        net.bus[cols] = net.bus[cols].where(net.bus[cols].notna(), None)
+        net.bus[cols] = net.bus[cols].where(net.bus[cols].notna(), None)  # type: ignore[index,call-overload]
 
     logger.info('imported net')
     return net
@@ -880,9 +880,7 @@ def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
     logger.debug('line <%s> created' % params['name'])
 
 
-def point_len(
-        p1: list[Union[float, int], Union[float, int]],
-        p2: list[Union[float, int], Union[float, int]]) -> float:
+def point_len(p1: list[Union[float, int]], p2: list[Union[float, int]]) -> float:
     """
     Calculate distance between p1 and p2
     """
@@ -891,7 +889,7 @@ def point_len(
     return ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5
 
 
-def calc_len_coords(coords: list[list[Union[float, int], Union[float, int]]]) -> float:
+def calc_len_coords(coords: list[list[Union[float, int]]]) -> float:
     """
     Calculate the sum of point distances in list of coords
     """

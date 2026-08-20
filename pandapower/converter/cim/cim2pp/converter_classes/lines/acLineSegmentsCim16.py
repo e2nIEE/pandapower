@@ -81,7 +81,7 @@ class AcLineSegmentsCim16:
                 level=LogLevel.ERROR, code=ReportCode.ERROR_CONVERTING,
                 message="Error processing the ACLineSegments, there is a problem with Terminals in the source data!"))
             dups = ac_line_segments.pivot_table(index=['rdfId'], aggfunc='size')  # type: ignore[arg-type]
-            dups = dups.loc[dups != 2]
+            dups = dups.loc[dups != 2]  # type: ignore[call-overload]
             for rdfId, count in dups.items():
                 self.logger.warning("The ACLineSegment with RDF ID %s has %s Terminals!" % (rdfId, count))
                 self.logger.warning("The ACLineSegment data: \n%s" %

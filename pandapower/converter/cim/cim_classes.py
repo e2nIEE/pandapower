@@ -422,8 +422,8 @@ class CimParser:
             full_model = element_types[full_model >= 0].values[0]  # type: ignore[assignment]
         else:
             full_model = 'FullModel'  # type: ignore[assignment]
-        full_model_profile = full_model[:-9] + 'Model.profile'
-        full_model_df = self._get_df(root.findall('.//' + full_model))  # type: ignore[arg-type]
+        full_model_profile = full_model[:-9] + "Model.profile"  # type: ignore[operator]
+        full_model_df = self._get_df(root.findall(".//" + full_model))  # type: ignore[arg-type,operator]
         if full_model_df.index.size == 0 and self.ignore_errors:
             self.logger.warning("The FullModel is not given in the XML tree, returning %s" % default_profile)
             return default_profile
@@ -556,12 +556,12 @@ class CimParser:
         if prf not in output:
             output[prf] = prf_content
         else:
-            for ele, df in prf_content.items():
+            for ele, df in prf_content.items():  # type: ignore[assignment]
                 if ele not in output[prf]:
-                    concat_list = [prf_content[ele]]
+                    concat_list = [prf_content[ele]]  # type: ignore[index]
                 else:
-                    concat_list = [output[prf][ele], prf_content[ele]]
-                output[prf][ele] = pd.concat(concat_list, ignore_index=True, sort=False)
+                    concat_list = [output[prf][ele], prf_content[ele]]  # type: ignore[index]
+                output[prf][ele] = pd.concat(concat_list, ignore_index=True, sort=False)  # type: ignore[index]
 
     def _check_file(self, file: str) -> bool:
         if not os.path.isfile(file):

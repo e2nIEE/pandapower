@@ -72,7 +72,7 @@ class EquivalentBranchesCim16:
                         "has two Terminals, %s Terminals should be given but there are %s Terminals available" %
                         (eqb_length_before_merge * 2, eqb.index.size)))
             dups = eqb.pivot_table(index=['rdfId'], aggfunc='size')  # type: ignore[arg-type]
-            dups = dups.loc[dups != 2]
+            dups = dups.loc[dups != 2]  # type: ignore[call-overload]
             for rdfId, count in dups.items():
                 self.logger.warning("The EquivalentBranch with RDF ID %s has %s Terminals!" % (rdfId, count))
                 self.logger.warning("The EquivalentBranch data: \n%s" % eqb[eqb['rdfId'] == rdfId])

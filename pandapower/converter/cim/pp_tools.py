@@ -103,8 +103,14 @@ def add_slack_and_lines_to_boundary_nodes(net: pandapowerNet, voltage_levels: Li
                         name='virtual slack at voltage level ' + str(one_voltage_level))
         logger.info("Added slack at bus ID: %s" % new_bus_id)
         new_bus_id_array = [new_bus_id for _ in busses_t.index.values]
-        create_lines(net, from_buses=busses_t.index.values, to_buses=new_bus_id_array, std_type='low_impedance_line',
-                     name='virtual line to slack node with voltage level ' + str(one_voltage_level), length_km=1)
+        create_lines(
+            net,
+            from_buses=busses_t.index.to_list(),
+            to_buses=new_bus_id_array,
+            std_type="low_impedance_line",
+            name="virtual line to slack node with voltage level " + str(one_voltage_level),
+            length_km=1,
+        )
         logger.info("Created %s low impedance lines." % len(busses_t.index.values))
         del busses_t
 

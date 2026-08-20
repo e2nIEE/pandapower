@@ -254,7 +254,7 @@ class ConnectivityNodesCim16:
                 level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
                 message="There is a problem at the busses!"))
             dups = connectivity_nodes.pivot_table(index=['rdfId'], aggfunc=lambda x: x.size)
-            dups = dups.loc[dups != 1]
+            dups = dups.loc[dups != 1]  # type: ignore[call-overload]
             for rdfId, count in dups.items():
                 self.logger.warning("The ConnectivityNode with RDF ID %s has %s TopologicalNodes!" % (rdfId, count))
                 self.logger.warning("The ConnectivityNode data: \n%s" %
