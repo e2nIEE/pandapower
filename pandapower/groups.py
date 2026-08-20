@@ -978,8 +978,7 @@ def elements_connected_to_group(
                 continue
             for bus_col in bed[et]:
                 if et == "switch" and bus_col == "element":
-                    bed_buses = net[et][bus_col].loc[net.switch.index[
-                        net.switch.et == "b"].intersection(e_id)]
+                    bed_buses = net[et][bus_col].loc[net.switch.index[net.switch.et == "b"].intersection(e_id)]
                 else:
                     bed_buses = net[et][bus_col].loc[e_id]
                 if respect_in_service and "in_service" in net[et].columns:
