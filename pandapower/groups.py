@@ -23,6 +23,7 @@ from pandapower.auxiliary import ensure_iterability, log_to_level, pandapowerNet
 from pandapower.create import (
     create_empty_network, _group_parameter_list, _set_multiple_entries, _check_elements_existence, create_group
 )
+from pandapower.pp_types import Int
 from pandapower.toolbox.power_factor import signing_system_value
 from pandapower.toolbox.element_selection import (
     branch_element_bus_dict, element_bus_tuples, pp_elements, get_connected_elements_dict
@@ -62,11 +63,11 @@ def drop_group_and_elements(net: pandapowerNet, index: int) -> None:
 
 
 def attach_to_groups(
-        net: pandapowerNet,
-        index: list[int],
-        element_types: str | list[str],
-        element_indices: list[list[int]] | list[int],
-        reference_columns: str | list[str] | None = None
+    net: pandapowerNet,
+    index: list[Int],
+    element_types: str | list[str],
+    element_indices: list[list[Int]] | list[Int],
+    reference_columns: str | list[str] | None = None,
 ) -> None:
     """
     Appends the groups by the elements given.
@@ -88,12 +89,12 @@ def attach_to_groups(
 
 
 def attach_to_group(
-        net: pandapowerNet,
-        index: int,
-        element_types: str | list[str],
-        element_indices: list[list[int]] | list[int],
-        reference_columns: str | list[str] | None = None,
-        take_existing_reference_columns: bool = True
+    net: pandapowerNet,
+    index: Int,
+    element_types: str | list[str],
+    element_indices: list[list[Int]] | list[Int],
+    reference_columns: str | list[str] | None = None,
+    take_existing_reference_columns: bool = True,
 ) -> None:
     """
     Appends the group by the elements given.
@@ -212,11 +213,11 @@ def _get_lists_from_df(df: pd.DataFrame, cols: list[str]) -> list[list]:
     return [df[col].tolist() for col in cols]
 
 
-def group_element_lists(net: pandapowerNet, index: int):
+def group_element_lists(net: pandapowerNet, index: Int):
     return tuple(_get_lists_from_df(net.group.loc[[index]], ["element_type", "element_index", "reference_column"]))
 
 
-def group_name(net: pandapowerNet, index: int) -> str:
+def group_name(net: pandapowerNet, index: Int) -> str:
     """
     Returns the name of the group and checks that all group rows include the same name
 
@@ -233,7 +234,7 @@ def group_name(net: pandapowerNet, index: int) -> str:
     See Also:
         :func:`group_index`
     """
-    names: pd.Series[str] = net.group.name.loc[[index]]
+    names: pd.Series[str] = net.group.name.loc[[index]]  # type: ignore[index]
     if len(set(names)) != 1 and not pd.isnull(names).all():
         raise ValueError(f"group {index} has different values in net.group.name.loc[index]")
     return names.iat[0]  # type: ignore[return-value]
@@ -1015,8 +1016,9 @@ def elements_connected_to_group(
             conn_buses = set(conn_index[net.bus.in_service.loc[conn_index].to_numpy()])
         connected["bus"] = conn_buses
 
-    connected = {et: sorted(pd.Index(conn).difference(group_element_index(net, index, et))) for et,
-                 conn in connected.items()}
+    connected: dict[str, Collection[int]] = {
+        et: sorted(pd.Index(conn).difference(group_element_index(net, index, et))) for et, conn in connected.items()
+    }
     if include_empty_lists:
         return connected
     else:
