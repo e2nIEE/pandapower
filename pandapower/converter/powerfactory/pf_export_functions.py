@@ -5,8 +5,8 @@ from typing_extensions import deprecated
 logger = logging.getLogger(__name__)
 
 
-@deprecated('Argument include_hidden_bus is unused and will be removed in future versions.')
 @overload
+@deprecated('Argument include_hidden_bus is unused and will be removed in future versions.')
 def create_network_dict(app, include_hidden_bus, flag_graphics='GPS'): ...
 
 

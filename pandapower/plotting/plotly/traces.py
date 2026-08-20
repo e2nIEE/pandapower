@@ -1032,7 +1032,7 @@ def create_weighted_marker_trace(
 
     # additional info for the create_scale_trace function:
     if not isinstance(scale_marker_size, Iterable):
-        scale_marker_size = [scale_marker_size]
+        scale_marker_size = [scale_marker_size]  # type: ignore[list-item]
 
     marker_trace["meta"] = {
         'marker_scaling': marker_scaling,

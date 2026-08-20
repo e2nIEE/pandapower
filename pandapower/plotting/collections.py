@@ -127,7 +127,7 @@ def create_annotation_collection(texts, coords, size: float | list[float], prop=
     # we convert TextPaths to PathPatches to create a PatchCollection
     if hasattr(size, "__iter__"):
         for i, t in enumerate(texts):
-            tp.append(PathPatch(CustomTextPath(coords[i], t, size=size[i], prop=prop)))
+            tp.append(PathPatch(CustomTextPath(coords[i], t, size=size[i], prop=prop)))  # type: ignore[index]
     else:
         for t, c in zip(texts, coords):
             tp.append(PathPatch(CustomTextPath(c, t, size=size, prop=prop)))
