@@ -13,7 +13,7 @@ import pytest
 
 from pandapower.control import ConstControl
 from pandapower.create import create_pwl_cost
-from pandapower.file_io import from_json, to_json
+from pandapower.file_io import from_excel, to_excel
 from pandapower.networks import simple_four_bus_system
 from pandapower.networks.power_system_test_cases import case5
 from pandapower.run import runpp
@@ -278,15 +278,15 @@ def test_store_and_load(simple_test_net):
     dirname = tempfile.gettempdir()
     output_streamer = OutputStreamer(net, output_path=dirname, output_file_type=".json")
     output_streamer.remove_log_variable("res_bus")
-    tmp_file = os.path.join(dirname, "net.json")
-    to_json(net, tmp_file)
+    tmp_file = os.path.join(dirname, "net.xlsx")
+    to_excel(net, tmp_file)
     del net
     del output_streamer
     res_line_file = os.path.join(dirname, "res_line", "loading_percent.json")
     # del result file is one is present
     if os.path.isfile(res_line_file):
         os.remove(res_line_file)
-    net = from_json(tmp_file)
+    net = from_excel(tmp_file)
     output_streamer = net.output_writer.iat[0, 0]
     assert len(output_streamer.log_variables) == 1
     assert output_streamer.output_path == dirname
