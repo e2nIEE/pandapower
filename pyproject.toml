@@ -104,7 +104,8 @@ typing = [
     "types-geopandas~=1.1.4",
     "types-python-dateutil",
     "types-seaborn",
-    "types-xlrd"
+    "types-xlrd",
+    "lxml-stubs"
 ]
 
 all = ["pandapower[plotting,performance,fileio,converter,pgm,control,helm,opendss]"]
