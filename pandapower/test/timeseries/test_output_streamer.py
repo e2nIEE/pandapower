@@ -180,8 +180,10 @@ def test_default_output_streamer(simple_test_net):
     output_streamer = net.output_writer.iloc[0, 0]
     loading_percent = output_streamer.output["res_line.loading_percent"]
     vm_pu = output_streamer.output["res_bus.vm_pu"]
-    assert loading_percent.shape[0] == n_timesteps and loading_percent.shape[1] == len(net.line)
-    assert vm_pu.shape[0] == n_timesteps and vm_pu.shape[1] == len(net.bus)
+    assert loading_percent.shape[0] == n_timesteps
+    assert loading_percent.shape[1] == len(net.line)
+    assert vm_pu.shape[0] == n_timesteps
+    assert vm_pu.shape[1] == len(net.bus)
 
 
 def test_output_streamer_eval_simple(simple_test_net):
@@ -249,10 +251,13 @@ def test_remove_variable(simple_test_net):
     # test printing
     logger.info(output_streamer)
     assert len(output_streamer.log_variables) == 2
-    assert output_streamer.log_variables[0][0] == "res_bus" and output_streamer.log_variables[0][1] == "vm_pu"
-    assert output_streamer.log_variables[1][0] == "res_line" and output_streamer.log_variables[1][1] == "loading_percent"
+    assert output_streamer.log_variables[0][0] == "res_bus"
+    assert output_streamer.log_variables[0][1] == "vm_pu"
+    assert output_streamer.log_variables[1][0] == "res_line"
+    assert output_streamer.log_variables[1][1] == "loading_percent"
     output_streamer.remove_log_variable("res_bus")
-    assert output_streamer.log_variables[0][0] == "res_line" and output_streamer.log_variables[0][1] == "loading_percent"
+    assert output_streamer.log_variables[0][0] == "res_line"
+    assert output_streamer.log_variables[0][1] == "loading_percent"
     output_streamer.remove_log_variable("res_line", "loading_percent")
     assert len(output_streamer.log_variables) == 0
 
