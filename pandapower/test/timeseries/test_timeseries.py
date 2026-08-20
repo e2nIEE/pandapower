@@ -18,6 +18,7 @@ from pandapower.create import create_empty_network, create_bus, create_ext_grid,
 from pandapower.run import set_user_pf_options, runpp
 from pandapower.timeseries import DFData
 from pandapower.timeseries import OutputWriter
+from pandapower.timeseries import OutputStreamer
 from pandapower.timeseries.run_time_series import run_timeseries, control_diagnostic
 
 logger = logging.getLogger(__name__)
@@ -96,12 +97,27 @@ def setup_output_writer(net, time_steps):
     ow.log_variable('res_trafo3w', 'q_hv_mvar')
     return ow
 
+def setup_output_streamer(net, time_steps):
+    output_streamer = OutputStreamer(net, time_steps, output_path=tempfile.gettempdir())
+    output_streamer.log_variable('load', 'p_mw')
+    output_streamer.log_variable('res_bus', 'vm_pu')
+    output_streamer.log_variable('res_trafo3w', 'p_hv_mw')
+    output_streamer.log_variable('res_trafo3w', 'q_hv_mvar')
+    return output_streamer
 
-def test_const_control(simple_test_net):
+
+@pytest.fixture(params=[setup_output_writer, setup_output_streamer], 
+                ids=["OutputWriter", "OutputStreamer"])
+def output_setup(request):
+    """Returns the method that creates the right output object for the test case."""
+    return request.param
+
+
+def test_const_control(simple_test_net, output_setup):
     net = simple_test_net
     profiles, ds = create_data_source()
     time_steps = range(0, 10)
-    ow = setup_output_writer(net, time_steps)
+    ow = output_setup(net, time_steps)
 
     ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1',
                  scale_factor=0.85)
@@ -114,7 +130,7 @@ def test_const_control(simple_test_net):
     assert np.all(np.isclose(profiles['slack_v'].values, ow.output['res_bus.vm_pu'][0].values))
 
 
-def test_switch_states_in_time_series():
+def test_switch_states_in_time_series(output_setup):
     net = create_empty_network()
     create_buses(net, 3, 0.4)
     create_ext_grid(net, 0)
@@ -129,7 +145,7 @@ def test_switch_states_in_time_series():
     profiles["switch_pos"] = np.random.randint(2, size=n_timesteps, dtype=bool)
     ds = DFData(profiles)
 
-    ow = setup_output_writer(net, time_steps)
+    ow = output_setup(net, time_steps)
     ow.log_variable('res_line', 'pl_mw')
     ow.log_variable('res_ext_grid', 'p_mw')
 
@@ -145,11 +161,11 @@ def test_switch_states_in_time_series():
     )
 
 
-def test_const_control_write_to_object_attribute(simple_test_net):
+def test_const_control_write_to_object_attribute(simple_test_net, output_setup):
     net = simple_test_net
     profiles, ds = create_data_source()
     time_steps = range(0, 10)
-    ow = setup_output_writer(net, time_steps)
+    ow = output_setup(net, time_steps)
 
     ContinuousTapControl(net, 0, 1., tol=1e-4, level=1, check_tap_bounds=False)
 
@@ -310,11 +326,11 @@ def test_output_dump_after_time(simple_test_net):
     # ToDo: read partially dumped results and compare with all stored results
 
 
-def test_pf_options(simple_test_net):
+def test_pf_options(simple_test_net, output_setup):
     net = simple_test_net
     _, ds = create_data_source()
     time_steps = range(0, 3)
-    ow = setup_output_writer(net, time_steps)
+    ow = output_setup(net, time_steps)
 
     ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1',
                  scale_factor=0.85)
@@ -325,11 +341,11 @@ def test_pf_options(simple_test_net):
     assert net._options["distributed_slack"]
 
 
-def test_user_pf_options(simple_test_net):
+def test_user_pf_options(simple_test_net, output_setup):
     net = simple_test_net
     _, ds = create_data_source()
     time_steps = range(0, 3)
-    ow = setup_output_writer(net, time_steps)
+    ow = output_setup(net, time_steps)
 
     ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1',
                  scale_factor=0.85)
@@ -346,11 +362,11 @@ def test_user_pf_options(simple_test_net):
     assert net._options["distributed_slack"]
 
 
-def test_user_pf_options_init_run(simple_test_net):
+def test_user_pf_options_init_run(simple_test_net, output_setup):
     net = simple_test_net
     _, ds = create_data_source()
     time_steps = range(0, 3)
-    ow = setup_output_writer(net, time_steps)
+    ow = output_setup(net, time_steps)
 
     ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1',
                  scale_factor=0.85)
@@ -364,11 +380,11 @@ def test_user_pf_options_init_run(simple_test_net):
     assert net._options["distributed_slack"]
 
 
-def test_user_pf_options_recycle_manual(simple_test_net):
+def test_user_pf_options_recycle_manual(simple_test_net, output_setup):
     net = simple_test_net
     _, ds = create_data_source()
     time_steps = range(0, 3)
-    ow = setup_output_writer(net, time_steps)
+    ow = output_setup(net, time_steps)
 
     ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1',
                  scale_factor=0.85)
