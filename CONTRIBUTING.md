@@ -258,3 +258,37 @@ The Docstring can then be added by adding a reference to the function to the fil
 > [!TIP]
 > Note that it is not required to add types to the docstring, types in the documentation will be generated from the
 > python types set in the function definition.
+
+
+## Deprecation Guidelines
+
+If you are improving existing pandapower functionality in a way that may change its behavior, you should implement
+deprecation warnings to notify users before removing or altering the old behavior.
+
+### When to use deprecation warnings
+
+- Parameter names or function signatures are changing
+- Default behavior is being modified
+- Functions are being renamed or moved to a different module
+
+**Deprecation warnings** should exist for at least one minor version release before the next major or minor version
+release. Always provide the new desired functionality alongside the deprecation notice.
+
+### How to implement
+
+The recommended approach uses two pull requests:
+
+1. **PR2 (interim)**: Contains both the new functionality and backward-compatible code that issues deprecation warnings.
+   - Use `warnings.warn("Message", category=DeprecationWarning)` (or `FutureWarning`) to inform users
+   - The old behavior should still work, but trigger a warning when used
+   - Add tests for the new functionality
+   - Add `assert Version(pp.__version__) < Version('X.Y')` to tests of the deprecated code (using `from packaging.version import Version`) so they are automatically removed in a future release
+
+2. **PR1 (final)**: Removes the deprecated code path entirely. This PR should be merged after the next release.
+
+> [!NOTE]
+> Both PRs should be submitted together. The reviewer should not approve them until both are correct and complete.
+> The person merging PR2 is responsible for merging PR1 after the next release.
+
+For the full process description and an example, see the
+[deprecation guidelines documentation](https://pandapower.readthedocs.io/en/latest/about/deprecating.html).
