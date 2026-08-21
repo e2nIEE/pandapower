@@ -26,7 +26,7 @@ _ext_grid_columns = {
         nullable=True,
         required=False,
         description="maximum short circuit power provision [MVA]",
-        metadata={"sc": True, "cim": True},
+        metadata={"sc": True, "3ph": True, "cim": True, "example": "1000"},
     ),
     "s_sc_min_mva": pa.Column(
         float,
@@ -34,7 +34,7 @@ _ext_grid_columns = {
         nullable=True,
         required=False,
         description="minimum short circuit power provision [MVA]",
-        metadata={"sc": True, "cim": True},
+        metadata={"sc": True, "cim": True, "example": "1000"},
     ),
     "rx_max": pa.Column(
         float,
@@ -42,7 +42,7 @@ _ext_grid_columns = {
         nullable=True,
         required=False,
         description="maxium R/X ratio of short-circuit impedance",
-        metadata={"sc": True, "3ph": True, "cim": True},
+        metadata={"sc": True, "3ph": True, "cim": True, "example": "0.1"},
     ),
     "rx_min": pa.Column(
         float,
@@ -50,7 +50,7 @@ _ext_grid_columns = {
         nullable=True,
         required=False,
         description="minimum R/X ratio of short-circuit impedance",
-        metadata={"sc": True, "3ph": True, "cim": True},
+        metadata={"sc": True, "3ph": True, "cim": True, "example": "0.1"},
     ),
     "r0x0_max": pa.Column(
         float,
@@ -58,7 +58,7 @@ _ext_grid_columns = {
         nullable=True,
         required=False,
         description="maximal R/X-ratio to calculate Zero sequence internal impedance of ext_grid",
-        metadata={"sc": True, "3ph": True, "cim": True},
+        metadata={"sc": True, "3ph": True, "cim": True, "example": "0.1"},
     ),
     "x0x_max": pa.Column(
         float,
@@ -66,7 +66,23 @@ _ext_grid_columns = {
         nullable=True,
         required=False,
         description="maximal X0/X-ratio to calculate Zero sequence internal impedance of ext_grid",
-        metadata={"sc": True, "3ph": True, "cim": True},
+        metadata={"sc": True, "3ph": True, "cim": True, "example": "1.0"},
+    ),
+    "r0x0_min": pa.Column(
+        float,
+        pa.Check.ge(0),
+        nullable=True,
+        required=False,
+        description="minimal R/X-ratio to calculate Zero sequence internal impedance of ext_grid",
+        metadata={"sc": True, "example": "0.1"},
+    ),
+    "x0x_min": pa.Column(
+        float,
+        pa.Check.ge(0),
+        nullable=True,
+        required=False,
+        description="minimal X0/X-ratio to calculate Zero sequence internal impedance of ext_grid",
+        metadata={"sc": True, "example": "1.0"},
     ),
     "slack_weight": pa.Column(
         float,
