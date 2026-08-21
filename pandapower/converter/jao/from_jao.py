@@ -365,7 +365,7 @@ def _create_transformers_and_buses(
     trafo_connections = _allocate_trafos_to_buses_and_create_buses(
         net, data, bus_idx, vn_hv_kv, vn_lv_kv, **kwargs)
     max_i_a = data[key].loc[:, ("Maximum Current Imax (A) primary", "Fixed")]
-    empty_i_idx = max_i_a.index[max_i_a.isnull()]  # type: ignore[call-overload]
+    empty_i_idx = max_i_a.index[max_i_a.isnull()]  # type: ignore[call-overload,index]
     max_i_a.loc[empty_i_idx] = data[key].loc[empty_i_idx, (
         "Maximum Current Imax (A) primary", "Max")].values
     sn_mva = np.sqrt(3) * max_i_a * vn_hv_kv / 1e3
