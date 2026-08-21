@@ -227,11 +227,11 @@ def reactor_net(tmp_path):
 
 
 def test_element_counts(net):
-    assert len(net.bus) == 4  # sourcebus, b1, b2, b3
-    assert len(net.line) == 2  # l1, l2
-    assert len(net.trafo) == 1  # t1
-    assert len(net.load) == 1  # load1
-    assert len(net.ext_grid) == 1  # Vsource
+    assert len(net.bus) == 4          # sourcebus, b1, b2, b3
+    assert len(net.line) == 2         # l1, l2
+    assert len(net.trafo) == 1        # t1
+    assert len(net.load) == 1         # load1
+    assert len(net.ext_grid) == 1     # Vsource
     assert net["opendss_import"]["warnings"] == []
 
 
@@ -262,7 +262,7 @@ def test_transformer_impedance(net):
     assert t["vn_hv_kv"] == pytest.approx(12.47)
     assert t["vn_lv_kv"] == pytest.approx(0.48)
     assert t["sn_mva"] == pytest.approx(0.5)
-    assert t["vkr_percent"] == pytest.approx(1.0, rel=1e-6)  # 0.5 + 0.5
+    assert t["vkr_percent"] == pytest.approx(1.0, rel=1e-6)        # 0.5 + 0.5
     assert t["vk_percent"] == pytest.approx(np.hypot(1.0, 5.0), rel=1e-6)
 
 

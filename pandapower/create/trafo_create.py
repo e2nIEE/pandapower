@@ -9,6 +9,7 @@ from typing import Iterable, Sequence
 from functools import partial
 
 import pandas as pd
+from pandas.api.typing import NAType
 from numpy import nan, isnan, isin, array, bool_, float64, full, integer, all as all_
 import numpy.typing as npt
 
@@ -43,7 +44,7 @@ def create_transformer(
     parallel: int = get_default_value("trafo", "parallel"),
     df: float = get_default_value("trafo", "df"),
     tap_changer_type: str | None = None,
-    tap_dependency_table: bool = pd.NA,
+    tap_dependency_table: bool | NAType = pd.NA,
     id_characteristic_table: int | None = None,
     pt_percent: float = nan,
     xn_ohm: float = nan,
@@ -202,7 +203,7 @@ def create_transformers(
     parallel: int | Iterable[int] = get_default_value("trafo", "parallel"),
     df: float | Iterable[float] = get_default_value("trafo", "df"),
     tap_changer_type: TapChangerWithTabularType | Iterable[str] | None = None,
-    tap_dependency_table: bool | Iterable[bool] = pd.NA,
+    tap_dependency_table: bool | Iterable[bool] | NAType = pd.NA,
     id_characteristic_table: int | Iterable[int] | None = None,
     pt_percent: float | Iterable[float] = nan,
     # oltc: bool | Iterable[bool] = False,
@@ -341,7 +342,7 @@ def create_transformer_from_parameters(
     si0_hv_partial: float = nan,
     pt_percent: float = nan,
     # oltc: bool = False,
-    tap_dependency_table: bool = pd.NA,
+    tap_dependency_table: bool | NAType = pd.NA,
     xn_ohm: float = nan,
     rn_ohm: float = nan,
     tap2_side: HVLVType | None = None,
@@ -570,7 +571,7 @@ def create_transformers_from_parameters(  # index missing ?
     si0_hv_partial: float | Iterable[float] = nan,
     pt_percent: float | Iterable[float] = nan,
     # oltc: bool | Iterable[bool] = False,
-    tap_dependency_table: bool | Iterable[bool] = pd.NA,
+    tap_dependency_table: bool | Iterable[bool] | NAType = pd.NA,
     xn_ohm: float | Iterable[float] = nan,
     rn_ohm: float | Iterable[float] = nan,
     tap2_side: HVLVType | Iterable[str] | None = None,
@@ -748,14 +749,14 @@ def create_transformer3w(
     mv_bus: Int,
     lv_bus: Int,
     std_type: str,
-    name: pd.StringDtype = pd.NA,
+    name: str | NAType = pd.NA,
     tap_pos: int | float = nan,
     in_service: bool = get_default_value("trafo3w", "in_service"),
     index: Int | None = None,
     max_loading_percent: float = nan,
     tap_changer_type: TapChangerWithTabularType | None = None,
     tap_at_star_point: bool = get_default_value("trafo3w", "tap_at_star_point"),
-    tap_dependency_table: bool = pd.NA,
+    tap_dependency_table: bool | NAType = pd.NA,
     id_characteristic_table: int | None = None,
     **kwargs,
 ) -> Int:
@@ -800,7 +801,7 @@ def create_transformer3w(
         if b not in net["bus"].index.values:
             raise UserWarning("Trafo tries to attach to bus %s" % b)
 
-    entries: dict[str, str | None | Int | bool | float] = {
+    entries: dict[str, str | None | Int | bool | float | NAType] = {
         "name": name,
         "hv_bus": hv_bus,
         "mv_bus": mv_bus,
@@ -850,7 +851,7 @@ def create_transformer3w(
     else:
         entries["tap_pos"] = tap_pos
         if type(tap_pos) is float:
-            net.trafo3w.tap_pos = net.trafo3w.tap_pos.astype(float)
+            net.trafo3w.tap_pos = net.trafo3w.tap_pos.astype(float)  # type: ignore[attr-defined]
 
     _set_entries(net, "trafo3w", index, entries=entries)
 
@@ -890,14 +891,14 @@ def create_transformers3w(
     lv_buses: Sequence,
     std_type: str,
     tap_pos: float | Iterable[float] = nan,
-    name: Iterable[pd.StringDtype] | pd.StringDtype = pd.NA,
+    name: Iterable[pd.StringDtype] | pd.StringDtype | NAType = pd.NA,
     in_service: bool | Iterable[bool] = get_default_value("trafo3w", "in_service"),
     index: Iterable[Int] | None = None,
     max_loading_percent: float | Iterable[float] = nan,
     tap_at_star_point: bool | Iterable[bool] = get_default_value("trafo3w", "tap_at_star_point"),
     tap_changer_type: float | Iterable[float] = nan,
-    tap_dependency_table: bool | Iterable[bool] = pd.NA,
-    id_characteristic_table: int | Iterable[int] = pd.NA,
+    tap_dependency_table: bool | Iterable[bool] | NAType = pd.NA,
+    id_characteristic_table: int | Iterable[int] | NAType = pd.NA,
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
@@ -1017,7 +1018,7 @@ def create_transformer3w_from_parameters(
     tap_max: int | float = nan,
     tap_changer_type: TapChangerWithTabularType | None = None,
     tap_min: float | None = nan,
-    name: pd.StringDtype = pd.NA,
+    name: pd.StringDtype | NAType = pd.NA,
     in_service: bool = get_default_value("trafo3w", "in_service"),
     index: Int | None = None,
     max_loading_percent: float = nan,
@@ -1029,7 +1030,7 @@ def create_transformer3w_from_parameters(
     vkr0_mv_percent: float = nan,
     vkr0_lv_percent: float = nan,
     vector_group: str | None = None,
-    tap_dependency_table: bool = pd.NA,
+    tap_dependency_table: bool | NAType = pd.NA,
     id_characteristic_table: int | None = None,
     **kwargs,
 ) -> Int:
@@ -1201,28 +1202,28 @@ def create_transformers3w_from_parameters(  # no index ?
     i0_percent: float | Iterable[float],
     shift_mv_degree: float | Iterable[float] = get_default_value("trafo3w", "shift_mv_degree"),
     shift_lv_degree: float | Iterable[float] = get_default_value("trafo3w", "shift_lv_degree"),
-    tap_side: HVMVLVType | Iterable[str] = pd.NA,
+    tap_side: HVMVLVType | Iterable[str] | NAType = pd.NA,
     tap_step_percent: float | Iterable[float] = nan,
     tap_step_degree: float | Iterable[float] = nan,
     tap_pos: float | Iterable[float] = nan,
     tap_neutral: float | Iterable[float] = nan,
     tap_max: float | Iterable[float] = nan,
     tap_min: float | Iterable[float] = nan,
-    name: Iterable[pd.StringDtype] | pd.StringDtype = pd.NA,
+    name: Iterable[pd.StringDtype] | pd.StringDtype | NAType = pd.NA,
     in_service: bool | Iterable[bool] = get_default_value("trafo3w", "in_service"),
     index: Iterable[Int] | None = None,
     max_loading_percent: float | Iterable[float] = nan,
-    tap_at_star_point: bool | Iterable[bool] = pd.NA,
-    tap_changer_type: str | Iterable[str] = pd.NA,
+    tap_at_star_point: bool | Iterable[bool] | NAType = pd.NA,
+    tap_changer_type: str | Iterable[str] | NAType = pd.NA,
     vk0_hv_percent: float | Iterable[float] = nan,
     vk0_mv_percent: float | Iterable[float] = nan,
     vk0_lv_percent: float | Iterable[float] = nan,
     vkr0_hv_percent: float | Iterable[float] = nan,
     vkr0_mv_percent: float | Iterable[float] = nan,
     vkr0_lv_percent: float | Iterable[float] = nan,
-    vector_group: str | Iterable[str] = pd.NA,
-    tap_dependency_table: bool | Iterable[bool] = pd.NA,
-    id_characteristic_table: int | Iterable[int] = pd.NA,
+    vector_group: str | Iterable[str] | NAType = pd.NA,
+    tap_dependency_table: bool | Iterable[bool] | NAType = pd.NA,
+    id_characteristic_table: int | Iterable[int] | NAType = pd.NA,
     **kwargs,
 ) -> npt.NDArray[integer]:
     """

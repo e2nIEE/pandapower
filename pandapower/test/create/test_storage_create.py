@@ -26,10 +26,10 @@ def _check_storage_table(table: pd.DataFrame, buses: tuple[int, int, int]):
     assert not table.controllable.at[1]
     assert not table.controllable.at[2]
     assert np.allclose(table.max_p_mw, 0.2)
-    assert all(table.min_p_mw.values == [0, 0.1, 0])
+    assert all(table.min_p_mw.values == [0, 0.1, 0])  # type: ignore[arg-type]
     assert np.allclose(table.max_q_mvar, 0.2)
-    assert all(table.min_q_mvar.values == [0, 0.1, 0])
-    assert all(table.test_kwargs.values == ["dummy_string_1", "dummy_string_2", "dummy_string_3"])
+    assert all(table.min_q_mvar.values == [0, 0.1, 0])  # type: ignore[arg-type]
+    assert all(table.test_kwargs.values == ["dummy_string_1", "dummy_string_2", "dummy_string_3"])  # type: ignore[arg-type]
 
 
 def test_create_storage():

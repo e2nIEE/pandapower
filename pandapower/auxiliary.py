@@ -1574,8 +1574,8 @@ def _add_dcline_gens(net: pandapowerNet) -> None:
     from pandapower.create import create_gen
 
     for dctab in net.dcline.itertuples():
-        p_mw = np.abs(dctab.p_mw)
-        p_loss = p_mw * (1 - dctab.loss_percent / 100) - dctab.loss_mw  # type: ignore[operator]
+        p_mw: float = np.abs(dctab.p_mw)  # type: ignore[operator]
+        p_loss: float = p_mw * (1 - dctab.loss_percent / 100) - dctab.loss_mw  # type: ignore[assignment,operator]
 
         max_p_mw: float
         if hasattr(dctab, 'max_p_mw') and pd.notna(dctab.max_p_mw):
@@ -1584,6 +1584,9 @@ def _add_dcline_gens(net: pandapowerNet) -> None:
             max_p_mw = float('nan')
         p_min: float
         p_max: float
+
+        p_to: float
+        p_from: float
         if np.sign(dctab.p_mw) > 0:
             p_to = p_loss
             p_from = -p_mw
@@ -1655,9 +1658,21 @@ def _add_vsc_stacked(net: pandapowerNet):
             ref_bus = bus_dc_minus
             control_mode_dc = 'vm_pu_diff_p'
 
-        create_vsc(net, ac_bus, bus_dc_plus, r_ohm/2., x_ohm/2., r_dc_ohm/2., pl_dc_mw=pl_dc_mw,
-                   control_mode_ac=control_mode_ac, control_value_ac=control_value_ac, name=str(name)+"+",
-                   control_mode_dc=control_mode_dc, control_value_dc=control_value_dc, ref_bus=ref_bus)
+        create_vsc(
+            net,
+            ac_bus,
+            bus_dc_plus,
+            r_ohm / 2.0,
+            x_ohm / 2.0,
+            r_dc_ohm / 2.0,
+            pl_dc_mw=pl_dc_mw,
+            control_mode_ac=control_mode_ac,
+            control_value_ac=control_value_ac,
+            name=str(name) + "+",
+            control_mode_dc=control_mode_dc,  # type: ignore[arg-type]
+            control_value_dc=control_value_dc,
+            ref_bus=ref_bus,
+        )
 
         ref_bus = None
         if control_mode_dc == 'vm_pu_diff_p':
@@ -1665,9 +1680,21 @@ def _add_vsc_stacked(net: pandapowerNet):
             control_mode_dc = 'vm_pu_diff_m'
             control_value_dc = -control_value_dc
 
-        create_vsc(net, ac_bus, bus_dc_minus, r_ohm/2., x_ohm/2., r_dc_ohm/2., pl_dc_mw=pl_dc_mw,
-                   control_mode_ac=control_mode_ac, control_value_ac=control_value_ac, name=str(name)+"-",
-                   control_mode_dc=control_mode_dc, control_value_dc=control_value_dc, ref_bus=ref_bus)
+        create_vsc(
+            net,
+            ac_bus,
+            bus_dc_minus,
+            r_ohm / 2.0,
+            x_ohm / 2.0,
+            r_dc_ohm / 2.0,
+            pl_dc_mw=pl_dc_mw,
+            control_mode_ac=control_mode_ac,
+            control_value_ac=control_value_ac,
+            name=str(name) + "-",
+            control_mode_dc=control_mode_dc,  # type: ignore[arg-type]
+            control_value_dc=control_value_dc,
+            ref_bus=ref_bus,
+        )
 
 
 def _add_auxiliary_elements(net: pandapowerNet):

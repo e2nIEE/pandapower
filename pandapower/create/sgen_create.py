@@ -7,6 +7,7 @@ import logging
 from typing import Iterable, Sequence
 
 import pandas as pd
+from pandas.api.typing import NAType
 from numpy import nan, bool_
 import numpy.typing as npt
 
@@ -33,7 +34,7 @@ def create_sgen(
     p_mw: float,
     q_mvar: float = get_default_value("sgen", "q_mvar"),
     sn_mva: float = nan,
-    name: str = pd.NA,
+    name: str | NAType = pd.NA,
     index: Int | None = None,
     scaling: float = get_default_value("sgen", "scaling"),
     type: str | None = None,
@@ -42,14 +43,14 @@ def create_sgen(
     min_p_mw: float = nan,
     max_q_mvar: float = nan,
     min_q_mvar: float = nan,
-    controllable: bool | None = pd.NA,
+    controllable: bool | NAType = pd.NA,
     k: float = nan,
     rx: float = nan,
-    id_q_capability_characteristic: int = pd.NA,
-    reactive_capability_curve: bool = pd.NA,
-    curve_style: str = pd.NA,
+    id_q_capability_characteristic: int | NAType = pd.NA,
+    reactive_capability_curve: bool | NAType = pd.NA,
+    curve_style: str | NAType = pd.NA,
     current_source: bool = get_default_value("sgen", "current_source"),
-    generator_type: GeneratorType = pd.NA,
+    generator_type: GeneratorType | NAType = pd.NA,
     max_ik_ka: float = nan,
     kappa: float = nan,
     lrc_pu: float = nan,
@@ -175,7 +176,7 @@ def create_sgens(
     p_mw: float | Iterable[float],
     q_mvar: float | Iterable[float] = get_default_value("sgen", "q_mvar"),
     sn_mva: float | Iterable[float] = nan,
-    name: Iterable[str] = pd.NA,
+    name: Iterable[str] | NAType = pd.NA,
     index: Int | Iterable[Int] | None = None,
     scaling: float | Iterable[float] = get_default_value("sgen", "scaling"),
     type: WyeDeltaType = get_default_value("sgen", "type"),
@@ -184,12 +185,12 @@ def create_sgens(
     min_p_mw: float | Iterable[float] = nan,
     max_q_mvar: float | Iterable[float] = nan,
     min_q_mvar: float | Iterable[float] = nan,
-    controllable: bool | Iterable[bool] | None = pd.NA,
+    controllable: bool | Iterable[bool] | NAType = pd.NA,
     k: float | Iterable[float] = nan,
     rx: float = nan,
-    id_q_capability_characteristic: Int | Iterable[Int] = pd.NA,
-    reactive_capability_curve: bool | Iterable[bool] = pd.NA,
-    curve_style: str | Iterable[str] = pd.NA,
+    id_q_capability_characteristic: Int | Iterable[Int] | NAType = pd.NA,
+    reactive_capability_curve: bool | Iterable[bool] | NAType = pd.NA,
+    curve_style: str | Iterable[str] | NAType = pd.NA,
     current_source: bool | Iterable[bool] = get_default_value("sgen", "current_source"),
     generator_type: GeneratorType = get_default_value("sgen", "generator_type"),
     max_ik_ka: float = nan,

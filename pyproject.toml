@@ -95,9 +95,14 @@ typing = [
     "types-networkx~=3.6",
     "types-tqdm~=4.68",
     "scipy-stubs~=1.17.1; python_version >= '3.12'",
-    "pandera[mypy]~=0.29.0",
+    "pandera[mypy]>=0.27.0,<=0.29.0",
     "psycopg~=3.2",
-    "matplotlib~=3.10"
+    "matplotlib~=3.10",
+    "types-geopandas~=1.1.4",
+    "types-python-dateutil",
+    "types-seaborn",
+    "types-xlrd",
+    "lxml-stubs"
 ]
 
 all = ["pandapower[plotting,performance,fileio,converter,pgm,control,helm,opendss]"]
