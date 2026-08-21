@@ -100,4 +100,4 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
 |
 
 We welcome contributions to pandapower of any kind - if you want to contribute, please check out the
-`contribution guidelines <https://github.com/e2nIEE/pandapower/blob/develop/CONTRIBUTING.rst>`__.
+`contribution guidelines <https://github.com/e2nIEE/pandapower?tab=contributing-ov-file>`__.

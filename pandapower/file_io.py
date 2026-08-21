@@ -244,20 +244,20 @@ def _from_excel_old(xls, add_basic_std_types=True):
 
 
 def from_json(
-    filename_or_str,
-    convert=True,
-    encryption_key=None,
-    elements_to_deserialize=None,
-    keep_serialized_elements=True,
-    add_basic_std_types=False,
-    replace_elements=None,
-    empty_dict_like_object=None,
-    ignore_unknown_objects=False,
-    drop_invalid_geodata=False,
-    omit_tables=None,
-    omit_modules=None,
-    ignore_version_conflicts=False,
-    skip_checks=False,
+        filename_or_str,
+        convert=True,
+        encryption_key=None,
+        elements_to_deserialize=None,
+        keep_serialized_elements=True,
+        add_basic_std_types=False,
+        replace_elements=None,
+        empty_dict_like_object=None,
+        ignore_unknown_objects=False,
+        drop_invalid_geodata=False,
+        omit_tables=None,
+        omit_modules=None,
+        ignore_version_conflicts=False,
+        skip_checks=False
 ):
     """
     Load a pandapower network from a JSON file.

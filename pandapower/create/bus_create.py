@@ -55,6 +55,8 @@ def _geodata_to_geo_series(
         if len(geo) != nr_buses:
             raise ValueError("geodata must be a single point or have the same length as nr_buses")
     else:
+        if coords is None:
+            return None  # unreachable but required for type narrowing
         logger.warning(
             "There is no support for LineString geodata on a bus. Some functionality might not work as intended."
             " Use at your own risk."
@@ -241,8 +243,8 @@ def create_buses(
 
     entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo, **kwargs}
 
-    min_vm_pu_exists = pd.notna(min_vm_pu) if pd.api.types.is_scalar(min_vm_pu) else pd.notna(min_vm_pu).any()
-    max_vm_pu_exists = pd.notna(max_vm_pu) if pd.api.types.is_scalar(max_vm_pu) else pd.notna(max_vm_pu).any()
+    min_vm_pu_exists = pd.notna(min_vm_pu) if pd.api.types.is_scalar(min_vm_pu) else pd.notna(min_vm_pu).any()  # type: ignore[attr-defined,arg-type]
+    max_vm_pu_exists = pd.notna(max_vm_pu) if pd.api.types.is_scalar(max_vm_pu) else pd.notna(max_vm_pu).any()  # type: ignore[attr-defined,arg-type]
     if min_vm_pu_exists or max_vm_pu_exists or "min_vm_pu" in net.bus.columns:
         _add_to_entries_if_not_nan(
             net,
@@ -324,8 +326,8 @@ def create_buses_dc(
 
     entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo, **kwargs}
 
-    min_vm_pu_exists = pd.notna(min_vm_pu) if pd.api.types.is_scalar(min_vm_pu) else pd.notna(min_vm_pu).any()
-    max_vm_pu_exists = pd.notna(max_vm_pu) if pd.api.types.is_scalar(max_vm_pu) else pd.notna(max_vm_pu).any()
+    min_vm_pu_exists: bool = pd.notna(min_vm_pu) if pd.api.types.is_scalar(min_vm_pu) else pd.notna(min_vm_pu).any()  # type: ignore[attr-defined,arg-type]
+    max_vm_pu_exists: bool = pd.notna(max_vm_pu) if pd.api.types.is_scalar(max_vm_pu) else pd.notna(max_vm_pu).any()  # type: ignore[attr-defined,arg-type]
     if min_vm_pu_exists or max_vm_pu_exists or "min_vm_pu" in net.bus.columns:
         _add_to_entries_if_not_nan(
             net,

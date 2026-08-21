@@ -63,6 +63,13 @@ except ImportError:
     helmpy_available = False
 
 
+try:
+    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
+    helmpy_available = True
+except ImportError:
+    helmpy_available = False
+
+
 
 def test_minimal_net(**kwargs):
     # tests corner-case when the grid only has 1 bus and an ext-grid

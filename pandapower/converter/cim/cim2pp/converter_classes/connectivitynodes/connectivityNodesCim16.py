@@ -149,16 +149,17 @@ class ConnectivityNodesCim16:
                 connectivity_nodes = connectivity_nodes.drop(columns=['BaseVoltage_2'])
                 del mapping
             # check if there is a mix between BB and NB models
-            terminals_temp = \
-                self.cimConverter.cim['eq']['Terminal'].loc[
-                    self.cimConverter.cim['eq']['Terminal']['ConnectivityNode'].isna(), 'rdfId']
+            terminals_temp = self.cimConverter.cim['eq']['Terminal'].loc[
+                    self.cimConverter.cim['eq']['Terminal']['ConnectivityNode'].isna(),
+                    'rdfId'
+            ]
             if terminals_temp.index.size > 0:
-                terminals_temp = pd.merge(terminals_temp,
+                terminals_temp_df = pd.merge(terminals_temp,
                                           self.cimConverter.cim['tp']['Terminal'][['rdfId', 'TopologicalNode']],
                                           how='left', on='rdfId')
-                terminals_temp = terminals_temp.drop(columns=['rdfId'])
-                terminals_temp = terminals_temp.rename(columns={'TopologicalNode': 'rdfId'})
-                terminals_temp = terminals_temp.drop_duplicates(subset=['rdfId'])
+                terminals_temp_df = terminals_temp_df.drop(columns=['rdfId'])
+                terminals_temp_df = terminals_temp_df.rename(columns={'TopologicalNode': 'rdfId'})
+                terminals_temp_df = terminals_temp_df.drop_duplicates(subset=['rdfId'])
                 tp_temp = self.cimConverter.cim['tp']['TopologicalNode'][
                     ['rdfId', 'name', 'description', 'BaseVoltage']]
                 tp_temp[sc['o_prf']] = 'tp'
@@ -168,7 +169,7 @@ class ConnectivityNodesCim16:
                         sort=False)
                     tp_temp[sc['o_prf']] = tp_temp[sc['o_prf']].fillna('tp_bd')
                 tp_temp[sc['o_cl']] = 'TopologicalNode'
-                tp_temp = pd.merge(terminals_temp, tp_temp, how='inner', on='rdfId')
+                tp_temp = pd.merge(terminals_temp_df, tp_temp, how='inner', on='rdfId')
                 connectivity_nodes = pd.concat([connectivity_nodes, tp_temp], ignore_index=True, sort=False)
         else:
             # Bus-Branch model
@@ -252,8 +253,8 @@ class ConnectivityNodesCim16:
             self.cimConverter.report_container.add_log(Report(
                 level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
                 message="There is a problem at the busses!"))
-            dups = connectivity_nodes.pivot_table(index=['rdfId'], aggfunc='size')
-            dups = dups.loc[dups != 1]
+            dups = connectivity_nodes.pivot_table(index=['rdfId'], aggfunc=lambda x: x.size)
+            dups = dups.loc[dups != 1]  # type: ignore[call-overload]
             for rdfId, count in dups.items():
                 self.logger.warning("The ConnectivityNode with RDF ID %s has %s TopologicalNodes!" % (rdfId, count))
                 self.logger.warning("The ConnectivityNode data: \n%s" %

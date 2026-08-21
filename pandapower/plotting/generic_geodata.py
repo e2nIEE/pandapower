@@ -160,13 +160,10 @@ def coords_from_igraph(
     else:
         graph.to_undirected(mode="each", combine_edges="first")
         layout = graph.layout("rt", root=roots)
-    return list(zip(*layout.coords))
+    return list(zip(*layout.coords))  # type: ignore[arg-type]
 
 
-def coords_from_nxgraph(
-        mg: networkx.Graph = None,
-        layout_engine: str = 'neato'
-) -> list[list[float]]:
+def coords_from_nxgraph(mg: networkx.Graph | None = None, layout_engine: str = "neato") -> list[list[float]]:
     """
     Create a list of generic coordinates from a networkx graph layout.
 
@@ -178,26 +175,26 @@ def coords_from_nxgraph(
          list of coordinates from the graph layout
     """
     # workaround for bug in agraph
-    for u, v in mg.edges(data=False):
-        if 'key' in mg[int(u)][int(v)]:
-            del mg[int(u)][int(v)]['key']
-        if 'key' in mg[int(u)][int(v)].get(0, ()):
-            del mg[int(u)][int(v)][0]['key']
+    for u, v in mg.edges(data=False):  # type: ignore[union-attr]
+        if "key" in mg[int(u)][int(v)]:  # type: ignore[index]
+            del mg[int(u)][int(v)]["key"]  # type: ignore[index]
+        if "key" in mg[int(u)][int(v)].get(0, ()):  # type: ignore[call-overload,index]
+            del mg[int(u)][int(v)][0]["key"]  # type: ignore[index]
     # ToDo: Insert fallback layout for nxgraph
-    return list(zip(*(list(nx.drawing.nx_agraph.graphviz_layout(mg, prog=layout_engine).values()))))
+    return list(zip(*(list(nx.drawing.nx_agraph.graphviz_layout(mg, prog=layout_engine).values()))))  # type: ignore[arg-type]
 
 
 def create_generic_coordinates(
-        net: pandapowerNet,
-        mg: networkx.Graph = None,
-        library: str = "igraph",
-        respect_switches: bool = False,
-        geodata_table: str = "bus",
-        buses: Iterable[int] = None,
-        overwrite: bool = False,
-        layout_engine: str = 'neato',
-        trafo_length_km: float = 0.01,
-        switch_length_km: float = 0.001
+    net: pandapowerNet,
+    mg: networkx.Graph | None = None,
+    library: str = "igraph",
+    respect_switches: bool = False,
+    geodata_table: str = "bus",
+    buses: Iterable[int] | None = None,
+    overwrite: bool = False,
+    layout_engine: str = "neato",
+    trafo_length_km: float = 0.01,
+    switch_length_km: float = 0.001,
 ) -> pandapowerNet:
     """
     This function will add arbitrary geo-coordinates for all buses based on an analysis of branches

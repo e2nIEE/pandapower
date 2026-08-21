@@ -1,9 +1,12 @@
+# -*- coding: utf-8 -*-
+
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
 import pytest
 
+import pandapower as pp
 from pandapower.create import (
     create_bus,
     create_ext_grid,

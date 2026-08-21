@@ -1,5 +1,5 @@
 import os
-pp_dir = os.path.dirname(os.path.realpath(__file__))
+pp_dir: str = os.path.dirname(os.path.realpath(__file__))
 
 from pandapower._version import __version__, __format_version__
 

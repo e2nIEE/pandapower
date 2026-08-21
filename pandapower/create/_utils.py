@@ -84,7 +84,7 @@ def add_tag_group_to_df(net: ADict, table_name: str, tag_name: str) -> None:
         col_metadata = col_info["metadata"]
         if col_metadata is None:
             continue
-        if tag_name in col_metadata:
+        if tag_name in col_metadata:  # type: ignore[operator]
             add_column_to_df(net, table_name, col_name)
 
 
@@ -289,7 +289,7 @@ def _try_astype(df, column, dtyp):
 
 
 def _set_value_if_not_nan(
-    net: pandapowerNet, index: int, value: Any, column: str, element_type: str, default_val=pd.NA
+    net: pandapowerNet, index: Int, value: Any, column: str, element_type: str, default_val=pd.NA
 ):
     """Sets the given value to the dataframe net[element_type]. If the value is nan, default_val
     is assumed if this is not nan.
@@ -312,7 +312,7 @@ def _set_value_if_not_nan(
     col_info = get_column_info(element_type, column)
     if col_info is not None and pd.isna(default_val) and not col_info["nullable"] and col_info["default"] is not None:
         default_val = col_info["default"]
-    if dtype == "float" and pd.isna(default_val):
+    if dtype == "float" and pd.isna(default_val):  # type: ignore[arg-type]
         default_val = float("nan")
     if _not_nan(value):
         if not column_exists:
