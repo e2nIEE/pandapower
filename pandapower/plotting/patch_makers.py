@@ -80,7 +80,7 @@ def wp_patch(
     blade_coord2: float,
     hub_size: float,
     path: "Type[Path]",
-) -> tuple[list[Patch], list]:
+) -> tuple[list["Patch"], list]:
     """
     Generate Patch for wind power plant.
 
