@@ -37,6 +37,7 @@ from pandapower import (
 )
 import pandas as pd
 from pandapower.auxiliary import soft_dependency_error
+from pandapower.pp_types import SwitchType
 from pandapower.converter.pypowsybl.pypowsybl_static_comparison import (
     PyPowSyBlStaticComparisonMixin,
 )
@@ -62,9 +63,9 @@ def _require_pypowsybl(function_name: str) -> Any:
 
 
 class PyPowSyBlConverter(
-    PyPowSyBlComparisonUtilsMixin,
     PyPowSyBlStaticComparisonMixin,
     PyPowSyBlLoadflowComparisonMixin,
+    PyPowSyBlComparisonUtilsMixin,
 ):
 
     """Convert powsybl network models into pandapower networks.
@@ -110,8 +111,8 @@ class PyPowSyBlConverter(
         self.default_line_max_i_ka = 9999.0
         self.default_trafo_sn_mva = 9999.0
         self.default_trafo_vk_percent = 0.001
-        self.default_switch_type = "CB"
-        self.switch_type_mapping = {
+        self.default_switch_type: SwitchType = "CB"
+        self.switch_type_mapping: dict[str, SwitchType] = {
             "BREAKER": "CB",
             "DISCONNECTOR": "DS",
             "LOAD_BREAK_SWITCH": "LBS",
@@ -195,10 +196,11 @@ class PyPowSyBlConverter(
 
         if log_loadflow_comparison:
             self._log_loadflow_comparison_table()
-        elif return_loadflow_table:
-            self.loadflow_table = self._build_loadflow_table()
 
         if return_loadflow_table:
+            if self.loadflow_table is None:
+                self.loadflow_table = self._build_loadflow_table()
+
             return self.pandap_net, self.pyp_net, json_filename, self.loadflow_table
 
         return self.pandap_net, self.pyp_net, json_filename
@@ -426,7 +428,7 @@ class PyPowSyBlConverter(
 
         return str(value).strip().upper()
 
-    def _get_pp_switch_type(self, switch_row, default=None) -> str:
+    def _get_pp_switch_type(self, switch_row, default=None) -> SwitchType:
         """
         Map a powsybl switch kind to pandapower switch type.
 
@@ -559,8 +561,8 @@ class PyPowSyBlConverter(
 
         """
         elements_map = {}
-        bus_id_to_bus_names = {}
-        bus_map = {}
+        bus_id_to_bus_names: dict[Any, Any] = {}
+        bus_map: dict[Any, Any] = {}
 
         buses = self.pyp_net.get_bus_breaker_view_buses()
 
@@ -649,7 +651,7 @@ class PyPowSyBlConverter(
 
             target_v_kv = self._to_float(row.get("target_v"), np.nan)
 
-            bus_vn_kv = float(self.pandap_net.bus.at[bus_idx, "vn_kv"])
+            bus_vn_kv = self._get_bus_vn_kv(bus_idx)
 
             if np.isfinite(target_v_kv) and bus_vn_kv > 0:
                 vm_pu = target_v_kv / bus_vn_kv
@@ -678,7 +680,7 @@ class PyPowSyBlConverter(
 
     def _set_generator_optional_parameters(
         self,
-        gen_idx: int,
+        gen_idx: int | np.integer,
         gen_id: Any,
         row: pd.Series,
         is_slack: bool,
@@ -910,7 +912,7 @@ class PyPowSyBlConverter(
                 c_nf_per_km=c_nf_per_km,
                 g_us_per_km=g_us_per_km,
                 max_i_ka=self.default_line_max_i_ka,
-                parallel=parallel,
+                parallel=int(parallel),
                 name=line_id,
                 in_service=in_service,
             )
@@ -1024,7 +1026,7 @@ class PyPowSyBlConverter(
         trafos = self.pyp_net.get_3_windings_transformers(all_attributes=True)
 
         for trafo_id, row in trafos.iterrows():
-            legs = []
+            legs: list[dict[str, Any]] = []
 
             for leg_no in (1, 2, 3):
                 bus_ref = self._get_first_non_missing_value(

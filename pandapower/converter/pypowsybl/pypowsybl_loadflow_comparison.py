@@ -13,6 +13,9 @@ import numpy as np
 import pandas as pd
 from pandapower import runpp
 from pandapower.auxiliary import soft_dependency_error
+from pandapower.converter.pypowsybl.pypowsybl_comparison_utils import (
+    PyPowSyBlComparisonUtilsMixin,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -28,7 +31,7 @@ def _require_pypowsybl_loadflow(function_name: str) -> Any:
     return pyp_lf
 
 
-class PyPowSyBlLoadflowComparisonMixin:
+class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
     """
     Provide load-flow comparison methods for converted networks.
 
@@ -98,7 +101,7 @@ class PyPowSyBlLoadflowComparisonMixin:
             DataFrame with load-flow static rows and result comparison rows.
 
         """
-        rows = []
+        rows: list[dict[str, Any]] = []
 
         pyp_status = self._run_powsybl_loadflow_for_comparison()
         pp_status = self._run_pandapower_loadflow_for_comparison()
@@ -164,7 +167,7 @@ class PyPowSyBlLoadflowComparisonMixin:
 
         if not table.empty:
             for element_type, dataframe in table.groupby("element_type", sort=False):
-                self.loadflow_dataframes[element_type] = dataframe.reset_index(
+                self.loadflow_dataframes[str(element_type)] = dataframe.reset_index(
                     drop=True
                 ).copy()
 

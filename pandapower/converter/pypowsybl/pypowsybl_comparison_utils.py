@@ -6,10 +6,13 @@
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
+
+if TYPE_CHECKING:
+    from pandapower.auxiliary import pandapowerNet
 
 
 class PyPowSyBlComparisonUtilsMixin:
@@ -21,6 +24,51 @@ class PyPowSyBlComparisonUtilsMixin:
     shared transfer-table row creation.
     
     """
+
+    if TYPE_CHECKING:
+        # Converter state and helpers that are provided by ``PyPowSyBlConverter``.
+        pyp_net: Any
+        pandap_net: pandapowerNet
+        transfer_table: pd.DataFrame | None
+        transfer_dataframes: dict[str, pd.DataFrame]
+        transfer_summary: pd.DataFrame
+        loadflow_table: pd.DataFrame | None
+        loadflow_dataframes: dict[str, pd.DataFrame]
+        loadflow_summary: pd.DataFrame
+        powsybl_loadflow_result: Any
+        pandapower_loadflow_result: dict[str, bool] | None
+        default_vm_pu: float
+        default_parallel: float
+        default_length_km: float
+        default_shift_degree: float
+        default_base_sn_mva: float
+        default_impedance_ohm: float
+        default_admittance_s: float
+        default_active_power_mw: float
+        default_reactive_power_mvar: float
+        default_trafo_sn_mva: float
+        default_trafo_vk_percent: float
+        default_switch_z_ohm: float
+
+        def _to_float(self, value, default=np.nan) -> float: ...
+
+        def _to_bool(self, value, default=False) -> bool: ...
+
+        def _is_missing(self, value) -> bool: ...
+
+        def _get_first_non_missing_value(self, row, *keys, default=None) -> Any: ...
+
+        def _get_bus_vn_kv(self, pp_bus_idx) -> float: ...
+
+        def _get_pp_switch_type(self, switch_row, default=None) -> str: ...
+
+        def _ohm_to_pu(self, z_ohm, vn_kv, sn_mva) -> float: ...
+
+        def _select_slack_generator_id(self, generators) -> Any | None: ...
+
+        def _calculate_3w_pair_short_circuit_values(
+            self, leg_a, leg_b, reference_u_kv
+        ) -> tuple[float, float]: ...
 
     def _comparison_to_float(self, value, default=np.nan) -> float:
         """

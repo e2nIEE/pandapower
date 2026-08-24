@@ -12,10 +12,14 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
+from pandapower.converter.pypowsybl.pypowsybl_comparison_utils import (
+    PyPowSyBlComparisonUtilsMixin,
+)
+
 logger = logging.getLogger(__name__)
 
 
-class PyPowSyBlStaticComparisonMixin:
+class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
     """
     Provide static transfer comparisons for converted networks.
 
@@ -44,7 +48,7 @@ class PyPowSyBlStaticComparisonMixin:
             DataFrame with one row per checked element parameter.
 
         """
-        rows = []
+        rows: list[dict[str, Any]] = []
 
         self._build_bus_transfer_rows(rows)
         self._build_generator_transfer_rows(rows)
@@ -92,7 +96,7 @@ class PyPowSyBlStaticComparisonMixin:
 
         if not table.empty:
             for element_type, dataframe in table.groupby("element_type", sort=False):
-                self.transfer_dataframes[element_type] = dataframe.reset_index(
+                self.transfer_dataframes[str(element_type)] = dataframe.reset_index(
                     drop=True
                 ).copy()
 
@@ -644,7 +648,7 @@ class PyPowSyBlStaticComparisonMixin:
             data is missing.
 
         """
-        legs = []
+        legs: list[dict[str, Any]] = []
 
         for leg_no in (1, 2, 3):
             bus_ref = self._get_first_non_missing_value(

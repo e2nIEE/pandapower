@@ -58,7 +58,7 @@ def from_pypowsybl(
         default_length_km=default_length_km,
     )
 
-    if return_loadflow_table:
+    if len(conversion_result) == 4:
         pp_net, _, _, loadflow_table = conversion_result
     else:
         pp_net, _, _ = conversion_result

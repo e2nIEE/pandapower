@@ -20,7 +20,7 @@ logger = logging.getLogger(__name__)
 
 
 def _create_powsybl_ieee_network(pyp: Any, factory_name: str) -> Any:
-    factory = getattr(pyp.network, factory_name, None)
+    factory: Any = getattr(pyp.network, factory_name, None)
 
     if factory is None:
         pytest.skip(f"pypowsybl.network.{factory_name} is not available")
@@ -782,7 +782,7 @@ def _assert_same_pandapower_bus_loadflow_results(
         if bus_name not in original_buses.index:
             continue
 
-        original_v_mag = float(original_buses.loc[bus_name, "v_mag"])
+        original_v_mag = float(original_buses["v_mag"].loc[bus_name])
 
         if np.isclose(original_v_mag, target_v, rtol=5e-3, atol=1e-2):
             regulated_bus_names.add(bus_name)
@@ -1681,7 +1681,7 @@ def _assert_converted_3w_transformers_match_powsybl(
                 f"3W transformer {trafo_id!r} has invalid {column}: {pp_trafo[column]}"
             )
 
-        rated_u_columns = [
+        rated_u_columns: list[Any] = [
             _get_first_existing_column(original_trafos, ["rated_u1", "ratedU1"]),
             _get_first_existing_column(original_trafos, ["rated_u2", "ratedU2"]),
             _get_first_existing_column(original_trafos, ["rated_u3", "ratedU3"]),
@@ -1706,7 +1706,7 @@ def _assert_converted_3w_transformers_match_powsybl(
                 err_msg=f"3W transformer {trafo_id!r} voltage levels differ",
             )
 
-        rated_s_columns = [
+        rated_s_columns: list[Any] = [
             _get_first_existing_column(original_trafos, ["rated_s1", "ratedS1"]),
             _get_first_existing_column(original_trafos, ["rated_s2", "ratedS2"]),
             _get_first_existing_column(original_trafos, ["rated_s3", "ratedS3"]),
@@ -2159,7 +2159,7 @@ def _run_conversion_roundtrip_cycle(
     )
 
     converter = PyPowSyBlConverter()
-    pandapower_network, _, json_path = converter._powsybl_to_pandapower(
+    pandapower_network, _, json_path, *_ = converter._powsybl_to_pandapower(
         filename=str(xiidm_path),
         log_static_comparison=False,
         log_loadflow_comparison=False,
@@ -2381,7 +2381,7 @@ def _run_conversion_pandapower_cycle(
 
     converter = PyPowSyBlConverter()
 
-    roundtrip_pp_net, _, json_path = converter._powsybl_to_pandapower(
+    roundtrip_pp_net, _, json_path, *_ = converter._powsybl_to_pandapower(
         filename=str(xiidm_path),
         log_static_comparison=False,
         log_loadflow_comparison=False,
