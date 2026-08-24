@@ -43,7 +43,7 @@ The per unit values are therefore transformed into the network per unit system:
 
    \begin{align*}
     \underline{z}_{ft} &= (rft\_pu + j \cdot xft\_pu) \cdot \frac{S_{N}}{sn\_mva} \\
-    \underline{z}_{tf} &= (rft\_pu + j \cdot xtf\_pu) \cdot \frac{S_{N}}{sn\_mva} \\
+    \underline{z}_{tf} &= (rtf\_pu + j \cdot xtf\_pu) \cdot \frac{S_{N}}{sn\_mva} \\
     \end{align*}
 
 where :math:`S_{N}` is the reference power of the per unit system (see :ref:`Unit Systems and Conventions<conventions>`). 

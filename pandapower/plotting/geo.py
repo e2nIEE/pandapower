@@ -367,7 +367,7 @@ def dump_to_geojson(
 
     if switches:
         if isinstance(switches, bool):
-            switches = net.switch.index
+            switches = net.switch.index  # type: ignore[assignment]
         if "switch" in net.keys():
             cols = net.switch.columns
             for ind, row in net.switch.loc[switches].iterrows():
