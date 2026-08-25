@@ -2259,7 +2259,7 @@ def _run_conversion_roundtrip_cycle(
         original_network, roundtrip_network, pandapower_network
     )
 
-
+@pytest.mark.skip(reason="pypowsybl's pandapower importer is not pp4 ready")  # TODO: remove once they fixed the issue.
 @pytest.mark.parametrize(
     "case_name, network_factory",
     PYP_NETWORK_CASES,
@@ -2404,6 +2404,7 @@ def _run_conversion_pandapower_cycle(
     _assert_same_pandapower_network_results(original_pp_net, roundtrip_pp_net)
 
 
+@pytest.mark.skip(reason="pypowsybl's pandapower importer is not pp4 ready")  # TODO: remove once they fixed the issue.
 @pytest.mark.parametrize(
     "case_name, network_factory",
     PANDAPOWER_NETWORK_CASES,
