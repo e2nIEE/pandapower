@@ -75,6 +75,7 @@ Change Log
 - [FIXED] pf2pp: :code:`app.GetActiveScenario().loc_name` can be :code:`None`
 - [FIXED] pf2pp: static generator without a bus does not cause import errors (it is ignored)
 - [ADDED] plotting: added a toggleable colormap feature to :code:`simple_plot`
+- [ADDED] introducing pypowsybl to pandapower converter
 - [ADDED] cim2pp: mapping SV data to the assets with flag use_sv_data_for_assets=True
 
 [3.4.0] - 2026-02-09
