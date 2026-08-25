@@ -576,9 +576,85 @@ class TestMotorForeignKey:
             in_service=True,
         )
 
+        # Row 2: sc group all NaN
+        create_motor(
+            net,
+            bus=b0,
+            pn_mech_mw=2.0,
+            cos_phi=0.85,
+            efficiency_percent=88.0,
+            loading_percent=60.0,
+            scaling=1.0,
+            in_service=False,
+        )
+
+        # Row 3: sc group complete again
+        create_motor(
+            net,
+            bus=b0,
+            pn_mech_mw=1.5,
+            cos_phi=0.88,
+            cos_phi_n=0.85,
+            efficiency_percent=91.0,
+            efficiency_n_percent=93.0,
+            loading_percent=55.0,
+            scaling=0.9,
+            lrc_pu=5.5,
+            rx=0.15,
+            vn_kv=0.38,
+            in_service=True,
+        )
+
+        validate_network(net)
+
+
+class TestMotorForeignKey:
+    """Tests for foreign key constraints"""
+
+    def test_invalid_bus_index(self):
+        """Test: bus FK must reference an existing bus index"""
+        net = pandapowerNet(name="test_invalid_bus_index")
+        b0 = create_bus(net, 0.4)
+
+        create_motor(
+            net,
+            bus=b0,
+            pn_mech_mw=1.0,
+            cos_phi=0.9,
+            efficiency_percent=90.0,
+            loading_percent=50.0,
+            scaling=1.0,
+            in_service=True,
+        )
+
         net.motor["bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus FK works with non-sequential bus indices"""
+        net = pandapowerNet(name="test_valid_bus_index_non_sequential")
+        create_bus(net, 0.4, index=10)
+        create_bus(net, 0.4, index=42)
+        create_bus(net, 0.4, index=100)
+
+        create_motor(
+            net, bus=10, pn_mech_mw=1.0, cos_phi=0.9,
+            efficiency_percent=90.0, loading_percent=50.0,
+            scaling=1.0, in_service=True,
+        )
+        create_motor(
+            net, bus=42, pn_mech_mw=2.0, cos_phi=0.85,
+            efficiency_percent=88.0, loading_percent=60.0,
+            scaling=1.0, in_service=True,
+        )
+        create_motor(
+            net, bus=100, pn_mech_mw=0.5, cos_phi=0.92,
+            efficiency_percent=92.0, loading_percent=40.0,
+            scaling=0.9, in_service=False,
+        )
+
+        validate_network(net)
 
     def test_valid_bus_index_non_sequential(self):
         """Test: bus FK works with non-sequential bus indices"""

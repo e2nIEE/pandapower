@@ -1,8 +1,6 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
-from pandapower.network_schema.tools.validation.column_condition import create_lower_equals_column_check
 from pandapower.network_schema.tools.validation.column_condition import create_lower_equals_column_check
 
 _bus_dc_columns = {

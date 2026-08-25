@@ -107,7 +107,7 @@ class TestAsymmetricSgenRequiredFields:
             q_c_mvar=0.5,
             scaling=1.0,
             in_service=True,
-            # current_source=False, # See todo above, this is treated as custom currently
+            # current_source=False,
             type="PV",
             name="test",
             sn_mva=10.0,
