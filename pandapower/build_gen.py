@@ -205,6 +205,7 @@ def _enforce_controllable_vm_pu_p_mw(net, ppc, gen_is, f, t):
 def _build_pp_gen(net, ppc, f, t, sequence):
     delta = net["_options"]["delta"]
     gen_is = net._is_elements["gen"]
+
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     mode = net["_options"]["mode"]
 

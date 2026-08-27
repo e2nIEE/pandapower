@@ -24,6 +24,38 @@ from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 
 
+
+from numpy import ones, flatnonzero as find
+from pandapower.pypower.idx_bus import PD
+from pandapower.pypower.idx_gen import GEN_BUS, PG, GEN_STATUS
+from pandapower.pypower.makeSbus import _get_Cg
+
+def _makePbus(baseMVA, bus, gen):
+    """Builds the vector of bus active power injections.
+
+    Returns the bus active power injections, that is, generation
+    minus load. Power is expressed in per unit.
+
+    @see: L{makeYbus}
+
+    @author: Ray Zimmerman (PSERC Cornell)
+    @author: Richard Lincoln
+    @author: Lothar Loewer
+    """
+    ## generator info
+    on = find(gen[:, GEN_STATUS] > 0)  ## which generators are on?
+    gen_on = gen[on, :]
+
+    ## connection matrix, element i, j is 1 if gen on(j) at bus i is ON
+    Cg = _get_Cg(gen_on, bus)
+
+    ## power injected by gens plus power injected by loads converted to p.u.
+    Pbus = (Cg * gen_on[:, PG] - bus[:, PD]) / baseMVA
+
+    return Pbus
+
+
+
 def _run_dc_pf(ppci, recycle: dict | bool = False):
     """
     Runs a decoupled (dc) powerflow to initialize all the values.
@@ -40,11 +72,11 @@ def _run_dc_pf(ppci, recycle: dict | bool = False):
     if isinstance(recycle, dict) and "Bbus" in ppci['internal'] and \
             np.array_equal(ppci['internal']['branch'][:, TAP], ppci["branch"][:, TAP]):
         baseMVA = ppci['baseMVA']
-        bus = ppci['bus']
-        bus_dc = ppci['bus_dc']
-        gen = ppci['gen']
-        branch = ppci['branch']
-        branch_dc = ppci['branch_dc']
+        bus = ppci['bus']              # do not use internal data since bus    data contain (most likely modified) load information of AC-loads and sgen
+        bus_dc = ppci['bus_dc']        # do not use internal data since bus_dc data contain (most likely modified) load information of DC-loads; also not stored at the moment
+        gen = ppci['gen']              # do not use internal data since gen    data contain (most likely modified) gen  information
+        branch = ppci['branch']        # reason for not using this data: ?,  maybe due to changed data based on tap changers
+        branch_dc = ppci['branch_dc']  # reason for not using this data: ?,  not stored at the moment
         vsc = ppci['internal']['vsc']
         ref = ppci['internal']['ref']
         pv = ppci['internal']['pv']
@@ -66,8 +98,10 @@ def _run_dc_pf(ppci, recycle: dict | bool = False):
 
         ppci['internal']['baseMVA'] = baseMVA
         ppci['internal']['bus'] = bus
+#        ppci['internal']['bus_dc'] = bus_dc
         ppci['internal']['gen'] = gen
         ppci['internal']['branch'] = branch
+#        ppci['internal']['branch_dc'] = branch_dc
         ppci['internal']['vsc'] = vsc
         ppci['internal']['ref'] = ref
         ppci['internal']['pv'] = pv
@@ -94,7 +128,8 @@ def _run_dc_pf(ppci, recycle: dict | bool = False):
 
     # compute complex bus power injections [generation - load]
     # adjusted for phase shifters and real shunts
-    Pbus = np.real(makeSbus(baseMVA, bus, gen)) - bus[:, GS] / baseMVA
+    Pbus = np.real(_makePbus(baseMVA, bus, gen)) - bus[:, GS] / baseMVA  # LL mofified called function
+
     # add dc nodes respecting loads
     Pbus = np.concatenate([Pbus, -bus_dc[:, DC_PD]])
     # select VSCs with mode DC p and not mode AC slack

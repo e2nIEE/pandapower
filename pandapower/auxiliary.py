@@ -1936,6 +1936,86 @@ def SVabc_from_SV012(
 
 
 def _add_dcline_gens(net: pandapowerNet) -> None:
+    dcline = net.dcline.copy()
+    dcline["scaling"] = 1.0
+    dcline["slack"] = False
+    dcline["controllable"] = None
+    dcline["reactive_capability_curve"] = False
+    dcline["vn_kv"] = net.bus.loc[net.dcline.from_bus, "vn_kv"].values
+
+    p_mw = np.abs(dcline.p_mw)
+    p_loss = p_mw * (1 - dcline.loss_percent / 100) - dcline.loss_mw
+    max_p_mw = dcline.max_p_mw.values
+
+    mask_positive = dcline.p_mw.values > 0
+
+    n_gen = len(dcline) * 2
+
+    # Neue DataFrame-Zeilen vorbereiten
+    new_gens = pd.DataFrame(index=range(n_gen), columns=net.gen.columns)
+
+    # to_bus Generatoren
+    new_gens.iloc[:len(dcline), new_gens.columns.get_indexer([
+        'bus', 'p_mw', 'vm_pu', 'min_p_mw', 'max_p_mw',
+        'max_q_mvar', 'min_q_mvar', 'in_service',
+        'scaling', 'slack', 'controllable', 'reactive_capability_curve', 'vn_kv'
+    ])] = list(zip(
+        dcline["to_bus"],
+        np.where(mask_positive, p_loss, -p_mw),
+        dcline["vm_to_pu"],
+        np.where(mask_positive, 0, -max_p_mw),
+        np.where(mask_positive, max_p_mw, 0),
+        dcline["max_q_to_mvar"],
+        dcline["min_q_to_mvar"],
+        dcline["in_service"],
+        dcline["scaling"],
+        dcline["slack"],
+        dcline["controllable"],
+        dcline["reactive_capability_curve"],
+        dcline["vn_kv"]
+    ))
+
+    # from_bus Generatoren
+    new_gens.iloc[len(dcline):, new_gens.columns.get_indexer([
+        'bus', 'p_mw', 'vm_pu', 'min_p_mw', 'max_p_mw',
+        'max_q_mvar', 'min_q_mvar', 'in_service',
+        'scaling', 'slack', 'controllable', 'reactive_capability_curve', 'vn_kv'
+    ])] = list(zip(
+        dcline["from_bus"],
+        np.where(mask_positive, -p_mw, p_loss),
+        dcline["vm_from_pu"],
+        np.where(mask_positive, 0, -max_p_mw),
+        np.where(mask_positive, max_p_mw, 0),
+        dcline["max_q_from_mvar"],
+        dcline["min_q_from_mvar"],
+        dcline["in_service"],
+        dcline["scaling"],
+        dcline["slack"],
+        dcline["controllable"],
+        dcline["reactive_capability_curve"],
+        dcline["vn_kv"]
+    ))
+
+    new_gens = new_gens.astype({
+        "bus": "int",
+        "p_mw": "float",
+        "vm_pu": "float",
+        "min_p_mw": "float",
+        "max_p_mw": "float",
+        "max_q_mvar": "float",
+        "min_q_mvar": "float",
+        "in_service": "bool",
+        "scaling": "float",
+        "slack": "bool",
+        "controllable": "bool",
+        "reactive_capability_curve": "bool",
+        "vn_kv": "float"
+    })
+    new_gens.index += net.gen.index.max()+1
+    net.gen = pd.concat([net.gen, new_gens.dropna(axis=1, how="all")])
+
+
+def _add_dcline_gens_old(net: pandapowerNet) -> None:
     """
     For each HVDC Link create consumption and supply generator
 

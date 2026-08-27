@@ -211,7 +211,9 @@ class BinarySearchControl(Controller):
                 self.input_element_in_service.append(net.trafo.in_service[input_index])
             elif self.input_element == "res_switch":
                 self.input_element_in_service.append(
-                    net[self.input_element].pf_in_service[input_index])
+                    net.switch.closed[input_index])
+                    # LL: hier gab es einen Fehler:  net[self.input_element].pf_in_service[input_index])
+                    # net[self.input_element].pf_in_service[input_index])
             elif self.input_element == "res_impedance":
                 self.input_element_in_service.append(net.impedance.in_service[input_index])
             elif self.input_element == "res_bus":
@@ -854,6 +856,11 @@ class DroopControl(Controller):
             input_sign = np.asarray(net.controller.at[self.controller_idx, "object"].input_sign)
             input_values = (input_sign * np.asarray(input_values)).tolist()
             self.diff = (net.controller.at[self.controller_idx, "object"].set_point - sum(input_values))
+        if self.bus_idx is None:
+            self.converged = np.all(np.abs(self.diff) < self.tol)
+        else:
+            self.converged = net.controller.at[self.controller_idx, "object"].converged and np.all(np.abs(self.diff) < self.tol)
+
         self.converged = np.all(np.abs(self.diff) < self.tol)
         return self.converged
 

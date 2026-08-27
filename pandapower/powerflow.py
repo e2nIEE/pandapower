@@ -106,8 +106,18 @@ def _recycled_powerflow(net, **kwargs):
         if "trafo3w" in lookup:
             _calc_trafo3w_parameter(net, ppc)
 
+
+    _add_auxiliary_elements(net)  # LL, 03.08.2026
+    from pandapower.results import init_element  # ...
+    init_element(net, 'gen')  # ...
+
     if "gen" in recycle and recycle["gen"]:
         # updates the ppc["gen"] part
+
+#        _add_auxiliary_elements(net)  # LL, 03.08.2026
+#        from pandapower.results import init_element # ...
+#        init_element(net, 'gen') # ...
+
         _build_gen_ppc(net, ppc)
         ppc["gen"] = nan_to_num(ppc["gen"])
 
