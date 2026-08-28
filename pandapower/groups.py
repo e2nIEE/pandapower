@@ -199,11 +199,17 @@ def detach_from_groups(
     for i in np.arange(len(to_check), dtype=np.int64)[to_check]:
         rc = net.group.reference_column.iat[i]
         if rc is None or pd.isnull(rc):
-            net.group.element_index.iat[i] = pd.Index(net.group.element_index.iat[i]).difference(element_index).tolist()
+            net.group.iat[i, net.group.columns.get_loc("element_index")] = (
+                pd.Index(net.group.element_index.iat[i]).difference(element_index).tolist()
+            )
         else:
-            net.group.element_index.iat[i] = pd.Index(net.group.element_index.iat[i]).difference(  # type: ignore[assignment]
-                pd.Index(net[element_type][rc].loc[element_index.intersection(net[element_type].index)])
-            ).tolist()
+            net.group.iat[i, net.group.columns.get_loc("element_index")] = (
+                pd.Index(net.group.element_index.iat[i])
+                .difference(  # type: ignore[assignment]
+                    pd.Index(net[element_type][rc].loc[element_index.intersection(net[element_type].index)])
+                )
+                .tolist()
+            )
 
         if not len(net.group.element_index.iat[i]):  # type: ignore[arg-type]
             keep[i] = False

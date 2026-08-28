@@ -1,6 +1,6 @@
-import os
-import logging
 import importlib.util
+import logging
+import os
 from pathlib import Path
 
 import pandera as pa
