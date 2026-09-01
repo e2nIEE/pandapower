@@ -1,6 +1,7 @@
 # test_pandera_load_dc_elements.py
 
 import itertools
+import numpy as np
 import pandas as pd
 import pandera as pa
 import pytest
@@ -28,7 +29,7 @@ class TestLoadDcRequiredFields:
     """Tests for required load_dc fields"""
 
     @pytest.mark.parametrize(
-        "parameter, valid_value",
+        "parameter,valid_value",
         list(
             itertools.chain(
                 itertools.product(["bus_dc"], positiv_ints_plus_zero),
@@ -53,10 +54,10 @@ class TestLoadDcRequiredFields:
         "parameter, invalid_value",
         list(
             itertools.chain(
-                itertools.product(["bus_dc"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["p_dc_mw"], not_floats_list),
-                itertools.product(["scaling"], [*negativ_floats, *not_floats_list]),
-                itertools.product(["in_service"], not_boolean_list),
+                itertools.product(["bus_dc"], [float(np.nan), pd.NA, *negativ_ints, *not_ints_list]),
+                itertools.product(["p_dc_mw"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["scaling"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
+                itertools.product(["in_service"], [float(np.nan), pd.NA, *not_boolean_list]),
             )
         ),
     )
@@ -114,12 +115,14 @@ class TestLoadDcOptionalFields:
         validate_network(net)
 
     @pytest.mark.parametrize(
-        "parameter, valid_value",
+        "parameter,valid_value",
         list(
             itertools.chain(
-                itertools.product(["name"], strings),
-                itertools.product(["type"], strings),
-                itertools.product(["zone"], strings),
+                # Nullable string columns - include pd.NA directly in chain
+                itertools.product(["name"], [pd.NA, *strings]),
+                itertools.product(["type"], [pd.NA, *strings]),
+                itertools.product(["zone"], [pd.NA, *strings]),
+                # Boolean column (required=False but not nullable)
                 itertools.product(["controllable"], bools),
             )
         ),
@@ -167,6 +170,83 @@ class TestLoadDcOptionalFields:
             validate_network(net)
 
 
+class TestLoadDcNullableColumns:
+    """Tests for nullable columns - testing NA/NaN acceptance"""
+
+    def test_all_nullable_string_columns_na_valid(self):
+        """Test: All nullable string columns can be NA"""
+        net = pandapowerNet(name="test_all_nullable_string_columns_na_valid")
+        b0 = create_bus_dc(net, 0.4)
+
+        create_load_dc(net, bus_dc=b0, p_dc_mw=1.0, scaling=1.0, in_service=True)
+
+        # Set all nullable string columns to NA
+        net.load_dc["name"] = pd.Series([pd.NA], dtype=pd.StringDtype())
+        net.load_dc["type"] = pd.Series([pd.NA], dtype=pd.StringDtype())
+        net.load_dc["zone"] = pd.Series([pd.NA], dtype=pd.StringDtype())
+
+        validate_network(net)
+
+    @pytest.mark.parametrize(
+        "column_name",
+        ["name", "type", "zone"],
+    )
+    def test_individual_nullable_string_column_na_valid(self, column_name):
+        """Test: Each nullable string column accepts NA individually"""
+        net = pandapowerNet(name="test_individual_nullable_string_column_na_valid")
+        b0 = create_bus_dc(net, 0.4)
+
+        create_load_dc(net, bus_dc=b0, p_dc_mw=1.0, scaling=1.0, in_service=True)
+
+        net.load_dc[column_name] = pd.Series([pd.NA], dtype=pd.StringDtype())
+        validate_network(net)
+
+    def test_mixed_null_and_valid_values_in_rows(self):
+        """Test: Multiple rows with mixed NA and valid values"""
+        net = pandapowerNet(name="test_mixed_null_and_valid_values_in_rows")
+        b0 = create_bus_dc(net, 0.4)
+        b1 = create_bus_dc(net, 0.4)
+        b2 = create_bus_dc(net, 0.4)
+
+        # Row 1: all optional string fields filled
+        create_load_dc(
+            net,
+            bus_dc=b0,
+            p_dc_mw=1.0,
+            scaling=1.0,
+            in_service=True,
+            name="Load A",
+            type="consumer",
+            zone="zone-1",
+            controllable=True,
+        )
+        # Row 2: only some fields filled
+        create_load_dc(
+            net,
+            bus_dc=b1,
+            p_dc_mw=2.0,
+            scaling=0.8,
+            in_service=False,
+            name="Load B",
+            controllable=False,
+        )
+        # Row 3: minimal - only required fields
+        create_load_dc(
+            net,
+            bus_dc=b2,
+            p_dc_mw=0.5,
+            scaling=1.2,
+            in_service=True,
+        )
+
+        # Set nullable columns with mixed values
+        net.load_dc["name"] = pd.Series(["Load A", "Load B", pd.NA], dtype=pd.StringDtype())
+        net.load_dc["type"] = pd.Series(["consumer", pd.NA, pd.NA], dtype=pd.StringDtype())
+        net.load_dc["zone"] = pd.Series(["zone-1", pd.NA, pd.NA], dtype=pd.StringDtype())
+
+        validate_network(net)
+
+
 class TestLoadDcForeignKey:
     """Tests for foreign key constraints"""
 
@@ -179,6 +259,19 @@ class TestLoadDcForeignKey:
         net.load_dc["bus_dc"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
+    def test_valid_bus_dc_index_non_sequential(self):
+        """Test: bus_dc FK works with non-sequential bus_dc indices"""
+        net = pandapowerNet(name="test_valid_bus_dc_index_non_sequential")
+        create_bus_dc(net, 0.4, index=10)
+        create_bus_dc(net, 0.4, index=42)
+        create_bus_dc(net, 0.4, index=100)
+
+        create_load_dc(net, bus_dc=10, p_dc_mw=1.0, scaling=1.0, in_service=True)
+        create_load_dc(net, bus_dc=42, p_dc_mw=2.0, scaling=0.9, in_service=True)
+        create_load_dc(net, bus_dc=100, p_dc_mw=0.5, scaling=1.1, in_service=False)
+
+        validate_network(net)
 
 
 class TestLoadDcResults:

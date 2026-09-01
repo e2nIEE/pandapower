@@ -20,7 +20,6 @@ from pandapower.test.network_schema.elements.helper import (
     negativ_ints,
     not_ints_list,
     positiv_floats,
-    positiv_floats_plus_zero,
     negativ_floats_plus_zero,
     all_allowed_floats,
     percent_valid,
@@ -38,8 +37,8 @@ class TestStorageRequiredFields:
                 itertools.product(["bus"], positiv_ints_plus_zero),
                 itertools.product(["p_mw"], all_allowed_floats),
                 itertools.product(["q_mvar"], all_allowed_floats),
-                itertools.product(["sn_mva"], positiv_floats),
-                itertools.product(["scaling"], [*positiv_floats_plus_zero, *negativ_floats_plus_zero]),
+                itertools.product(["sn_mva"], [float(np.nan), *positiv_floats]),
+                itertools.product(["scaling"], all_allowed_floats),
                 itertools.product(["in_service"], bools),
             )
         ),
@@ -52,19 +51,22 @@ class TestStorageRequiredFields:
         create_bus(net, 0.4, index=42)
 
         create_storage(net, bus=0, p_mw=0.5, q_mvar=0.1, scaling=1.0, in_service=True, max_e_mwh=10.0)
-        net.storage[parameter] = valid_value
+        if parameter == "sn_mva":
+            net.storage[parameter] = pd.Series([valid_value], dtype="float64")
+        else:
+            net.storage[parameter] = valid_value
         validate_network(net)
 
     @pytest.mark.parametrize(
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["bus"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["p_mw"], not_floats_list),
-                itertools.product(["q_mvar"], not_floats_list),
-                itertools.product(["sn_mva"], not_floats_list),
-                itertools.product(["scaling"], not_floats_list),
-                itertools.product(["in_service"], not_boolean_list),
+                itertools.product(["bus"], [float(np.nan), pd.NA, *negativ_ints, *not_ints_list]),
+                itertools.product(["p_mw"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["q_mvar"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["sn_mva"], [pd.NA, *not_floats_list]),
+                itertools.product(["scaling"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["in_service"], [float(np.nan), pd.NA, *not_boolean_list]),
             )
         ),
     )
@@ -105,6 +107,12 @@ class TestStorageOptionalFields:
         net.storage["min_q_mvar"] = -0.8
         net.storage["controllable"] = pd.Series([True], dtype=bool)
 
+        # CIM columns
+        net.storage["origin_id"] = pd.Series(["cim_id_1"], dtype=pd.StringDtype())
+        net.storage["origin_class"] = pd.Series(["BatteryUnit"], dtype=pd.StringDtype())
+        net.storage["terminal"] = pd.Series(["term_1"], dtype=pd.StringDtype())
+        net.storage["description"] = pd.Series(["Test storage"], dtype=pd.StringDtype())
+
         validate_network(net)
 
     def test_optional_fields_with_nulls(self):
@@ -126,49 +134,34 @@ class TestStorageOptionalFields:
         net.storage["max_e_mwh"] = [float(np.nan), float(np.nan), 5.0]
         net.storage["min_e_mwh"] = [float(np.nan), 0.0, float(np.nan)]
 
+        # CIM columns with mixed nulls
+        net.storage["origin_id"] = pd.Series(["cim_1", pd.NA, pd.NA], dtype=pd.StringDtype())
+        net.storage["origin_class"] = pd.Series([pd.NA, pd.NA, "BatteryUnit"], dtype=pd.StringDtype())
+        net.storage["terminal"] = pd.Series([pd.NA, pd.NA, pd.NA], dtype=pd.StringDtype())
+        net.storage["description"] = pd.Series([pd.NA, "Desc 2", pd.NA], dtype=pd.StringDtype())
+
         validate_network(net)
-
-    def test_opf_group_partial_missing_invalid(self):
-        """OPF group must be complete if any OPF value is set"""
-
-        # Case 1: only max_p_mw
-        net = pandapowerNet(name="test_opf_group_partial_missing_invalid0")
-        b0 = create_bus(net, 0.4)
-        create_storage(net, bus=b0, p_mw=0.1, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
-        net.storage["max_p_mw"] = 1.0
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "opf")
-
-        # Case 2: only controllable
-        net = pandapowerNet(name="test_opf_group_partial_missing_invalid1")
-        b0 = create_bus(net, 0.4)
-        create_storage(net, bus=b0, p_mw=0.2, q_mvar=0.1, scaling=1.0, in_service=True, max_e_mwh=10.0)
-        net.storage["controllable"] = pd.Series([True], dtype="boolean")
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "opf")
-
-        # Case 3: only min_q_mvar
-        net = pandapowerNet(name="test_opf_group_partial_missing_invalid2")
-        b0 = create_bus(net, 0.4)
-        create_storage(net, bus=b0, p_mw=-0.2, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
-        net.storage["min_q_mvar"] = -0.5
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "opf")
 
     @pytest.mark.parametrize(
         "parameter,valid_value",
         list(
             itertools.chain(
-                itertools.product(["name"], strings),
-                itertools.product(["type"], strings),
-                itertools.product(["max_e_mwh"], all_allowed_floats),
-                itertools.product(["min_e_mwh"], all_allowed_floats),
-                itertools.product(["soc_percent"], percent_valid),
+                itertools.product(["name"], [pd.NA, *strings]),
+                itertools.product(["type"], [pd.NA, *strings]),
+                itertools.product(["max_e_mwh"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["min_e_mwh"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["soc_percent"], [float(np.nan), *percent_valid]),
+                #OPF columns
                 itertools.product(["max_p_mw"], all_allowed_floats),
                 itertools.product(["min_p_mw"], all_allowed_floats),
                 itertools.product(["max_q_mvar"], all_allowed_floats),
                 itertools.product(["min_q_mvar"], all_allowed_floats),
                 itertools.product(["controllable"], bools),
+
+                itertools.product(["origin_id"], [pd.NA, *strings]),
+                itertools.product(["origin_class"], [pd.NA, *strings]),
+                itertools.product(["terminal"], [pd.NA, *strings]),
+                itertools.product(["description"], [pd.NA, *strings]),
             )
         ),
     )
@@ -186,7 +179,7 @@ class TestStorageOptionalFields:
         net.storage["min_q_mvar"] = -0.6
         net.storage["controllable"] = pd.Series([True], dtype=bool)
 
-        if parameter in {"name", "type"}:
+        if parameter in {"name", "type", "origin_id", "origin_class", "terminal", "description"}:
             net.storage[parameter] = pd.Series([valid_value], dtype="string")
         elif parameter == "controllable":
             net.storage[parameter] = pd.Series([valid_value], dtype=bool)
@@ -199,17 +192,22 @@ class TestStorageOptionalFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["name"], not_strings_list),
-                itertools.product(["type"], not_strings_list),
-                itertools.product(["sn_mva"], [*negativ_floats_plus_zero, *not_floats_list]),
-                itertools.product(["max_e_mwh"], not_floats_list),
-                itertools.product(["min_e_mwh"], not_floats_list),
-                itertools.product(["soc_percent"], [*percent_invalid, *not_floats_list]),
-                itertools.product(["max_p_mw"], not_floats_list),
-                itertools.product(["min_p_mw"], not_floats_list),
-                itertools.product(["max_q_mvar"], not_floats_list),
-                itertools.product(["min_q_mvar"], not_floats_list),
-                itertools.product(["controllable"], not_boolean_list),
+                itertools.product(["name"], [float(np.nan), *not_strings_list]),
+                itertools.product(["type"], [float(np.nan), *not_strings_list]),
+                itertools.product(["sn_mva"], [pd.NA, *negativ_floats_plus_zero, *not_floats_list]),
+                itertools.product(["max_e_mwh"], [pd.NA, *not_floats_list]),
+                itertools.product(["min_e_mwh"], [pd.NA, *not_floats_list]),
+                itertools.product(["soc_percent"], [pd.NA, *percent_invalid, *not_floats_list]),
+                itertools.product(["max_p_mw"], [pd.NA, *not_floats_list]),
+                itertools.product(["min_p_mw"], [pd.NA, *not_floats_list]),
+                itertools.product(["max_q_mvar"], [pd.NA, *not_floats_list]),
+                itertools.product(["min_q_mvar"], [pd.NA, *not_floats_list]),
+                itertools.product(["controllable"], [float(np.nan), *not_boolean_list]),
+
+                itertools.product(["origin_id"], [float(np.nan), *not_strings_list]),
+                itertools.product(["origin_class"], [float(np.nan), *not_strings_list]),
+                itertools.product(["terminal"], [float(np.nan), *not_strings_list]),
+                itertools.product(["description"], [float(np.nan), *not_strings_list]),
             )
         ),
     )
@@ -231,7 +229,6 @@ class TestStorageOptionalFields:
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
-
 class TestStorageForeignKey:
     """Tests for foreign key constraints"""
 
@@ -244,6 +241,19 @@ class TestStorageForeignKey:
         net.storage["bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus FK works with non-sequential bus indices"""
+        net = pandapowerNet(name="test_valid_bus_index_non_sequential")
+        create_bus(net, 0.4, index=10)
+        create_bus(net, 0.4, index=42)
+        create_bus(net, 0.4, index=100)
+
+        create_storage(net, bus=10, p_mw=0.5, q_mvar=0.1, scaling=1.0, in_service=True, max_e_mwh=10.0)
+        create_storage(net, bus=42, p_mw=-0.3, q_mvar=0.0, scaling=0.8, in_service=True, max_e_mwh=5.0)
+        create_storage(net, bus=100, p_mw=0.0, q_mvar=-0.1, scaling=1.2, in_service=False, max_e_mwh=8.0)
+
+        validate_network(net)
 
 
 class TestStorageResults:

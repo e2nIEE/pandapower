@@ -1,6 +1,7 @@
 # test_asymmetric_load_elements.py
 
 import itertools
+import numpy as np
 import pandas as pd
 import pandera as pa
 import pytest
@@ -41,7 +42,7 @@ class TestAsymmetricLoadRequiredFields:
                 itertools.product(["q_c_mvar"], all_allowed_floats),
                 itertools.product(["scaling"], positiv_floats_plus_zero),
                 itertools.product(["in_service"], bools),
-                itertools.product(["type"], ["wye", "delta"]),
+                itertools.product(["type"], strings),
             )
         ),
     )
@@ -76,15 +77,15 @@ class TestAsymmetricLoadRequiredFields:
         list(
             itertools.chain(
                 itertools.product(["bus"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["p_a_mw"], [*negativ_floats, *not_floats_list]),
-                itertools.product(["p_b_mw"], [*negativ_floats, *not_floats_list]),
-                itertools.product(["p_c_mw"], [*negativ_floats, *not_floats_list]),
-                itertools.product(["q_a_mvar"], not_floats_list),
-                itertools.product(["q_b_mvar"], not_floats_list),
-                itertools.product(["q_c_mvar"], not_floats_list),
-                itertools.product(["scaling"], [*negativ_floats, *not_floats_list]),
-                itertools.product(["in_service"], not_boolean_list),
-                itertools.product(["type"], [*strings, *not_strings_list]),  # invalid strings + non-strings
+                itertools.product(["p_a_mw"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
+                itertools.product(["p_b_mw"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
+                itertools.product(["p_c_mw"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
+                itertools.product(["q_a_mvar"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["q_b_mvar"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["q_c_mvar"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["scaling"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
+                itertools.product(["in_service"], [float(np.nan), pd.NA, *not_boolean_list]),
+                itertools.product(["type"], [float(np.nan), pd.NA, *not_strings_list]),  # invalid strings + non-strings
             )
         ),
     )
@@ -137,6 +138,9 @@ class TestAsymmetricLoadOptionalFields:
             type="wye",
             name="lorem ipsum",
             sn_mva=25.0,
+            sn_a_mva = 8.0,
+            sn_b_mva = 9.0,
+            sn_c_mva = 7.0
         )
         validate_network(net)
 
@@ -173,6 +177,48 @@ class TestAsymmetricLoadOptionalFields:
             type="wye",
             sn_mva=15.0,
         )
+        create_asymmetric_load(
+            net,
+            bus=b0,
+            p_a_mw=8.0,
+            p_b_mw=9.0,
+            p_c_mw=7.5,
+            q_a_mvar=3.0,
+            q_b_mvar=3.5,
+            q_c_mvar=2.5,
+            scaling=1.0,
+            in_service=False,
+            type="wye",
+            sn_a_mva=15.0,
+        )
+        create_asymmetric_load(
+            net,
+            bus=b0,
+            p_a_mw=8.0,
+            p_b_mw=9.0,
+            p_c_mw=7.5,
+            q_a_mvar=3.0,
+            q_b_mvar=3.5,
+            q_c_mvar=2.5,
+            scaling=1.0,
+            in_service=False,
+            type="wye",
+            sn_b_mva=15.0,
+        )
+        create_asymmetric_load(
+            net,
+            bus=b0,
+            p_a_mw=8.0,
+            p_b_mw=9.0,
+            p_c_mw=7.5,
+            q_a_mvar=3.0,
+            q_b_mvar=3.5,
+            q_c_mvar=2.5,
+            scaling=1.0,
+            in_service=False,
+            type="wye",
+            sn_c_mva=15.0,
+        )
         validate_network(net)
 
     @pytest.mark.parametrize(
@@ -180,7 +226,10 @@ class TestAsymmetricLoadOptionalFields:
         list(
             itertools.chain(
                 itertools.product(["name"], [pd.NA, *strings]),
-                itertools.product(["sn_mva"], positiv_floats),
+                itertools.product(["sn_mva"], [float(np.nan), *positiv_floats]),
+                itertools.product(["sn_a_mva"], [float(np.nan), *positiv_floats]),
+                itertools.product(["sn_b_mva"], [float(np.nan), *positiv_floats]),
+                itertools.product(["sn_c_mva"], [float(np.nan), *positiv_floats]),
             )
         ),
     )
@@ -217,6 +266,9 @@ class TestAsymmetricLoadOptionalFields:
             itertools.chain(
                 itertools.product(["name"], not_strings_list),
                 itertools.product(["sn_mva"], [*negativ_floats_plus_zero, *not_floats_list]),
+                itertools.product(["sn_a_mva"], [*negativ_floats_plus_zero, *not_floats_list]),
+                itertools.product(["sn_b_mva"], [*negativ_floats_plus_zero, *not_floats_list]),
+                itertools.product(["sn_c_mva"], [*negativ_floats_plus_zero, *not_floats_list]),
             )
         ),
     )
@@ -271,6 +323,31 @@ class TestAsymmetricLoadForeignKey:
 
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus FK works with non-sequential bus indices"""
+        net = pandapowerNet(name="test_valid_bus_index_non_sequential")
+        create_bus(net, 0.4, index=10)
+        create_bus(net, 0.4, index=42)
+        create_bus(net, 0.4, index=100)
+
+        create_asymmetric_load(
+            net, bus=10, p_a_mw=1.0, p_b_mw=1.0, p_c_mw=1.0,
+            q_a_mvar=0.5, q_b_mvar=0.5, q_c_mvar=0.5,
+            scaling=1.0, in_service=True, type="wye",
+        )
+        create_asymmetric_load(
+            net, bus=42, p_a_mw=2.0, p_b_mw=2.0, p_c_mw=2.0,
+            q_a_mvar=0.3, q_b_mvar=0.3, q_c_mvar=0.3,
+            scaling=1.0, in_service=True, type="delta",
+        )
+        create_asymmetric_load(
+            net, bus=100, p_a_mw=0.5, p_b_mw=0.5, p_c_mw=0.5,
+            q_a_mvar=0.1, q_b_mvar=0.1, q_c_mvar=0.1,
+            scaling=0.8, in_service=False, type="wye",
+        )
+
+        validate_network(net)
 
 
 class TestAsymmetricLoadResults:
