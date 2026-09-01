@@ -54,6 +54,7 @@ def nets_to_test_group(request):
 
 
 def test_group_create(nets_to_test_group):
+
     net, type_, rc, idxs = nets_to_test_group
     net = deepcopy(net)
 
@@ -66,13 +67,13 @@ def test_group_create(nets_to_test_group):
     assert net.group.name.loc[[idxs[1]]].values[0] == 'Group of transformers'
 
     with pytest.raises(
-            UserWarning, match=r"Cannot create group with xward members Index\(\['?0'?\], dtype='(?:int64|object)'\)\."
+        UserWarning, match=r"Cannot create group with xward members Index\(\['?0'?\], dtype='(?:int64|object|str)'\)\."
     ):
         # no xward in net
         create_group_from_dict(net, {"xward": typed_list([0], type_)}, reference_column=rc)
 
     with pytest.raises(
-            UserWarning, match=r"Cannot create group with sgen members Index\(\['?100'?\], dtype='(?:int64|object)'\)\."
+        UserWarning, match=r"Cannot create group with sgen members Index\(\['?100'?\], dtype='(?:int64|object|str)'\)\."
     ):
         # no sgen 100 in net
         create_group_from_dict(net, {"sgen": typed_list([3, 100], type_)}, reference_column=rc)
@@ -131,14 +132,9 @@ def test_compare_group_elements(nets_to_test_group):
 def test_ensure_lists_in_group_element_column(nets_to_test_group):
     net = deepcopy(nets_to_test_group[0])
 
-    no_nans = [1, 1]
-    vals = [[np.nan, pd.Index([2, 3]), {0, 1, 2}],
-            [(2, 3, 4), None, 3]]
-    for no_nan, val in zip(no_nans, vals):
+    original_index = net.group.index.tolist()
+    for val in [[np.nan, pd.Index([2, 3]), {0, 1, 2}], [(2, 3, 4), None, 3]]:
         for drop in [True, False]:
-            if drop and no_nan == 0:
-                continue  # don't need to check dropping if there is nothing to drop
-
             netc = deepcopy(net)
 
             # manipulate element entries
@@ -146,10 +142,11 @@ def test_ensure_lists_in_group_element_column(nets_to_test_group):
 
             ensure_lists_in_group_element_column(netc, drop_empty_lines=drop)
 
-            expected_rows = net.group.shape[0] - no_nan if drop else net.group.shape[0]
+            expected_rows = net.group.shape[0] - 1 if drop else net.group.shape[0]
             assert expected_rows == netc.group.shape[0]
             for i in range(netc.group.shape[0]):
                 assert isinstance(netc.group.element_index.iat[i], list)
+            assert net.group.index.tolist() == original_index
 
 
 def test_remove_not_existing_group_members(nets_to_test_group):
@@ -177,9 +174,10 @@ def test_remove_not_existing_group_members(nets_to_test_group):
     remove_not_existing_group_members(net, verbose=False)
 
     assert len(net.group.at[idxs[1], "element_index"]) == 3
-    assert "impedance" not in net.group.element_type.loc[[idxs[1]]].values
-    assert "line" not in net.group.element_type.loc[[idxs[1]]].values
-    assert "gen" not in net.group.element_type.loc[[idxs[1]]].values
+    et = net.group.element_type.loc[[idxs[1]]].tolist()
+    assert "impedance" not in et
+    assert "line" not in et
+    assert "gen" not in et
 
 
 def test_check_unique_group_rows():
@@ -292,8 +290,8 @@ def test_attach_to_group(nets_to_test_group):
     assert set(net.group.loc[[idxs[1]]].element_type.tolist()) == {"gen", "sgen", "trafo"}
 
     with pytest.raises(
-            UserWarning,
-            match=r"Cannot create group with xward members Index\(\[\'?0\'?\], dtype='(?:int64|object)'\)\."
+        UserWarning,
+        match=r"Cannot create group with xward members Index\(\[\'?0\'?\], dtype='(?:int64|object|str)'\)\.",
     ):
         attach_to_group(net, idxs[1], ["xward"], [typed_list([0], type_)],
                         reference_columns=rc)

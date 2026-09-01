@@ -4,26 +4,25 @@
 import ast
 import copy
 import inspect
+import logging
 import re
 import sys
-import math
-from typing import Callable, TYPE_CHECKING, Optional, Tuple, Literal
+from collections.abc import Callable
+from itertools import combinations
+from typing import TYPE_CHECKING, Literal
 
 import geojson
-import pandas as pd
-
-from itertools import combinations
-from typing_extensions import deprecated
-
-import logging
 import numpy as np
-from pandas import isnull, Series, DataFrame
+import pandas as pd
+from pandas import DataFrame, Series, isnull
+from pandas.api.typing import NAType
+from typing_extensions import deprecated
 
 try:
     import matplotlib.pyplot as plt
-    from matplotlib.collections import LineCollection, PatchCollection, Collection
+    from matplotlib.collections import Collection, LineCollection, PatchCollection
     from matplotlib.font_manager import FontProperties
-    from matplotlib.patches import Circle, Rectangle, PathPatch
+    from matplotlib.patches import Circle, PathPatch, Rectangle
     from matplotlib.textpath import TextPath
     from matplotlib.transforms import Affine2D
 
@@ -31,8 +30,16 @@ try:
 
     # Depends on matplotlib:
     from pandapower.plotting.patch_makers import (
-        load_patches, node_patches, gen_patches, sgen_patches, ext_grid_patches, trafo_patches, storage_patches,
-        ward_patches, xward_patches, vsc_patches
+        ext_grid_patches,
+        gen_patches,
+        load_patches,
+        node_patches,
+        sgen_patches,
+        storage_patches,
+        trafo_patches,
+        vsc_patches,
+        ward_patches,
+        xward_patches,
     )
 except ImportError:
     MATPLOTLIB_INSTALLED = False
@@ -42,25 +49,41 @@ except ImportError:
     class TextPath:  # type: ignore[no-redef]
         pass
 
-from pandapower.auxiliary import soft_dependency_error
 from pandapower import pandapowerNet
-from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches, \
-    sgen_patches, ext_grid_patches, trafo_patches, storage_patches, ward_patches, xward_patches, vsc_patches
-from pandapower.plotting.plotting_toolbox import _rotate_dim2, coords_from_node_geodata, \
-    position_on_busbar, get_index_array
+from pandapower.auxiliary import soft_dependency_error
+from pandapower.plotting.patch_makers import (
+    ext_grid_patches,
+    gen_patches,
+    load_patches,
+    node_patches,
+    sgen_patches,
+    storage_patches,
+    trafo_patches,
+    vsc_patches,
+    ward_patches,
+    xward_patches,
+)
+from pandapower.plotting.plotting_toolbox import (
+    _rotate_dim2,
+    coords_from_node_geodata,
+    get_index_array,
+    position_on_busbar,
+)
 
 if TYPE_CHECKING:
-    from matplotlib.colors import Normalize, Colormap
-    from matplotlib.collections import LineCollection, PatchCollection, Collection
+    from matplotlib.collections import Collection, LineCollection, PatchCollection
+    from matplotlib.colors import Colormap, Normalize
     from matplotlib.font_manager import FontProperties
-    from matplotlib.patches import Circle, Rectangle, PathPatch
+    from matplotlib.patches import Circle, PathPatch, Rectangle
     from matplotlib.textpath import TextPath
     from matplotlib.transforms import Affine2D
 
 logger = logging.getLogger(__name__)
 
 
-def _get_coords_from_geojson(gj_str):
+def _get_coords_from_geojson(gj_str: str | NAType):
+    if pd.isna(gj_str):
+        return None
     pattern = r'"coordinates"\s*:\s*((?:\[(?:\[[^]]+],?\s*)+\])|\[[^]]+\])'
     matches = re.findall(pattern, gj_str)
 
@@ -398,10 +421,22 @@ def _create_complex_branch_collection(coords, patch_maker, size=1, infos=None, r
 
 
 def create_bus_collection(
-        net: pandapowerNet, buses: Optional[list] = None, size: float = 5., patch_type: str = "circle", color=None,
-        z=None, cmap=None, norm=None, infofunc: Optional[Callable] = None, picker: bool = False,
-        bus_geodata: Optional[pd.DataFrame] = None, bus_table: str = "bus", cbar_title: str = "Bus Voltage [pu]",
-        clim: Optional[Tuple[float]] = None, plot_colormap: bool = True, **kwargs
+    net: pandapowerNet,
+    buses: list | None = None,
+    size: float = 5.0,
+    patch_type: str = "circle",
+    color=None,
+    z=None,
+    cmap=None,
+    norm=None,
+    infofunc: Callable | None = None,
+    picker: bool = False,
+    bus_geodata: pd.DataFrame | None = None,
+    bus_table: str = "bus",
+    cbar_title: str = "Bus Voltage [pu]",
+    clim: tuple[float] | None = None,
+    plot_colormap: bool = True,
+    **kwargs,
 ):
     """
     Creates a matplotlib patch collection of pandapower buses.
@@ -538,6 +573,8 @@ def create_line_collection(
     if not lines_without_geo.empty:
         logger.warning(
             f'Could not plot lines {lines_without_geo}. Bus geodata is missing for those lines!')
+
+    line_geodata_series = line_geodata_series.dropna()
 
     infos = [infofunc(line) for line in line_geodata_series.index] if infofunc else []
 

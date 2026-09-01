@@ -142,12 +142,12 @@ def test_trafo_characteristic_table_diagnostic():
     # populate id_characteristic_table parameter
     add_column_to_df(net, "trafo", "id_characteristic_table")
     add_column_to_df(net, "trafo", 'tap_dependency_table')
-    net.trafo['id_characteristic_table'].at[0] = 0
-    net.trafo['tap_dependency_table'].at[0] = False
+    net.trafo.at[0, "id_characteristic_table"] = 0
+    net.trafo.at[0, "tap_dependency_table"] = False
     with pytest.warns(UserWarning):
         trafo_characteristic_table_diagnostic(net)
     # populate tap_dependency_table parameter
-    net.trafo.at[0, 'tap_dependency_table'] = True
+    net.trafo.at[0, "tap_dependency_table"] = True
     assert trafo_characteristic_table_diagnostic(net) is True
 
     # add trafo_characteristic_table with missing parameter values

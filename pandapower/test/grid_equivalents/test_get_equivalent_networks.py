@@ -61,7 +61,7 @@ def test_networks(eq_type, sn_mva, net_func, boundary_buses, internal_buses, ret
 
     va_degree = net_func.__name__ == "case118" and eq_type != "xward"
 
-    max_error, related_values = get_max_error(
+    max_error, _ = get_max_error(
         net, eq_type, boundary_buses, internal_buses, return_internal, va_degree=va_degree, **kwargs
     )
     assert max_error < epsilon

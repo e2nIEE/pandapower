@@ -99,12 +99,10 @@ def _m2ppc(mpc_file, load_case_engine=None):
             "matpowercaseframes is used to convert .m file. Please install that python "
             "package, e.g. via 'pip install matpowercaseframes'.")
     mpc_frames = CaseFrames(mpc_file, load_case_engine=load_case_engine)
-    ppc = {
-        key: mpc_frames.__getattribute__(key)  # directly get python value
-        if not isinstance(mpc_frames.__getattribute__(key), pd.DataFrame)
-        else mpc_frames.__getattribute__(key).values  # get value from pandas
-        for key in mpc_frames._attributes
-    }
+    ppc = mpc_frames.to_dict()
+    for k, v in ppc.items():
+        if isinstance(v, list):
+            ppc[k] = np.array(v)
     _adjust_ppc_indices(ppc)
     _change_ppc_TAP_value(ppc)
     return ppc

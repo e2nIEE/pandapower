@@ -2,40 +2,41 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
-from typing import Callable
+from collections.abc import Callable
 
-import pytest
 import numpy as np
+import pandas as pd
+import pytest
+from packaging.version import Version
 
-from pandapower.network import pandapowerNet
 from pandapower.create import create_ext_grid, create_switch
-from pandapower.toolbox.grid_modification import drop_trafos, change_std_type
-from pandapower.networks import example_multivoltage, example_simple
 from pandapower.diagnostic.diagnostic import Diagnostic
-from pandapower.diagnostic.diagnostic_helpers import DiagnosticFunction
 from pandapower.diagnostic.diagnostic_functions import (
-    InvalidValues,
-    NoExtGrid,
-    MultipleVoltageControllingElementsPerBus,
-    ParallelSwitches,
-    Overload,
-    WrongSwitchConfiguration,
-    DifferentVoltageLevelsConnected,
-    ImplausibleImpedanceValues,
-    NominalVoltagesMismatch,
-    WrongReferenceSystem,
-    DisconnectedElements,
-    DeviationFromStdType,
-    NumbaComparison,
-    MissingBusIndices,
     CheckDCPowerflow,
+    DeviationFromStdType,
+    DifferentVoltageLevelsConnected,
     DisableVoltageDependentLoads,
-    WrongLineCapacitance,
-    WrongLineResistance,
-    WrongLineReactance,
+    DisconnectedElements,
+    ImplausibleImpedanceValues,
+    InvalidValues,
+    MissingBusIndices,
+    MultipleVoltageControllingElementsPerBus,
+    NoExtGrid,
+    NominalVoltagesMismatch,
+    NumbaComparison,
+    Overload,
+    ParallelSwitches,
     SubNetProblemTest,
-    OptimisticPowerflow
+    WrongLineCapacitance,
+    WrongLineReactance,
+    WrongLineResistance,
+    WrongReferenceSystem,
+    WrongSwitchConfiguration,
 )
+from pandapower.diagnostic.diagnostic_helpers import DiagnosticFunction
+from pandapower.network import pandapowerNet
+from pandapower.networks import example_multivoltage, example_simple
+from pandapower.toolbox.grid_modification import change_std_type, drop_trafos
 
 try:
     import numba
@@ -110,6 +111,7 @@ def test_no_issues(diag_params, diag_errors, diag_function):
     check_report_function(diag_function(), None, None)
 
 
+@pytest.mark.skipif(Version(pd.__version__) > Version("3"), reason="Pandas3 does not allow setting invalid values")
 class TestInvalidValues:
     def test_greater_zero(self, test_net, diag_params, diag_errors):
         net = copy.deepcopy(test_net)
@@ -369,6 +371,219 @@ class TestInvalidValues:
         check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))
 
 
+class TestInvalidValuesPandas3:
+    def test_greater_zero(self, test_net, diag_params, diag_errors):
+        net = copy.deepcopy(test_net)
+        check_function = "invalid_values"
+        net.bus.at[42, "vn_kv"] = -1
+        net.line.at[7, "length_km"] = -1
+        net.line.at[8, "max_i_ka"] = 0
+        net.trafo.at[0, "vk_percent"] = 0.0
+        net.trafo.at[0, "sn_mva"] = None
+        net.trafo.at[0, "vn_hv_kv"] = -1.5
+        net.trafo3w.at[0, "vk_hv_percent"] = 2.3
+        net.trafo3w.at[0, "vk_mv_percent"] = np.nan
+        net.trafo3w.at[0, "vk_lv_percent"] = 0.0
+        net.trafo3w.at[0, "vkr_lv_percent"] = 1.0
+        net.trafo3w.at[0, "sn_hv_mva"] = 11
+        net.trafo3w.at[0, "vn_hv_kv"] = -1.5
+        net.trafo3w.at[0, "vn_mv_kv"] = -1.5
+
+        diag_function = InvalidValues()
+        check_result = diag_function.diagnostic(net, **diag_params)
+        if check_result:
+            diag_results = {check_function: check_result}
+        else:
+            diag_results = {}
+
+        assert diag_results[check_function] == {
+            "bus": [(42, "vn_kv", -1, ">0")],
+            "line": [(7, "length_km", -1.0, ">0"), (8, "max_i_ka", 0.0, ">0")],
+            "trafo": [
+                (0, "sn_mva", "nan", ">0"),
+                (0, "vn_hv_kv", -1.5, ">0"),
+                (0, "vk_percent", 0.0, ">0"),
+                (0, "vkr_percent", 0.06, "vkr_percent_larger"),
+            ],
+            "trafo3w": [
+                (0, "vn_hv_kv", -1.5, ">0"),
+                (0, "vn_mv_kv", -1.5, ">0"),
+                (0, "vkr_lv_percent", 1.0, "vkr_percent_larger"),
+                (0, "vk_mv_percent", "nan", ">0"),
+                (0, "vk_lv_percent", 0.0, ">0"),
+                (0, "vk_mv_percent", "nan", "<20"),
+            ],
+        }
+
+        check_report_function(
+            diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None)
+        )
+
+    def test_greater_equal_zero(self, test_net, diag_params, diag_errors):
+        net = copy.deepcopy(test_net)
+        check_function = "invalid_values"
+        net.line.loc[7, "r_ohm_per_km"] = -1
+        net.line.loc[8, "x_ohm_per_km"] = None
+        net.trafo.loc[0, "vkr_percent"] = -1
+        net.trafo.loc[0, "pfe_kw"] = -1.5
+        net.trafo.loc[0, "i0_percent"] = -0.001
+        net.trafo3w.loc[0, "vkr_hv_percent"] = 16
+        net.trafo3w.loc[0, "vkr_mv_percent"] = -1
+        net.trafo3w.loc[0, "vkr_lv_percent"] = 1
+        net.trafo3w.loc[0, "pfe_kw"] = 2
+        net.trafo3w.loc[0, "i0_percent"] = 10
+        net.load.loc[0, "scaling"] = -0.1
+        net.load.loc[1, "scaling"] = 0
+        net.load.loc[2, "scaling"] = 1
+        net.gen.loc[0, "scaling"] = None
+        net.sgen.loc[0, "scaling"] = pd.NA
+
+        diag_function = InvalidValues()
+        check_result = diag_function.diagnostic(net, **diag_params)
+        if check_result:
+            diag_results = {check_function: check_result}
+        else:
+            diag_results = {}
+        assert diag_results[check_function] == {
+            "gen": [(0, "scaling", "nan", ">=0")],
+            "line": [
+                (7, "r_ohm_per_km", -1.0, ">=0"),
+                (8, "x_ohm_per_km", "nan", ">=0"),
+            ],
+            "load": [(0, "scaling", -0.1, ">=0")],
+            "sgen": [(0, "scaling", "nan", ">=0")],
+            "trafo": [
+                (0, "vkr_percent", -1, ">=0"),
+                (0, "pfe_kw", -1.5, ">=0"),
+                (0, "i0_percent", -0.001, ">=0"),
+            ],
+            "trafo3w": [
+                (0, "vkr_hv_percent", 16.0, "vkr_percent_larger"),
+                (0, "vkr_mv_percent", -1.0, ">=0"),
+                (0, "vkr_hv_percent", 16.0, "<15"),
+            ],
+        }
+
+        check_report_function(
+            diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None)
+        )
+
+    def test_boolean(self, test_net, diag_params, diag_errors):
+        net = copy.deepcopy(test_net)
+        check_function = "invalid_values"
+        net.switch.loc[2, "closed"] = False
+
+        diag_function = InvalidValues()
+        check_result = diag_function.diagnostic(net, **diag_params)
+        if check_result:
+            diag_results = {check_function: check_result}
+        else:
+            diag_results = {}
+        assert check_function not in diag_results
+
+        check_report_function(
+            diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None)
+        )
+
+    def test_pos_int(self, test_net, diag_params, diag_errors):
+        net = copy.deepcopy(test_net)
+        check_function = "invalid_values"
+        diag_params = copy.deepcopy(diag_params)
+        net.line.at[7, "from_bus"] = 1
+        net.trafo.at[0, "lv_bus"] = None
+        net.trafo3w.at[0, "lv_bus"] = 2
+        net.gen.at[0, "bus"] = np.nan
+        net.switch.at[0, "bus"] = None
+
+        diag_function = InvalidValues()
+        check_result = diag_function.diagnostic(net, **diag_params)
+        if check_result:
+            diag_results = {check_function: check_result}
+        else:
+            diag_results = {}
+        assert diag_results[check_function] == {
+            "trafo": [(0, "lv_bus", "nan", "positive_integer")],
+            "gen": [(0, "bus", "nan", "positive_integer")],
+            "switch": [(0, "bus", "nan", "positive_integer")],
+        }
+
+        check_report_function(
+            diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None)
+        )
+
+    def test_number(self, test_net, diag_params, diag_errors):
+        net = copy.deepcopy(test_net)
+        check_function = "invalid_values"
+        diag_params = copy.deepcopy(diag_params)
+        net.load.loc[0, "p_mw"] = 1000
+        net.load.loc[1, "q_mvar"] = None
+        net.sgen.loc[0, "p_mw"] = -1
+        net.sgen.loc[1, "q_mvar"] = np.nan
+        net.ext_grid.loc[0, "va_degree"] = 13.55
+
+        diag_function = InvalidValues()
+        check_result = diag_function.diagnostic(net, **diag_params)
+        if check_result:
+            diag_results = {check_function: check_result}
+        else:
+            diag_results = {}
+        assert diag_results[check_function] == {
+            "load": [(1, "q_mvar", "nan", "number")],
+            "sgen": [(1, "q_mvar", "nan", "number")],
+        }
+
+        check_report_function(
+            diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None)
+        )
+
+    def test_between_zero_and_one(self, test_net, diag_params, diag_errors):
+        net = copy.deepcopy(test_net)
+        check_function = "invalid_values"
+        diag_params = copy.deepcopy(diag_params)
+        net.line.loc[0, "df"] = 1.5
+
+        diag_function = InvalidValues()
+        check_result = diag_function.diagnostic(net, **diag_params)
+        if check_result:
+            diag_results = {check_function: check_result}
+        else:
+            diag_results = {}
+        assert diag_results[check_function] == {"line": [(0, "df", 1.5, "0<x<=1")]}
+
+        check_report_function(
+            diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None)
+        )
+
+    def test_switch_type(self, test_net, diag_params, diag_errors):
+        net = copy.deepcopy(test_net)
+        check_function = "invalid_values"
+        diag_params = copy.deepcopy(diag_params)
+        net.switch.loc[0, "et"] = "bus"
+        net.switch.loc[1, "et"] = 1
+        net.switch.loc[2, "et"] = None
+        net.switch.loc[3, "et"] = True
+        net.switch.loc[4, "et"] = "t"
+
+        diag_function = InvalidValues()
+        check_result = diag_function.diagnostic(net, **diag_params)
+        if check_result:
+            diag_results = {check_function: check_result}
+        else:
+            diag_results = {}
+        assert diag_results[check_function] == {
+            "switch": [
+                (0, "et", "bus", "switch_type"),
+                (1, "et", 1, "switch_type"),
+                (2, "et", "None", "switch_type"),
+                (3, "et", True, "switch_type"),
+            ]
+        }
+
+        check_report_function(
+            diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None)
+        )
+
+
 def test_no_ext_grid(test_net, diag_params, diag_errors):
     net = copy.deepcopy(test_net)
     net.ext_grid = net.ext_grid.drop(0)
@@ -398,7 +613,7 @@ def test_overload(test_net, diag_params, diag_errors):
     net = copy.deepcopy(test_net)
     check_function = "overload"
     diag_params = copy.deepcopy(diag_params)
-    net.load.p_mw.at[4] *= 1000
+    net.load.at[4, "p_mw"] *= 1000
 
     diag_function = Overload()
     check_result = diag_function.diagnostic(net, **diag_params)
@@ -572,8 +787,8 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors):
     check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))
 
     net.trafo = copy.deepcopy(trafo_copy)
-    net.trafo.vn_hv_kv.at[0] *= 1.31
-    net.trafo.vn_lv_kv.at[0] *= 1.31
+    net.trafo.at[0, "vn_hv_kv"] *= 1.31
+    net.trafo.at[0, "vn_lv_kv"] *= 1.31
     check_result = diag_function.diagnostic(net, **diag_params)
     if check_result:
         diag_results = {check_function: check_result}
@@ -584,8 +799,8 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors):
     check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))
 
     net.trafo = copy.deepcopy(trafo_copy)
-    net.trafo.vn_hv_kv.at[0] *= 0.69
-    net.trafo.vn_lv_kv.at[0] *= 0.69
+    net.trafo.at[0, "vn_hv_kv"] *= 0.69
+    net.trafo.at[0, "vn_lv_kv"] *= 0.69
     check_result = diag_function.diagnostic(net, **diag_params)
     if check_result:
         diag_results = {check_function: check_result}
@@ -596,8 +811,8 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors):
     check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))
 
     net.trafo = copy.deepcopy(trafo_copy)
-    net.trafo.vn_hv_kv.at[0] *= 1.29
-    net.trafo.vn_lv_kv.at[0] *= 1.29
+    net.trafo.at[0, "vn_hv_kv"] *= 1.29
+    net.trafo.at[0, "vn_lv_kv"] *= 1.29
     check_result = diag_function.diagnostic(net, **diag_params)
     if check_result:
         diag_results = {check_function: check_result}
@@ -608,8 +823,8 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors):
     check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))
 
     net.trafo = copy.deepcopy(trafo_copy)
-    net.trafo.vn_hv_kv.at[0] *= 0.71
-    net.trafo.vn_lv_kv.at[0] *= 0.71
+    net.trafo.at[0, "vn_hv_kv"] *= 0.71
+    net.trafo.at[0, "vn_lv_kv"] *= 0.71
     check_result = diag_function.diagnostic(net, **diag_params)
     if check_result:
         diag_results = {check_function: check_result}
@@ -634,9 +849,9 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors):
     check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))
 
     net.trafo3w = copy.deepcopy(trafo3w_copy)
-    net.trafo3w.vn_hv_kv.at[0] *= 1.31
-    net.trafo3w.vn_mv_kv.at[0] *= 1.31
-    net.trafo3w.vn_lv_kv.at[0] *= 1.31
+    net.trafo3w.at[0, "vn_hv_kv"] *= 1.31
+    net.trafo3w.at[0, "vn_mv_kv"] *= 1.31
+    net.trafo3w.at[0, "vn_lv_kv"] *= 1.31
     check_result = diag_function.diagnostic(net, **diag_params)
     if check_result:
         diag_results = {check_function: check_result}
@@ -647,9 +862,9 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors):
     check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))
 
     net.trafo3w = copy.deepcopy(trafo3w_copy)
-    net.trafo3w.vn_hv_kv.at[0] *= 0.69
-    net.trafo3w.vn_mv_kv.at[0] *= 0.69
-    net.trafo3w.vn_lv_kv.at[0] *= 0.69
+    net.trafo3w.at[0, "vn_hv_kv"] *= 0.69
+    net.trafo3w.at[0, "vn_mv_kv"] *= 0.69
+    net.trafo3w.at[0, "vn_lv_kv"] *= 0.69
     check_result = diag_function.diagnostic(net, **diag_params)
     if check_result:
         diag_results = {check_function: check_result}
@@ -660,9 +875,9 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors):
     check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))
 
     net.trafo3w = copy.deepcopy(trafo3w_copy)
-    net.trafo3w.vn_hv_kv.at[0] *= 1.29
-    net.trafo3w.vn_mv_kv.at[0] *= 1.29
-    net.trafo3w.vn_lv_kv.at[0] *= 1.29
+    net.trafo3w.at[0, "vn_hv_kv"] *= 1.29
+    net.trafo3w.at[0, "vn_mv_kv"] *= 1.29
+    net.trafo3w.at[0, "vn_lv_kv"] *= 1.29
     check_result = diag_function.diagnostic(net, **diag_params)
     if check_result:
         diag_results = {check_function: check_result}
@@ -673,9 +888,9 @@ def test_nominal_voltages_dont_match(test_net, diag_params, diag_errors):
     check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))
 
     net.trafo3w = copy.deepcopy(trafo3w_copy)
-    net.trafo3w.vn_hv_kv.at[0] *= 0.71
-    net.trafo3w.vn_mv_kv.at[0] *= 0.71
-    net.trafo3w.vn_lv_kv.at[0] *= 0.71
+    net.trafo3w.at[0, "vn_hv_kv"] *= 0.71
+    net.trafo3w.at[0, "vn_mv_kv"] *= 0.71
+    net.trafo3w.at[0, "vn_lv_kv"] *= 0.71
     check_result = diag_function.diagnostic(net, **diag_params)
     if check_result:
         diag_results = {check_function: check_result}
@@ -739,6 +954,7 @@ def test_disconnected_elements(test_net, diag_params, diag_errors):
     check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))
 
 
+@pytest.mark.skipif(Version(pd.__version__) > Version("3"), reason="Pandas3 does not allow setting invalid values")
 def test_deviation_from_std_type(test_net, diag_params, diag_errors):
     net = copy.deepcopy(test_net)
     check_function = "deviation_from_std_type"
@@ -763,6 +979,34 @@ def test_deviation_from_std_type(test_net, diag_params, diag_errors):
             21: {"e_value": "5", "param": "max_i_ka", "std_type_in_lib": True, "std_type_value": 0.105},
         },
         "trafo": {0: {"e_value": 24.4, "param": "vk_percent", "std_type_in_lib": True, "std_type_value": 12.2}},
+    }
+
+    check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))
+
+
+def test_deviation_from_std_type_pandas3(test_net, diag_params, diag_errors):
+    net = copy.deepcopy(test_net)
+    check_function = "deviation_from_std_type"
+    diag_params = copy.deepcopy(diag_params)
+
+    net.line.loc[0, "r_ohm_per_km"] += 1
+    net.line.loc[6, "x_ohm_per_km"] -= 1
+    net.line.loc[14, "c_nf_per_km"] *= -1
+
+    change_std_type(net, 0, element="trafo", name="160 MVA 380/110 kV")
+
+    diag_function = DeviationFromStdType()
+    check_result = diag_function.diagnostic(net, **diag_params)
+    if check_result:
+        diag_results = {check_function: check_result}
+    else:
+        diag_results = {}
+    assert diag_results[check_function] == {
+        "line": {
+            0: {"e_value": 1.1571, "param": "r_ohm_per_km", "std_type_in_lib": True, "std_type_value": 0.1571},
+            6: {"e_value": -0.883, "param": "x_ohm_per_km", "std_type_in_lib": True, "std_type_value": 0.117},
+            14: {"e_value": -264.0, "param": "c_nf_per_km", "std_type_in_lib": True, "std_type_value": 264},
+        }
     }
 
     check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))
@@ -813,12 +1057,14 @@ def test_missing_bus_indices(test_net, diag_params, diag_errors):
     net = copy.deepcopy(test_net)
     check_function = "missing_bus_indices"
     diag_params = copy.deepcopy(diag_params)
-    net.line.from_bus.iat[0] = 10000
-    net.trafo.lv_bus.iat[0] = 10001
-    net.trafo3w.mv_bus.iat[0] = 10002
-    net.switch.bus.iat[0] = 10003
-    net.switch.element.iat[0] = 10004
-    net.ext_grid.bus.iloc[0] = 10005
+
+    net.line.at[net.line.index[0], "from_bus"] = 10000
+    net.trafo.at[net.trafo.index[0], "lv_bus"] = 10001
+    net.trafo3w.at[net.trafo3w.index[0], "mv_bus"] = 10002
+    net.switch.at[net.switch.index[0], "bus"] = 10003
+    net.switch.at[net.switch.index[0], "element"] = 10004
+    net.ext_grid.at[net.ext_grid.index[0], "bus"] = 10005
+
     diag_function = MissingBusIndices()
     check_result = diag_function.diagnostic(net, **diag_params)
     if check_result:
