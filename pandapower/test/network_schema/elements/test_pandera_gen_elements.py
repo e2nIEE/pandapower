@@ -7,6 +7,7 @@ import pandera as pa
 import pytest
 
 from pandapower.create import create_bus, create_gen
+from pandapower.create._utils import add_tag_group_to_df
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
@@ -181,29 +182,6 @@ class TestGenOptionalFields:
             reactive_capability_curve=True,
         )
 
-        # def test_optional_fields_qcc_with_nulls(self): TODO scc commented out in gen.py
-        #     """Test: gen with optional fields including nulls, with dependencies respected"""
-        #     net = pandapowerNet(name="test_optional_fields_qcc_with_nulls")
-        #     create_bus(net, 0.4)
-        # Row 3: sc present
-        # create_gen(
-        #     net,
-        #     bus=0,
-        #     p_mw=-1.0,
-        #     vm_pu=0.5,
-        #     scaling=1.0,
-        #     in_service=True,
-        #     slack=True,
-        #     # optional
-        #     vn_kv=1.0,
-        #     xdss_pu=1.0,
-        #     rdss_ohm=1.0,
-        #     cos_phi=1.0,
-        #     power_station_trafo=0,
-        #     pg_percent=1.0,
-        # )
-        validate_network(net)
-
     @pytest.mark.parametrize(
         "parameter,valid_value",
         list(
@@ -229,6 +207,16 @@ class TestGenOptionalFields:
                 itertools.product(["pg_percent"], [float(np.nan), *all_allowed_floats]),
                 itertools.product(["min_vm_pu"], positiv_floats),
                 itertools.product(["max_vm_pu"], positiv_floats),
+                # CIM-only fields
+                itertools.product(["origin_id"], [pd.NA, *strings]),
+                itertools.product(["origin_class"], [pd.NA, *strings]),
+                itertools.product(["terminal"], [pd.NA, *strings]),
+                itertools.product(["description"], [pd.NA, *strings]),
+                itertools.product(["RegulatingControl.mode"], [pd.NA, *strings]),
+                itertools.product(["RegulatingControl.targetValue"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["RegulatingControl.enabled"], [pd.NA, *bools]),
+                itertools.product(["referencePriority"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["governorSCD"], [float(np.nan), *all_allowed_floats]),
             )
         ),
     )
@@ -266,14 +254,21 @@ class TestGenOptionalFields:
             min_vm_pu=1.0,
             max_vm_pu=1.1,
         )
+        net.gen["origin_id"] = pd.Series(["test_origin"], dtype=pd.StringDtype())
+        net.gen["origin_class"] = pd.Series(["test_class"], dtype=pd.StringDtype())
+        net.gen["terminal"] = pd.Series(["test_terminal"], dtype=pd.StringDtype())
+        net.gen["description"] = pd.Series(["test_desc"], dtype=pd.StringDtype())
+        net.gen["RegulatingControl.mode"] = pd.Series(["test_mode"], dtype=pd.StringDtype())
 
         # Handle dtype preservation for nullable columns
         if parameter == "id_q_capability_characteristic":
             net.gen[parameter] = pd.Series([valid_value], dtype="Int64")
         elif parameter == "power_station_trafo":
             net.gen[parameter] = pd.Series([valid_value], dtype="Int64")
-        elif parameter in ["name", "type", "curve_style"]:
+        elif parameter in ["name", "type", "curve_style", "origin_id", "origin_class", "terminal", "description", "RegulatingControl.mode"]:
             net.gen[parameter] = pd.Series([valid_value], dtype=pd.StringDtype())
+        elif parameter == "RegulatingControl.enabled":
+            net.gen[parameter] = pd.Series([valid_value], dtype=pd.BooleanDtype())
         else:
             net.gen[parameter] = valid_value
 
@@ -281,62 +276,13 @@ class TestGenOptionalFields:
         net.gen["name"] = net.gen["name"].astype("string")
         net.gen["type"] = net.gen["type"].astype("string")
         net.gen["curve_style"] = net.gen["curve_style"].astype("string")
+        net.gen["origin_id"] = net.gen["origin_id"].astype("string")
+        net.gen["origin_class"] = net.gen["origin_class"].astype("string")
+        net.gen["terminal"] = net.gen["terminal"].astype("string")
+        net.gen["description"] = net.gen["description"].astype("string")
+        net.gen["RegulatingControl.mode"] = net.gen["RegulatingControl.mode"].astype("string")
 
         validate_network(net)
-
-    @pytest.mark.xfail  # TODO add back when opf included in tests
-    def test_opf_group_partial_missing_invalid(self):
-        """Test: OPF group must be complete if any OPF value is set (gen)"""
-        net = pandapowerNet(name="test_opf_group_partial_missing_invalid")
-        b0 = create_bus(net, 0.4)
-        create_gen(net, bus=b0, p_mw=-1.0, vm_pu=0.5, scaling=1.0, in_service=True, slack=True)
-
-        # Set only one OPF column -> should fail due to group dependency
-        net.gen["max_p_mw"] = 100.0
-
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "opf")
-
-    def test_q_lim_enforced_group_partial_missing_invalid(self):
-        """Test: q_lim_enforced group (max_q_mvar/min_q_mvar) must be complete"""
-        net = pandapowerNet(name="test_q_lim_enforced_group_partial_missing_invalid")
-        b0 = create_bus(net, 0.4)
-        create_gen(net, bus=b0, p_mw=-1.0, vm_pu=0.5, scaling=1.0, in_service=True, slack=True)
-
-        # Set only max_q_mvar -> should fail because min_q_mvar is missing/NaN
-        net.gen["max_q_mvar"] = 1.0
-
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "q_lim_enforced")
-
-    @pytest.mark.xfail #TODO add back when reactive_capability_curve is removed
-    def test_qcc_group_partial_missing_invalid(self):
-        """Test: QCC group must be complete if any value is set"""
-        net = pandapowerNet(name="test_qcc_group_partial_missing_invalid")
-        b0 = create_bus(net, 0.4)
-        create_gen(net, bus=b0, p_mw=-1.0, vm_pu=0.5, scaling=1.0, in_service=True, slack=True)
-
-        # Set only one QCC column at a time -> each should fail
-        # id_q_capability_characteristic only
-        net.gen["id_q_capability_characteristic"] = pd.Series([0], dtype="Int64")
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "qcc")
-
-        # Reset and set only curve_style
-        net = pandapowerNet(name="test_qcc_group_partial_missing_invalid1")
-        b0 = create_bus(net, 0.4)
-        create_gen(net, bus=b0, p_mw=-1.0, vm_pu=0.5, scaling=1.0, in_service=True, slack=True)
-        net.gen["curve_style"] = pd.Series(["straightLineYValues"], dtype="string")
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "qcc")
-
-        # Reset and set only reactive_capability_curve
-        net = pandapowerNet(name="test_qcc_group_partial_missing_invalid2")
-        b0 = create_bus(net, 0.4)
-        create_gen(net, bus=b0, p_mw=-1.0, vm_pu=0.5, scaling=1.0, in_service=True, slack=True)
-        net.gen["reactive_capability_curve"] = pd.Series([True], dtype="boolean")
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "qcc")
 
     @pytest.mark.parametrize(
         "parameter,invalid_value",
@@ -361,7 +307,16 @@ class TestGenOptionalFields:
                 itertools.product(["controllable"], not_boolean_list),
                 itertools.product(["pg_percent"], not_floats_list),
                 itertools.product(["min_vm_pu"], [*negativ_floats, *not_floats_list]),
-                itertools.product(["max_vm_pu"], [*negativ_floats_plus_zero, *not_floats_list]),
+                itertools.product(["max_vm_pu"], [*negativ_floats_plus_zero, 2.1, 3.0, 10.0, *not_floats_list]),                # CIM-only fields
+                itertools.product(["origin_id"], not_strings_list),
+                itertools.product(["origin_class"], not_strings_list),
+                itertools.product(["terminal"], not_strings_list),
+                itertools.product(["description"], not_strings_list),
+                itertools.product(["RegulatingControl.mode"], not_strings_list),
+                itertools.product(["RegulatingControl.targetValue"], not_floats_list),
+                itertools.product(["RegulatingControl.enabled"], not_boolean_list),
+                itertools.product(["referencePriority"], not_floats_list),
+                itertools.product(["governorSCD"], not_floats_list),
             )
         ),
     )
@@ -388,113 +343,130 @@ class TestGenOptionalFields:
             id_q_capability_characteristic=0,
             curve_style="straightLineYValues",
             reactive_capability_curve=True,
+            origin_id="test",
+            origin_class="test",
+            terminal="test",
+            description="test",
         )
+
+        # for OPF columns, add group dependency so only target parameter triggers failure
+        #  otherwise the "min <= max" check will fail.
+        if parameter in ["min_vm_pu", "max_vm_pu", "min_q_mvar", "max_q_mvar", "min_p_mw", "max_p_mw"]:
+            add_tag_group_to_df(net, "gen", "opf")
+
+
         net.gen[parameter] = invalid_value
+
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
 
-class TestGenDependencyGroupNullValues:
-    """Tests for nullable dependency group columns - all columns in group set to NA together"""
+class TestGenCrossFieldChecks:
+    """Tests for cross-field validation checks (min <= max)"""
 
-    # def test_qcc_group_all_null_valid(self):
-    #     """Test: QCC group columns can all be NA together"""
-    #     net = create_empty_network()
-    #     create_bus(net, 0.4)
-    #     create_gen(
-    #         net,
-    #         bus=0,
-    #         p_mw=-1.0,
-    #         vm_pu=0.5,
-    #         scaling=1.0,
-    #         in_service=True,
-    #         slack=True,
-    #     )
-    #     # Set all QCC columns to NA with correct dtypes
-    #     net.gen["id_q_capability_characteristic"] = pd.Series([pd.NA], dtype="Int64")
-    #     net.gen["curve_style"] = pd.Series([pd.NA], dtype=pd.StringDtype())
-    #     net.gen["reactive_capability_curve"] = pd.Series([pd.NA], dtype=pd.BooleanDtype())
-    #
-    #     validate_network(net)
+    def test_min_q_mvar_less_than_max_q_mvar_valid(self):
+        """Test: min_q_mvar <= max_q_mvar is valid"""
+        net = pandapowerNet(name="test_min_q_less_than_max_q_valid")
+        b0 = create_bus(net, 0.4)
+        create_gen(
+            net,
+            bus=b0,
+            p_mw=-1.0,
+            vm_pu=0.5,
+            scaling=1.0,
+            in_service=True,
+            slack=True,
+            min_q_mvar=-50.0,
+            max_q_mvar=50.0,
+        )
+        validate_network(net)
 
-
-    def test_cim_columns_individual_na_valid(self):
-        """Test: CIM columns (not in dependency groups) accept NA individually"""
-        cim_nullable_columns = {
-            "name": pd.StringDtype(),
-            "type": pd.StringDtype(),
-            "origin_id": pd.StringDtype(),
-            "origin_class": pd.StringDtype(),
-            "terminal": pd.StringDtype(),
-            "description": pd.StringDtype(),
-            "RegulatingControl.mode": pd.StringDtype(),
-        }
-
-        for col_name, dtype in cim_nullable_columns.items():
-            net = create_empty_network()
-            create_bus(net, 0.4)
-            create_gen(
-                net,
-                bus=0,
-                p_mw=-1.0,
-                vm_pu=0.5,
-                scaling=1.0,
-                in_service=True,
-                slack=True,
-            )
-            net.gen[col_name] = pd.Series([pd.NA], dtype=dtype)
+    def test_min_q_mvar_greater_than_max_q_mvar_invalid(self):
+        """Test: min_q_mvar > max_q_mvar is invalid"""
+        net = pandapowerNet(name="test_min_q_greater_than_max_q_invalid")
+        b0 = create_bus(net, 0.4)
+        create_gen(
+            net,
+            bus=b0,
+            p_mw=-1.0,
+            vm_pu=0.5,
+            scaling=1.0,
+            in_service=True,
+            slack=True,
+            min_q_mvar=50.0,
+            max_q_mvar=-50.0,
+        )
+        with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
+    def test_min_p_mw_less_than_max_p_mw_valid(self):
+        """Test: min_p_mw <= max_p_mw is valid"""
+        net = pandapowerNet(name="test_min_p_less_than_max_p_valid")
+        b0 = create_bus(net, 0.4)
+        create_gen(
+            net,
+            bus=b0,
+            p_mw=-1.0,
+            vm_pu=0.5,
+            scaling=1.0,
+            in_service=True,
+            slack=True,
+            min_p_mw=-100.0,
+            max_p_mw=100.0,
+        )
+        validate_network(net)
 
-class TestGenDependencyGroupNullValues:
-    """Tests for nullable dependency group columns - all columns in group set to NA together"""
+    def test_min_p_mw_greater_than_max_p_mw_invalid(self):
+        """Test: min_p_mw > max_p_mw is invalid"""
+        net = pandapowerNet(name="test_min_p_greater_than_max_p_invalid")
+        b0 = create_bus(net, 0.4)
+        create_gen(
+            net,
+            bus=b0,
+            p_mw=-1.0,
+            vm_pu=0.5,
+            scaling=1.0,
+            in_service=True,
+            slack=True,
+            min_p_mw=100.0,
+            max_p_mw=-100.0,
+        )
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
 
-    # def test_qcc_group_all_null_valid(self):
-    #     """Test: QCC group columns can all be NA together"""
-    #     net = create_empty_network()
-    #     create_bus(net, 0.4)
-    #     create_gen(
-    #         net,
-    #         bus=0,
-    #         p_mw=-1.0,
-    #         vm_pu=0.5,
-    #         scaling=1.0,
-    #         in_service=True,
-    #         slack=True,
-    #     )
-    #     # Set all QCC columns to NA with correct dtypes
-    #     net.gen["id_q_capability_characteristic"] = pd.Series([pd.NA], dtype="Int64")
-    #     net.gen["curve_style"] = pd.Series([pd.NA], dtype=pd.StringDtype())
-    #     net.gen["reactive_capability_curve"] = pd.Series([pd.NA], dtype=pd.BooleanDtype())
-    #
-    #     validate_network(net)
+    def test_min_vm_pu_less_than_max_vm_pu_valid(self):
+        """Test: min_vm_pu <= max_vm_pu is valid"""
+        net = pandapowerNet(name="test_min_vm_less_than_max_vm_valid")
+        b0 = create_bus(net, 0.4)
+        create_gen(
+            net,
+            bus=b0,
+            p_mw=-1.0,
+            vm_pu=0.5,
+            scaling=1.0,
+            in_service=True,
+            slack=True,
+            min_vm_pu=0.9,
+            max_vm_pu=1.1,
+        )
+        validate_network(net)
 
-
-    def test_cim_columns_individual_na_valid(self):
-        """Test: CIM columns (not in dependency groups) accept NA individually"""
-        cim_nullable_columns = {
-            "name": pd.StringDtype(),
-            "type": pd.StringDtype(),
-            "origin_id": pd.StringDtype(),
-            "origin_class": pd.StringDtype(),
-            "terminal": pd.StringDtype(),
-            "description": pd.StringDtype(),
-            "RegulatingControl.mode": pd.StringDtype(),
-        }
-
-        for col_name, dtype in cim_nullable_columns.items():
-            net = pandapowerNet(name="test_cim_columns_individual_na_valid")
-            create_bus(net, 0.4)
-            create_gen(
-                net,
-                bus=0,
-                p_mw=-1.0,
-                vm_pu=0.5,
-                scaling=1.0,
-                in_service=True,
-                slack=True,
-            )
-            net.gen[col_name] = pd.Series([pd.NA], dtype=dtype)
+    def test_min_vm_pu_greater_than_max_vm_pu_invalid(self):
+        """Test: min_vm_pu > max_vm_pu is invalid"""
+        net = pandapowerNet(name="test_min_vm_greater_than_max_vm_invalid")
+        b0 = create_bus(net, 0.4)
+        create_gen(
+            net,
+            bus=b0,
+            p_mw=-1.0,
+            vm_pu=0.5,
+            scaling=1.0,
+            in_service=True,
+            slack=True,
+            min_vm_pu=1.1,
+            max_vm_pu=0.9,
+        )
+        with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
 

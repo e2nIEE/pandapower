@@ -134,6 +134,33 @@ class TestVscBipolarRequiredFields:
 class TestVscBipolarOptionalFields:
     """Tests for optional vsc_bipolar fields"""
 
+    def test_all_optional_fields_valid(self):
+        """Test: vsc_bipolar with all optional fields set is valid"""
+        net = pandapowerNet(name="test_all_optional_fields_valid")
+        b0 = create_bus(net, 0.4)
+        create_bus_dc(net, vn_kv=110.0)  # index 0
+        create_bus_dc(net, vn_kv=110.0)  # index 1
+
+        create_vsc_bipolar(
+            net,
+            bus=b0,
+            bus_dc_plus=0,
+            bus_dc_minus=1,
+            r_ohm=0.1,
+            x_ohm=0.05,
+            r_dc_ohm=0.02,
+            pl_dc_mw=0.5,
+            control_mode="Vac_phi",
+            control_value_1=1.0,
+            control_value_2=10.0,
+            controllable=True,
+            in_service=True,
+            name="VSC Bipolar A",
+        )
+
+        net.vsc_bipolar["name"] = net.vsc_bipolar["name"].astype("string")
+        validate_network(net)
+
     @pytest.mark.parametrize(
         "parameter,valid_value",
         list(
@@ -178,6 +205,168 @@ class TestVscBipolarOptionalFields:
 
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
+
+class TestVscBipolarNullableColumns:
+    """Tests for nullable columns - testing NA/NaN acceptance"""
+
+    def test_all_nullable_string_columns_na_valid(self):
+        """Test: All nullable string columns can be NA"""
+        net = pandapowerNet(name="test_all_nullable_string_columns_na_valid")
+        b0 = create_bus(net, 0.4)
+        create_bus_dc(net, vn_kv=110.0)  # index 0
+        create_bus_dc(net, vn_kv=110.0)  # index 1
+
+        create_vsc_bipolar(
+            net,
+            bus=b0,
+            bus_dc_plus=0,
+            bus_dc_minus=1,
+            r_ohm=0.1,
+            x_ohm=0.05,
+            r_dc_ohm=0.02,
+            pl_dc_mw=0.5,
+            control_mode="Vac_phi",
+            control_value_1=1.0,
+            control_value_2=10.0,
+            controllable=True,
+            in_service=True,
+        )
+
+        net.vsc_bipolar["name"] = pd.Series([pd.NA], dtype=pd.StringDtype())
+        validate_network(net)
+
+    def test_individual_nullable_string_column_na_valid(self):
+        """Test: name column accepts NA individually"""
+        net = pandapowerNet(name="test_individual_nullable_string_column_na_valid")
+        b0 = create_bus(net, 0.4)
+        create_bus_dc(net, vn_kv=110.0)  # index 0
+        create_bus_dc(net, vn_kv=110.0)  # index 1
+
+        create_vsc_bipolar(
+            net,
+            bus=b0,
+            bus_dc_plus=0,
+            bus_dc_minus=1,
+            r_ohm=0.1,
+            x_ohm=0.05,
+            r_dc_ohm=0.02,
+            pl_dc_mw=0.5,
+            control_mode="Vac_phi",
+            control_value_1=1.0,
+            control_value_2=10.0,
+            controllable=True,
+            in_service=True,
+        )
+
+        net.vsc_bipolar["name"] = pd.Series([pd.NA], dtype=pd.StringDtype())
+        validate_network(net)
+
+    def test_mixed_null_and_valid_values_in_rows(self):
+        """Test: Multiple rows with mixed NA and valid values"""
+        net = pandapowerNet(name="test_mixed_null_and_valid_values_in_rows")
+        b0 = create_bus(net, 0.4)
+        b1 = create_bus(net, 0.4)
+        b2 = create_bus(net, 0.4)
+        create_bus_dc(net, vn_kv=110.0)  # index 0
+        create_bus_dc(net, vn_kv=110.0)  # index 1
+        create_bus_dc(net, vn_kv=110.0)  # index 2
+
+        create_vsc_bipolar(
+            net,
+            bus=b0,
+            bus_dc_plus=0,
+            bus_dc_minus=1,
+            r_ohm=0.1,
+            x_ohm=0.05,
+            r_dc_ohm=0.02,
+            pl_dc_mw=0.5,
+            control_mode="Vac_phi",
+            control_value_1=1.0,
+            control_value_2=10.0,
+            controllable=True,
+            in_service=True,
+            name="VSC A",
+        )
+
+        create_vsc_bipolar(
+            net,
+            bus=b1,
+            bus_dc_plus=1,
+            bus_dc_minus=2,
+            r_ohm=0.2,
+            x_ohm=0.1,
+            r_dc_ohm=0.05,
+            pl_dc_mw=0.3,
+            control_mode="Vdc_Q",
+            control_value_1=0.98,
+            control_value_2=5.0,
+            controllable=False,
+            in_service=False,
+        )
+
+        create_vsc_bipolar(
+            net,
+            bus=b2,
+            bus_dc_plus=0,
+            bus_dc_minus=2,
+            r_ohm=0.15,
+            x_ohm=0.08,
+            r_dc_ohm=0.03,
+            pl_dc_mw=0.2,
+            control_mode="Pac_Vac",
+            control_value_1=1.02,
+            control_value_2=8.0,
+            controllable=True,
+            in_service=True,
+            name="VSC C",
+        )
+
+        net.vsc_bipolar["name"] = pd.Series(["VSC A", pd.NA, "VSC C"], dtype=pd.StringDtype())
+        validate_network(net)
+
+    def test_name_column_all_na_multiple_rows_valid(self):
+        """Test: name column can be NA for all rows"""
+        net = pandapowerNet(name="test_name_column_all_na_multiple_rows_valid")
+        b0 = create_bus(net, 0.4)
+        b1 = create_bus(net, 0.4)
+        create_bus_dc(net, vn_kv=110.0)  # index 0
+        create_bus_dc(net, vn_kv=110.0)  # index 1
+
+        create_vsc_bipolar(
+            net,
+            bus=b0,
+            bus_dc_plus=0,
+            bus_dc_minus=1,
+            r_ohm=0.1,
+            x_ohm=0.05,
+            r_dc_ohm=0.02,
+            pl_dc_mw=0.5,
+            control_mode="Vac_phi",
+            control_value_1=1.0,
+            control_value_2=10.0,
+            controllable=True,
+            in_service=True,
+        )
+
+        create_vsc_bipolar(
+            net,
+            bus=b1,
+            bus_dc_plus=0,
+            bus_dc_minus=1,
+            r_ohm=0.2,
+            x_ohm=0.1,
+            r_dc_ohm=0.05,
+            pl_dc_mw=0.3,
+            control_mode="Vdc_Q",
+            control_value_1=0.98,
+            control_value_2=5.0,
+            controllable=False,
+            in_service=False,
+        )
+
+        net.vsc_bipolar["name"] = pd.Series([pd.NA, pd.NA], dtype=pd.StringDtype())
+        validate_network(net)
 
 
 class TestVscBipolarForeignKey:

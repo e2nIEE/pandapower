@@ -79,7 +79,6 @@ class TestMeasurementRequiredFields:
                 itertools.product(["value"], not_floats_list),
                 itertools.product(["std_dev"], not_floats_list),
                 itertools.product(["element"], not_ints_list),
-                itertools.product(["check_existing"], not_boolean_list),
                 itertools.product(["side"], not_strings_list),
             )
         ),
@@ -99,7 +98,6 @@ class TestMeasurementRequiredFields:
                 "std_dev": [0.1],
                 "bus": [0],
                 "element": [0],
-                "check_existing": [True],
                 "side": ["hv"],
             }
         )
@@ -174,13 +172,65 @@ class TestMeasurementOptionalFields:
                 "std_dev": [0.01],
                 "bus": [0],
                 "element": [0],
-                "check_existing": [True],
                 "side": ["hv"],
             }
         )
         net.measurement["bus"] = invalid_bus
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
+    def test_all_optional_fields_valid(self):
+        """Test: measurement with all optional fields set is valid"""
+        net = pandapowerNet(name="test_all_optional_fields_valid")
+        b0 = create_bus(net, 0.4)
+
+        net.measurement = pd.DataFrame({
+            "name": pd.Series(["measurement1"], dtype=pd.StringDtype()),
+            "measurement_type": ["p"],
+            "element_type": ["bus"],
+            "value": [10.0],
+            "std_dev": [0.1],
+            "bus": [b0],
+            "element": [b0],
+            "side": pd.Series(["hv"], dtype=pd.StringDtype()),
+            "origin_id": pd.Series(["origin_1"], dtype=pd.StringDtype()),
+            "origin_class": pd.Series(["class_a"], dtype=pd.StringDtype()),
+            "source": pd.Series(["scada"], dtype=pd.StringDtype()),
+            "analog_id": pd.Series(["analog_1"], dtype=pd.StringDtype()),
+            "terminal_id": pd.Series(["term_1"], dtype=pd.StringDtype()),
+            "description": pd.Series(["test measurement"], dtype=pd.StringDtype()),
+        })
+        validate_network(net)
+
+    @pytest.mark.parametrize(
+        "parameter,valid_value",
+        [
+            ("origin_id", pd.NA),
+            ("origin_class", pd.NA),
+            ("source", pd.NA),
+            ("analog_id", pd.NA),
+            ("terminal_id", pd.NA),
+            ("description", pd.NA),
+        ],
+    )
+    def test_cim_fields_valid_values(self, parameter, valid_value):
+        """Test: CIM fields accept valid values"""
+        net = pandapowerNet(name="test_cim_fields_valid_values")
+        b0 = create_bus(net, 0.4)
+
+        net.measurement = pd.DataFrame({
+            "name": pd.Series(["m1"], dtype=pd.StringDtype()),
+            "measurement_type": ["p"],
+            "element_type": ["bus"],
+            "value": [10.0],
+            "std_dev": [0.1],
+            "bus": [b0],
+            "element": [b0],
+            "side": pd.Series(["hv"], dtype=pd.StringDtype()),
+        })
+
+        net.measurement[parameter] = pd.Series([valid_value], dtype=pd.StringDtype())
+        validate_network(net)
 
 
 class TestMeasurementForeignKey:
@@ -200,7 +250,6 @@ class TestMeasurementForeignKey:
                 "std_dev": [0.1],
                 "bus": [b0],
                 "element": [b0],
-                "check_existing": [True],
                 "side": ["hv"],
             }
         )
@@ -213,29 +262,6 @@ class TestMeasurementForeignKey:
     def test_valid_bus_index_non_sequential(self):
         """Test: bus FK works with non-sequential bus indices"""
         net = pandapowerNet(name="test_valid_bus_index_non_sequential")
-        create_bus(net, 0.4, index=10)
-        create_bus(net, 0.4, index=42)
-        create_bus(net, 0.4, index=100)
-
-        net.measurement = pd.DataFrame(
-            {
-                "name": pd.Series(["m1", "m2", "m3"], dtype="string"),
-                "measurement_type": ["p", "q", "v"],
-                "element_type": ["bus", "bus", "bus"],
-                "value": [10.0, 5.0, 1.01],
-                "std_dev": [0.1, 0.2, 0.01],
-                "bus": [10, 42, 100],
-                "element": [10, 42, 100],
-                "side": pd.Series([pd.NA, pd.NA, pd.NA], dtype="string"),
-            }
-        )
-
-        validate_network(net)
-
-
-    def test_valid_bus_index_non_sequential(self):
-        """Test: bus FK works with non-sequential bus indices"""
-        net = create_empty_network()
         create_bus(net, 0.4, index=10)
         create_bus(net, 0.4, index=42)
         create_bus(net, 0.4, index=100)

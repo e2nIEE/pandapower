@@ -103,6 +103,13 @@ class TestBusOptionalFields:
             itertools.chain(
                 itertools.product(["min_vm_pu", "max_vm_pu"], [np.nan, *positiv_floats]),
                 itertools.product(["type", "zone", "geo"], [pd.NA, *strings]),
+                itertools.product(
+                    ["origin_id", "origin_class", "origin_profile", "cim_topnode",
+                     "ConnectivityNodeContainer_id", "Substation_id", "description",
+                     "Busbar_id", "Busbar_name", "GeographicalRegion_id", "GeographicalRegion_name",
+                     "SubGeographicalRegion_id", "SubGeographicalRegion_name", "ucte_country"],
+                    [pd.NA, *strings]
+                )
             )
         ),
     )
@@ -120,6 +127,13 @@ class TestBusOptionalFields:
                 itertools.product(["min_vm_pu"], [*negativ_floats, *not_floats_list, *not_allowed_floats]),
                 itertools.product(["max_vm_pu"], [*negativ_floats_plus_zero, *not_floats_list, *not_allowed_floats]),
                 itertools.product(["type", "zone", "geo"], [np.nan, float(np.nan), *not_strings_list]),
+                itertools.product(
+                    ["origin_id", "origin_class", "origin_profile", "cim_topnode",
+                     "ConnectivityNodeContainer_id", "Substation_id", "description",
+                     "Busbar_id", "Busbar_name", "GeographicalRegion_id", "GeographicalRegion_name",
+                     "SubGeographicalRegion_id", "SubGeographicalRegion_name", "ucte_country"],
+                    [np.nan, float(np.nan), *not_strings_list]
+                )
             )
         ),
     )
@@ -137,16 +151,6 @@ class TestBusOptionalFields:
 
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
-
-
-class TestBusGroupDependency:
-    """Tests for group dependency constraints, max_vm_pu, min_vm_pu get created if one is present in create_bus"""
-
-    def test_opf_columns_both_absent_valid(self):
-        """Test: both opf columns absent is valid"""
-        net = pandapowerNet(name="test_opf_columns_absent")
-        create_bus(net, 0.4)
-        validate_network(net)
 
 
 class TestBusCrossFieldConstraints:
@@ -210,24 +214,6 @@ class TestBusCimUcteFields:
         create_bus(net, 0.4)
         net.bus["origin_id"] = pd.Series([pd.NA], dtype=pd.StringDtype())
         validate_network(net)
-
-    @pytest.mark.parametrize(
-        "field",
-        [
-            "origin_id", "origin_class", "origin_profile", "cim_topnode",
-            "ConnectivityNodeContainer_id", "Substation_id", "description",
-            "Busbar_id", "Busbar_name", "GeographicalRegion_id",
-            "GeographicalRegion_name", "SubGeographicalRegion_id",
-            "SubGeographicalRegion_name", "ucte_country"
-        ],
-    )
-    def test_cim_fields_invalid(self, field):
-        """Test: CIM fields reject float nan"""
-        net = pandapowerNet(name="test_cim_invalid")
-        create_bus(net, 0.4)
-        net.bus[field] = float(np.nan)
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
 
 
 class TestBusResults:

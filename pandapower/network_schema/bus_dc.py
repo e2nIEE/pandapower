@@ -31,7 +31,7 @@ _bus_dc_columns = {
     ),
     "min_vm_pu": pa.Column(
         float,
-        pa.Check.ge(0),
+        checks=[pa.Check.ge(0), pa.Check.le(2)],
         nullable=True,
         required=False,
         description="Minimum dc bus voltage in p.u. - necessary for OPF",

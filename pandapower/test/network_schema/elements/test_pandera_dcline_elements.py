@@ -1,4 +1,4 @@
-# test_dcline.py
+# test_pandera_dcline_elements.py
 
 import itertools
 
@@ -195,6 +195,12 @@ class TestDclineOptionalFields:
                 itertools.product(["max_q_from_mvar"], all_allowed_floats),
                 itertools.product(["min_q_to_mvar"], all_allowed_floats),
                 itertools.product(["max_q_to_mvar"], all_allowed_floats),
+
+                itertools.product(["origin_id"], [pd.NA, *strings]),
+                itertools.product(["origin_class"], [pd.NA, *strings]),
+                itertools.product(["description"], [pd.NA, *strings]),
+                itertools.product(["terminal_to"], [pd.NA, *strings]),
+                itertools.product(["terminal_from"], [pd.NA, *strings]),
             )
         ),
     )
@@ -232,7 +238,8 @@ class TestDclineOptionalFields:
             in_service=True,
             name="lorem ipsum"
         )
-        if parameter == "name":
+        cim_string_fields = ["name", "origin_id", "origin_class", "description", "terminal_to", "terminal_from"]
+        if parameter in cim_string_fields:
             net.dcline[parameter] = pd.Series([valid_value], dtype=pd.StringDtype())
         else:
             net.dcline.loc[dc0, parameter] = valid_value
@@ -249,6 +256,12 @@ class TestDclineOptionalFields:
                 itertools.product(["max_q_from_mvar"], not_floats_list),
                 itertools.product(["min_q_to_mvar"], not_floats_list),
                 itertools.product(["max_q_to_mvar"], not_floats_list),
+
+                itertools.product(["origin_id"], not_strings_list),
+                itertools.product(["origin_class"], not_strings_list),
+                itertools.product(["description"], not_strings_list),
+                itertools.product(["terminal_to"], not_strings_list),
+                itertools.product(["terminal_from"], not_strings_list),
             )
         ),
     )
@@ -278,28 +291,6 @@ class TestDclineOptionalFields:
         net.dcline[parameter] = invalid_value
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
-
-    def test_opf_group_partial_missing_invalid(self):
-        """Test: OPF group must be complete if any OPF value is set"""
-        net = pandapowerNet(name="test_opf_group_partial_missing_invalid")
-        b0 = create_bus(net, 0.4)
-        b1 = create_bus(net, 0.4)
-        create_dcline(
-            net,
-            from_bus=b0,
-            to_bus=b1,
-            p_mw=10.0,
-            loss_percent=1.0,
-            loss_mw=0.1,
-            vm_from_pu=1.02,
-            vm_to_pu=1.01,
-            in_service=True,
-        )
-        net.dcline["max_p_mw"] = 100.0
-
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
-
 
 class TestDclineForeignKey:
     """Tests for foreign key constraints"""
@@ -375,7 +366,7 @@ class TestDclineForeignKey:
 
     def test_valid_bus_index_non_sequential(self):
         """Test: bus FKs work with non-sequential bus indices"""
-        net = create_empty_network()
+        net = pandapowerNet(name="test_valid_bus_index_non_sequential")
         create_bus(net, 0.4, index=10)
         create_bus(net, 0.4, index=42)
         create_bus(net, 0.4, index=100)

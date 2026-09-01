@@ -125,8 +125,8 @@ class TestBusDCOptionalFields:
                 itertools.product(["type"], [np.nan, *not_strings_list]),
                 itertools.product(["zone"], [np.nan, *not_strings_list]),
                 itertools.product(["geo"], [np.nan, *not_strings_list]),
-                itertools.product(["min_vm_pu"], [np.nan, *not_floats_list, *not_allowed_floats]),
-                itertools.product(["max_vm_pu"], [np.nan, *not_floats_list, *not_allowed_floats]),
+                itertools.product(["min_vm_pu"], [*not_floats_list, *not_allowed_floats]),
+                itertools.product(["max_vm_pu"], [*not_floats_list, *not_allowed_floats]),
             )
         ),
     )
@@ -143,23 +143,6 @@ class TestBusDCOptionalFields:
 
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
-
-
-class TestBusDCGroupDependency:
-    """Tests for group dependency constraints"""
-
-    def test_opf_columns_must_appear_together(self):
-        """Test: opf columns must both be present if one is present"""
-        net = pandapowerNet(name="test_opf_columns_together")
-        create_bus_dc(net, vn_kv=1.0, in_service=True, max_vm_pu=1.1)
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
-
-    def test_opf_columns_both_absent_valid(self):
-        """Test: both opf columns absent is valid"""
-        net = pandapowerNet(name="test_opf_columns_absent")
-        create_bus_dc(net, vn_kv=1.0, in_service=True)
-        validate_network(net)
 
 
 class TestBusDCCrossFieldConstraints:

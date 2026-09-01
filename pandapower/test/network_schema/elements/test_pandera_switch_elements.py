@@ -162,6 +162,11 @@ class TestSwitchOptionalFields:
             itertools.chain(
                 itertools.product(["name"], not_strings_list),
                 itertools.product(["type"], not_strings_list),
+                itertools.product(["origin_id"], not_strings_list),
+                itertools.product(["origin_class"], not_strings_list),
+                itertools.product(["description"], not_strings_list),
+                itertools.product(["terminal_bus"], not_strings_list),
+                itertools.product(["terminal_element"], not_strings_list),
             )
         ),
     )

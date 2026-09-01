@@ -177,6 +177,18 @@ class TestSgenOptionalFields:
                 itertools.product(["id_q_capability_characteristic"], all_allowed_ints),
                 itertools.product(["curve_style"], ["straightLineYValues", "constantYValue"]),
                 itertools.product(["reactive_capability_curve"], bools),
+                # CIM
+                itertools.product(["origin_id"], [pd.NA, *strings]),
+                itertools.product(["origin_class"], [pd.NA, *strings]),
+                itertools.product(["terminal"], [pd.NA, *strings]),
+                itertools.product(["description"], [pd.NA, *strings]),
+                itertools.product(["RegulatingControl.mode"], [pd.NA, *strings]),
+                itertools.product(["RegulatingControl.targetValue"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["referencePriority"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["vn_kv"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["rdss_ohm"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["xdss_pu"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["RegulatingControl.enabled"], [pd.NA, *bools]),
             )
         ),
     )
@@ -196,9 +208,10 @@ class TestSgenOptionalFields:
         net.sgen["reactive_capability_curve"] = pd.Series([True], dtype="boolean")
 
         # Handle nullable types properly
-        if parameter in {"name", "type", "curve_style", "generator_type"}:
+        if parameter in {"name", "type", "curve_style", "generator_type", "origin_id", "origin_class", "terminal",
+                         "description", "RegulatingControl.mode"}:
             net.sgen[parameter] = pd.Series([valid_value], dtype="string")
-        elif parameter in {"current_source", "reactive_capability_curve"}:
+        elif parameter in {"current_source", "reactive_capability_curve", "RegulatingControl.enabled"}:
             net.sgen[parameter] = pd.Series([valid_value], dtype=pd.BooleanDtype())
         elif parameter == "id_q_capability_characteristic":
             net.sgen[parameter] = pd.Series([valid_value], dtype="Int64")
@@ -206,46 +219,6 @@ class TestSgenOptionalFields:
             net.sgen[parameter] = valid_value
 
         validate_network(net)
-
-    def test_opf_group_partial_missing_invalid(self):
-        net = pandapowerNet(name="test_opf_group_partial_missing_invalid")
-        b0 = create_bus(net, 0.4)
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-
-        # Set only one OPF column
-        net.sgen["max_p_mw"] = 100.0
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "opf")
-
-    @pytest.mark.xfail  # TODO add back when reactive_capability_curve is removed
-    def test_qcc_group_partial_missing_invalid(self):
-        # Only id_q_capability_characteristic
-        net = pandapowerNet(name="test_qcc_group_partial_missing_invalid0")
-        b0 = create_bus(net, 0.4)
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        net.sgen["id_q_capability_characteristic"] = pd.Series([0], dtype="Int64")
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "qcc")
-
-        # Only curve_style
-        net = pandapowerNet(name="test_qcc_group_partial_missing_invalid1")
-        b0 = create_bus(net, 0.4)
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        net.sgen["curve_style"] = pd.Series([pd.NA, "straightLineYValues"], dtype="string")
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "qcc")
-
-        # Only reactive_capability_curve
-        net = pandapowerNet(name="test_qcc_group_partial_missing_invalid2")
-        b0 = create_bus(net, 0.4)
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        net.sgen["reactive_capability_curve"] = pd.Series([pd.NA, pd.NA, True], dtype="boolean")
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "qcc")
 
     @pytest.mark.parametrize(
         "parameter,invalid_value",
@@ -269,6 +242,17 @@ class TestSgenOptionalFields:
                 itertools.product(["id_q_capability_characteristic"], not_ints_list),
                 itertools.product(["curve_style"], not_strings_list),
                 itertools.product(["reactive_capability_curve"], not_boolean_list),
+                itertools.product(["origin_id"], not_strings_list),
+                itertools.product(["origin_class"], not_strings_list),
+                itertools.product(["terminal"], not_strings_list),
+                itertools.product(["description"], not_strings_list),
+                itertools.product(["RegulatingControl.mode"], not_strings_list),
+                itertools.product(["RegulatingControl.targetValue"], not_floats_list),
+                itertools.product(["referencePriority"], not_floats_list),
+                itertools.product(["vn_kv"], not_floats_list),
+                itertools.product(["rdss_ohm"], not_floats_list),
+                itertools.product(["xdss_pu"], not_floats_list),
+                itertools.product(["RegulatingControl.enabled"], not_boolean_list),
             )
         ),
     )
@@ -292,380 +276,6 @@ class TestSgenOptionalFields:
             validate_network(net)
 
 
-class TestSgenDependencyGroupNullValues:
-    """Tests for nullable dependency group columns"""
-
-    def test_opf_group_all_nan_valid(self):
-        """Test: OPF group columns can all be NaN together (group not triggered)"""
-        net = pandapowerNet(name="test_opf_group_all_nan_valid")
-        b0 = create_bus(net, 0.4)
-
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-
-        # Set all OPF columns to NaN
-        net.sgen["max_p_mw"] = float(np.nan)
-        net.sgen["min_p_mw"] = float(np.nan)
-        net.sgen["max_q_mvar"] = float(np.nan)
-        net.sgen["min_q_mvar"] = float(np.nan)
-
-        validate_network(net)
-
-    def test_qcc_group_all_na_valid(self):
-        """Test: QCC group columns can all be NA/NaN together (group not triggered)"""
-        net = pandapowerNet(name="test_qcc_group_all_na_valid")
-        b0 = create_bus(net, 0.4)
-
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-
-        # Set all QCC columns to NA/NaN with correct dtypes
-        net.sgen["id_q_capability_characteristic"] = pd.Series([pd.NA], dtype="Int64")
-        net.sgen["curve_style"] = pd.Series([pd.NA], dtype=pd.StringDtype())
-        net.sgen["reactive_capability_curve"] = pd.Series([pd.NA], dtype=pd.BooleanDtype())
-
-        validate_network(net)
-
-    def test_mixed_null_and_valid_values_in_rows(self):
-        """Test: Multiple rows with mixed NA and valid values"""
-        net = pandapowerNet(name="test_mixed_null_and_valid_values_in_rows")
-        b0 = create_bus(net, 0.4)
-        b1 = create_bus(net, 0.4)
-
-        # Row 1: OPF group complete
-        create_sgen(
-            net,
-            bus=b0,
-            p_mw=1.0,
-            q_mvar=0.1,
-            scaling=1.0,
-            in_service=True,
-            name="SGen A",
-            sn_mva=1.0,
-            type="PV",
-            max_p_mw=2.0,
-            min_p_mw=-1.0,
-            max_q_mvar=1.0,
-            min_q_mvar=-0.5,
-        )
-
-        # Row 2: all optional fields NA/NaN (OPF group all NaN)
-        create_sgen(
-            net,
-            bus=b1,
-            p_mw=2.0,
-            q_mvar=0.2,
-            scaling=0.8,
-            in_service=False,
-        )
-
-        # Row 3: QCC group complete, OPF group all NaN
-        create_sgen(
-            net,
-            bus=b0,
-            p_mw=0.5,
-            q_mvar=0.05,
-            scaling=1.2,
-            in_service=True,
-        )
-
-        # Set nullable columns with mixed values
-        net.sgen["name"] = pd.Series(["SGen A", pd.NA, pd.NA], dtype=pd.StringDtype())
-        net.sgen["type"] = pd.Series(["PV", pd.NA, "WP"], dtype=pd.StringDtype())
-        net.sgen["sn_mva"] = [1.0, float(np.nan), float(np.nan)]
-
-        # OPF columns - Row 1 has values, Row 2 and 3 have NaN (group consistency per row)
-        net.sgen["max_p_mw"] = [2.0, float(np.nan), float(np.nan)]
-        net.sgen["min_p_mw"] = [-1.0, float(np.nan), float(np.nan)]
-        net.sgen["max_q_mvar"] = [1.0, float(np.nan), float(np.nan)]
-        net.sgen["min_q_mvar"] = [-0.5, float(np.nan), float(np.nan)]
-
-        # QCC columns - Row 3 has values, others have NA/NaN (group consistency per row)
-        net.sgen["id_q_capability_characteristic"] = pd.Series([pd.NA, pd.NA, 0], dtype="Int64")
-        net.sgen["curve_style"] = pd.Series([pd.NA, pd.NA, "straightLineYValues"], dtype=pd.StringDtype())
-        net.sgen["reactive_capability_curve"] = pd.Series([pd.NA, pd.NA, True], dtype=pd.BooleanDtype())
-
-        # SC-related columns with mixed values (not in group dependency)
-        net.sgen["k"] = [0.5, float(np.nan), float(np.nan)]
-        net.sgen["rx"] = [float(np.nan), 0.1, float(np.nan)]
-        net.sgen["current_source"] = pd.Series([True, pd.NA, pd.NA], dtype=pd.BooleanDtype())
-
-        # CIM columns with mixed values
-        net.sgen["origin_id"] = pd.Series(["cim_1", pd.NA, pd.NA], dtype=pd.StringDtype())
-        net.sgen["origin_class"] = pd.Series([pd.NA, pd.NA, "GeneratingUnit"], dtype=pd.StringDtype())
-
-        validate_network(net)
-
-    def test_cim_columns_all_na_valid(self):
-        """Test: All CIM-related columns can be NA"""
-        net = pandapowerNet(name="test_cim_columns_all_na_valid")
-        b0 = create_bus(net, 0.4)
-
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-
-        # CIM columns from schema metadata
-        cim_string_columns = ["name", "origin_id", "origin_class", "terminal", "description", "type"]
-
-        for col in cim_string_columns:
-            net.sgen[col] = pd.Series([pd.NA], dtype=pd.StringDtype())
-
-        validate_network(net)
-
-    def test_opf_group_row_consistency_valid(self):
-        """Test: OPF group - each row must have all values or all NaN"""
-        net = pandapowerNet(name="test_opf_group_row_consistency_valid")
-        b0 = create_bus(net, 0.4)
-
-        # Row 1: all OPF values present
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        # Row 2: all OPF values NaN
-        create_sgen(net, bus=b0, p_mw=2.0, q_mvar=0.1, scaling=1.0, in_service=True)
-
-        net.sgen["max_p_mw"] = [2.0, float(np.nan)]
-        net.sgen["min_p_mw"] = [-2.0, float(np.nan)]
-        net.sgen["max_q_mvar"] = [1.0, float(np.nan)]
-        net.sgen["min_q_mvar"] = [-1.0, float(np.nan)]
-
-        validate_network(net)
-
-    def test_opf_group_row_partial_invalid(self):
-        """Test: OPF group - partial values in a row should fail"""
-        net = pandapowerNet(name="test_opf_group_row_partial_invalid")
-        b0 = create_bus(net, 0.4)
-
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        create_sgen(net, bus=b0, p_mw=2.0, q_mvar=0.1, scaling=1.0, in_service=True)
-
-        # Row 1: all OPF values present
-        # Row 2: partial OPF values
-        net.sgen["max_p_mw"] = [2.0, 3.0]
-        net.sgen["min_p_mw"] = [-2.0, float(np.nan)]
-        net.sgen["max_q_mvar"] = [1.0, float(np.nan)]
-        net.sgen["min_q_mvar"] = [-1.0, float(np.nan)]
-
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
-
-    def test_qcc_group_row_consistency_valid(self):
-        """Test: QCC group - each row must have all values or all NA"""
-        net = pandapowerNet(name="test_qcc_group_row_consistency_valid")
-        b0 = create_bus(net, 0.4)
-
-        # Row 1: all QCC values present
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        # Row 2: all QCC values NA
-        create_sgen(net, bus=b0, p_mw=2.0, q_mvar=0.1, scaling=1.0, in_service=True)
-
-        net.sgen["id_q_capability_characteristic"] = pd.Series([0, pd.NA], dtype="Int64")
-        net.sgen["curve_style"] = pd.Series(["straightLineYValues", pd.NA], dtype=pd.StringDtype())
-        net.sgen["reactive_capability_curve"] = pd.Series([True, pd.NA], dtype=pd.BooleanDtype())
-
-        validate_network(net)
-
-    @pytest.mark.xfail  # TODO add back when reactive_capability_curve is removed
-    def test_qcc_group_row_partial_invalid(self):
-        """Test: QCC group - partial values in a row should fail"""
-        net = pandapowerNet(name="test_qcc_group_row_partial_invalid")
-        b0 = create_bus(net, 0.4)
-
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        create_sgen(net, bus=b0, p_mw=2.0, q_mvar=0.1, scaling=1.0, in_service=True)
-
-        # Row 1: all QCC values present
-        # Row 2: partial QCC values (only id set) - should fail
-        net.sgen["id_q_capability_characteristic"] = pd.Series([0, 1], dtype="Int64")
-        net.sgen["curve_style"] = pd.Series(["straightLineYValues", pd.NA], dtype=pd.StringDtype())
-        net.sgen["reactive_capability_curve"] = pd.Series([True, pd.NA], dtype=pd.BooleanDtype())
-
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
-
-
-class TestSgenDependencyGroupNullValues:
-    """Tests for nullable dependency group columns"""
-
-    def test_opf_group_all_nan_valid(self):
-        """Test: OPF group columns can all be NaN together (group not triggered)"""
-        net = pandapowerNet(name="test_opf_group_all_nan_valid")
-        b0 = create_bus(net, 0.4)
-
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-
-        # Set all OPF columns to NaN
-        net.sgen["max_p_mw"] = float(np.nan)
-        net.sgen["min_p_mw"] = float(np.nan)
-        net.sgen["max_q_mvar"] = float(np.nan)
-        net.sgen["min_q_mvar"] = float(np.nan)
-
-        validate_network(net)
-
-    def test_qcc_group_all_na_valid(self):
-        """Test: QCC group columns can all be NA/NaN together (group not triggered)"""
-        net = pandapowerNet(name="test_qcc_group_all_na_valid")
-        b0 = create_bus(net, 0.4)
-
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-
-        # Set all QCC columns to NA/NaN with correct dtypes
-        net.sgen["id_q_capability_characteristic"] = pd.Series([pd.NA], dtype="Int64")
-        net.sgen["curve_style"] = pd.Series([pd.NA], dtype=pd.StringDtype())
-        net.sgen["reactive_capability_curve"] = pd.Series([pd.NA], dtype=pd.BooleanDtype())
-
-        validate_network(net)
-
-    def test_mixed_null_and_valid_values_in_rows(self):
-        """Test: Multiple rows with mixed NA and valid values"""
-        net = pandapowerNet(name="test_mixed_null_and_valid_values_in_rows")
-        b0 = create_bus(net, 0.4)
-        b1 = create_bus(net, 0.4)
-
-        # Row 1: OPF group complete
-        create_sgen(
-            net,
-            bus=b0,
-            p_mw=1.0,
-            q_mvar=0.1,
-            scaling=1.0,
-            in_service=True,
-            name="SGen A",
-            sn_mva=1.0,
-            type="PV",
-            max_p_mw=2.0,
-            min_p_mw=-1.0,
-            max_q_mvar=1.0,
-            min_q_mvar=-0.5,
-        )
-
-        # Row 2: all optional fields NA/NaN (OPF group all NaN)
-        create_sgen(
-            net,
-            bus=b1,
-            p_mw=2.0,
-            q_mvar=0.2,
-            scaling=0.8,
-            in_service=False,
-        )
-
-        # Row 3: QCC group complete, OPF group all NaN
-        create_sgen(
-            net,
-            bus=b0,
-            p_mw=0.5,
-            q_mvar=0.05,
-            scaling=1.2,
-            in_service=True,
-        )
-
-        # Set nullable columns with mixed values
-        net.sgen["name"] = pd.Series(["SGen A", pd.NA, pd.NA], dtype=pd.StringDtype())
-        net.sgen["type"] = pd.Series(["PV", pd.NA, "WP"], dtype=pd.StringDtype())
-        net.sgen["sn_mva"] = [1.0, float(np.nan), float(np.nan)]
-
-        # OPF columns - Row 1 has values, Row 2 and 3 have NaN (group consistency per row)
-        net.sgen["max_p_mw"] = [2.0, float(np.nan), float(np.nan)]
-        net.sgen["min_p_mw"] = [-1.0, float(np.nan), float(np.nan)]
-        net.sgen["max_q_mvar"] = [1.0, float(np.nan), float(np.nan)]
-        net.sgen["min_q_mvar"] = [-0.5, float(np.nan), float(np.nan)]
-
-        # QCC columns - Row 3 has values, others have NA/NaN (group consistency per row)
-        net.sgen["id_q_capability_characteristic"] = pd.Series([pd.NA, pd.NA, 0], dtype="Int64")
-        net.sgen["curve_style"] = pd.Series([pd.NA, pd.NA, "straightLineYValues"], dtype=pd.StringDtype())
-        net.sgen["reactive_capability_curve"] = pd.Series([pd.NA, pd.NA, True], dtype=pd.BooleanDtype())
-
-        # SC-related columns with mixed values (not in group dependency)
-        net.sgen["k"] = [0.5, float(np.nan), float(np.nan)]
-        net.sgen["rx"] = [float(np.nan), 0.1, float(np.nan)]
-        net.sgen["current_source"] = pd.Series([True, pd.NA, pd.NA], dtype=pd.BooleanDtype())
-
-        # CIM columns with mixed values
-        net.sgen["origin_id"] = pd.Series(["cim_1", pd.NA, pd.NA], dtype=pd.StringDtype())
-        net.sgen["origin_class"] = pd.Series([pd.NA, pd.NA, "GeneratingUnit"], dtype=pd.StringDtype())
-
-        validate_network(net)
-
-    def test_cim_columns_all_na_valid(self):
-        """Test: All CIM-related columns can be NA"""
-        net = pandapowerNet(name="test_cim_columns_all_na_valid")
-        b0 = create_bus(net, 0.4)
-
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-
-        # CIM columns from schema metadata
-        cim_string_columns = ["name", "origin_id", "origin_class", "terminal", "description", "type"]
-
-        for col in cim_string_columns:
-            net.sgen[col] = pd.Series([pd.NA], dtype=pd.StringDtype())
-
-        validate_network(net)
-
-    def test_opf_group_row_consistency_valid(self):
-        """Test: OPF group - each row must have all values or all NaN"""
-        net = pandapowerNet(name="test_opf_group_row_consistency_valid")
-        b0 = create_bus(net, 0.4)
-
-        # Row 1: all OPF values present
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        # Row 2: all OPF values NaN
-        create_sgen(net, bus=b0, p_mw=2.0, q_mvar=0.1, scaling=1.0, in_service=True)
-
-        net.sgen["max_p_mw"] = [2.0, float(np.nan)]
-        net.sgen["min_p_mw"] = [-2.0, float(np.nan)]
-        net.sgen["max_q_mvar"] = [1.0, float(np.nan)]
-        net.sgen["min_q_mvar"] = [-1.0, float(np.nan)]
-
-        validate_network(net)
-
-    def test_opf_group_row_partial_invalid(self):
-        """Test: OPF group - partial values in a row should fail"""
-        net = pandapowerNet(name="test_opf_group_row_partial_invalid")
-        b0 = create_bus(net, 0.4)
-
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        create_sgen(net, bus=b0, p_mw=2.0, q_mvar=0.1, scaling=1.0, in_service=True)
-
-        # Row 1: all OPF values present
-        # Row 2: partial OPF values
-        net.sgen["max_p_mw"] = [2.0, 3.0]
-        net.sgen["min_p_mw"] = [-2.0, float(np.nan)]
-        net.sgen["max_q_mvar"] = [1.0, float(np.nan)]
-        net.sgen["min_q_mvar"] = [-1.0, float(np.nan)]
-
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
-
-    def test_qcc_group_row_consistency_valid(self):
-        """Test: QCC group - each row must have all values or all NA"""
-        net = pandapowerNet(name="test_qcc_group_row_consistency_valid")
-        b0 = create_bus(net, 0.4)
-
-        # Row 1: all QCC values present
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        # Row 2: all QCC values NA
-        create_sgen(net, bus=b0, p_mw=2.0, q_mvar=0.1, scaling=1.0, in_service=True)
-
-        net.sgen["id_q_capability_characteristic"] = pd.Series([0, pd.NA], dtype="Int64")
-        net.sgen["curve_style"] = pd.Series(["straightLineYValues", pd.NA], dtype=pd.StringDtype())
-        net.sgen["reactive_capability_curve"] = pd.Series([True, pd.NA], dtype=pd.BooleanDtype())
-
-        validate_network(net)
-
-    @pytest.mark.xfail  # TODO add back when reactive_capability_curve is removed
-    def test_qcc_group_row_partial_invalid(self):
-        """Test: QCC group - partial values in a row should fail"""
-        net = pandapowerNet(name="test_qcc_group_row_partial_invalid")
-        b0 = create_bus(net, 0.4)
-
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        create_sgen(net, bus=b0, p_mw=2.0, q_mvar=0.1, scaling=1.0, in_service=True)
-
-        # Row 1: all QCC values present
-        # Row 2: partial QCC values (only id set) - should fail
-        net.sgen["id_q_capability_characteristic"] = pd.Series([0, 1], dtype="Int64")
-        net.sgen["curve_style"] = pd.Series(["straightLineYValues", pd.NA], dtype=pd.StringDtype())
-        net.sgen["reactive_capability_curve"] = pd.Series([True, pd.NA], dtype=pd.BooleanDtype())
-
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
-
-
 class TestSgenForeignKey:
     """Tests for foreign key constraints"""
 
@@ -681,19 +291,6 @@ class TestSgenForeignKey:
     def test_valid_bus_index_non_sequential(self):
         """Test: bus FK works with non-sequential bus indices"""
         net = pandapowerNet(name="test_valid_bus_index_non_sequential")
-        create_bus(net, 0.4, index=10)
-        create_bus(net, 0.4, index=42)
-        create_bus(net, 0.4, index=100)
-
-        create_sgen(net, bus=10, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
-        create_sgen(net, bus=42, p_mw=2.0, q_mvar=0.2, scaling=0.9, in_service=True)
-        create_sgen(net, bus=100, p_mw=0.5, q_mvar=0.05, scaling=1.1, in_service=False)
-
-        validate_network(net)
-
-    def test_valid_bus_index_non_sequential(self):
-        """Test: bus FK works with non-sequential bus indices"""
-        net = create_empty_network()
         create_bus(net, 0.4, index=10)
         create_bus(net, 0.4, index=42)
         create_bus(net, 0.4, index=100)

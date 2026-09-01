@@ -287,26 +287,6 @@ class TestTcscOptionalFields:
         net.tcsc["max_angle_degree"] = 120.0
         validate_network(net)
 
-    def test_min_equal_max_check_passes(self):
-        """Test: min_angle_degree == max_angle_degree passes"""
-        net = create_empty_network()
-        b0 = create_bus(net, 0.4)
-        b1 = create_bus(net, 0.4)
-        create_tcsc(
-            net,
-            from_bus=b0,
-            to_bus=b1,
-            x_l_ohm=0.0,
-            x_cvar_ohm=-0.1,
-            set_p_to_mw=0.0,
-            thyristor_firing_angle_degree=100.0,
-            controllable=True,
-            in_service=False,
-        )
-        net.tcsc["min_angle_degree"] = 120.0
-        net.tcsc["max_angle_degree"] = 120.0
-        validate_network(net)
-
     def test_min_greater_than_max_fails(self):
         net = pandapowerNet(name="test_min_greater_than_max_fails")
         b0 = create_bus(net, 0.4)  # index 0

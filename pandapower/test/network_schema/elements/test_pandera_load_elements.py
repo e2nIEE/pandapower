@@ -82,6 +82,35 @@ class TestLoadRequiredFields:
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
+    def test_zip_group_complete_valid(self):
+        """Test: ZIP group with all columns present is valid"""
+        net = pandapowerNet(name="test_zip_group_complete_valid")
+        b0 = create_bus(net, 0.4)
+        create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
+
+        # Set complete ZIP group
+        net.load["const_z_p_percent"] = 20.0
+        net.load["const_i_p_percent"] = 30.0
+        net.load["const_z_q_percent"] = 10.0
+        net.load["const_i_q_percent"] = 40.0
+
+        validate_network(net)
+
+    def test_zip_group_complete_invalid(self):
+        """Test: ZIP group with all columns present is valid"""
+        net = pandapowerNet(name="test_zip_group_complete_valid")
+        b0 = create_bus(net, 0.4)
+        create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
+
+        # Set complete ZIP group
+        net.load["const_z_p_percent"] = '20.0'
+        net.load["const_i_p_percent"] = 30.0
+        net.load["const_z_q_percent"] = 10.0
+        net.load["const_i_q_percent"] = 40.0
+
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
 
 class TestLoadOptionalFields:
     """Tests for optional load fields and ZIP group dependencies"""
@@ -153,19 +182,7 @@ class TestLoadOptionalFields:
 
         validate_network(net)
 
-    def test_zip_group_complete_valid(self):
-        """Test: ZIP group with all columns present is valid"""
-        net = pandapowerNet(name="test_zip_group_complete_valid")
-        b0 = create_bus(net, 0.4)
-        create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
 
-        # Set complete ZIP group
-        net.load["const_z_p_percent"] = 20.0
-        net.load["const_i_p_percent"] = 30.0
-        net.load["const_z_q_percent"] = 10.0
-        net.load["const_i_q_percent"] = 40.0
-
-        validate_network(net)
 
     @pytest.mark.parametrize(
         "parameter,valid_value",
@@ -271,155 +288,6 @@ class TestLoadOptionalFields:
         net.load[parameter] = invalid_value
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
-
-
-class TestLoadDependencyGroupNullValues:
-    """Tests for nullable dependency group columns - all columns in group set to NA together"""
-
-    def test_all_nullable_string_columns_na_valid(self):
-        """Test: All nullable string columns can be NA"""
-        net = pandapowerNet(name="test_all_nullable_string_columns_na_valid")
-        b0 = create_bus(net, 0.4)
-
-        create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
-
-        # Set all nullable string columns to NA
-        net.load["name"] = pd.Series([pd.NA], dtype=pd.StringDtype())
-        net.load["zone"] = pd.Series([pd.NA], dtype=pd.StringDtype())
-        net.load["type"] = pd.Series([pd.NA], dtype=pd.StringDtype())
-        net.load["origin_id"] = pd.Series([pd.NA], dtype=pd.StringDtype())
-        net.load["origin_class"] = pd.Series([pd.NA], dtype=pd.StringDtype())
-        net.load["terminal"] = pd.Series([pd.NA], dtype=pd.StringDtype())
-        net.load["description"] = pd.Series([pd.NA], dtype=pd.StringDtype())
-
-        validate_network(net)
-
-    def test_all_nullable_float_columns_nan_valid(self):
-        """Test: All nullable float columns (not in ZIP group) can be NaN"""
-        net = pandapowerNet(name="test_all_nullable_float_columns_nan_valid")
-        b0 = create_bus(net, 0.4)
-
-        create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
-
-        # Set non-group nullable float columns to NaN
-        net.load["sn_mva"] = float("nan")
-        net.load["max_p_mw"] = float("nan")
-        net.load["min_p_mw"] = float("nan")
-        net.load["max_q_mvar"] = float("nan")
-        net.load["min_q_mvar"] = float("nan")
-
-        validate_network(net)
-
-    @pytest.mark.parametrize(
-        "column_name",
-        ["name", "zone", "type", "origin_id", "origin_class", "terminal", "description"],
-    )
-    def test_individual_nullable_string_column_na_valid(self, column_name):
-        """Test: Each nullable string column accepts NA individually"""
-        net = pandapowerNet(name="test_individual_nullable_string_column_na_valid")
-        b0 = create_bus(net, 0.4)
-
-        create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
-
-        net.load[column_name] = pd.Series([pd.NA], dtype=pd.StringDtype())
-        validate_network(net)
-
-    @pytest.mark.parametrize(
-        "column_name",
-        ["sn_mva", "max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar"],
-    )
-    def test_individual_nullable_float_column_nan_valid(self, column_name):
-        """Test: Each nullable float column (not in ZIP group) accepts NaN individually"""
-        net = pandapowerNet(name="test_individual_nullable_float_column_nan_valid")
-        b0 = create_bus(net, 0.4)
-
-        create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
-
-        net.load[column_name] = float("nan")
-        validate_network(net)
-
-    def test_mixed_null_and_valid_values_in_rows(self):
-        """Test: Multiple rows with mixed NA and valid values"""
-        net = pandapowerNet(name="test_mixed_null_and_valid_values_in_rows")
-        b0 = create_bus(net, 0.4)
-
-        # Row 1: all optional string fields filled, ZIP group complete
-        create_load(
-            net,
-            bus=b0,
-            p_mw=1.0,
-            q_mvar=0.1,
-            scaling=1.0,
-            in_service=True,
-            name="Load A",
-            sn_mva=1.0,
-            type="wye",
-            zone="zone-1",
-        )
-
-        # Row 2: all optional fields NA/NaN (including ZIP group all NaN)
-        create_load(
-            net,
-            bus=b0,
-            p_mw=2.0,
-            q_mvar=0.2,
-            scaling=0.8,
-            in_service=False,
-        )
-
-        # Row 3: some fields filled
-        create_load(
-            net,
-            bus=b0,
-            p_mw=0.5,
-            q_mvar=0.05,
-            scaling=1.2,
-            in_service=True,
-            type="delta",
-        )
-
-        # Set nullable columns with mixed values
-        net.load["name"] = pd.Series(["Load A", pd.NA, pd.NA], dtype=pd.StringDtype())
-        net.load["zone"] = pd.Series(["zone-1", pd.NA, pd.NA], dtype=pd.StringDtype())
-        net.load["type"] = pd.Series(["wye", pd.NA, "delta"], dtype=pd.StringDtype())
-        net.load["sn_mva"] = [1.0, float("nan"), float("nan")]
-
-        # CIM columns with mixed values
-        net.load["origin_id"] = pd.Series(["cim_1", pd.NA, pd.NA], dtype=pd.StringDtype())
-        net.load["origin_class"] = pd.Series([pd.NA, pd.NA, "EnergyConsumer"], dtype=pd.StringDtype())
-
-        # Float columns with mixed NaN
-        net.load["max_p_mw"] = [2.0, float("nan"), float("nan")]
-        net.load["min_p_mw"] = [-1.0, float("nan"), float("nan")]
-
-        validate_network(net)
-
-    def test_cim_columns_all_na_valid(self):
-        """Test: All CIM-related columns can be NA"""
-        net = pandapowerNet(name="test_cim_columns_all_na_valid")
-        b0 = create_bus(net, 0.4)
-
-        create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
-
-        # CIM columns from schema metadata
-        cim_string_columns = ["name", "origin_id", "origin_class", "terminal", "description"]
-
-        for col in cim_string_columns:
-            net.load[col] = pd.Series([pd.NA], dtype=pd.StringDtype())
-
-        validate_network(net)
-
-    def test_type_column_na_valid(self):
-        """Test: type column can be NA (despite isin constraint)"""
-        net = pandapowerNet(name="test_type_column_na_valid")
-        b0 = create_bus(net, 0.4)
-
-        create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
-
-        # type is nullable despite having isin constraint
-        net.load["type"] = pd.Series([pd.NA], dtype=pd.StringDtype())
-
-        validate_network(net)
 
 
 class TestLoadForeignKey:

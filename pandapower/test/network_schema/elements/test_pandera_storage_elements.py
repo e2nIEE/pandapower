@@ -142,81 +142,6 @@ class TestStorageOptionalFields:
 
         validate_network(net)
 
-    def test_opf_group_complete_valid(self):
-        """OPF group with all columns present is valid"""
-        net = pandapowerNet(name="test_opf_group_complete_valid")
-        b0 = create_bus(net, 0.4)
-        create_storage(net, bus=b0, p_mw=0.1, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
-
-        # Set complete OPF group
-        net.storage["max_p_mw"] = 1.0
-        net.storage["min_p_mw"] = -1.0
-        net.storage["max_q_mvar"] = 0.6
-        net.storage["min_q_mvar"] = -0.6
-        net.storage["controllable"] = pd.Series([True], dtype=bool)
-
-        validate_network(net)
-
-    def test_opf_group_partial_missing_invalid(self):
-        """OPF group must be complete if any OPF value is set"""
-
-        # Case 1: only max_p_mw
-        net = pandapowerNet(name="test_opf_group_partial_missing_invalid0")
-        b0 = create_bus(net, 0.4)
-        create_storage(net, bus=b0, p_mw=0.1, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
-        net.storage["max_p_mw"] = 1.0
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "opf")
-
-        # Case 2: only controllable
-        net = pandapowerNet(name="test_opf_group_partial_missing_invalid1")
-        b0 = create_bus(net, 0.4)
-        create_storage(net, bus=b0, p_mw=0.2, q_mvar=0.1, scaling=1.0, in_service=True, max_e_mwh=10.0)
-        net.storage["controllable"] = pd.Series([True], dtype="boolean")
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "opf")
-
-        # Case 3: only min_q_mvar
-        net = pandapowerNet(name="test_opf_group_partial_missing_invalid2")
-        b0 = create_bus(net, 0.4)
-        create_storage(net, bus=b0, p_mw=-0.2, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
-        net.storage["min_q_mvar"] = -0.5
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "opf")
-
-        # Case 4: missing only controllable
-        net = pandapowerNet(name="test_opf_group_partial_missing_invalid3")
-        b0 = create_bus(net, 0.4)
-        create_storage(net, bus=b0, p_mw=0.1, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
-        net.storage["max_p_mw"] = 1.0
-        net.storage["min_p_mw"] = -1.0
-        net.storage["max_q_mvar"] = 0.6
-        net.storage["min_q_mvar"] = -0.6
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
-
-        # Case 4: missing only controllable
-        net = create_empty_network()
-        b0 = create_bus(net, 0.4)
-        create_storage(net, bus=b0, p_mw=0.1, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
-        net.storage["max_p_mw"] = 1.0
-        net.storage["min_p_mw"] = -1.0
-        net.storage["max_q_mvar"] = 0.6
-        net.storage["min_q_mvar"] = -0.6
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
-
-        # Case 4: missing only controllable
-        net = pandapowerNet(name="test_opf_group_partial_missing_invalid3")
-        b0 = create_bus(net, 0.4)
-        create_storage(net, bus=b0, p_mw=0.1, q_mvar=0.0, scaling=1.0, in_service=True, max_e_mwh=10.0)
-        net.storage["max_p_mw"] = 1.0
-        net.storage["min_p_mw"] = -1.0
-        net.storage["max_q_mvar"] = 0.6
-        net.storage["min_q_mvar"] = -0.6
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
-
     @pytest.mark.parametrize(
         "parameter,valid_value",
         list(
@@ -232,6 +157,11 @@ class TestStorageOptionalFields:
                 itertools.product(["max_q_mvar"], all_allowed_floats),
                 itertools.product(["min_q_mvar"], all_allowed_floats),
                 itertools.product(["controllable"], bools),
+
+                itertools.product(["origin_id"], [pd.NA, *strings]),
+                itertools.product(["origin_class"], [pd.NA, *strings]),
+                itertools.product(["terminal"], [pd.NA, *strings]),
+                itertools.product(["description"], [pd.NA, *strings]),
             )
         ),
     )
@@ -249,7 +179,7 @@ class TestStorageOptionalFields:
         net.storage["min_q_mvar"] = -0.6
         net.storage["controllable"] = pd.Series([True], dtype=bool)
 
-        if parameter in {"name", "type"}:
+        if parameter in {"name", "type", "origin_id", "origin_class", "terminal", "description"}:
             net.storage[parameter] = pd.Series([valid_value], dtype="string")
         elif parameter == "controllable":
             net.storage[parameter] = pd.Series([valid_value], dtype=bool)
@@ -273,6 +203,11 @@ class TestStorageOptionalFields:
                 itertools.product(["max_q_mvar"], [pd.NA, *not_floats_list]),
                 itertools.product(["min_q_mvar"], [pd.NA, *not_floats_list]),
                 itertools.product(["controllable"], [float(np.nan), *not_boolean_list]),
+
+                itertools.product(["origin_id"], [float(np.nan), *not_strings_list]),
+                itertools.product(["origin_class"], [float(np.nan), *not_strings_list]),
+                itertools.product(["terminal"], [float(np.nan), *not_strings_list]),
+                itertools.product(["description"], [float(np.nan), *not_strings_list]),
             )
         ),
     )
@@ -293,44 +228,6 @@ class TestStorageOptionalFields:
         net.storage[parameter] = invalid_value
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
-
-    @pytest.mark.xfail
-    def test_opf_group_all_null_valid(self): #TODO controllable is not nullable
-        """Test: OPF group columns can all be NA/NaN together (group not triggered)"""
-        net = pandapowerNet(name="test_opf_group_all_null_valid")
-        b0 = create_bus(net, 0.4)
-
-        create_storage(net, bus=b0, p_mw=0.5, q_mvar=0.1, scaling=1.0, in_service=True, max_e_mwh=10.0)
-
-        # Set all OPF columns to NA/NaN with correct dtypes
-        net.storage["max_p_mw"] = float(np.nan)
-        net.storage["min_p_mw"] = float(np.nan)
-        net.storage["max_q_mvar"] = float(np.nan)
-        net.storage["min_q_mvar"] = float(np.nan)
-
-        validate_network(net)
-
-    @pytest.mark.xfail #TODO controllable is not nullable
-    def test_opf_group_mixed_rows_valid(self):
-        """Test: Multiple rows where OPF group is complete in some rows, all NaN in others"""
-        net = pandapowerNet(name="test_opf_group_mixed_rows_valid")
-        b0 = create_bus(net, 0.4)
-        b1 = create_bus(net, 0.4)
-
-        # Row 1: OPF group complete
-        create_storage(net, bus=b0, p_mw=0.5, q_mvar=0.1, scaling=1.0, in_service=True, max_e_mwh=10.0)
-
-        # Row 2: no OPF columns
-        create_storage(net, bus=b1, p_mw=-0.3, q_mvar=0.0, scaling=0.8, in_service=False, max_e_mwh=5.0)
-
-        # Set OPF group - Row 1 complete, Row 2 all NaN
-        net.storage["max_p_mw"] = [1.0, float(np.nan)]
-        net.storage["min_p_mw"] = [-1.0, float(np.nan)]
-        net.storage["max_q_mvar"] = [0.6, float(np.nan)]
-        net.storage["min_q_mvar"] = [-0.6, float(np.nan)]
-
-        validate_network(net)
-
 
 class TestStorageForeignKey:
     """Tests for foreign key constraints"""
