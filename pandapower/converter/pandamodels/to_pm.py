@@ -533,7 +533,7 @@ def init_ne_line(net, new_line_index, construction_costs=None):
     -------
     """
     # init dataframe
-    net["ne_line"] = net["line"].loc[new_line_index, :]
+    net["ne_line"] = net["line"].loc[new_line_index, :].copy()
     # add costs, if None -> init with zeros
     construction_costs = np.zeros(len(new_line_index)) if construction_costs is None else \
         construction_costs
@@ -580,7 +580,9 @@ def add_params_to_pm(net, pm):
             df = pd.DataFrame(index=pm_idxs) if elm not in ["line", "trafo"] else pd.DataFrame(index=pm_idxs_br)   
             df["element_index"] = pm_idxs
             df["element_pp_index"] = pd_idxs if elm not in ["line", "trafo"] else pd_idxs_br
-            df["value"] = target_values
+            df["value"] = None
+            if len(target_values):
+                df["value"] = target_values
             df["element"] = elm
             pm["user_defined_params"][param] = df.to_dict(into=OrderedDict, orient="index")
 

@@ -150,8 +150,7 @@ def read_ots_results(net: pandapowerNet):
         res = "res_" + element
         if "in_service" not in net[res]:
             # copy in service state from inputs
-            net[res].loc[:, "in_service"] = None
-            net[res].loc[:, "in_service"] = net[res].loc[:, "in_service"].values
+            net[res]["in_service"] = None
         branch_status = ppc["branch"][f:t, BR_STATUS].real  # type: ignore[index]
 
         net[res].loc[:, "in_service"] = branch_status
