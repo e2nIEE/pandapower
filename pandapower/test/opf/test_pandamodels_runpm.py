@@ -92,8 +92,8 @@ def create_cigre_grid_with_time_series(json_path, net=None, add_ts_constaints=Fa
     sgen_ts = pd.DataFrame(index=time_series.index.tolist(), columns=net.sgen.index.tolist())
     for t in range(n_timesteps):
         load_ts.loc[t] = load_p * time_series.at[t, "residential"]
-        sgen_ts.loc[t][:8] = sgen_p * time_series.at[t, "pv"]
-        sgen_ts.loc[t][8] = wind_p * time_series.at[t, "wind"]
+    sgen_ts.loc[t, sgen_ts.columns[:8].tolist()] = (sgen_p * time_series.at[t, "pv"]).tolist()
+    sgen_ts.loc[t, sgen_ts.columns[8]] = wind_p * time_series.at[t, "wind"]
 
     # create time series controller for load and sgen
     ConstControl(net, element="load", variable="p_mw",
@@ -499,7 +499,7 @@ def test_pm_tnep():
     # run power models tnep optimization
     runpm_tnep(net, pm_model="ACPPowerModel")
     # set lines to be built in service
-    lines_to_built = net["res_ne_line"].loc[net["res_ne_line"].loc[:, "built"], "built"].index
+    lines_to_built = net["res_ne_line"].loc[net["res_ne_line"]["built"].astype(bool), "built"].index
     net["line"].loc[lines_to_built, "in_service"] = True
     # run a power flow calculation again and check if max_loading percent is still violated
     runpp(net)

@@ -163,4 +163,4 @@ def read_tnep_results(net: pandapowerNet):
         # get pandapower index from power models index
         pp_idx = line_idx[int(pm_branch_idx) - 1]
         # built is a float, which is not exactly 1.0 or 0. sometimes
-        net["res_ne_line"].loc[pp_idx, "built"] = branch_data["built"] > 0.5
+        net["res_ne_line"].loc[pp_idx, "built"] = int(branch_data["built"] > 0.5)

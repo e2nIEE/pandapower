@@ -495,7 +495,8 @@ def runpm_ploss(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     for elm in ["line", "trafo"]:
         if "pm_param/target_branch" in net[elm].columns:
             net[elm]["pm_param/side"] = None
-            net[elm].loc[net[elm]["pm_param/target_branch"] == True, "pm_param/side"] = "from"
+            target_branch_mask = net[elm]["pm_param/target_branch"] == True
+            net[elm].loc[target_branch_mask, "pm_param/side"] = "from"
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
@@ -511,19 +512,35 @@ def runpm_ploss(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
     _runpm(net, delete_buffer_file=delete_buffer_file, pm_file_path=pm_file_path, pdm_dev_mode=pdm_dev_mode, **kwargs)
 
 
-def runpm_loading(net, pp_to_pm_callback=None, calculate_voltage_angles=True,
-                  trafo_model: Literal["t", "pi"] = "t", delta=1e-8, trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
-                  check_connectivity=True,
-                pm_model="ACPPowerModel", pm_solver="ipopt", correct_pm_network_data=True, silence=True,
-                pm_time_limits=None, pm_log_level=0, pm_file_path = None, delete_buffer_file=True,
-                opf_flow_lim="S", pm_tol=1e-8, pdm_dev_mode=False, **kwargs):
+def runpm_loading(
+    net,
+    pp_to_pm_callback=None,
+    calculate_voltage_angles=True,
+    trafo_model: Literal["t", "pi"] = "t",
+    delta=1e-8,
+    trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
+    check_connectivity=True,
+    pm_model="ACPPowerModel",
+    pm_solver="ipopt",
+    correct_pm_network_data=True,
+    silence=True,
+    pm_time_limits=None,
+    pm_log_level=0,
+    pm_file_path=None,
+    delete_buffer_file=True,
+    opf_flow_lim="S",
+    pm_tol=1e-8,
+    pdm_dev_mode=False,
+    **kwargs,
+):
     """
     Runs non-linear optimization for active power loss reduction.
     """
     for elm in ["line", "trafo"]:
         if "pm_param/target_branch" in net[elm].columns:
             net[elm]["pm_param/side"] = None
-            net[elm].loc[net[elm]["pm_param/target_branch"] == True, "pm_param/side"] = "from"
+            target_branch_mask = net[elm]["pm_param/target_branch"] == True
+            net[elm].loc[target_branch_mask, "pm_param/side"] = "from"
 
     net._options = {}
     _add_ppc_options(net, calculate_voltage_angles=calculate_voltage_angles,
