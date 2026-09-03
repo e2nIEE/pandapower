@@ -68,6 +68,7 @@ from pandapower.plotting.plotting_toolbox import (
     coords_from_node_geodata,
     get_index_array,
     position_on_busbar,
+    safe_geojson_loads,
 )
 
 if TYPE_CHECKING:
@@ -485,7 +486,7 @@ def create_bus_collection(
     if bus_geodata is None:
         bus_geodata = net[bus_table].geo.apply(_get_coords_from_geojson)
 
-    buses_with_geo = buses[np.isin(buses, bus_geodata.index.values)]
+    buses_with_geo = buses[np.isin(buses, bus_geodata.dropna().index.values)]
     if len(buses_with_geo) < len(buses):
         logger.warning(
             f"The following buses cannot be displayed as there is on geodata available: {set(buses) - set(buses_with_geo)}"
@@ -733,10 +734,22 @@ def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infof
     trafos = trafos[in_geodata]
     trafo_table = net.trafo.loc[trafos]
 
-    hv_geo = bus_geodata.loc[trafo_table["hv_bus"]].apply(geojson.loads).apply(geojson.utils.coords).apply(
-        next).to_list()  # using next works because bus only has one coordinate pair
-    lv_geo = bus_geodata.loc[trafo_table["lv_bus"]].apply(geojson.loads).apply(geojson.utils.coords).apply(
-        next).to_list()
+    hv_geo = (
+        bus_geodata.loc[trafo_table["hv_bus"]]
+        .apply(safe_geojson_loads)
+        .dropna()
+        .apply(geojson.utils.coords)
+        .apply(next)
+        .to_list()
+    )  # using next works because bus only has one coordinate pair
+    lv_geo = (
+        bus_geodata.loc[trafo_table["lv_bus"]]
+        .apply(safe_geojson_loads)
+        .dropna()
+        .apply(geojson.utils.coords)
+        .apply(next)
+        .to_list()
+    )
     tg = list(zip(hv_geo, lv_geo))
 
     info = [infofunc(tr) for tr in trafos] if infofunc is not None else []
@@ -900,7 +913,7 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, c
     infos = []
     color = kwargs.pop("color", "k")
     linewidth = kwargs.pop("linewidths", 2.)
-    bus_geodata = bus_geodata.apply(geojson.loads)
+    bus_geodata = bus_geodata.apply(safe_geojson_loads).dropna()
     if cmap is not None and z is None:
         z = net.res_trafo3w.loading_percent
     for i, idx in enumerate(trafo3w_table.index):

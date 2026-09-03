@@ -1,28 +1,34 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import sys
-import math
 import logging
-from typing import Type, TYPE_CHECKING
+import math
+import sys
+from typing import TYPE_CHECKING
 
+import geojson
 import geojson.utils
-from geojson import Point
 import numpy as np
+from geojson import Point
 
 try:
-    from matplotlib.patches import RegularPolygon, Arc, Circle, Rectangle, Ellipse, PathPatch, Polygon, Patch
+    from matplotlib.patches import Arc, Circle, Ellipse, Patch, PathPatch, Polygon, Rectangle, RegularPolygon
+    from matplotlib.path import Path
     from matplotlib.textpath import TextPath
     from matplotlib.transforms import Affine2D
-    from matplotlib.path import Path
 
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
 from pandapower.auxiliary import soft_dependency_error
-from pandapower.plotting.plotting_toolbox import _rotate_dim2, get_color_list, get_angle_list, \
-    get_linewidth_list, get_list
-
+from pandapower.plotting.plotting_toolbox import (
+    _rotate_dim2,
+    get_angle_list,
+    get_color_list,
+    get_linewidth_list,
+    get_list,
+    safe_geojson_loads,
+)
 
 if TYPE_CHECKING:
     from matplotlib.patches import Patch
@@ -79,7 +85,7 @@ def wp_patch(
     blade_coord1: float,
     blade_coord2: float,
     hub_size: float,
-    path: "Type[Path]",
+    path: "type[Path]",
 ) -> tuple[list["Patch"], list]:
     """
     Generate Patch for wind power plant.
@@ -582,7 +588,7 @@ def trafo_patches(coords, size, **kwargs):
     circles, lines = [], []
 
     # load and extract the coords from the geojson object
-    coords = list(map(lambda x: list(geojson.utils.coords(geojson.loads(x))), coords))
+    coords = list(map(lambda x: list(geojson.utils.coords(safe_geojson_loads(x))), coords))
 
     for i, (p1, p2) in enumerate(coords):
         p1 = np.array(p1)
@@ -726,7 +732,7 @@ def vsc_patches(coords, size, **kwargs):
     squares, lines = [], []
 
     # load and extract the coords from the geojson object
-    coords = list(map(lambda x: list(geojson.utils.coords(geojson.loads(x))), coords))
+    coords = list(map(lambda x: list(geojson.utils.coords(safe_geojson_loads(x))), coords))
 
     for i, (p1, p2) in enumerate(coords):
         p1 = np.array(p1)

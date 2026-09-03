@@ -537,7 +537,7 @@ def remove_not_existing_group_members(net: pandapowerNet, verbose: bool = True) 
     if verbose:
         drop_mask = results.isna()
         if drop_mask.any():
-            logger.info(f"net.group row {net.group.index[drop_mask]} will be dropped.")
+            logger.info(f"net.group row {drop_mask[drop_mask].index} will be dropped.")
 
 
 def ensure_lists_in_group_element_column(
