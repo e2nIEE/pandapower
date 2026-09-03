@@ -13,12 +13,13 @@ from numpy import array
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.network import ADict, pandapowerNet
 # ADict is used as a type to ensure compatibility with pandapipes
+from pandapower.plotting.plotting_toolbox import safe_geojson_loads
 
 
 logger = logging.getLogger(__name__)
 
 try:
-    from shapely.geometry import Point, LineString
+    from shapely.geometry import LineString, Point
 
     shapely_INSTALLED = True
 except ImportError:
@@ -183,7 +184,7 @@ def abstract_convert_crs(
             logger.warning("Converting geojson to crs other than WGS84 is highly discouraged.")
 
         def _geojson_transformer(geojson_str):
-            geometry = geojson.loads(geojson_str)
+            geometry = safe_geojson_loads(geojson_str)
 
             if geometry["type"] == "Point":
                 x, y = geometry["coordinates"]
@@ -299,7 +300,7 @@ def dump_to_geojson_node_branch(
                     missing_geom[name] += 1
                     continue
                 uid = f"{name}-{ind}"
-                features.append(geojson.Feature(geometry=geojson.loads(geom), id=uid, properties=props[uid]))
+                features.append(geojson.Feature(geometry=safe_geojson_loads(geom), id=uid, properties=props[uid]))
     return features, missing_geom[node_name], missing_geom[branch_name]
 
 
@@ -383,7 +384,7 @@ def dump_to_geojson(
                 _get_props(row, cols, prop)
 
                 # getting geodata for switches
-                geom = geojson.loads(net.bus.geo.at[row.bus])
+                geom = safe_geojson_loads(net.bus.geo.at[row.bus])
                 if isinstance(geom, geojson.LineString):
                     logger.warning(f"LineString geometry not supported for type 'switch'. Skipping switch {ind}")
                     geom = None
@@ -409,7 +410,7 @@ def dump_to_geojson(
                 _get_props(row, cols, prop)
 
                 # getting geodata for trafos
-                geom = geojson.loads(net.bus.geo.at[row.lv_bus])
+                geom = safe_geojson_loads(net.bus.geo.at[row.lv_bus])
                 if isinstance(geom, geojson.LineString):
                     logger.warning(f"LineString geometry not supported for type '{t_type}'. Skipping trafo {ind}")
                 if geom is None:
