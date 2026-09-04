@@ -1009,7 +1009,7 @@ def create_weighted_marker_trace(
     if (
         not isinstance(infofunc, pd.Series)
         and isinstance(infofunc, Iterable)
-        and len(infofunc) == len(values_by_bus.index)
+        and len(infofunc) == len(values_by_bus.index)  # type: ignore[arg-type]
     ):
         infofunc = pd.Series(index=values_by_bus.index, data=infofunc)
 
@@ -1032,7 +1032,7 @@ def create_weighted_marker_trace(
 
     # additional info for the create_scale_trace function:
     if not isinstance(scale_marker_size, Iterable):
-        scale_marker_size = [scale_marker_size]
+        scale_marker_size = [scale_marker_size]  # type: ignore[list-item]
 
     marker_trace["meta"] = {
         'marker_scaling': marker_scaling,

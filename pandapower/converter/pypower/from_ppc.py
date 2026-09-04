@@ -572,8 +572,8 @@ def validate_from_ppc(ppc: dict, net: pandapowerNet, max_diff_values: dict | Non
     ppc_res["bus"] = ppc['bus'][:, 7:9]
     ppc_res["branch"] = ppc['branch'][:, 13:17]
     ppc_res["gen"] = ppc['gen'][:, 1:3]
-    ppc_res["gen_p"] = ppc_res["gen"][:, :1]
-    ppc_res["gen_q_sum_per_bus"] = _gen_q_per_bus_sum(ppc_res["gen"][:, -1:], ppc)
+    ppc_res["gen_p"] = ppc_res["gen"][:, :1]  # type: ignore[index]
+    ppc_res["gen_q_sum_per_bus"] = _gen_q_per_bus_sum(ppc_res["gen"][:, -1:], ppc)  # type: ignore[index]
 
     # --- pandapower powerflow results -> pp_res ---------------------------------------------------
     pp_res = dict.fromkeys(ppc_elms)
@@ -582,8 +582,8 @@ def validate_from_ppc(ppc: dict, net: pandapowerNet, max_diff_values: dict | Non
     pp_res["bus"] = net.res_bus.loc[ppc["bus"][:, BUS_I].astype(np.int64), ['vm_pu', 'va_degree']].values
 
     # --- branch
-    pp_res["branch"] = np.zeros(ppc_res["branch"].shape)
-    from_to_buses = -np.ones((ppc_res["branch"].shape[0], 2), dtype=np.int64)
+    pp_res["branch"] = np.zeros(ppc_res["branch"].shape)  # type: ignore[union-attr]
+    from_to_buses = -np.ones((ppc_res["branch"].shape[0], 2), dtype=np.int64)  # type: ignore[var-annotated,union-attr]
     for et in net._from_ppc_lookups["branch"].element_type.unique():
         if et == "line" or et == "impedance":
             from_to_cols = ["from_bus", "to_bus"]
@@ -595,8 +595,9 @@ def validate_from_ppc(ppc: dict, net: pandapowerNet, max_diff_values: dict | Non
             raise NotImplementedError(
                 f"result columns for element type {et} are not implemented.")
         is_et = net._from_ppc_lookups["branch"].element_type == et
-        pp_res["branch"][is_et] += net[f"res_{et}"].loc[
-            net._from_ppc_lookups["branch"].element.loc[is_et], res_cols].values
+        pp_res["branch"][is_et] += (  # type: ignore[index]
+            net[f"res_{et}"].loc[net._from_ppc_lookups["branch"].element.loc[is_et], res_cols].values
+        )
         from_to_buses[is_et] = net[et].loc[
             net._from_ppc_lookups["branch"].element.loc[is_et], from_to_cols].values
 
@@ -608,24 +609,25 @@ def validate_from_ppc(ppc: dict, net: pandapowerNet, max_diff_values: dict | Non
         raise ValueError("ppc branch from and to buses don't fit to pandapower from and to + "
                         "hv and lv buses.")
     if np.any(switch_from_to):
-        pp_res["branch"][switch_from_to, :] = pp_res["branch"][switch_from_to, :][:, [2, 3, 0, 1]]
+        pp_res["branch"][switch_from_to, :] = pp_res["branch"][switch_from_to, :][:, [2, 3, 0, 1]]  # type: ignore[index]
 
     # --- gen
-    pp_res["gen"] = np.zeros(ppc_res["gen"].shape)
+    pp_res["gen"] = np.zeros(ppc_res["gen"].shape)  # type: ignore[union-attr]
     res_cols = ['p_mw', 'q_mvar']
     for et in net._from_ppc_lookups["gen"].element_type.unique():
         is_et = net._from_ppc_lookups["gen"].element_type == et
-        pp_res["gen"][is_et] += net[f"res_{et}"].loc[
-            net._from_ppc_lookups["gen"].element.loc[is_et], res_cols].values
+        pp_res["gen"][is_et] += (  # type: ignore[index]
+            net[f"res_{et}"].loc[net._from_ppc_lookups["gen"].element.loc[is_et], res_cols].values
+        )
 
-    pp_res["gen_p"] = ppc_res["gen"][:, :1]
-    pp_res["gen_q_sum_per_bus"] = _gen_q_per_bus_sum(pp_res["gen"][:, -1:], ppc)
+    pp_res["gen_p"] = ppc_res["gen"][:, :1]  # type: ignore[index]
+    pp_res["gen_q_sum_per_bus"] = _gen_q_per_bus_sum(pp_res["gen"][:, -1:], ppc)  # type: ignore[index]
 
     # --- log maximal differences the powerflow result comparison
     diff_res = dict()
     comp_keys = ["bus", "branch", "gen_p", "gen_q_sum_per_bus"]
     for comp_key in comp_keys:
-        diff_res[comp_key] = ppc_res[comp_key] - pp_res[comp_key]
+        diff_res[comp_key] = ppc_res[comp_key] - pp_res[comp_key]  # type: ignore[operator]
         if isinstance(diff_res[comp_key], pd.DataFrame):
             diff_res[comp_key] = diff_res[comp_key].values
         for i_col, var_str, unit in zip(*_log_dict(comp_key)):
@@ -642,8 +644,7 @@ def validate_from_ppc(ppc: dict, net: pandapowerNet, max_diff_values: dict | Non
         other_max_diff = {
             "bus_vm_pu": 1e-3, "bus_va_degree": 1e-3, "branch_p_mw": 1e-6, "branch_q_mvar": 1e-6,
             "gen_p_mw": None, "gen_q_mvar": None}
-        if _validate_diff_res(diff_res, other_max_diff) and \
-                (np.max(abs(pp_res["gen"] - ppc_res["gen"])) > 1e-1).any():
+        if _validate_diff_res(diff_res, other_max_diff) and (np.max(abs(pp_res["gen"] - ppc_res["gen"])) > 1e-1).any():  # type: ignore[attr-defined,operator]
             logger.debug("The active/reactive power generation difference possibly results "
                         "because of a pypower error. Please validate "
                         "the results via pypower loadflow.")  # this occurs e.g. at ppc case9
