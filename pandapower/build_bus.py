@@ -11,7 +11,7 @@ import pandas as pd
 from pandapower.auxiliary import _sum_by_group, phase_to_sequence, version_check
 from pandapower.pypower.idx_bus import BUS_I, BASE_KV, PD, QD, GS, BS, VMAX, VMIN, BUS_TYPE, NONE, \
     VM, VA, CID_P, CID_Q, CZD_P, CZD_Q, bus_cols, REF, PV
-from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, bus_cols_sc
+from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, GS_EG, BS_EG, bus_cols_sc
 from .pypower.idx_bus_dc import dc_bus_cols, DC_BUS_TYPE, DC_BUS_AREA, DC_VM, DC_ZONE, DC_VMAX, DC_VMIN, DC_P, DC_BUS_I, \
     DC_BASE_KV, DC_NONE, DC_REF, DC_B2B, DC_PD
 from .pypower.idx_ssc import ssc_cols, SSC_BUS, SSC_R, SSC_X, SSC_SET_VM_PU, SSC_X_CONTROL_VA, SSC_X_CONTROL_VM, \
@@ -998,6 +998,8 @@ def _add_ext_grid_sc_impedance(net, ppc):
         case = net._options["case"]
     else:
         case = "max"
+    if mode == "sc":
+        ppc["bus"][:, [GS_EG, BS_EG]] = 0.
     eg = net["ext_grid"][net._is_elements["ext_grid"]]
     if len(eg) == 0:
         return
@@ -1030,6 +1032,8 @@ def _add_ext_grid_sc_impedance(net, ppc):
     if mode == "sc":
         ppc["bus"][buses, GS] += gs * ppc['baseMVA']
         ppc["bus"][buses, BS] += bs * ppc['baseMVA']
+        ppc["bus"][buses, GS_EG] += gs * ppc['baseMVA']
+        ppc["bus"][buses, BS_EG] += bs * ppc['baseMVA']
     else:
         ppc["bus"][buses, GS] = gs * ppc['baseMVA']
         ppc["bus"][buses, BS] = bs * ppc['baseMVA']

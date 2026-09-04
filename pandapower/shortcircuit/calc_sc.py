@@ -17,7 +17,8 @@ from pandapower.shortcircuit.currents import _calc_ikss, \
     _calc_ikss_1ph, _calc_ip, _calc_ith, _calc_branch_currents, _calc_branch_currents_complex
 from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx
 from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
-from pandapower.shortcircuit.ppc_conversion import _init_ppc, _create_k_updated_ppci, _get_is_ppci_bus
+from pandapower.shortcircuit.ppc_conversion import _init_ppc, _create_k_updated_ppci, _get_is_ppci_bus, \
+    _split_ppci_by_fault_location_c
 from pandapower.shortcircuit.results import _extract_results, _copy_result_to_ppci_orig
 
 import logging
@@ -174,36 +175,39 @@ def _calc_current(net, ppci_orig, bus):
     for calc_bus in ps_gen_ppci_bus + [non_ps_gen_ppci_bus]:
         if isinstance(calc_bus, np.ndarray):
             # Use ppci for general bus
-            this_ppci, this_ppci_bus = non_ps_gen_ppci, calc_bus
+            base_ppci, base_ppci_bus = non_ps_gen_ppci, calc_bus
         else:
             # Use specific ps_gen_bus ppci
-            this_ppci, this_ppci_bus = ps_gen_bus_ppci_dict[calc_bus], np.array([calc_bus])
+            base_ppci, base_ppci_bus = ps_gen_bus_ppci_dict[calc_bus], np.array([calc_bus])
 
-        _calc_ybus(this_ppci)
-        if net["_options"]["inverse_y"]:
-            _calc_zbus(net, this_ppci)
-        else:
-            # Factorization Ybus once
-            # scipy.sparse.linalg.factorized converts the input matrix to csc from csr and raises a warning
-            # todo: create Ybus in CSC format instead of CSR format if known that inverse_y is False?
-            this_ppci["internal"]["ybus_fact"] = factorized(this_ppci["internal"]["Ybus"].tocsc())
-
-        _calc_rx(net, this_ppci, this_ppci_bus)
-        _calc_ikss(net, this_ppci, this_ppci_bus)
-        _add_kappa_to_ppc(net, this_ppci)
-        if net["_options"]["ip"]:
-            _calc_ip(net, this_ppci)
-        if net["_options"]["ith"]:
-            _calc_ith(net, this_ppci)
-
-        if net._options["branch_results"]:
-            if net._options["fault"] == "3ph":
-                _calc_branch_currents_complex(net, this_ppci, this_ppci_bus)
+        # The ext_grid impedance depends on the voltage factor c at the fault location, so one
+        # ppci per distinct c among the fault buses is required
+        for this_ppci, this_ppci_bus in _split_ppci_by_fault_location_c(net, base_ppci, base_ppci_bus):
+            _calc_ybus(this_ppci)
+            if net["_options"]["inverse_y"]:
+                _calc_zbus(net, this_ppci)
             else:
-                _calc_branch_currents(net, this_ppci, this_ppci_bus)
+                # Factorization Ybus once
+                # scipy.sparse.linalg.factorized converts the input matrix to csc from csr and raises a warning
+                # todo: create Ybus in CSC format instead of CSR format if known that inverse_y is False?
+                this_ppci["internal"]["ybus_fact"] = factorized(this_ppci["internal"]["Ybus"].tocsc())
 
-        _copy_result_to_ppci_orig(ppci_orig, this_ppci, this_ppci_bus,
-                                  calc_options=net._options)
+            _calc_rx(net, this_ppci, this_ppci_bus)
+            _calc_ikss(net, this_ppci, this_ppci_bus)
+            _add_kappa_to_ppc(net, this_ppci)
+            if net["_options"]["ip"]:
+                _calc_ip(net, this_ppci)
+            if net["_options"]["ith"]:
+                _calc_ith(net, this_ppci)
+
+            if net._options["branch_results"]:
+                if net._options["fault"] == "3ph":
+                    _calc_branch_currents_complex(net, this_ppci, this_ppci_bus)
+                else:
+                    _calc_branch_currents(net, this_ppci, this_ppci_bus)
+
+            _copy_result_to_ppci_orig(ppci_orig, this_ppci, this_ppci_bus,
+                                      calc_options=net._options)
 
 
 def _calc_sc(net, bus):
@@ -230,32 +234,41 @@ def _calc_sc_1ph(net, bus):
     # Create k updated ppci
     ppci_bus = _get_is_ppci_bus(net, bus)
     _, ppci, _ = _create_k_updated_ppci(net, ppci, ppci_bus=ppci_bus)
-    _calc_ybus(ppci)
 
     # zero seq bus impedance
     ppc_0, ppci_0 = _pd2ppc_zero(net, ppc['branch'][:, K_ST])
-    _calc_ybus(ppci_0)
 
-    if net["_options"]["inverse_y"]:
-        _calc_zbus(net, ppci)
-        _calc_zbus(net, ppci_0)
-    else:
-        # Factorization Ybus once
-        ppci["internal"]["ybus_fact"] = factorized(ppci["internal"]["Ybus"])
-        ppci_0["internal"]["ybus_fact"] = factorized(ppci_0["internal"]["Ybus"])
+    # The ext_grid impedance depends on the voltage factor c at the fault location, so one
+    # ppci per distinct c among the fault buses is required, for both sequences
+    groups = _split_ppci_by_fault_location_c(net, ppci, ppci_bus)
+    groups_0 = _split_ppci_by_fault_location_c(net, ppci_0, ppci_bus)
 
-    ppci_bus = _get_is_ppci_bus(net, bus)
-    _calc_rx(net, ppci, ppci_bus)
-    _add_kappa_to_ppc(net, ppci)
+    for (this_ppci, this_ppci_bus), (this_ppci_0, _) in zip(groups, groups_0):
+        _calc_ybus(this_ppci)
+        _calc_ybus(this_ppci_0)
 
-    _calc_rx(net, ppci_0, ppci_bus)
-    _calc_ikss_1ph(net, ppci, ppci_0, ppci_bus)
-
-    if net._options["branch_results"]:
-        if net._options["fault"] == "3ph":
-            _calc_branch_currents_complex(net, ppci, ppci_bus)
+        if net["_options"]["inverse_y"]:
+            _calc_zbus(net, this_ppci)
+            _calc_zbus(net, this_ppci_0)
         else:
-            _calc_branch_currents(net, ppci, ppci_bus)
+            # Factorization Ybus once
+            this_ppci["internal"]["ybus_fact"] = factorized(this_ppci["internal"]["Ybus"])
+            this_ppci_0["internal"]["ybus_fact"] = factorized(this_ppci_0["internal"]["Ybus"])
+
+        _calc_rx(net, this_ppci, this_ppci_bus)
+        _add_kappa_to_ppc(net, this_ppci)
+
+        _calc_rx(net, this_ppci_0, this_ppci_bus)
+        _calc_ikss_1ph(net, this_ppci, this_ppci_0, this_ppci_bus)
+
+        if net._options["branch_results"]:
+            if net._options["fault"] == "3ph":
+                _calc_branch_currents_complex(net, this_ppci, this_ppci_bus)
+            else:
+                _calc_branch_currents(net, this_ppci, this_ppci_bus)
+
+        _copy_result_to_ppci_orig(ppci, this_ppci, this_ppci_bus, calc_options=net._options)
+        _copy_result_to_ppci_orig(ppci_0, this_ppci_0, this_ppci_bus, calc_options=net._options)
 
     ppc_0 = _copy_results_ppci_to_ppc(ppci_0, ppc_0, "sc")
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, "sc")

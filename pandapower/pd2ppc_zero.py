@@ -38,7 +38,7 @@ from pandapower.pypower.idx_brch import (
 )
 from pandapower.pypower.idx_bus import BASE_KV, BS, GS, BUS_TYPE, NONE
 from pandapower.pypower.idx_brch_sc import branch_cols_sc
-from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN
+from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, GS_EG, BS_EG
 from pandapower.build_branch import (
     _calc_tap_from_dataframe,
     _transformer_correction_factor,
@@ -500,6 +500,8 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     else:
         case = "max"
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
+    if mode == "sc":
+        ppc["bus"][:, [GS_EG, BS_EG]] = 0.
     is_egs = net._is_elements["ext_grid"]
     eg = net["ext_grid"][is_egs]
     if len(eg) == 0:
@@ -544,6 +546,9 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     buses, gs, bs = _sum_by_group(eg_buses_ppc, y0_grid.real, y0_grid.imag)
     ppc["bus"][buses, GS] = gs
     ppc["bus"][buses, BS] = bs
+    if mode == "sc":
+        ppc["bus"][buses, GS_EG] = gs
+        ppc["bus"][buses, BS_EG] = bs
 
 
 def _add_line_sc_impedance_zero(net, ppc):

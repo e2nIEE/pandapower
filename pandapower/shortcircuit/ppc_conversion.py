@@ -12,8 +12,8 @@ from pandapower.auxiliary import _add_auxiliary_elements, _sum_by_group
 from pandapower.build_branch import get_trafo_values, _transformer_correction_factor
 from pandapower.pypower.idx_bus import GS, BS, BASE_KV
 from pandapower.pypower.idx_brch import BR_X, BR_R, T_BUS, F_BUS
-from pandapower.pypower.idx_bus_sc import C_MAX, K_G, K_SG, V_G, \
-    PS_TRAFO_IX, GS_P, BS_P, KAPPA, GS_GEN, BS_GEN
+from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, K_G, K_SG, V_G, \
+    PS_TRAFO_IX, GS_P, BS_P, KAPPA, GS_GEN, BS_GEN, GS_EG, BS_EG
 from pandapower.pypower.idx_brch_sc import K_T, K_ST
 
 import logging
@@ -321,6 +321,32 @@ def _create_k_updated_ppci(net, ppci_orig, ppci_bus, zero_sequence=False):
             bus_ppci.update({bus: ppci_gen})
 
     return non_ps_gen_bus, ppci, bus_ppci
+
+
+def _split_ppci_by_fault_location_c(net, ppci, ppci_bus):
+    c_col = C_MAX if net["_options"]["case"] == "max" else C_MIN
+    gs_eg = np.nan_to_num(ppci["bus"][:, GS_EG])
+    bs_eg = np.nan_to_num(ppci["bus"][:, BS_EG])
+    eg_mask = (gs_eg != 0.) | (bs_eg != 0.)
+    if not np.any(eg_mask):
+        return [(ppci, ppci_bus)]
+
+    c_eg = ppci["bus"][:, c_col]
+    c_fault = ppci["bus"][ppci_bus, c_col]
+
+    groups = []
+    for c in np.unique(c_fault):
+        bus_group = ppci_bus[c_fault == c]
+        scale = np.zeros(ppci["bus"].shape[0])
+        scale[eg_mask] = c_eg[eg_mask] / c - 1.
+        if np.allclose(scale, 0.):
+            groups.append((ppci, bus_group))
+            continue
+        ppci_c = deepcopy(ppci)
+        ppci_c["bus"][:, GS] += scale * gs_eg
+        ppci_c["bus"][:, BS] += scale * bs_eg
+        groups.append((ppci_c, bus_group))
+    return groups
 
 # TODO Roman: correction factor for 1ph cases
 

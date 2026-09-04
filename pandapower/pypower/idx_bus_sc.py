@@ -35,5 +35,7 @@ SKSS        = start + 23
 PHI_IKSS1_DEGREE = start + 24
 PHI_IKSS2_DEGREE = start + 25
 PHI_IKCV_DEGREE  = start + 26
+GS_EG       = start + 27
+BS_EG       = start + 28
 
-bus_cols_sc = 27
+bus_cols_sc = 29
