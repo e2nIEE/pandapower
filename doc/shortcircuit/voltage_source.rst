@@ -28,7 +28,7 @@ When calculating maximum short-circuit currents, the impedance of an external gr
   r_{k, eg} =& rx\_max \cdot x_{sg} 
   
 where :math:`rx\_max` and :math:`s\_sc\_max\_mva` are parameters in the ext_grid table and :math:`c_{max}` is the :ref:`voltage correction factor <c>` of the
-external grid bus.
+fault location.
 
 In case of minimal short-circuit currents, the impedance is calculated accordingly:
 

@@ -285,19 +285,19 @@ def test_branch_all_currents_trafo_simple():
     net = net_transformer_simple()
     calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=6., branch_results=True, bus=1)
 
-    assert np.isclose(net.res_bus_sc.ikss_ka, 9.749917, atol=1e-6, rtol=0)
-    assert np.isclose(net.res_bus_sc.skss_mw, 6.75494, atol=1e-6, rtol=0)
+    assert np.isclose(net.res_bus_sc.ikss_ka, 9.781376, atol=1e-6, rtol=0)
+    assert np.isclose(net.res_bus_sc.skss_mw, 6.776736, atol=1e-6, rtol=0)
 
-    assert np.isclose(net.res_trafo_sc.ikss_hv_ka, 0.389997, atol=1e-6, rtol=0)
-    assert np.isclose(net.res_trafo_sc.ikss_lv_ka, 9.749916, atol=1e-6, rtol=0)
+    assert np.isclose(net.res_trafo_sc.ikss_hv_ka, 0.391255, atol=1e-6, rtol=0)
+    assert np.isclose(net.res_trafo_sc.ikss_lv_ka, 9.781376, atol=1e-6, rtol=0)
 
-    assert np.isclose(net.res_trafo_sc.p_hv_mw, 0.549236, atol=1e-6, rtol=0)
-    assert np.isclose(net.res_trafo_sc.q_hv_mvar, 6.567902, atol=1e-6, rtol=0)
+    assert np.isclose(net.res_trafo_sc.p_hv_mw, 0.552786, atol=1e-6, rtol=0)
+    assert np.isclose(net.res_trafo_sc.q_hv_mvar, 6.610356, atol=1e-6, rtol=0)
     assert np.isclose(net.res_trafo_sc.p_lv_mw, 0, atol=1e-6, rtol=0)
     assert np.isclose(net.res_trafo_sc.q_lv_mvar, 0, atol=1e-6, rtol=0)
 
-    assert np.isclose(net.res_trafo_sc.vm_hv_pu, 0.975705, atol=1e-6, rtol=0)
-    assert np.isclose(net.res_trafo_sc.va_hv_degree, 0.065838, atol=1e-6, rtol=0)
+    assert np.isclose(net.res_trafo_sc.vm_hv_pu, 0.978853, atol=1e-6, rtol=0)
+    assert np.isclose(net.res_trafo_sc.va_hv_degree, 0.063048, atol=1e-6, rtol=0)
     assert np.isclose(net.res_trafo_sc.vm_lv_pu, 0, atol=1e-6, rtol=0)
     assert np.isclose(net.res_trafo_sc.va_lv_degree, 0, atol=1e-6, rtol=0)
 
@@ -323,22 +323,22 @@ def test_branch_all_currents_trafo_simple_other_voltage3(inverse_y):
 
     calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, inverse_y=inverse_y)
 
-    assert np.allclose(net.res_bus_sc.loc[6].values, [1.16712302, 0.80860656, 0.10127268, 0.18141131], rtol=0,
+    assert np.allclose(net.res_bus_sc.loc[6].values, [1.16744221, 0.80882769, 0.10126652, 0.18134970], rtol=0,
                        atol=1e-6)
 
-    res_line_sc = np.array([[0.013691, 0.013691, -60.827605, 0.013691, 119.172395, 0.4132998, 0.7358034, -0.413244,
+    res_line_sc = np.array([[0.013694, 0.013694, -60.820804, 0.013694, 119.179196, 0.4132998, 0.7358034, -0.413244,
                              -0.735716, 1.186326, -0.150470, 1.186180, -0.150091],
-                            [0.042441, 0.042441, -60.827605, 0.042441, 119.172395, 0.412972, 0.732456, -0.4124366,
+                            [0.042452, 0.042452, -60.820804, 0.042452, 119.179196, 0.412972, 0.732456, -0.4124366,
                              -0.7316133, 1.143870, -0.242663, 1.142514, -0.239117],
-                            [1.167123, 1.167123, -60.827605, 1.167123, 119.172395, 0.404566, 0.637498, 0, 0, 0.933749,
+                            [1.167442, 1.167442, -60.820804, 1.167442, 119.179196, 0.404566, 0.637498, 0, 0, 0.933749,
                              -3.227445, 0.000000, 0.000000]])
     relevant = [i for i, c in enumerate(net.res_line_sc.columns) if not np.all(np.isnan(net.res_line_sc[c]))]
     assert np.allclose(net.res_line_sc.iloc[:, relevant].values, res_line_sc[:, relevant], rtol=0, atol=1e-6)
     res_trafo_sc = np.array([[0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 1.186326,
                               - 0.150470, 1.186326, - 0.150470],
-                             [0.013691, - 60.827605, 0.042441, 119.172395, 0.413244, 0.735716, - 0.412972, - 0.732456,
+                             [0.013694, - 60.820804, 0.042452, 119.179196, 0.413244, 0.735716, - 0.412972, - 0.732456,
                               1.186180, - 0.150091, 1.143870, - 0.242663],
-                             [0.042441, - 60.827605, 1.167123, 119.172395, 0.412437, 0.731613, - 0.404566, - 0.637498,
+                             [0.042452, - 60.820804, 1.167442, 119.179196, 0.412437, 0.731613, - 0.404566, - 0.637498,
                               1.142514, - 0.239117, 0.933749, - 3.227445]])
     relevant = [i for i, c in enumerate(net.res_trafo_sc.columns) if not np.all(np.isnan(net.res_trafo_sc[c]))]
     assert np.allclose(net.res_trafo_sc.iloc[:, relevant].values, res_trafo_sc[:, relevant], rtol=0, atol=1e-6)
@@ -348,22 +348,22 @@ def test_branch_all_currents_trafo_simple_other_voltage3(inverse_y):
 
     calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, inverse_y=inverse_y)
 
-    assert np.allclose(net.res_bus_sc.loc[6].values, [1.15940813, 0.80326152, 0.10147573, 0.18288051], rtol=0,
+    assert np.allclose(net.res_bus_sc.loc[6].values, [1.15994647, 0.80363449, 0.10146521, 0.18277534], rtol=0,
                        atol=1e-6)
 
-    res_line_sc = np.array([[0.017769, 0.017769, -60.975224, 0.017769, 119.024776, 0.408286, 0.728168, -0.4081925,
+    res_line_sc = np.array([[0.017777, 0.017777, -60.963759, 0.017777, 119.036241, 0.408286, 0.728168, -0.4081925,
                              -0.7280205, 0.904182, - 0.254709, 0.903993, - 0.254055],
-                            [0.051529, 0.051529, -60.975224, 0.051529, 119.024776, 0.407791, 0.723216, -0.4070021,
+                            [0.051553, 0.051553, -60.963759, 0.051553, 119.036241, 0.407791, 0.723216, -0.4070021,
                              -0.7219731, 0.930252, - 0.392031, 0.928605, - 0.386736],
-                            [1.159408, 1.159408, -60.975224, 1.159408, 119.024776, 0.399235, 0.629098, 0, 0, 0.927576,
+                            [1.159946, 1.159946, -60.963759, 1.159946, 119.036241, 0.399235, 0.629098, 0, 0, 0.927576,
                              - 3.375064, 0, 0]])
     relevant = [i for i, c in enumerate(net.res_line_sc.columns) if not np.all(np.isnan(net.res_line_sc[c]))]
     assert np.allclose(net.res_line_sc.iloc[:, relevant].values, res_line_sc[:, relevant], rtol=0, atol=1e-6)
     res_trafo_sc = np.array([[0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.904182,
                               - 0.254709, 0.904182, - 0.254709],
-                             [0.017769, - 60.975224, 0.051529, 119.024776, 0.408192, 0.728021, - 0.407791, - 0.723216,
+                             [0.017777, - 60.963759, 0.051553, 119.036241, 0.408192, 0.728021, - 0.407791, - 0.723216,
                               0.903993, - 0.254055, 0.930252, - 0.392031],
-                             [0.051529, - 60.975224, 1.159408, 119.024776, 0.407002, 0.721973, - 0.399235, - 0.629098,
+                             [0.051553, - 60.963759, 1.159946, 119.036241, 0.407002, 0.721973, - 0.399235, - 0.629098,
                               0.928605, - 0.386736, 0.927576, - 3.375064]])
     relevant = [i for i, c in enumerate(net.res_trafo_sc.columns) if not np.all(np.isnan(net.res_trafo_sc[c]))]
     assert np.allclose(net.res_trafo_sc.iloc[:, relevant].values, res_trafo_sc[:, relevant], rtol=0, atol=1e-6)
@@ -393,19 +393,19 @@ def test_branch_all_currents_trafo_simple_other_voltage3(inverse_y):
 
     calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, inverse_y=inverse_y)
 
-    assert np.allclose(net.res_bus_sc.loc[6].values, [1.153265, 0.799006, 0.101542, 0.184117], rtol=0, atol=1e-6)
-    res_line_sc = np.array([[0.014531, 0.014531, - 61.122864, 0.014531, 118.877136, 0.404535, 0.728398, - 0.404473,
+    assert np.allclose(net.res_bus_sc.loc[6].values, [1.153626, 0.799255, 0.101535, 0.184046], rtol=0, atol=1e-6)
+    res_line_sc = np.array([[0.014536, 0.014536, - 61.115203, 0.014536, 118.884797, 0.404535, 0.728398, - 0.404473,
                              - 0.728299, 1.103480, - 0.169658, 1.103325, - 0.169187],
-                            [0.048437, 0.048437, - 61.122864, 0.048437, 118.877136, 0.404185, 0.724860, - 0.403488,
+                            [0.048452, 0.048452, - 61.115203, 0.048452, 118.884797, 0.404185, 0.724860, - 0.403488,
                              - 0.723762, 0.989244, - 0.267095, 0.987697, - 0.261989],
-                            [1.153265, 1.153265, - 61.122864, 1.153265, 118.877136, 0.395016, 0.622450, 0, 0, 0.922662,
+                            [1.153626, 1.153626, - 61.115203, 1.153626, 118.884797, 0.395016, 0.622450, 0, 0, 0.922662,
                              - 3.522703, 0, 0]])
     relevant = [i for i, c in enumerate(net.res_line_sc.columns) if not np.all(np.isnan(net.res_line_sc[c]))]
     assert np.allclose(net.res_line_sc.iloc[:, relevant].values, res_line_sc[:, relevant], rtol=0, atol=1e-6)
     res_trafo_sc = np.array([[0, 0, 0, 0, 0, 0, 0, 0, 1.103480, - 0.169658, 1.103480, - 0.169658],
-                             [0.014531, - 61.122864, 0.048437, 118.877136, 0.404473, 0.728299, - 0.404185, - 0.72486,
+                             [0.014536, - 61.115203, 0.048452, 118.884797, 0.404473, 0.728299, - 0.404185, - 0.72486,
                               1.103325, - 0.169187, 0.989244, - 0.267095],
-                             [0.048437, - 61.122864, 1.153265, 118.877136, 0.403488, 0.723762, - 0.395016, - 0.62245,
+                             [0.048452, - 61.115203, 1.153626, 118.884797, 0.403488, 0.723762, - 0.395016, - 0.62245,
                               0.987697, - 0.261989, 0.922662, - 3.522703]])
     relevant = [i for i, c in enumerate(net.res_trafo_sc.columns) if not np.all(np.isnan(net.res_trafo_sc[c]))]
     assert np.allclose(net.res_trafo_sc.iloc[:, relevant].values, res_trafo_sc[:, relevant], rtol=0, atol=1e-6)
@@ -429,31 +429,31 @@ def test_type_c_trafo_simple_other_voltage4(inverse_y):
     # baseI = baseMVA / (baseV * np.sqrt(3))
     # baseZ = baseV ** 2 / baseMVA
 
-    assert np.allclose(net.res_bus_sc.loc[6].values, [2.096122, 1.452236, 0.054549, 0.085178], rtol=0, atol=1e-6)
+    assert np.allclose(net.res_bus_sc.loc[6].values, [2.097445, 1.453153, 0.054534, 0.085112], rtol=0, atol=1e-6)
 
-    res_line_sc = np.array([[0.012104, 0.010331, -52.747518, 0.012104, 121.050735, 0.322524, 0.419803, -0.322487,
-                             -0.529717, 0.986152, -0.281725, 0.986032, -0.281941],
-                            [0.036634, 0.036019, -59.720977, 0.036634, 119.710805, 0.312602, 0.527369, -0.312210,
-                             -0.538872, 0.982660, -0.378583, 0.981499, -0.376180],
-                            [0.998604, 0.998594, -61.123876, 0.998604, 118.875767, 0.296171, 0.466687, 0, 0, 0.798926,
-                             -3.524072, 0, 0],
-                            [0.044289, 0.043675, -59.839870, 0.044289, 119.691851, 0.377698, 0.639716, -0.377123,
-                             -0.650913, 0.982060, -0.398116, 0.980654, -0.395135],
-                            [1.097518, 1.097507, -61.142831, 1.097518, 118.856813, 0.357750, 0.563720, 0, 0, 0.878062,
-                             -3.543027, 0, 0]])
+    res_line_sc = np.array([[0.012112, 0.010338, -52.734819, 0.012112, 121.063403, 0.322932, 0.420331, -0.322895,
+                             -0.530385, 0.986774, -0.269135, 0.986655, -0.269352],
+                            [0.036657, 0.036042, -59.708387, 0.036657, 119.723394, 0.312996, 0.528036, -0.312604,
+                             -0.539553, 0.983281, -0.365994, 0.982119, -0.363591],
+                            [0.999234, 0.999224, -61.111287, 0.999234, 118.888357, 0.296545, 0.467277, 0, 0, 0.799430,
+                             -3.511483, 0, 0],
+                            [0.044317, 0.043702, -59.827282, 0.044317, 119.704439, 0.378175, 0.640524, -0.377600,
+                             -0.651735, 0.982680, -0.385527, 0.981273, -0.382546],
+                            [1.098211, 1.098200, -61.130241, 1.098211, 118.869403, 0.358202, 0.564432, 0, 0, 0.878616,
+                             -3.530438, 0, 0]])
     non_i_degree = [i for i, c in enumerate(net.res_line_sc.columns) if c not in ["ikss_from_degree", "ikss_to_degree"]]
     i_degree = [i for i, c in enumerate(net.res_line_sc.columns) if c in ["ikss_from_degree", "ikss_to_degree"]]
     assert np.allclose(net.res_line_sc.values[:, non_i_degree], res_line_sc[:, non_i_degree], rtol=0, atol=2e-6)
     assert np.allclose(net.res_line_sc.values[:, i_degree], res_line_sc[:, i_degree], rtol=0, atol=2e-4)
 
-    res_trafo_sc = np.array([[0.014655, -59.201943, 0.043675, 120.160131, 0.387670, 0.643162, -0.377698, -0.639716,
-                              0.986152, -0.281725, 0.982060, -0.398116],
-                             [0.012104, -58.949266, 0.036019, 120.279024, 0.322487, 0.529717, -0.312602, -0.527369,
-                              0.986032, -0.281941, 0.982660, -0.378583],
-                             [0.036634, -60.289196, 0.998594, 118.876124, 0.312210, 0.538872, -0.296171, -0.466687,
-                              0.981499, -0.376180, 0.798926, -3.524072],
-                             [0.044289, -60.308150, 1.097507, 118.857170, 0.377123, 0.650913, -0.357750, -0.563720,
-                              0.980654, -0.395135, 0.878062, -3.543027]])
+    res_trafo_sc = np.array([[0.014664, -59.189289, 0.043702, 120.172718, 0.388160, 0.643973, -0.378175, -0.640524,
+                              0.986774, -0.269135, 0.982680, -0.385527],
+                             [0.012112, -58.936597, 0.036042, 120.291612, 0.322895, 0.530385, -0.312996, -0.528036,
+                              0.986655, -0.269352, 0.983281, -0.365994],
+                             [0.036657, -60.276606, 0.999224, 118.888714, 0.312604, 0.539553, -0.296545, -0.467277,
+                              0.982119, -0.363591, 0.799430, -3.511483],
+                             [0.044317, -60.295561, 1.098200, 118.869759, 0.377600, 0.651735, -0.358202, -0.564432,
+                              0.981273, -0.382546, 0.878616, -3.530438]])
     non_i_degree = [i for i, c in enumerate(net.res_trafo_sc.columns) if c not in ["ikss_hv_degree", "ikss_lv_degree"]]
     i_degree = [i for i, c in enumerate(net.res_trafo_sc.columns) if c in ["ikss_lv_degree", "ikss_lv_degree"]]
     assert np.allclose(net.res_trafo_sc.values[:, non_i_degree], res_trafo_sc[:, non_i_degree], rtol=0, atol=2e-6)
@@ -485,33 +485,33 @@ def test_type_c_trafo_simple_other_voltage4_sgen(inverse_y):
     baseI = baseMVA / (baseV * np.sqrt(3))
     baseZ = baseV ** 2 / baseMVA
 
-    assert np.allclose(net.res_bus_sc.loc[6].values, [1.12072796, 0.77646312, 0.11355049, 0.15946966], rtol=0,
+    assert np.allclose(net.res_bus_sc.loc[6].values, [1.12078305, 0.77650127, 0.11355834, 0.15940677], rtol=0,
                        atol=1e-6)
 
-    res_line_sc = np.array([[0.37233817, 0.37202159, -171.92326236, 0.37233817, 8.4072921, -19.05762949, 2.78907414,
-                             19.09876936, -2.83670764, 0.99637, -0.24936231, 0.99798561, -0.04098874],
-                            [0.04744828, 0.04684176, -52.75384134, 0.04744828, 126.82145161, 0.39363348, 0.67731344,
-                             -0.39297336, -0.68797096, 0.9655717, 7.08233793, 0.96406436, 7.08617078],
-                            [1.12072796, 1.12071697, -53.94177232, 1.12072796, 126.05787127, 0.37304125, 0.58781451, 0.,
-                             0., 0.89663052, 3.65803177, 0., 0.],
-                            [0.6275538, 0.62734921, -21.12040944, 0.6275538, 158.81863754, 10.05721887, 3.15086826,
-                             -9.94029022, -2.97825453, 0.96992777, -3.72493869, 0.95467304, -4.50238709],
-                            [0., 0.0000277, 85.40612729, 0., 0., 0., -0.00001832, 0., 0., 0.95459186, -4.56234781,
-                             0.95460121, -4.56270483]])
+    res_line_sc = np.array([[0.37239718, 0.37207999, -171.89576492, 0.37239718, 8.43475144, -19.06144281, 2.79494871,
+                             19.10259566, -2.84258034, 0.99645282, -0.23750969, 0.99806769, -0.02909521],
+                            [0.04745062, 0.04684406, -52.74129080, 0.04745062, 126.83400220, 0.39367217, 0.67738003,
+                             -0.39301198, -0.68803859, 0.96561913, 7.09488948, 0.96411172, 7.09872232],
+                            [1.12078305, 1.12077206, -53.92922049, 1.12078305, 126.07042311, 0.37307793, 0.58787229, 0.,
+                             0., 0.89667460, 3.67058294, 0., 0.],
+                            [0.62760596, 0.62740136, -21.10855690, 0.62760596, 158.83049008, 10.05889088, 3.15139210,
+                             -9.94194280, -2.97874967, 0.97000839, -3.71308615, 0.95475240, -4.49053453],
+                            [0., 0.00002771, 85.44932678, 0., 0., 0., -0.00001832, 0., 0., 0.95467121, -4.55049506,
+                             0.95468057, -4.55085147]])
 
     non_degree = [i for i, c in enumerate(net.res_line_sc.columns) if not "degree" in c]
     degree = [i for i, c in enumerate(net.res_line_sc.columns) if "degree" in c]
     assert np.allclose(net.res_line_sc.values[:, non_degree], res_line_sc[:, non_degree], rtol=0, atol=6e-5)
     assert np.allclose(net.res_line_sc.values[:, degree], res_line_sc[:, degree], rtol=0, atol=0.05)
 
-    res_trafo_sc = np.array([[0.20929507, -21.10342929, 0.62734921, 158.87959058, 10.1259613, 3.85742992, -10.05721888,
-                              -3.15086826, 0.99637, -0.24936231, 0.96992777, -3.72493869],
-                             [0.37233817, -171.5927079, 1.15480275, 8.40493491, -19.09876937, 2.83670764, 19.30799817,
-                              -0.44577867, 0.99798561, -0.04098874, 0.9655717, 7.08233793],
-                             [0.04744828, -53.17854903, 1.12071698, 126.05822829, 0.39297335, 0.68797096, -0.37304126,
-                              -0.58781451, 0.96406436, 7.08617078, 0.89663052, 3.65803177],
-                             [0.00077159, -4.48005446, 0.0000277, -94.62521878, 0.01275854, -0.00000497, 0., 0.00001832,
-                              0.95467304, -4.50238709, 0.95459186, -4.56234781]])
+    res_trafo_sc = np.array([[0.20931246, -21.09156834, 0.62740136, 158.89144309, 10.12764473, 3.85806953, -10.05889088,
+                              -3.15139210, 0.99645282, -0.23750969, 0.97000839, -3.71308615],
+                             [0.37239718, -171.56524856, 1.15498571, 8.43239187, -19.10259566, 2.84258034, 19.31188904,
+                              -0.45089518, 0.99806769, -0.02909521, 0.96561913, 7.09488948],
+                             [0.04745062, -53.16599782, 1.12077206, 126.07077955, 0.39301198, 0.68803859, -0.37307793,
+                              -0.58787229, 0.96411172, 7.09872232, 0.89667460, 3.67058294],
+                             [0.00077165, -4.46820168, 0.00002771, -94.55060006, 0.01276064, -0.00000497, 0., 0.00001832,
+                              0.95475240, -4.49053453, 0.95467121, -4.55049506]])
     non_degree = [i for i, c in enumerate(net.res_trafo_sc.columns) if "degree" not in c]
     degree = [i for i, c in enumerate(net.res_trafo_sc.columns) if "degree" in c]
     assert np.allclose(net.res_trafo_sc.values[:, non_degree], res_trafo_sc[:, non_degree], rtol=0, atol=1e-5)
@@ -758,15 +758,15 @@ def test_trafo_impedance(trafo_impedance_case):
 
     # min test case
     if trafo_impedance_case == "min":
-        assert np.allclose(net.res_bus_sc.ikss_ka, 1.906175, rtol=0, atol=1e-3)
-        assert np.allclose(net.res_bus_sc.skss_mw, 1.320637, rtol=0, atol=1e-5)
+        assert np.allclose(net.res_bus_sc.ikss_ka, 1.906977, rtol=0, atol=1e-3)
+        assert np.allclose(net.res_bus_sc.skss_mw, 1.321193, rtol=0, atol=1e-5)
         assert np.allclose(net.res_bus_sc.rk_ohm, 0.106, rtol=0, atol=1e-3)
         assert np.allclose(net.res_bus_sc.xk_ohm, 0.045, rtol=0, atol=1e-3)
 
     # max test case
     else:
-        assert np.allclose(net.res_bus_sc.ikss_ka, 2.112413, rtol=0, atol=1e-3)
-        assert np.allclose(net.res_bus_sc.skss_mw, 1.463523, rtol=0, atol=1e-5)
+        assert np.allclose(net.res_bus_sc.ikss_ka, 2.113121, rtol=0, atol=1e-3)
+        assert np.allclose(net.res_bus_sc.skss_mw, 1.464013, rtol=0, atol=1e-5)
         assert np.allclose(net.res_bus_sc.rk_ohm, 0.106, rtol=0, atol=1e-3)
         assert np.allclose(net.res_bus_sc.xk_ohm, 0.045, rtol=0, atol=1e-3)
 

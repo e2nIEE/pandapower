@@ -50,15 +50,15 @@ def test_max_6_trafo(net_transformer):
     calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=6.)
     assert (abs(net.res_bus_sc.ikss_ka.at[0] - 5.77350301940194) < 1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[1] - 5.77350301940194) < 1e-5)
-    assert (abs(net.res_bus_sc.ikss_ka.at[2] - 16.905912296) < 1e-5)
+    assert (abs(net.res_bus_sc.ikss_ka.at[2] - 16.992256457) < 1e-5)
 
     assert (abs(net.res_bus_sc.ip_ka.at[0] - 14.256046241) < 1e-5)
     assert (abs(net.res_bus_sc.ip_ka.at[1] - 14.256046241) < 1e-5)
-    assert (abs(net.res_bus_sc.ip_ka.at[2] - 42.518706441) < 1e-5)
+    assert (abs(net.res_bus_sc.ip_ka.at[2] - 42.739921763) < 1e-5)
 
     assert (abs(net.res_bus_sc.ith_ka.at[0] - 5.8711913689) < 1e-5)
     assert (abs(net.res_bus_sc.ith_ka.at[1] - 5.8711913689) < 1e-5)
-    assert (abs(net.res_bus_sc.ith_ka.at[2] - 17.240013111) < 1e-5)
+    assert (abs(net.res_bus_sc.ith_ka.at[2] - 17.328351827) < 1e-5)
 
 
 def test_min_10_trafo(net_transformer):
@@ -66,15 +66,15 @@ def test_min_10_trafo(net_transformer):
     calc_sc(net, case='min', ip=True, ith=True, lv_tol_percent=10.)
     assert (abs(net.res_bus_sc.ikss_ka.at[0] - 2.309401) < 1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[1] - 2.309401) < 1e-5)
-    assert (abs(net.res_bus_sc.ikss_ka.at[2] - 12.317352187) < 1e-5)
+    assert (abs(net.res_bus_sc.ikss_ka.at[2] - 12.589241601) < 1e-5)
 
     assert (abs(net.res_bus_sc.ip_ka.at[0] - 5.702418) < 1e-5)
     assert (abs(net.res_bus_sc.ip_ka.at[1] - 5.702418) < 1e-5)
-    assert (abs(net.res_bus_sc.ip_ka.at[2] - 30.911013102) < 1e-5)
+    assert (abs(net.res_bus_sc.ip_ka.at[2] - 31.604749954) < 1e-5)
 
     assert (abs(net.res_bus_sc.ith_ka.at[0] - 2.348476) < 1e-5)
     assert (abs(net.res_bus_sc.ith_ka.at[1] - 2.348476) < 1e-5)
-    assert (abs(net.res_bus_sc.ith_ka.at[2] - 12.556071768) < 1e-5)
+    assert (abs(net.res_bus_sc.ith_ka.at[2] - 12.834015879) < 1e-5)
 
 
 def test_min_6_trafo(net_transformer):
@@ -82,25 +82,25 @@ def test_min_6_trafo(net_transformer):
     calc_sc(net, case='min', ip=True, ith=True, lv_tol_percent=6.)
     assert (abs(net.res_bus_sc.ikss_ka.at[0] - 2.309401) < 1e-5)
     assert (abs(net.res_bus_sc.ikss_ka.at[1] - 2.309401) < 1e-5)
-    assert (abs(net.res_bus_sc.ikss_ka.at[2] - 13.001649531) < 1e-5)
+    assert (abs(net.res_bus_sc.ikss_ka.at[2] - 13.143580384) < 1e-5)
 
     assert (abs(net.res_bus_sc.ip_ka.at[0] - 5.702418) < 1e-5)
     assert (abs(net.res_bus_sc.ip_ka.at[1] - 5.702418) < 1e-5)
-    assert (abs(net.res_bus_sc.ip_ka.at[2] - 32.628291607) < 1e-5)
+    assert (abs(net.res_bus_sc.ip_ka.at[2] - 32.990367671) < 1e-5)
 
     assert (abs(net.res_bus_sc.ith_ka.at[0] - 2.348476) < 1e-5)
     assert (abs(net.res_bus_sc.ith_ka.at[1] - 2.348476) < 1e-5)
-    assert (abs(net.res_bus_sc.ith_ka.at[2] - 13.253631311) < 1e-5)
+    assert (abs(net.res_bus_sc.ith_ka.at[2] - 13.398717686) < 1e-5)
 
 
 def test_min_10_trafo_2ph(net_transformer):
     net = net_transformer
     calc_sc(net, fault="2ph", case='min', ip=True, ith=True, lv_tol_percent=10.)
     assert (abs(net.res_bus_sc.ikss_ka.at[0] - 2.0000000702) < 1e-5)
-    assert (abs(net.res_bus_sc.ikss_ka.at[2] - 10.667139901) < 1e-5)
+    assert (abs(net.res_bus_sc.ikss_ka.at[2] - 10.902603041) < 1e-5)
 
     assert (abs(net.res_bus_sc.ip_ka.at[0] - 4.9384391739) < 1e-5)
-    assert (abs(net.res_bus_sc.ip_ka.at[2] - 26.769722603) < 1e-5)
+    assert (abs(net.res_bus_sc.ip_ka.at[2] - 27.370516341) < 1e-5)
 
 
 #    assert (abs(net.res_bus_sc.ith_ka.at[0] - 2.0000000702) <1e-5)
