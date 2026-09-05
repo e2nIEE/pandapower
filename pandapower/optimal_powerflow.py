@@ -70,6 +70,7 @@ def _optimal_powerflow(net, verbose, suppress_warnings, **kwargs):
                 et=result["et"], fd=stdout, ppopt=ppopt)
 
     if not result["success"]:
+        _clean_up(net)
         raise OPFNotConverged("Optimal Power Flow did not converge!")
 
     # ppci doesn't contain out of service elements, but ppc does -> copy results accordingly
