@@ -11,6 +11,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] ``create_continuous_bus_index`` (and other toolbox functions relying on ``element_bus_tuples``) now also update the ``bus`` column of the ``ssc`` element table; it was previously missing from the list of bus-referencing elements
 - [FIXED] speedup dump_to_geojson_node_branch
 - [FIXED] added the LV Schutterwald network to the network documentation.
 - [FIXED] restored ``OpenDSSDirect.py`` to the ``all``/``dev`` extras so the OpenDSS converter is exercised (and its coverage reported) in CI again; it was dropped in #3062 because installing it alongside ``pytest~=9.1`` crashed the pytest process on Windows. Root cause (see `dss-extensions/OpenDSSDirect.py#148 <https://github.com/dss-extensions/OpenDSSDirect.py/issues/148>`_): pytest enables Python's ``faulthandler`` by default, which intercepts a first-chance Windows structured exception that OpenDSSDirect.py's native backend raises -- and normally handles itself -- during import, and misreports it as fatal. Bracketing the import with ``faulthandler.disable()``/``.enable()`` avoids the false crash while leaving ``faulthandler`` protecting the rest of the test run; the converter now runs on Windows instead of merely skipping there.

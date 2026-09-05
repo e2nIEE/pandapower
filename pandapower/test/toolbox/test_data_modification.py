@@ -137,6 +137,9 @@ def test_continuos_bus_numbering():
     create_ward(net, bus0, 2, 1, 1, 2)
     create_ward(net, bus0, 2, 1, 1, 2)
 
+    bus0 = create_bus(net, 0.4, index=9821)
+    create_ssc(net, bus0, r_ohm=1., x_ohm=1.)
+
     create_continuous_bus_index(net)
 
     buses = net.bus.index
