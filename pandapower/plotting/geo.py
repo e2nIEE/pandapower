@@ -265,11 +265,6 @@ def dump_to_geojson_node_branch(
     :param include_type_id:
     :return:
     """
-    def update_props(r: pd.Series) -> None:
-        if r.name not in props:
-            props[r.name] = {}
-        props[r.name].update(r.to_dict())
-
     features = []
     elements = {node_name: nodes, branch_name: branches}
     geodata = {node_name: net[node_name].geo, branch_name: net[branch_name].geo}
@@ -280,18 +275,22 @@ def dump_to_geojson_node_branch(
         element = elements[name]
         if element:
             props: dict = {}
-            for table in [name, f"res_{name}"]:
-                if table not in net.keys():
+            for table in (name, f"res_{name}"):
+                if table not in net:
                     continue
 
-                tempdf = net[table].copy(deep=True)
+                tempdf = net[table].drop(columns="geo", errors="ignore").copy()
+                original_index = tempdf.index
+
                 if include_type_id:
                     tempdf["pp_type"] = name
-                    tempdf["pp_index"] = tempdf.index
-                tempdf.index = tempdf.apply(lambda r: f"{r['pp_type']}-{r['pp_index']}", axis=1)
-                tempdf.drop(columns=["geo"], inplace=True, axis=1, errors="ignore")
+                    tempdf["pp_index"] = original_index
 
-                tempdf.apply(update_props, axis=1)
+                # Use identical keys for `name` and `res_name` rows so their data merges.
+                tempdf.index = name + "-" + original_index.astype(str)
+
+                for key, values in tempdf.to_dict(orient="index").items():
+                    props.setdefault(key, {}).update(values)
             if isinstance(element, bool):
                 iterator = geodata[name].items()
             else:
@@ -368,7 +367,7 @@ def dump_to_geojson(
     if switches:
         if isinstance(switches, bool):
             switches = net.switch.index  # type: ignore[assignment]
-        if "switch" in net.keys():
+        if "switch" in net:
             cols = net.switch.columns
             for ind, row in net.switch.loc[switches].iterrows():
                 if pd.isna(row.bus):
@@ -398,7 +397,7 @@ def dump_to_geojson(
         t_type = "trafo3w" if t_is_3w else "trafo"
         if isinstance(trafos, bool):
             trafos = net[t_type].index
-        if t_type in net.keys():
+        if t_type in net:
             cols = net[t_type].columns
             for ind, row in net[t_type].loc[trafos].iterrows():
                 prop = {}
