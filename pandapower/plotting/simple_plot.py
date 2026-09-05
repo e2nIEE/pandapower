@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -362,51 +360,51 @@ def _set_colormap_mode(
 
 
 def simple_plot(
-        net: pandapowerNet,
-        respect_switches: bool = False,
-        line_width: float = 3.0,
-        bus_size: float = 1.0,
-        ext_grid_size: float = 1.0,
-        trafo_size: float = 1.0,
-        plot_loads: bool = False,
-        plot_gens: bool = False,
-        plot_sgens: bool = False,
-        orientation=None,
-        load_size: float = 1.0,
-        gen_size: float = 1.0,
-        sgen_size: float = 1.0,
-        switch_size: float = 2.0,
-        switch_distance: float = 1.0,
-        plot_line_switches: bool = False,
-        plot_bus_switches: bool = False,
-        scale_size: bool = True,
-        bus_color="#1c3f52",
-        line_color="grey",
-        dcline_color="c",
-        trafo_color="k",
-        ext_grid_color="#1c3f52",
-        switch_color="k",
-        library="igraph",
-        show_plot: bool = True,
-        ax=None,
-        draw_by_type: bool = True,
-        bus_dc_size: float = 1.0,
-        bus_dc_color="m",
-        line_dc_color="c",
-        vsc_size: float = 4.0,
-        vsc_color="orange",
-        highlight_buses=None,
-        highlight_lines=None,
-        enable_hover=True,
-        highlight_bus_size_factor=2.0,
-        highlight_line_width_factor=2.5,
-        highlight_color="red",
-        colormap_type: str = "continuous",
-        line_limits: tuple = (0, 25, 50, 75, 100),
-        bus_limits: tuple = (0.9, 0.95, 1.0, 1.05, 1.1),
-        cmap_lines: list = None,
-        cmap_buses: list = None,
-        plot_colorbars: bool = True,
+    net: pandapowerNet,
+    respect_switches: bool = False,
+    line_width: float = 3.0,
+    bus_size: float = 1.0,
+    ext_grid_size: float = 1.0,
+    trafo_size: float = 1.0,
+    plot_loads: bool = False,
+    plot_gens: bool = False,
+    plot_sgens: bool = False,
+    orientation=None,
+    load_size: float = 1.0,
+    gen_size: float = 1.0,
+    sgen_size: float = 1.0,
+    switch_size: float = 2.0,
+    switch_distance: float = 1.0,
+    plot_line_switches: bool = False,
+    plot_bus_switches: bool = False,
+    scale_size: bool = True,
+    bus_color="#1c3f52",
+    line_color="grey",
+    dcline_color="c",
+    trafo_color="k",
+    ext_grid_color="#1c3f52",
+    switch_color="k",
+    library="igraph",
+    show_plot: bool = True,
+    ax=None,
+    draw_by_type: bool = True,
+    bus_dc_size: float = 1.0,
+    bus_dc_color="m",
+    line_dc_color="c",
+    vsc_size: float = 4.0,
+    vsc_color="orange",
+    highlight_buses=None,
+    highlight_lines=None,
+    enable_hover=True,
+    highlight_bus_size_factor=2.0,
+    highlight_line_width_factor=2.5,
+    highlight_color="red",
+    colormap_type: str = "continuous",
+    line_limits: tuple = (0, 25, 50, 75, 100),
+    bus_limits: tuple = (0.9, 0.95, 1.0, 1.05, 1.1),
+    cmap_lines: list | None = None,
+    cmap_buses: list | None = None,
+    plot_colorbars: bool = True,
 ):
     """Plot a pandapower network as simply as possible.
 
@@ -452,8 +450,7 @@ def simple_plot(
         plot_sgens (bool, optional): Draw static generator symbols.
             Default is ``False``.
         orientation (float or None, optional): Base orientation angle in
-            radians for sgen, gen, and load symbols.  ``None`` uses the
-            element-specific default.  Default is ``None``.
+            radians for sgen, gen, and load symbols.  ``None`` uses ``np.pi``.  Default is ``None``.
         load_size (float, optional): Relative load symbol size.
             Default is ``1.0``.
         gen_size (float, optional): Relative gen symbol size.
@@ -633,13 +630,22 @@ def simple_plot(
     normal_bc = cmap_bc = None
     if has_buses:
         normal_bc = create_bus_collection(
-            net, net.bus.index, size=bus_size,
-            color=bus_color, zorder=8, infofunc=bus_info,
+            net,
+            net.bus.index,  # type: ignore[arg-type]
+            size=bus_size,
+            color=bus_color,
+            zorder=8,
+            infofunc=bus_info,
         )
         if cmap_buses_ready:
             cmap_bc = create_bus_collection(
-                net, net.bus.index, size=bus_size,
-                cmap=cmap_b, norm=norm_b, zorder=9, infofunc=bus_info,
+                net,
+                net.bus.index,  # type: ignore[arg-type]
+                size=bus_size,
+                cmap=cmap_b,
+                norm=norm_b,
+                zorder=9,
+                infofunc=bus_info,
             )
 
     collections = []
@@ -658,7 +664,7 @@ def simple_plot(
         if respect_switches
         else set()
     )
-    plot_lines = in_service_lines.difference(nogolines)
+    plot_lines = in_service_lines.difference(nogolines)  # type: ignore[arg-type]
     plot_dclines = net.dcline.in_service
     plot_lines_dc = net.line_dc.loc[net.line_dc.in_service].index
 
@@ -824,11 +830,11 @@ def simple_plot(
     if colormap_ready and plot_colorbars:
         if cmap_lc is not None:
             cbar_l = plt.colorbar(cmap_lc, ax=ax, label="Line loading [%]")
-            cbar_l.set_ticks(_extract_cbar_ticks(_cl, colormap_type))
+            cbar_l.set_ticks(_extract_cbar_ticks(_cl, colormap_type))  # type: ignore[arg-type]
             _colorbars.append(cbar_l)
         if cmap_bc is not None:
             cbar_b = plt.colorbar(cmap_bc, ax=ax, label="Bus voltage [p.u.]")
-            cbar_b.set_ticks(_extract_cbar_ticks(_cb, colormap_type))
+            cbar_b.set_ticks(_extract_cbar_ticks(_cb, colormap_type))  # type: ignore[arg-type]
             _colorbars.append(cbar_b)
 
         # Proceed only when at least one colorbar was created.
@@ -960,10 +966,10 @@ def calculate_unique_angles(
 
     for df, df_name in [(sgen_counts, "sgen"), (gen_counts, "gen")]:
         index: int
-        for index, row in df.iterrows():
+        for index, row in df.iterrows():  # type: ignore[assignment]
             patch_angle = float(2 * math.pi / patches_per_bus[index])
             c: str | float
-            for c, v in row.items():
+            for c, v in row.items():  # type: ignore[assignment]
                 _type: str
                 if v > 0:
                     if isinstance(c, float) and math.isnan(c):
@@ -972,10 +978,10 @@ def calculate_unique_angles(
                         _type = str(c)
                     if df_name not in patches[index]:
                         patches[index][df_name] = {}
-                    patches[index][df_name][_type] = patch_angle * counts[index]
+                    patches[index][df_name][_type] = patch_angle * counts[index]  # type: ignore[index]
                     counts[index] += 1
 
-    for index, _ in loads.items():
+    for index in loads.index:
         patch_angle = float(2 * math.pi / patches_per_bus[index])
         patches[index]["load"] = patch_angle * counts[index]
         counts[index] += 1

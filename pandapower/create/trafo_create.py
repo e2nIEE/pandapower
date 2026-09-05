@@ -263,9 +263,21 @@ def create_transformers(
         raise ValueError(f"std_type is missing a required value. Required values: {', '.join(required_params)}")
     
     params_from_std_type = (
-        "i0_percent", "vk0_percent", "vkr0_percent", "mag0_percent", "mag0_rx", 
-        "si0_hv_partial", "vector_group", "shift_degree", "tap_side", "tap_neutral", 
-        "tap_min", "tap_max", "tap_step_degree", "tap_step_percent", "trafo_characteristic_table",
+        "i0_percent",
+        "vk0_percent",
+        "vkr0_percent",
+        "mag0_percent",
+        "mag0_rx",
+        "si0_hv_partial",
+        "vector_group",
+        "shift_degree",
+        "tap_side",
+        "tap_neutral",
+        "tap_min",
+        "tap_max",
+        "tap_step_degree",
+        "tap_step_percent",
+        "trafo_characteristic_table",
         *required_params
     )
     
@@ -468,7 +480,7 @@ def create_transformer_from_parameters(
     else:
         entries["tap_pos"] = tap_pos
         if type(tap_pos) is float:
-            net.trafo.tap_pos = net.trafo.tap_pos.astype(float)
+            net.trafo.tap_pos = net.trafo.tap_pos.astype(float)  # type: ignore[attr-defined]
 
     for key in ["tap_dependent_impedance", "vk_percent_characteristic", "vkr_percent_characteristic"]:
         if key in kwargs:
@@ -852,7 +864,7 @@ def create_transformer3w(
     else:
         entries["tap_pos"] = tap_pos
         if type(tap_pos) is float:
-            net.trafo3w.tap_pos = net.trafo3w.tap_pos.astype(float)
+            net.trafo3w.tap_pos = net.trafo3w.tap_pos.astype(float)  # type: ignore[attr-defined]
 
     dd = pd.DataFrame(entries, index=[index])
     net["trafo3w"] = pd.concat([net["trafo3w"], dd], sort=True).reindex(net["trafo3w"].columns, axis=1)

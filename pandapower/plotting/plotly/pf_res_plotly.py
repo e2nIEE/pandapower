@@ -1,8 +1,9 @@
-# -*- coding: utf-8 -*-
-from typing import Literal
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
+from typing import Literal
+import logging
+
 import pandas as pd
 
 from pandapower.auxiliary import pandapowerNet
@@ -16,7 +17,6 @@ from pandapower.plotting.plotly.traces import (
 from pandapower.run import runpp
 from pandapower.plotting.geo import convert_crs
 
-import logging
 logger = logging.getLogger(__name__)
 
 
@@ -100,7 +100,7 @@ def pf_res_plotly(net: pandapowerNet,
         OUTPUT:
             **figure** (graph_objs._figure.Figure) figure object
     """
-    if 'res_bus' not in net or net.get('res_bus').shape[0] == 0:
+    if "res_bus" not in net or net.res_bus.shape[0] == 0:
         logger.warning(
             'There are no Power Flow results. A Newton-Raphson power flow will be executed.')
         runpp(net)
@@ -136,13 +136,15 @@ def pf_res_plotly(net: pandapowerNet,
     # hoverinfo which contains name and pf results
     precision = 3
 
+    voltage_factor: float
     if voltage_unit == "k":
-        voltage_factor = 1
+        voltage_factor = 1.0
     else:
         voltage_factor = 1e3
 
+    power_factor: float
     if power_unit == "M":
-        power_factor = 1
+        power_factor = 1.0
     elif power_unit == "k":
         power_factor = 1e3
     else:
@@ -172,8 +174,9 @@ def pf_res_plotly(net: pandapowerNet,
         use_line_geo = False
 
     # hoverinfo that contains name and pf results
+    current_factor: float
     if current_unit == "k":
-        current_factor = 1
+        current_factor = 1.0
     else:
         current_factor = 1e3
 
