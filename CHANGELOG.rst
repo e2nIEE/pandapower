@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] OPF cleaned up in case of non convergence
 - [FIXED] ``create_continuous_bus_index`` (and other toolbox functions relying on ``element_bus_tuples``) now also update the ``bus`` column of the ``ssc`` element table; it was previously missing from the list of bus-referencing elements
 - [FIXED] speedup dump_to_geojson_node_branch
 - [FIXED] added the LV Schutterwald network to the network documentation.
