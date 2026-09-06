@@ -11,6 +11,7 @@ import geojson
 import numpy as np
 import pandas as pd
 import pytest
+import simplejson
 from pandas.testing import assert_frame_equal, assert_series_equal
 
 from pandapower import pp_dir
@@ -140,6 +141,10 @@ def test_json_basic(net_in, tmp_path):
         convert_format(net_out)
 
     assert_net_equal(net_in, net_out)
+
+
+def test_json_encoder_accepts_simplejson_encoding_keyword():
+    assert simplejson.dumps({"value": "✓"}, cls=PPJSONEncoder) == '{"value": "\\u2713"}'
 
 
 def test_json_controller_none():
