@@ -259,3 +259,30 @@ def test_get_all_elements():
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])
+
+
+def test_element_bus_tuples_cover_ac_bus_columns():
+    net = create_empty_network()
+    ac_bus_columns = {"bus", "from_bus", "to_bus", "hv_bus", "mv_bus", "lv_bus"}
+    expected = {
+        (element, column)
+        for element, table in net.items()
+        if isinstance(table, pd.DataFrame) and not element.startswith("res_")
+        for column in ac_bus_columns.intersection(table.columns)
+    }
+    assert set(element_bus_tuples()) == expected
+
+
+@pytest.mark.parametrize("in_service", [True, False])
+def test_get_connected_tcsc(in_service):
+    from pandapower.create import create_tcsc
+    from pandapower.toolbox.element_selection import get_connected_elements
+
+    net = create_empty_network()
+    buses = create_buses(net, 3, vn_kv=20.)
+    tcsc = create_tcsc(net, buses[0], buses[1], x_l_ohm=1, x_cvar_ohm=-10,
+                       set_p_to_mw=10, thyristor_firing_angle_degree=90, in_service=in_service)
+    for bus in buses[:2]:
+        assert get_connected_elements(net, "tcsc", bus) == {tcsc}
+        assert get_connected_elements(net, "tcsc", bus, respect_in_service=True) == ({tcsc} if in_service else set())
+    assert not get_connected_elements(net, "tcsc", buses[2])

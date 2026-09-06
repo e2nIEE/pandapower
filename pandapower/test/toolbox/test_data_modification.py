@@ -241,3 +241,35 @@ def test_scaling_by_type():
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])
+
+
+@pytest.mark.parametrize("continuous", [False, True])
+def test_reindex_facts_and_converter_bus_references(continuous):
+    from pandapower.create import create_bus_dc, create_svc, create_vsc, create_vsc_stacked, create_vsc_bipolar, create_tcsc
+
+    net = create_empty_network()
+    b1 = create_bus(net, vn_kv=20., index=4)
+    b2 = create_bus(net, vn_kv=20., index=9)
+    d0 = create_bus_dc(net, vn_kv=20., index=4)
+    d1 = create_bus_dc(net, vn_kv=20., index=9)
+    create_svc(net, b1, x_l_ohm=1, x_cvar_ohm=-10, set_vm_pu=1., thyristor_firing_angle_degree=90)
+    create_vsc(net, b1, d0, r_ohm=1, x_ohm=1, r_dc_ohm=1)
+    create_vsc_stacked(net, b1, d0, d1, r_ohm=1, x_ohm=1, r_dc_ohm=1)
+    create_vsc_bipolar(net, b1, d0, d1, r_ohm=1, x_ohm=1, r_dc_ohm=1)
+    create_tcsc(net, b1, b2, x_l_ohm=1, x_cvar_ohm=-10, set_p_to_mw=10, thyristor_firing_angle_degree=90)
+    original = copy.deepcopy(net)
+
+    if continuous:
+        lookup = create_continuous_bus_index(net, start=2)
+    else:
+        lookup = reindex_buses(net, {4: 12, 9: 7})
+
+    for element in ("svc", "vsc", "vsc_stacked", "vsc_bipolar", "tcsc"):
+        for column in ("bus", "from_bus", "to_bus"):
+            if column in net[element]:
+                expected = original[element][column].map(lookup)
+                pd.testing.assert_series_equal(net[element][column], expected, check_dtype=False)
+        for column in ("bus_dc", "bus_dc_plus", "bus_dc_minus"):
+            if column in net[element]:
+                pd.testing.assert_series_equal(net[element][column], original[element][column])
+    pd.testing.assert_frame_equal(net.bus_dc, original.bus_dc)

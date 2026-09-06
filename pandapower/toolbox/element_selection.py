@@ -178,10 +178,10 @@ def get_connected_elements(net, element_type, buses, respect_switches=True, resp
         connected_elements = set(net["trafo3w"].index[(net.trafo3w.hv_bus.isin(buses)) |
                                                       (net.trafo3w.mv_bus.isin(buses)) |
                                                       (net.trafo3w.lv_bus.isin(buses))])
-    elif element_type == "impedance":
-        element_table = net.impedance
-        connected_elements = set(net["impedance"].index[(net.impedance.from_bus.isin(buses)) |
-                                                        (net.impedance.to_bus.isin(buses))])
+    elif element_type in ("impedance", "tcsc"):
+        element_table = net[element_type]
+        connected_elements = set(element_table.index[element_table.from_bus.isin(buses) |
+                                                      element_table.to_bus.isin(buses)])
     elif element_type == "measurement":
         element_table = net[element_type]
         connected_elements = set(net.measurement.index[(net.measurement.element.isin(buses)) |
@@ -650,7 +650,9 @@ def branch_element_bus_dict(include_switch=False, sort=None):
 def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=False):
     """
     Utility function
-    Provides the tuples of elements and corresponding columns for buses they are connected to
+    Provides the tuples of elements and corresponding columns referencing AC buses.
+    Includes FACTS devices and the AC terminals of converters. DC bus columns
+    refer to the separate bus_dc table and must not be remapped as AC buses.
     :param bus_elements: whether tuples for bus elements e.g. load, sgen, ... are included
     :param branch_elements: whether branch elements e.g. line, trafo, ... are included
     :param res_elements: whether result table names e.g. res_sgen, res_line, ... are included
@@ -665,12 +667,14 @@ def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=Fal
         ebts += [("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
                  ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"),
                  ("storage", "bus"), ("asymmetric_load", "bus"), ("asymmetric_sgen", "bus"),
-                 ("motor", "bus"), ("ssc", "bus")]
+                 ("motor", "bus"), ("ssc", "bus"), ("svc", "bus"), ("vsc", "bus"),
+                 ("vsc_stacked", "bus"), ("vsc_bipolar", "bus")]
     if branch_elements:
         ebts += [("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
                  ("impedance", "to_bus"), ("switch", "bus"), ("trafo", "hv_bus"),
                  ("trafo", "lv_bus"), ("trafo3w", "hv_bus"), ("trafo3w", "mv_bus"),
-                 ("trafo3w", "lv_bus"), ("dcline", "from_bus"), ("dcline", "to_bus")]
+                 ("trafo3w", "lv_bus"), ("dcline", "from_bus"), ("dcline", "to_bus"),
+                 ("tcsc", "from_bus"), ("tcsc", "to_bus")]
     if res_elements:
         elements_without_res = ["switch", "measurement", "asymmetric_load", "asymmetric_sgen"]
         ebts += [("res_" + ebt[0], ebt[1]) for ebt in ebts if ebt[0] not in elements_without_res]
