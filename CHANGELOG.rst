@@ -18,6 +18,23 @@ Change Log
 - [FIXED] impedance element docs: the ``z_tf`` equation used ``rft_pu`` instead of ``rtf_pu``, and the ``gt_pu``/``bt_pu``/``gt0_pu``/``bt0_pu`` shunt parameters were described as being at the ``from_bus`` instead of the ``to_bus``.
 - [FIXED] fixed tutorial for plotting with pyqt
 
+[3.5.4] - 2026-07-08
+-------------------------------
+- [UPDATED] versions of dependent libraries
+- [FIXED] improved from_json even further
+
+[3.5.3] - 2026-07-07
+-------------------------------
+- [FIXED] moved a misleading logger.warning message
+
+[3.5.2] - 2026-07-06
+-------------------------------
+- [REMOVED] direct dependency to helmpy, if you want to use it, you have to install it manually or uncomment the line in pyproject.toml. Otherwise pypi.org rejects the package.
+
+[3.5.1] - 2026-07-06
+-------------------------------
+- [FIXED] upload pipeline
+
 [3.5.0] - 2026-07-06
 -------------------------------
 - [ADDED] toolbox: :code:`compute_switch_flows` computes power flow through zero-impedance bus-bus switches via nodal balance
