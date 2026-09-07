@@ -77,7 +77,7 @@ def create_shunt(
     index = _get_index_with_check(net, "shunt", index)
 
     if vn_kv is None:
-        vn_kv = net.bus.vn_kv.at[bus]
+        vn_kv = net.bus.vn_kv.at[bus]  # type: ignore[assignment]
 
     entries = {
         "bus": bus,

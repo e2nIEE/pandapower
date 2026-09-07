@@ -480,7 +480,7 @@ def create_transformer_from_parameters(
     else:
         entries["tap_pos"] = tap_pos
         if type(tap_pos) is float:
-            net.trafo.tap_pos = net.trafo.tap_pos.astype(float)
+            net.trafo.tap_pos = net.trafo.tap_pos.astype(float)  # type: ignore[attr-defined]
 
     for key in ["tap_dependent_impedance", "vk_percent_characteristic", "vkr_percent_characteristic"]:
         if key in kwargs:
@@ -864,7 +864,7 @@ def create_transformer3w(
     else:
         entries["tap_pos"] = tap_pos
         if type(tap_pos) is float:
-            net.trafo3w.tap_pos = net.trafo3w.tap_pos.astype(float)
+            net.trafo3w.tap_pos = net.trafo3w.tap_pos.astype(float)  # type: ignore[attr-defined]
 
     dd = pd.DataFrame(entries, index=[index])
     net["trafo3w"] = pd.concat([net["trafo3w"], dd], sort=True).reindex(net["trafo3w"].columns, axis=1)

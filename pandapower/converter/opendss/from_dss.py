@@ -41,7 +41,7 @@ try:
     faulthandler_was_enabled = faulthandler.is_enabled()
     faulthandler.disable()
     try:
-        import opendssdirect as dss
+        import opendssdirect as dss  # type: ignore[import-untyped]
     finally:
         if faulthandler_was_enabled:
             faulthandler.enable()

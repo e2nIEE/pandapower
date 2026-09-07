@@ -88,11 +88,31 @@ class BinarySearchControl(Controller):
         Additional keyword arguments.
 
     """
-    def __init__(self, net, ctrl_in_service, output_element, output_variable, output_element_index,
-                 output_element_in_service, output_values_distribution, input_element, input_variable,
-                 input_element_index, set_point, control_modus:str=None, name="", input_inverted=None,
-                 tol=0.001, in_service=True, order=0, level=0, drop_same_existing_ctrl=False,
-                 matching_params=None, **kwargs):
+
+    def __init__(
+        self,
+        net,
+        ctrl_in_service,
+        output_element,
+        output_variable,
+        output_element_index,
+        output_element_in_service,
+        output_values_distribution,
+        input_element,
+        input_variable,
+        input_element_index,
+        set_point,
+        control_modus: str | None = None,
+        name="",
+        input_inverted=None,
+        tol=0.001,
+        in_service=True,
+        order=0,
+        level=0,
+        drop_same_existing_ctrl=False,
+        matching_params=None,
+        **kwargs,
+    ):
         super().__init__(net, in_service=in_service, order=order, level=level,
                          drop_same_existing_ctrl=drop_same_existing_ctrl,
                          matching_params=matching_params)
@@ -163,10 +183,16 @@ class BinarySearchControl(Controller):
         # normalize the values distribution:
         self._normalize_distribution_in_service(initial_pf_distribution=output_values_distribution)
 
-        self.output_adjustable = np.array([False if not distribution else service
-                                            for distribution, service in zip(np.atleast_1d(self.output_values_distribution),
-                                                np.atleast_1d(self.output_element_in_service))], dtype=bool)
-        ###finding correct control_modus, catching deprecated voltage_ctrl argument###
+        self.output_adjustable = np.array(
+            [
+                False if not distribution else service
+                for distribution, service in zip(
+                    np.atleast_1d(self.output_values_distribution), np.atleast_1d(self.output_element_in_service)
+                )
+            ],
+            dtype=bool,
+        )
+        # finding correct control_modus, catching deprecated voltage_ctrl argument
         if control_modus is None: #catching old attribute voltage_ctrl
             if hasattr(self, 'voltage_ctrl'):
                 control_modus = self.voltage_ctrl
@@ -185,12 +211,14 @@ class BinarySearchControl(Controller):
                          f" types 'Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl'\n")
         else:
             try:
-                self.control_modus = ControlModusEnum(control_modus)
+                self.control_modus = ControlModusEnum(control_modus)  # type: ignore[has-type]
             except ValueError:
-                logger.warning(f"Control_modus {control_modus} not recognized, using 'Q_ctrl' from available"
-                               f" types 'Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan_phi_ctrl'\n")
-                self.control_modus = ControlModusEnum.q_ctrl
-        if self.control_modus == ControlModusEnum.PF_ctrl_cap: #-1 for capacitive, 1 for inductive systems
+                logger.warning(
+                    f"Control_modus {control_modus} not recognized, using 'Q_ctrl' from available"
+                    f" types 'Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan_phi_ctrl'\n"
+                )
+                self.control_modus = ControlModusEnum.q_ctrl  # type: ignore[has-type]
+        if self.control_modus == ControlModusEnum.PF_ctrl_cap:  # type: ignore[has-type] #-1 for capacitive, 1 for inductive systems
             self.reactance= -1
         else:
             if control_modus == ControlModusEnum.PF_ctrl:
@@ -199,7 +227,7 @@ class BinarySearchControl(Controller):
                 self.control_modus = ControlModusEnum.PF_ctrl_ind
             self.reactance = 1
 
-        if self.control_modus in ControlModusEnum.pf_modes(): #checking cos(phi) limits
+        if self.control_modus in ControlModusEnum.pf_modes():  # type: ignore[has-type] # checking cos(phi) limits
             if abs(self.set_point) > 1:
                 raise UserWarning(f'Power Factor Controller {self.index}: Set point out of range ([-1,1]')
         ###adding input elements###
@@ -227,7 +255,7 @@ class BinarySearchControl(Controller):
                                                                               input_index,
                                                                               input_variable)
             ###get p variables for input elements for Phi controller
-            if self.control_modus in ControlModusEnum.pf_modes() or self.control_modus== ControlModusEnum.tan_phi_ctrl:
+            if self.control_modus in ControlModusEnum.pf_modes() or self.control_modus == ControlModusEnum.tan_phi_ctrl:  # type: ignore[has-type]
                 if isinstance(input_variable, list):
                     input_variable_p = input_variable[counter].replace('q', 'p').replace('var','w')
                     _, input_variable_temp_p = _detect_read_write_flag(net, self.input_element,input_index,
