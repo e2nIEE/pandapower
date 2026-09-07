@@ -34,9 +34,6 @@ if TYPE_CHECKING:
     from matplotlib.patches import Patch
     from matplotlib.path import Path
 
-if TYPE_CHECKING:
-    from matplotlib.path import Path
-
 logger = logging.getLogger(__name__)
 
 

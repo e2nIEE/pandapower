@@ -7,19 +7,24 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower.create import create_measurement, create_bus, create_load, create_sgen, create_shunt, create_ward
+from pandapower.create import create_bus, create_load, create_measurement, create_sgen, create_shunt, create_ward
+from pandapower.estimation.util import add_virtual_meas_from_loadflow
 from pandapower.network import pandapowerNet
 from pandapower.networks.cigre_networks import create_cigre_network_mv
-from pandapower.networks.create_examples import example_simple, example_multivoltage
+from pandapower.networks.create_examples import example_multivoltage, example_simple
 from pandapower.run import runpp
 from pandapower.test.helper_functions import assert_net_equal
 from pandapower.toolbox.comparison import compare_arrays
 from pandapower.toolbox.data_modification import (
-    reindex_elements, reindex_buses, add_column_from_node_to_elements, add_column_from_element_to_elements,
-    create_continuous_bus_index, create_continuous_elements_index, set_scaling_by_type
+    add_column_from_element_to_elements,
+    add_column_from_node_to_elements,
+    create_continuous_bus_index,
+    create_continuous_elements_index,
+    reindex_buses,
+    reindex_elements,
+    set_scaling_by_type,
 )
 from pandapower.toolbox.element_selection import pp_elements
-from pandapower.estimation.util import add_virtual_meas_from_loadflow
 
 
 def test_add_column_from_node_to_elements():
@@ -136,9 +141,6 @@ def test_continuos_bus_numbering():
     create_ward(net, bus0, 2, 1, 1, 2)
     create_ward(net, bus0, 2, 1, 1, 2)
     create_ward(net, bus0, 2, 1, 1, 2)
-
-    bus0 = create_bus(net, 0.4, index=9821)
-    create_ssc(net, bus0, r_ohm=1., x_ohm=1.)
 
     create_continuous_bus_index(net)
 

@@ -143,10 +143,6 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
 
     bus_p[~net.bus.in_service] = np.nan
     bus_q[~net.bus.in_service] = np.nan
-
-    bus_p[~net.bus.in_service] = np.nan
-    bus_q[~net.bus.in_service] = np.nan
-
     for idx, tab in net.ext_grid.iterrows():
         if tab.in_service:
             bus_p.at[tab.bus] -= net.res_ext_grid.p_mw.at[idx]

@@ -638,7 +638,7 @@ class WrongLineReactance(DiagnosticFunction[pandapowerNet, bool]):
         except expected_exceptions:
             check_result = False
             try:
-                net.line["x_ohm_per_km"] *= reactance_scaling_factor
+                net.line.x_ohm_per_km *= reactance_scaling_factor
                 run(net)
                 check_result = True
             except expected_exceptions:
@@ -649,7 +649,7 @@ class WrongLineReactance(DiagnosticFunction[pandapowerNet, bool]):
             raise e
 
         # teardown
-        net.line["x_ohm_per_km"] = line_reactance
+        net.line.x_ohm_per_km = line_reactance
 
         return check_result
 
@@ -715,7 +715,7 @@ class WrongLineResistance(DiagnosticFunction[pandapowerNet, bool]):
         except expected_exceptions:
             check_result = False
             try:
-                net.line["r_ohm_per_km"] *= resistance_scaling_factor
+                net.line.r_ohm_per_km *= resistance_scaling_factor
                 run(net)
                 check_result = True
             except expected_exceptions:
@@ -726,7 +726,7 @@ class WrongLineResistance(DiagnosticFunction[pandapowerNet, bool]):
             raise e
 
         # teardown
-        net.line["r_ohm_per_km"] = line_resistance
+        net.line.r_ohm_per_km = line_resistance
 
         return check_result
 
