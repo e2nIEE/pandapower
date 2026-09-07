@@ -115,7 +115,7 @@ def get_equivalent(
     _check_network(net)
     logger.info(eq_type + " equivalent calculation started.")
 
-    # --- determine interal buses, external buses, buses connected to boundary buses via
+    # --- determine internal buses, external buses, buses connected to boundary buses via
     #     bus-bus-switch and update boundary buses by external slack buses
 
     all_internal_buses, all_external_buses, boundary_buses_inclusive_bswitch, boundary_buses = \

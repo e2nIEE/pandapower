@@ -92,8 +92,8 @@ def create_cigre_grid_with_time_series(json_path, net=None, add_ts_constaints=Fa
     sgen_ts = pd.DataFrame(index=time_series.index.tolist(), columns=net.sgen.index.tolist())
     for t in range(n_timesteps):
         load_ts.loc[t] = load_p * time_series.at[t, "residential"]
-        sgen_ts.loc[t][:8] = sgen_p * time_series.at[t, "pv"]
-        sgen_ts.loc[t][8] = wind_p * time_series.at[t, "wind"]
+        sgen_ts.loc[t, sgen_ts.columns[:8].tolist()] = sgen_p * time_series.at[t, "pv"]
+        sgen_ts.loc[t, sgen_ts.columns[8]] = wind_p * time_series.at[t, "wind"]
 
     # create time series controller for load and sgen
     ConstControl(net, element="load", variable="p_mw",
@@ -499,13 +499,12 @@ def test_pm_tnep():
     # run power models tnep optimization
     runpm_tnep(net, pm_model="ACPPowerModel")
     # set lines to be built in service
-    lines_to_built = net["res_ne_line"].loc[net["res_ne_line"].loc[:, "built"], "built"].index
+    lines_to_built = net["res_ne_line"].loc[net["res_ne_line"]["built"].astype(bool), "built"].index
     net["line"].loc[lines_to_built, "in_service"] = True
     # run a power flow calculation again and check if max_loading percent is still violated
     runpp(net)
     # check max line loading results
-    assert not np.any(net["res_line"].loc[:, "loading_percent"] >
-                      net["line"].loc[:, "max_loading_percent"])
+    assert not np.any(net["res_line"].loc[:, "loading_percent"] > net["line"].loc[:, "max_loading_percent"])
 
 
 @pytest.mark.slow
@@ -548,8 +547,8 @@ def test_timeseries_pandamodels():
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_runpm_vstab():
     net = create_cigre_network_mv(with_der="pv_wind")
-    net.sgen.p_mw = net.sgen.p_mw * 8
-    net.sgen.sn_mva = net.sgen.sn_mva * 8
+    net.sgen.p_mw *= 8
+    net.sgen.sn_mva *= 8
     runpp(net)
     net_org = deepcopy(net)
 
@@ -580,7 +579,7 @@ def test_runpm_vstab():
         create_poly_cost(net, idx, "ext_grid", 1.0)
 
     net.bus["pm_param/setpoint_v"] = None
-    net.bus["pm_param/setpoint_v"].loc[net.sgen.bus] = 0.99
+    net.bus.loc[net.sgen.bus, "pm_param/setpoint_v"] = 0.99
 
     runpm_vstab(net)
 
@@ -634,16 +633,16 @@ def test_runpm_multi_vstab():
     net.ext_grid["min_p_mw"] = -10000.0
 
     # lower and upper bounds for DERs
-    net.sgen["max_p_mw"] = net.sgen.p_mw.values
-    net.sgen["min_p_mw"] = net.sgen.p_mw.values
-    net.sgen["max_q_mvar"] = net.sgen.p_mw.values * 0.328
-    net.sgen["min_q_mvar"] = -net.sgen.p_mw.values * 0.328
+    net.sgen["max_p_mw"] = net.sgen.p_mw
+    net.sgen["min_p_mw"] = net.sgen.p_mw
+    net.sgen["max_q_mvar"] = net.sgen.p_mw * 0.328
+    net.sgen["min_q_mvar"] = -net.sgen.p_mw * 0.328
 
     net.trafo["max_loading_percent"] = 100.0
     net.line["max_loading_percent"] = 100.0
 
     net.bus["pm_param/setpoint_v"] = None  # add extra column
-    net.bus["pm_param/setpoint_v"].loc[net.sgen.bus] = 0.96
+    net.bus.loc[net.sgen.bus, "pm_param/setpoint_v"] = 0.96
 
     # load time series data for 96 time steps
     json_path = os.path.join(pp_dir, "test", "opf", "cigre_timeseries_15min.json")
@@ -690,9 +689,9 @@ def test_runpm_qflex_and_multi_qflex():
     net.line["max_loading_percent"] = 100.0
 
     net.trafo["pm_param/setpoint_q"] = None  # add extra column
-    net.trafo["pm_param/setpoint_q"].loc[0] = -5
+    net.trafo.at[0, "pm_param/setpoint_q"] = -5
     net.trafo["pm_param/side"] = None
-    net.trafo["pm_param/side"][0] = "lv"
+    net.trafo.at[0, "pm_param/side"] = "lv"
 
     # run opf
     runpm_qflex(net)

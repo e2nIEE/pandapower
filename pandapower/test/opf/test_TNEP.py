@@ -65,7 +65,7 @@ def test_pm_tnep_cigre_dc():
     runpm_tnep(net, pm_solver="juniper", pm_model="DCMPPowerModel")  # gurobi is a better option, but not for travis
 
     # set lines to be built in service
-    lines_to_built = net["res_ne_line"].loc[net["res_ne_line"].loc[:, "built"], "built"].index
+    lines_to_built = net["res_ne_line"].loc[net["res_ne_line"]["built"].astype(bool), "built"].index
     net["line"].loc[lines_to_built, "in_service"] = True
 
     # run a power flow calculation again and check if max_loading percent is still violated
@@ -115,7 +115,7 @@ def test_pm_tnep_cigre_ac_S():
                opf_flow_lim="S", pm_mip_solver='cbc')  # gurobi is a better option, but not for travis
 
     # set lines to be built in service
-    lines_to_built = net["res_ne_line"].loc[net["res_ne_line"].loc[:, "built"], "built"].index
+    lines_to_built = net["res_ne_line"].loc[net["res_ne_line"]["built"].astype(bool), "built"].index
     net["line"].loc[lines_to_built, "in_service"] = True
 
     # run a power flow calculation again and check if max_loading percent is still violated
@@ -144,7 +144,7 @@ def test_pm_tnep_cigre_ac_I():
     # print(net["res_ne_line"])
 
     # set lines to be built in service
-    lines_to_built = net["res_ne_line"].loc[net["res_ne_line"].loc[:, "built"], "built"].index
+    lines_to_built = net["res_ne_line"].loc[net["res_ne_line"]["built"].astype(bool), "built"].index
     net["line"].loc[lines_to_built, "in_service"] = True
 
     # run a power flow calculation again and check if max_loading percent is still violated

@@ -15,6 +15,7 @@ from pandapower.auxiliary import pandapowerNet, soft_dependency_error
 from pandapower.create._utils import add_column_to_df
 from pandapower.topology.create_graph import create_nxgraph
 from pandapower.topology.graph_searches import connected_components
+from pandapower.plotting.plotting_toolbox import safe_geojson_loads
 
 try:
     import igraph
@@ -276,7 +277,7 @@ def fuse_geodata(net):
     geocoords = set(net.bus.dropna(subset=['geo']).index)
     for area in connected_components(mg):
         if len(area & geocoords) > 1:
-            geo = net.bus.loc[list(area & geocoords), 'geo'].apply(geojson.loads)
+            geo = net.bus.loc[list(area & geocoords), 'geo'].apply(safe_geojson_loads)
             for bus in area:
                 if len(geo) > 1:
                     coordinates = [point['coordinates'] for point in geo]

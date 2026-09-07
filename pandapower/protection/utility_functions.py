@@ -131,13 +131,15 @@ def create_sc_bus(net_copy, sc_line_id, sc_fraction):
             net.switch.element[switch_id] = sc_line2
 
     # set geodata for new bus
-    net.bus.loc[max_idx_bus + 1, 'geo'] = None
+    if "geo" not in net.bus:
+        add_column_to_df(net, "bus", "geo")
 
     x1, y1 = _get_coords_from_bus_idx(net, aux_line.from_bus)[0]
     x2, y2 = _get_coords_from_bus_idx(net, aux_line.to_bus)[0]
 
-    net.bus.geo.at[max_idx_bus + 1] = geojson.dumps(
-        geojson.Point((sc_fraction * (x2 - x1) + x1, sc_fraction * (y2 - y1) + y1)), sort_keys=True)
+    net.bus.at[max_idx_bus + 1, "geo"] = geojson.dumps(
+        geojson.Point((sc_fraction * (x2 - x1) + x1, sc_fraction * (y2 - y1) + y1)), sort_keys=True
+    )
     return net
 
 

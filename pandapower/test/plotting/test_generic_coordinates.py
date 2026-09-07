@@ -39,12 +39,12 @@ def test_create_generic_coordinates_igraph_custom_table_index():
     net = simple_four_bus_system()
     create_generic_coordinates(net, geodata_table="bus", overwrite=True)
     assert pd.notna(net.bus.geo).all()
-    net.bus.geo[[0, 2]] = pd.NA
+    net.bus.loc[[0, 2], "geo"] = pd.NA
     create_generic_coordinates(net, geodata_table="bus", buses=[0, 2])
     assert pd.notna(net.bus.geo).all()
-    net.bus.geo.at[0] = "Hallo"
+    net.bus.at[0, "geo"] = "Hallo"
     create_generic_coordinates(net, geodata_table="bus", buses=[0], overwrite=True)
-    assert net.bus.geo.at[0] != "Hallo"
+    assert net.bus.at[0, "geo"] != "Hallo"
 
     net["test"] = pd.DataFrame(data=["T1", "T2", "T3"], columns=["name"])
     create_generic_coordinates(net, geodata_table="test")

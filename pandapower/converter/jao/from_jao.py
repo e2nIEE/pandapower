@@ -814,7 +814,8 @@ def _allocate_trafos_to_buses_and_create_buses(
     duplicated_buses["name"] += " (2)"
     duplicated_buses.index = list(range(net.bus.index.max()+1,
                                         net.bus.index.max()+1+len(duplicated_buses)))
-    trafo_connections.loc[same_bus_connection, "lv_bus"] = duplicated_buses.index
+    if same_bus_connection.any():
+        trafo_connections.loc[same_bus_connection, "lv_bus"] = duplicated_buses.index
     net.bus = pd.concat([net.bus, duplicated_buses])
     if n_add_buses := len(duplicated_buses):
         tr_names = data[key].loc[trafo_connections.index[same_bus_connection],

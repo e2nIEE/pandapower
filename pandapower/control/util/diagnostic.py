@@ -1,20 +1,15 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+import logging
+import warnings
 from copy import deepcopy
 
 import pandas as pd
 
-from pandapower.control.util.auxiliary import get_controller_index
 from pandapower.control.controller.trafo_control import TrafoController
+from pandapower.control.util.auxiliary import get_controller_index
 
-try:
-    import pandaplan.core.pplog as pplog
-except:
-    import logging as pplog
-
-import warnings
-
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def control_diagnostic(net, respect_in_service=True):

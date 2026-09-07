@@ -325,7 +325,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
     branch_lookup = pd.DataFrame({"element": [-1] * n_bra, "element_type": [""] * n_bra})
     branch_lookup.loc[is_line, "element"] = idx_line
     branch_lookup.loc[is_line, "element_type"] = "line"
-    branch_lookup.loc[is_trafo, "element"] = idx_trafo
+    if len(idx_trafo):
+        branch_lookup.loc[is_trafo, "element"] = idx_trafo
     branch_lookup.loc[is_trafo, "element_type"] = "trafo"
     branch_lookup["element"] = branch_lookup["element"].astype("float64")
     branch_lookup.loc[is_impedance, "element"] = idx_impedance

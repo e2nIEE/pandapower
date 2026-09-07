@@ -3,6 +3,7 @@ import pandas as pd
 import pandera as pa
 import pytest
 
+from pandapower import create_measurement
 from pandapower.create import create_bus
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
@@ -79,7 +80,6 @@ class TestMeasurementRequiredFields:
                 itertools.product(["value"], not_floats_list),
                 itertools.product(["std_dev"], not_floats_list),
                 itertools.product(["element"], not_ints_list),
-                itertools.product(["check_existing"], not_boolean_list),
                 itertools.product(["side"], not_strings_list),
             )
         ),
@@ -90,18 +90,15 @@ class TestMeasurementRequiredFields:
         create_bus(net, 0.4)  # index 0
         create_bus(net, 0.4)  # index 1
 
-        net.measurement = pd.DataFrame(
-            {
-                "name": pd.Series(["m1"], dtype="string"),
-                "measurement_type": ["p"],
-                "element_type": ["bus"],
-                "value": [10.0],
-                "std_dev": [0.1],
-                "bus": [0],
-                "element": [0],
-                "check_existing": [True],
-                "side": ["hv"],
-            }
+        create_measurement(
+            net=net,
+            meas_type="p",
+            element_type="bus",
+            value=10.0,
+            std_dev=0.1,
+            element=0,
+            check_existing=True,
+            side="hv",
         )
 
         net.measurement[parameter] = invalid_value
