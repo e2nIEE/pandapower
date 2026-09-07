@@ -665,7 +665,7 @@ def element_bus_tuples(bus_elements=True, branch_elements=True, res_elements=Fal
         ebts += [("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
                  ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"),
                  ("storage", "bus"), ("asymmetric_load", "bus"), ("asymmetric_sgen", "bus"),
-                 ("motor", "bus")]
+                 ("motor", "bus"), ("ssc", "bus")]
     if branch_elements:
         ebts += [("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
                  ("impedance", "to_bus"), ("switch", "bus"), ("trafo", "hv_bus"),

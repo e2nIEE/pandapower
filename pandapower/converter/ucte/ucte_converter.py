@@ -627,7 +627,7 @@ class UCTE2pandapower:
         def get_name_from_ucte_string(ucte_string: str) -> str:
             return f"{ucte_string[:8].strip()}_{ucte_string[9:17].strip()}_{ucte_string[18]}"
 
-        new_names = input_df.loc[input_df["name"] == "", input_column].map(
+        new_names = input_df.loc[input_df["name"] == "", input_column].map(  # type: ignore[union-attr,index]
             get_name_from_ucte_string
         )
         input_df.loc[input_df["name"] == "", "name"] = new_names
@@ -643,7 +643,7 @@ class UCTE2pandapower:
             # taking always the order code leads to more matches, at least for lines...
             return f"{node1}_{node2}_{order_code}{suffix}"
 
-        amica_names = input_df.loc[:, input_column].map(get_name_from_ucte_string)
+        amica_names = input_df.loc[:, input_column].map(get_name_from_ucte_string)  # type: ignore[union-attr,index]
         input_df.loc[:, "amica_name"] = amica_names
 
     def set_pp_col_types(

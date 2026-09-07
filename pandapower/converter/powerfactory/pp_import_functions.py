@@ -35,12 +35,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Define global variables
-line_dict = {}
-trafo_dict = {}
-trafo3w_dict = {}
-switch_dict = {}
-bus_dict = {}
-grf_map = {}
+line_dict: dict = {}
+trafo_dict: dict = {}
+trafo3w_dict: dict = {}
+switch_dict: dict = {}
+bus_dict: dict = {}
+grf_map: dict = {}
 
 
 def ga(element, attr):
@@ -64,7 +64,7 @@ def from_pf(
     line_dict = {}
     trafo_dict = {}
     trafo3w_dict = {}
-    impedance_dict = {}
+    impedance_dict = {}  # type: ignore[name-defined]
     switch_dict = {}
     logger.debug("__name__: %s" % __name__)
     logger.debug('started from_pf')
@@ -361,7 +361,7 @@ def from_pf(
         if "pf_area" not in net.bus.columns:
             net.bus["pf_area"] = None
         cols = ["pf_area", "pf_zone"]
-        net.bus[cols] = net.bus[cols].where(net.bus[cols].notna(), None)
+        net.bus[cols] = net.bus[cols].where(net.bus[cols].notna(), None)  # type: ignore[index,call-overload]
 
     logger.info('imported net')
     return net
@@ -880,9 +880,7 @@ def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
     logger.debug('line <%s> created' % params['name'])
 
 
-def point_len(
-        p1: list[Union[float, int], Union[float, int]],
-        p2: list[Union[float, int], Union[float, int]]) -> float:
+def point_len(p1: list[Union[float, int]], p2: list[Union[float, int]]) -> float:
     """
     Calculate distance between p1 and p2
     """
@@ -891,13 +889,13 @@ def point_len(
     return ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5
 
 
-def calc_len_coords(coords: list[list[Union[float, int], Union[float, int]]]) -> float:
+def calc_len_coords(coords: list[list[Union[float, int]]]) -> float:
     """
     Calculate the sum of point distances in list of coords
     """
     tot_len = 0
     for i in range(len(coords) - 1):
-        tot_len += point_len(coords[i], coords[i + 1])
+        tot_len += point_len(coords[i], coords[i + 1])  # type: ignore[assignment]
     return tot_len
 
 
