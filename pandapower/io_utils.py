@@ -882,6 +882,9 @@ class FromSerializableRegistry():
 
 class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, **kwargs):
+        # simplejson passes its legacy encoding option to custom decoders, but
+        # the stdlib JSONDecoder used here does not accept it.
+        kwargs.pop("encoding", None)
         # net = pandapowerNet.__new__(pandapowerNet)
         #        net = create_empty_network()
         deserialize_pandas = kwargs.pop('deserialize_pandas', True)

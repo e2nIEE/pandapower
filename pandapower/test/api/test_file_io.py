@@ -143,8 +143,16 @@ def test_json_basic(net_in, tmp_path):
     assert_net_equal(net_in, net_out)
 
 
-def test_json_encoder_accepts_simplejson_encoding_keyword():
-    assert simplejson.dumps({"value": "✓"}, cls=PPJSONEncoder) == '{"value": "\\u2713"}'
+@pytest.mark.parametrize(
+    ("dumps", "loads"),
+    [(json.dumps, simplejson.loads), (simplejson.dumps, json.loads)],
+)
+def test_json_simplejson_interoperability(net_in, dumps, loads):
+    serialized_net = dumps(net_in, cls=PPJSONEncoder)
+    net_out = loads(serialized_net, cls=PPJSONDecoder)
+    convert_format(net_out)
+
+    assert_net_equal(net_in, net_out)
 
 
 def test_json_controller_none():
