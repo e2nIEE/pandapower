@@ -346,9 +346,12 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        python-version: ['3.14']
         group: [ 1, 2, 3 ]
     steps:
       - uses: actions/checkout@v6
+        with:
+          python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
           uv sync --extra all --extra tutorials --extra test
@@ -363,8 +366,14 @@ jobs:
   tutorial_warnings_tests:
     needs: build
     runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ['3.14']
+        group: [ 1, 2, 3 ]
     steps:
       - uses: actions/checkout@v6
+        with:
+          python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
           uv sync --extra all --extra tutorials --extra test
@@ -373,7 +382,7 @@ jobs:
           uv pip list
       - name: Test with pytest
         run: |
-          uv run pytest -W error --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials"
+          uv run pytest -W error --splits 3 --group ${{ matrix.group }} --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials"
 
   docs_check:
     needs: build
