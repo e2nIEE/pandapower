@@ -29,6 +29,7 @@ def from_mpc(
     casename_mpc_file='mpc',
     validate_conversion=False,
     load_case_engine=None,
+    set_opf_controllable=False,
     **kwargs,
 ):
     """
@@ -50,6 +51,7 @@ def from_mpc(
         load_case_engine (object, None): External engine used to call MATPOWER `loadcase` (e.g. Oct2Py() object from
             matpower.start_instance()). Defaults to None. If None, parse data using
             matpowercaseframes.reader.parse_file.
+        set_opf_controllable (bool, False): If True, marks converted ``ext_grid`` and ``gen`` elements as controllable in the pandapower network. This is needed for correct conversion for OPF purposes, as MATPOWER cannot imply controllability directly for gen types.
 
     Keyword Arguments:
         any: are passed to :func:`from_ppc`
@@ -68,12 +70,16 @@ def from_mpc(
     elif ending == ".m":
         ppc = _m2ppc(mpc_file, load_case_engine=load_case_engine)
     net = from_ppc(ppc, f_hz=f_hz, validate_conversion=validate_conversion, **kwargs)
+    if set_opf_controllable:
+        if len(net.ext_grid) > 0:
+            net.ext_grid["controllable"] = True
+        if len(net.gen) > 0:
+            net.gen["controllable"] = True
     if "mpc_additional_data" in ppc:
         if "_options" not in net:
             net["_options"] = {}
         net._options.update(ppc["mpc_additional_data"])
         logger.info('added fields %s in net._options' % list(ppc["mpc_additional_data"].keys()))
-
     return net
 
 

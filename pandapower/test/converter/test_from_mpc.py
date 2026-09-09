@@ -55,6 +55,27 @@ def test_from_mpc_m():
     assert case24_m.converged
     assert nets_equal(case24_mat, case24_m)
 
+@pytest.mark.skipif(not matpowercaseframes_imported,
+                    reason="matpowercaseframes is needed to convert .m files.")
+def test_from_mpc_opf_controllable():
+    this_folder = os.path.join(pp_dir, "test", "converter")
+    mat_case = os.path.join(this_folder, 'case24_ieee_rts.mat')
+    mat_net = from_mpc(
+        str(mat_case),
+        validate_conversion=False,
+        set_opf_controllable=True,
+    )
+    assert mat_net.ext_grid["controllable"].all()
+    assert mat_net.gen["controllable"].all()
+
+    m_case = os.path.join(this_folder, 'case24_ieee_rts.m')
+    m_net = from_mpc(
+        str(m_case),
+        validate_conversion=False,
+        set_opf_controllable=True,
+    )
+    assert m_net.ext_grid["controllable"].all()
+    assert m_net.gen["controllable"].all()
 
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])
