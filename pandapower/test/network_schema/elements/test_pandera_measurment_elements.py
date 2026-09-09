@@ -1,4 +1,5 @@
 import itertools
+
 import pandas as pd
 import pandera as pa
 import pytest
@@ -7,18 +8,15 @@ from pandapower import create_measurement
 from pandapower.create import create_bus
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
-
 from pandapower.test.network_schema.elements.helper import (
-    strings,
-    bools,
-    not_strings_list,
-    not_floats_list,
-    not_boolean_list,
-    positiv_ints_plus_zero,
-    negativ_ints,
-    not_ints_list,
     all_allowed_floats,
     all_allowed_ints,
+    negativ_ints,
+    not_floats_list,
+    not_ints_list,
+    not_strings_list,
+    positiv_ints_plus_zero,
+    strings,
 )
 
 valid_measurement_types = ["p", "q", "i", "v"]
@@ -58,7 +56,6 @@ class TestMeasurementRequiredFields:
                 "element_type": ["bus"],
                 "value": [10.0],
                 "std_dev": [0.1],
-                "bus": [b0],
                 "element": [b0],
                 "side": pd.Series(["hv"], dtype=pd.StringDtype()),
             }
@@ -127,85 +124,6 @@ class TestMeasurementOptionalFields:
         )
         validate_network(net)
 
-    @pytest.mark.parametrize(
-        "valid_bus",
-        positiv_ints_plus_zero,
-    )
-    def test_optional_bus_valid_values(self, valid_bus):
-        """Test: optional 'bus' column accepts valid values and FK passes if index exists"""
-        net = pandapowerNet(name="test_optional_bus_valid_values")
-        create_bus(net, 0.4)  # 0
-        create_bus(net, 0.4)  # 1
-        create_bus(net, 0.4, index=42)
-
-        net.measurement = pd.DataFrame(
-            {
-                "name": pd.Series(["m2"], dtype="string"),
-                "measurement_type": ["i"],
-                "element_type": ["line"],
-                "value": [3.3],
-                "std_dev": [0.05],
-                "bus": [0],
-                "element": [0],
-                "side": pd.Series(["to"], dtype="string"),
-            }
-        )
-        net.measurement["bus"] = valid_bus
-        validate_network(net)
-
-    @pytest.mark.parametrize(
-        "invalid_bus",
-        [*negativ_ints, *not_ints_list],
-    )
-    def test_optional_bus_invalid_values(self, invalid_bus):
-        """Test: optional 'bus' column rejects invalid values"""
-        net = pandapowerNet(name="test_optional_bus_invalid_values")
-        create_bus(net, 0.4)
-
-        net.measurement = pd.DataFrame(
-            {
-                "name": pd.Series(["m3"], dtype="string"),
-                "measurement_type": ["v"],
-                "element_type": ["trafo"],
-                "value": [1.01],
-                "std_dev": [0.01],
-                "bus": [0],
-                "element": [0],
-                "check_existing": [True],
-                "side": ["hv"],
-            }
-        )
-        net.measurement["bus"] = invalid_bus
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
-
-
-class TestMeasurementForeignKey:
-    """Tests for foreign key constraints (bus FK)"""
-
-    def test_invalid_bus_index(self):
-        """Test: bus must reference an existing bus index if present"""
-        net = pandapowerNet(name="test_invalid_bus_index")
-        b0 = create_bus(net, 0.4)
-
-        net.measurement = pd.DataFrame(
-            {
-                "name": pd.Series(["m4"], dtype="string"),
-                "measurement_type": ["p"],
-                "element_type": ["bus"],
-                "value": [2.0],
-                "std_dev": [0.1],
-                "bus": [b0],
-                "element": [b0],
-                "check_existing": [True],
-                "side": ["hv"],
-            }
-        )
-
-        net.measurement["bus"] = 9999
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
-
 
 class TestMeasurementResults:
     """Tests for measurement results after calculations"""
@@ -213,4 +131,4 @@ class TestMeasurementResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_measurement_usage(self):
         """Test: measurement values are consumed correctly by state estimation"""
-        pass
+        raise NotImplementedError("Test not yet implemented")
