@@ -11,6 +11,7 @@ import geojson
 import numpy as np
 import pandas as pd
 import pytest
+import simplejson  # type: ignore[import-untyped]
 from pandas.testing import assert_frame_equal, assert_series_equal
 
 from pandapower import pp_dir
@@ -138,6 +139,18 @@ def test_json_basic(net_in, tmp_path):
     with open(filename) as fp:
         net_out = json.load(fp, cls=PPJSONDecoder)
         convert_format(net_out)
+
+    assert_net_equal(net_in, net_out)
+
+
+@pytest.mark.parametrize(
+    ("dumps", "loads"),
+    [(json.dumps, simplejson.loads), (simplejson.dumps, json.loads)],
+)
+def test_json_simplejson_interoperability(net_in, dumps, loads):
+    serialized_net = dumps(net_in, cls=PPJSONEncoder)
+    net_out = loads(serialized_net, cls=PPJSONDecoder)
+    convert_format(net_out)
 
     assert_net_equal(net_in, net_out)
 
