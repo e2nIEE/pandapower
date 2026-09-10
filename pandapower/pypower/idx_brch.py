@@ -93,5 +93,6 @@ BR_G      = 23    # g, total line charging conductance (p.u.)
 BR_G_ASYM = 24
 BR_B_ASYM = 25
 
+DIRECTED = 26
 
-branch_cols = 26
+branch_cols = 27

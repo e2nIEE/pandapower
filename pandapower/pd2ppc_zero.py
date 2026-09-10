@@ -35,6 +35,7 @@ from pandapower.pypower.idx_brch import (
     BR_X_ASYM,
     BR_G_ASYM,
     BR_B_ASYM,
+    DIRECTED
 )
 from pandapower.pypower.idx_bus import BASE_KV, BS, GS, BUS_TYPE, NONE
 from pandapower.pypower.idx_brch_sc import branch_cols_sc
@@ -170,6 +171,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
     ppc["branch"][f:t, BR_B] = 0
     ppc["branch"][f:t, BR_G] = 0
     ppc["branch"][f:t, BR_STATUS] = in_service
+    ppc["branch"][f:t, DIRECTED] = True
 
     if "vector_group" not in trafo_df:
         raise ValueError(
@@ -626,6 +628,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
     in_service = get_trafo_values(trafo_df, "in_service").astype(np.int64)
     branch[f:t, F_BUS] = bus_lookup[hv_bus]
     branch[f:t, T_BUS] = bus_lookup[lv_bus]
+    branch[f:t, DIRECTED] = True
 
     r, x, *_, ratio, shift = _calc_branch_values_from_trafo_df(
         net, ppc, trafo_df, sequence=0
