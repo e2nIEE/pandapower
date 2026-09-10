@@ -4,5 +4,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from .cim2pp import from_cim
+from .pp2cim import to_cim
+
+__all__ = ["from_cim", "to_cim"]
 
 __version__ = '3.6.10'
