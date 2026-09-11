@@ -131,7 +131,7 @@ def test_const_control(simple_test_net, output_setup):
     assert np.all(np.isclose(profiles['slack_v'].values, ow.output['res_bus.vm_pu'][0].values))
 
 
-def test_switch_states_in_time_series():
+def test_switch_states_in_time_series(output_setup):
     net = pandapowerNet(name="test_switch_states_in_time_series")
     create_buses(net, 3, 0.4)
     create_ext_grid(net, 0)
