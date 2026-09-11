@@ -4,6 +4,13 @@ import pandera.pandas as pa
 # TODO: to discuss whole concept
 # TODO: whats required and whats not ?
 
+_side_allowed = {"line": ["from", "to"], "trafo": ["hv", "lv"], "trafo3w": ["hv", "mv", "lv"]}
+
+def _check_elment_type_side_combination(row: pd.Series) -> bool:
+    return row.element_type not in _side_allowed or row.side in _side_allowed[row.element_type]
+
+# TODO: add cross reference (foreign_key) check for element column
+
 measurement_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(pd.StringDtype, nullable=True, description="Name of measurement"),
@@ -25,8 +32,9 @@ measurement_schema = pa.DataFrameSchema(
         ),
         "side": pa.Column(
             pd.StringDtype,
+            pa.Check.isin(["from", "to", "hv", "mv", "lv"]),
             nullable=True,
-            description="Only used for measured lines or transformers. Side defines at which end of the branch the measurement is gathered. For lines this may be “from“, “to“ to denote the side with the from_bus or to_bus. It can also be the index of the from_bus or to_bus. For transformers, it can be “hv“, “mv“ or “lv“ or the corresponding bus index, respectively.",
+            description="Used for element_type line, trafo or trafo3w. Defines where the measurement is gathered.",
         ),  # TODO: check nur wenn element_type trafo(3w) oder line
         "origin_id": pa.Column(
             pd.StringDtype,
@@ -71,6 +79,10 @@ measurement_schema = pa.DataFrameSchema(
             metadata={"cim": True, "doc": False},
         ),
     },
+    pa.Check(
+        _check_elment_type_side_combination,
+        element_wise=True
+    ),
     name="measurement",
     strict=False,
 )

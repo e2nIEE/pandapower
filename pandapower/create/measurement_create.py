@@ -28,6 +28,7 @@ def create_measurement(
     name: str | None = None,
     **kwargs,
 ) -> Int:
+    # TODO: create should raise Attribute error if side does not match element_type (et=line, side=hv)
     """
     Creates a measurement, which is used by the estimation module. Possible types of measurements \
     are: v, p, q, i, va, ia
