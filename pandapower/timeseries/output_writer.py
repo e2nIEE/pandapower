@@ -181,7 +181,7 @@ class OutputWriter(JSONSerializableClass):
         for partial_func in self.output_list:
             self._init_np_array(partial_func)
 
-    def _save_separate(self, append, net=None):
+    def _save_separate(self, append):
 
         for partial in self.output_list:
             if isinstance(partial, tuple):
