@@ -237,9 +237,9 @@ class OutputWriter(JSONSerializableClass):
                 if save_single and self.output_file_type in [".xls", ".xlsx"]:
                     self._save_single_xls_sheet(append)
                 elif self.output_file_type in [".xls", ".xlsx", ".json", ".p"]:
-                    self._save_separate(append, net=net)
+                    self._save_separate(append)
                 elif "csv" in self.output_file_type.split("."):
-                    self._save_separate(append, net=net)
+                    self._save_separate(append)
                 else:
                     raise UserWarning("Specify output file with .csv, .csv.*, .xls, .xlsx, .p or .json ending")
                 if append:
