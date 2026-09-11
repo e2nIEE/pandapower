@@ -136,8 +136,10 @@ def _bus_index_validation(element: str, schema: pa.DataFrameSchema, net: pandapo
         >>> _bus_index_validation('load', net)  # Validates bus column
     """
     if element not in ["bus", "bus_dc"]:
+        # TODO: bus columns should not be looked up by name but by metadata (foreign_key)
         bus_columns = [col for col in schema.columns if "bus" in col.lower() and col in net[element]]
         if element == "switch":
+            # TODO: check if this approach works for et column not "b" in switch table.
             bus_columns.append("element")
         dc_items = [item for item in bus_columns if "dc" in item]
         non_dc_items = [item for item in bus_columns if "dc" not in item]
