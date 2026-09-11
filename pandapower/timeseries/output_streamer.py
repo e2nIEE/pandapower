@@ -75,7 +75,6 @@ class OutputStreamer(OutputWriter):
             log_variables=log_variables,
             csv_separator=csv_separator,
         )
-        self.net = net
         self.output_path = output_path
         # defines the interval that is used to save the data to the file. If set to <=0, it behaves like OutputWriter.
         self.save_interval = save_interval
@@ -84,17 +83,18 @@ class OutputStreamer(OutputWriter):
         # initialize the last time step to 0
         self.last_time_step = 0
 
-    def __update_csv_header(self, data: pd.DataFrame, table: str):
+    def __update_csv_header(self, net: pandapowerNet, data: pd.DataFrame, table: str):
         """
         Updates the header of the element's dataframe.
 
         Parameters:
+            net (pandapowerNet): The pandapower format network.
             data (DataFrame): Data to be updated.
             table (str): Name of the DataFrame table (example: "res_bus")
         """
         element_type = table.split(".")[0].replace("res_", "")
-        if element_type in self.net:
-            mapping = self.net[element_type].name.to_dict()
+        if element_type in net and "name" in net[element_type]:
+            mapping = net[element_type].name.to_dict()
             data.rename(columns=mapping, inplace=True)
 
     def save_results(
@@ -190,11 +190,12 @@ class OutputStreamer(OutputWriter):
             else:
                 raise ValueError(e)
 
-    def _save_csv(self, file_path: str, data: pd.DataFrame, table: str, append: bool = False) -> None:
+    def _save_csv(self, net: pandapowerNet, file_path: str, data: pd.DataFrame, table: str, append: bool = False) -> None:
         """
         Saves the new simulation data to a csv file.
 
         Parameters:
+            net (pandapowerNet): The pandapower format network.
             file_path (str): Path to the excel file
             data (pd.DataFrame): Data to be saved or appended.
             table (str): Name of the network element.
@@ -204,13 +205,13 @@ class OutputStreamer(OutputWriter):
             data = self._get_data_since_last_save(data)
             header = self.last_time_step == 0
             if header:
-                self.__update_csv_header(data, table)
+                self.__update_csv_header(net, data, table)
             data.to_csv(file_path, sep=self.csv_separator, mode="a", header=header)
         else:
-            self.__update_csv_header(data, table)
+            self.__update_csv_header(net, data, table)
             data.to_csv(file_path, sep=self.csv_separator, mode="w", header=True)
 
-    def _save_separate(self, append):
+    def _save_separate(self, append, net=None):
 
         for partial in self.output_list:
             table, variable = self._get_table_and_variable(partial)
@@ -232,5 +233,5 @@ class OutputStreamer(OutputWriter):
                 elif self.output_file_type in [".xls", ".xlsx"]:
                     self._save_excel(file_path, data, table)
                 elif "csv" in self.output_file_type.split("."):
-                    self._save_csv(file_path, data, table, append=append)
+                    self._save_csv(net, file_path, data, table, append=append)
         self.last_time_step = self.time_step

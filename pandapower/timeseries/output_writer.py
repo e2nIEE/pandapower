@@ -181,7 +181,7 @@ class OutputWriter(JSONSerializableClass):
         for partial_func in self.output_list:
             self._init_np_array(partial_func)
 
-    def _save_separate(self, append):
+    def _save_separate(self, append, net=None):
 
         for partial in self.output_list:
             if isinstance(partial, tuple):
@@ -237,9 +237,9 @@ class OutputWriter(JSONSerializableClass):
                 if save_single and self.output_file_type in [".xls", ".xlsx"]:
                     self._save_single_xls_sheet(append)
                 elif self.output_file_type in [".xls", ".xlsx", ".json", ".p"]:
-                    self._save_separate(append)
+                    self._save_separate(append, net=net)
                 elif "csv" in self.output_file_type.split("."):
-                    self._save_separate(append)
+                    self._save_separate(append, net=net)
                 else:
                     raise UserWarning("Specify output file with .csv, .csv.*, .xls, .xlsx, .p or .json ending")
                 if append:
