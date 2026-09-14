@@ -4,16 +4,16 @@
 from __future__ import annotations
 
 import logging
-from typing import Literal
 
 import pandas as pd
 
 from pandapower import pandapowerNet
-from pandapower.pp_types import Int, MeasurementElementType, MeasurementType
 from pandapower.create._utils import _get_index_with_check, _set_entries
+from pandapower.pp_types import Int, MeasurementElementType, MeasurementSideType, MeasurementType
 
 logger = logging.getLogger(__name__)
 
+_element_type_side_map = {"line": ["from", "to"], "trafo": ["hv", "lv"], "trafo3w": ["hv", "mv", "lv"]}
 
 def create_measurement(
     net: pandapowerNet,
@@ -22,13 +22,12 @@ def create_measurement(
     value: float,
     std_dev: float,
     element: int,
-    side: int | Literal["from", "to"] | Literal["hv", "mv", "lv"] | None = None,
+    side: int | MeasurementSideType | None = None,
     check_existing: bool = False,
     index: Int | None = None,
     name: str | None = None,
     **kwargs,
 ) -> Int:
-    # TODO: create should raise Attribute error if side does not match element_type (et=line, side=hv)
     """
     Creates a measurement, which is used by the estimation module. Possible types of measurements \
     are: v, p, q, i, va, ia
@@ -41,9 +40,9 @@ def create_measurement(
         value: Measurement value.
         std_dev: Standard deviation in the same unit as the measurement
         element: Index of the measured element
-        side: Only used for measured lines or transformers. Side defines at which end of the branch the measurement is
+        side: Only used for line or trafo(3w). Side defines at which point of the element the measurement is
             gathered. For lines this may be "from", "to" to denote the side with the from_bus or to_bus. It can also be
-            the index of the from_bus or to_bus. For transformers, it can be "hv", "mv" or "lv" or the corresponding bus
+            the index of the from_bus or to_bus. For trafo(3w), it can be "hv", ("mv"), "lv" or the corresponding bus
             index, respectively.
         check_existing: Check for and replace existing measurements for this bus, type and element_type. Set it to False
             for performance improvements which can cause unsafe behavior.
@@ -64,6 +63,24 @@ def create_measurement(
     """
     if side is None and element_type in ("line", "trafo", "trafo3w"):
         raise UserWarning(f"The element type '{element_type}' requires parameter 'side' to be set")
+
+    # convert index side to string side
+    if pd.notna(side) and not isinstance(side, str):
+        possible_cols = [f"{name}_bus" for name in _element_type_side_map[element_type]]
+        element_col = net[element_type].loc[element, possible_cols].isin(side)
+        col_name = element_col.index[element_col].tolist()
+        if len(col_name) > 1:
+            raise UserWarning(f"found multiple columns with the required side index: {col_name}")
+        if len(col_name) == 0:
+            raise UserWarning(f"side index not found in element row:\n{net[element_type].loc[element]}")
+        side = col_name[0][:-4]  # slice away the _bus at the end of the column name
+
+    # check if side is valid for element_type
+    if pd.notna(side) and side not in _element_type_side_map[element_type]:
+        raise AttributeError(
+            f"The element_type '{element_type}' requires parameter 'side' to be "
+            f"from {_element_type_side_map[element_type]}"
+        )
 
     if element is not None and element not in net[element_type].index.to_numpy():
         raise UserWarning(f"{element_type} with index={element} does not exist")
