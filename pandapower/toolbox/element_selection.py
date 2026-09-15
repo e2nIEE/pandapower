@@ -669,7 +669,7 @@ def element_bus_tuples(bus_elements: bool = True, branch_elements: bool = True, 
         ebts += [("sgen", "bus"), ("load", "bus"), ("ext_grid", "bus"), ("gen", "bus"),
                  ("ward", "bus"), ("xward", "bus"), ("shunt", "bus"),
                  ("storage", "bus"), ("asymmetric_load", "bus"), ("asymmetric_sgen", "bus"),
-                 ("motor", "bus")]
+                 ("motor", "bus"), ("ssc", "bus")]
     if branch_elements:
         ebts += [("line", "from_bus"), ("line", "to_bus"), ("impedance", "from_bus"),
                  ("impedance", "to_bus"), ("switch", "bus"), ("trafo", "hv_bus"),
@@ -707,6 +707,64 @@ def count_elements(net: pandapowerNet, return_empties: bool = False, **kwargs) -
     """
     return pd.Series({et: net[et].shape[0] if et in net else 0 for et in pp_elements(**kwargs) if
                       return_empties or (et in net and bool(net[et].shape[0]))}, dtype=np.int64)
+
+
+def get_all_elements(net, include_results=False):
+    """
+    Create a combined overview of all elements in a pandapower network
+    as a single DataFrame.
+
+    Parameters
+    ----------
+    net : pandapowerNet
+        The pandapower network object or a dict-like structure whose
+        values (partially) are pandas.DataFrames containing element data
+        (e.g. 'bus', 'line', 'trafo', 'load', ...).
+    include_results : bool, optional
+        If False (default), result tables whose keys start with
+        ``'res_'`` (e.g. ``'res_bus'``, ``'res_line'``) are ignored.
+        If True, these tables are also included in the overview.
+
+    Returns
+    -------
+    pandas.DataFrame
+        DataFrame with one row per element from all considered tables.
+        Contains at least the columns:
+
+        - ``'pp_type'`` : name of the original table (e.g. ``'bus'``,
+
+          ``'line'``)
+        - ``'pp_idx'`` : original index of the element in that table
+
+        In addition, all columns from all original tables are included
+        (union of columns); missing values are filled with NaN.
+    """
+    frames = []
+
+    for name, table in net.items():
+        # only DataFrame
+        if not isinstance(table, pd.DataFrame):
+            continue
+
+        # res_ optional (res_bus, res_line, ...)
+        if not include_results and name.startswith("res_"):
+            continue
+
+        if table.empty:
+            continue
+
+        df = table.copy()
+        # save type and index
+        df.insert(0, "pp_type", name)
+        df.insert(1, "pp_idx", df.index)
+
+        # reset index
+        frames.append(df.reset_index(drop=True))
+
+    if not frames:
+        return pd.DataFrame(columns=["pp_type", "pp_idx"])
+
+    return pd.concat(frames, ignore_index=True, sort=False)
 
 
 def get_all_elements(net, include_results=False):
