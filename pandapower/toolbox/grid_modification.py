@@ -1336,8 +1336,7 @@ def replace_ext_grid_by_gen(
     # --- create gens
     new_idx = []
     for ext_grid, index in zip(net.ext_grid.loc[ext_grids].itertuples(name="ExtGrid"), gen_indices):
-        p_mw = 0 if "res_ext_grid" not in net or ext_grid.Index not in net.res_ext_grid.index else net.res_ext_grid.at[
-            ext_grid.Index, "p_mw"]
+        p_mw: float = 0.0 if "res_ext_grid" not in net or ext_grid.Index not in net.res_ext_grid.index else net.res_ext_grid.at[ext_grid.Index, "p_mw"]
         if hasattr(ext_grid, "name") and pd.notna(ext_grid.name):
             name: str = ext_grid.name
         else:
