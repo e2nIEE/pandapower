@@ -305,7 +305,7 @@ class BaseAlgebraZeroInjConstraints(BaseAlgebra):
         V = self.eppci.E2V(E)
         Sbus = V * np.conj(self.Ybus * V)
         c = np.r_[Sbus[p_zero_inj].real,
-                  Sbus[q_zero_inj].imag] * self.eppci['baseMVA']
+                  Sbus[q_zero_inj].imag]
         return c
 
     def create_cx_jacobian(self, E, p_zero_inj, q_zero_inj):
