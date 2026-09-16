@@ -28,6 +28,7 @@ class OutputStreamer(OutputWriter):
     Parameters:
         net: The pandapower format network
         time_steps (list): time_steps to calculate as a list (or range)
+        save_interval (int, 0): Amount of time steps after which the data is stored cyclically.
         output_path (string, None): Path to a folder where the output is written to.
         output_file_type (string, ".p"): output filetype to use. Allowed file extensions: [.xls, .xlsx, .csv, .csv.*,
             .p, .json]

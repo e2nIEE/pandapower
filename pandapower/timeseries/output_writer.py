@@ -66,12 +66,12 @@ class OutputWriter(JSONSerializableClass):
 
     Example:
         >>> from pandapower.timeseries.output_writer import OutputWriter
-        >>> from pandapower.networks as nw
+        >>> import pandapower.networks as nw
         >>> net = nw.simple_four_bus_system()
         >>> ow = OutputWriter(net) # create an OutputWriter
         >>> ow.log_variable('res_bus', 'vm_pu') # add logging for bus voltage magnitudes
         >>> ow.log_variable('res_line', 'loading_percent') # add logging for line loadings in percent
-        >>>  # Getting the cost function slope for each time step:
+        >>> # Getting the cost function slope for each time step:
         >>> def cost_logging(result, n_columns=2):
         >>>      return array([result[i][0][2] for i in range(len(result))])
         >>> ow.log_variable("pwl_cost", "points", eval_function=cost_logging)
