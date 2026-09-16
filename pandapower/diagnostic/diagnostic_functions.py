@@ -6,42 +6,46 @@ A module containing some default diagnostic functions that will be used when not
 """
 
 import copy
+import logging
 import sys
 from collections import defaultdict
 from functools import partial
-import logging
 from typing import Any
 
 import numpy as np
 import pandas as pd
 
-from pandapower.toolbox import (
-    select_subnet, replace_xward_by_ward, create_continuous_bus_index,
-    get_connected_buses_at_element, get_connected_elements
-)
-from pandapower.network import ADict, pandapowerNet
-from pandapower.create import create_impedance, create_switch
-from pandapower.run import runpp, rundcpp
 from pandapower.auxiliary import (
-    LoadflowNotConverged,
-    OPFNotConverged,
     ControllerNotConverged,
+    LoadflowNotConverged,
     NetCalculationNotConverged,
+    OPFNotConverged,
 )
+from pandapower.create import create_impedance, create_switch
 from pandapower.diagnostic.diagnostic_helpers import (
     DiagnosticFunction,
     check_boolean,
-    check_less_zero,
-    check_number,
+    check_greater_equal_zero,
+    check_greater_zero,
+    check_greater_zero_less_equal_one,
     check_less_15,
     check_less_20,
-    check_pos_int,
-    check_greater_zero,
-    check_greater_equal_zero,
-    check_switch_type,
     check_less_equal_zero,
-    check_greater_zero_less_equal_one,
-    check_vkr_larger
+    check_less_zero,
+    check_number,
+    check_pos_int,
+    check_switch_type,
+    check_vkr_larger,
+)
+from pandapower.network import ADict, pandapowerNet
+from pandapower.pp_types import Int
+from pandapower.run import rundcpp, runpp
+from pandapower.toolbox import (
+    create_continuous_bus_index,
+    get_connected_buses_at_element,
+    get_connected_elements,
+    replace_xward_by_ward,
+    select_subnet,
 )
 
 logger = logging.getLogger(__name__)
@@ -784,168 +788,6 @@ class WrongLineResistance(DiagnosticFunction[pandapowerNet, bool]):
                 f"Too high resistance tested: Power flow did not converge with line.r_ohm_per_km scaled down to {osf_percent}")
 
 
-class WrongLineReactance(DiagnosticFunction[pandapowerNet, bool]):
-    """
-    Checks, if a loadflow calculation converges. If not, checks, if line reactance is too high, by scaling it to 1%.
-    """
-    def __init__(self) -> None:
-        super().__init__()
-        self.reactance_scaling_factor: float | None = None
-
-    def diagnostic(self, net: pandapowerNet, **kwargs) -> bool | None:
-        """
-        Parameters:
-            net: pandapower network
-
-        Keyword Arguments:
-            Args for power flow function. If "run" is in kwargs the default call to runpp()
-            is replaced by the function kwargs["run"]
-
-        Return:
-            dict with the results of the overload check
-            Format: {'load_overload': True/False, 'generation_overload', True/False}
-        """
-        # get function to run power flow
-        run = partial(kwargs.pop("run", runpp), **kwargs)
-        check_result = None
-        line_reactance = copy.copy(net.line.x_ohm_per_km)
-
-        reactance_scaling_factor = kwargs.pop(
-            "reactance_scaling_factor", default_argument_values["reactance_scaling_factor"]
-        )
-
-        self.reactance_scaling_factor = reactance_scaling_factor
-        try:
-            run(net)
-        except expected_exceptions:
-            check_result = False
-            try:
-                net.line.x_ohm_per_km *= reactance_scaling_factor
-                run(net)
-                check_result = True
-            except expected_exceptions:
-                self.out.debug("Line reactance check failed.")
-
-        except Exception as e:
-            self.out.error(f"Line reactance check failed: {str(e)}")
-            raise e
-
-        # teardown
-        net.line.x_ohm_per_km = line_reactance
-
-        return check_result
-
-    def report(self, error: Exception | None, results: bool | None) -> None:
-        # error and success checks
-        if error is not None:
-            self.out.warning("Check for convergence error failed due to the following error:")
-            self.out.warning(error)
-            return
-        if results is None:
-            self.out.info("PASSED: Power flow converges. No line capacitance problems found.")
-            return
-
-        # message header
-        self.out.compact("line problems:\n")
-        self.out.detailed("Checking for too high line capacitance...\n")
-
-        # message body
-        if self.capacitance_scaling_factor is not None:
-            capacitance_scaling_factor = self.capacitance_scaling_factor
-        else:
-            raise RuntimeError('diagnostic was not executed before calling results?')
-
-        osf_percent = f"{capacitance_scaling_factor * 100} percent."
-
-        if results:
-            self.out.warning(
-                f"Too high capacitance found: Power flow converges with line.c_nf_per_km scaled down to {osf_percent}")
-        else:
-            self.out.warning(
-                f"Too high capacitance tested: Power flow did not converge with line.c_nf_per_km scaled down to {osf_percent}")
-
-
-class WrongLineResistance(DiagnosticFunction[pandapowerNet, bool]):
-    """
-    Checks, if a loadflow calculation converges. If not, checks, if line resistance is too high, by scaling it to 1%.
-    """
-    def __init__(self) -> None:
-        super().__init__()
-        self.resistance_scaling_factor: float | None = None
-
-    def diagnostic(self, net: pandapowerNet, **kwargs) -> bool | None:
-        """
-        Parameters:
-            net: pandapower network
-
-        Keyword Arguments:
-            Args for power flow function. If "run" is in kwargs the default call to runpp()
-            is replaced by the function kwargs["run"]
-
-        Return:
-            dict with the results of the overload check
-            Format: {'load_overload': True/False, 'generation_overload', True/False}
-        """
-        # get function to run power flow
-        run = partial(kwargs.pop("run", runpp), **kwargs)
-        check_result = None
-        line_resistance = copy.copy(net.line.r_ohm_per_km)
-
-        resistance_scaling_factor = kwargs.pop(
-            "resistance_scaling_factor", default_argument_values["resistance_scaling_factor"]
-        )
-
-        self.resistance_scaling_factor = resistance_scaling_factor
-        try:
-            run(net)
-        except expected_exceptions:
-            check_result = False
-            try:
-                net.line.r_ohm_per_km *= resistance_scaling_factor
-                run(net)
-                check_result = True
-            except expected_exceptions:
-                self.out.debug("Line resistance check failed.")
-
-        except Exception as e:
-            self.out.error(f"Line resistance check failed: {str(e)}")
-            raise e
-
-        # teardown
-        net.line.r_ohm_per_km = line_resistance
-
-        return check_result
-
-    def report(self, error: Exception | None, results: bool | None) -> None:
-        # error and success checks
-        if error is not None:
-            self.out.warning("Check for convergence error failed due to the following error:")
-            self.out.warning(error)
-            return
-        if results is None:
-            self.out.info("PASSED: Power flow converges. No line capacitance problems found.")
-            return
-
-        # message header
-        self.out.compact("line problems:\n")
-        self.out.detailed("Checking for too high line capacitance...\n")
-
-        # message body
-        if self.capacitance_scaling_factor is not None:
-            capacitance_scaling_factor = self.capacitance_scaling_factor
-        else:
-            raise RuntimeError('diagnostic was not executed before calling results?')
-
-        osf_percent = f"{capacitance_scaling_factor * 100} percent."
-
-        if results:
-            self.out.warning(
-                f"Too high capacitance found: Power flow converges with line.c_nf_per_km scaled down to {osf_percent}")
-        else:
-            self.out.warning(
-                f"Too high capacitance tested: Power flow did not converge with line.c_nf_per_km scaled down to {osf_percent}")
-
-
 class SubNetProblemTest(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
     """
     Checks, if subnets are converging. This is done using the zone attribute.
@@ -1141,21 +983,21 @@ class SlackGenPlacement(DiagnosticFunction[pandapowerNet, dict[str, float]]):
         # get function to run power flow
         run = partial(kwargs.pop("run", runpp), **kwargs)
 
-        check_result = {}
+        check_result: dict[str, float] = {}
 
         if 'gen' not in net:
             return None
 
         orig_gen = copy.copy(net.gen)
 
-        def _calculate_losses(net: pandapowerNet) -> np.floating[Any]:
+        def _calculate_losses(net: pandapowerNet) -> float:
             """
             internal function to calculate losses
             """
             idx = net.gen.loc[net.gen.slack==True].index
             res = np.linalg.norm(net.res_gen.loc[idx].p_mw + net.res_gen.loc[idx].q_mvar * 1j)
             res += np.linalg.norm(net.res_ext_grid.p_mw + net.res_ext_grid.q_mvar * 1j)
-            return res
+            return float(res)
 
         try:
             run(net)
@@ -1167,7 +1009,7 @@ class SlackGenPlacement(DiagnosticFunction[pandapowerNet, dict[str, float]]):
             check_result['base_case'] = sys.float_info.max
         except Exception as e:
             self.out.error(f"Slack gen placement calculation failed: {str(e)}")
-            raise e
+            raise
 
         # disable all slack gen
         net.gen["slack"] = False
@@ -1392,7 +1234,7 @@ class DifferentVoltageLevelsConnected(DiagnosticFunction[pandapowerNet, dict]):
     """
     def __init__(self) -> None:
         super().__init__()
-        self.net = None
+        self.net: pandapowerNet | None = None
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> dict | None:
         """
@@ -1441,6 +1283,8 @@ class DifferentVoltageLevelsConnected(DiagnosticFunction[pandapowerNet, dict]):
         self.out.detailed("Checking for connections of different voltage levels...\n")
 
         # message body
+        if self.net is None:
+            raise RuntimeError("report called before diagnostic")
         element_counter = 0
         for key in results:
             element_counter += len(results[key])
@@ -1469,7 +1313,7 @@ class ImplausibleImpedanceValues(DiagnosticFunction[pandapowerNet, list[dict]]):
     """
     def __init__(self) -> None:
         super().__init__()
-        self.params = {}
+        self.params: dict[str, float] = {}
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> list[dict] | None:
         """

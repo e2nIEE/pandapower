@@ -6,7 +6,7 @@ A module containing helper functions for the diagnostic functions and creating c
 """
 
 import logging
-from typing import Generic, TypeVar, Literal
+from typing import Generic, TypeVar, Any
 from abc import abstractmethod, ABC
 from collections import defaultdict
 
@@ -15,31 +15,26 @@ import pandas as pd
 
 from pandapower.network import ADict, pandapowerNet
 
-logger = logging.getLogger(__name__)
+COMPACT_LEVEL: int = logging.WARNING + 2
+DETAILED_LEVEL: int = logging.WARNING + 4
 
 
-# initialize custom log levels for compact and detailed output
-def add_log_level(levelno: int, levelname: str) -> None:
-    """
-    add a custom log level to the logger
+class DiagnosticLogger(logging.Logger):
+    def compact(self, message: str, *args: Any, **kwargs: Any) -> None:
+        if self.isEnabledFor(COMPACT_LEVEL):
+            self._log(COMPACT_LEVEL, message, args, **kwargs)
 
-    Parameters:
-        levelno: int number for the level
-        levelname: name for the level
-    """
-
-    def log_for_level(self, message, *args, **kwargs):
-        if self.isEnabledFor(levelno):
-            self._log(levelno, message, args, **kwargs)
-
-    logging.addLevelName(level=levelno, levelName=levelname.upper())
-    setattr(logging, levelname.upper(), levelno)
-    setattr(logging.getLoggerClass(), levelname.lower(), log_for_level)
-    setattr(logging, levelname.lower(), log_for_level)
+    def detailed(self, message: str, *args: Any, **kwargs: Any) -> None:
+        if self.isEnabledFor(DETAILED_LEVEL):
+            self._log(DETAILED_LEVEL, message, args, **kwargs)
 
 
-add_log_level(logging.WARNING + 2, "compact")
-add_log_level(logging.WARNING + 4, "detailed")
+# Register the custom logger
+logging.setLoggerClass(DiagnosticLogger)
+logging.addLevelName(COMPACT_LEVEL, "compact")
+logging.addLevelName(DETAILED_LEVEL, "detailed")
+
+logger: DiagnosticLogger = logging.getLogger(__name__)  # type: ignore[assignment]
 
 T = TypeVar('T')
 N = TypeVar('N', bound=ADict)

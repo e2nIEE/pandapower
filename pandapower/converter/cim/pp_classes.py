@@ -72,7 +72,10 @@ class PandapowerDiagnostic:
         :return: The pandapower diagnostic with CIM IDs.
         """
         if self.diagnostic is None:
-            self.diagnostic = diagnostic(self.net)
+            diag = diagnostic(self.net)
+            if diag is None:
+                raise UserWarning("creating diagnostic failed")
+            self.diagnostic = diag
         result_diagnostic = {}
         for key, item in self.diagnostic.items():
             result_diagnostic[key] = self._rec_replace_pp_diagnostic_with_cim_ids(item)
