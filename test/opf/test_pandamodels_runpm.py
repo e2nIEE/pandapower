@@ -13,33 +13,54 @@ from pandapower.control import ConstControl
 from pandapower.converter.pandamodels import convert_pp_to_pm
 from pandapower.converter.pandamodels.to_pm import init_ne_line
 from pandapower.create import (
-    create_storage,
-    create_shunt,
-    create_pwl_cost,
-    create_poly_cost,
     create_bus,
-    create_line,
-    create_gen,
-    create_load,
-    create_transformer3w_from_parameters,
-    create_sgen,
-    create_transformer3w,
     create_ext_grid,
+    create_gen,
+    create_line,
+    create_load,
+    create_poly_cost,
+    create_pwl_cost,
+    create_sgen,
+    create_shunt,
+    create_storage,
+    create_transformer3w,
+    create_transformer3w_from_parameters,
 )
 from pandapower.network import pandapowerNet
 from pandapower.networks.cigre_networks import create_cigre_network_mv
 from pandapower.networks.power_system_test_cases import (
-    case5, case9, case14, case30, case39, case57, case118, case145, case300
+    case5,
+    case9,
+    case14,
+    case30,
+    case39,
+    case57,
+    case118,
+    case145,
+    case300,
 )
 from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_system
 from pandapower.opf.pm_storage import read_pm_storage_results
 from pandapower.run import rundcpp, runpp
-from pandapower.runpm import runpm_pf, runpm_ac_opf, runpm_dc_opf, runpm_vstab, runpm_tnep, runpm_ots, runpm_qflex, \
-    runpm_storage_opf, runpm_multi_qflex, runpm_ploss, runpm_loading, runpm_multi_vstab
+from pandapower.runpm import (
+    runpm_ac_opf,
+    runpm_dc_opf,
+    runpm_loading,
+    runpm_multi_qflex,
+    runpm_multi_vstab,
+    runpm_ots,
+    runpm_pf,
+    runpm_ploss,
+    runpm_qflex,
+    runpm_redispatch,
+    runpm_storage_opf,
+    runpm_tnep,
+    runpm_vstab,
+)
 from pandapower.timeseries import DFData, run_timeseries
 
 try:
-    from juliacall import JuliaError as UnsupportedPythonError # type: ignore
+    from juliacall import JuliaError as UnsupportedPythonError  # type: ignore
 except ImportError:
     UnsupportedPythonError = Exception
 
@@ -52,6 +73,7 @@ from test import test_path
 from test.consistency_checks import consistency_checks
 from test.helper_functions import add_grid_connection, create_test_line
 from test.opf.test_basic import net_3w_trafo_opf
+
 
 def create_cigre_grid_with_time_series(json_path, net=None, add_ts_constaints=False):
     if net is None:
@@ -513,7 +535,6 @@ def test_ots_opt():
         assert np.array_equal(np.array([0, 1, 1, 1, 1, 0]).astype(bool), branch_status.astype(bool))
 
 
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 @pytest.mark.xfail(reason="not completed yet")
 def test_timeseries_pandamodels():
     profiles = pd.DataFrame()
@@ -790,7 +811,6 @@ def _create_redispatch_net():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_runpm_redispatch_deviation():
     net, l_weak = _create_redispatch_net()
 
@@ -817,7 +837,6 @@ def test_runpm_redispatch_deviation():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_runpm_redispatch_cost():
     net, l_weak = _create_redispatch_net()
     runpp(net)
@@ -835,9 +854,8 @@ def test_runpm_redispatch_cost():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_runpm_redispatch_dc():
-    net, l_weak = _create_redispatch_net()
+    net, _ = _create_redispatch_net()
     runpp(net)
 
     create_poly_cost(net, 0, "gen", cp1_eur_per_mw=1.,
@@ -851,11 +869,10 @@ def test_runpm_redispatch_dc():
 
 
 @pytest.mark.slow
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_runpm_redispatch_unpriced_gen_stays_fixed():
     # a controllable gen without redispatch costs must keep its base dispatch (pg == pg0),
     # only the priced gen participates in the redispatch
-    net, l_weak = _create_redispatch_net()
+    net, _ = _create_redispatch_net()
     # add a third controllable gen at the load bus that we do NOT price for redispatch
     b2 = net.load.bus.iloc[0]
     g_unpriced = create_gen(net, b2, p_mw=5., min_p_mw=0., max_p_mw=100.,
