@@ -21,7 +21,7 @@ from pandapower.auxiliary import (
 )
 from pandapower.network import pandapowerNet, ADict
 from pandapower.pp_types import Int
-from pandapower.network_structure import get_structure_dict, get_column_info
+from pandapower.network_structure import get_structure_dict, get_column_info, get_default_value
 
 logger = logging.getLogger(__name__)
 
@@ -52,12 +52,52 @@ def add_column_to_df(net: ADict, table_name: str, column_name: str) -> None:
     # Add Optional Column:
     net_struct_dict = get_structure_dict(False)
     dtype = net_struct_dict[table_name][column_name]
-    net[table_name][column_name] = pd.Series(dtype=dtype)
+    default_value = get_default_value(table_name, column_name)
+    if net[table_name].empty:
+        net[table_name][column_name] = pd.Series(dtype=dtype)
+    else:  # only add value if table is not empty otherwise a single entry will be generated
+        net[table_name][column_name] = pd.Series(default_value, dtype=dtype)
     # Ensure column order:
     desired_order = list(net_struct_dict[table_name].keys())
     struct_columns = [col for col in desired_order if col in net[table_name].columns]
     custom_columns = [col for col in net[table_name].columns if col not in desired_order]
     net[table_name] = net[table_name][struct_columns+custom_columns]
+
+
+def add_tag_group_to_df(net: ADict, table_name: str, tag_name: str) -> None:
+    """
+    A function that adds multiple columns to a dataframe based on the metadata tag in the schema
+
+    Parameters:
+        net: the pandapower Network
+        table_name: the table in the pandapower Network where the columns should be added.
+        tag_name: the metadata tag that should be added
+    """
+    net_struct_dict = get_structure_dict(False)
+    if table_name not in net_struct_dict:
+        raise ValueError(f"Table {table_name} has no definition in network structure.")
+    for col_name in net_struct_dict[table_name]:
+        col_info = get_column_info(table_name, col_name)
+        if col_info is None:
+            logger.warning(f"could not get column information for {table_name}.{col_name}")
+            continue
+        col_metadata = col_info["metadata"]
+        if col_metadata is None:
+            continue
+        if tag_name in col_metadata:  # type: ignore[operator]
+            add_column_to_df(net, table_name, col_name)
+
+
+def add_tag_group(net: pandapowerNet, tag_names: set[str] | str):
+    if isinstance(tag_names, str):
+        tag_names = {
+            tag_names,
+        }
+
+    for element in net:
+        if isinstance(net[element], pd.DataFrame):
+            for tag_name in tag_names:
+                add_tag_group_to_df(net, element, tag_name)
 
 
 def _geodata_to_geo_series(data: Iterable[tuple[float, float]] | tuple[int, int], nr_buses: int) -> list[str]:
@@ -249,7 +289,7 @@ def _try_astype(df, column, dtyp):
 
 
 def _set_value_if_not_nan(
-    net: pandapowerNet, index: int, value: Any, column: str, element_type: str, default_val=pd.NA
+    net: pandapowerNet, index: Int, value: Any, column: str, element_type: str, default_val=pd.NA
 ):
     """Sets the given value to the dataframe net[element_type]. If the value is nan, default_val
     is assumed if this is not nan.
@@ -272,7 +312,7 @@ def _set_value_if_not_nan(
     col_info = get_column_info(element_type, column)
     if col_info is not None and pd.isna(default_val) and not col_info["nullable"] and col_info["default"] is not None:
         default_val = col_info["default"]
-    if dtype == "float" and pd.isna(default_val):
+    if dtype == "float" and pd.isna(default_val):  # type: ignore[arg-type]
         default_val = float("nan")
     if _not_nan(value):
         if not column_exists:

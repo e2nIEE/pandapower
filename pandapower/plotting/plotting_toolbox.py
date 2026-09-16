@@ -1,15 +1,35 @@
 import ast
+import logging
 import re
 
+import geojson
 import numpy as np
 import pandas as pd
-import geojson
-
 from typing_extensions import deprecated
 
-import logging
-
 logger = logging.getLogger(__name__)
+
+
+def safe_geojson_loads(value):
+    """
+    Safely parse a GeoJSON string, handling non-string values.
+
+    In pandas 3.0, assignment to dataframes may result in non-string values
+    (e.g., float NaN or other types) in geo columns. This function handles
+    these cases gracefully.
+
+    :param value: The value to parse (should be a string or NaN)
+    :type value: str or NAType
+    :return: Parsed GeoJSON object or None if parsing fails
+    """
+    if pd.isna(value):
+        return None
+    try:
+        if not isinstance(value, str):
+            value = str(value)
+        return geojson.loads(value)
+    except (TypeError, ValueError):
+        return None
 
 
 def _rotate_dim2(arr, ang):
@@ -67,7 +87,7 @@ def get_collection_sizes(net, bus_size=1.0, ext_grid_size=1.0, trafo_size=1.0, l
     :return: sizes (dict) - dictionary containing all scaled sizes
     """
 
-    lst = net.bus.geo.apply(geojson.loads).apply(geojson.utils.coords).apply(next).values
+    lst = net.bus.geo.apply(safe_geojson_loads).dropna().apply(geojson.utils.coords).apply(next).values
     mean_distance_between_buses = sum(map(lambda a, b: (a-b)/200, *(map(max, zip(*lst)), map(min, zip(*lst)))))
 
     sizes = {

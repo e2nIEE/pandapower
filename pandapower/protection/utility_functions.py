@@ -131,13 +131,15 @@ def create_sc_bus(net_copy, sc_line_id, sc_fraction):
             net.switch.element[switch_id] = sc_line2
 
     # set geodata for new bus
-    net.bus.loc[max_idx_bus + 1, 'geo'] = None
+    if "geo" not in net.bus:
+        add_column_to_df(net, "bus", "geo")
 
     x1, y1 = _get_coords_from_bus_idx(net, aux_line.from_bus)[0]
     x2, y2 = _get_coords_from_bus_idx(net, aux_line.to_bus)[0]
 
-    net.bus.geo.at[max_idx_bus + 1] = geojson.dumps(
-        geojson.Point((sc_fraction * (x2 - x1) + x1, sc_fraction * (y2 - y1) + y1)), sort_keys=True)
+    net.bus.at[max_idx_bus + 1, "geo"] = geojson.dumps(
+        geojson.Point((sc_fraction * (x2 - x1) + x1, sc_fraction * (y2 - y1) + y1)), sort_keys=True
+    )
     return net
 
 
@@ -840,12 +842,14 @@ def get_vi_angle(net: pandapowerNet, switch_id: int, **kwargs) -> float:
     runpp(net)
     line_idx = net.switch.element.at[switch_id]
 
+    p: float
+    q: float
     if get_from_bus_info_switch(net, switch_id):
-        p = net.res_line_sc.p_from_mw.at[line_idx]
-        q = net.res_line_sc.q_from_mvar.at[line_idx]
+        p = net.res_line_sc.p_from_mw.at[line_idx]  # type: ignore[assignment]
+        q = net.res_line_sc.q_from_mvar.at[line_idx]  # type: ignore[assignment]
     else:
-        p = net.res_line_sc.p_to_mw.at[line_idx]
-        q = net.res_line_sc.q_to_mvar.at[line_idx]
+        p = net.res_line_sc.p_to_mw.at[line_idx]  # type: ignore[assignment]
+        q = net.res_line_sc.q_to_mvar.at[line_idx]  # type: ignore[assignment]
 
     if p > 0 and q > 0:
         vi_angle = math.degrees(math.atan(q / p))
@@ -903,7 +907,7 @@ def bus_path_multiple_ext_bus(net):
 
 
 # get the line path from the given bus path
-def get_line_path(net, bus_path):
+def get_line_path(net, bus_path):  # type: ignore[no-redef]
     """ Function return the list of line path from the given bus path"""
     line_path = []
     for i in range(len(bus_path) - 1):

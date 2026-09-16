@@ -23,6 +23,8 @@ def from_ucte_dict(ucte_parser: UCTEParser, slack_as_gen: bool = True, clip_smal
     :rtype: pandapowerNet
 
     """
+    if ucte_parser.path_ucte_file is None:
+        raise RuntimeError("The variable 'path_ucte_file' of ucte_parser is None, set it before parsing it!")
     file_name = Path(ucte_parser.path_ucte_file).stem
     ucte_converter = UCTE2pandapower(slack_as_gen=slack_as_gen, name=file_name, clip_small_x_values=clip_small_x_values)
     net = ucte_converter.convert(ucte_parser.get_data())

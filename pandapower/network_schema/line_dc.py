@@ -1,8 +1,6 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
-
 _line_dc_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the dc line"),
     "std_type": pa.Column(
@@ -151,7 +149,6 @@ _line_dc_columns = {
 }
 line_dc_schema = pa.DataFrameSchema(
     _line_dc_columns,
-    checks=create_column_dependency_checks_from_metadata(["tdpf"], _line_dc_columns),
     name="line_dc",
     strict=False,
 )

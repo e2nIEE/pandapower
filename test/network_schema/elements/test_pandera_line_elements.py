@@ -207,7 +207,7 @@ class TestLineOptionalFields:
         create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
         net.line["tdpf"] = True
         with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+            validate_network(net, "tdpf")
 
         # Case 2: one tdpf param only -> invalid
         net = pandapowerNet(name="test_tdpf_group_partial_missing_invalid1")
@@ -216,7 +216,7 @@ class TestLineOptionalFields:
         create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
         net.line["wind_speed_m_per_s"] = 3.0
         with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+            validate_network(net, "tdpf")
 
         # Case 3: another tdpf param only -> invalid
         net = pandapowerNet(name="test_tdpf_group_partial_missing_invalid2")
@@ -225,8 +225,8 @@ class TestLineOptionalFields:
         create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
         net.line["reference_temperature_degree_celsius"] = 20.0
         with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
-        # TODO sc, 3ph not beeing checked in line.py
+            validate_network(net, "tdpf")
+        # TODO sc, 3ph not being checked in line.py
 
     @pytest.mark.parametrize(
         "parameter,valid_value",

@@ -1,8 +1,6 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
-
 _line_columns = {
     "name": pa.Column(
         pd.StringDtype,
@@ -244,15 +242,6 @@ line_schema = pa.DataFrameSchema(
     _line_columns,
     name="line",
     strict=False,
-    checks=create_column_dependency_checks_from_metadata(
-        [
-            "opf",
-            # "sc",
-            "tdpf",
-            # "3ph",
-        ],
-        _line_columns,
-    ),
 )
 
 res_line_schema = res_line_est_schema = pa.DataFrameSchema(

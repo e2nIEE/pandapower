@@ -239,11 +239,14 @@ class TestLineDcOptionalFields:
             df=0.5,
             in_service=True,
         )
-        net.line_dc["tdpf"] = pd.Series([True], dtype="boolean")
+        net.line_dc["tdpf"] = pd.Series([True], dtype=pd.BooleanDtype())
         with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+            validate_network(net, "tdpf")
 
         # Case 2: one tdpf param only -> invalid
+        net = pandapowerNet(name="Case 2")
+        b0 = create_bus_dc(net, 0.4)
+        b1 = create_bus_dc(net, 0.4)
         create_line_dc_from_parameters(
             net,
             from_bus_dc=b0,
@@ -258,9 +261,12 @@ class TestLineDcOptionalFields:
         )
         net.line_dc["wind_speed_m_per_s"] = 3.0
         with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+            validate_network(net, "tdpf")
 
         # Case 3: another tdpf param only -> invalid
+        net = pandapowerNet(name="Case 3")
+        b0 = create_bus_dc(net, 0.4)
+        b1 = create_bus_dc(net, 0.4)
         create_line_dc_from_parameters(
             net,
             from_bus_dc=b0,
@@ -275,7 +281,7 @@ class TestLineDcOptionalFields:
         )
         net.line_dc["reference_temperature_degree_celsius"] = 20.0
         with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+            validate_network(net, "tdpf")
 
     @pytest.mark.parametrize(
         "parameter,valid_value",

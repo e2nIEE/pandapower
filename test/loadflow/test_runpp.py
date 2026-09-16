@@ -57,6 +57,20 @@ except ImportError:
     helmpy_available = False
 
 
+try:
+    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
+    helmpy_available = True
+except ImportError:
+    helmpy_available = False
+
+
+try:
+    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
+    helmpy_available = True
+except ImportError:
+    helmpy_available = False
+
+
 from test import test_path
 from test.consistency_checks import runpp_with_consistency_checks
 from test.control.test_shunt_control import simple_test_net_shunt_control

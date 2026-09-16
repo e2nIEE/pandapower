@@ -164,7 +164,7 @@ def check_greater_equal_zero(element, element_index, column):
         return element_index
 
 
-def check_greater_zero(element: pd.Series, element_index: int, column: str) -> int:
+def check_greater_zero(element: pd.Series, element_index: int, column: str) -> int | None:
     """
     functions that check, if a certain input type restriction for attribute values of a pandapower
     elements are fulfilled. Exemplary description for all type check functions.
@@ -180,14 +180,15 @@ def check_greater_zero(element: pd.Series, element_index: int, column: str) -> i
     if check_number(element, element_index, column) is None:
         if element[column] <= 0:
             return element_index
+        return None
     else:
         return element_index
 
 
 def check_greater_zero_less_equal_one(element, element_index, column):
-    if check_number(element, element_index, column) is None:
-        if not (0 < element[column] <= 1):
-            return element_index
+    if check_number(element, element_index, column) is None and not (0 < element[column] <= 1):
+        return element_index
+    return None
 
 
 def check_less_15(element, element_index, column):

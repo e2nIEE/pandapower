@@ -12,7 +12,7 @@ from pandapower.estimation.ppc_conversion import ExtendedPPCI
 try:
     from numpy import isin
 except ImportError:
-    from numpy import in1d as isin
+    from numpy import in1d as isin  # type: ignore[attr-defined,no-redef]
 
 __all__ = ['BaseAlgebra', 'BaseAlgebraZeroInjConstraints']
 

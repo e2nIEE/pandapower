@@ -1,8 +1,6 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
-
 _ext_grid_columns = {
     "name": pa.Column(
         pd.StringDtype, nullable=True, required=False, description="name of the external grid", metadata={"cim": True}
@@ -149,7 +147,6 @@ ext_grid_schema = pa.DataFrameSchema(
     _ext_grid_columns,
     name="ext_grid",
     strict=False,
-    checks=create_column_dependency_checks_from_metadata(["opf", "sc", "3ph"], _ext_grid_columns),
 )
 
 res_ext_grid_schema = pa.DataFrameSchema(

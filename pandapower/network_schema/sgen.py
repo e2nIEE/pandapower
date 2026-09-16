@@ -1,8 +1,6 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
-
 _sgen_columns = {
     "name": pa.Column(
         pd.StringDtype,
@@ -205,14 +203,6 @@ sgen_schema = pa.DataFrameSchema(
     _sgen_columns,
     name="sgen",
     strict=False,
-    checks=create_column_dependency_checks_from_metadata(
-        [
-            "opf",
-            # "sc",
-            "qcc",
-        ],
-        _sgen_columns,
-    ),
 )
 
 res_sgen_schema = res_sgen_3ph_schema = pa.DataFrameSchema(

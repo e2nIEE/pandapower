@@ -79,7 +79,7 @@ class SynchronousMachinesCim16:
         # if voltage is not on connectivity node, topological node will be used
         eqtp_terminals = pd.merge(self.cimConverter.cim['eq']['Terminal'], self.cimConverter.cim['tp']['Terminal'],
                                   how='left', on='rdfId')
-        eqtp_terminals.ConnectivityNode = eqtp_terminals.ConnectivityNode.fillna(eqtp_terminals.TopologicalNode)
+        eqtp_terminals.ConnectivityNode = eqtp_terminals.ConnectivityNode.fillna(eqtp_terminals.TopologicalNode)  # type: ignore[attr-defined]
         eqtp_terminals = eqtp_terminals[['rdfId', 'ConnectivityNode']].rename(
             columns={'rdfId': 'Terminal', 'ConnectivityNode': 'reg_control_cnode'})
         eqssh_reg_control = pd.merge(eqssh_reg_control, eqtp_terminals, how='left', on='Terminal')

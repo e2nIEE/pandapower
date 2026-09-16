@@ -7,7 +7,8 @@ import logging
 from typing import Iterable, Sequence
 
 import pandas as pd
-from numpy import nan, bool_
+from pandas.api.typing import NAType
+from numpy import nan
 import numpy.typing as npt
 
 from pandapower.network_structure import get_default_value
@@ -22,9 +23,21 @@ from pandapower.create.utils import (
     _set_entries,
     _set_multiple_entries,
     _set_value_if_not_nan,
+    _not_nan,
 )
 
 logger = logging.getLogger(__name__)
+
+def _get_bus_voltage_limit(net: pandapowerNet, bus: Int, column: str):
+    if column in net.bus.columns and _not_nan(net.bus.at[bus, column]):
+        return net.bus.at[bus, column]
+    return nan
+
+
+def _get_bus_voltage_limits(net: pandapowerNet, buses: Sequence, column: str):
+    if column in net.bus.columns:
+        return net.bus.loc[buses, column].values
+    return nan
 
 
 def create_gen(
@@ -33,7 +46,7 @@ def create_gen(
     p_mw: float,
     vm_pu: float = get_default_value("gen", "vm_pu"),
     sn_mva: float = nan,
-    name: str = pd.NA,
+    name: str | NAType = pd.NA,
     index: Int | None = None,
     max_q_mvar: float = nan,
     min_q_mvar: float = nan,
@@ -42,18 +55,18 @@ def create_gen(
     min_vm_pu: float = nan,
     max_vm_pu: float = nan,
     scaling: float = get_default_value("gen", "scaling"),
-    type: str = pd.NA,
+    type: str | NAType = pd.NA,
     slack: bool = get_default_value("gen", "slack"),
-    id_q_capability_characteristic: int | None = pd.NA,
+    id_q_capability_characteristic: int | NAType = pd.NA,
     reactive_capability_curve: bool | None = None,
-    curve_style: str | None = pd.NA,
-    controllable: bool | Iterable[bool] | None = pd.NA,
+    curve_style: str | NAType = pd.NA,
+    controllable: bool | Iterable[bool] | NAType = pd.NA,
     vn_kv: float = nan,
     xdss_pu: float = nan,
     rdss_ohm: float = nan,
     cos_phi: float = nan,
     pg_percent: float = nan,
-    power_station_trafo: int = pd.NA,
+    power_station_trafo: int | NAType = pd.NA,
     in_service: bool = get_default_value("gen", "in_service"),
     slack_weight: float = nan,
     **kwargs,
@@ -166,8 +179,14 @@ def create_gen(
     _set_value_if_not_nan(net, index, min_q_mvar, "min_q_mvar", "gen")
     _set_value_if_not_nan(net, index, max_q_mvar, "max_q_mvar", "gen")
     # V limits for OPF if controllable == True
-    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "gen", default_val=get_default_value("gen", "max_vm_pu"))
-    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "gen", default_val=get_default_value("gen", "min_vm_pu"))
+    # V limits for OPF if controllable == True
+    if not _not_nan(max_vm_pu):
+        max_vm_pu = _get_bus_voltage_limit(net, bus, "max_vm_pu")
+    if not _not_nan(min_vm_pu):
+        min_vm_pu = _get_bus_voltage_limit(net, bus, "min_vm_pu")
+
+    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "gen")
+    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "gen")
 
     # Short circuit calculation variables
     _set_value_if_not_nan(net, index, vn_kv, "vn_kv", "gen")
@@ -195,18 +214,18 @@ def create_gens(
     min_vm_pu: float | Iterable[float] = nan,
     max_vm_pu: float | Iterable[float] = nan,
     scaling: float | Iterable[float] = get_default_value("gen", "scaling"),
-    type: str | Iterable[str] = pd.NA,
+    type: str | Iterable[str] | NAType = pd.NA,
     slack: bool | Iterable[bool] = get_default_value("gen", "slack"),
-    id_q_capability_characteristic: Int | Iterable[Int] | None = pd.NA,
+    id_q_capability_characteristic: Int | Iterable[Int] | NAType = pd.NA,
     reactive_capability_curve: bool | Iterable[bool] | None = None,
-    curve_style: str | Iterable[str] | None = pd.NA,
+    curve_style: str | Iterable[str] | NAType = pd.NA,
     controllable: bool | float | Iterable[bool | float] | None = None,
     vn_kv: float | Iterable[float] = nan,
     xdss_pu: float | Iterable[float] = nan,
     rdss_ohm: float | Iterable[float] = nan,
     cos_phi: float | Iterable[float] = nan,
     pg_percent: float = nan,
-    power_station_trafo: int = pd.NA,
+    power_station_trafo: Int | NAType = pd.NA,
     in_service: bool = get_default_value("gen", "in_service"),
     slack_weight: float = nan,
     **kwargs,
@@ -304,6 +323,10 @@ def create_gens(
     _add_to_entries_if_not_nan(net, "gen", entries, index, "max_p_mw", max_p_mw)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "min_q_mvar", min_q_mvar)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "max_q_mvar", max_q_mvar)
+    if not _not_nan(min_vm_pu):
+        min_vm_pu = _get_bus_voltage_limits(net, buses, "min_vm_pu")
+    if not _not_nan(max_vm_pu):
+        max_vm_pu = _get_bus_voltage_limits(net, buses, "max_vm_pu")
     _add_to_entries_if_not_nan(net, "gen", entries, index, "min_vm_pu", min_vm_pu)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "max_vm_pu", max_vm_pu)
     _add_to_entries_if_not_nan(net, "gen", entries, index, "vn_kv", vn_kv)

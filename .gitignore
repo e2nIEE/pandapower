@@ -2,6 +2,7 @@
 *~
 build/
 .pytest_cache/
+.mypy_cache/
 dist/
 .cache/
 .idea

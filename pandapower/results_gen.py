@@ -11,7 +11,7 @@ from pandapower.auxiliary import (
     S_from_VI_elementwise,
     SVabc_from_SV012,
 )
-from pandapower.create._utils import add_column_to_df
+from pandapower.create.utils import add_column_to_df
 from pandapower.pypower.idx_bus import VM, VA,BASE_KV
 from pandapower.pypower.idx_bus_dc import DC_PD, DC_REF, DC_BUS_TYPE
 from pandapower.pypower.idx_gen import PG, QG, GEN_BUS

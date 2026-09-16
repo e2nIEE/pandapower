@@ -281,7 +281,7 @@ class TestGenOptionalFields:
         net.gen["max_p_mw"] = 100.0
 
         with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+            validate_network(net, "opf")
 
     def test_q_lim_enforced_group_partial_missing_invalid(self):
         """Test: q_lim_enforced group (max_q_mvar/min_q_mvar) must be complete"""
@@ -293,7 +293,7 @@ class TestGenOptionalFields:
         net.gen["max_q_mvar"] = 1.0
 
         with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+            validate_network(net, "q_lim_enforced")
 
     def test_qcc_group_partial_missing_invalid(self):
         """Test: QCC group must be complete if any value is set"""
@@ -305,19 +305,19 @@ class TestGenOptionalFields:
         # id_q_capability_characteristic only
         net.gen["id_q_capability_characteristic"] = pd.Series([0], dtype="Int64")
         with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+            validate_network(net, "qcc")
 
         # Reset and set only curve_style
         create_gen(net, bus=b0, p_mw=-1.0, vm_pu=0.5, scaling=1.0, in_service=True, slack=True)
         net.gen["curve_style"] = pd.Series(["straightLineYValues"], dtype="string")
         with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+            validate_network(net, "qcc")
 
         # Reset and set only reactive_capability_curve
         create_gen(net, bus=b0, p_mw=-1.0, vm_pu=0.5, scaling=1.0, in_service=True, slack=True)
         net.gen["reactive_capability_curve"] = pd.Series([True], dtype="boolean")
         with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+            validate_network(net, "qcc")
 
     @pytest.mark.parametrize(
         "parameter,invalid_value",

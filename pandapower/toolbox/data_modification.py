@@ -109,7 +109,8 @@ def add_column_from_element_to_elements(net, column, replace, elements=None,
         element_type = net[el][et_col]
         for short, complete in [("t", "trafo"), ("t3", "trafo3w"), ("l", "line"), ("s", "switch"),
                                 ("b", "bus")]:
-            net[el].loc[element_type == short, et_col] = complete
+            element_type.loc[element_type == short] = complete
+        net[el][et_col] = element_type  # update element_type with the modified element types
         element_types_without_column = [et for et in set(element_type) if column not in
                                         net[et].columns]
         if len(element_types_without_column):
@@ -280,12 +281,12 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
         return
 
     # --- reindex
-    new_index = pd.Series(net[element_type].index, index=net[element_type].index)
+    new_index = pd.Series(list(net[element_type].index), index=net[element_type].index)
     if element_type != "group":
         new_index.loc[old_indices] = get_indices(old_indices, lookup)
     else:
         new_index.loc[old_indices] = get_indices(new_index.loc[old_indices].values, lookup)
-    net[element_type].set_index(pd.Index(new_index.values), inplace=True)
+    net[element_type] = net[element_type].set_index(pd.Index(new_index.to_list()))
 
     # --- adapt group link
     if net.group.shape[0]:

@@ -204,7 +204,7 @@ class TestExtGridOptionalFields:
         net.ext_grid["max_p_mw"] = 100.0
 
         with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+            validate_network(net, "opf")
 
     def test_sc_group_partial_missing_invalid(self):
         """Test: SC group must be complete if any SC value is set"""
@@ -216,7 +216,7 @@ class TestExtGridOptionalFields:
         net.ext_grid["s_sc_max_mva"] = 1000.0
 
         with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+            validate_network(net, "sc")
 
     def test_3ph_group_partial_missing_invalid(self):
         """Test: 3PH group must be complete if any 3PH value is set (and SC group too)"""
@@ -228,7 +228,7 @@ class TestExtGridOptionalFields:
         net.ext_grid["rx_max"] = 0.4
 
         with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+            validate_network(net, "3ph")
 
     @pytest.mark.parametrize(
         "parameter,invalid_value",

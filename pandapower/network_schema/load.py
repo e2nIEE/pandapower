@@ -1,8 +1,6 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
-
 _load_columns = {
     "name": pa.Column(
         pd.StringDtype, nullable=True, required=False, description="name of the load", metadata={"cim": True}
@@ -101,7 +99,6 @@ _load_columns = {
 }
 load_schema = pa.DataFrameSchema(
     _load_columns,
-    checks=create_column_dependency_checks_from_metadata(["zip"], _load_columns),
     name="load",
     strict=False,
 )
