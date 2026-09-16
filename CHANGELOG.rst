@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] ``PPJSONEncoder`` accepts the legacy ``encoding`` keyword supplied by ``simplejson``.
 - [FIXED] ``wls_with_zero_constraint`` now converges for any ``sn_mva``; the zero-injection constraint was scaled by ``baseMVA`` while its Jacobian was not
 - [FIXED] ``create_load_dc`` now allocates and validates indexes against ``load_dc``, preventing overwrites and false ``source_dc`` conflicts.
 - [FIXED] OPF cleaned up in case of non convergence
