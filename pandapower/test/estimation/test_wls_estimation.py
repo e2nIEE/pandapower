@@ -746,9 +746,10 @@ def test_net_with_bb_switch_fusing():
     assert np.allclose(net.res_bus.vm_pu.values, net.res_bus_est.vm_pu.values, 5e-2)
 
 
-def test_net_with_zero_injection():
+@pytest.mark.parametrize("sn_mva", [1.0, 2.0, 10.0, 100.0, 1000.0])
+def test_net_with_zero_injection(sn_mva):
     # @author: AndersLi
-    net = create_empty_network()
+    net = create_empty_network(sn_mva=sn_mva)
     b1 = create_bus(net, name="Bus 1", vn_kv=220, index=1)
     b2 = create_bus(net, name="Bus 2", vn_kv=220, index=2)
     b3 = create_bus(net, name="Bus 3", vn_kv=220, index=3)
