@@ -8,6 +8,7 @@ Change Log
 - [ADDED] create function for trafo characteristic entries
 - [ADDED] converter for trafo characteristics
 - [FIXED] create_gen and create_gens now use connected bus voltage limits as generator voltage-limit defaults.
+- [CHANGED] moved test files out of package, :code:`pandapower.test` to :code:`test`
 
 [upcoming release] - 2026-..-..
 -------------------------------

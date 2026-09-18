@@ -20,9 +20,8 @@ import pandas as pd
 import pandas.testing as pdt
 
 from pandapower.auxiliary import ensure_iterability, log_to_level
-from pandapower.create import (
-    _group_parameter_list, _set_multiple_entries, _check_elements_existence, create_group
-)
+from pandapower.create.utils import _group_parameter_list, _set_multiple_entries, _check_elements_existence
+from pandapower.create.group_create import create_group
 from pandapower.pp_types import Int
 from pandapower.toolbox.power_factor import signing_system_value
 from pandapower.toolbox.element_selection import (
@@ -896,13 +895,13 @@ def return_group_as_net(
 
 
 def elements_connected_to_group(
-        net: pandapowerNet,
-        index: int,
-        element_types: list[str],
-        find_buses_only_from_buses: bool = False,
-        respect_switches: bool = True,
-        respect_in_service: bool = False,
-        include_empty_lists: bool = False
+    net: pandapowerNet,
+    index: int,
+    element_types: list[str],
+    find_buses_only_from_buses: bool = False,
+    respect_switches: bool = True,
+    respect_in_service: bool = False,
+    include_empty_lists: bool = False,
 ) -> dict[str, Collection[int]]:
     """
     Returns a dict of indices of elements that are connected to the group.

@@ -530,7 +530,7 @@ def _calculate_qmin_qmax_from_q_capability_characteristics(net, element):
         return None
 
     # Filter rows with True 'reactive_capability_curve'
-    from pandapower.create._utils import add_column_to_df
+    from pandapower.create.utils import add_column_to_df
     add_column_to_df(net, element, 'reactive_capability_curve')
     element_data = net[element].loc[net[element]['reactive_capability_curve'].fillna(False)]
 

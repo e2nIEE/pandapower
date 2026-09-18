@@ -709,31 +709,24 @@ def count_elements(net: pandapowerNet, return_empties: bool = False, **kwargs) -
                       return_empties or (et in net and bool(net[et].shape[0]))}, dtype=np.int64)
 
 
-def get_all_elements(net, include_results=False):
+def get_all_elements(net: pandapowerNet, include_results: bool = False):
     """
     Create a combined overview of all elements in a pandapower network
     as a single DataFrame.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        The pandapower network object or a dict-like structure whose
-        values (partially) are pandas.DataFrames containing element data
-        (e.g. 'bus', 'line', 'trafo', 'load', ...).
-    include_results : bool, optional
-        If False (default), result tables whose keys start with
-        ``'res_'`` (e.g. ``'res_bus'``, ``'res_line'``) are ignored.
-        If True, these tables are also included in the overview.
+    Parameters:
+        net: The pandapower network object or a dict-like structure whose
+            values (partially) are pandas.DataFrames containing element data
+            (e.g. 'bus', 'line', 'trafo', 'load', ...).
+        include_results: If False (default), result tables whose keys start with ``'res_'``
+            (e.g. ``'res_bus'``, ``'res_line'``) are ignored.
+            If True, these tables are also included in the overview.
 
-    Returns
-    -------
-    pandas.DataFrame
+    Returns:
         DataFrame with one row per element from all considered tables.
         Contains at least the columns:
 
-        - ``'pp_type'`` : name of the original table (e.g. ``'bus'``,
-
-          ``'line'``)
+        - ``'pp_type'`` : name of the original table (e.g. ``'bus'``, ``'line'``)
         - ``'pp_idx'`` : original index of the element in that table
 
         In addition, all columns from all original tables are included

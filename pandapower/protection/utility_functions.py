@@ -14,7 +14,7 @@ import logging as log
 
 from pandapower import pandapowerNet
 from pandapower.topology.create_graph import create_nxgraph
-from pandapower.create._utils import add_column_to_df
+from pandapower.create.utils import add_column_to_df
 from pandapower.create import create_bus, create_line_from_parameters
 from pandapower.plotting.collections import create_annotation_collection, create_line_collection, \
     create_bus_collection, create_line_switch_collection, draw_collections, create_trafo_collection, \

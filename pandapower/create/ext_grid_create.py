@@ -10,7 +10,7 @@ from numpy import nan
 from pandapower import pandapowerNet
 from pandapower.network_structure import get_default_value
 from pandapower.pp_types import Int
-from pandapower.create._utils import (
+from pandapower.create.utils import (
     _check_element,
     _get_index_with_check,
     _set_entries,

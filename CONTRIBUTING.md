@@ -177,7 +177,7 @@ Pull requests that lead to failing required tests will not be accepted.
 ### Adding Tests for new functionality
 
 If you have added new functionality, you should also add a new function that tests this functionality.
-pytest automatically detects all functions in the pandapower/test folder that start with 'test' and are located in a
+pytest automatically detects all functions in the `test` folder that start with 'test' and are located in a
 file that also starts with 'test' as relevant test cases.
 
 Say you have added a new function that doubles the rated power of a grid and added it to pandapower/toolbox.py:

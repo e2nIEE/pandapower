@@ -11,7 +11,7 @@ import numpy.typing as npt
 
 from pandapower.network import pandapowerNet
 from pandapower.pp_types import Int, CostElementType, PWLPowerType
-from pandapower.create._utils import (
+from pandapower.create.utils import (
     _cost_existance_check,
     _costs_existance_check,
     _get_index_with_check,

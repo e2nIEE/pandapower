@@ -12,7 +12,7 @@ from packaging.version import Version
 from pandapower._version import __version__, __format_version__
 from pandapower import pandapowerNet
 from pandapower.control import TrafoController, BinarySearchControl, DroopControl
-from pandapower.create._utils import add_column_to_df
+from pandapower.create.utils import add_column_to_df
 from pandapower.create import create_poly_cost
 from pandapower.create.trafo_characteristic_create import create_trafo_characteristic
 from pandapower.network_structure import get_structure_dict
@@ -99,7 +99,7 @@ def _drop_empty_if_not_required(net):
     """
     net_struct = get_structure_dict()
     tables_to_drop = []
-    exceptions = ["res_bus_sc"] # TODO: why?
+    exceptions = ["res_bus_sc"]  # TODO: why?
     for table_name, table in net.items():
         if isinstance(table, pd.DataFrame):
             if table_name.startswith("res_"):
@@ -134,7 +134,7 @@ def _replace_invalid_data(net, elements_to_deserialize, drop_invalid_geodata):
         except TypeError:
             geo_df = net[element]['geo'].dropna()
         except KeyError:
-            geo_df = {} # skip if no geo column exists
+            geo_df = {}  # skip if no geo column exists
         if element in ["bus", "bus_dc"]:
             for i, geo in geo_df.items():
                 coords = geo['coordinates']
@@ -539,10 +539,10 @@ def _add_missing_columns(net, elements_to_deserialize):
     # Update the switch table with 'in_ka'
     if ('res_switch' in net and _check_elements_to_deserialize('res_switch', elements_to_deserialize) and
             'p_from_mw' not in net.res_switch):
-            net.res_switch['p_from_mw'] = np.nan
-            net.res_switch['q_from_mvar'] = np.nan
-            net.res_switch['p_to_mw'] = np.nan
-            net.res_switch['q_to_mvar'] = np.nan
+        net.res_switch['p_from_mw'] = np.nan
+        net.res_switch['q_from_mvar'] = np.nan
+        net.res_switch['p_to_mw'] = np.nan
+        net.res_switch['q_to_mvar'] = np.nan
 
     # Update the switch table with 'in_ka'
     if ('res_switch_est' in net and _check_elements_to_deserialize('res_switch_est', elements_to_deserialize) and
