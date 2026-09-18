@@ -5,6 +5,7 @@ from pandapower.control.controller.station_control import BinarySearchControl
 from pandapower.create import create_empty_network, create_buses, create_ext_grid, create_line_from_parameters, \
     create_shunt
 from pandapower.run import runpp
+from pandapower.toolbox import create_continuous_bus_index, drop_buses
 
 
 def simple_test_net_shunt_control():
@@ -57,6 +58,31 @@ def test_discrete_shunt_control_with_step_dependency_table(tol=1e-6):
     assert (abs(net.res_bus.loc[1, "vm_pu"] - 1.077258) < tol)
     assert net.shunt.loc[0, "step"] == 4
 
+def test_discrete_shunt_controlled_bus_follows_reindexed_shunt_bus():
+    net = create_empty_network()
+    buses = create_buses(net, 3, vn_kv=[20.0, 10.0, 5.0])
+
+    shunt_index = create_shunt(
+        net,
+        bus=buses[2],
+        q_mvar=-1.0,
+        p_mw=0.0,
+        step=0,
+        max_step=1,
+    )
+    controller = DiscreteShuntController(net, shunt_index, vm_set_pu=1.0)
+
+    assert net.shunt.at[shunt_index, "bus"] == buses[2]
+    assert controller.controlled_bus(net) == buses[2]
+
+    drop_buses(net, [buses[1]])
+    create_continuous_bus_index(net)
+
+    assert net.shunt.at[shunt_index, "bus"] == 1
+    assert controller.controlled_bus(net) == 1
+
+    net.res_bus = pd.DataFrame({"vm_pu": [1.0, 1.0]}, index=net.bus.index)
+    assert controller.is_converged(net)
 
 if __name__ == '__main__':
     pytest.main(['-s', __file__])
