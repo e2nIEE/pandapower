@@ -426,6 +426,23 @@ def _is_safe_to_deserialize(module_name, class_name, class_):
 
 class PPJSONEncoder(json.JSONEncoder):
     def __init__(self, isinstance_func=isinstance_partial, **kwargs):
+        # simplejson always supplies its backend-specific options to custom
+        # encoder classes. PPJSONEncoder uses the stdlib implementation, which
+        # does not accept these options.
+        simplejson_options = {
+            "encoding",
+            "use_decimal",
+            "namedtuple_as_object",
+            "tuple_as_array",
+            "iterable_as_array",
+            "bigint_as_string",
+            "item_sort_key",
+            "for_json",
+            "ignore_nan",
+            "int_as_string_bitcount",
+        }
+        for option in simplejson_options:
+            kwargs.pop(option, None)
         super().__init__(**kwargs)
         self.isinstance_func = isinstance_func
 
@@ -865,6 +882,9 @@ class FromSerializableRegistry():
 
 class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, **kwargs):
+        # simplejson passes its legacy encoding option to custom decoders, but
+        # the stdlib JSONDecoder used here does not accept it.
+        kwargs.pop("encoding", None)
         # net = pandapowerNet.__new__(pandapowerNet)
         #        net = create_empty_network()
         deserialize_pandas = kwargs.pop('deserialize_pandas', True)
