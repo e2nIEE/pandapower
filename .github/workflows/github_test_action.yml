@@ -160,7 +160,7 @@ jobs:
       #    python-version: ${{ matrix.python-version }}
       - name: Install dependencies
         run: |
-          python -m pip install pypower pytest-split pytest-cov juliacall julia
+          python -m pip install pypower pytest-split pytest-cov juliacall julia numba
           python -m pip install .[pandamodels,test]
       - name: Install PandaModels.jl
         run: |
