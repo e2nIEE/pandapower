@@ -14,7 +14,7 @@ _gen_columns = {
         description="type variable to classify generators naming conventions: “sync” - synchronous generator “async” - asynchronous generator",
         metadata={"cim": True},
     ),
-    "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}),
+    "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus"}),
     "p_mw": pa.Column(float, description="active power of the generator [MW]"),
     "vm_pu": pa.Column(
         float, pa.Check.gt(0), description="voltage set point of the generator [p.u.]", metadata={"default": 1.0}

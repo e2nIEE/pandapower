@@ -6,9 +6,9 @@ import pandera.pandas as pa
 vsc_bipolar_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(pd.StringDtype, nullable=True, required=False, description=""),
-        "bus": pa.Column(int, pa.Check.ge(0), description="", metadata={"foreign_key": "bus.index"}),
-        "bus_dc_plus": pa.Column(int, pa.Check.ge(0), description="", metadata={"foreign_key": "bus_dc.index"}),
-        "bus_dc_minus": pa.Column(int, pa.Check.ge(0), description="", metadata={"foreign_key": "bus_dc.index"}),
+        "bus": pa.Column(int, pa.Check.ge(0), description="", metadata={"foreign_key": "bus"}),
+        "bus_dc_plus": pa.Column(int, pa.Check.ge(0), description="", metadata={"foreign_key": "bus_dc"}),
+        "bus_dc_minus": pa.Column(int, pa.Check.ge(0), description="", metadata={"foreign_key": "bus_dc"}),
         "r_ohm": pa.Column(float, description="resistance of the coupling transformer component of VSC"),
         "x_ohm": pa.Column(float, description="reactance of the coupling transformer component of VSC"),
         "r_dc_ohm": pa.Column(float, description="resistance of the internal dc resistance component of VSC"),

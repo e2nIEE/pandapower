@@ -3,7 +3,7 @@ Functions for creating and validating bus index cross-references.
 """
 import pandas as pd
 import pandera.pandas as pa
-
+from copy import deepcopy
 from pandapower import pandapowerNet
 
 
@@ -107,43 +107,26 @@ def _create_multi_column_reference_schema(
     return pa.DataFrameSchema(columns=schema_columns, name=element_name, strict=False)
 
 
-def _bus_index_validation(element: str, schema: pa.DataFrameSchema, net: pandapowerNet):
+def build_foreign_key_index_checks(schema:pa.DataFrameSchema, net:pandapowerNet) -> None:
     """
-    Validates that all bus references in a network element exist in the corresponding bus tables.
+        Creates a deepcopy of schema with foreign key validation checks added based on metadata.
 
-    This function ensures that every bus index referenced in an element's bus-related columns
-    actually exists in the network's bus or bus_dc tables. It handles both AC buses (bus table)
-    and DC buses (bus_dc table) separately.
+        Parses the 'foreign_key' metadata from columns (format: "table")
+        and adds index validation checks against the corresponding network element.
 
-    Parameters:
-        element: Name of the network element to validate (e.g., 'line', 'load', 'gen', etc.).
-            Must not be 'bus' or 'bus_dc' as these are the reference tables themselves.
-        schema: The DataFrameSchema where to get columns containing "bus" from.
-        net: The pandapower network object containing all network elements and bus tables.
+        Parameters:
+            schema: The DataFrameSchema to analyze for foreign key columns
+            net: The pandapower network object containing reference tables
 
-    Raises:
-        ValidationError: If any bus reference in the element doesn't exist in the corresponding bus table.
-
-    Notes:
-        - Automatically identifies all columns containing 'bus' in their name
-        - Separates DC bus columns (containing 'dc') from regular AC bus columns
-
-        - For 'switch' elements, also validates the 'element' column
-        - Uses multi-column reference schema validation to ensure referential integrity
-
-    Example:
-        >>> _bus_index_validation('line', net)  # Validates from_bus, to_bus columns
-        >>> _bus_index_validation('load', net)  # Validates bus column
-    """
-    if element not in ["bus", "bus_dc"]:
-        # TODO: bus columns should not be looked up by name but by metadata (foreign_key)
-        bus_columns = [col for col in schema.columns if "bus" in col.lower() and col in net[element]]
-        if element == "switch":
-            # TODO: check if this approach works for et column not "b" in switch table.
-            bus_columns.append("element")
-        dc_items = [item for item in bus_columns if "dc" in item]
-        non_dc_items = [item for item in bus_columns if "dc" not in item]
-        for df, lst in [(net.bus, non_dc_items), (net.bus_dc, dc_items)]:
-            _create_multi_column_reference_schema(
-                reference_df=df, columns_to_validate=lst, element_name=element
-            ).validate(net[element])
+        Returns:
+            A deepcopy of the schema with foreign key checks added to appropriate columns
+        """
+    for col_name, column in schema.columns.items():
+        if column.metadata and "foreign_key" in column.metadata:
+            ref_table_name = column.metadata["foreign_key"]
+            if ref_table_name not in net:
+                continue
+            reference_df = net[ref_table_name]
+            check = _create_index_validation_check(reference_df, col_name, schema.name or ref_table_name)
+            existing_checks = column.checks or []
+            column.checks = existing_checks + [check]

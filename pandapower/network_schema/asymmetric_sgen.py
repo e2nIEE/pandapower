@@ -12,7 +12,7 @@ asymmetric_sgen_schema = pa.DataFrameSchema(
             metadata={"default": "wye"},
         ),
         "bus": pa.Column(
-            int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}
+            int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus"}
         ),
         "p_a_mw": pa.Column(
             float,

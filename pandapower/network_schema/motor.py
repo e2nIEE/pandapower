@@ -5,7 +5,7 @@ _motor_columns = {
     "name": pa.Column(
         pd.StringDtype, nullable=True, required=False, description="name of the motor", metadata={"cim": True}
     ),
-    "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}),
+    "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus"}),
     "pn_mech_mw": pa.Column(float, pa.Check.ge(0), description="Mechanical rated power of the motor [MW]"),
     "cos_phi": pa.Column(
         float, pa.Check.between(min_value=0, max_value=1), description="cosine phi at current operating point"

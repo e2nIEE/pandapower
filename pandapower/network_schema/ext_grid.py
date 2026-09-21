@@ -5,7 +5,7 @@ _ext_grid_columns = {
     "name": pa.Column(
         pd.StringDtype, nullable=True, required=False, description="name of the external grid", metadata={"cim": True}
     ),
-    "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}),
+    "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus"}),
     "vm_pu": pa.Column(float, pa.Check.gt(0), description="voltage set point [p.u]", metadata={"default": 1.0}),
     "va_degree": pa.Column(float, description="voltage angle set point [degree]", metadata={"default": 0.0}),
     "max_p_mw": pa.Column(

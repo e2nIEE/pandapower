@@ -9,13 +9,13 @@ _dcline_columns = {
         int,
         pa.Check.ge(0),
         description="Index of bus where the dc line starts",
-        metadata={"foreign_key": "bus.index"},
+        metadata={"foreign_key": "bus"},
     ),
     "to_bus": pa.Column(
         int,
         pa.Check.ge(0),
         description="Index of bus where the dc line ends",
-        metadata={"foreign_key": "bus.index"},
+        metadata={"foreign_key": "bus"},
     ),
     "p_mw": pa.Column(float, description="Active power transmitted from ‘from_bus’ to ‘to_bus’"),
     "loss_percent": pa.Column(

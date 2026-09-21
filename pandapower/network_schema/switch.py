@@ -4,7 +4,7 @@ import pandera.pandas as pa
 switch_schema = pa.DataFrameSchema(
     {
         "bus": pa.Column(
-            int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}
+            int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus"}
         ),
         "name": pa.Column(
             pd.StringDtype, nullable=True, required=False, description="name of the switch", metadata={"cim": True}
