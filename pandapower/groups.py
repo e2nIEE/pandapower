@@ -199,11 +199,17 @@ def detach_from_groups(
     for i in np.arange(len(to_check), dtype=np.int64)[to_check]:
         rc = net.group.reference_column.iat[i]
         if rc is None or pd.isnull(rc):
-            net.group.element_index.iat[i] = pd.Index(net.group.element_index.iat[i]).difference(element_index).tolist()
+            net.group.iat[i, net.group.columns.get_loc("element_index")] = (
+                pd.Index(net.group.element_index.iat[i]).difference(element_index).tolist()
+            )
         else:
-            net.group.element_index.iat[i] = pd.Index(net.group.element_index.iat[i]).difference(  # type: ignore[assignment]
-                pd.Index(net[element_type][rc].loc[element_index.intersection(net[element_type].index)])
-            ).tolist()
+            net.group.iat[i, net.group.columns.get_loc("element_index")] = (
+                pd.Index(net.group.element_index.iat[i])
+                .difference(  # type: ignore[assignment]
+                    pd.Index(net[element_type][rc].loc[element_index.intersection(net[element_type].index)])
+                )
+                .tolist()
+            )
 
         if not len(net.group.element_index.iat[i]):  # type: ignore[arg-type]
             keep[i] = False
@@ -504,7 +510,7 @@ def check_unique_group_rows(
             log_to_level(warn, logger, log_level)
 
 
-def remove_not_existing_group_members(net: pandapowerNet, verbose: bool = True):
+def remove_not_existing_group_members(net: pandapowerNet, verbose: bool = True) -> None:
     """
     Remove group members from net.group that do not exist in the elements tables.
 
@@ -512,41 +518,26 @@ def remove_not_existing_group_members(net: pandapowerNet, verbose: bool = True):
         net: pandapower net
         verbose: Additional logging messages
     """
-    gr_idx_before = set(net.group.index)
-    keep: npt.NDArray[bool] = np.ones(net.group.shape[0], dtype=bool)
-    not_existing_et = set()
-    empty_et = set()
-    for i in range(net.group.shape[0]):
-        et: str = net.group.element_type.iat[i]  # type: ignore[assignment]
-        if et not in net or not isinstance(net[et], pd.DataFrame):
-            not_existing_et |= {et}
-            keep[i] = False
-        elif not net[et].shape[0]:
-            empty_et |= {et}
-            keep[i] = False
-        else:
-            not_exist_bool = ~group_entries_exist_in_element_table(net, net.group.index[i], et)
-            if np.all(not_exist_bool):
-                keep[i] = False
-                if verbose:
-                    logger.info(f"net.group row {i} is dropped because no fitting elements exist in net[{et}].")
-            elif np.any(not_exist_bool):
-                net.group.element_index.iat[i] = list(np.array(net.group.element_index.iat[i])[~not_exist_bool])  # type: ignore[assignment]
-                if verbose:
-                    logger.info(f"{np.sum(not_exist_bool)} entries were dropped from net.group row {i}.")
-    if verbose:
-        if len(not_existing_et):
-            logger.info(f"element_types {not_existing_et} are no dataframes in net and thus be removed from net.group.")
-        if len(empty_et):
-            logger.info(f"net[*] are empty and thus be removed from net.group. "
-                        f"* is placeholder for {empty_et}.")
-    net.group = net.group.loc[keep]
+
+    def filter_row(et, elms, rc):
+        if et not in net or not isinstance(net[et], pd.DataFrame) or net[et].empty:
+            return None  # indicates to drop row
+        valid_ids = set(net[et].index) if pd.isna(rc) else set(net[et][rc].dropna())
+        filtered = [e for e in elms if e in valid_ids]
+        return filtered if filtered else None
+
+    results = net.group.apply(
+        lambda row: filter_row(row["element_type"], row["element_index"], row["reference_column"]), axis=1
+    )
+
+    keep_mask = results.notna()
+    net.group = net.group[keep_mask].copy()  # copy to avoid fragmentation
+    net.group.element_index = results[keep_mask].tolist()
 
     if verbose:
-        gr_idx_after = set(net.group.index)
-        removed_gr = gr_idx_before - gr_idx_after
-        if len(removed_gr):
-            logger.info(f"These groups are removed since no existing member remains: {removed_gr}.")
+        drop_mask = results.isna()
+        if drop_mask.any():
+            logger.info(f"net.group row {drop_mask[drop_mask].index} will be dropped.")
 
 
 def ensure_lists_in_group_element_column(
@@ -559,21 +550,18 @@ def ensure_lists_in_group_element_column(
         net: pandapower net
         drop_empty_lines: This parameter decides whether empty entries should be removed (the complete row in net.group)
     """
-    keep: npt.NDArray[bool] = np.ones(net.group.shape[0], dtype=bool)
-    for i in range(net.group.shape[0]):
-        elm = net.group.element_index.iat[i]
-        if hasattr(elm, "__iter__") and not isinstance(elm, str):
-            net.group.element_index.iat[i] = list(elm)  # type: ignore[assignment]
-            if not len(elm):  # type: ignore[arg-type]
-                keep[i] = False
+
+    def to_list(element):
+        if hasattr(element, "__iter__") and not isinstance(element, str):
+            return list(element)
+        elif pd.isna(element):
+            return []
         else:
-            if elm is None or pd.isnull(elm):
-                net.group.element_index.iat[i] = []
-                keep[i] = False
-            else:
-                net.group.element_index.iat[i] = [elm]  # type: ignore[assignment]
+            return [element]
+
+    net.group.element_index = net.group.element_index.apply(to_list)
     if drop_empty_lines:
-        net.group = net.group.loc[keep]
+        net.group = net.group[net.group.element_index.astype(bool)]
 
 
 def group_entries_exist_in_element_table(

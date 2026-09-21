@@ -145,6 +145,7 @@ def _bus_index_validation(element: str, schema: pa.DataFrameSchema, net: pandapo
         ]
 
         if element == "switch":
+            # TODO: check if this approach works for et column not "b" in switch table.
             bus_columns.append("element")
         dc_items = [item for item in bus_columns if "dc" in item]
         non_dc_items = [item for item in bus_columns if "dc" not in item]

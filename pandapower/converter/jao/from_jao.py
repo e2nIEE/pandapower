@@ -677,7 +677,7 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
                 logger.warning(f"Bus {bus} (name {net.bus.at[bus, 'name']}) was found multiple times in line_geo_data. "
                                f"No geo positions was used more often than all other positions. "
                                "The first of the most used positions is used.")
-            return _geo_json_str(this_bus_geo.loc[how_often.idxmax()].iloc[0])
+            return _geo_json_str(this_bus_geo.loc[how_often.idxmax()].iloc[0])  # type: ignore[call-overload]
 
         return None
 
@@ -814,7 +814,8 @@ def _allocate_trafos_to_buses_and_create_buses(
     duplicated_buses["name"] += " (2)"
     duplicated_buses.index = list(range(net.bus.index.max()+1,
                                         net.bus.index.max()+1+len(duplicated_buses)))
-    trafo_connections.loc[same_bus_connection, "lv_bus"] = duplicated_buses.index
+    if same_bus_connection.any():
+        trafo_connections.loc[same_bus_connection, "lv_bus"] = duplicated_buses.index
     net.bus = pd.concat([net.bus, duplicated_buses])
     if n_add_buses := len(duplicated_buses):
         tr_names = data[key].loc[trafo_connections.index[same_bus_connection],

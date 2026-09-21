@@ -16,6 +16,7 @@ HVMVLVType = Literal["hv", "mv", "lv"]
 MeasurementType = Literal["v", "p", "q", "i", "va", "ia"]
 MeasurementElementType = Literal["bus", "line", "trafo", "trafow3", "load", "gen", "sgen", "shunt", "ward", "xward",
                                  "ext_grid"]
+MeasurementSideType = Literal["from", "to", "hv", "mv", "lv"]
 PWLPowerType = Literal["p", "q"]
 SwitchElementType = Literal[
     "b",  # bus

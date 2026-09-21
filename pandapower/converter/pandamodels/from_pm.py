@@ -70,7 +70,7 @@ def add_time_series_data_to_net(net: pandapowerNet, controller, tp):
             variable = content["object"].__dict__["matching_params"]["variable"]
             elm_idxs = content["object"].__dict__["matching_params"]["element_index"]
             df = content["object"].data_source.df
-            net[element].loc[elm_idxs,variable] = df.loc[int(tp)].values
+            net[element].loc[elm_idxs, variable] = df.loc[int(tp)].astype(net[element][variable].dtype)
 
 
 def pm_results_to_ppc_results(net: pandapowerNet, ppc, ppci, result_pm):
@@ -150,8 +150,7 @@ def read_ots_results(net: pandapowerNet):
         res = "res_" + element
         if "in_service" not in net[res]:
             # copy in service state from inputs
-            net[res].loc[:, "in_service"] = None
-            net[res].loc[:, "in_service"] = net[res].loc[:, "in_service"].values
+            net[res]["in_service"] = None
         branch_status = ppc["branch"][f:t, BR_STATUS].real  # type: ignore[index]
 
         net[res].loc[:, "in_service"] = branch_status
@@ -164,4 +163,4 @@ def read_tnep_results(net: pandapowerNet):
         # get pandapower index from power models index
         pp_idx = line_idx[int(pm_branch_idx) - 1]
         # built is a float, which is not exactly 1.0 or 0. sometimes
-        net["res_ne_line"].loc[pp_idx, "built"] = branch_data["built"] > 0.5
+        net["res_ne_line"].loc[pp_idx, "built"] = int(branch_data["built"] > 0.5)

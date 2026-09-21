@@ -281,8 +281,7 @@ def drop_assist_elms_by_creating_ext_net(net, elms=None):
         target_elm_idx = net[elm].index[names]
         net[elm] = net[elm].drop(target_elm_idx)
         if f"res_{elm}" in net and net["res_" + elm].shape[0]:
-            res_target_elm_idx = net["res_" +
-                                     elm].index.intersection(target_elm_idx)
+            res_target_elm_idx = net["res_" + elm].index.intersection(target_elm_idx)
             net["res_" + elm] = net["res_" + elm].drop(res_target_elm_idx)
 
     if "name_equivalent" in net.bus.columns.tolist():

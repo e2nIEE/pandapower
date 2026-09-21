@@ -263,7 +263,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
         bus = int(busstr.split("/")[0])
         key = net_zpbn.bus.name[i].split("-")[0]
         elm = net_zpbn.bus.name[i].split("_")[0]
-        idx = S.index[S.ext_bus == bus].values[0]
+        idx = S.index[S.ext_bus == bus][0]
         P = S[key][idx].real * sn_mva
         Q = S[key][idx].imag * sn_mva
         Sn = S["sn_" + key][idx].real
@@ -280,15 +280,18 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
 
         # ---- match other columns
         elm_org = net[elm]
-        if elm_old is None or elm_old != elm:
+        if pd.isna(elm_old) or elm_old != elm:
             other_cols = set(elm_org.columns) - \
                          {"name", "bus", "p_mw", "q_mvar", "sn_mva", "in_service", "scaling"}
             other_cols_bool = set(
                 net[elm][list(other_cols)].columns[net[elm][list(other_cols)].apply(is_bool_dtype)])
             other_cols -= other_cols_bool
-            other_cols_number = set(
-                net[elm][list(other_cols)].columns[
-                    net[elm][list(other_cols)].apply(is_numeric_dtype)])
+            other_cols_number_mask = net[elm][list(other_cols)].apply(is_numeric_dtype)
+            other_cols_number = (
+                set()
+                if other_cols_number_mask.empty
+                else set(net[elm][list(other_cols)].columns[other_cols_number_mask])
+            )
             other_cols -= other_cols_number
             other_cols_str = set()
             other_cols_none = set()
@@ -362,7 +365,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
                             net_zpbn[elm].loc[elm_idx, colid] = asv[0]
                         else:
                             net_zpbn[elm].loc[elm_idx, colid] = "//".join(asv)
-                    net_zpbn[elm].loc[elm_idx, list(other_cols_none)] = None
+                    net_zpbn[elm].loc[elm_idx, list(other_cols_none)] = pd.NA
                     for ocm in other_cols_mixed:
                         net_zpbn[elm][ocm] = net_zpbn[elm][ocm].astype("object")
                     net_zpbn[elm].loc[elm_idx, list(other_cols_mixed)] = "mixed data type"

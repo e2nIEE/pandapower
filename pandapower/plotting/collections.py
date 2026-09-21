@@ -4,26 +4,25 @@
 import ast
 import copy
 import inspect
+import logging
 import re
 import sys
-import math
-from typing import Callable, TYPE_CHECKING, Optional, Tuple, Literal
+from collections.abc import Callable
+from itertools import combinations
+from typing import TYPE_CHECKING, Literal
 
 import geojson
-import pandas as pd
-
-from itertools import combinations
-from typing_extensions import deprecated
-
-import logging
 import numpy as np
-from pandas import isnull, Series, DataFrame
+import pandas as pd
+from pandas import DataFrame, Series, isnull
+from pandas.api.typing import NAType
+from typing_extensions import deprecated
 
 try:
     import matplotlib.pyplot as plt
-    from matplotlib.collections import LineCollection, PatchCollection, Collection
+    from matplotlib.collections import Collection, LineCollection, PatchCollection
     from matplotlib.font_manager import FontProperties
-    from matplotlib.patches import Circle, Rectangle, PathPatch
+    from matplotlib.patches import Circle, PathPatch, Rectangle
     from matplotlib.textpath import TextPath
     from matplotlib.transforms import Affine2D
 
@@ -31,8 +30,16 @@ try:
 
     # Depends on matplotlib:
     from pandapower.plotting.patch_makers import (
-        load_patches, node_patches, gen_patches, sgen_patches, ext_grid_patches, trafo_patches, storage_patches,
-        ward_patches, xward_patches, vsc_patches
+        ext_grid_patches,
+        gen_patches,
+        load_patches,
+        node_patches,
+        sgen_patches,
+        storage_patches,
+        trafo_patches,
+        vsc_patches,
+        ward_patches,
+        xward_patches,
     )
 except ImportError:
     MATPLOTLIB_INSTALLED = False
@@ -42,25 +49,42 @@ except ImportError:
     class TextPath:  # type: ignore[no-redef]
         pass
 
-from pandapower.auxiliary import soft_dependency_error
 from pandapower import pandapowerNet
-from pandapower.plotting.patch_makers import load_patches, node_patches, gen_patches, \
-    sgen_patches, ext_grid_patches, trafo_patches, storage_patches, ward_patches, xward_patches, vsc_patches
-from pandapower.plotting.plotting_toolbox import _rotate_dim2, coords_from_node_geodata, \
-    position_on_busbar, get_index_array
+from pandapower.auxiliary import soft_dependency_error
+from pandapower.plotting.patch_makers import (
+    ext_grid_patches,
+    gen_patches,
+    load_patches,
+    node_patches,
+    sgen_patches,
+    storage_patches,
+    trafo_patches,
+    vsc_patches,
+    ward_patches,
+    xward_patches,
+)
+from pandapower.plotting.plotting_toolbox import (
+    _rotate_dim2,
+    coords_from_node_geodata,
+    get_index_array,
+    position_on_busbar,
+    safe_geojson_loads,
+)
 
 if TYPE_CHECKING:
-    from matplotlib.colors import Normalize, Colormap
-    from matplotlib.collections import LineCollection, PatchCollection, Collection
+    from matplotlib.collections import Collection, LineCollection, PatchCollection
+    from matplotlib.colors import Colormap, Normalize
     from matplotlib.font_manager import FontProperties
-    from matplotlib.patches import Circle, Rectangle, PathPatch
+    from matplotlib.patches import Circle, PathPatch, Rectangle
     from matplotlib.textpath import TextPath
     from matplotlib.transforms import Affine2D
 
 logger = logging.getLogger(__name__)
 
 
-def _get_coords_from_geojson(gj_str):
+def _get_coords_from_geojson(gj_str: str | NAType):
+    if pd.isna(gj_str):
+        return None
     pattern = r'"coordinates"\s*:\s*((?:\[(?:\[[^]]+],?\s*)+\])|\[[^]]+\])'
     matches = re.findall(pattern, gj_str)
 
@@ -398,10 +422,22 @@ def _create_complex_branch_collection(coords, patch_maker, size=1, infos=None, r
 
 
 def create_bus_collection(
-        net: pandapowerNet, buses: Optional[list] = None, size: float = 5., patch_type: str = "circle", color=None,
-        z=None, cmap=None, norm=None, infofunc: Optional[Callable] = None, picker: bool = False,
-        bus_geodata: Optional[pd.DataFrame] = None, bus_table: str = "bus", cbar_title: str = "Bus Voltage [pu]",
-        clim: Optional[Tuple[float]] = None, plot_colormap: bool = True, **kwargs
+    net: pandapowerNet,
+    buses: list | None = None,
+    size: float = 5.0,
+    patch_type: str = "circle",
+    color=None,
+    z=None,
+    cmap=None,
+    norm=None,
+    infofunc: Callable | None = None,
+    picker: bool = False,
+    bus_geodata: pd.DataFrame | None = None,
+    bus_table: str = "bus",
+    cbar_title: str = "Bus Voltage [pu]",
+    clim: tuple[float] | None = None,
+    plot_colormap: bool = True,
+    **kwargs,
 ):
     """
     Creates a matplotlib patch collection of pandapower buses.
@@ -450,7 +486,7 @@ def create_bus_collection(
     if bus_geodata is None:
         bus_geodata = net[bus_table].geo.apply(_get_coords_from_geojson)
 
-    buses_with_geo = buses[np.isin(buses, bus_geodata.index.values)]
+    buses_with_geo = buses[np.isin(buses, bus_geodata.dropna().index.values)]
     if len(buses_with_geo) < len(buses):
         logger.warning(
             f"The following buses cannot be displayed as there is on geodata available: {set(buses) - set(buses_with_geo)}"
@@ -538,6 +574,8 @@ def create_line_collection(
     if not lines_without_geo.empty:
         logger.warning(
             f'Could not plot lines {lines_without_geo}. Bus geodata is missing for those lines!')
+
+    line_geodata_series = line_geodata_series.dropna()
 
     infos = [infofunc(line) for line in line_geodata_series.index] if infofunc else []
 
@@ -696,10 +734,22 @@ def create_trafo_connection_collection(net, trafos=None, bus_geodata=None, infof
     trafos = trafos[in_geodata]
     trafo_table = net.trafo.loc[trafos]
 
-    hv_geo = bus_geodata.loc[trafo_table["hv_bus"]].apply(geojson.loads).apply(geojson.utils.coords).apply(
-        next).to_list()  # using next works because bus only has one coordinate pair
-    lv_geo = bus_geodata.loc[trafo_table["lv_bus"]].apply(geojson.loads).apply(geojson.utils.coords).apply(
-        next).to_list()
+    hv_geo = (
+        bus_geodata.loc[trafo_table["hv_bus"]]
+        .apply(safe_geojson_loads)
+        .dropna()
+        .apply(geojson.utils.coords)
+        .apply(next)
+        .to_list()
+    )  # using next works because bus only has one coordinate pair
+    lv_geo = (
+        bus_geodata.loc[trafo_table["lv_bus"]]
+        .apply(safe_geojson_loads)
+        .dropna()
+        .apply(geojson.utils.coords)
+        .apply(next)
+        .to_list()
+    )
     tg = list(zip(hv_geo, lv_geo))
 
     info = [infofunc(tr) for tr in trafos] if infofunc is not None else []
@@ -863,7 +913,7 @@ def create_trafo3w_collection(net, trafo3ws=None, picker=False, infofunc=None, c
     infos = []
     color = kwargs.pop("color", "k")
     linewidth = kwargs.pop("linewidths", 2.)
-    bus_geodata = bus_geodata.apply(geojson.loads)
+    bus_geodata = bus_geodata.apply(safe_geojson_loads).dropna()
     if cmap is not None and z is None:
         z = net.res_trafo3w.loading_percent
     for i, idx in enumerate(trafo3w_table.index):

@@ -785,14 +785,14 @@ def test_fullgrid_trafo(fullgrid_v2):
     assert element_1['terminal_lv'].item() == '_6fdc4516-25fc-2f4e-996f-1f590fd5677a'
     assert element_1['PowerTransformerEnd_id_hv'].item() == '_162712fd-bd8f-2d4d-8ac9-84bf324ef796'
     assert element_1['PowerTransformerEnd_id_lv'].item() == '_3ee25db5-2305-1d40-a515-01acb2a12e93'
-    assert math.isnan(element_1['tapchanger_class'].item())
-    assert math.isnan(element_1['tapchanger_id'].item())
+    assert pd.isna(element_1["tapchanger_class"].item())
+    assert pd.isna(element_1["tapchanger_id"].item())
     assert element_1['vector_group'].item() == 'Yy'
     assert isinstance(element_1['id_characteristic_table'].item(), np.int64)
     assert isinstance(element_0['id_characteristic_table'].dtype, pd.Int64Dtype)
-    assert math.isnan(element_1['vk0_percent'].item())
-    assert math.isnan(element_1['vkr0_percent'].item())
-    assert math.isnan(element_1['xn_ohm'].item())
+    assert pd.isna(element_1["vk0_percent"].item())
+    assert pd.isna(element_1["vkr0_percent"].item())
+    assert pd.isna(element_1["xn_ohm"].item())
     assert not element_1['power_station_unit'].item()
     assert not element_1['oltc'].item()
     assert element_1['tap_dependency_table'].item()

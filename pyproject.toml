@@ -37,7 +37,7 @@ classifiers = [
     "Programming Language :: Python :: 3.14"
 ]
 dependencies = [
-    "pandas~=2.3",
+    "pandas~=3.0.5",
     "networkx~=3.6",
     "scipy~=1.18; python_version >= '3.12'",
     "scipy<1.17; python_version < '3.12'",
@@ -89,7 +89,7 @@ helm = ["fast-helmpy"]
 
 typing = [
     "mypy~=2.1",
-    "pandas-stubs~=3.0",
+    "pandas-stubs~=3.0.5",
     "types-shapely~=2.1",
     "types-openpyxl~=3.1",
     "types-networkx~=3.6",

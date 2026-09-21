@@ -116,7 +116,7 @@ class UCTEParser:
         # drop the raw input columns
         for ucte_element, df in self.data.items():
             if 0 in df.columns:
-                df = df.drop(columns=[0], axis=1)
+                df = df.drop(columns=[0])  # FIXME: this does nothing, either remove or fix
         # set the data types
         dtypes = {}
         i_t = pd.Int64Dtype()
