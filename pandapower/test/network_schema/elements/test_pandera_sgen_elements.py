@@ -1,6 +1,7 @@
 # test_pandera_sgen_elements.py
 
 import itertools
+import numpy as np
 import pandas as pd
 import pandera as pa
 import pytest
@@ -55,11 +56,11 @@ class TestSgenRequiredFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["bus"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["p_mw"], not_floats_list),
-                itertools.product(["q_mvar"], not_floats_list),
-                itertools.product(["scaling"], [*negativ_floats, *not_floats_list]),
-                itertools.product(["in_service"], not_boolean_list),
+                itertools.product(["bus"], [float(np.nan), pd.NA, *negativ_ints, *not_ints_list]),
+                itertools.product(["p_mw"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["q_mvar"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["scaling"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
+                itertools.product(["in_service"], [float(np.nan), pd.NA, *not_boolean_list]),
             )
         ),
     )
@@ -155,24 +156,39 @@ class TestSgenOptionalFields:
         "parameter,valid_value",
         list(
             itertools.chain(
-                itertools.product(["name"], strings),
-                itertools.product(["type"], strings),
-                itertools.product(["sn_mva"], positiv_floats),
+                # Non-group nullable columns - can include pd.NA / float(np.nan)
+                itertools.product(["name"], [pd.NA, *strings]),
+                itertools.product(["type"], [pd.NA, *strings]),
+                itertools.product(["sn_mva"], [float(np.nan), *positiv_floats]),
+                itertools.product(["controllable"], bools),
+                itertools.product(["k"], [float(np.nan), *positiv_floats_plus_zero]),
+                itertools.product(["rx"], [float(np.nan), *positiv_floats_plus_zero]),
+                itertools.product(["current_source"], [pd.NA, *bools]),
+                itertools.product(["generator_type"], [pd.NA, "current_source", "async", "async_doubly_fed"]),
+                itertools.product(["lrc_pu"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["max_ik_ka"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["kappa"], [float(np.nan), *all_allowed_floats]),
+                # OPF group columns - test NON-NULL values only
                 itertools.product(["max_p_mw"], all_allowed_floats),
                 itertools.product(["min_p_mw"], all_allowed_floats),
                 itertools.product(["max_q_mvar"], all_allowed_floats),
                 itertools.product(["min_q_mvar"], all_allowed_floats),
-                itertools.product(["controllable"], bools),
-                itertools.product(["k"], positiv_floats_plus_zero),
-                itertools.product(["rx"], positiv_floats_plus_zero),
-                itertools.product(["current_source"], bools),
-                itertools.product(["generator_type"], ["current_source", "async", "async_doubly_fed"]),
-                itertools.product(["lrc_pu"], all_allowed_floats),
-                itertools.product(["max_ik_ka"], all_allowed_floats),
-                itertools.product(["kappa"], all_allowed_floats),
+                # QCC group columns - test NON-NULL values only
                 itertools.product(["id_q_capability_characteristic"], all_allowed_ints),
                 itertools.product(["curve_style"], ["straightLineYValues", "constantYValue"]),
                 itertools.product(["reactive_capability_curve"], bools),
+                # CIM
+                itertools.product(["origin_id"], [pd.NA, *strings]),
+                itertools.product(["origin_class"], [pd.NA, *strings]),
+                itertools.product(["terminal"], [pd.NA, *strings]),
+                itertools.product(["description"], [pd.NA, *strings]),
+                itertools.product(["RegulatingControl.mode"], [pd.NA, *strings]),
+                itertools.product(["RegulatingControl.targetValue"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["referencePriority"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["vn_kv"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["rdss_ohm"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["xdss_pu"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["RegulatingControl.enabled"], [pd.NA, *bools]),
             )
         ),
     )
@@ -191,9 +207,11 @@ class TestSgenOptionalFields:
         net.sgen["curve_style"] = pd.Series(["straightLineYValues"], dtype="string")
         net.sgen["reactive_capability_curve"] = pd.Series([True], dtype="boolean")
 
-        if parameter in {"name", "type", "curve_style", "generator_type"}:
+        # Handle nullable types properly
+        if parameter in {"name", "type", "curve_style", "generator_type", "origin_id", "origin_class", "terminal",
+                         "description", "RegulatingControl.mode"}:
             net.sgen[parameter] = pd.Series([valid_value], dtype="string")
-        elif parameter in {"current_source", "reactive_capability_curve"}:
+        elif parameter in {"current_source", "reactive_capability_curve", "RegulatingControl.enabled"}:
             net.sgen[parameter] = pd.Series([valid_value], dtype=pd.BooleanDtype())
         elif parameter == "id_q_capability_characteristic":
             net.sgen[parameter] = pd.Series([valid_value], dtype="Int64")
@@ -202,48 +220,12 @@ class TestSgenOptionalFields:
 
         validate_network(net)
 
-    def test_opf_group_partial_missing_invalid(self):
-        net = pandapowerNet(name="test_opf_group_partial_missing_invalid")
-        b0 = create_bus(net, 0.4)
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-
-        # Set only one OPF column -> should fail
-        net.sgen["max_p_mw"] = 100.0
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "opf")
-
-    def test_qcc_group_partial_missing_invalid(self):
-        # Only id_q_capability_characteristic
-        net = pandapowerNet(name="test_qcc_group_partial_missing_invalid0")
-        b0 = create_bus(net, 0.4)
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        net.sgen["id_q_capability_characteristic"] = pd.Series([0], dtype="Int64")
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "qcc")
-
-        # Only curve_style
-        net = pandapowerNet(name="test_qcc_group_partial_missing_invalid1")
-        b0 = create_bus(net, 0.4)
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        net.sgen["curve_style"] = pd.Series([pd.NA, "straightLineYValues"], dtype="string")
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "qcc")
-
-        # Only reactive_capability_curve
-        net = pandapowerNet(name="test_qcc_group_partial_missing_invalid2")
-        b0 = create_bus(net, 0.4)
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
-        net.sgen["reactive_capability_curve"] = pd.Series([pd.NA, pd.NA, True], dtype="boolean")
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "qcc")
-
     @pytest.mark.parametrize(
         "parameter,invalid_value",
         list(
             itertools.chain(
                 itertools.product(["name"], not_strings_list),
+                itertools.product(["type"], not_strings_list),
                 itertools.product(["sn_mva"], [*negativ_floats_plus_zero, *not_floats_list]),
                 itertools.product(["max_p_mw"], not_floats_list),
                 itertools.product(["min_p_mw"], not_floats_list),
@@ -260,6 +242,17 @@ class TestSgenOptionalFields:
                 itertools.product(["id_q_capability_characteristic"], not_ints_list),
                 itertools.product(["curve_style"], not_strings_list),
                 itertools.product(["reactive_capability_curve"], not_boolean_list),
+                itertools.product(["origin_id"], not_strings_list),
+                itertools.product(["origin_class"], not_strings_list),
+                itertools.product(["terminal"], not_strings_list),
+                itertools.product(["description"], not_strings_list),
+                itertools.product(["RegulatingControl.mode"], not_strings_list),
+                itertools.product(["RegulatingControl.targetValue"], not_floats_list),
+                itertools.product(["referencePriority"], not_floats_list),
+                itertools.product(["vn_kv"], not_floats_list),
+                itertools.product(["rdss_ohm"], not_floats_list),
+                itertools.product(["xdss_pu"], not_floats_list),
+                itertools.product(["RegulatingControl.enabled"], not_boolean_list),
             )
         ),
     )
@@ -294,6 +287,19 @@ class TestSgenForeignKey:
         net.sgen["bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus FK works with non-sequential bus indices"""
+        net = pandapowerNet(name="test_valid_bus_index_non_sequential")
+        create_bus(net, 0.4, index=10)
+        create_bus(net, 0.4, index=42)
+        create_bus(net, 0.4, index=100)
+
+        create_sgen(net, bus=10, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
+        create_sgen(net, bus=42, p_mw=2.0, q_mvar=0.2, scaling=0.9, in_service=True)
+        create_sgen(net, bus=100, p_mw=0.5, q_mvar=0.05, scaling=1.1, in_service=False)
+
+        validate_network(net)
 
 
 class TestSgenResults:

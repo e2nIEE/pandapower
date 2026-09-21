@@ -29,14 +29,14 @@ _gen_columns = {
     ),
     "max_q_mvar": pa.Column(
         float,
-        nullable=True,
+        nullable=False,
         required=False,
         description="maximum reactive power of the generator [MVAr]",
         metadata={"opf": True, "q_lim_enforced": True, "cim": True},
     ),
     "min_q_mvar": pa.Column(
         float,
-        nullable=True,
+        nullable=False,
         required=False,
         description="minimum reactive power of the generator [MVAr]",
         metadata={"opf": True, "q_lim_enforced": True, "cim": True},
@@ -45,10 +45,10 @@ _gen_columns = {
         float, pa.Check.ge(0), description="scaling factor for the active power", metadata={"default": 1.0}
     ),
     "max_p_mw": pa.Column(
-        float, nullable=True, required=False, description="maximum active power", metadata={"opf": True, "cim": True}
+        float, nullable=False, required=False, description="maximum active power", metadata={"opf": True, "cim": True}
     ),
     "min_p_mw": pa.Column(
-        float, nullable=True, required=False, description="minimum active power", metadata={"opf": True, "cim": True}
+        float, nullable=False, required=False, description="minimum active power", metadata={"opf": True, "cim": True}
     ),
     "vn_kv": pa.Column(
         float,
@@ -131,16 +131,16 @@ _gen_columns = {
     ),
     "min_vm_pu": pa.Column(
         float,
-        pa.Check.gt(0),
-        nullable=True,
+        pa.Check.ge(0),
+        nullable=False,
         required=False,
         description="Minimum voltage magnitude. If not set, the bus voltage limit is taken - necessary for OPF.",
         metadata={"opf": True, "default": 0.0},
     ),
     "max_vm_pu": pa.Column(
         float,
-        pa.Check.gt(0),
-        nullable=True,
+        checks=[pa.Check.gt(0), pa.Check.le(2)],
+        nullable=False,
         required=False,
         description="Maximum voltage magnitude. If not set, the bus voltage limit is taken - necessary for OPF",
         metadata={"opf": True, "default": 2.0},

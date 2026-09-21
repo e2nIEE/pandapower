@@ -1,6 +1,8 @@
 # test_pandera_svc_elements.py
 
 import itertools
+
+import numpy as np
 import pandas as pd
 import pandera as pa
 import pytest
@@ -76,13 +78,13 @@ class TestSvcRequiredFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["bus"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["x_l_ohm"], [*negativ_floats, *not_floats_list]),
-                itertools.product(["x_cvar_ohm"], [*positiv_floats, *not_floats_list]),
-                itertools.product(["set_vm_pu"], not_floats_list),
-                itertools.product(["thyristor_firing_angle_degree"], [*invalid_angle_range, *not_floats_list]),
-                itertools.product(["controllable"], not_boolean_list),
-                itertools.product(["in_service"], not_boolean_list),
+                itertools.product(["bus"], [float(np.nan), pd.NA, *negativ_ints, *not_ints_list]),
+                itertools.product(["x_l_ohm"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
+                itertools.product(["x_cvar_ohm"], [float(np.nan), pd.NA, *positiv_floats, *not_floats_list]),
+                itertools.product(["set_vm_pu"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["thyristor_firing_angle_degree"], [float(np.nan), pd.NA, *invalid_angle_range, *not_floats_list]),
+                itertools.product(["controllable"], [float(np.nan), pd.NA, *not_boolean_list]),
+                itertools.product(["in_service"], [float(np.nan), pd.NA, *not_boolean_list]),
             )
         ),
     )
@@ -150,7 +152,7 @@ class TestSvcOptionalFields:
             in_service=True,
             name="alpha",
         )
-        # Row 2: min only initially (we'll null out max)
+        # Row 2: min only initially
         create_svc(
             net,
             bus=b0,
@@ -162,7 +164,7 @@ class TestSvcOptionalFields:
             in_service=False,
             min_angle_degree=95.0,
         )
-        # Row 3: max only initially (we'll null out min)
+        # Row 3: max only initially
         create_svc(
             net,
             bus=b0,
@@ -213,9 +215,9 @@ class TestSvcOptionalFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["name"], not_strings_list),
-                itertools.product(["min_angle_degree"], [*invalid_low_angle, *not_floats_list]),
-                itertools.product(["max_angle_degree"], [*invalid_high_angle, *not_floats_list]),
+                itertools.product(["name"], [float(np.nan), *not_strings_list]),
+                itertools.product(["min_angle_degree"], [float(np.nan), pd.NA, *invalid_low_angle, *not_floats_list]),
+                itertools.product(["max_angle_degree"], [float(np.nan), pd.NA, *invalid_high_angle, *not_floats_list]),
             )
         ),
     )
@@ -304,6 +306,45 @@ class TestSvcForeignKey:
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus FK works with non-sequential bus indices"""
+        net = pandapowerNet(name="test_valid_bus_index_non_sequential")
+        create_bus(net, 0.4, index=10)
+        create_bus(net, 0.4, index=42)
+        create_bus(net, 0.4, index=100)
+
+        create_svc(
+            net,
+            bus=10,
+            x_l_ohm=0.0,
+            x_cvar_ohm=-0.1,
+            set_vm_pu=1.00,
+            thyristor_firing_angle_degree=100.0,
+            controllable=True,
+            in_service=True,
+        )
+        create_svc(
+            net,
+            bus=42,
+            x_l_ohm=0.0,
+            x_cvar_ohm=-0.1,
+            set_vm_pu=1.00,
+            thyristor_firing_angle_degree=100.0,
+            controllable=True,
+            in_service=True,
+        )
+        create_svc(
+            net,
+            bus=100,
+            x_l_ohm=0.0,
+            x_cvar_ohm=-0.1,
+            set_vm_pu=1.00,
+            thyristor_firing_angle_degree=100.0,
+            controllable=True,
+            in_service=True,
+        )
+
+        validate_network(net)
 
 class TestSvcResults:
     """Tests for svc results after calculations"""

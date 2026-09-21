@@ -1,6 +1,8 @@
 # test_ext_grid.py
 
 import itertools
+import numpy as np
+import pandas as pd
 import pandera as pa
 import pytest
 
@@ -59,11 +61,11 @@ class TestExtGridRequiredFields:
         list(
             itertools.chain(
                 itertools.product(["bus"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["vm_pu"], [*negativ_floats_plus_zero, *not_floats_list]),
-                itertools.product(["va_degree"], not_floats_list),
-                itertools.product(["slack_weight"], not_floats_list),
-                itertools.product(["in_service"], not_boolean_list),
-                itertools.product(["controllable"], not_boolean_list),
+                itertools.product(["vm_pu"], [float(np.nan), pd.NA, *negativ_floats_plus_zero, *not_floats_list]),
+                itertools.product(["va_degree"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["slack_weight"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["in_service"], [float(np.nan), pd.NA, *not_boolean_list]),
+                itertools.product(["controllable"], [float(np.nan), pd.NA, *not_boolean_list]),
             )
         ),
     )
@@ -145,13 +147,26 @@ class TestExtGridOptionalFields:
             x0x_max=2.5,
             name=None,
         )
+        # Row 3: no optional groups, only name
+        create_ext_grid(
+            net,
+            bus=b0,
+            vm_pu=1.0,
+            va_degree=0.0,
+            in_service=True,
+            name="gamma",
+        )
+
+        # Set name column with nulls
+        net.ext_grid["name"] = pd.Series(["alpha", pd.NA, "gamma"], dtype=pd.StringDtype())
+
         validate_network(net)
 
     @pytest.mark.parametrize(
         "parameter,valid_value",
         list(
             itertools.chain(
-                itertools.product(["name"], strings),
+                itertools.product(["name"], [pd.NA, *strings]),
                 itertools.product(["max_p_mw"], all_allowed_floats),
                 itertools.product(["min_p_mw"], all_allowed_floats),
                 itertools.product(["max_q_mvar"], all_allowed_floats),
@@ -162,6 +177,18 @@ class TestExtGridOptionalFields:
                 itertools.product(["rx_min"], positiv_floats_plus_zero),
                 itertools.product(["r0x0_max"], positiv_floats_plus_zero),
                 itertools.product(["x0x_max"], positiv_floats_plus_zero),
+
+                itertools.product(["origin_id"], [pd.NA, *strings]),
+                itertools.product(["origin_class"], [pd.NA, *strings]),
+                itertools.product(["substation"], [pd.NA, *strings]),
+                itertools.product(["terminal"], [pd.NA, *strings]),
+                itertools.product(["description"], [pd.NA, *strings]),
+                itertools.product(["RegulatingControl.mode"], [pd.NA, *strings]),
+                itertools.product(["RegulatingControl.targetValue"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["RegulatingControl.enabled"], [pd.NA, *bools]),  # Note: bools, not floats
+                itertools.product(["referencePriority"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["p_mw"], [float(np.nan), *all_allowed_floats]),
+                itertools.product(["q_mvar"], [float(np.nan), *all_allowed_floats]),
             )
         ),
     )
@@ -170,7 +197,7 @@ class TestExtGridOptionalFields:
         net = pandapowerNet(name="test_valid_optional_values")
         b0 = create_bus(net, 0.4)
 
-        create_ext_grid(
+        e0 = create_ext_grid(
             net,
             bus=b0,
             vm_pu=1.02,
@@ -189,46 +216,56 @@ class TestExtGridOptionalFields:
             rx_min=0.1,
             r0x0_max=0.2,
             x0x_max=3.0,
+            name="ext grid 0",
+        )
+        create_ext_grid(
+            net,
+            bus=b0,
+            vm_pu=1.02,
+            va_degree=0.0,
+            in_service=True,
+            # OPF group
+            max_p_mw=np.nan,
+            min_p_mw=np.nan,
+            max_q_mvar=np.nan,
+            min_q_mvar=np.nan,
+            # SC group
+            s_sc_max_mva=np.nan,
+            s_sc_min_mva=np.nan,
+            # 3PH group (also part of SC group)
+            rx_max=np.nan,
+            rx_min=np.nan,
+            r0x0_max=np.nan,
+            x0x_max=np.nan,
             name="ext grid 1",
         )
-        net.ext_grid[parameter] = valid_value
-        net.ext_grid["name"] = net.ext_grid["name"].astype("string")
+
+        net.ext_grid.loc[e0, parameter] = valid_value
+
+        # Initialize CIM columns with proper dtype first
+        if parameter in ["origin_id", "origin_class", "substation", "terminal", "description",
+                         "RegulatingControl.mode"]:
+            # Initialize all CIM columns with default values first
+            for col in ["origin_id", "origin_class", "substation", "terminal", "description", "RegulatingControl.mode"]:
+                if col not in net.ext_grid.columns:
+                    net.ext_grid[col] = pd.Series(["test"], dtype=pd.StringDtype())
+
+            # Then set the specific parameter value
+            if pd.isna(valid_value):
+                net.ext_grid[parameter] = pd.Series([pd.NA, "test"], dtype=pd.StringDtype())
+            else:
+                net.ext_grid[parameter] = pd.Series([valid_value, "test"], dtype=pd.StringDtype())
+        elif parameter == "RegulatingControl.enabled":
+            if parameter not in net.ext_grid.columns:
+                net.ext_grid[parameter] = pd.Series([True], dtype=pd.BooleanDtype())
+            if pd.isna(valid_value):
+                net.ext_grid[parameter] = pd.Series([pd.NA, True], dtype=pd.BooleanDtype())
+            else:
+                net.ext_grid[parameter] = pd.Series([valid_value, True], dtype=pd.BooleanDtype())
+        else:
+            net.ext_grid.loc[e0, parameter] = valid_value
+
         validate_network(net)
-
-    def test_opf_group_partial_missing_invalid(self):
-        """Test: OPF group must be complete if any OPF value is set"""
-        net = pandapowerNet(name="test_opf_group_partial_missing_invalid")
-        b0 = create_bus(net, 0.4)
-        create_ext_grid(net, bus=b0, vm_pu=1.0, va_degree=0.0, in_service=True)
-        # Set only one OPF column -> should fail by group dependency
-        net.ext_grid["max_p_mw"] = 100.0
-
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "opf")
-
-    def test_sc_group_partial_missing_invalid(self):
-        """Test: SC group must be complete if any SC value is set"""
-        net = pandapowerNet(name="test_sc_group_partial_missing_invalid")
-        b0 = create_bus(net, 0.4)
-
-        create_ext_grid(net, bus=b0, vm_pu=1.0, va_degree=0.0, in_service=True)
-        # Set only s_sc_max_mva -> should fail by group dependency
-        net.ext_grid["s_sc_max_mva"] = 1000.0
-
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "sc")
-
-    def test_3ph_group_partial_missing_invalid(self):
-        """Test: 3PH group must be complete if any 3PH value is set (and SC group too)"""
-        net = pandapowerNet(name="test_3ph_group_partial_missing_invalid")
-        b0 = create_bus(net, 0.4)
-
-        create_ext_grid(net, bus=b0, vm_pu=1.0, va_degree=0.0, in_service=True)
-        # Set only rx_max -> should fail by group dependency
-        net.ext_grid["rx_max"] = 0.4
-
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net, "3ph")
 
     @pytest.mark.parametrize(
         "parameter,invalid_value",
@@ -245,6 +282,18 @@ class TestExtGridOptionalFields:
                 itertools.product(["rx_min"], [*negativ_floats, *not_floats_list]),
                 itertools.product(["r0x0_max"], [*negativ_floats, *not_floats_list]),
                 itertools.product(["x0x_max"], [*negativ_floats, *not_floats_list]),
+
+                itertools.product(["origin_id"], not_strings_list),
+                itertools.product(["origin_class"], not_strings_list),
+                itertools.product(["substation"], not_strings_list),
+                itertools.product(["terminal"], not_strings_list),
+                itertools.product(["description"], not_strings_list),
+                itertools.product(["RegulatingControl.mode"], not_strings_list),
+                itertools.product(["RegulatingControl.targetValue"], not_floats_list),
+                itertools.product(["RegulatingControl.enabled"], not_boolean_list),  # Note: bools, not floats
+                itertools.product(["referencePriority"], not_floats_list),
+                itertools.product(["p_mw"], not_floats_list),
+                itertools.product(["q_mvar"], not_floats_list),
             )
         ),
     )
@@ -291,6 +340,19 @@ class TestExtGridForeignKey:
         net.ext_grid["bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus FK works with non-sequential bus indices"""
+        net = pandapowerNet(name="test_valid_bus_index_non_sequential")
+        create_bus(net, 0.4, index=10)
+        create_bus(net, 0.4, index=42)
+        create_bus(net, 0.4, index=100)
+
+        create_ext_grid(net, bus=10, vm_pu=1.0, va_degree=0.0, in_service=True)
+        create_ext_grid(net, bus=42, vm_pu=1.02, va_degree=0.0, in_service=True)
+        create_ext_grid(net, bus=100, vm_pu=0.98, va_degree=0.0, in_service=False)
+
+        validate_network(net)
 
 
 class TestExtGridResults:

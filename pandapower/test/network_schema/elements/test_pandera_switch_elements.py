@@ -20,7 +20,6 @@ from pandapower.test.network_schema.elements.helper import (
     negativ_ints,
     not_ints_list,
     positiv_floats,
-    positiv_floats_plus_zero,
     negativ_floats_plus_zero,
     all_allowed_floats,
 )
@@ -35,10 +34,10 @@ class TestSwitchRequiredFields:
             itertools.chain(
                 itertools.product(["bus"], positiv_ints_plus_zero),
                 itertools.product(["element"], positiv_ints_plus_zero),
-                itertools.product(["et"], [["b"], ["l"], ["t"], ["t3"]]),
+                itertools.product(["et"], ["b", "l", "t", "t3"]),
                 itertools.product(["closed"], bools),
-                itertools.product(["in_ka"], positiv_floats),
-                itertools.product(["z_ohm"], all_allowed_floats),
+                itertools.product(["in_ka"], [float(np.nan), *positiv_floats]),
+                itertools.product(["z_ohm"], [float(np.nan), *all_allowed_floats]),
             )
         ),
     )
@@ -54,7 +53,7 @@ class TestSwitchRequiredFields:
 
         # Assign the parameter
         if parameter == "et":
-            net.switch[parameter] = pd.Series(valid_value, dtype="string")
+            net.switch[parameter] = pd.Series([valid_value], dtype="string")
         else:
             net.switch[parameter] = valid_value
 
@@ -64,12 +63,12 @@ class TestSwitchRequiredFields:
         "parameter, invalid_value",
         list(
             itertools.chain(
-                itertools.product(["bus"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["element"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["et"], [*strings, *not_strings_list]),  # anything not in {"b","l","t","t3"}
-                itertools.product(["closed"], not_boolean_list),
-                itertools.product(["in_ka"], [*negativ_floats_plus_zero, *not_floats_list]),
-                itertools.product(["z_ohm"], not_floats_list),
+                itertools.product(["bus"], [float(np.nan), pd.NA, *negativ_ints, *not_ints_list]),
+                itertools.product(["element"], [float(np.nan), pd.NA, *negativ_ints, *not_ints_list]),
+                itertools.product(["et"], [float(np.nan), pd.NA, *strings, *not_strings_list]),  # anything not in {"b","l","t","t3"}
+                itertools.product(["closed"], [float(np.nan), pd.NA, *not_boolean_list]),
+                itertools.product(["in_ka"], [pd.NA, *negativ_floats_plus_zero, *not_floats_list]),
+                itertools.product(["z_ohm"], [pd.NA, *not_floats_list]),
             )
         ),
     )
@@ -79,7 +78,7 @@ class TestSwitchRequiredFields:
         create_bus(net, 0.4)  # 0
         create_bus(net, 0.4)  # 1
 
-        create_switch(net, bus=0, element=1, et="b", type="CB", closed=True)
+        create_switch(net, bus=0, element=1, et="b", type="CB", closed=True, in_ka=1.0, z_ohm=1.0)
 
         net.switch[parameter] = invalid_value
         with pytest.raises(pa.errors.SchemaError):
@@ -107,12 +106,10 @@ class TestSwitchOptionalFields:
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
-        create_switch(net, bus=b0, element=b1, et="b", type="CB", closed=False)
+        create_switch(net, bus=b0, element=b1, et="b", type="CB", closed=False, in_ka=20.0, z_ohm=0.01)
         # Optional fields
         net.switch["name"] = pd.Series(["SW-A"], dtype="string")
         net.switch["type"] = pd.Series(["CB"], dtype="string")
-        net.switch["in_ka"] = 20.0  # gt(0)
-        net.switch["z_ohm"] = 0.01  # any float
 
         validate_network(net)
 
@@ -124,24 +121,27 @@ class TestSwitchOptionalFields:
 
         # Row 1: name/type set, in_ka/z_ohm null
         create_switch(net, bus=b0, element=b1, et="b", type="CB", closed=True)
-        net.switch["name"] = pd.Series(["S1"], dtype="string")
-        net.switch["type"] = pd.Series(["CB"], dtype="string")
-        net.switch["in_ka"] = [float(np.nan)]  # nullable
-        net.switch["z_ohm"] = [float(np.nan)]  # nullable
-
         # Row 2: all optionals null
         create_switch(net, bus=b0, element=b1, et="b", closed=False)
-        net.switch["name"].iat[1] = pd.NA
-        net.switch["type"].iat[1] = pd.NA
+
+        net.switch["name"] = pd.Series(["S1", pd.NA], dtype="string")
+        net.switch["type"] = pd.Series(["CB", pd.NA], dtype="string")
+        net.switch["in_ka"] = [float(np.nan), float(np.nan)]
+        net.switch["z_ohm"] = [float(np.nan), float(np.nan)]
 
         validate_network(net)
 
     @pytest.mark.parametrize(
-        "parameter, valid_value",
+        "parameter,valid_value",
         list(
             itertools.chain(
-                itertools.product(["name"], [pd.NA, *strings]),
+               itertools.product(["name"], [pd.NA, *strings]),
                 itertools.product(["type"], [pd.NA, *strings]),
+                itertools.product(["origin_id"], [pd.NA, *strings]),
+                itertools.product(["origin_class"], [pd.NA, *strings]),
+                itertools.product(["description"], [pd.NA, *strings]),
+                itertools.product(["terminal_bus"], [pd.NA, *strings]),
+                itertools.product(["terminal_element"], [pd.NA, *strings]),
             )
         ),
     )
@@ -153,19 +153,20 @@ class TestSwitchOptionalFields:
 
         create_switch(net, bus=b0, element=b1, et="b", closed=True)
 
-        if parameter in {"name", "type"}:
-            net.switch[parameter] = pd.Series([valid_value], dtype="string")
-        else:
-            net.switch[parameter] = valid_value
-
+        net.switch[parameter] = pd.Series([valid_value], dtype="string")
         validate_network(net)
 
     @pytest.mark.parametrize(
-        "parameter, invalid_value",
+        "parameter,invalid_value",
         list(
             itertools.chain(
                 itertools.product(["name"], not_strings_list),
                 itertools.product(["type"], not_strings_list),
+                itertools.product(["origin_id"], not_strings_list),
+                itertools.product(["origin_class"], not_strings_list),
+                itertools.product(["description"], not_strings_list),
+                itertools.product(["terminal_bus"], not_strings_list),
+                itertools.product(["terminal_element"], not_strings_list),
             )
         ),
     )
@@ -175,7 +176,7 @@ class TestSwitchOptionalFields:
         b0 = create_bus(net, 0.4)
         b1 = create_bus(net, 0.4)
 
-        create_switch(net, bus=b0, element=b1, et="b", closed=True)
+        create_switch(net, bus=b0, element=b1, et="b", closed=True, in_ka=1.0, z_ohm=0.01)
         net.switch[parameter] = invalid_value
 
         with pytest.raises(pa.errors.SchemaError):
@@ -196,6 +197,20 @@ class TestSwitchForeignKey:
         net.switch["bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus FK works with non-sequential bus indices"""
+        net = pandapowerNet(name="test_valid_bus_index_non_sequential")
+        create_bus(net, 0.4, index=10)
+        create_bus(net, 0.4, index=42)
+        create_bus(net, 0.4, index=100)
+
+        # Bus-bus switches with non-sequential indices
+        create_switch(net, bus=10, element=42, et="b", closed=True)
+        create_switch(net, bus=42, element=100, et="b", closed=False)
+        create_switch(net, bus=100, element=10, et="b", closed=True)
+
+        validate_network(net)
 
 
 class TestSwitchResults:

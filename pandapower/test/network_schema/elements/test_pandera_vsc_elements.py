@@ -17,6 +17,7 @@ from pandapower.test.network_schema.elements.helper import (
     not_boolean_list,
     positiv_ints_plus_zero,
     negativ_ints,
+    negativ_floats,
     not_ints_list,
     positiv_floats_plus_zero,
     all_allowed_floats,
@@ -29,6 +30,36 @@ invalid_control_mode_ac = [s for s in strings if s not in allowed_control_mode_a
 
 allowed_control_mode_dc = ["vm_pu", "p_mw"]
 invalid_control_mode_dc = [s for s in strings if s not in allowed_control_mode_dc]
+
+
+def _create_net_with_buses():
+    """Helper to create a network with AC and DC buses."""
+    net = pandapowerNet(name="_create_net_with_buses")
+    create_bus(net, vn_kv=110.0)  # index 0
+    create_bus(net, vn_kv=20.0)  # index 1
+    create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)  # index 0
+    create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)  # index 1
+    return net
+
+
+def _create_valid_vsc(net, bus=0, bus_dc=0, name="VSC-1"):
+    """Helper to create a valid VSC element."""
+    create_vsc(
+        net,
+        bus=bus,
+        bus_dc=bus_dc,
+        r_ohm=0.0,
+        x_ohm=0.0,
+        r_dc_ohm=0.0,
+        pl_dc_mw=0.0,
+        control_mode_ac="vm_pu",
+        control_value_ac=1.0,
+        control_mode_dc="vm_pu",
+        control_value_dc=1.0,
+        controllable=True,
+        in_service=True,
+        name=name,
+    )
 
 
 class TestVscRequiredFields:
@@ -65,22 +96,7 @@ class TestVscRequiredFields:
         create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)  # index 1
         create_bus_dc(net, vm_pu=1.0, index=42, vn_kv=110.0)
 
-        create_vsc(
-            net,
-            bus=0,
-            bus_dc=0,
-            r_ohm=0.0,
-            x_ohm=0.0,
-            r_dc_ohm=0.0,
-            pl_dc_mw=0.0,
-            control_mode_ac="vm_pu",
-            control_value_ac=1.0,
-            control_mode_dc="vm_pu",
-            control_value_dc=1.0,
-            controllable=True,
-            in_service=True,
-            name="VSC-1",
-        )
+        _create_valid_vsc(net)
 
         net.vsc[parameter] = valid_value
         validate_network(net)
@@ -89,18 +105,18 @@ class TestVscRequiredFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["bus"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["bus_dc"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["r_ohm"], [*not_floats_list, -0.1]),
-                itertools.product(["x_ohm"], [*not_floats_list, -0.1]),
-                itertools.product(["r_dc_ohm"], not_floats_list),
-                itertools.product(["pl_dc_mw"], not_floats_list),
-                itertools.product(["control_mode_ac"], [*invalid_control_mode_ac, *not_strings_list]),
-                itertools.product(["control_value_ac"], not_floats_list),
-                itertools.product(["control_mode_dc"], [*invalid_control_mode_dc, *not_strings_list]),
-                itertools.product(["control_value_dc"], not_floats_list),
-                itertools.product(["controllable"], not_boolean_list),
-                itertools.product(["in_service"], not_boolean_list),
+                itertools.product(["bus"], [float(np.nan), pd.NA, None, *negativ_ints, *not_ints_list]),
+                itertools.product(["bus_dc"], [float(np.nan), pd.NA, None, *negativ_ints, *not_ints_list]),
+                itertools.product(["r_ohm"], [float(np.nan), pd.NA, None, *negativ_floats, *not_floats_list]),
+                itertools.product(["x_ohm"], [float(np.nan), pd.NA, None, *negativ_floats, *not_floats_list]),
+                itertools.product(["r_dc_ohm"], [float(np.nan), pd.NA, None, *not_floats_list]),
+                itertools.product(["pl_dc_mw"], [float(np.nan), pd.NA, None, *not_floats_list]),
+                itertools.product(["control_mode_ac"], [float(np.nan), pd.NA, None, *invalid_control_mode_ac, *not_strings_list]),
+                itertools.product(["control_value_ac"], [float(np.nan), pd.NA, None, *not_floats_list]),
+                itertools.product(["control_mode_dc"], [float(np.nan), pd.NA, None, *invalid_control_mode_dc, *not_strings_list]),
+                itertools.product(["control_value_dc"], [float(np.nan), pd.NA, None, *not_floats_list]),
+                itertools.product(["controllable"], [float(np.nan), pd.NA, None, *not_boolean_list]),
+                itertools.product(["in_service"], [float(np.nan), pd.NA, None, *not_boolean_list]),
             )
         ),
     )
@@ -114,21 +130,7 @@ class TestVscRequiredFields:
         create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)  # index 0
         create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)  # index 1
 
-        create_vsc(
-            net,
-            bus=0,
-            bus_dc=0,
-            r_ohm=0.0,
-            x_ohm=0.0,
-            r_dc_ohm=0.0,
-            pl_dc_mw=0.0,
-            control_mode_ac="vm_pu",
-            control_value_ac=1.0,
-            control_mode_dc="vm_pu",
-            control_value_dc=1.0,
-            controllable=True,
-            in_service=True,
-        )
+        _create_valid_vsc(net)
 
         net.vsc[parameter] = invalid_value
         with pytest.raises(pa.errors.SchemaError):
@@ -138,12 +140,46 @@ class TestVscRequiredFields:
 class TestVscOptionalFields:
     """Tests for optional VSC fields"""
 
-    def test_all_optional_fields_valid(self):
-        """Test: VSC with optional 'name' set is valid"""
-        net = pandapowerNet(name="test_all_optional_fields_valid")
-        create_bus(net, vn_kv=110.0)  # AC
-        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)  # DC
+    @pytest.mark.parametrize(
+        "parameter,valid_value",
+        list(itertools.product(["name"], [pd.NA, *strings])),
+    )
+    def test_valid_optional_values(self, parameter, valid_value):
+        """Test: valid optional values are accepted"""
+        net = _create_net_with_buses()
 
+        _create_valid_vsc(net)
+
+        net.vsc[parameter] = pd.Series([valid_value], dtype=pd.StringDtype())
+        validate_network(net)
+
+    @pytest.mark.parametrize(
+        "parameter,invalid_value",
+        list(itertools.product(["name"], [float(np.nan), *not_strings_list])),
+    )
+    def test_invalid_optional_values(self, parameter, invalid_value):
+        """Test: Invalid optional values are rejected"""
+        net = _create_net_with_buses()
+
+        _create_valid_vsc(net)
+
+        net.vsc[parameter] = invalid_value
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_mixed_null_and_valid_values_in_rows(self):
+        """Test: Multiple rows with mixed NA and valid values"""
+        net = pandapowerNet(name="test_mixed_null_and_valid_values_in_rows")
+        # AC buses
+        create_bus(net, vn_kv=110.0)  # 0
+        create_bus(net, vn_kv=20.0)  # 1
+        create_bus(net, vn_kv=10.0)  # 2
+        # DC buses
+        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)  # 0
+        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)  # 1
+        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)  # 2
+
+        # Row 1: all optional fields filled
         create_vsc(
             net,
             bus=0,
@@ -152,42 +188,16 @@ class TestVscOptionalFields:
             x_ohm=0.2,
             r_dc_ohm=0.05,
             pl_dc_mw=0.3,
-            control_mode_ac="q_mvar",
-            control_value_ac=10.0,
-            control_mode_dc="p_mw",
-            control_value_dc=5.0,
-            controllable=False,
-            in_service=True,
-            name="Alpha",
-        )
-        net.vsc["name"] = net.vsc["name"].astype("string")
-        validate_network(net)
-
-    def test_optional_fields_with_nulls(self):
-        """Test: VSC with optional 'name' including nulls is valid"""
-        net = pandapowerNet(name="test_optional_fields_with_nulls")
-        # AC/DC buses
-        create_bus(net, vn_kv=20.0)  # 0
-        create_bus(net, vn_kv=10.0)  # 1
-        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)  # 0
-        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)  # 1
-
-        create_vsc(
-            net,
-            bus=0,
-            bus_dc=0,
-            r_ohm=0.0,
-            x_ohm=0.0,
-            r_dc_ohm=0.0,
-            pl_dc_mw=0.0,
             control_mode_ac="vm_pu",
             control_value_ac=1.0,
             control_mode_dc="vm_pu",
             control_value_dc=1.0,
             controllable=True,
-            in_service=False,
-            name="hello",
+            in_service=True,
+            name="VSC A",
         )
+
+        # Row 2: name is null
         create_vsc(
             net,
             bus=1,
@@ -196,113 +206,74 @@ class TestVscOptionalFields:
             x_ohm=0.0,
             r_dc_ohm=0.0,
             pl_dc_mw=0.0,
-            control_mode_ac="slack",
-            control_value_ac=0.0,
+            control_mode_ac="q_mvar",
+            control_value_ac=5.0,
             control_mode_dc="p_mw",
-            control_value_dc=0.0,
+            control_value_dc=10.0,
             controllable=False,
-            in_service=True,
+            in_service=False,
             name=None,
         )
 
-        net.vsc["name"] = pd.Series(["V1", pd.NA], dtype=pd.StringDtype())
-        validate_network(net)
-
-    @pytest.mark.parametrize(
-        "parameter,valid_value",
-        list(itertools.product(["name"], [pd.NA, *strings])),
-    )
-    def test_valid_optional_values(self, parameter, valid_value):
-        """Test: valid optional values are accepted"""
-        net = pandapowerNet(name="test_valid_optional_values")
-        create_bus(net, vn_kv=110.0)
-        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)
-
+        # Row 3: name filled again
         create_vsc(
             net,
-            bus=0,
-            bus_dc=0,
-            r_ohm=0.0,
-            x_ohm=0.0,
-            r_dc_ohm=0.0,
-            pl_dc_mw=0.0,
-            control_mode_ac="vm_pu",
-            control_value_ac=1.0,
+            bus=2,
+            bus_dc=2,
+            r_ohm=0.05,
+            x_ohm=0.1,
+            r_dc_ohm=0.02,
+            pl_dc_mw=0.1,
+            control_mode_ac="slack",
+            control_value_ac=0.0,
             control_mode_dc="vm_pu",
-            control_value_dc=1.0,
+            control_value_dc=1.02,
             controllable=True,
             in_service=True,
+            name="VSC C",
         )
-        net.vsc[parameter] = pd.Series([valid_value], dtype=pd.StringDtype())
+
+        # Set nullable columns with mixed values
+        net.vsc["name"] = pd.Series(["VSC A", pd.NA, "VSC C"], dtype=pd.StringDtype())
+
         validate_network(net)
-
-    @pytest.mark.parametrize(
-        "parameter,invalid_value",
-        list(itertools.product(["name"], not_strings_list)),
-    )
-    def test_invalid_optional_values(self, parameter, invalid_value):
-        """Test: Invalid optional values are rejected"""
-        net = pandapowerNet(name="test_invalid_optional_values")
-        create_bus(net, vn_kv=110.0)
-        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)
-
-        create_vsc(
-            net,
-            bus=0,
-            bus_dc=0,
-            r_ohm=0.0,
-            x_ohm=0.0,
-            r_dc_ohm=0.0,
-            pl_dc_mw=0.0,
-            control_mode_ac="vm_pu",
-            control_value_ac=1.0,
-            control_mode_dc="vm_pu",
-            control_value_dc=1.0,
-            controllable=True,
-            in_service=True,
-        )
-        net.vsc[parameter] = invalid_value
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
 
 
 class TestVscForeignKey:
     """Tests for foreign key constraints"""
 
     def test_invalid_bus_index(self):
-        net = pandapowerNet(name="test_invalid_bus_index")
-        create_bus(net, vn_kv=110.0)
-        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)
+        """Test: bus FK must reference an existing bus index"""
+        net = _create_net_with_buses()
 
-        create_vsc(
-            net,
-            bus=0,
-            bus_dc=0,
-            r_ohm=0.0,
-            x_ohm=0.0,
-            r_dc_ohm=0.0,
-            pl_dc_mw=0.0,
-            control_mode_ac="vm_pu",
-            control_value_ac=1.0,
-            control_mode_dc="vm_pu",
-            control_value_dc=1.0,
-            controllable=True,
-            in_service=True,
-        )
+        _create_valid_vsc(net)
 
         net.vsc["bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
     def test_invalid_bus_dc_index(self):
+        """Test: bus_dc FK must reference an existing bus_dc index"""
+        net = _create_net_with_buses()
+
+        _create_valid_vsc(net)
+
+        net.vsc["bus_dc"] = 9999
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus FK works with non-sequential bus indices"""
         net = pandapowerNet(name="test_invalid_bus_dc_index")
-        create_bus(net, vn_kv=110.0)
-        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0)
+        create_bus(net, vn_kv=110.0, index=10)
+        create_bus(net, vn_kv=20.0, index=42)
+        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0, index=5)
+        create_bus_dc(net, vm_pu=1.0, vn_kv=110.0, index=99)
 
         create_vsc(
             net,
-            bus=0,
-            bus_dc=0,
+            bus=10,
+            bus_dc=5,
             r_ohm=0.0,
             x_ohm=0.0,
             r_dc_ohm=0.0,
@@ -315,9 +286,7 @@ class TestVscForeignKey:
             in_service=True,
         )
 
-        net.vsc["bus_dc"] = 9999
-        with pytest.raises(pa.errors.SchemaError):
-            validate_network(net)
+        validate_network(net)
 
 
 class TestVscResults:
