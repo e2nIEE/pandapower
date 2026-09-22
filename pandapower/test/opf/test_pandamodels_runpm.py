@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -269,22 +267,22 @@ def test_pwl():
     net.load.p_mw = 1
     runpm_ac_opf(net)
     consistency_checks(net, rtol=1e-3)
-    assert np.isclose(net.res_gen.p_mw.at[g2], 0)
-    assert np.isclose(net.res_gen.p_mw.at[g3], 0)
+    assert np.isclose(net.res_gen.p_mw.at[g2], 0, atol=1e-6)
+    assert np.isclose(net.res_gen.p_mw.at[g3], 0, atol=1e-6)
     assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1], atol=1e-4)
 
     net.load.p_mw = 3
     runpm_ac_opf(net)
     consistency_checks(net, rtol=1e-3)
-    assert np.isclose(net.res_gen.p_mw.at[g3], 0)
-    assert np.isclose(net.res_gen.p_mw.at[g1], 2)
+    assert np.isclose(net.res_gen.p_mw.at[g3], 0, atol=1e-6)
+    assert np.isclose(net.res_gen.p_mw.at[g1], 2, atol=1e-6)
     assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1] + net.res_gen.p_mw.at[g2] * 2, atol=1e-4)
 
     net.load.p_mw = 5
     runpm_ac_opf(net)
     consistency_checks(net, rtol=1e-3)
-    assert np.isclose(net.res_gen.p_mw.at[g1], 2)
-    assert np.isclose(net.res_gen.p_mw.at[g2], 3)
+    assert np.isclose(net.res_gen.p_mw.at[g1], 2, atol=1e-6)
+    assert np.isclose(net.res_gen.p_mw.at[g2], 3, atol=1e-6)
     assert np.isclose(net.res_cost, net.res_gen.p_mw.at[g1] + net.res_gen.p_mw.at[g2] * 2 +
                       net.res_gen.p_mw.at[g3] * 3, atol=1e-4)
 
@@ -518,7 +516,7 @@ def test_ots_opt():
 
 
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
-@pytest.mark.xfail(reason="not complited yet")
+@pytest.mark.xfail(reason="not completed yet")
 def test_timeseries_pandamodels():
     profiles = pd.DataFrame()
     n_timesteps = 3

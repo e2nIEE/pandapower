@@ -1,8 +1,8 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import copy
+import logging
 
 import numpy as np
 import pandas as pd
@@ -44,8 +44,6 @@ try:
     lightsim2grid_installed = True
 except ImportError:
     lightsim2grid_installed = False
-
-import logging
 
 logger = logging.getLogger(__name__)
 

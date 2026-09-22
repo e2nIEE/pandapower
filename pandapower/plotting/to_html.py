@@ -11,7 +11,7 @@ try:
     from html import escape
 except ImportError:
     # cgi is decprecated in python 3
-    from cgi import escape
+    from cgi import escape  # type: ignore[attr-defined, no-redef]
 import json
 
 

@@ -99,26 +99,24 @@ def test_big_gen_network_calc_sc():
         assert np.isclose(net.res_line_sc.ikss_ka.at[0], 0.46221808, atol=1e-3)
         assert np.isclose(net.res_line_sc.ikss_ka.at[1], 1.72233192, atol=1e-3)
 
-def test_iec60909_on_single_branch():
-    cases = {
-        10: {
-            "min": [72.16878364, 49.868725],
-            "max": [144.337567, 81.818773]
-        },
-        6: {
-            "min": [72.168784,    50.761055],
-            "max": [144.337567,     80.016087]
-        }
-    }
-    for tolerance in cases.keys():
-        for case in cases[tolerance].keys():
-            net = create_empty_network()
-            b1 = create_bus(net, vn_kv=0.4)
-            b2 = create_bus(net, vn_kv=0.4)
-            create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=50., rx_min=1, rx_max=1)
-            create_impedance(net, b1, b2, 0.01, 0, 1)
-            calc_sc(net, case=case, lv_tol_percent=tolerance)
-            assert np.allclose(net.res_bus_sc.ikss_ka, cases[tolerance][case], atol=1e-3)
+
+cases = [
+    (10, "min", [72.16878364, 49.868725]),
+    (10, "max", [144.337567, 81.818773]),
+    (6, "min", [72.168784, 50.761055]),
+    (6, "max", [144.337567, 80.016087])
+]
+
+
+@pytest.mark.parametrize("tolerance, case, values", cases)
+def test_iec60909_on_single_branch(tolerance, case, values):
+    net = create_empty_network()
+    b1 = create_bus(net, vn_kv=0.4)
+    b2 = create_bus(net, vn_kv=0.4)
+    create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=50., rx_min=1, rx_max=1)
+    create_impedance(net, b1, b2, 0.01, 0, 1)
+    calc_sc(net, case=case, lv_tol_percent=tolerance)
+    assert np.allclose(net.res_bus_sc.ikss_ka, values, atol=1e-3)
 
 
 if __name__ == '__main__':

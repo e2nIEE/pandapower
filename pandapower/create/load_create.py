@@ -408,7 +408,7 @@ def create_load_dc(
     **kwargs,
 ):
     """
-    Creates a dc voltage source in a dc grid with an adjustable set point
+    Creates a DC load connected to a DC bus.
 
     Parameters:
         net: The pandapower network in which the element is created
@@ -423,12 +423,12 @@ def create_load_dc(
             "controllable" column exists in DataFrame
 
     Returns:
-        The ID of the created svc
+        The ID of the created DC load
 
     """
     _check_element(net, bus_dc, element="bus_dc")
 
-    index = _get_index_with_check(net, "source_dc", index=index)
+    index = _get_index_with_check(net, "load_dc", index=index)
 
     entries = {
         "name": name,

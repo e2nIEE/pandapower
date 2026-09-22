@@ -180,7 +180,7 @@ def _get_branch_map(
     mask = br_is_mask[start:end]
 
     # Compute PPCI offset: number of active branches before the current element type
-    offset = np.sum(br_is_mask[:start])
+    offset: int = np.sum(br_is_mask[:start])
 
     # Get the original element indices (e.g., net.line.index) filtered by active mask
     element_indices = getattr(net, element_type).index.values[mask]

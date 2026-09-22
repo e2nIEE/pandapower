@@ -24,19 +24,16 @@ def lv_schutterwald(separation_by_sub=False, include_heat_pumps=False, **kwargs)
 
     Source: https://doi.org/10.3390/en13164052
 
-    OPTIONAL:
-        **separation_by_sub** - (bool, False): if True, the network gets separated into 14
-        sections, referring to their substations
+    Parameters:
+        separation_by_sub (bool, False): if True, returns the network as 14 separate sections,
+            one for each substation
+        include_heat_pumps (bool, False): if True, includes the heat pumps from the study
 
-        **include_heat_pumps** - (bool, False): if True, the heat pumps from the study are
-        included in the network
+    Returns:
+        pandapowerNet or list: the complete network, or its 14 sections if ``separation_by_sub``
+        is True
 
-    OUTPUT:
-         **net** - pandapower network
-
-         **subnets** (list) - all sections of the pandapower network
-
-    EXAMPLE:
+    Example:
 
         >>> from pandapower.networks import lv_schutterwald
         >>> net = lv_schutterwald()

@@ -1,9 +1,8 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import sys
 import math
+from typing import Type, TYPE_CHECKING
 
 import geojson.utils
 from geojson import Point
@@ -23,6 +22,9 @@ from pandapower.plotting.plotting_toolbox import _rotate_dim2, get_color_list, g
     get_linewidth_list, get_list
 
 import logging
+
+if TYPE_CHECKING:
+    from matplotlib.path import Path
 
 logger = logging.getLogger(__name__)
 
@@ -66,16 +68,16 @@ def wye_patch(node_geo, offset, size, r_triangle, angle, facecolor, edgecolor) -
 
 
 def wp_patch(
-        node_geo: Point,
-        offset: float,
-        size: float,
-        angle: float,
-        facecolor: str,
-        edgecolor: str,
-        blade_coord1: float,
-        blade_coord2: float,
-        hub_size: float,
-        path: any
+    node_geo: Point,
+    offset: float,
+    size: float,
+    angle: float,
+    facecolor: str,
+    edgecolor: str,
+    blade_coord1: float,
+    blade_coord2: float,
+    hub_size: float,
+    path: "Type[Path]",
 ) -> tuple[list[Patch], list]:
     """
     Generate Patch for wind power plant.
@@ -381,7 +383,8 @@ def gen_patches(node_coords, size, angles, patch_type, draw_by_type: bool = True
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-    polys, lines = [], []
+    polys: list[Polygon | Circle | Arc] = []
+    lines: list = []
     offset = kwargs.get("offset", 2. * size)
     all_angles = get_angle_list(angles, len(node_coords))
     all_patches = get_list(patch_type, len(node_coords), 'patches', 'patch types')

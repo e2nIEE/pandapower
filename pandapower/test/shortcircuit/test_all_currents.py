@@ -743,7 +743,7 @@ def test_trafo_impedance(trafo_impedance_case):
     # create_load(net, 2, 0.1)
 
     # runpp(net)
-    
+
     # trafo:
     # v_lv = 410
     # z_tlv = 4 / 100 * v_lv ** 2 / (400 * 1e3)

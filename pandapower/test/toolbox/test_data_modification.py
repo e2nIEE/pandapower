@@ -10,7 +10,7 @@ import pandas as pd
 import pytest
 
 from pandapower.create import create_measurement, create_empty_network, create_bus, create_load, create_sgen, \
-    create_shunt, create_ward
+    create_shunt, create_ward, create_ssc
 from pandapower.networks.cigre_networks import create_cigre_network_mv
 from pandapower.networks.create_examples import example_simple, example_multivoltage
 from pandapower.run import runpp
@@ -137,6 +137,9 @@ def test_continuos_bus_numbering():
     create_ward(net, bus0, 2, 1, 1, 2)
     create_ward(net, bus0, 2, 1, 1, 2)
     create_ward(net, bus0, 2, 1, 1, 2)
+
+    bus0 = create_bus(net, 0.4, index=9821)
+    create_ssc(net, bus0, r_ohm=1., x_ohm=1.)
 
     create_continuous_bus_index(net)
 

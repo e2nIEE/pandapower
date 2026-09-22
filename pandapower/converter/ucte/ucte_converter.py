@@ -335,7 +335,7 @@ class UCTE2pandapower:
 
         if self.clip_small_x_values:
             # apply rule of min. X of 0.05 Ohm from UCTE-DEF
-            impedances.loc[(impedances.x >= 0.0) & (impedances.x < 0.05) , "x"] = +0.05 
+            impedances.loc[(impedances.x >= 0.0) & (impedances.x < 0.05) , "x"] = +0.05
             impedances.loc[(impedances.x > -0.05) & (impedances.x < 0.0) , "x"] = -0.05
         else:
             # being close to the PF approach
@@ -432,8 +432,8 @@ class UCTE2pandapower:
 
         if self.clip_small_x_values:
             # apply rule of min. X of 0.05 Ohm from UCTE-DEF
-            trafos.loc[(trafos.x >= 0.0) & (trafos.x < 0.05) , "x"] = +0.05 
-            trafos.loc[(trafos.x > -0.05) & (trafos.x < 0.0) , "x"] = -0.05
+            trafos.loc[(trafos.x >= 0.0) & (trafos.x < 0.05), "x"] = +0.05
+            trafos.loc[(trafos.x > -0.05) & (trafos.x < 0.0), "x"] = -0.05
         else:
             # being close to the PF approach
             trafos.loc[trafos.x == 0, "x"] = 1e-3
@@ -470,7 +470,7 @@ class UCTE2pandapower:
         )
 
         trafos = trafos.fillna({'i0_percent': 0.0, 'pfe_kw': 0.0})
-        
+
         # phase data in UCTE represent an effect to vm only
         # angle data in UCTE represent an effect to va (and maybe vm too)
 
@@ -497,7 +497,7 @@ class UCTE2pandapower:
         generic = ~(symm | asym) | has_2nd_tap_changer # data for generic transformers is included in the phase values
 
         trafos["tap_changer_type"] = "Ratio"
-        
+
         trafos.loc[generic, "tap_min"] = -trafos["phase_reg_n"]
         trafos.loc[generic, "tap_max"] = trafos["phase_reg_n"]
         trafos.loc[generic, "tap_pos"] = trafos["phase_reg_n2"]
@@ -517,7 +517,7 @@ class UCTE2pandapower:
         trafos.loc[idx, "tap2_pos"] = trafos.loc[idx, "angle_reg_n2"]
         trafos.loc[idx, "tap2_step_percent"] = trafos.loc[idx, "angle_reg_delta_u"]
         trafos.loc[idx, "tap2_step_degree"] = trafos.loc[idx, "angle_reg_theta"]
-        
+
         idx = trafos.loc[symm & ~(has_2nd_tap_changer)].index
         trafos.loc[idx, "tap_changer_type"] = "Symmetrical"
         trafos.loc[idx, "tap_min"] = -trafos.loc[idx, "angle_reg_n"]
@@ -540,24 +540,24 @@ class UCTE2pandapower:
         # voltage1, not the hv side!)
         trafos["vn_hv_kv"] = trafos[["voltage1", "voltage2"]].max(axis=1)
         trafos["vn_lv_kv"] = trafos[["voltage1", "voltage2"]].min(axis=1)
-        
+
         # swap the 'hv_node' and 'lv_node' if need
         trafos["swap"] = trafos["vn_hv_kv"] != trafos["voltage1"]
         # to be consistent with PF
         trafos["swap"] = trafos["swap"] | (trafos["vn_hv_kv"]==trafos["vn_lv_kv"])
-        
+
         # copy the 'fid_node_start' and 'fid_node_end'
         trafos["hv_bus2"] = trafos["hv_bus"].copy()
         trafos["lv_bus2"] = trafos["lv_bus"].copy()
         trafos.loc[trafos.swap, "hv_bus"] = trafos.loc[trafos.swap, "lv_bus2"]
         trafos.loc[trafos.swap, "lv_bus"] = trafos.loc[trafos.swap, "hv_bus2"]
-        
+
         # set the tap side, default is lv correct it for other windings
         trafos["tap_side"] = "lv"
         trafos["tap2_side"] = "lv"
         trafos.loc[trafos.swap, "tap_side"] = "hv"
         trafos.loc[trafos.swap, "tap2_side"] = "hv"
-        
+
         trafos["tap_neutral"] = 0
         trafos.loc[trafos.tap_min.isnull(), "tap_side"] = None
         trafos.loc[trafos.tap_min.isnull(), "tap_neutral"] = np.nan
@@ -627,7 +627,7 @@ class UCTE2pandapower:
         def get_name_from_ucte_string(ucte_string: str) -> str:
             return f"{ucte_string[:8].strip()}_{ucte_string[9:17].strip()}_{ucte_string[18]}"
 
-        new_names = input_df.loc[input_df["name"] == "", input_column].map(
+        new_names = input_df.loc[input_df["name"] == "", input_column].map(  # type: ignore[union-attr,index]
             get_name_from_ucte_string
         )
         input_df.loc[input_df["name"] == "", "name"] = new_names
@@ -643,7 +643,7 @@ class UCTE2pandapower:
             # taking always the order code leads to more matches, at least for lines...
             return f"{node1}_{node2}_{order_code}{suffix}"
 
-        amica_names = input_df.loc[:, input_column].map(get_name_from_ucte_string)
+        amica_names = input_df.loc[:, input_column].map(get_name_from_ucte_string)  # type: ignore[union-attr,index]
         input_df.loc[:, "amica_name"] = amica_names
 
     def set_pp_col_types(

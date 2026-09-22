@@ -482,20 +482,19 @@ def create_series_reactor_as_impedance(
         index of the created element
     """
     if net.bus.at[from_bus, "vn_kv"] == net.bus.at[to_bus, "vn_kv"]:
-        vn_kv = net.bus.at[from_bus, "vn_kv"]
+        vn_kv: float = net.bus.at[from_bus, "vn_kv"]  # type: ignore[assignment]
     else:
         raise UserWarning(
-            "Unable to infer rated voltage vn_kv for series reactor %s due to "
-            "different rated voltages of from_bus %d (%.3f p.u.) and "
-            "to_bus %d (%.3f p.u.)"
-            % (name, from_bus, net.bus.at[from_bus, "vn_kv"], to_bus, net.bus.at[to_bus, "vn_kv"])
+            f"Unable to infer rated voltage vn_kv for series reactor {name} due to different rated voltages of "
+            f"from_bus {from_bus} ({net.bus.at[from_bus, 'vn_kv']:.3f} p.u.) and "
+            f"to_bus {to_bus} ({net.bus.at[to_bus, 'vn_kv']:.3f} p.u.)"
         )
 
-    base_z_ohm = vn_kv**2 / sn_mva
-    rft_pu = r_ohm / base_z_ohm
-    xft_pu = x_ohm / base_z_ohm
-    rft0_pu = r0_ohm / base_z_ohm if r0_ohm is not None else None
-    xft0_pu = x0_ohm / base_z_ohm if x0_ohm is not None else None
+    base_z_ohm: float = vn_kv**2 / sn_mva
+    rft_pu: float = r_ohm / base_z_ohm
+    xft_pu: float = x_ohm / base_z_ohm
+    rft0_pu: float | None = r0_ohm / base_z_ohm if r0_ohm is not None else None
+    xft0_pu: float | None = x0_ohm / base_z_ohm if x0_ohm is not None else None
 
     index = create_impedance(
         net,

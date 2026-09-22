@@ -83,7 +83,7 @@ class DcLineSegmentsCim16:
         t = self.cimConverter.cim['eq']['DCTerminal'][['DCNode', 'DCConductingEquipment', 'sequenceNumber']]
         t = t.rename(columns={'DCNode': 'ConnectivityNode', 'DCConductingEquipment': 'ConductingEquipment'})
 
-        def search_converter(cn_ids: Dict[str, str], visited_cns: List[str]) -> str:
+        def search_converter(cn_ids: Dict[str, str], visited_cns: List[str]) -> str | None:
             new_cn_dict = {}
             for one_cn, from_dev in cn_ids.items():
                 # get the Terminals
@@ -103,11 +103,13 @@ class DcLineSegmentsCim16:
                             new_cn_dict[id_temp] = one_t['ConductingEquipment']
             if len(new_cn_dict) > 0:
                 visited_cns.extend(list(cn_ids))
-                return search_converter(cn_ids=new_cn_dict, visited_cns=visited_cns)
+                return search_converter(cn_ids=new_cn_dict, visited_cns=visited_cns)  # type: ignore[arg-type]
+
+            return None
 
         for row_index, row in dc_line_segments[dc_line_segments['converters'].isna()].iterrows():
-            conv = search_converter(cn_ids={row['ConnectivityNode']: row['rdfId']},
-                                    visited_cns=[row['ConnectivityNode']])
+            conv = search_converter(cn_ids={row['ConnectivityNode']: row['rdfId']},  # type: ignore[dict-item]
+                                    visited_cns=[row['ConnectivityNode']])  # type: ignore[list-item]
             dc_line_segments.loc[row_index, 'converters'] = conv
             if conv is None:
                 self.logger.warning("Problem with converting tht DC line %s: No ACDC converter found, maybe the DC "
@@ -132,9 +134,12 @@ class DcLineSegmentsCim16:
             dc_line_segments[one_item + '2'] = dc_line_segments[one_item + '2'].iloc[1:].reset_index()[one_item + '2']
         del copy_list, one_item
         dc_line_segments = dc_line_segments.drop_duplicates(['rdfId'], keep='first')
-        dc_line_segments = pd.merge(dc_line_segments,
-                                    pd.DataFrame(dc_line_segments.pivot_table(index=['converters'], aggfunc='size'),
-                                                 columns=['converter_dups']), how='left', on='converters')
+        dc_line_segments = pd.merge(
+            dc_line_segments,
+            pd.DataFrame(
+                dc_line_segments.pivot_table(index=['converters'], aggfunc='size'), columns=['converter_dups']),  # type: ignore[arg-type]
+                how='left', on='converters'
+        )
         dc_line_segments['loss_mw'] = \
             abs(abs(dc_line_segments['p']) - abs(dc_line_segments['p2'])) / dc_line_segments['converter_dups']
         dc_line_segments['p_mw'] = dc_line_segments['p'] / dc_line_segments['converter_dups']

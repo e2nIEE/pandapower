@@ -53,6 +53,8 @@ def _geodata_to_geo_series(
         if len(geo) != nr_buses:
             raise ValueError("geodata must be a single point or have the same length as nr_buses")
     else:
+        if coords is None:
+            return None  # unreachable but required for type narrowing
         logger.warning(
             "There is no support for LineString geodata on a bus. Some functionality might not work as intended."
             " Use at your own risk."

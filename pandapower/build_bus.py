@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
-import warnings
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
+import warnings
 from collections import defaultdict
 from itertools import chain
 
@@ -1010,11 +1008,11 @@ def _add_ext_grid_sc_impedance(net, ppc):
         c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
     else:
         c = 1.1
-    if not "s_sc_%s_mva" % case in eg:
+    if f"s_sc_{case}_mva" not in eg:
         raise ValueError(f"short circuit apparent power s_sc_{case}_mva needs to be specified for external grid \n"
                          f" Try: net.ext_grid['s_sc_{case}_mva'] = 1000")
     s_sc = eg["s_sc_%s_mva" % case].values/ppc['baseMVA']
-    if not "rx_%s" % case in eg:
+    if f"rx_{case}" not in eg:
         raise ValueError(f"short circuit R/X rate rx_{case} needs to be specified for external grid \n"
                          f" Try: net.ext_grid['rx_{case}'] = 0.1")
     rx = eg["rx_%s" % case].values

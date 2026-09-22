@@ -53,7 +53,7 @@ class LogLevel(enum.Enum):
 
 
 class Report:
-    def __init__(self, message: str, code: ReportCode, level: LogLevel, timestamp: datetime.datetime = None):
+    def __init__(self, message: str, code: ReportCode, level: LogLevel, timestamp: datetime.datetime | None = None):
         self.timestamp = datetime.datetime.now()
         if timestamp is not None:
             self.timestamp = timestamp
@@ -71,7 +71,7 @@ class Report:
 
 
 class ReportContainer(interfaces.ReportContainer):
-    def __init__(self, logs: List[Report] = None):
+    def __init__(self, logs: List[Report] | None = None):
         if logs is not None and isinstance(logs, List):
             self.logs = logs
         else:

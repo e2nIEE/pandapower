@@ -17,6 +17,7 @@ from pandapower.create import (
     create_switch, create_line_from_parameters, create_impedance, create_empty_network, create_gen, create_ext_grid,
     create_load, create_shunt, create_bus, create_sgen, create_storage, create_ward
 )
+from pandapower.pp_types import Int
 from pandapower.run import runpp
 from pandapower.toolbox.element_selection import (
     branch_element_bus_dict,
@@ -1194,19 +1195,24 @@ def replace_impedance_by_line(
         Zni = vn ** 2 / imp.sn_mva
         if max_i == 'imp.sn_mva':
             max_i = imp.sn_mva / vn / np.sqrt(3)
-        new_index.append(create_line_from_parameters(
-
-            net, imp.from_bus, imp.to_bus,
-            length_km=1,
-            r_ohm_per_km=imp.rft_pu * Zni,
-            x_ohm_per_km=imp.xft_pu * Zni,
-            c_nf_per_km=0,
-            max_i_ka=max_i,
-            r0_ohm_per_km=imp.rft0_pu * Zni if "rft0_pu" in net.impedance.columns else np.nan,
-            x0_ohm_per_km=imp.xft0_pu * Zni if "xft0_pu" in net.impedance.columns else np.nan,
-            c0_nf_per_km=0,
-            parallel=1,
-            name=imp.name, in_service=imp.in_service))
+        new_index.append(
+            create_line_from_parameters(
+                net,
+                imp.from_bus,
+                imp.to_bus,
+                length_km=1,
+                r_ohm_per_km=imp.rft_pu * Zni,
+                x_ohm_per_km=imp.xft_pu * Zni,
+                c_nf_per_km=0,
+                max_i_ka=max_i,
+                r0_ohm_per_km=imp.rft0_pu * Zni if "rft0_pu" in net.impedance.columns else np.nan,
+                x0_ohm_per_km=imp.xft0_pu * Zni if "xft0_pu" in net.impedance.columns else np.nan,
+                c0_nf_per_km=0,
+                parallel=1,
+                name=imp.name,  # type: ignore[arg-type]
+                in_service=imp.in_service,
+            )
+        )
     _replace_group_member_element_type(net, index, "impedance", new_index, "line",
                                        detach_from_gr=False)
     drop_elements_simple(net, "impedance", index)
@@ -1267,19 +1273,26 @@ def replace_line_by_impedance(
         Zni = vn ** 2 / sn_mva[i]
         p = parallel[idx]
         l = length_km[idx]
-        new_index.append(create_impedance(
-            net, line_.from_bus, line_.to_bus,
-            rft_pu=line_.r_ohm_per_km * l / p / Zni,
-            xft_pu=line_.x_ohm_per_km * l / p / Zni,
-            gf_pu=line_.g_us_per_km * 1e-6 * Zni * l * p,
-            bf_pu=2 * net.f_hz * np.pi * line_.c_nf_per_km * 1e-9 * Zni * l * p,
-            sn_mva=sn_mva[i],
-            rft0_pu=line_.r0_ohm_per_km * l / p / Zni if "r0_ohm_per_km" in cols else None,
-            xft0_pu=line_.x0_ohm_per_km * l / p / Zni if "x0_ohm_per_km" in cols else None,
-            gf0_pu=line_.g0_us_per_km * 1e-6 * Zni * l * p if "g0_us_per_km" in cols else None,
-            bf0_pu=2 * net.f_hz * np.pi * line_.c0_nf_per_km * 1e-9 * Zni * l * p if "c0_nf_per_km" in cols else None,
-            name=line_.name,
-            in_service=line_.in_service))
+        new_index.append(
+            create_impedance(
+                net,
+                line_.from_bus,
+                line_.to_bus,
+                rft_pu=line_.r_ohm_per_km * l / p / Zni,
+                xft_pu=line_.x_ohm_per_km * l / p / Zni,
+                gf_pu=line_.g_us_per_km * 1e-6 * Zni * l * p,
+                bf_pu=2 * net.f_hz * np.pi * line_.c_nf_per_km * 1e-9 * Zni * l * p,
+                sn_mva=sn_mva[i],
+                rft0_pu=line_.r0_ohm_per_km * l / p / Zni if "r0_ohm_per_km" in cols else None,
+                xft0_pu=line_.x0_ohm_per_km * l / p / Zni if "x0_ohm_per_km" in cols else None,
+                gf0_pu=line_.g0_us_per_km * 1e-6 * Zni * l * p if "g0_us_per_km" in cols else None,
+                bf0_pu=2 * net.f_hz * np.pi * line_.c0_nf_per_km * 1e-9 * Zni * l * p
+                if "c0_nf_per_km" in cols
+                else None,
+                name=line_.name,  # type: ignore[arg-type]
+                in_service=line_.in_service,
+            )
+        )
         i += 1
     _replace_group_member_element_type(net, index, "line", new_index, "impedance",
                                        detach_from_gr=False)
@@ -1346,15 +1359,24 @@ def replace_ext_grid_by_gen(
     # add missing columns to net.gen which should be kept
     missing_cols_to_keep = existing_cols_to_keep.difference(net.gen.columns)
     for col in missing_cols_to_keep:
-        net.gen[col] = np.nan
+        net.gen[col] = np.nan  # type: ignore[arg-type]
 
     # --- create gens
     new_idx = []
     for ext_grid, index in zip(net.ext_grid.loc[ext_grids].itertuples(), gen_indices):
-        p_mw = 0 if ext_grid.Index not in net.res_ext_grid.index else net.res_ext_grid.at[
-            ext_grid.Index, "p_mw"]
-        idx = create_gen(net, ext_grid.bus, vm_pu=ext_grid.vm_pu, p_mw=p_mw, name=ext_grid.name,
-                         in_service=ext_grid.in_service, controllable=True, index=index)
+        p_mw: float = (
+            0.0 if ext_grid.Index not in net.res_ext_grid.index else net.res_ext_grid.at[ext_grid.Index, "p_mw"]  # type: ignore[assignment]
+        )
+        idx = create_gen(
+            net,
+            ext_grid.bus,  # type: ignore[arg-type]
+            vm_pu=ext_grid.vm_pu,  # type: ignore[arg-type]
+            p_mw=p_mw,
+            name=ext_grid.name,  # type: ignore[arg-type]
+            in_service=ext_grid.in_service,  # type: ignore[arg-type]
+            controllable=True,
+            index=index,
+        )
         new_idx.append(idx)
     net.gen.loc[new_idx, "slack"] = slack
     val = net.ext_grid.loc[ext_grids, existing_cols_to_keep].values
@@ -1432,9 +1454,16 @@ def replace_gen_by_ext_grid(
     # --- create ext_grids
     new_idx = []
     for gen, index in zip(net.gen.loc[gens].itertuples(), ext_grid_indices):
-        va_degree = 0. if gen.bus not in net.res_bus.index else net.res_bus.va_degree.at[gen.bus]
-        idx = create_ext_grid(net, gen.bus, vm_pu=gen.vm_pu, va_degree=va_degree, name=gen.name,
-                              in_service=gen.in_service, index=index)
+        va_degree: float = 0.0 if gen.bus not in net.res_bus.index else net.res_bus.va_degree.at[gen.bus]  # type: ignore[assignment]
+        idx = create_ext_grid(
+            net,
+            gen.bus,  # type: ignore[arg-type]
+            vm_pu=gen.vm_pu,  # type: ignore[arg-type]
+            va_degree=va_degree,
+            name=gen.name,  # type: ignore[arg-type]
+            in_service=gen.in_service,  # type: ignore[arg-type]
+            index=index,
+        )
         new_idx.append(idx)
     net.ext_grid.loc[new_idx, existing_cols_to_keep] = net.gen.loc[gens, existing_cols_to_keep].values
 
@@ -1506,10 +1535,18 @@ def replace_gen_by_sgen(
     # --- create sgens
     new_idx = []
     for gen, index in zip(net.gen.loc[gens].itertuples(), sgen_indices):
-        q_mvar = 0. if gen.Index not in net.res_gen.index else net.res_gen.at[gen.Index, "q_mvar"]
-        controllable = True if "controllable" not in net.gen.columns else gen.controllable
-        idx = create_sgen(net, gen.bus, p_mw=gen.p_mw, q_mvar=q_mvar, name=gen.name,
-                          in_service=gen.in_service, controllable=controllable, index=index)
+        q_mvar: float = 0.0 if gen.Index not in net.res_gen.index else net.res_gen.at[gen.Index, "q_mvar"]  # type: ignore[assignment]
+        controllable: bool = True if "controllable" not in net.gen.columns else gen.controllable  # type: ignore[assignment]
+        idx = create_sgen(
+            net,
+            gen.bus,  # type: ignore[arg-type]
+            p_mw=gen.p_mw,  # type: ignore[arg-type]
+            q_mvar=q_mvar,
+            name=gen.name,  # type: ignore[arg-type]
+            in_service=gen.in_service,  # type: ignore[arg-type]
+            controllable=controllable,
+            index=index,
+        )
         new_idx.append(idx)
     net.sgen.loc[new_idx, existing_cols_to_keep] = net.gen.loc[gens, existing_cols_to_keep].values  # type: ignore[index,union-attr]
 
@@ -1585,27 +1622,28 @@ def replace_sgen_by_gen(
     new_idx = []
     log_warning = False
     for sgen, index in zip(net.sgen.loc[sgens].itertuples(), gen_indices):
+        vm_pu: float
         if sgen.bus in net.res_bus.index:
-            vm_pu: float = net.res_bus.at[sgen.bus, "vm_pu"]  # type: ignore[assignment]
+            vm_pu = net.res_bus.at[sgen.bus, "vm_pu"]  # type: ignore[assignment]
         else:  # no result information to get vm_pu -> use net.gen.vm_pu or net.ext_grid.vm_pu or
             # set 1.0
             if sgen.bus in net.gen.bus.values:
-                vm_pu = net.gen.vm_pu.loc[net.gen.bus == sgen.bus].tolist()[0]
+                vm_pu = net.gen.vm_pu.loc[net.gen.bus == sgen.bus].tolist()[0]  # type: ignore[assignment]
             elif sgen.bus in net.ext_grid.bus.values:
-                vm_pu = net.ext_grid.vm_pu.loc[net.ext_grid.bus == sgen.bus].tolist()[0]
+                vm_pu = net.ext_grid.vm_pu.loc[net.ext_grid.bus == sgen.bus].tolist()[0]  # type: ignore[assignment]
             else:
                 vm_pu = 1.0
                 log_warning = True
-        controllable = False if "controllable" not in net.sgen.columns else sgen.controllable
+        controllable: bool = False if "controllable" not in net.sgen.columns else sgen.controllable  # type: ignore[assignment]
         idx = create_gen(
             net,
-            sgen.bus,
+            sgen.bus,  # type: ignore[arg-type]
             vm_pu=vm_pu,
-            p_mw=sgen.p_mw,
-            name=sgen.name,
-            in_service=sgen.in_service,
+            p_mw=sgen.p_mw,  # type: ignore[arg-type]
+            name=sgen.name,  # type: ignore[arg-type]
+            in_service=sgen.in_service,  # type: ignore[arg-type]
             controllable=controllable,
-            index=index
+            index=index,
         )
         new_idx.append(idx)
     new_idx = np.array(new_idx, dtype=np.int64)
@@ -1641,14 +1679,14 @@ def replace_sgen_by_gen(
 
 
 def replace_pq_elmtype(
-        net: pandapowerNet,
-        old_element_type: Literal["sgen", "load", "storage"],
-        new_element_type: Literal["sgen", "load", "storage"],
-        old_indices: Collection[int] | int | None = None,
-        new_indices: Collection[int] | None = None,
-        cols_to_keep: list | None = None,
-        add_cols_to_keep: list | None = None
-) -> Collection[int]:
+    net: pandapowerNet,
+    old_element_type: Literal["sgen", "load", "storage"],
+    new_element_type: Literal["sgen", "load", "storage"],
+    old_indices: Collection[int] | int | None = None,
+    new_indices: Collection[int] | None = None,
+    cols_to_keep: list | None = None,
+    add_cols_to_keep: list | None = None,
+) -> Collection[Int]:
     """
     Replaces e.g. static generators by loads or loads by storages and so forth.
 
@@ -1703,18 +1741,18 @@ def replace_pq_elmtype(
 
     # --- create new_element_type
     already_considered_cols = set()
-    new_idx = []
+    new_idx: list[Int] = []
     for oelm, index in zip(net[old_element_type].loc[old_indices].itertuples(), new_indices_):
         controllable = False if "controllable" not in net[old_element_type].columns else oelm.controllable
         sign = -1 if old_element_type in ["sgen"] else 1
         args = {}
         if new_element_type == "load":
-            fct = create_load
+            fct = create_load  # type: ignore[assignment]
         elif new_element_type == "sgen":
-            fct = create_sgen
+            fct = create_sgen  # type: ignore[assignment]
             sign *= -1
         elif new_element_type == "storage":
-            fct = create_storage
+            fct = create_storage  # type: ignore[assignment]
             already_considered_cols |= {"max_e_mwh"}
             args = {"max_e_mwh": 1 if "max_e_mwh" not in net[old_element_type].columns else net[
                 old_element_type].max_e_kwh.loc[old_indices]}
@@ -1722,8 +1760,17 @@ def replace_pq_elmtype(
             raise ValueError(
                 f'"new_element_type" should be of type Literal["load", "sgen", "storage"], got: {new_element_type}'
             )
-        idx = fct(net, oelm.bus, p_mw=sign*oelm.p_mw, q_mvar=sign*oelm.q_mvar, name=oelm.name,
-                  in_service=oelm.in_service, controllable=controllable, index=index, **args)
+        idx: Int = fct(
+            net,
+            oelm.bus,
+            p_mw=sign * oelm.p_mw,
+            q_mvar=sign * oelm.q_mvar,
+            name=oelm.name,
+            in_service=oelm.in_service,
+            controllable=controllable,
+            index=index,
+            **args,  # type: ignore[arg-type]
+        )
         new_idx.append(idx)
 
     if sign == -1:
@@ -1780,17 +1827,22 @@ def replace_ward_by_internal_elements(net: pandapowerNet, wards: Collection[int]
     ass = element_associated_groups(net, "ward", wards)
 
     # --- create loads and shunts
-    new_load_idx: list[int] = []
-    new_shunt_idx: list[int] = []
+    new_load_idx: list[Int] = []
+    new_shunt_idx: list[Int] = []
     for ward in net.ward.loc[wards].itertuples():
-        load_idx = create_load(net, ward.bus, ward.ps_mw, ward.qs_mvar, in_service=ward.in_service, name=ward.name)
+        load_idx = create_load(net, ward.bus, ward.ps_mw, ward.qs_mvar, in_service=ward.in_service, name=ward.name)  # type: ignore[arg-type]
         shunt_idx = create_shunt(
-            net, ward.bus, q_mvar=ward.qz_mvar, p_mw=ward.pz_mw, in_service=ward.in_service, name=ward.name
+            net,
+            ward.bus,  # type: ignore[arg-type]
+            q_mvar=ward.qz_mvar,  # type: ignore[arg-type]
+            p_mw=ward.pz_mw,  # type: ignore[arg-type]
+            in_service=ward.in_service,  # type: ignore[arg-type]
+            name=ward.name,  # type: ignore[arg-type]
         )
         new_load_idx.append(load_idx)
         new_shunt_idx.append(shunt_idx)
 
-        attach_to_groups(net, ass[ward.Index], ["load", "shunt"], [[load_idx], [shunt_idx]])  # type: ignore[index]
+        attach_to_groups(net, ass[ward.Index], ["load", "shunt"], [[load_idx], [shunt_idx]])  # type: ignore[index,arg-type]
 
     # --- result data
     if net.res_ward.shape[0]:

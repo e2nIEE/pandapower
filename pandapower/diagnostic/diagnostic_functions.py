@@ -362,31 +362,31 @@ class Overload(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
             check_result["load"] = False
             check_result["generation"] = False
             try:
-                net.load.scaling = overload_scaling_factor
+                net.load["scaling"] = overload_scaling_factor
                 run(net)
                 check_result["load"] = True
             except expected_exceptions:
-                net.load.scaling = load_scaling
+                net.load["scaling"] = load_scaling
                 try:
-                    net.gen.scaling = overload_scaling_factor
-                    net.sgen.scaling = overload_scaling_factor
+                    net.gen["scaling"] = overload_scaling_factor
+                    net.sgen["scaling"] = overload_scaling_factor
                     run(net)
                     check_result["generation"] = True
                 except expected_exceptions:
-                    net.sgen.scaling = sgen_scaling
-                    net.gen.scaling = gen_scaling
+                    net.sgen["scaling"] = sgen_scaling
+                    net.gen["scaling"] = gen_scaling
                     try:
-                        net.load.scaling = overload_scaling_factor
-                        net.gen.scaling = overload_scaling_factor
-                        net.sgen.scaling = overload_scaling_factor
+                        net.load["scaling"] = overload_scaling_factor
+                        net.gen["scaling"] = overload_scaling_factor
+                        net.sgen["scaling"] = overload_scaling_factor
                         run(net)
                         check_result["generation"] = True
                         check_result["load"] = True
                     except expected_exceptions:
                         self.out.debug("Overload check did not help")
-            net.sgen.scaling = sgen_scaling
-            net.gen.scaling = gen_scaling
-            net.load.scaling = load_scaling
+            net.sgen["scaling"] = sgen_scaling
+            net.gen["scaling"] = gen_scaling
+            net.load["scaling"] = load_scaling
         except Exception as e:
             self.out.error(f"Overload check failed: {str(e)}")
             raise e
@@ -562,7 +562,7 @@ class WrongLineCapacitance(DiagnosticFunction[pandapowerNet, bool]):
         except expected_exceptions:
             check_result = False
             try:
-                net.line.c_nf_per_km *= capacitance_scaling_factor
+                net.line["c_nf_per_km"] *= capacitance_scaling_factor
                 run(net)
                 check_result = True
             except expected_exceptions:
@@ -573,7 +573,7 @@ class WrongLineCapacitance(DiagnosticFunction[pandapowerNet, bool]):
             raise e
 
         # teardown
-        net.line.c_nf_per_km = line_capacitance
+        net.line["c_nf_per_km"] = line_capacitance
 
         return check_result
 
@@ -639,7 +639,7 @@ class WrongLineReactance(DiagnosticFunction[pandapowerNet, bool]):
         except expected_exceptions:
             check_result = False
             try:
-                net.line.x_ohm_per_km *= reactance_scaling_factor
+                net.line["x_ohm_per_km"] *= reactance_scaling_factor
                 run(net)
                 check_result = True
             except expected_exceptions:
@@ -650,7 +650,7 @@ class WrongLineReactance(DiagnosticFunction[pandapowerNet, bool]):
             raise e
 
         # teardown
-        net.line.x_ohm_per_km = line_reactance
+        net.line["x_ohm_per_km"] = line_reactance
 
         return check_result
 
@@ -716,7 +716,7 @@ class WrongLineResistance(DiagnosticFunction[pandapowerNet, bool]):
         except expected_exceptions:
             check_result = False
             try:
-                net.line.r_ohm_per_km *= resistance_scaling_factor
+                net.line["r_ohm_per_km"] *= resistance_scaling_factor
                 run(net)
                 check_result = True
             except expected_exceptions:
@@ -727,7 +727,7 @@ class WrongLineResistance(DiagnosticFunction[pandapowerNet, bool]):
             raise e
 
         # teardown
-        net.line.r_ohm_per_km = line_resistance
+        net.line["r_ohm_per_km"] = line_resistance
 
         return check_result
 
@@ -783,7 +783,7 @@ class SubNetProblemTest(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
         run = partial(kwargs.pop("run", runpp), **kwargs)
         self.net = copy.deepcopy(net)
 
-        self.zones = self.net.bus.zone.unique()
+        self.zones = self.net.bus.zone.unique()  # type: ignore[assignment]
         check_result = {}
 
         if len(self.zones) < 1:
@@ -851,7 +851,7 @@ class OptimisticPowerflow(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
         check_result = {}
 
         try:
-            self.net.line.c_nf_per_km = 0
+            self.net.line["c_nf_per_km"] = 0
 
             run(self.net)
             return None
@@ -860,9 +860,9 @@ class OptimisticPowerflow(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
             self.out.debug("Line susceptance = 0, did not solve the problem.")
             try:
                 if 'trafo' in self.net:
-                    self.net.trafo.pfe_kw = 0
+                    self.net.trafo["pfe_kw"] = 0
                 if 'trafo3w' in self.net:
-                    self.net.trafo3w.pfe_kw = 0
+                    self.net.trafo3w["pfe_kw"] = 0
 
                 run(self.net)
                 check_result["trafo_pfe_kw_zero"] = True
@@ -871,11 +871,11 @@ class OptimisticPowerflow(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
                 self.out.debug("Line susceptance = 0 and iron losses = 0, did not solve the problem.")
                 try:
                     if 'load' in self.net:
-                        self.net.load.p_mw = 0
-                        self.net.load.q_mvar = 0
+                        self.net.load["p_mw"] = 0
+                        self.net.load["q_mvar"] = 0
                     if 'sgen' in self.net:
-                        self.net.sgen.p_mw = 0
-                        self.net.sgen.q_mvar = 0
+                        self.net.sgen["p_mw"] = 0
+                        self.net.sgen["q_mvar"] = 0
 
                     run(self.net)
                     check_result["load_sgen_zero"] = True
@@ -971,7 +971,7 @@ class SlackGenPlacement(DiagnosticFunction[pandapowerNet, dict[str, float]]):
             raise e
 
         # disable all slack gen
-        net.gen.slack = False
+        net.gen["slack"] = False
 
         # try all gen combinations
         for idx, gen in net.gen.iterrows():
@@ -981,10 +981,10 @@ class SlackGenPlacement(DiagnosticFunction[pandapowerNet, dict[str, float]]):
                 run(net)
 
                 res = _calculate_losses(net)
-                check_result[idx] = res
+                check_result[idx] = res  # type: ignore[index]
             except expected_exceptions:
                 self.out.debug(f"Gen[{idx}]=Slack did not converge, trying different one")
-                check_result[idx] = sys.float_info.max
+                check_result[idx] = sys.float_info.max  # type: ignore[index]
             except Exception as e:
                 self.out.error(f"Slack gen placement calculation failed: {str(e)}")
                 raise e
@@ -1078,17 +1078,17 @@ class WrongSwitchConfiguration(DiagnosticFunction[pandapowerNet, bool]):
                        is replaced by the function kwargs["run"]
         """
         run = partial(kwargs.pop("run", runpp), **kwargs)
-        switch_configuration = copy.deepcopy(net.switch.closed)
+        switch_configuration = copy.deepcopy(net.switch["closed"])
         try:
             run(net)
         except expected_exceptions:
             try:
-                net.switch.closed = True
+                net.switch["closed"] = True
                 run(net)
-                net.switch.closed = switch_configuration
+                net.switch["closed"] = switch_configuration
                 return True
             except expected_exceptions:
-                net.switch.closed = switch_configuration
+                net.switch["closed"] = switch_configuration
                 return False
         except Exception as e:
             self.out.error(f"Switch check failed: {str(e)}")
@@ -1272,8 +1272,8 @@ class ImplausibleImpedanceValues(DiagnosticFunction[pandapowerNet, list[dict]]):
         min_r_ohm = kwargs.pop("min_r_ohm", default_argument_values.get("min_r_ohm", None))
         max_x_ohm = kwargs.pop("max_x_ohm", default_argument_values.get("max_x_ohm", None))
         min_x_ohm = kwargs.pop("min_x_ohm", default_argument_values.get("min_x_ohm", None))
-        zb_f_ohm = np.square(net.bus.loc[net.impedance.from_bus.values, "vn_kv"].values) / net.impedance.sn_mva
-        zb_t_ohm = np.square(net.bus.loc[net.impedance.to_bus.values, "vn_kv"].values) / net.impedance.sn_mva
+        zb_f_ohm = np.square(net.bus.loc[net.impedance.from_bus, "vn_kv"].to_numpy()) / net.impedance.sn_mva
+        zb_t_ohm = np.square(net.bus.loc[net.impedance.to_bus, "vn_kv"].to_numpy()) / net.impedance.sn_mva
 
         self.params['max_r_ohm'] = max_r_ohm
         self.params['min_r_ohm'] = min_r_ohm
@@ -1382,18 +1382,38 @@ class ImplausibleImpedanceValues(DiagnosticFunction[pandapowerNet, list[dict]]):
                         elif key == "trafo":
                             for idx in implausible_idx:
                                 create_impedance(
-                                    net, net.trafo.at[idx, "hv_bus"], net.trafo.at[idx, "lv_bus"], 0, 0.01, 100
+                                    net,
+                                    net.trafo.at[idx, "hv_bus"],  # type: ignore[arg-type]
+                                    net.trafo.at[idx, "lv_bus"],  # type: ignore[arg-type]
+                                    0,
+                                    0.01,
+                                    100,
                                 )
                         elif key == "trafo3w":
                             for idx in implausible_idx:
                                 create_impedance(
-                                    net, net.trafo3w.at[idx, "hv_bus"], net.trafo3w.at[idx, "mv_bus"], 0, 0.01, 100
+                                    net,
+                                    net.trafo3w.at[idx, "hv_bus"],  # type: ignore[arg-type]
+                                    net.trafo3w.at[idx, "mv_bus"],  # type: ignore[arg-type]
+                                    0,
+                                    0.01,
+                                    100,
                                 )
                                 create_impedance(
-                                    net, net.trafo3w.at[idx, "mv_bus"], net.trafo3w.at[idx, "lv_bus"], 0, 0.01, 100
+                                    net,
+                                    net.trafo3w.at[idx, "mv_bus"],  # type: ignore[arg-type]
+                                    net.trafo3w.at[idx, "lv_bus"],  # type: ignore[arg-type]
+                                    0,
+                                    0.01,
+                                    100,
                                 )
                                 create_impedance(
-                                    net, net.trafo3w.at[idx, "hv_bus"], net.trafo3w.at[idx, "lv_bus"], 0, 0.01, 100
+                                    net,
+                                    net.trafo3w.at[idx, "hv_bus"],  # type: ignore[arg-type]
+                                    net.trafo3w.at[idx, "lv_bus"],  # type: ignore[arg-type]
+                                    0,
+                                    0.01,
+                                    100,
                                 )
                         else:
                             for idx in implausible_idx:
