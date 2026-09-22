@@ -1,5 +1,7 @@
 import copy
 import tempfile
+import warnings
+from pathlib import Path
 
 import numpy as np
 import pandas as pd
@@ -120,15 +122,28 @@ def _run_failed_example(profile, include_tap, initial_run, recycle=None):
         DiscreteTapControl(net, element_index=0, side="hv", vm_lower_pu=0.99, vm_upper_pu=1.01)
     output_writer = OutputWriter(net, output_path=None)
     observed_recycle = []
+    expected_batch_warning = not include_tap and recycle is None
 
     def output_writer_fct(net, time_step, pf_converged, ctrl_converged, ts_variables):
         observed_recycle.append(copy.deepcopy(ts_variables["recycle_options"]))
         _call_output_writer(net, time_step, pf_converged, ctrl_converged, ts_variables)
 
-    run_timeseries(net, time_steps=range(len(profile)), continue_on_divergence=True, verbose=False,
-                   output_writer_fct=output_writer_fct,
-                   **({} if recycle is None else {"recycle": recycle}))
-    return net, output_writer, original_load, observed_recycle
+    with warnings.catch_warnings(record=True) as recorded_warnings:
+        if expected_batch_warning:
+            warnings.filterwarnings("always", message=r"^invalid value encountered in divide$",
+                                    category=RuntimeWarning, module=r"^pandapower\.pf\.pfsoln_numba$")
+        run_timeseries(net, time_steps=range(len(profile)), continue_on_divergence=True, verbose=False,
+                       output_writer_fct=output_writer_fct,
+                       **({} if recycle is None else {"recycle": recycle}))
+    if expected_batch_warning:
+        for warning in recorded_warnings:
+            assert str(warning.message) == "invalid value encountered in divide"
+            assert warning.category is RuntimeWarning
+            assert Path(warning.filename.replace("\\", "/")).parts[-3:] == (
+                "pandapower", "pf", "pfsoln_numba.py")
+    else:
+        assert not recorded_warnings
+    return net, output_writer, original_load, observed_recycle, recorded_warnings
 
 
 @pytest.mark.parametrize(
@@ -141,9 +156,9 @@ def _run_failed_example(profile, include_tap, initial_run, recycle=None):
     ],
 )
 def test_recycle_recovers_after_failed_time_step(profile, include_tap, initial_run):
-    control_net, control_writer, _, control_options = _run_failed_example(
+    control_net, control_writer, _, control_options, _ = _run_failed_example(
         profile, include_tap, initial_run, recycle=False)
-    recycled_net, recycled_writer, original_load, recycled_options = _run_failed_example(
+    recycled_net, recycled_writer, original_load, recycled_options, _ = _run_failed_example(
         profile, include_tap, initial_run)
     failed_steps = np.array([value >= 1000.0 for value in profile])
 
