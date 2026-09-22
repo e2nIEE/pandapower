@@ -287,9 +287,13 @@ class TestBuildForeignKeyChecks:
         """Test: invalid foreign key references raise ValidationError"""
         net = pandapowerNet(name="test_invalid_fk")
         create_bus(net, 0.4)
+        create_bus(net, 0.4)
+
 
         create_load(net, bus=0, p_mw=1.0, q_mvar=0.0)
-        net.load.loc[0, "bus"] = 9999  # Invalid bus index
+        create_load(net, bus=1, p_mw=1.0, q_mvar=0.0)
+
+        net.load.loc[1, "bus"] = 9999  # Invalid bus index
 
         test_schema = copy.deepcopy(get_element_schema("load"))
         build_foreign_key_index_checks(test_schema, net)

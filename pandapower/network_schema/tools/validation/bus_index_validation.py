@@ -36,28 +36,13 @@ def _create_index_validation_check(reference_df: pd.DataFrame, column_name: str,
         >>> check = _create_index_validation_check(bus_df, 'hv_bus', 'trafo')
         >>> # This check can now be used to validate that trafo hv_bus values exist in bus_df
     """
-    reference_index = set(reference_df.index)
-
-    def check_values_in_reference_index(series: pd.Series) -> bool:
-        if "dc" in column_name:
-            ref_name = "bus_dc"
-        else:
-            ref_name = "bus"
-        mask = series.isin(reference_index)
-        if not mask.all():
-            failing_values = series[~mask].unique()
-            failing_indices = series.index[~mask].values.tolist()
-            raise ValueError(
-                f"The following values for net.{element_name}.{column_name} at index {failing_indices} are not in the "
-                f"index of the {ref_name}-dataframe: {failing_values.tolist()}"
-            )
-        return True
+    reference_index = set(reference_df.index) | {pd.NA}
 
     return pa.Check(
-        check_values_in_reference_index,
-        name=f"{check_values_in_reference_index.__name__}_{column_name}",
+        lambda s: s.isin(reference_index),
+        name=f"foreign key for {element_name}.{column_name}",
+        determined_by_unique=True,
     )
-
 
 def _create_multi_column_reference_schema(
     reference_df: pd.DataFrame,
