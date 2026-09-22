@@ -216,12 +216,12 @@ def _get_multiple_index_with_check(net, table, index, number, name=None):
         return arange(bid, bid + number, 1)
     u, c = uni(index, return_counts=True)
     if np_any(c > 1):
-        raise UserWarning("Passed indexes %s exist multiple times" % (u[c > 1]))
+        raise UserWarning(f"Passed indexes {u[c > 1]} exist multiple times")
     intersect = intersect1d(index, net[table].index.values)
     if len(intersect) > 0:
         if name is None:
             name = table.capitalize() + "s"
-        raise UserWarning("%s with indexes %s already exist." % (name, intersect))
+        raise UserWarning(f"{name} with indexes {intersect} already exist.")
     return index
 
 
@@ -229,7 +229,7 @@ def _check_element(net, element_index, element="bus"):
     if element not in net:
         raise UserWarning(f"Node table {element} does not exist")
     if element_index not in net[element].index.values:
-        raise UserWarning("Cannot attach to %s %s, %s does not exist" % (element, element_index, element_index))
+        raise UserWarning(f"Cannot attach to {element} {element_index}, {element_index} does not exist")
 
 
 def _check_multiple_elements(net, element_indices, element="bus", name="buses"):
@@ -246,8 +246,7 @@ def _check_branch_element(net, element_name, index, from_node, to_node, node_nam
     missing_nodes = {from_node, to_node} - set(net[node_name].index.values)
     if len(missing_nodes) > 0:
         raise UserWarning(
-            "%s %d tries to attach to non-existing %s(%s) %s"
-            % (element_name.capitalize(), index, node_name, plural, missing_nodes)
+            f"{element_name.capitalize()} {index} tries to attach to non-existing {node_name}({plural}) {missing_nodes}"
         )
 
 
@@ -257,9 +256,7 @@ def _check_multiple_branch_elements(net, from_nodes, to_nodes, element_name, nod
     all_nodes = set(from_nodes) | set(to_nodes)
     node_not_exist = all_nodes - set(net[node_name].index)
     if len(node_not_exist) > 0:
-        raise UserWarning(
-            "%s trying to attach to non existing %s%s %s" % (element_name, node_name, plural, node_not_exist)
-        )
+        raise UserWarning(f"{element_name} trying to attach to non existing {node_name}{plural} {node_not_exist}")
 
 
 def _not_nan(value, all_=True):
