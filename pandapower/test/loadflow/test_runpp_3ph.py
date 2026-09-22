@@ -778,6 +778,15 @@ def test_trafo_asym():
         check_results(net, trafo_vector_group, get_PF_Results(trafo_vector_group))
 
 
+@pytest.mark.parametrize("trafo_vector_group", ["yy", "yd", "dy", "dd"])
+def test_trafo_asym_unsupported_vector_groups(trafo_vector_group):
+    net = create_empty_network()
+    make_nw(net, 10, 0, "bal_wye", trafo_vector_group)
+
+    with pytest.raises(NotImplementedError, match="Calculation of 3-phase power flow"):
+        runpp_3ph(net)
+
+
 def _test_trafo_shifts(net, rtol):
     # Dyn
     for clock in [-30, 30, 150, 210, -150]:

@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] 3-phase power flow now rejects unsupported transformer vector groups ``yy``, ``yd``, ``dy``, and ``dd`` before zero-sequence setup (#3122)
 - [FIXED] creating a branch element (e.g. ``create_line_from_parameters``) without an ``index`` on a non-existing bus raised ``TypeError`` instead of the intended ``UserWarning``, because the error message formatted the ``None`` index with ``%d`` (#3141)
 - [FIXED] ``PPJSONEncoder`` accepts the legacy ``encoding`` keyword supplied by ``simplejson``.
 - [FIXED] ``wls_with_zero_constraint`` now converges for any ``sn_mva``; the zero-injection constraint was scaled by ``baseMVA`` while its Jacobian was not
