@@ -677,7 +677,7 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
                 logger.warning(f"Bus {bus} (name {net.bus.at[bus, 'name']}) was found multiple times in line_geo_data. "
                                f"No geo positions was used more often than all other positions. "
                                "The first of the most used positions is used.")
-            return _geo_json_str(this_bus_geo.loc[how_often.idxmax()].iloc[0])
+            return _geo_json_str(this_bus_geo.loc[how_often.idxmax()].iloc[0])  # type: ignore[call-overload]
 
         return None
 

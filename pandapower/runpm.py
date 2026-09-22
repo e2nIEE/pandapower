@@ -7,6 +7,8 @@ from functools import partial
 
 from functools import partial
 
+from functools import partial
+
 from pandapower.auxiliary import _add_ppc_options, _add_opf_options
 from pandapower.converter.pandamodels.from_pm import read_ots_results, read_tnep_results
 from pandapower.network import pandapowerNet
