@@ -2,16 +2,20 @@ import copy
 import tempfile
 
 import numpy as np
+import pandas as pd
 import pytest
 
+from pandapower.control import DiscreteTapControl
 from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
 from pandapower.create import create_gen, create_bus, create_line, create_transformer, create_transformer3w
+from pandapower.networks import example_simple
 from pandapower.run import runpp, rundcpp
 from pandapower.test.timeseries.test_output_writer import create_data_source, OutputWriter, ConstControl, \
     run_timeseries, simple_test_net
 from pandapower.timeseries.data_sources.frame_data import DFData
 from pandapower.timeseries.read_batch_results import get_batch_line_results, get_batch_trafo_results, \
     get_batch_trafo3w_results, v_to_i_s, polar_to_rad
+from pandapower.timeseries.run_time_series import _call_output_writer
 
 n_timesteps = 5
 time_steps = range(0, n_timesteps)
@@ -104,6 +108,77 @@ def test_batch_output_reader(simple_test_net):
     assert np.allclose(i3_lm_ka, i_m)
     assert np.allclose(i3_lv_ka, i_l)
     assert np.allclose(t3_loading_percent_normal, ld3_trafo)
+
+
+def _run_failed_example(profile, include_tap, initial_run, recycle=None):
+    net = example_simple()
+    original_load = net.load.loc[0, ["q_mvar", "scaling"]].copy()
+    data_source = DFData(pd.DataFrame({0: profile}))
+    ConstControl(net, element="load", variable="p_mw", element_index=0,
+                 data_source=data_source, profile_name=0, initial_run=initial_run)
+    if include_tap:
+        DiscreteTapControl(net, element_index=0, side="hv", vm_lower_pu=0.99, vm_upper_pu=1.01)
+    output_writer = OutputWriter(net, output_path=None)
+    observed_recycle = []
+
+    def output_writer_fct(net, time_step, pf_converged, ctrl_converged, ts_variables):
+        observed_recycle.append(copy.deepcopy(ts_variables["recycle_options"]))
+        _call_output_writer(net, time_step, pf_converged, ctrl_converged, ts_variables)
+
+    run_timeseries(net, time_steps=range(len(profile)), continue_on_divergence=True, verbose=False,
+                   output_writer_fct=output_writer_fct,
+                   **({} if recycle is None else {"recycle": recycle}))
+    return net, output_writer, original_load, observed_recycle
+
+
+@pytest.mark.parametrize(
+    "profile, include_tap, initial_run",
+    [
+        ([2.0, 1000.0, 2.0], True, False),
+        ([2.0, 1000.0], True, False),
+        ([1000.0, 2.0], False, True),
+        ([1000.0], False, True),
+    ],
+)
+def test_recycle_recovers_after_failed_time_step(profile, include_tap, initial_run):
+    control_net, control_writer, _, control_options = _run_failed_example(
+        profile, include_tap, initial_run, recycle=False)
+    recycled_net, recycled_writer, original_load, recycled_options = _run_failed_example(
+        profile, include_tap, initial_run)
+    failed_steps = np.array([value >= 1000.0 for value in profile])
+
+    for writer in [recycled_writer, control_writer]:
+        parameters = writer.output["Parameters"]
+        np.testing.assert_array_equal(parameters.index.to_numpy(), np.arange(len(profile)))
+        np.testing.assert_array_equal(parameters["powerflow_failed"].to_numpy(), failed_steps)
+        np.testing.assert_array_equal(parameters["controller_unstable"].to_numpy(),
+                                      np.zeros(len(profile), dtype=bool))
+        assert len(writer.output["res_bus.vm_pu"]) == len(profile)
+        assert len(writer.output["res_line.loading_percent"]) == len(profile)
+
+    if not include_tap:
+        assert recycled_options[0]["batch_read"]
+        assert recycled_options[0]["only_v_results"]
+        assert control_options[0] is False
+
+    for time_step in np.flatnonzero(~failed_steps):
+        recycled_vm = recycled_writer.output["res_bus.vm_pu"].iloc[time_step].to_numpy()
+        control_vm = control_writer.output["res_bus.vm_pu"].iloc[time_step].to_numpy()
+        recycled_loading = recycled_writer.output["res_line.loading_percent"].iloc[time_step].to_numpy()
+        control_loading = control_writer.output["res_line.loading_percent"].iloc[time_step].to_numpy()
+        assert np.isfinite(recycled_vm).all()
+        assert np.isfinite(recycled_loading).all()
+        np.testing.assert_allclose(recycled_vm, control_vm, rtol=0, atol=1e-6)
+        np.testing.assert_allclose(recycled_loading, control_loading, rtol=0, atol=1e-6)
+
+    assert recycled_net.load.at[0, "p_mw"] == profile[-1]
+    assert control_net.load.at[0, "p_mw"] == profile[-1]
+    assert recycled_net.load.at[0, "q_mvar"] == original_load["q_mvar"]
+    assert control_net.load.at[0, "q_mvar"] == original_load["q_mvar"]
+    assert recycled_net.load.at[0, "scaling"] == original_load["scaling"]
+    assert control_net.load.at[0, "scaling"] == original_load["scaling"]
+    if include_tap:
+        assert recycled_net.trafo.at[0, "tap_pos"] == control_net.trafo.at[0, "tap_pos"]
 
 
 def _v_var(run, full=True):
