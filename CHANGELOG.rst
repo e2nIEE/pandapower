@@ -8,6 +8,7 @@ Change Log
 - [FIXED] ``wls_with_zero_constraint`` now converges for any ``sn_mva``; the zero-injection constraint was scaled by ``baseMVA`` while its Jacobian was not
 - [FIXED] ``create_load_dc`` now allocates and validates indexes against ``load_dc``, preventing overwrites and false ``source_dc`` conflicts.
 - [FIXED] OPF cleaned up in case of non convergence
+- [FIXED] timeseries recycling recovers after a failed power flow step
 - [FIXED] ``create_continuous_bus_index`` (and other toolbox functions relying on ``element_bus_tuples``) now also update the ``bus`` column of the ``ssc`` element table; it was previously missing from the list of bus-referencing elements
 - [FIXED] speedup dump_to_geojson_node_branch
 - [FIXED] added the LV Schutterwald network to the network documentation.
