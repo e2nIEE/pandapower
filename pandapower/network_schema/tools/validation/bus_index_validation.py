@@ -109,8 +109,6 @@ def build_foreign_key_index_checks(schema:pa.DataFrameSchema, net:pandapowerNet)
     for col_name, column in schema.columns.items():
         if column.metadata and "foreign_key" in column.metadata:
             ref_table_name = column.metadata["foreign_key"]
-            if ref_table_name not in net:
-                continue
             reference_df = net[ref_table_name]
             check = _create_index_validation_check(reference_df, col_name, schema.name or ref_table_name)
             existing_checks = column.checks or []
