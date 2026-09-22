@@ -1,20 +1,16 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from __future__ import annotations
-
 import logging
+from collections.abc import Iterable, Sequence
 from operator import itemgetter
-from typing import Iterable, Sequence
 
 import numpy.typing as npt
-from numpy import nan, isnan, any as np_any, all as np_all
+from numpy import nan
+from typing_extensions import deprecated
 
-from pandapower import pandapowerNet
-from pandapower.std_types import load_std_type
-from pandapower.pp_types import Int, LineType
+from pandapower import ensure_iterability, pandapowerNet
 from pandapower.create._utils import (
-    _add_branch_geodata,
     _add_multiple_branch_geodata,
     _add_to_entries_if_not_nan,
     _check_branch_element,
@@ -23,8 +19,8 @@ from pandapower.create._utils import (
     _get_multiple_index_with_check,
     _set_entries,
     _set_multiple_entries,
-    _set_value_if_not_nan,
 )
+from pandapower.network_schema.tools.validation.network_validation import validate_network
 from pandapower.network_structure import get_default_value
 from pandapower.pp_types import Int, LineType
 from pandapower.std_types import load_std_type
@@ -32,6 +28,7 @@ from pandapower.std_types import load_std_type
 logger = logging.getLogger(__name__)
 
 
+@deprecated("Use create_lines instead.")
 def create_line(
     net: pandapowerNet,
     from_bus: Int,
@@ -95,67 +92,26 @@ def create_line(
     Example:
         >>> create_line(net, from_bus=0, to_bus=1, length_km=0.1,  std_type="NAYY 4x50 SE", name="line1")
     """
-    # check if bus exist to attach the line to
-    _check_branch_element(net, "Line", index, from_bus, to_bus)
-
-    index = _get_index_with_check(net, "line", index)
-
-    tdpf_columns = (
-        "wind_speed_m_per_s",
-        "wind_angle_degree",
-        "conductor_outer_diameter_m",
-        "air_temperature_degree_celsius",
-        "reference_temperature_degree_celsius",
-        "solar_radiation_w_per_sq_m",
-        "solar_absorptivity",
-        "emissivity",
-        "r_theta_kelvin_per_mw",
-        "mc_joule_per_m_k",
-    )
-    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
-
-    entries = {
-        "name": name,
-        "length_km": length_km,
-        "from_bus": from_bus,
-        "to_bus": to_bus,
-        "in_service": in_service,
-        "std_type": std_type,
-        "df": df,
-        "parallel": parallel,
+    return create_lines(
+        net,
+        from_bus,
+        to_bus,
+        length_km,
+        std_type,
+        name,
+        index,
+        geodata,
+        df,
+        parallel,
+        in_service,
+        max_loading_percent,
+        alpha,
+        temperature_degree_celsius,
         **kwargs,
-    }
-
-    lineparam = load_std_type(net, std_type, "line")
-
-    entries.update({param: lineparam[param] for param in ["r_ohm_per_km", "x_ohm_per_km", "c_nf_per_km", "max_i_ka"]})
-    if "r0_ohm_per_km" in lineparam:
-        entries.update({param: lineparam[param] for param in ["r0_ohm_per_km", "x0_ohm_per_km", "c0_nf_per_km"]})
-
-    entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.0
-
-    if "type" in lineparam:
-        entries["type"] = lineparam["type"]
-
-    # only add alpha from std_type if any line already has an alpha # TODO inconsistent behavior: Document this CLEARLY!
-    if "alpha" in net.line.columns and "alpha" in lineparam:
-        entries["alpha"] = lineparam["alpha"]
-
-    _set_entries(net, "line", index, entries=entries)
-
-    _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
-    _set_value_if_not_nan(net, index, alpha, "alpha", "line")
-    _set_value_if_not_nan(net, index, temperature_degree_celsius, "temperature_degree_celsius", "line")
-    # add optional columns for TDPF if parameters passed to kwargs:
-    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line")
-    for column, value in tdpf_parameters.items():
-        _set_value_if_not_nan(net, index, value, column, "line")
-
-    _add_branch_geodata(net, geodata, index)
-
-    return index
+    )[0]
 
 
+@deprecated("Use create_lines_dc instead.")
 def create_line_dc(
     net: pandapowerNet,
     from_bus_dc: Int,
@@ -218,76 +174,29 @@ def create_line_dc(
     Example:
         >>> create_line_dc(net, from_bus_dc=0, to_bus_dc=1, length_km=0.1,  std_type="NAYY 4x50 SE", name="line_dc1")
     """
-
-    # check if bus exist to attach the line to
-    _check_branch_element(net, "Line_dc", index, from_bus_dc, to_bus_dc, node_name="bus_dc")
-
-    index = _get_index_with_check(net, "line_dc", index)
-
-    tdpf_columns = (
-        "wind_speed_m_per_s",
-        "wind_angle_degree",
-        "conductor_outer_diameter_m",
-        "air_temperature_degree_celsius",
-        "reference_temperature_degree_celsius",
-        "solar_radiation_w_per_sq_m",
-        "solar_absorptivity",
-        "emissivity",
-        "r_theta_kelvin_per_mw",
-        "mc_joule_per_m_k",
-    )
-    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
-
-    entries = {
-        "name": name,
-        "length_km": length_km,
-        "from_bus_dc": from_bus_dc,
-        "to_bus_dc": to_bus_dc,
-        "in_service": in_service,
-        "std_type": std_type,
-        "df": df,
-        "parallel": parallel,
+    return create_lines_dc(
+        net,
+        from_bus_dc,
+        to_bus_dc,
+        length_km,
+        std_type,
+        name,
+        index,
+        geodata,
+        df,
+        parallel,
+        in_service,
+        max_loading_percent,
+        alpha,
+        temperature_degree_celsius,
         **kwargs,
-    }
-
-    lineparam = load_std_type(net, std_type, "line_dc")
-
-    entries.update({param: lineparam[param] for param in ["r_ohm_per_km", "max_i_ka"]})
-    if "r0_ohm_per_km" in lineparam:
-        entries.update({param: lineparam[param] for param in ["r0_ohm_per_km"]})
-
-    entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.0
-
-    if "type" in lineparam:
-        entries["type"] = lineparam["type"]
-
-    # if net.line column already has alpha, add it from std_type
-    if "alpha" in net.line.columns and "alpha" in lineparam:
-        entries["alpha"] = lineparam["alpha"]
-
-    _set_entries(net, "line_dc", index, entries=entries)
-
-    if geodata and hasattr(geodata, "__iter__"):
-        geo = [[x, y] for x, y in geodata]
-        net.line_dc.at[index, "geo"] = f'{{"coordinates": {geo}, "type": "LineString"}}'
-
-    _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line_dc")
-    _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
-    _set_value_if_not_nan(net, index, temperature_degree_celsius, "temperature_degree_celsius", "line_dc")
-    # add optional columns for TDPF if parameters passed to kwargs:
-    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line_dc")
-    for column, value in tdpf_parameters.items():
-        _set_value_if_not_nan(net, index, value, column, "line_dc")
-
-    _add_branch_geodata(net, geodata, index, "line_dc")
-
-    return index
+    )[0]
 
 
 def create_lines(
     net: pandapowerNet,
-    from_buses: Sequence,
-    to_buses: Sequence,
+    from_buses: Int | Sequence[Int],
+    to_buses: Int | Sequence[Int],
     length_km: float | Iterable[float],
     std_type: str | Iterable[str],
     name: Iterable[str] | None = None,
@@ -297,6 +206,9 @@ def create_lines(
     parallel: int | Iterable[int] = get_default_value("line", "parallel"),
     in_service: bool | Iterable[bool] = get_default_value("line", "in_service"),
     max_loading_percent: float | Iterable[float] = nan,
+    alpha: float | Iterable[float] = nan,
+    temperature_degree_celsius: float | Iterable[float] = nan,
+    skip_validation: bool = False,
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
@@ -321,6 +233,12 @@ def create_lines(
         df: derating factor: maximum current of line in relation to nominal current of line (from 0 to 1)
         parallel: number of parallel line systems
         max_loading_percent: maximum current loading (only needed for OPF)
+        alpha: temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))
+            .. attention::
+                This column will only be filled from std_type if the column already exists in the line DataFrame
+        temperature_degree_celsius: line temperature for which line resistance is adjusted
+        skip_validation: if set to true validate_network will not be run after creating.
+            (Only use this if performance is critical)
 
     Keyword Arguments:
         alpha (float): temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))
@@ -347,6 +265,9 @@ def create_lines(
             >>>   net, from_buses=[0,1], to_buses=[2,3], length_km=0.1, std_type="NAYY 4x50 SE", name=["line1", "line2"]
             >>> )
     """
+    from_buses = ensure_iterability(from_buses)
+    to_buses = ensure_iterability(to_buses)
+
     _check_multiple_branch_elements(net, from_buses, to_buses, "Lines")
 
     index = _get_multiple_index_with_check(net, "line", index, len(from_buses))
@@ -370,7 +291,9 @@ def create_lines(
         entries["x_ohm_per_km"] = lineparam["x_ohm_per_km"]
         entries["c_nf_per_km"] = lineparam["c_nf_per_km"]
         entries["max_i_ka"] = lineparam["max_i_ka"]
-        entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.0
+        entries["g_us_per_km"] = lineparam.get("g_us_per_km", 0.0)
+        if "alpha" in net.line.columns and "alpha" in lineparam:
+            entries["alpha"] = lineparam["alpha"]
         if "type" in lineparam:
             entries["type"] = lineparam["type"]
     else:
@@ -383,6 +306,8 @@ def create_lines(
         entries["type"] = [line_param_dict.get("type", None) for line_param_dict in lineparam]
 
     _add_to_entries_if_not_nan(net, "line", entries, index, "max_loading_percent", max_loading_percent)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "alpha", alpha)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "temperature_degree_celsius", temperature_degree_celsius)
 
     # add optional columns for TDPF if parameters passed to kwargs:
     _add_to_entries_if_not_nan(net, "line", entries, index, "tdpf", kwargs.get("tdpf"))
@@ -406,13 +331,16 @@ def create_lines(
 
     _add_multiple_branch_geodata(net, geodata, index)
 
+    if not skip_validation:
+        validate_network(net)
+
     return index
 
 
 def create_lines_dc(
     net: pandapowerNet,
-    from_buses_dc: Sequence,
-    to_buses_dc: Sequence,
+    from_buses_dc: Int | Sequence[Int],
+    to_buses_dc: Int | Sequence[Int],
     length_km: float | Iterable[float],
     std_type: str | Sequence[str],
     name: Iterable[str] | None = None,
@@ -422,6 +350,9 @@ def create_lines_dc(
     parallel: int | Iterable[int] = get_default_value("line", "parallel"),
     in_service: bool | Iterable[bool] = get_default_value("line", "in_service"),
     max_loading_percent: float | Iterable[float] = nan,
+    alpha: float = nan,
+    temperature_degree_celsius: float = nan,
+    skip_validation: bool = False,
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
@@ -446,6 +377,12 @@ def create_lines_dc(
         df: derating factor: maximum current of line in relation to nominal current of line (from 0 to 1)
         parallel: number of parallel line systems
         max_loading_percent: maximum current loading (only needed for OPF)
+        alpha: temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))
+            .. attention::
+                This column will only be filled from std_type if the column already exists in the line DataFrame
+        temperature_degree_celsius: line temperature for which line resistance is adjusted
+        skip_validation: if set to true validate_network will not be run after creating.
+            (Only use this if performance is critical)
 
     Keyword Arguments:
         alpha (float): temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))
@@ -472,8 +409,11 @@ def create_lines_dc(
         >>>   std_type="Not specified yet", name=["line_dc1","line_dc2"]
         >>> )
     """
+    from_buses_dc = ensure_iterability(from_buses_dc)
+    to_buses_dc = ensure_iterability(to_buses_dc)
+
     _check_multiple_branch_elements(
-        net, from_buses_dc, to_buses_dc, "Lines_dc", node_name="bus_dc", plural="(all dc buses)"
+        net, from_buses_dc, to_buses_dc, "lines_dc", node_name="bus_dc", plural="(all dc buses)"
     )
 
     index = _get_multiple_index_with_check(net, "line_dc", index, len(from_buses_dc))
@@ -495,7 +435,9 @@ def create_lines_dc(
         lineparam = load_std_type(net, std_type, "line_dc")
         entries["r_ohm_per_km"] = lineparam["r_ohm_per_km"]
         entries["max_i_ka"] = lineparam["max_i_ka"]
-        entries["g_us_per_km"] = lineparam["g_us_per_km"] if "g_us_per_km" in lineparam else 0.0
+        entries["g_us_per_km"] = lineparam.get("g_us_per_km", 0.0)
+        if "alpha" in net.line_dc.columns and "alpha" in lineparam:
+            entries["alpha"] = lineparam["alpha"]
         if "type" in lineparam:
             entries["type"] = lineparam["type"]
     else:
@@ -506,6 +448,8 @@ def create_lines_dc(
         entries["type"] = [line_param_dict.get("type", None) for line_param_dict in lineparam]
 
     _add_to_entries_if_not_nan(net, "line_dc", entries, index, "max_loading_percent", max_loading_percent)
+    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "alpha", alpha)
+    _add_to_entries_if_not_nan(net, "line_dc", entries, index, "temperature_degree_celsius", temperature_degree_celsius)
 
     # add optional columns for TDPF if parameters passed to kwargs:
     _add_to_entries_if_not_nan(net, "line_dc", entries, index, "tdpf", kwargs.get("tdpf"))
@@ -529,9 +473,13 @@ def create_lines_dc(
 
     _add_multiple_branch_geodata(net, geodata, index, "line_dc")
 
+    if not skip_validation:
+        validate_network(net)
+
     return index
 
 
+@deprecated("Use create_lines_from_parameters instead.")
 def create_line_from_parameters(
     net: pandapowerNet,
     from_bus: Int,
@@ -612,71 +560,33 @@ def create_line_from_parameters(
         >>>   r_ohm_per_km=.01, x_ohm_per_km=0.05, c_nf_per_km=10, max_i_ka=0.4, name="line1"
         >>> )
     """
-
-    # check if bus exist to attach the line to
-    _check_branch_element(net, "Line", index, from_bus, to_bus)
-
-    index = _get_index_with_check(net, "line", index)
-
-    tdpf_columns = (
-        "wind_speed_m_per_s",
-        "wind_angle_degree",
-        "conductor_outer_diameter_m",
-        "air_temperature_degree_celsius",
-        "reference_temperature_degree_celsius",
-        "solar_radiation_w_per_sq_m",
-        "solar_absorptivity",
-        "emissivity",
-        "r_theta_kelvin_per_mw",
-        "mc_joule_per_m_k",
-    )
-    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
-
-    entries = {
-        "name": name,
-        "length_km": length_km,
-        "from_bus": from_bus,
-        "to_bus": to_bus,
-        "in_service": in_service,
-        "std_type": None,
-        "df": df,
-        "r_ohm_per_km": r_ohm_per_km,
-        "x_ohm_per_km": x_ohm_per_km,
-        "c_nf_per_km": c_nf_per_km,
-        "max_i_ka": max_i_ka,
-        "parallel": parallel,
-        "type": type,
-        "g_us_per_km": g_us_per_km,
+    return create_lines_from_parameters(
+        net,
+        from_bus,
+        to_bus,
+        length_km,
+        r_ohm_per_km,
+        x_ohm_per_km,
+        c_nf_per_km,
+        max_i_ka,
+        name,
+        index,
+        type,
+        geodata,
+        in_service,
+        df,
+        parallel,
+        g_us_per_km,
+        max_loading_percent,
+        alpha,
+        temperature_degree_celsius,
+        r0_ohm_per_km,
+        x0_ohm_per_km,
+        c0_nf_per_km,
+        g0_us_per_km,
+        endtemp_degree,
         **kwargs,
-    }
-    _set_entries(net, "line", index, entries=entries)
-
-    nan_0_values = [isnan(r0_ohm_per_km), isnan(x0_ohm_per_km), isnan(c0_nf_per_km)]
-    if not np_any(nan_0_values):
-        _set_value_if_not_nan(net, index, r0_ohm_per_km, "r0_ohm_per_km", "line")
-        _set_value_if_not_nan(net, index, x0_ohm_per_km, "x0_ohm_per_km", "line")
-        _set_value_if_not_nan(net, index, c0_nf_per_km, "c0_nf_per_km", "line")
-        _set_value_if_not_nan(
-            net, index, g0_us_per_km, "g0_us_per_km", "line", default_val=get_default_value("line", "g0_us_per_km")
-        )
-    elif not np_all(nan_0_values):
-        logger.warning(
-            "Zero sequence values are given for only some parameters. Please specify "
-            "them for all parameters, otherwise they are not set!"
-        )
-
-    _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line")
-    _set_value_if_not_nan(net, index, alpha, "alpha", "line")
-    _set_value_if_not_nan(net, index, temperature_degree_celsius, "temperature_degree_celsius", "line")
-    _set_value_if_not_nan(net, index, endtemp_degree, "endtemp_degree", "line")
-
-    # add optional columns for TDPF if parameters passed to kwargs:
-    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line")
-    for column, value in tdpf_parameters.items():
-        _set_value_if_not_nan(net, index, value, column, "line")
-
-    _add_branch_geodata(net, geodata, index)
-    return index
+    )[0]
 
 
 def create_line_dc_from_parameters(
@@ -747,65 +657,32 @@ def create_line_dc_from_parameters(
         >>>   net, from_bus_dc=0, to_bus_dc=1, length_km=0.1, r_ohm_per_km=.01, max_i_ka=0.4, name="line_dc1"
         >>> )
     """
-
-    # check if bus exist to attach the dc line to
-    _check_branch_element(net, "Line_dc", index, from_bus_dc, to_bus_dc, node_name="bus_dc")
-
-    index = _get_index_with_check(net, "line_dc", index)
-
-    tdpf_columns = (
-        "wind_speed_m_per_s",
-        "wind_angle_degree",
-        "conductor_outer_diameter_m",
-        "air_temperature_degree_celsius",
-        "reference_temperature_degree_celsius",
-        "solar_radiation_w_per_sq_m",
-        "solar_absorptivity",
-        "emissivity",
-        "r_theta_kelvin_per_mw",
-        "mc_joule_per_m_k",
-    )
-    tdpf_parameters = {c: kwargs.pop(c) for c in tdpf_columns if c in kwargs}
-
-    entries = {
-        "name": name,
-        "length_km": length_km,
-        "from_bus_dc": from_bus_dc,
-        "to_bus_dc": to_bus_dc,
-        "in_service": in_service,
-        "std_type": None,
-        "df": df,
-        "r_ohm_per_km": r_ohm_per_km,
-        "max_i_ka": max_i_ka,
-        "parallel": parallel,
-        "type": type,
-        "g_us_per_km": g_us_per_km,
+    return create_lines_dc_from_parameters(
+        net,
+        from_bus_dc,
+        to_bus_dc,
+        length_km,
+        r_ohm_per_km,
+        max_i_ka,
+        name,
+        index,
+        type,
+        geodata,
+        in_service,
+        df,
+        parallel,
+        g_us_per_km,
+        max_loading_percent,
+        alpha,
+        temperature_degree_celsius,
         **kwargs,
-    }
-    _set_entries(net, "line_dc", index, entries=entries)
-
-    if geodata and hasattr(geodata, "__iter__"):
-        geo = [[x, y] for x, y in geodata]
-        net.line_dc.at[index, "geo"] = f'{{"coordinates": {geo}, "type": "LineString"}}'
-
-    _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "line_dc")
-    _set_value_if_not_nan(net, index, alpha, "alpha", "line_dc")
-    _set_value_if_not_nan(net, index, temperature_degree_celsius, "temperature_degree_celsius", "line_dc")
-
-    # add optional columns for TDPF if parameters passed to kwargs:
-    _set_value_if_not_nan(net, index, kwargs.get("tdpf"), "tdpf", "line_dc")
-    for column, value in tdpf_parameters.items():
-        _set_value_if_not_nan(net, index, value, column, "line_dc")
-
-    _add_branch_geodata(net, geodata, index, "line_dc")
-
-    return index
+    )[0]
 
 
 def create_lines_from_parameters(
     net: pandapowerNet,
-    from_buses: Sequence,
-    to_buses: Sequence,
+    from_buses: Int | Sequence[Int],
+    to_buses: Int | Sequence[Int],
     length_km: float | Iterable[float],
     r_ohm_per_km: float | Iterable[float],
     x_ohm_per_km: float | Iterable[float],
@@ -826,6 +703,8 @@ def create_lines_from_parameters(
     x0_ohm_per_km: float | Iterable[float] = nan,
     c0_nf_per_km: float | Iterable[float] = nan,
     g0_us_per_km: float | Iterable[float] = nan,
+    endtemp_degree: float | Iterable[float] = nan,
+    skip_validation: bool = False,
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
@@ -858,7 +737,12 @@ def create_lines_from_parameters(
             coordinates of bus b. The points in the middle represent the bending points of the line
         max_loading_percent: maximum current loading (only needed for OPF)
         alpha: temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
+            .. attention::
+                This column will only be filled from std_type if the column already exists in the line DataFrame
         temperature_degree_celsius: line temperature for which line resistance is adjusted
+        endtemp_degree:
+        skip_validation: if set to true validate_network will not be run after creating.
+            (Only use this if performance is critical)
 
     Keyword Arguments:
         tdpf (bool): whether the line is considered in the TDPF calculation
@@ -884,7 +768,10 @@ def create_lines_from_parameters(
         >>>   max_i_ka=0.4, name=["line1","line2"]
         >>> )
     """
-    _check_multiple_branch_elements(net, from_buses, to_buses, "Lines")
+    from_buses = ensure_iterability(from_buses)
+    to_buses = ensure_iterability(to_buses)
+
+    _check_multiple_branch_elements(net, from_buses, to_buses, "lines")
 
     index = _get_multiple_index_with_check(net, "line", index, len(from_buses))
 
@@ -911,6 +798,7 @@ def create_lines_from_parameters(
     _add_to_entries_if_not_nan(net, "line", entries, index, "c0_nf_per_km", c0_nf_per_km)
     _add_to_entries_if_not_nan(net, "line", entries, index, "g0_us_per_km", g0_us_per_km)
     _add_to_entries_if_not_nan(net, "line", entries, index, "temperature_degree_celsius", temperature_degree_celsius)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "endtemp_degree", endtemp_degree)
     _add_to_entries_if_not_nan(net, "line", entries, index, "alpha", alpha)
 
     # add optional columns for TDPF if parameters passed to kwargs:
@@ -935,13 +823,16 @@ def create_lines_from_parameters(
 
     _add_multiple_branch_geodata(net, geodata, index)
 
+    if not skip_validation:
+        validate_network(net)
+
     return index
 
 
 def create_lines_dc_from_parameters(
     net: pandapowerNet,
-    from_buses_dc: Sequence,
-    to_buses_dc: Sequence,
+    from_buses_dc: Int | Sequence[Int],
+    to_buses_dc: Int | Sequence[Int],
     length_km: float | Iterable[float],
     r_ohm_per_km: float | Iterable[float],
     max_i_ka: float | Iterable[float],
@@ -956,6 +847,7 @@ def create_lines_dc_from_parameters(
     max_loading_percent: float | Iterable[float] = nan,
     alpha: float = nan,
     temperature_degree_celsius: float = nan,
+    skip_validation: bool = False,
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
@@ -983,6 +875,8 @@ def create_lines_dc_from_parameters(
         max_loading_percent: maximum current loading (only needed for OPF)
         alpha: temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
         temperature_degree_celsius: line temperature for which line resistance is adjusted
+        skip_validation: if set to true validate_network will not be run after creating.
+            (Only use this if performance is critical)
 
     Keyword Arguments:
         tdpf (bool): whether the line is considered in the TDPF calculation
@@ -1007,6 +901,9 @@ def create_lines_dc_from_parameters(
         >>>   r_ohm_per_km=.01, max_i_ka=0.4, name=["line_dc1","line_dc2"]
         >>> )
     """
+    from_buses_dc = ensure_iterability(from_buses_dc)
+    to_buses_dc = ensure_iterability(to_buses_dc)
+
     _check_multiple_branch_elements(
         net, from_buses_dc, to_buses_dc, "Lines_dc", node_name="bus_dc", plural="(all dc buses)"
     )
@@ -1054,6 +951,9 @@ def create_lines_dc_from_parameters(
 
     _add_multiple_branch_geodata(net, geodata, index, "line_dc")
 
+    if not skip_validation:
+        validate_network(net)
+
     return index
 
 
@@ -1074,6 +974,7 @@ def create_dcline(
     max_q_from_mvar: float = nan,
     max_q_to_mvar: float = nan,
     in_service: bool = get_default_value("dcline", "in_service"),
+    skip_validation: bool = False,
     **kwargs,
 ) -> Int:
     """
@@ -1096,6 +997,8 @@ def create_dcline(
         min_q_to_mvar: Minimum reactive power at to bus. Necessary for OPF
         max_q_from_mvar: Maximum reactive power at from bus. Necessary for OPF
         max_q_to_mvar: Maximum reactive power at to bus. Necessary for OPF
+        skip_validation: if set to true validate_network will not be run after creating.
+            (Only use this if performance is critical)
 
     Return:
         ID of the created element
@@ -1127,5 +1030,8 @@ def create_dcline(
         **kwargs,
     }
     _set_entries(net, "dcline", index, entries=entries)
+
+    if not skip_validation:
+        validate_network(net)
 
     return index
