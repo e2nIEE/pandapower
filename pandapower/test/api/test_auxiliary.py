@@ -459,12 +459,13 @@ def test_characteristic(file_io):
     c1 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], fill_value=(0, 4))
     c2 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
     c3 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="hello")
-    c4 = LogSplineCharacteristic(net, [0,1,2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
+    c4 = LogSplineCharacteristic(net, [1, 2, 3], [1, 4, 9], interpolator_kind="Pchip", extrapolate=False)
 
     if file_io:
         net_copy = from_json_string(to_json(net))
         c1, c2, c3, c4 = net_copy.characteristic.object.values
 
+    assert np.allclose(c4([1, 1.5, 2, 3]), [1, 2.25, 4, 9], rtol=0, atol=1e-6)
     assert np.allclose(c1([-1]), [0], rtol=0, atol=1e-6)
     # assert c1(3) == 4
     # assert c1(1) == 1

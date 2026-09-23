@@ -401,7 +401,7 @@
     "trafo3w": {
       "_module": "pandas.core.frame",
       "_class": "DataFrame",
-      "_object": "{\"columns\":[\"name\",\"std_type\",\"hv_bus\",\"mv_bus\",\"lv_bus\",\"sn_hv_mva\",\"sn_mv_mva\",\"sn_lv_mva\",\"vn_hv_kv\",\"vn_mv_kv\",\"vn_lv_kv\",\"vk_hv_percent\",\"vk_mv_percent\",\"vk_lv_percent\",\"vkr_hv_percent\",\"vkr_mv_percent\",\"vkr_lv_percent\",\"pfe_kw\",\"i0_percent\",\"shift_mv_degree\",\"shift_lv_degree\",\"tap_side\",\"tap_neutral\",\"tap_min\",\"tap_max\",\"tap_step_percent\",\"tap_step_degree\",\"tap_pos\",\"tap_at_star_point\",\"in_service\",\"vk0_hv_percent\",\"vk0_mv_percent\",\"vk0_lv_percent\",\"vkr0_hv_percent\",\"vkr0_mv_percent\",\"vkr0_lv_percent\",\"vector_group\",\"equipment\",\"vm_set_pu\"],\"index\":[0,1],\"data\":[[\"3W_Star\",\"3-Wicklungstransformatortyp_1_1\",5,6,7,1.0,0.699999988079071,0.300000011920929,20.0,0.600000023841858,0.400000005960464,2.0,1.0,0.5,0.300000011920929,0.200000002980232,0.100000001490116,50.0,10.0,0.0,0.0,\"hv\",0,-1,1,5.0,0.0,1,true,true,3.0,3.0,3.0,0.0,0.0,0.0,\"YNynyn\",\"\",1.0],[\"3W_Terminal\",\"3-Wicklungstransformatortyp_1\",1,2,3,1.0,0.699999988079071,0.300000011920929,20.0,0.600000023841858,0.400000005960464,2.0,1.0,0.5,0.300000011920929,0.200000002980232,0.100000001490116,50.0,10.0,0.0,0.0,\"hv\",0,-1,1,5.0,0.0,1,false,true,3.0,3.0,3.0,0.0,0.0,0.0,\"YNynyn\",\"\",1.0]]}",
+      "_object": "{\"columns\":[\"name\",\"std_type\",\"hv_bus\",\"mv_bus\",\"lv_bus\",\"sn_hv_mva\",\"sn_mv_mva\",\"sn_lv_mva\",\"vn_hv_kv\",\"vn_mv_kv\",\"vn_lv_kv\",\"vk_hv_percent\",\"vk_mv_percent\",\"vk_lv_percent\",\"vkr_hv_percent\",\"vkr_mv_percent\",\"vkr_lv_percent\",\"pfe_kw\",\"i0_percent\",\"shift_mv_degree\",\"shift_lv_degree\",\"tap_side\",\"tap_neutral\",\"tap_min\",\"tap_max\",\"tap_step_percent\",\"tap_step_degree\",\"tap_pos\",\"tap_at_star_point\",\"in_service\",\"vk0_hv_percent\",\"vk0_mv_percent\",\"vk0_lv_percent\",\"vkr0_hv_percent\",\"vkr0_mv_percent\",\"vkr0_lv_percent\",\"vector_group\",\"equipment\",\"vm_set_pu\",\"tap_dependency_table\"],\"index\":[0,1],\"data\":[[\"3W_Star\",\"3-Wicklungstransformatortyp_1_1\",5,6,7,1.0,0.699999988079071,0.300000011920929,20.0,0.600000023841858,0.400000005960464,2.0,1.0,0.5,0.300000011920929,0.200000002980232,0.100000001490116,50.0,10.0,0.0,0.0,\"hv\",0,-1,1,5.0,0.0,1,true,true,3.0,3.0,3.0,0.0,0.0,0.0,\"YNynyn\",\"\",1.0,false],[\"3W_Terminal\",\"3-Wicklungstransformatortyp_1\",1,2,3,1.0,0.699999988079071,0.300000011920929,20.0,0.600000023841858,0.400000005960464,2.0,1.0,0.5,0.300000011920929,0.200000002980232,0.100000001490116,50.0,10.0,0.0,0.0,\"hv\",0,-1,1,5.0,0.0,1,false,true,3.0,3.0,3.0,0.0,0.0,0.0,\"YNynyn\",\"\",1.0,false]]}",
       "orient": "split",
       "dtype": {
         "name": "object",
@@ -442,7 +442,8 @@
         "vkr0_lv_percent": "float64",
         "vector_group": "object",
         "equipment": "object",
-        "vm_set_pu": "float64"
+        "vm_set_pu": "float64",
+        "tap_dependency_table": "bool"
       },
       "is_multiindex": false,
       "is_multicolumn": false

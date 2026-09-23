@@ -1731,7 +1731,8 @@ def _check_tdpf_parameters(
         tdpf_lines = np.array([])
         # we raise the exception later
     else:
-        tdpf_lines = net.line.loc[net.line.tdpf.fillna(False).astype(bool) & net.line.in_service].index.values
+        tdpf_mask = net.line.tdpf.to_numpy(dtype=bool, na_value=False)
+        tdpf_lines = net.line.loc[tdpf_mask & net.line.in_service].index.values
 
     if len(tdpf_lines) == 0:
         logger.info("TDPF: no relevant lines found")

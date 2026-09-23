@@ -1588,7 +1588,7 @@ def _transformer_correction_factor(trafo_df, vk, vkr, sn, cmax, case):
         return np.ones(len(trafo_df))
 
     if "power_station_unit" in trafo_df.columns:
-        power_station_unit = trafo_df.power_station_unit.fillna(False).values.astype(bool)
+        power_station_unit = trafo_df.power_station_unit.to_numpy(dtype=bool, na_value=False)
     else:
         power_station_unit = np.zeros(len(trafo_df)).astype(bool)
 
