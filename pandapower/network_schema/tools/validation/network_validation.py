@@ -1,10 +1,11 @@
+import copy
 import logging
 
 import pandera.pandas as pa
 
 from pandapower import pandapowerNet
 from pandapower.network_schema.tools.helper import get_element_schema
-from pandapower.network_schema.tools.validation.bus_index_validation import _bus_index_validation
+from pandapower.network_schema.tools.validation.bus_index_validation import build_foreign_key_index_checks
 
 logger = logging.getLogger()
 
@@ -66,13 +67,15 @@ def validate_network(net: pandapowerNet, groups_to_validate: str | set[str] | No
         groups_set = groups_to_validate
 
     for element in net.keys():
-        schema = get_element_schema(element)
+        schema = copy.deepcopy(get_element_schema(element))
         if schema is None:
             continue
 
         df = net[element]
         reset_required: set[str] = set()
         try:
+            # validate bus index dependency
+            build_foreign_key_index_checks(schema, net)
             if groups_set is not None:
                 # Get all group checks at once for all specified groups
                 cols = [
@@ -94,6 +97,3 @@ def validate_network(net: pandapowerNet, groups_to_validate: str | set[str] | No
             # reset the schema
             for col_name in reset_required:
                 schema.columns[col_name].required = False
-
-        # validate bus index dependency
-        _bus_index_validation(element, schema, net)

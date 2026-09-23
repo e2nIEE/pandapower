@@ -16,10 +16,10 @@ _line_columns = {
         description="standard type which can be used to easily define line parameters with the pandapower standard type library",
     ),
     "from_bus": pa.Column(
-        int, pa.Check.ge(0), description="Index of bus where the line starts", metadata={"foreign_key": "bus.index"}
+        int, pa.Check.ge(0), description="Index of bus where the line starts", metadata={"foreign_key": "bus"}
     ),
     "to_bus": pa.Column(
-        int, pa.Check.ge(0), description="Index of bus where the line ends", metadata={"foreign_key": "bus.index"}
+        int, pa.Check.ge(0), description="Index of bus where the line ends", metadata={"foreign_key": "bus"}
     ),
     "length_km": pa.Column(float, pa.Check.gt(0), description="length of the line [km]"),
     "r_ohm_per_km": pa.Column(float, pa.Check.ge(0), description="resistance of the line [Ohm per km]"),

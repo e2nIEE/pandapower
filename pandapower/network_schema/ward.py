@@ -11,7 +11,7 @@ ward_schema = pa.DataFrameSchema(
             metadata={"cim": True},
         ),
         "bus": pa.Column(
-            int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}
+            int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus"}
         ),
         "ps_mw": pa.Column(float, description="constant active power demand [MW]"),
         "qs_mvar": pa.Column(float, description="constant reactive power demand [MVar]"),

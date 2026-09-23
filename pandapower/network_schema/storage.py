@@ -3,7 +3,7 @@ import pandera.pandas as pa
 
 _storage_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="Name of the storage unit"),
-    "bus": pa.Column(int, pa.Check.ge(0), description="Index of connected bus", metadata={"foreign_key": "bus.index"}),
+    "bus": pa.Column(int, pa.Check.ge(0), description="Index of connected bus", metadata={"foreign_key": "bus"}),
     "p_mw": pa.Column(
         float,
         description="Momentary real power of the storage (positive for charging, negative for discharging)",
