@@ -239,7 +239,8 @@ def test_unequal_trafo_hv_lv_impedances():
     nminus1_cases = {"line": {"index": net.line.index.values}}
     res = run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
 
-    run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
+    with pytest.warns(UserWarning, match=r'has not found any generators tagged as "slack bus"'):
+        run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
 
     for s in ("min", "max"):
         assert np.allclose(res["bus"][f"{s}_vm_pu"], net.res_bus[f"{s}_vm_pu"].values, atol=1e-3, rtol=0), s
