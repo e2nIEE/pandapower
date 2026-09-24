@@ -226,9 +226,13 @@ jobs:
           uv pip install matplotlib
           uv pip install lxml
           if ${{ matrix.python-version != '3.10' }}; then uv pip install numba; fi
-      - name: Install pandapipes and simbench
+      - name: Install pandapipes
         run: |
           uv pip install git+https://github.com/e2nIEE/pandapipes@develop#egg=pandapipes
+
+      - name: Install simbench
+        if: ${{ matrix.python-version != '3.10' }}
+        run: |
           uv pip install git+https://github.com/e2nIEE/simbench@develop#egg=simbench
       - name: List of installed packages
         run: |
@@ -237,6 +241,7 @@ jobs:
         run: |
           uv run python -c 'from pandapipes import pp_dir; import pytest; import sys; ec = pytest.main([pp_dir]); sys.exit(ec)'
       - name: Test simbench
+        if: ${{ matrix.python-version != '3.10' }}
         run: |
           uv run python -c 'from simbench import sb_dir; import pytest; import sys; ec = pytest.main([sb_dir]); sys.exit(ec)'
 

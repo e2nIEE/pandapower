@@ -477,6 +477,23 @@ def test_characteristic(file_io):
         c3([0])
 
 
+@pytest.mark.parametrize("zero_axis", ("x", "y"))
+def test_log_characteristic_zero_values(zero_axis, caplog):
+    net = create_empty_network()
+    x_values = np.array([0.0, 1.0, 2.0]) if zero_axis == "x" else np.array([1.0, 2.0, 3.0])
+    y_values = np.array([0.0, 1.0, 2.0]) if zero_axis == "y" else np.array([1.0, 2.0, 3.0])
+    warning_message = f"zero-values not supported in {zero_axis}_values"
+
+    with pytest.warns(RuntimeWarning, match="divide by zero encountered in log10"):
+        characteristic = LogSplineCharacteristic(
+            net, x_values, y_values, interpolator_kind="Pchip", extrapolate=False
+        )
+
+    assert warning_message in caplog.messages
+    logged_values = characteristic.x_vals if zero_axis == "x" else characteristic.y_vals
+    assert np.isneginf(logged_values[0])
+
+
 def test_log_characteristic_property():
     net = create_empty_network()
     c = LogSplineCharacteristic(net, [10, 1000, 10000], [1000, 0.1, 0.001], interpolator_kind="Pchip", extrapolate=False)

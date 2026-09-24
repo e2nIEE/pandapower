@@ -236,7 +236,11 @@ def test_temperature_r(calc_a0_a1_a2_tau_for_simple_test_grid, with_gen, distrib
     net2.line["temperature_degree_celsius"] = net.res_line.temperature_degree_celsius
     # test default value for alpha = 0.004
     net2.line.drop(columns="alpha", inplace=True)
-    runpp(net2, consider_line_temperature=True)
+    with pytest.warns(
+        UserWarning,
+        match=r"^'alpha' is assumed to 0\.004 and required for the calculation of the temperature based resistance\.$",
+    ):
+        runpp(net2, consider_line_temperature=True)
     net2.line["alpha"] = ALPHA_TDPF
 
     net.res_line = net.res_line.drop(["temperature_degree_celsius", "r_theta_kelvin_per_mw"], axis=1)

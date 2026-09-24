@@ -4,6 +4,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
+import pytest
 
 from pandapower.create import create_empty_network, create_bus, create_line, create_ext_grid, create_sgen, create_gen
 from pandapower.shortcircuit.calc_sc import calc_sc
@@ -145,4 +146,8 @@ def test_voltage_very_simple():
 
 def test_iec_60909_4():
     net = iec_60909_4()
-    calc_sc(net, case="max", ip=True, ith=True, branch_results=True, bus=2)
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc(net, case="max", ip=True, ith=True, branch_results=True, bus=2)

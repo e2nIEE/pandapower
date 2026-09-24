@@ -325,13 +325,16 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
     
     # branch_lookup: which branches are lines, and which ones are transformers
     branch_lookup = pd.DataFrame({"element": [-1] * n_bra, "element_type": [""] * n_bra})
-    branch_lookup.loc[is_line, "element"] = idx_line
-    branch_lookup.loc[is_line, "element_type"] = "line"
-    branch_lookup.loc[is_trafo, "element"] = idx_trafo
-    branch_lookup.loc[is_trafo, "element_type"] = "trafo"
+    if np.any(is_line):
+        branch_lookup.loc[is_line, "element"] = idx_line
+        branch_lookup.loc[is_line, "element_type"] = "line"
+    if np.any(is_trafo):
+        branch_lookup.loc[is_trafo, "element"] = idx_trafo
+        branch_lookup.loc[is_trafo, "element_type"] = "trafo"
     branch_lookup["element"] = branch_lookup["element"].astype("float64")
-    branch_lookup.loc[is_impedance, "element"] = idx_impedance
-    branch_lookup.loc[is_impedance, "element_type"] = "impedance"
+    if np.any(is_impedance):
+        branch_lookup.loc[is_impedance, "element"] = idx_impedance
+        branch_lookup.loc[is_impedance, "element_type"] = "impedance"
     return branch_lookup
 
 

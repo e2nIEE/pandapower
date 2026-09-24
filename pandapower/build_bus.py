@@ -1022,9 +1022,6 @@ def _add_ext_grid_sc_impedance(net, ppc):
         z_grid = c / (s_sc/3)  # 3 phase power divided to get 1 ph power
     x_grid = z_grid / np.sqrt(rx ** 2 + 1)
     r_grid = rx * x_grid
-    eg["r"] = r_grid
-    eg["x"] = x_grid
-
     y_grid = 1 / (r_grid + x_grid * 1j)
     buses, gs, bs = _sum_by_group(eg_buses_ppc, y_grid.real, y_grid.imag)
     if mode == "sc":

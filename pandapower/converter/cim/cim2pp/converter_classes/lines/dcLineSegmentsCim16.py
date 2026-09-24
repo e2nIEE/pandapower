@@ -72,9 +72,9 @@ class DcLineSegmentsCim16:
         converters = converters.drop(columns=['sequenceNumber'])
         converters = converters.rename(columns={'rdfId': 'converters'})
         converter_terminals = pd.concat(
-            [self.cimConverter.cim['eq']['Terminal'], self.cimConverter.cim['eq_bd']['Terminal']],
-            ignore_index=True, sort=False)
-        converter_terminals = converter_terminals[['rdfId']].rename(columns={'rdfId': 'rdfId_Terminal'})
+            [self.cimConverter.cim['eq']['Terminal'][['rdfId']],
+             self.cimConverter.cim['eq_bd']['Terminal'][['rdfId']]],
+            ignore_index=True, sort=False).rename(columns={'rdfId': 'rdfId_Terminal'})
         converters_t = pd.merge(converters, converter_terminals, how='inner', on='rdfId_Terminal')
 
         dc_line_segments = pd.merge(dc_line_segments, converters[['converters', 'ConnectivityNode']],

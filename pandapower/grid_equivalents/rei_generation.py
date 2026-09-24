@@ -63,7 +63,7 @@ def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
     """
     t_start = time.perf_counter()
     # --- initialization
-    Ybus_origin = net_zpbn._ppc["internal"]["Ybus"].todense()
+    Ybus_origin = net_zpbn._ppc["internal"]["Ybus"].toarray()
     bus_lookup_ppc = bus_lookups["bus_lookup_ppc"]
     nb_dict = {}
     for key in bus_lookup_ppc.keys():
@@ -96,7 +96,7 @@ def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type,
             logger.debug("Ymat_ee is a singular martix, now try to compute the \
                          pseudo-inverse of the matrix.")
             inverse_Ybus_ee = np.linalg.pinv(Ybus_ee)
-    Ybus_eq_boundary = Ybus_bb - (Ybus_be * inverse_Ybus_ee * Ybus_eb)
+    Ybus_eq_boundary = Ybus_bb - (Ybus_be @ inverse_Ybus_ee @ Ybus_eb)
     Ybus_eq = np.copy(Ybus_sorted[0: nb_dict["nb_i"] + nb_dict["nb_b"] + nb_dict["nb_t"],
                       0: nb_dict["nb_i"] + nb_dict["nb_b"] + nb_dict["nb_t"]])
     Ybus_eq[-(nb_dict["nb_b"] + nb_dict["nb_t"]):, -(nb_dict["nb_b"] +

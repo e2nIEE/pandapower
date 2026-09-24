@@ -1915,7 +1915,12 @@ def S_from_VI_elementwise(V: NDArray[NumpyDType], I: NDArray[NumpyDType]) -> NDA
 
 
 def I_from_SV_elementwise(S: NDArray[NumpyDType], V: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
-    return np.conjugate(np.divide(S, V, out=np.zeros_like(S), where=V != 0))  # Return zero if div by zero
+    current = np.zeros_like(S)
+    missing_voltage = np.isnan(V)
+    np.divide(S, V, out=current, where=~missing_voltage & (V != 0))
+    missing_current = complex(np.nan, np.nan) if np.iscomplexobj(current) else np.nan
+    current = np.where(missing_voltage, missing_current, current)
+    return np.conjugate(current)
 
 
 def SVabc_from_SV012(

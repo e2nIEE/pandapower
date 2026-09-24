@@ -45,7 +45,11 @@ def get_testgrids(foldername, filename):
     folder = os.path.join(pp_dir, 'test', 'converter', foldername)
     file = os.path.join(folder, filename)
     convert = "ppc" in filename
-    ppcs = from_json(file, convert=convert)
+    with pytest.warns(
+        DeprecationWarning,
+        match="This net is saved in older format, which will not be supported in future\\.",
+    ):
+        ppcs = from_json(file, convert=convert)
     return ppcs
 
 

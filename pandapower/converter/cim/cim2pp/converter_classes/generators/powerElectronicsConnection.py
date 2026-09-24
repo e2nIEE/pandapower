@@ -30,7 +30,7 @@ class PowerElectronicsConnection:
 
     def _prepare_power_electronics_connection(self) -> pd.DataFrame:
         eq_generating_units = self.cimConverter.cim['eq']['GeneratingUnit'][
-            ['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']]
+            ['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']].copy()
         # a column for the type of the static generator in pandapower
         eq_generating_units['type'] = 'GeneratingUnit'
         eq_generating_units = pd.concat([eq_generating_units, self.cimConverter.cim['eq']['WindGeneratingUnit']],

@@ -4,9 +4,13 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
+from contextlib import nullcontext
 
 import numpy as np
 import pytest
+from packaging.version import Version
+from scipy import __version__ as scipy_version
+from scipy.linalg import LinAlgWarning
 
 from pandapower import pp_dir
 from pandapower.auxiliary import get_free_id
@@ -16,6 +20,12 @@ from pandapower.create import create_bus, create_ext_grid, create_line, create_t
 from pandapower.file_io import from_json
 from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.std_types import create_std_type, add_zero_impedance_parameters
+
+
+def _expect_linalg_warning():
+    if Version(scipy_version) < Version("1.17.0"):
+        return nullcontext()
+    return pytest.warns(LinAlgWarning, match=r"^An ill-conditioned matrix detected: slice 0 has rcond = ")
 
 
 def check_results(net, vc, result):
@@ -82,39 +92,40 @@ def test_1ph_shortcircuit():
         check_results(net, vc, result)
 
 
-def test_1ph_shortcircuit_3w():
-    # vector groups without "N" have no impact on the 1ph
-    # here we check both functions, with Y invertion and with LU factorization for individual buses
-    # The currents are taken from the calculation with commercial software for reference
-    results = {
-                "ddd":  [1.5193429, 0, 0],
-                "ddy":  [1.5193429, 0, 0],
-                "dyd":  [1.5193429, 0, 0],
-                "dyy":  [1.5193429, 0, 0],
-                "ydd":  [1.5193429, 0, 0],
-                "ydy":  [1.5193429, 0, 0],
-                "yyd":  [1.5193429, 0, 0],
-                "yyy":  [1.5193429, 0, 0],
-                "ynyd": [1.783257, 0, 0],
-                "yndy": [1.79376470, 0, 0], # ok
-                "yynd": [1.5193429, 3.339398, 0],
-                "ydyn": [1.5193429, 0, 8.836452], # ok
-                "ynynd": [1.783257, 3.499335, 0],
-                "yndyn": [1.79376470, 0, 9.04238714], # ok
-                "yndd": [1.843545, 0, 0],
-                "ynyy": [1.5193429, 0, 0], # ok but why?
-                "dynyn": [1.51934281, 3.4130868, 8.86290334] # Please verify with your commercial software -> results from sc calculations
-               }
+# The currents are taken from the calculation with commercial software for reference.
+SINGLE_3W_RESULTS = {
+    "ddd":  [1.5193429, 0, 0],
+    "ddy":  [1.5193429, 0, 0],
+    "dyd":  [1.5193429, 0, 0],
+    "dyy":  [1.5193429, 0, 0],
+    "ydd":  [1.5193429, 0, 0],
+    "ydy":  [1.5193429, 0, 0],
+    "yyd":  [1.5193429, 0, 0],
+    "yyy":  [1.5193429, 0, 0],
+    "ynyd": [1.783257, 0, 0],
+    "yndy": [1.79376470, 0, 0], # ok
+    "yynd": [1.5193429, 3.339398, 0],
+    "ydyn": [1.5193429, 0, 8.836452], # ok
+    "ynynd": [1.783257, 3.499335, 0],
+    "yndyn": [1.79376470, 0, 9.04238714], # ok
+    "yndd": [1.843545, 0, 0],
+    "ynyy": [1.5193429, 0, 0], # ok but why?
+    "dynyn": [1.51934281, 3.4130868, 8.86290334] # Please verify with your commercial software -> results from sc calculations
+}
 
-    for vg, result in results.items():
-        net = single_3w_trafo_grid(vg)
+
+@pytest.mark.parametrize(("vg", "result"), list(SINGLE_3W_RESULTS.items()))
+def test_1ph_shortcircuit_3w(vg, result):
+    net = single_3w_trafo_grid(vg)
+    warning_context = _expect_linalg_warning() if vg != "dynyn" else nullcontext()
+    with warning_context:
         calc_sc(net, fault="1ph", case="max")
-        assert np.allclose(net.res_bus_sc.ikss_ka.values, result, rtol=0, atol=1e-6)
+    assert np.allclose(net.res_bus_sc.ikss_ka.values, result, rtol=0, atol=1e-6)
 
-        net2 = single_3w_trafo_grid(vg)
-        for bus in net2.bus.index.values:
-            calc_sc(net2, fault="1ph", case="max", inverse_y=False, bus=bus)
-            assert np.allclose(net.res_bus_sc.ikss_ka.at[bus], net2.res_bus_sc.ikss_ka.at[bus], rtol=0, atol=1e-9)
+    net2 = single_3w_trafo_grid(vg)
+    for bus in net2.bus.index.values:
+        calc_sc(net2, fault="1ph", case="max", inverse_y=False, bus=bus)
+        assert np.allclose(net.res_bus_sc.ikss_ka.at[bus], net2.res_bus_sc.ikss_ka.at[bus], rtol=0, atol=1e-9)
 
 
 def test_1ph_shortcircuit_min():
@@ -327,7 +338,8 @@ def test_iec60909_example_4_one_trafo3w():
     # x = 6.0598429694
     ikss_pf = [24.4009, 8.2481, 6.1728, 10.1851]
 
-    calc_sc(net, fault="1ph")
+    with _expect_linalg_warning():
+        calc_sc(net, fault="1ph")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf), atol=1e-4)
 
 
@@ -336,7 +348,8 @@ def test_iec60909_example_4_two_trafo3w():
 
     ikss_pf_2t3 = [24.5772, 14.7247, 8.1060, 15.2749]
 
-    calc_sc(net, fault="1ph")
+    with _expect_linalg_warning():
+        calc_sc(net, fault="1ph")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf_2t3), atol=1e-4)
 
 
@@ -350,10 +363,12 @@ def test_iec60909_example_4_two_trafo3w_two_earth():
     ikss_pf_max = [26.0499, 20.9472, 9.1722, 18.7457]
     ikss_pf_min = [3.9447, 8.2164, 4.9642, 6.8273]
 
-    calc_sc(net, fault="1ph", case="max")
+    with _expect_linalg_warning():
+        calc_sc(net, fault="1ph", case="max")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf_max), atol=1e-4)
 
-    calc_sc(net, fault="1ph", case="min")
+    with _expect_linalg_warning():
+        calc_sc(net, fault="1ph", case="min")
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf_min), atol=1e-4)
 
 
@@ -384,7 +399,8 @@ def test_iec_60909_4_small_with_gen_1ph_no_ps_detection():
 def test_iec_60909_4_small_with_gen_ps_unit_1ph():
     net = iec_60909_4_small(n_t3=2, num_earth=1, with_gen=True)
 
-    calc_sc(net, fault="1ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    with _expect_linalg_warning():
+        calc_sc(net, fault="1ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
     ikss_max = [24.6109, 17.4363, 12.7497, 18.6883]
     # ikss_min = [3.5001, 8.4362, 7.4743, 7.7707]
@@ -473,11 +489,14 @@ def test_trafo():
                                                 vn_lv_kv=21, vk_percent=16, vkr_percent=0.5, pt_percent=12,
                                                 vk0_percent=15.2, vkr0_percent=0.5, vector_group=vc, mag0_percent=10000,
                                                 mag0_rx=0, si0_hv_partial=0.5)
-        calc_sc(net, fault="1ph", case="max")
+        warning_context = _expect_linalg_warning() if vc in {"Yy", "Yd", "Dy", "Dd", "YNd", "YNy"} else nullcontext()
+        with warning_context:
+            calc_sc(net, fault="1ph", case="max")
         res = net.res_bus_sc.copy()
 
         net.sn_mva = 123
-        calc_sc(net, fault="1ph", case="max")
+        with warning_context:
+            calc_sc(net, fault="1ph", case="max")
         assert np.allclose(net.res_bus_sc, res, rtol=0, atol=1e-6), f"failed for vector group {vc}"
         assert np.allclose(net.res_bus_sc.ikss_ka, results[vc], rtol=0, atol=1e-6), f"{vc}: inconsistent results"
 
@@ -568,7 +587,9 @@ def test_zigzag_earthing_transformer(inverse_y):
             vector_group=eat_vg, shift_degree=330.0, vk0_percent=4.0,
             vkr0_percent=1.0, mag0_percent=100.0, mag0_rx=0.0, si0_hv_partial=0.9,
             rn_ohm=rn_ohm)
-        calc_sc(net, fault="1ph", case="max", inverse_y=inverse_y)
+        warning_context = _expect_linalg_warning() if inverse_y and eat_vg in {"ZNd", "YNd"} else nullcontext()
+        with warning_context:
+            calc_sc(net, fault="1ph", case="max", inverse_y=inverse_y)
         return net.res_bus_sc.at[b_mv, "ikss_ka"], net.res_bus_sc.at[b_aux, "ikss_ka"]
 
     znyn_mv, znyn_lv = build("ZNyn")

@@ -14,8 +14,6 @@ from pandapower.pypower.idx_brch import F_BUS, T_BUS, TAP, BR_R, BR_X
 from pandapower.pypower.idx_bus_sc import IKSS1, PHI_IKSS1_DEGREE
 from pandapower.run import runpp
 from pandapower.shortcircuit.calc_sc import calc_sc
-
-
 def three_bus_example():
     net = create_empty_network(sn_mva=56)
     b1 = create_bus(net, 110)
@@ -321,7 +319,11 @@ def test_branch_all_currents_trafo_simple_other_voltage3(inverse_y):
     net.trafo.at[1, "vn_hv_kv"] = 31
     net.trafo.at[2, "vn_hv_kv"] = 11
 
-    calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, inverse_y=inverse_y)
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, inverse_y=inverse_y)
 
     assert np.allclose(net.res_bus_sc.loc[6].values, [1.16712302, 0.80860656, 0.10127268, 0.18141131], rtol=0,
                        atol=1e-6)
@@ -346,7 +348,11 @@ def test_branch_all_currents_trafo_simple_other_voltage3(inverse_y):
     net.trafo.at[1, "vn_hv_kv"] = 29
     net.trafo.at[2, "vn_hv_kv"] = 9
 
-    calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, inverse_y=inverse_y)
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, inverse_y=inverse_y)
 
     assert np.allclose(net.res_bus_sc.loc[6].values, [1.15940813, 0.80326152, 0.10147573, 0.18288051], rtol=0,
                        atol=1e-6)
@@ -371,7 +377,11 @@ def test_branch_all_currents_trafo_simple_other_voltage3(inverse_y):
     net.trafo.at[1, "vn_hv_kv"] = 31
     net.trafo.at[2, "vn_hv_kv"] = 11
 
-    calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=4, inverse_y=inverse_y)
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=4, inverse_y=inverse_y)
     assert np.allclose(net.res_bus_sc.loc[4].values, [3.490484425, 60.45696064, 0.26224866, 1.80047754], rtol=0,
                        atol=3e-6)
     res_line_sc = np.array([[1.125963, 1.125963, -81.712857, 1.125963, 98.287143, 5.838649, 28.341696, -5.462115,
@@ -391,7 +401,11 @@ def test_branch_all_currents_trafo_simple_other_voltage3(inverse_y):
     net.trafo.at[1, "vn_lv_kv"] = 9
     net.trafo.at[2, "vn_lv_kv"] = 0.42
 
-    calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, inverse_y=inverse_y)
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc(net, case='max', lv_tol_percent=6., branch_results=True, bus=6, inverse_y=inverse_y)
 
     assert np.allclose(net.res_bus_sc.loc[6].values, [1.153265, 0.799006, 0.101542, 0.184117], rtol=0, atol=1e-6)
     res_line_sc = np.array([[0.014531, 0.014531, - 61.122864, 0.014531, 118.877136, 0.404535, 0.728398, - 0.404473,
@@ -857,7 +871,11 @@ def test_return_all_currents(inverse_y):
 
 def test_branch_all_currents_trafo():
     net = net_transformer()
-    calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=10., branch_results=True, return_all_currents=True)
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc(net, case='max', ip=True, ith=True, lv_tol_percent=10., branch_results=True, return_all_currents=True)
 
     assert (abs(net.res_trafo_sc.ikss_lv_ka.loc[(0, 0)] - 0.) < 1e-5)
     assert (abs(net.res_trafo_sc.ikss_lv_ka.loc[(0, 1)] - 0.) < 1e-5)
@@ -884,11 +902,19 @@ def test_against_single_sc_results_line():
 
 def test_against_single_sc_results_trafo():
     net = net_transformer()
-    calc_sc(net, case="max", branch_results=True, return_all_currents=True, inverse_y=False)
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc(net, case="max", branch_results=True, return_all_currents=True, inverse_y=False)
     multi_results = net.res_trafo_sc.copy()
 
     for bus in net.bus.index[net.bus.in_service]:
-        calc_sc(net, bus=bus, case="max", branch_results=True, return_all_currents=True, inverse_y=False)
+        with pytest.warns(
+            UserWarning,
+            match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+        ):
+            calc_sc(net, bus=bus, case="max", branch_results=True, return_all_currents=True, inverse_y=False)
         trafo_bus_indices = [(trafo, bus) for trafo in net.trafo.index]
         single_result_lv = net.res_trafo_sc.ikss_lv_ka.values
         multi_result_lv = multi_results.ikss_lv_ka.loc[trafo_bus_indices].values

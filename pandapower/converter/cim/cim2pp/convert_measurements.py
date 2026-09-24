@@ -358,7 +358,7 @@ class CreateMeasurements:
         time_start = time.time()
         sc = cim_tools.get_pp_net_special_columns_dict()
         # get the measurements from the sv profile and set the Terminal as index
-        sv_powerflow_g = self.cim['sv']['SvPowerFlow'][['Terminal', 'p', 'q']]
+        sv_powerflow_g = self.cim['sv']['SvPowerFlow'][['Terminal', 'p', 'q']].copy()
         sv_powerflow_g['p'] *= -1
         sv_powerflow_g['q'] *= -1
         sv_powerflow_g = sv_powerflow_g.set_index('Terminal').to_dict()

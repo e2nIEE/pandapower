@@ -303,7 +303,7 @@ def test_merge_with_characteristics():
          'vk_mv_percent': np.nan, 'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan})
 
     # merge networks
-    merged, _ = merge_nets(net1, net2, validate=False, return_net2_reindex_lookup=True)
+    merged, _ = merge_nets(net1, net2, validate=False, return_net2_reindex_lookup=True, std_prio_on_net1=True)
 
     # The second transformer should have the second characteristic
     result = merged.trafo_characteristic_table[
@@ -322,8 +322,8 @@ def test_merge_nets_with_custom_elements():
     net2 = simple_four_bus_system()
 
     net2["test"] = df.copy()
-    res_net1 = merge_nets(net1, net2, validate=False)
-    res_net2 = merge_nets(net2, net1, validate=False)
+    res_net1 = merge_nets(net1, net2, validate=False, std_prio_on_net1=True)
+    res_net2 = merge_nets(net2, net1, validate=False, std_prio_on_net1=True)
     assert df.equals(res_net1["test"])
     assert df.equals(res_net2["test"])
     assert nets_equal(res_net1, res_net2)

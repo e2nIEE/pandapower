@@ -246,7 +246,11 @@ def test_iec_60909_4_3ph_small_without_gen():
     # Deactivate all gens
     net.gen = net.gen.iloc[0:0, :]
 
-    calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
     ikss_pf = [40.3390, 28.4130, 14.2095, 28.7195, 13.4191]
     ip_pf = [99.7374, 72.6580, 32.1954, 72.1443, 36.5036]
 
@@ -257,7 +261,11 @@ def test_iec_60909_4_3ph_small_without_gen():
 def test_iec_60909_4_3ph_small_with_gen():
     net = iec_60909_4_small()
 
-    calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
     ikss_pf = [40.4754, 29.8334, 16.1684, 30.3573]
     ip_pf = [100.1164, 76.1134, 37.3576, 76.2689]
     ib_pf = [40.4754, 29.7337, 15.9593, 30.2245]
@@ -269,7 +277,11 @@ def test_iec_60909_4_3ph_small_with_gen():
 
 def test_iec_60909_4_3ph_small_with_gen_xward():
     net = iec_60909_4_small(with_xward=True)
-    calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
     ikss_pf = [40.6422, 31.6394, 16.7409, 33.2808]
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf), atol=1e-3)
@@ -278,7 +290,11 @@ def test_iec_60909_4_3ph_small_with_gen_xward():
 def test_iec_60909_4_3ph_small_gen_only():
     net = iec_60909_4_small_gen_only()
 
-    calc_sc(net, fault="3ph", case="max", ip=True, ith=True, tk_s=0.1, kappa_method="C")
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc(net, fault="3ph", case="max", ip=True, ith=True, tk_s=0.1, kappa_method="C")
     ikss_pf = [1.9755, 39.5042]
     ip_pf = [5.2316, 104.1085]
     ib_pf = [1.6071, 27.3470]
@@ -291,7 +307,11 @@ def test_iec_60909_4_3ph_small_gen_only():
 def test_iec_60909_4_3ph_2gen():
     net = iec_60909_4_2gen()
 
-    calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
     ikss_pf = [4.2821, 4.4280, 39.1090, 57.8129]
     ip_pf = [11.1157, 11.6306, 102.7821, 151.5569]
     ib_pf = [3.6605, 3.7571, 28.3801, 45.3742]
@@ -307,7 +327,11 @@ def test_iec_60909_4_3ph_2gen_no_ps_detection():
     net.trafo.power_station_unit = False
     net.gen.at[0, "in_service"] = False
     net.gen = net.gen.query("in_service")
-    calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
     ikss_pf = [1.8460, 1.6715, 6.8953, 39.5042]
     assert np.allclose(net.res_bus_sc.ikss_ka[:4].values, np.array(ikss_pf), atol=1e-3)
@@ -317,7 +341,11 @@ def test_iec_60909_4_3ph_without_motor():
     # Generator connected to normal bus does not need voltage correction
     net = iec_60909_4()
     net.motor = net.motor.iloc[0:0, :]
-    calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
     ikss_pf = [40.6347, 31.6635, 19.6231, 16.1956, 32.9971, 34.3559, 22.2762, 13.5726]
     ip_pf = [100.5427, 80.3509, 45.7157, 36.7855, 82.9406, 90.6143, 43.3826, 36.9103]
@@ -328,7 +356,11 @@ def test_iec_60909_4_3ph_without_motor():
 
 def test_iec_60909_4_3ph():
     net = iec_60909_4()
-    calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
     ikss = [40.6447, 31.7831, 19.6730, 16.2277, 33.1894, 37.5629, 25.5895, 13.5778, 52.4438, 80.5720]
     # Ip for kappa B
@@ -347,7 +379,11 @@ def test_iec_60909_4_3ph_min():
     net.line["endtemp_degree"] = 80.0
     net.ext_grid["s_sc_min_mva"] = net.ext_grid["s_sc_max_mva"] / 10
     net.ext_grid["rx_min"] = net.ext_grid["rx_max"]
-    calc_sc(net, fault="3ph", case="min", ip=True, tk_s=0.1, kappa_method="C")
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc(net, fault="3ph", case="min", ip=True, tk_s=0.1, kappa_method="C")
 
     ikss_min = [5.0257, 12.0645, 10.2108, 9.3820, 11.6761,
                 27.7655, 18.3930, 10.9024, 44.4310, 67.8216]
@@ -366,7 +402,11 @@ def test_iec_60909_4_3ph_ps_trafo_flag():
     net.gen.loc[:, "power_station_trafo"] = np.nan
 
     detect_power_station_unit(net, mode="trafo")
-    calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
     ikss = [40.6447, 31.7831, 19.6730, 16.2277, 33.1894, 37.5629, 25.5895, 13.5778, 52.4438, 80.5720]
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10], np.array(ikss), atol=1e-3)
@@ -374,7 +414,11 @@ def test_iec_60909_4_3ph_ps_trafo_flag():
 
 def test_iec_60909_4_2ph():
     net = iec_60909_4()
-    calc_sc(net, fault="2ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc(net, fault="2ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
     ikss = [35.1994, 27.5249, 17.0373, 14.0536, 28.7429, 32.5304, 22.1611, 11.7586, 45.4177, 69.7774]
     ip = [87.0941, 69.8085, 39.6736, 31.9067, 72.2294, 84.9946, 44.7648, 31.9760, 118.0221, 182.1389]
@@ -414,12 +458,20 @@ def test_detect_power_station_units():
 
 def test_sc_on_line():
     net = iec_60909_4()
-    calc_sc_on_line(net, 2, 0.3)  # todo: actual test missing here!!!
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc_on_line(net, 2, 0.3)  # todo: actual test missing here!!!
 
 
 def test_vde_232():
     net = vde_232()
-    calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
 
 if __name__ == '__main__':

@@ -17,7 +17,11 @@ def test_from_jao_with_testfile():
     assert os.path.isfile(testfile)
 
     # --- net1
-    net1 = from_jao(testfile, None, False)
+    with pytest.warns(
+        DeprecationWarning,
+        match=r"^The tap_phase_shifter/tap2_phase_shifter parameter is not supported in pandapower version 3\.0 or later\.",
+    ):
+        net1 = from_jao(testfile, None, False)
 
     assert len(net1.bus) == 10
     assert len(net1.line) == 7
@@ -44,11 +48,19 @@ def test_from_jao_with_testfile():
     assert net1.trafo.tap_max.iat[0] == 17
 
     # --- net2
-    net2 = from_jao(testfile, None, True)
+    with pytest.warns(
+        DeprecationWarning,
+        match=r"^The tap_phase_shifter/tap2_phase_shifter parameter is not supported in pandapower version 3\.0 or later\.",
+    ):
+        net2 = from_jao(testfile, None, True)
     nets_equal(net1, net2)  # extend_data_for_grid_group_connections makes no difference here
 
     # --- net3
-    net3 = from_jao(testfile, None, True, drop_grid_groups_islands=True)
+    with pytest.warns(
+        DeprecationWarning,
+        match=r"^The tap_phase_shifter/tap2_phase_shifter parameter is not supported in pandapower version 3\.0 or later\.",
+    ):
+        net3 = from_jao(testfile, None, True, drop_grid_groups_islands=True)
     assert len(net3.bus) == 6
     assert len(net3.line) == 5
     assert net3.line.Tieline.sum() == 1

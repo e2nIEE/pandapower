@@ -5,13 +5,37 @@
 
 import copy
 
+import numpy as np
 import pandas as pd
 import pytest
 
 from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
 from pandapower.create import create_bus
 from pandapower.networks.cigre_networks import create_cigre_network_lv
-from pandapower.toolbox.comparison import nets_equal, logger as tbc_logger
+from pandapower.toolbox.comparison import dataframes_equal, nets_equal, logger as tbc_logger
+
+
+@pytest.mark.parametrize(
+    "left,right",
+    [(None, np.nan), (None, pd.NA), (None, pd.NaT), (np.nan, pd.NA), (np.nan, pd.NaT), (pd.NA, pd.NaT)],
+)
+def test_dataframes_equal_object_null_values(left, right):
+    df1 = pd.DataFrame({"value": pd.Series([left], dtype=object)})
+    df2 = pd.DataFrame({"value": pd.Series([right], dtype=object)})
+    df1_original = df1.copy(deep=True)
+    df2_original = df2.copy(deep=True)
+
+    assert dataframes_equal(df1, df2)
+    pd.testing.assert_frame_equal(df1, df1_original)
+    pd.testing.assert_frame_equal(df2, df2_original)
+
+
+def test_dataframes_equal_preserves_value_and_dtype_checks():
+    assert not dataframes_equal(pd.DataFrame({"value": [1]}), pd.DataFrame({"value": [2]}))
+    assert not dataframes_equal(
+        pd.DataFrame({"value": pd.Series([1], dtype=object)}),
+        pd.DataFrame({"value": pd.Series([1], dtype="int64")}),
+    )
 
 
 def test_nets_equal():

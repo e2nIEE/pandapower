@@ -317,7 +317,7 @@ def _add_measurements_to_bus(meas_bus, bus_append, map_bus):
 
     # Process voltage (v) and voltage angle (va) measurements
     for meas_type in ("v", "va"):
-        this_meas = meas_bus[(meas_bus.measurement_type == meas_type)]
+        this_meas = meas_bus[(meas_bus.measurement_type == meas_type)].copy()
 
         if this_meas.empty:
             continue
@@ -337,7 +337,7 @@ def _add_measurements_to_bus(meas_bus, bus_append, map_bus):
 
     # Process active (p) and reactive (q) power injections
     for meas_type in ("p", "q"):
-        this_meas = meas_bus[(meas_bus.measurement_type == meas_type)]
+        this_meas = meas_bus[(meas_bus.measurement_type == meas_type)].copy()
         this_meas.value *= -1
 
         if this_meas.empty:
@@ -426,7 +426,7 @@ def _add_measurements_to_ppci(net, ppci, zero_injection, algorithm):
     meas.loc[meas.measurement_type == "q", ["value", "std_dev"]] /= ppci["baseMVA"]
 
     # Convert current (i) measurements to p.u.
-    i_meas = meas.query("measurement_type=='i'")
+    i_meas = meas.query("measurement_type=='i'").copy()
     if not i_meas.empty:
         # Convert side from string to bus id
         i_meas["side"] = i_meas.apply(lambda row:
@@ -468,6 +468,8 @@ def _add_measurements_to_ppci(net, ppci, zero_injection, algorithm):
     bus_append[new_in_line_buses, 3] = 1e-6
     bus_append[new_in_line_buses, 4] = 0.
     bus_append[new_in_line_buses, 5] = 1e-6
+    bus_append[new_in_line_buses, BUS_MEAS_PPCI_IX["p"]["IDX"]] = -1
+    bus_append[new_in_line_buses, BUS_MEAS_PPCI_IX["q"]["IDX"]] = -1
 
     # Create empty append array for branch measurements
     branch_append = np.full((ppci["branch"].shape[0], branch_cols_se), np.nan, dtype=ppci["branch"].dtype)

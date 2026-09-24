@@ -241,8 +241,8 @@ def _calc_sc_1ph(net, bus):
         _calc_zbus(net, ppci_0)
     else:
         # Factorization Ybus once
-        ppci["internal"]["ybus_fact"] = factorized(ppci["internal"]["Ybus"])
-        ppci_0["internal"]["ybus_fact"] = factorized(ppci_0["internal"]["Ybus"])
+        ppci["internal"]["ybus_fact"] = factorized(ppci["internal"]["Ybus"].tocsc())
+        ppci_0["internal"]["ybus_fact"] = factorized(ppci_0["internal"]["Ybus"].tocsc())
 
     ppci_bus = _get_is_ppci_bus(net, bus)
     _calc_rx(net, ppci, ppci_bus)

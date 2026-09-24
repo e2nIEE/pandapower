@@ -67,9 +67,22 @@ class CimConverter:
                 level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
                 message="Missing pandapower type %s in the pandapower network!" % pp_type))
             return
-        self.net[pp_type] = pd.concat([self.net[pp_type],
-                                      input_df[list(set(self.net[pp_type].columns).intersection(input_df.columns))]],
-                                      ignore_index=True, sort=False)
+        target = self.net[pp_type]
+        if input_df.empty:
+            return
+        source = input_df[target.columns.intersection(input_df.columns)].reset_index(drop=True)
+        if target.empty:
+            result = target.reindex(source.index)
+            for column in source.columns:
+                if source[column].notna().any():
+                    result[column] = source[column]
+                else:
+                    result[column] = pd.concat(
+                        [target[[column]], source[[column]]], ignore_index=True
+                    )[column]
+            self.net[pp_type] = result
+            return
+        self.net[pp_type] = pd.concat([target, source], ignore_index=True, sort=False)
 
     # noinspection PyShadowingNames
     def convert_to_pp(

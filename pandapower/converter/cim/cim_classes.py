@@ -105,8 +105,8 @@ class CimParser:
                             f"Setting data type of {col} from CIM element {cim_element_type} as type {data_type_col_str}"
                         )
                         if col in default_values:  # todo deprecated due to repair function?
-                            self.cim[profile][cim_element_type][col] = self.cim[profile][cim_element_type][col].fillna(
-                                value=default_values[col])
+                            self.cim[profile][cim_element_type][col] = self.cim[profile][cim_element_type][col].where(
+                                self.cim[profile][cim_element_type][col].notna(), default_values[col])
                         if data_type_col == bool_type:
                             self.cim[profile][cim_element_type][col] = \
                                 self.cim[profile][cim_element_type][col].map(to_bool)

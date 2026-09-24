@@ -8,8 +8,10 @@ from pandapower.create import (
     create_measurement
 )
 from pandapower.estimation.idx_brch import P_TO, P_TO_STD
+from pandapower.estimation.idx_bus import P, P_IDX, Q, Q_IDX, ZERO_INJ_FLAG
 from pandapower.estimation.ppc_conversion import pp2eppci
 from pandapower.pypower.idx_brch import branch_cols
+from pandapower.pypower.idx_bus import bus_cols
 import pytest
 
 
@@ -70,6 +72,15 @@ def test_duplicate_measurements_at_trafo3w():
                                   name=f"P2_{side.upper()}_Trafo{trafo}")
 
     _, _, eppci = pp2eppci(net, v_start="flat", delta_start="flat", zero_injection="aux_bus")
+    aux_lookups = np.concatenate([values for key, values in net._pd2ppc_lookups["aux"].items()
+                                  if key != "xward"])
+    aux_bus = net._pd2ppc_lookups["bus"][aux_lookups]
+    assert aux_bus.size == 2
+    np.testing.assert_array_equal(eppci.data["bus"][aux_bus, bus_cols + ZERO_INJ_FLAG], np.ones(2))
+    np.testing.assert_array_equal(eppci.data["bus"][aux_bus, bus_cols + P], 0)
+    np.testing.assert_array_equal(eppci.data["bus"][aux_bus, bus_cols + Q], 0)
+    np.testing.assert_array_equal(eppci.data["bus"][aux_bus, bus_cols + P_IDX], -1)
+    np.testing.assert_array_equal(eppci.data["bus"][aux_bus, bus_cols + Q_IDX], -1)
     vals = eppci.data["branch"][[2, 3], branch_cols + P_TO]
     np.testing.assert_array_equal(vals, [3, 3])
 

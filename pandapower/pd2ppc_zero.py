@@ -533,9 +533,6 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     if mode == "pf_3ph":
         z_grid = c / (s_sc / 3)
     x_grid = z_grid / np.sqrt(rx**2 + 1)
-    r_grid = rx * x_grid
-    eg["r"] = r_grid
-    eg["x"] = x_grid
 
     # ext_grid zero sequence impedance
     x0_grid = net.ext_grid[is_egs]["x0x_%s" % case].values * x_grid

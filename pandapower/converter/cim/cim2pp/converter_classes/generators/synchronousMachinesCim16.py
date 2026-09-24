@@ -41,7 +41,7 @@ class SynchronousMachinesCim16:
 
     def _prepare_synchronous_machines_cim16(self) -> pd.DataFrame:
         eq_generating_units = self.cimConverter.cim['eq']['GeneratingUnit'][
-            ['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']]
+            ['rdfId', 'nominalP', 'minOperatingP', 'maxOperatingP', 'governorSCD']].copy()
         # a column for the type of the static generator in pandapower
         eq_generating_units['type'] = 'GeneratingUnit'
         eq_generating_units = pd.concat([eq_generating_units, self.cimConverter.cim['eq']['WindGeneratingUnit']],
