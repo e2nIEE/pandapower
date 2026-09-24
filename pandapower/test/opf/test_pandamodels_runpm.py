@@ -4,6 +4,7 @@
 import copy
 import os
 from copy import deepcopy
+from types import SimpleNamespace
 
 import numpy as np
 import pandas as pd
@@ -602,6 +603,33 @@ def test_storage_opt():
     storage_results_100 = read_pm_storage_results(net2)
 
     assert abs(storage_results_100[0].values - storage_results_1[0].values).max() < 1e-6
+
+
+def test_read_pm_storage_results_maps_each_storage_and_timestep():
+    net = create_empty_network()
+    bus = create_bus(net, vn_kv=20.0)
+    first = create_storage(net, bus, p_mw=0.0, max_e_mwh=5.0, min_e_mwh=1.0)
+    second = create_storage(net, bus, p_mw=0.0, max_e_mwh=8.0, min_e_mwh=2.0)
+    net.res_ts_opt = {
+        "0": SimpleNamespace(res_storage=pd.DataFrame(
+            {"ps": [-1.0, 2.0], "qs": [0.1, 0.2], "se": [0.25, 0.6]}, index=[first, second]
+        )),
+        "1": SimpleNamespace(res_storage=pd.DataFrame(
+            {"ps": [3.0, 4.0], "qs": [-0.3, 0.5], "se": [0.5, 0.75]}, index=[first, second]
+        )),
+    }
+
+    results = read_pm_storage_results(net)
+
+    np.testing.assert_array_equal(results[first]["p_mw"], [-1.0, 3.0])
+    np.testing.assert_array_equal(results[first]["q_mvar"], [0.1, -0.3])
+    np.testing.assert_array_equal(results[first]["soc_percent"], [25.0, 50.0])
+    np.testing.assert_allclose(results[first]["soc_mwh"], [1.0, 2.0])
+    np.testing.assert_array_equal(results[second]["p_mw"], [2.0, 4.0])
+    np.testing.assert_array_equal(results[second]["q_mvar"], [0.2, 0.5])
+    np.testing.assert_array_equal(results[second]["soc_percent"], [60.0, 75.0])
+    np.testing.assert_allclose(results[second]["soc_mwh"], [3.6, 4.5])
+    assert all(dtype == float for result in results.values() for dtype in result.dtypes)
 
 
 @pytest.mark.slow
