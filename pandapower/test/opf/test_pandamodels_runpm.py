@@ -705,9 +705,9 @@ def test_runpm_qflex_and_multi_qflex():
     net.line["max_loading_percent"] = 100.0
 
     net.trafo["pm_param/setpoint_q"] = None  # add extra column
-    net.trafo["pm_param/setpoint_q"].loc[0] = -5
+    net.trafo.loc[0, "pm_param/setpoint_q"] = -5
     net.trafo["pm_param/side"] = None
-    net.trafo["pm_param/side"][0] = "lv"
+    net.trafo.loc[0, "pm_param/side"] = "lv"
 
     # run opf
     runpm_qflex(net)
