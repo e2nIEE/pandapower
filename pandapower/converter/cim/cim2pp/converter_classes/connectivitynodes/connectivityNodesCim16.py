@@ -206,11 +206,14 @@ class ConnectivityNodesCim16:
         # the terminals are used for the mapping asset -> node later during the conversion of other assets
         eqssh_terminals = self.cimConverter.cim['eq']['Terminal'][['rdfId', 'ConnectivityNode', 'ConductingEquipment',
                                                                    'sequenceNumber']]
-        eqssh_terminals = \
-            pd.concat([eqssh_terminals, self.cimConverter.cim['eq_bd']['Terminal'][['rdfId', 'ConductingEquipment',
-                                                                                    'ConnectivityNode',
-                                                                                    'sequenceNumber']]],
-                      ignore_index=True, sort=False)
+        eq_bd_terminals = self.cimConverter.cim['eq_bd']['Terminal'][['rdfId', 'ConductingEquipment',
+                                                                       'ConnectivityNode', 'sequenceNumber']]
+        if eq_bd_terminals.empty:
+            eqssh_terminals = eqssh_terminals.reset_index(drop=True)
+        else:
+            eq_bd_terminals = eq_bd_terminals.astype(
+                {'sequenceNumber': eqssh_terminals['sequenceNumber'].dtype})
+            eqssh_terminals = pd.concat([eqssh_terminals, eq_bd_terminals], ignore_index=True, sort=False)
         eqssh_terminals = pd.merge(eqssh_terminals, self.cimConverter.cim['ssh']['Terminal'], how='left', on='rdfId')
         eqssh_terminals = pd.merge(eqssh_terminals, self.cimConverter.cim['tp']['Terminal'], how='left', on='rdfId')
         eqssh_terminals['ConnectivityNode'] = eqssh_terminals['ConnectivityNode'].fillna(

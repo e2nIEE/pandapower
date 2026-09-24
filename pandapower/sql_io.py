@@ -1,6 +1,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+from contextlib import contextmanager
 from typing import Optional, TYPE_CHECKING
 
 import pandas as pd
@@ -381,7 +382,7 @@ def to_sqlite(net, filename, include_results=False):
     """
     if not SQLITE_INSTALLED:
         raise UserWarning("sqlite3 is not installed, install sqlite3 to use from_sqlite()")
-    with sqlite3.connect(filename) as conn:
+    with _sqlite_connection(filename) as conn:
         dodfs = io_utils.to_dict_of_dfs(net, include_results=include_results)
         for name, data in dodfs.items():
             data.to_sql(name, conn)
@@ -402,7 +403,7 @@ def from_sqlite(filename):
     """
     if not SQLITE_INSTALLED:
         raise UserWarning("sqlite3 is not installed, install sqlite3 to use from_sqlite()")
-    with sqlite3.connect(filename) as conn:
+    with _sqlite_connection(filename) as conn:
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         dodfs = {}
@@ -412,6 +413,16 @@ def from_sqlite(filename):
             dodfs[t] = table
         net = io_utils.from_dict_of_dfs(dodfs)
     return net
+
+
+@contextmanager
+def _sqlite_connection(filename):
+    conn = sqlite3.connect(filename)
+    try:
+        with conn:
+            yield conn
+    finally:
+        conn.close()
 
 
 def to_postgresql(

@@ -1,5 +1,6 @@
 import os
 from random import sample
+from types import SimpleNamespace
 
 import numpy as np
 import pandas as pd
@@ -12,6 +13,7 @@ from pandapower.create import create_empty_network, create_buses, create_ext_gri
     create_load, create_sgen, create_pwl_cost, create_bus, create_switch, create_motor
 from pandapower.grid_equivalents.auxiliary import replace_motor_by_load, _runpp_except_voltage_angles
 from pandapower.grid_equivalents.get_equivalent import get_equivalent, merge_internal_net_and_equivalent_external_net
+from pandapower.grid_equivalents import ward_generation
 from pandapower.grid_equivalents.ward_generation import create_passive_external_net_for_ward_admittance
 from pandapower.groups import group_element_lists, compare_group_elements, group_row, \
     set_group_reference_column, count_group_elements, group_element_index
@@ -137,6 +139,34 @@ def check_results_without_order(eq_net2, eq_net3):
                 if not same_values_found:
                     raise AssertionError("In eq_net3[%s], no line is found with values close to" +
                                          str(eq_net2[res_table].loc[idx2]))
+
+
+def test_xward_susceptance_zero_and_nonzero(monkeypatch):
+    xward_parameter = pd.DataFrame({
+        "shunt": np.array([complex(0.0, 0.0), complex(0.0, -0.0), 1j * 2.0, 1j * -2.0]),
+        "bus_pd": np.arange(4),
+    })
+    impedance_parameter = pd.DataFrame()
+    monkeypatch.setattr(
+        ward_generation,
+        "_calculate_ward_and_impedance_parameters",
+        lambda *args: (xward_parameter.copy(), impedance_parameter),
+    )
+    net_external = SimpleNamespace(
+        sn_mva=2.0,
+        bus=pd.DataFrame({"vn_kv": [10.0] * 4}),
+        res_bus=pd.DataFrame({"vm_pu": [1.0] * 4}),
+    )
+
+    xward_result, _ = ward_generation._calculate_xward_and_impedance_parameters(
+        net_external, None, None, False
+    )
+
+    assert np.signbit(xward_parameter["shunt"].to_numpy().imag[1])
+    x_ohm = xward_result["x_ohm"].to_numpy()
+    assert np.isneginf(x_ohm[0])
+    assert np.isposinf(x_ohm[1])
+    np.testing.assert_allclose(x_ohm[2:], [-25.0, 25.0])
 
 
 def test_cost_consideration():

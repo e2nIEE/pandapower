@@ -95,7 +95,7 @@ class SHGMEstimatorIRWLS(BaseEstimatorIRWLS):
         rsi = r / (w * self.sigma)
         phi = 1/(self.sigma**2)
         condition_mask = np.abs(rsi)>self.a
-        phi[condition_mask] = (1/(self.sigma**2) * np.abs(self.a / rsi))[condition_mask]
+        phi[condition_mask] = 1 / self.sigma[condition_mask]**2 * np.abs(self.a / rsi[condition_mask])
         return np.diagflat(phi)
 
     def weight(self, E):

@@ -485,7 +485,15 @@ def runpp_3ph(
         #     Voltages and Current transformation for PQ and Slack bus
         # =====================================================================
         i_abc_it_wye = (np.divide(s_abc_pu, v_abc_it)).conjugate()
-        i_abc_it_delta = np.matmul(i_del_xfmn, (np.divide(s_abc_delta_pu, np.matmul(v_del_xfmn, v_abc_it))).conjugate())
+        delta_voltage = np.matmul(v_del_xfmn, v_abc_it)
+        zero_power_at_zero_voltage = (s_abc_delta_pu == 0) & (delta_voltage == 0)
+        delta_current = np.divide(
+            s_abc_delta_pu,
+            delta_voltage,
+            out=np.zeros_like(s_abc_delta_pu),
+            where=~zero_power_at_zero_voltage,
+        )
+        i_abc_it_delta = np.matmul(i_del_xfmn, delta_current.conjugate())
 
         # For buses with both delta and wye loads we need to sum of their currents
         # to sum up the currents
@@ -518,6 +526,10 @@ def runpp_3ph(
         # Conduct Positive sequence power flow
         # =============================================================================
         _run_newton_raphson_pf(ppci1, net._options)
+        if not ppci1["success"]:
+            net["converged"] = False
+            _clean_up(net, res=False)
+            raise LoadflowNotConverged("Power Flow {0} did not converge after {1} iterations!".format("nr", count))
         # =============================================================================
         # Conduct Negative and Zero sequence power flow
         # =============================================================================
@@ -532,6 +544,10 @@ def runpp_3ph(
 
         s_mismatch = np.abs(np.abs(s1[pq_bus]) - np.abs(s_from_voltage[pq_bus]))
         v_012_it = combine_X012(v0_pu_it, v1_pu_it, v2_pu_it)
+        if not np.isfinite(s_mismatch).all() or not np.isfinite(v_012_it).all():
+            net["converged"] = False
+            _clean_up(net, res=False)
+            raise LoadflowNotConverged("Power Flow {0} did not converge after {1} iterations!".format("nr", count))
         v_abc_it = sequence_to_phase(v_012_it)
         count += 1
     et = perf_counter() - t0

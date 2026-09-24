@@ -26,7 +26,14 @@ def test_convert_format(version):
     if not os.path.isfile(filename):
         raise ValueError("File for version %s does not exist" % version)
     try:
-        net = from_json(filename, convert=False)
+        if vs.parse(version) < vs.parse("2.1.0"):
+            with pytest.warns(
+                DeprecationWarning,
+                match="This net is saved in older format, which will not be supported in future\\.",
+            ):
+                net = from_json(filename, convert=False)
+        else:
+            net = from_json(filename, convert=False)
         if ('version' in net) and (vs.parse(str(net.version)) > vs.parse('2.0.1')):
             _ = from_json(filename, elements_to_deserialize=['bus', 'load'])
     except:
@@ -34,7 +41,16 @@ def test_convert_format(version):
     vm_pu_old = net.res_bus.vm_pu.copy()
     convert_format(net)
     try:
-        runpp(net, run_control="controller" in net and len(net.controller) > 0)
+        run_control = "controller" in net and len(net.controller) > 0
+        has_legacy_transformer_data = any(
+            len(net[element]) and "tap_dependency_table" not in net[element].columns
+            for element in ("trafo", "trafo3w")
+        )
+        if has_legacy_transformer_data:
+            with pytest.warns(DeprecationWarning, match="tap_dependency_table is missing in net"):
+                runpp(net, run_control=run_control)
+        else:
+            runpp(net, run_control=run_control)
     except:
         raise UserWarning("Can not run power flow in network "
                           "saved with pandapower version %s" % version)
@@ -46,7 +62,8 @@ def test_convert_format(version):
 def test_convert_format_pq_bus_meas():
     net = from_json(os.path.join(folder, "example_2.3.1.json"), convert=False)
     net = convert_format(net)
-    runpp(net)
+    with pytest.warns(DeprecationWarning, match="tap_dependency_table is missing in net"):
+        runpp(net)
 
     bus_p_meas = net.measurement.query("element_type=='bus' and measurement_type=='p'").set_index("element", drop=True)
     assert np.allclose(net.res_bus.p_mw, bus_p_meas["value"])
@@ -64,7 +81,8 @@ def test_convert_format_characteristics():
     assert hasattr(net.characteristic.at[0, "object"], "kwargs")
     assert not hasattr(net.characteristic.at[0, "object"], "kind")
     assert not hasattr(net.characteristic.at[0, "object"], "fill_value")
-    runpp(net)
+    with pytest.warns(DeprecationWarning, match="tap_dependency_table is missing in net"):
+        runpp(net)
 
 
 def test_convert_format_adding_characteristic_columns():

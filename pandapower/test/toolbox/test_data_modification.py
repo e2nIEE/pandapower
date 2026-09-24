@@ -59,6 +59,8 @@ def test_add_column_from_element_to_elements():
     assert net.measurement.name.isnull().all()
     assert ~net.switch.name.isnull().all()
     orig_switch_names = copy.deepcopy(net.switch.name.values)
+    orig_switch_types = net.switch.et.copy(deep=True)
+    orig_measurement_types = net.measurement.element_type.copy(deep=True)
     expected_measurement_names = np.array([
         net.trafo.name.loc[0], net.line.name.loc[0], net.bus.name.loc[2]])
     expected_switch_names = np.append(
@@ -68,11 +70,15 @@ def test_add_column_from_element_to_elements():
     add_column_from_element_to_elements(net, "name", False)
     assert all(compare_arrays(net.measurement.name.values, expected_measurement_names))
     assert all(compare_arrays(net.switch.name.values, orig_switch_names))
+    pd.testing.assert_series_equal(net.switch.et, orig_switch_types)
+    pd.testing.assert_series_equal(net.measurement.element_type, orig_measurement_types)
 
     del net.measurement["name"]
     add_column_from_element_to_elements(net, "name", True)
     assert all(compare_arrays(net.measurement.name.values, expected_measurement_names))
     assert all(compare_arrays(net.switch.name.values, expected_switch_names))
+    pd.testing.assert_series_equal(net.switch.et, orig_switch_types)
+    pd.testing.assert_series_equal(net.measurement.element_type, orig_measurement_types)
 
 
 def test_reindex_buses():

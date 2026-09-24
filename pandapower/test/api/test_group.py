@@ -375,8 +375,12 @@ def test_group_io():
     runpp(net2)
     assert group_res_p_mw(net, gr1) == group_res_p_mw(net2, gr1)
     assert group_res_p_mw(net, gr2) == group_res_p_mw(net2, gr2)
-    pdt.assert_frame_equal(net.group.loc[[gr1]], net2.group.loc[[gr1]])
-    pdt.assert_frame_equal(net.group.loc[[gr2]], net2.group.loc[[gr2]])
+    assert dataframes_equal(
+        net.group.loc[[gr1]], net2.group.loc[[gr1]], ignore_index_order=False, assume_geojson_strings=False
+    )
+    assert dataframes_equal(
+        net.group.loc[[gr2]], net2.group.loc[[gr2]], ignore_index_order=False, assume_geojson_strings=False
+    )
 
 
 def test_count_group_elements(nets_to_test_group):

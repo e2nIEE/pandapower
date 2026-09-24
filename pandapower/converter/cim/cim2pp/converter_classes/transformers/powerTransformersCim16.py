@@ -58,11 +58,20 @@ class PowerTransformersCim16:
         if 'id_characteristic_table' not in trafo_df_origin.columns:
             trafo_df_origin['id_characteristic_table'] = float("NaN")
         if 'trafo_characteristic_table' not in self.cimConverter.net:
-            self.cimConverter.net['trafo_characteristic_table'] = pd.DataFrame(
-                columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent',
-                         'vkr_percent', 'vkr_hv_percent', 'vkr_mv_percent',
-                         'vkr_lv_percent', 'vk_hv_percent', 'vk_mv_percent',
-                         'vk_lv_percent'])
+            self.cimConverter.net['trafo_characteristic_table'] = pd.DataFrame({
+                'id_characteristic': pd.Series(dtype='int64'),
+                'step': pd.Series(dtype='int64'),
+                'voltage_ratio': pd.Series(dtype='float64'),
+                'angle_deg': pd.Series(dtype='float64'),
+                'vk_percent': pd.Series(dtype='float64'),
+                'vkr_percent': pd.Series(dtype='float64'),
+                'vkr_hv_percent': pd.Series(dtype='float64'),
+                'vkr_mv_percent': pd.Series(dtype='float64'),
+                'vkr_lv_percent': pd.Series(dtype='float64'),
+                'vk_hv_percent': pd.Series(dtype='float64'),
+                'vk_mv_percent': pd.Series(dtype='float64'),
+                'vk_lv_percent': pd.Series(dtype='float64'),
+            })
         # get the TablePoints
         ptct = self.cimConverter.cim['eq']['PhaseTapChangerTabular'][['TransformerEnd', 'PhaseTapChangerTable']]
         ptct = pd.merge(ptct, self.cimConverter.cim['eq']['PhaseTapChangerTablePoint'][
@@ -442,9 +451,10 @@ class PowerTransformersCim16:
         # get the Terminal, ConnectivityNode and bus voltage
         eq_ssh_tap_controllers = \
             pd.merge(eq_ssh_tap_controllers,
-                     pd.concat([self.cimConverter.cim['eq']['Terminal'], self.cimConverter.cim['eq_bd']['Terminal']],
-                               ignore_index=True, sort=False)[
-                         ['rdfId', 'ConnectivityNode']], how='left', on='rdfId')
+                     pd.concat([
+                         self.cimConverter.cim['eq']['Terminal'][['rdfId', 'ConnectivityNode']],
+                         self.cimConverter.cim['eq_bd']['Terminal'][['rdfId', 'ConnectivityNode']],
+                     ], ignore_index=True, sort=False), how='left', on='rdfId')
         eq_ssh_tap_controllers = eq_ssh_tap_controllers.drop(columns=['rdfId'])
         eq_ssh_tap_controllers = eq_ssh_tap_controllers.rename(columns={'ConnectivityNode': sc['o_id']})
         eq_ssh_tap_controllers = pd.merge(eq_ssh_tap_controllers,

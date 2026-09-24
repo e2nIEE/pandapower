@@ -53,7 +53,7 @@ def _extract_result_ppci_to_pp(net, ppc, ppci):
     net.res_bus_est.loc[merged_bus_idx, "q_mvar"] = 0
     # add shunt power because the injection at the node computed via Ybus is only the extra injection on top of the shunt
     for element in ["shunt", "ward", "xward"]:
-        if ~net[element].empty:
+        if not net[element].empty:
             bus = net[element].bus.values
             if element == "shunt":
                 Sn = 1j*(net[element].q_mvar.values)

@@ -459,12 +459,13 @@ def test_characteristic(file_io):
     c1 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], fill_value=(0, 4))
     c2 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
     c3 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="hello")
-    c4 = LogSplineCharacteristic(net, [0,1,2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
+    c4 = LogSplineCharacteristic(net, [1, 2, 3], [1, 4, 9], interpolator_kind="Pchip", extrapolate=False)
 
     if file_io:
         net_copy = from_json_string(to_json(net))
         c1, c2, c3, c4 = net_copy.characteristic.object.values
 
+    assert np.allclose(c4([1, 1.5, 2, 3]), [1, 2.25, 4, 9], rtol=0, atol=1e-6)
     assert np.allclose(c1([-1]), [0], rtol=0, atol=1e-6)
     # assert c1(3) == 4
     # assert c1(1) == 1
@@ -474,6 +475,23 @@ def test_characteristic(file_io):
     # test that unknown kind causes error:
     with pytest.raises(NotImplementedError):
         c3([0])
+
+
+@pytest.mark.parametrize("zero_axis", ("x", "y"))
+def test_log_characteristic_zero_values(zero_axis, caplog):
+    net = create_empty_network()
+    x_values = np.array([0.0, 1.0, 2.0]) if zero_axis == "x" else np.array([1.0, 2.0, 3.0])
+    y_values = np.array([0.0, 1.0, 2.0]) if zero_axis == "y" else np.array([1.0, 2.0, 3.0])
+    warning_message = f"zero-values not supported in {zero_axis}_values"
+
+    with pytest.warns(RuntimeWarning, match="divide by zero encountered in log10"):
+        characteristic = LogSplineCharacteristic(
+            net, x_values, y_values, interpolator_kind="Pchip", extrapolate=False
+        )
+
+    assert warning_message in caplog.messages
+    logged_values = characteristic.x_vals if zero_axis == "x" else characteristic.y_vals
+    assert np.isneginf(logged_values[0])
 
 
 def test_log_characteristic_property():

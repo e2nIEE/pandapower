@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 
 from pandapower.converter.pandamodels.to_pm import init_ne_line, convert_pp_to_pm
+from pandapower.converter.pandamodels.from_pm import read_tnep_results
 from pandapower.create import create_poly_cost
 from pandapower.networks.cigre_networks import create_cigre_network_mv
 from pandapower.run import runpp
@@ -49,6 +50,21 @@ def define_possible_new_lines(net):
     init_ne_line(net, new_lines, construction_costs=np.ones(len(new_lines)))
 
     return net
+
+
+def test_tnep_built_result_uses_boolean_dtype():
+    net = cigre_grid()
+    new_line = net.line.index[-2:].tolist()
+    init_ne_line(net, new_line)
+
+    assert net.res_ne_line["built"].dtype == bool
+    assert not net.res_ne_line["built"].any()
+
+    net["_pm_result"] = {"ne_branch": {"1": {"built": 0.25}, "2": {"built": 0.75}}}
+    read_tnep_results(net)
+
+    assert net.res_ne_line["built"].tolist() == [False, True]
+    assert net.res_ne_line["built"].dtype == bool
 
 
 @pytest.mark.slow

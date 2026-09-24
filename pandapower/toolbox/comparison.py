@@ -42,8 +42,13 @@ def dataframes_equal(df1, df2, ignore_index_order=True, assume_geojson_strings=T
         df2_cols = df2.columns
 
     # --- pandas implementation
+    df1_compare = df1[df1_cols].copy()
+    df2_compare = df2[df2_cols].copy()
+    for df in (df1_compare, df2_compare):
+        for col in df.select_dtypes(include="object").columns:
+            df[col] = df[col].where(df[col].notna(), None)
     try:
-        pdt.assert_frame_equal(df1[df1_cols], df2[df2_cols], **kwargs)
+        pdt.assert_frame_equal(df1_compare, df2_compare, **kwargs)
         if not assume_geojson_strings:
             return True
     except AssertionError:

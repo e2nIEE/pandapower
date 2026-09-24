@@ -31,7 +31,11 @@ def trafo3w_net():
 
 def test_trafo3w_max(trafo3w_net):
     net = trafo3w_net
-    calc_sc(net, case="max", lv_tol_percent=6., ip=True, ith=True)
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc(net, case="max", lv_tol_percent=6., ip=True, ith=True)
     assert np.allclose(net.res_bus_sc.ikss_ka.values, [0.26243195543, 1.2151357496, 3.2407820253])
     assert np.allclose(net.res_bus_sc.ip_ka.values, [0.64800210157, 3.0086118915, 8.0313060686])
     assert np.allclose(net.res_bus_sc.ith_ka.values, [0.26687233494, 1.2361480166, 3.2972358704])
@@ -43,7 +47,11 @@ def test_trafo3w_max(trafo3w_net):
 
 def test_trafo3w_min(trafo3w_net):
     net = trafo3w_net
-    calc_sc(net, case="min", lv_tol_percent=6., ip=True, ith=True)
+    with pytest.warns(
+        UserWarning,
+        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
+    ):
+        calc_sc(net, case="min", lv_tol_percent=6., ip=True, ith=True)
     assert np.allclose(net.res_bus_sc.ikss_ka.values, [0.10497277622, 0.56364359158, 1.5877756314])
     assert np.allclose(net.res_bus_sc.ip_ka.values, [0.25920082653, 1.3937300547, 3.9283892193])
     assert np.allclose(net.res_bus_sc.ith_ka.values, [0.10674892795, 0.57328848095, 1.6150713675])

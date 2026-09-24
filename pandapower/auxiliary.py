@@ -1731,7 +1731,8 @@ def _check_tdpf_parameters(
         tdpf_lines = np.array([])
         # we raise the exception later
     else:
-        tdpf_lines = net.line.loc[net.line.tdpf.fillna(False).astype(bool) & net.line.in_service].index.values
+        tdpf_mask = net.line.tdpf.to_numpy(dtype=bool, na_value=False)
+        tdpf_lines = net.line.loc[tdpf_mask & net.line.in_service].index.values
 
     if len(tdpf_lines) == 0:
         logger.info("TDPF: no relevant lines found")
@@ -1914,7 +1915,12 @@ def S_from_VI_elementwise(V: NDArray[NumpyDType], I: NDArray[NumpyDType]) -> NDA
 
 
 def I_from_SV_elementwise(S: NDArray[NumpyDType], V: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
-    return np.conjugate(np.divide(S, V, out=np.zeros_like(S), where=V != 0))  # Return zero if div by zero
+    current = np.zeros_like(S)
+    missing_voltage = np.isnan(V)
+    np.divide(S, V, out=current, where=~missing_voltage & (V != 0))
+    missing_current = complex(np.nan, np.nan) if np.iscomplexobj(current) else np.nan
+    current = np.where(missing_voltage, missing_current, current)
+    return np.conjugate(current)
 
 
 def SVabc_from_SV012(

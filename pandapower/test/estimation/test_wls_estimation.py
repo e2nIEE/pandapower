@@ -14,6 +14,9 @@ from pandapower import pp_dir
 from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_line_from_parameters, \
     create_measurement, create_load, create_transformer, create_line, create_sgen, create_transformer3w, create_switch
 from pandapower.estimation import chi2_analysis, remove_bad_data, estimate
+from pandapower.estimation.idx_bus import P, P_IDX, Q, Q_IDX, ZERO_INJ_FLAG
+from pandapower.estimation.ppc_conversion import pp2eppci
+from pandapower.pypower.idx_bus import bus_cols
 from pandapower.file_io import from_json
 from pandapower.networks.cigre_networks import create_cigre_network_mv
 from pandapower.networks.power_system_test_cases import case9
@@ -845,8 +848,16 @@ def test_zero_injection_aux_bus():
                        equal_nan=True)
     assert np.allclose(net_noinj_bus.res_bus_est.vm_pu.values, net_aux.res_bus_est.vm_pu.values, 1e-4, equal_nan=True)
 
-    # in case zero injection was set to none, the results should be different
-    assert ~np.allclose(net.res_bus_est.vm_pu.values, net_aux.res_bus_est.vm_pu.values, 1e-2, equal_nan=True)
+    eppci_none = pp2eppci(net, zero_injection=None)[2]
+    eppci_noinj = pp2eppci(net_noinj_bus, zero_injection="no_inj_bus")[2]
+    assert not eppci_none.data["bus"][:, bus_cols + ZERO_INJ_FLAG].any()
+    noinj_flags = eppci_noinj.data["bus"][:, bus_cols + ZERO_INJ_FLAG]
+    assert np.count_nonzero(noinj_flags) == 1
+    noinj_bus = np.flatnonzero(noinj_flags)
+    np.testing.assert_array_equal(eppci_noinj.data["bus"][noinj_bus, bus_cols + P], 0)
+    np.testing.assert_array_equal(eppci_noinj.data["bus"][noinj_bus, bus_cols + Q], 0)
+    np.testing.assert_array_equal(eppci_noinj.data["bus"][noinj_bus, bus_cols + P_IDX], -1)
+    np.testing.assert_array_equal(eppci_noinj.data["bus"][noinj_bus, bus_cols + Q_IDX], -1)
 
 
 @pytest.mark.xfail

@@ -5,6 +5,7 @@
 
 import copy
 import json
+import re
 import os
 
 import geojson
@@ -245,7 +246,8 @@ def test_sqlite_workaround(net_in, tmp_path):
 
 def test_convert_format():  # TODO what is this thing testing ?
     net = from_pickle(os.path.join(pp_dir, "test", "api", "old_net.p"))
-    runpp(net)
+    with pytest.warns(DeprecationWarning, match="tap_dependency_table is missing in net"):
+        runpp(net)
     assert net.converged
 
 
@@ -602,6 +604,14 @@ def test_json_multiindex_and_index_names():
                            check_index_type=False)
 
 
+def test_json_nonfinite_float_encoding():
+    encoded = json.dumps(float("-inf"), cls=PPJSONEncoder)
+    assert encoded == "-Infinity"
+    assert json.loads(encoded) == float("-inf")
+    with pytest.raises(ValueError, match="Out of range float values are not JSON compliant"):
+        json.dumps(float("-inf"), cls=PPJSONEncoder, allow_nan=False)
+
+
 def test_json_dict_of_stuff():
     net1 = case9()
     net2 = case14()
@@ -657,9 +667,17 @@ def test_ignore_unknown_objects():
     json_str3 = json_str.replace("\"ContinuousTapControl", "\"ContinuousTapControl2")
     with pytest.raises(AttributeError):
         from_json_string(json_str3, ignore_unknown_objects=False)
-    net3 = from_json_string(json_str2, ignore_unknown_objects=True)
+    with pytest.warns(
+        UserWarning,
+        match="Module pandapower.control.controller.trafo.ContinuousTapControl2 not found. Returning object as is.",
+    ):
+        net3 = from_json_string(json_str2, ignore_unknown_objects=True)
     assert isinstance(net3.controller.object.at[0], dict)
-    net4 = from_json_string(json_str3, ignore_unknown_objects=True)
+    with pytest.warns(
+        UserWarning,
+        match=re.escape("Class ContinuousTapControl2 not found in module pandapower.control.controller.trafo.ContinuousTapControl. Returning object as is."),
+    ):
+        net4 = from_json_string(json_str3, ignore_unknown_objects=True)
     assert isinstance(net4.controller.object.at[0], dict)
 
     # make sure that the loaded net equals the original net except for the controller

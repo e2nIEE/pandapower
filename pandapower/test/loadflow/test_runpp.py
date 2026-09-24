@@ -1362,7 +1362,11 @@ def test_line_temperature():
     assert np.allclose(net.res_bus.va_degree, va_init, rtol=0, atol=1e-16)
 
     # argument in runpp is considered
-    runpp(net, consider_line_temperature=True)
+    with pytest.warns(
+        UserWarning,
+        match=r"^'alpha' is assumed to 0\.004 and required for the calculation of the temperature based resistance\.$",
+    ):
+        runpp(net, consider_line_temperature=True)
     assert "r_ohm_per_km" in net.res_line.columns
     assert np.allclose(net.res_line.r_ohm_per_km, r_init, rtol=0, atol=1e-16)
     assert np.allclose(net.res_bus.vm_pu, v_init, rtol=0, atol=1e-16)
@@ -1372,7 +1376,11 @@ def test_line_temperature():
     t = np.arange(0, 80, 10)
     net.line.temperature_degree_celsius = t
     set_user_pf_options(net, consider_line_temperature=True)
-    runpp(net)
+    with pytest.warns(
+        UserWarning,
+        match=r"^'alpha' is assumed to 0\.004 and required for the calculation of the temperature based resistance\.$",
+    ):
+        runpp(net)
     alpha = 4e-3
     r_temp = r_init * (1 + alpha * (t - 20))
     assert np.allclose(net.res_line.r_ohm_per_km, r_temp, rtol=0, atol=1e-16)

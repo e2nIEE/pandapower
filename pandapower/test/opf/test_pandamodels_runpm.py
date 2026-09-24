@@ -4,6 +4,7 @@
 import copy
 import os
 from copy import deepcopy
+from types import SimpleNamespace
 
 import numpy as np
 import pandas as pd
@@ -75,12 +76,12 @@ def create_cigre_grid_with_time_series(json_path, net=None, add_ts_constaints=Fa
     sgen_p = net["sgen"].loc[:7, "p_mw"].values
     wind_p = net["sgen"].loc[8, "p_mw"]
 
-    load_ts = pd.DataFrame(index=time_series.index.tolist(), columns=net.load.index.tolist())
-    sgen_ts = pd.DataFrame(index=time_series.index.tolist(), columns=net.sgen.index.tolist())
+    load_ts = pd.DataFrame(index=time_series.index.tolist(), columns=net.load.index.tolist(), dtype=float)
+    sgen_ts = pd.DataFrame(index=time_series.index.tolist(), columns=net.sgen.index.tolist(), dtype=float)
     for t in range(n_timesteps):
         load_ts.loc[t] = load_p * time_series.at[t, "residential"]
-        sgen_ts.loc[t][:8] = sgen_p * time_series.at[t, "pv"]
-        sgen_ts.loc[t][8] = wind_p * time_series.at[t, "wind"]
+        sgen_ts.loc[t, net.sgen.index[:8]] = sgen_p * time_series.at[t, "pv"]
+        sgen_ts.loc[t, net.sgen.index[8]] = wind_p * time_series.at[t, "wind"]
 
     # create time series controller for load and sgen
     ConstControl(net, element="load", variable="p_mw",
@@ -567,7 +568,7 @@ def test_runpm_vstab():
         create_poly_cost(net, idx, "ext_grid", 1.0)
 
     net.bus["pm_param/setpoint_v"] = None
-    net.bus["pm_param/setpoint_v"].loc[net.sgen.bus] = 0.99
+    net.bus.loc[net.sgen.bus, "pm_param/setpoint_v"] = 0.99
 
     runpm_vstab(net)
 
@@ -604,6 +605,33 @@ def test_storage_opt():
     assert abs(storage_results_100[0].values - storage_results_1[0].values).max() < 1e-6
 
 
+def test_read_pm_storage_results_maps_each_storage_and_timestep():
+    net = create_empty_network()
+    bus = create_bus(net, vn_kv=20.0)
+    first = create_storage(net, bus, p_mw=0.0, max_e_mwh=5.0, min_e_mwh=1.0)
+    second = create_storage(net, bus, p_mw=0.0, max_e_mwh=8.0, min_e_mwh=2.0)
+    net.res_ts_opt = {
+        "0": SimpleNamespace(res_storage=pd.DataFrame(
+            {"ps": [-1.0, 2.0], "qs": [0.1, 0.2], "se": [0.25, 0.6]}, index=[first, second]
+        )),
+        "1": SimpleNamespace(res_storage=pd.DataFrame(
+            {"ps": [3.0, 4.0], "qs": [-0.3, 0.5], "se": [0.5, 0.75]}, index=[first, second]
+        )),
+    }
+
+    results = read_pm_storage_results(net)
+
+    np.testing.assert_array_equal(results[first]["p_mw"], [-1.0, 3.0])
+    np.testing.assert_array_equal(results[first]["q_mvar"], [0.1, -0.3])
+    np.testing.assert_array_equal(results[first]["soc_percent"], [25.0, 50.0])
+    np.testing.assert_allclose(results[first]["soc_mwh"], [1.0, 2.0])
+    np.testing.assert_array_equal(results[second]["p_mw"], [2.0, 4.0])
+    np.testing.assert_array_equal(results[second]["q_mvar"], [0.2, 0.5])
+    np.testing.assert_array_equal(results[second]["soc_percent"], [60.0, 75.0])
+    np.testing.assert_allclose(results[second]["soc_mwh"], [3.6, 4.5])
+    assert all(dtype == float for result in results.values() for dtype in result.dtypes)
+
+
 @pytest.mark.slow
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_runpm_multi_vstab():
@@ -630,7 +658,7 @@ def test_runpm_multi_vstab():
     net.line["max_loading_percent"] = 100.0
 
     net.bus["pm_param/setpoint_v"] = None  # add extra column
-    net.bus["pm_param/setpoint_v"].loc[net.sgen.bus] = 0.96
+    net.bus.loc[net.sgen.bus, "pm_param/setpoint_v"] = 0.96
 
     # load time series data for 96 time steps
     json_path = os.path.join(pp_dir, "test", "opf", "cigre_timeseries_15min.json")
@@ -677,9 +705,9 @@ def test_runpm_qflex_and_multi_qflex():
     net.line["max_loading_percent"] = 100.0
 
     net.trafo["pm_param/setpoint_q"] = None  # add extra column
-    net.trafo["pm_param/setpoint_q"].loc[0] = -5
+    net.trafo.loc[0, "pm_param/setpoint_q"] = -5
     net.trafo["pm_param/side"] = None
-    net.trafo["pm_param/side"][0] = "lv"
+    net.trafo.loc[0, "pm_param/side"] = "lv"
 
     # run opf
     runpm_qflex(net)

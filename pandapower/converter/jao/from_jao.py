@@ -361,7 +361,7 @@ def _create_transformers_and_buses(
     vn_hv_kv, vn_lv_kv = _get_transformer_voltages(data, bus_idx)
     trafo_connections = _allocate_trafos_to_buses_and_create_buses(
         net, data, bus_idx, vn_hv_kv, vn_lv_kv, **kwargs)
-    max_i_a = data[key].loc[:, ("Maximum Current Imax (A) primary", "Fixed")]
+    max_i_a = data[key].loc[:, ("Maximum Current Imax (A) primary", "Fixed")].copy()
     empty_i_idx = max_i_a.index[max_i_a.isnull()]  # type: ignore[call-overload]
     max_i_a.loc[empty_i_idx] = data[key].loc[empty_i_idx, (
         "Maximum Current Imax (A) primary", "Max")].values
@@ -808,12 +808,12 @@ def _allocate_trafos_to_buses_and_create_buses(
     # --- occurs for PSTs only)
     same_bus_connection = trafo_connections.hv_bus == trafo_connections.lv_bus
     duplicated_buses = net.bus.loc[trafo_connections.loc[same_bus_connection, "lv_bus"]].copy()
-    duplicated_buses["name"] += " (2)"
-    duplicated_buses.index = list(range(net.bus.index.max()+1,
-                                        net.bus.index.max()+1+len(duplicated_buses)))
-    trafo_connections.loc[same_bus_connection, "lv_bus"] = duplicated_buses.index
-    net.bus = pd.concat([net.bus, duplicated_buses])
     if n_add_buses := len(duplicated_buses):
+        duplicated_buses["name"] += " (2)"
+        duplicated_buses.index = list(range(net.bus.index.max()+1,
+                                            net.bus.index.max()+1+n_add_buses))
+        trafo_connections.loc[same_bus_connection, "lv_bus"] = duplicated_buses.index
+        net.bus = pd.concat([net.bus, duplicated_buses])
         tr_names = data[key].loc[trafo_connections.index[same_bus_connection],
                                  ("Location", "Full Name")]
         are_PSTs = tr_names.str.contains("PST")
@@ -905,7 +905,7 @@ def _drop_duplicates_and_join_TSO(bus_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _get_float_column(df, col_tuple, fill=0):
-    series = df.loc[:, col_tuple]
+    series = df.loc[:, col_tuple].copy()
     series.loc[series == "\xa0"] = fill
     return series.astype(float).fillna(fill)
 

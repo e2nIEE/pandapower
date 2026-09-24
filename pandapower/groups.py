@@ -17,7 +17,6 @@ from typing_extensions import deprecated
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
-import pandas.testing as pdt
 
 from pandapower.auxiliary import ensure_iterability, log_to_level, pandapowerNet
 from pandapower.create import (
@@ -432,11 +431,11 @@ def groups_equal(
     """
     df1 = net.group.loc[[index1]].set_index("name")
     df2 = net.group.loc[[index2]].set_index("name")
-    try:
-        pdt.assert_frame_equal(df1, df2, **kwargs)
-        return True
-    except AssertionError:
-        return False
+    from pandapower.toolbox.comparison import dataframes_equal
+
+    return dataframes_equal(
+        df1, df2, ignore_index_order=False, assume_geojson_strings=False, **kwargs
+    )
 
 
 def compare_group_elements(net: pandapowerNet, index1: int, index2: int) -> bool:

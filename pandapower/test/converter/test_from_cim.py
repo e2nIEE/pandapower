@@ -1,3 +1,4 @@
+import logging
 import os
 from codecs import ignore_errors
 
@@ -10,9 +11,45 @@ from pandapower.test import test_path
 
 from pandapower.converter.cim.cim2pp.from_cim import from_cim, from_cim_dict
 from pandapower.converter.cim.cim_classes import CimParser
+from pandapower.converter.cim.cim2pp.build_pp_net import CimConverter
 from pandapower.run import runpp
 
 from pandapower.control.util.auxiliary import create_trafo_characteristic_object, create_shunt_characteristic_object
+
+
+@pytest.mark.parametrize(
+    "values, source_dtype, expected_dtype",
+    [([1, 2], "Int64", "Int64"), ([pd.NA, pd.NA], "Int64", "Float64")],
+)
+def test_copy_to_pp_empty_target_preserves_column_dtypes(values, source_dtype, expected_dtype):
+    converter = CimConverter.__new__(CimConverter)
+    converter.logger = logging.getLogger(__name__)
+    target = pd.DataFrame({"sequenceNumber": pd.Series(dtype="float64"), "rdfId": pd.Series(dtype="object")})
+    converter.net = {"bus": target}
+    source = pd.DataFrame(
+        {
+            "sequenceNumber": pd.Series(values, dtype=source_dtype, index=[7, 3]),
+            "unmapped": ["ignored", "ignored"],
+        },
+        index=[7, 3],
+    )
+    original_source = source.copy(deep=True)
+
+    converter.copy_to_pp("bus", source)
+
+    assert converter.net["bus"].columns.tolist() == ["sequenceNumber", "rdfId"]
+    assert converter.net["bus"].index.tolist() == [0, 1]
+    if pd.isna(values[0]):
+        assert converter.net["bus"].sequenceNumber.isna().all()
+    else:
+        pd.testing.assert_series_equal(
+            converter.net["bus"].sequenceNumber,
+            source.sequenceNumber.reset_index(drop=True),
+            check_names=False,
+        )
+    assert converter.net["bus"].sequenceNumber.dtype == expected_dtype
+    assert converter.net["bus"].rdfId.isna().all()
+    pd.testing.assert_frame_equal(source, original_source)
 
 
 @pytest.fixture(scope="module")

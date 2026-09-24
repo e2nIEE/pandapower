@@ -8,13 +8,14 @@ Tests 3 phase power flow algorithm
 import os
 
 import numpy as np
+import pandas as pd
 import pytest
 import copy
 
 from pandapower.networks import create_cigre_network_mv
 from pandapower import pp_dir
 from pandapower.toolbox.grid_modification import replace_line_by_impedance
-from pandapower.auxiliary import get_free_id
+from pandapower.auxiliary import get_free_id, I_from_SV_elementwise
 from pandapower.create import (
     create_empty_network,
     create_bus,
@@ -32,6 +33,9 @@ from pandapower.create import (
 )
 from pandapower.file_io import from_json
 from pandapower.pf.runpp_3ph import runpp_3ph
+from pandapower.powerflow import LoadflowNotConverged
+from pandapower.pypower.idx_bus import VM
+from pandapower.results_bus import _get_bus_v_results_3ph
 from pandapower.run import runpp
 from pandapower.std_types import create_std_type, add_zero_impedance_parameters
 from pandapower.test.consistency_checks import (
@@ -44,6 +48,47 @@ from pandapower.toolbox.comparison import dataframes_equal
 from pandapower.test.conftest import result_test_network
 from pandapower.test.helper_functions import add_grid_connection
 from pandapower.test.loadflow.test_runpp import get_isolated
+
+
+def test_current_from_power_and_voltage_preserves_missing_values():
+    power = np.array([2 + 4j, 1 + 2j, 1 + 2j, 1 + 2j])
+    voltage = np.array([2 + 0j, 0 + 0j, complex(np.nan, np.nan), 1 + 0j])
+
+    current = I_from_SV_elementwise(power, voltage)
+
+    assert current[0] == 1 - 2j
+    assert current[1] == 0
+    assert np.isnan(current[2].real)
+    assert np.isnan(current[2].imag)
+    assert current[3] == 1 - 2j
+
+    real_current = I_from_SV_elementwise(np.array([2.0, 3.0]), np.array([2.0, 0.0]))
+    assert np.array_equal(real_current, np.array([1.0, 0.0]))
+
+
+def test_unbalance_percent_with_zero_positive_sequence(monkeypatch):
+    net = {
+        "_options": {"ac": False},
+        "bus": pd.DataFrame(index=range(4)),
+        "res_bus_3ph": pd.DataFrame(index=range(4)),
+        "_pd2ppc_lookups": {"bus": np.arange(4)},
+    }
+    sequence_voltages = np.array(
+        [[1, 1, 1, 1], [1 + 0j, 0j, 0j, np.nan + 0j], [0.5j, 0j, 1 + 0j, 1 + 0j]],
+        dtype=complex,
+    )
+    monkeypatch.setattr(
+        "pandapower.results_bus._V012_from_ppc012",
+        lambda *args: sequence_voltages,
+    )
+
+    _get_bus_v_results_3ph(net, None, None, None)
+
+    unbalance = net["res_bus_3ph"]["unbalance_percent"].to_numpy()
+    assert unbalance[0] == 50
+    assert np.isnan(unbalance[1])
+    assert np.isposinf(unbalance[2])
+    assert np.isnan(unbalance[3])
 
 
 @pytest.fixture
@@ -169,6 +214,27 @@ def test_2bus_network_isolated_net_part(test_net):
     check_it(test_net)
 
 
+def test_runpp_3ph_does_not_report_failed_inner_solve_as_converged(test_net, monkeypatch):
+    def failed_solve(ppci, options):
+        ppci["success"] = False
+
+    monkeypatch.setattr("pandapower.pf.runpp_3ph._run_newton_raphson_pf", failed_solve)
+    with pytest.raises(LoadflowNotConverged):
+        runpp_3ph(test_net)
+    assert not test_net["converged"]
+
+
+def test_runpp_3ph_does_not_report_nonfinite_state_as_converged(test_net, monkeypatch):
+    def nonfinite_solve(ppci, options):
+        ppci["success"] = True
+        ppci["bus"][0, VM] = np.nan
+
+    monkeypatch.setattr("pandapower.pf.runpp_3ph._run_newton_raphson_pf", nonfinite_solve)
+    with pytest.raises(LoadflowNotConverged):
+        runpp_3ph(test_net)
+    assert not test_net["converged"]
+
+
 def test_2bus_network_singel_oos_bus(test_net):
     # -o---x---o
     b1 = create_bus(test_net, vn_kv=110)
@@ -178,6 +244,8 @@ def test_2bus_network_singel_oos_bus(test_net):
     add_zero_impedance_parameters(test_net)
     runpp_3ph_with_consistency_checks(test_net)
     assert test_net["converged"]
+    assert np.isfinite(test_net.res_bus_3ph.loc[1, ["vm_a_pu", "vm_b_pu", "vm_c_pu"]]).all()
+    assert test_net.res_bus_3ph.loc[b1, ["vm_a_pu", "vm_b_pu", "vm_c_pu"]].isna().all()
 
 
 def test_out_serv_load(test_net):
@@ -776,6 +844,15 @@ def test_trafo_asym():
         runpp_3ph_with_consistency_checks(net)
         assert net["converged"]
         check_results(net, trafo_vector_group, get_PF_Results(trafo_vector_group))
+
+
+@pytest.mark.parametrize("trafo_vector_group", ["yy", "yd", "dy", "dd"])
+def test_trafo_asym_unsupported_vector_groups(trafo_vector_group):
+    net = create_empty_network()
+    make_nw(net, 10, 0, "bal_wye", trafo_vector_group)
+
+    with pytest.raises(NotImplementedError, match="Calculation of 3-phase power flow"):
+        runpp_3ph(net)
 
 
 def _test_trafo_shifts(net, rtol):

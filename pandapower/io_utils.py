@@ -742,8 +742,8 @@ class FromSerializableRegistry():
 
             lsc = LogSplineCharacteristic(
                 net=None,
-                x_values=x_vals,
-                y_values=y_vals,
+                x_values=numpy.power(10.0, x_vals),
+                y_values=numpy.power(10.0, y_vals),
                 interpolator_kind=interpolator_kind,
                 table="characteristic",
                 **kwarg,

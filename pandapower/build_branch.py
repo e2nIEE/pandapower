@@ -231,7 +231,7 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
     branch[f:t, BR_X] = line["x_ohm_per_km"].values * length_km / base_r / parallel
 
     if net._options["tdpf"]:
-        branch[f:t, TDPF] = line["in_service"].values & line["tdpf"].fillna(False).values.astype(bool)
+        branch[f:t, TDPF] = line["in_service"].values & line["tdpf"].to_numpy(dtype=bool, na_value=False)
         branch[f:t, BR_R_REF_OHM_PER_KM] = line["r_ohm_per_km"].values / parallel
         branch[f:t, BR_LENGTH_KM] = length_km
         branch[f:t, RATE_I_KA] = line["max_i_ka"].values * line["df"].values * parallel
@@ -1457,6 +1457,10 @@ def _branches_with_oos_buses(net: pandapowerNet, ppc, dc: bool = False):
             new_ls_buses[:, 0] = new_indices
             new_ls_buses[:, DC_BASE_KV if dc else BASE_KV] = \
                 get_values(ppc[bus_table][:, DC_BASE_KV if dc else BASE_KV], ls_info[:, 1], bus_lookup)
+            if not dc:
+                opposite_side = np.where(ls_info[:, 0].astype(bool), F_BUS, T_BUS)
+                opposite_buses = ppc[branch_table][ls_info[:, 2], opposite_side].real.astype(np.int64)
+                new_ls_buses[:, [VM, VA]] = ppc[bus_table][opposite_buses][:, [VM, VA]]
 
             future_buses.append(new_ls_buses)
 
@@ -1588,7 +1592,7 @@ def _transformer_correction_factor(trafo_df, vk, vkr, sn, cmax, case):
         return np.ones(len(trafo_df))
 
     if "power_station_unit" in trafo_df.columns:
-        power_station_unit = trafo_df.power_station_unit.fillna(False).values.astype(bool)
+        power_station_unit = trafo_df.power_station_unit.to_numpy(dtype=bool, na_value=False)
     else:
         power_station_unit = np.zeros(len(trafo_df)).astype(bool)
 

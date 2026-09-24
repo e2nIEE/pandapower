@@ -181,6 +181,12 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         # TODO Roman: check this/expand this
         ppc_idx = trafos["_ppc_idx"].values.astype(np.int64)
 
+        if mode == "pf_3ph" and vector_group.lower() not in ["ynyn", "dyn", "yzn"]:
+            raise NotImplementedError(
+                "Calculation of 3-phase power flow is only implemented for the transformer "
+                "vector groups 'YNyn', 'Dyn', 'Yzn'"
+            )
+
         if vector_group.lower() in ["yy", "yd", "dy", "dd"]:
             continue
 
@@ -236,7 +242,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         si0_hv_partial = trafos.si0_hv_partial.values.astype(float)
         parallel = trafos.parallel.values.astype(float)
         if "power_station_unit" in trafos.columns:
-            power_station_unit = trafos.power_station_unit.fillna(False).astype(bool)
+            power_station_unit = trafos.power_station_unit.to_numpy(dtype=bool, na_value=False)
         else:
             power_station_unit = np.zeros(len(trafos), dtype=bool)
         in_service = trafos["in_service"].astype(np.int64)
@@ -253,11 +259,6 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         tap_lv = np.square(vn_trafo_lv / vn_bus_lv) * net.sn_mva
         tap_hv = np.square(vn_trafo_hv / vn_bus_hv) * net.sn_mva
         if mode == "pf_3ph":
-            if vector_group.lower() not in ["ynyn", "dyn", "yzn"]:
-                raise NotImplementedError(
-                    "Calculation of 3-phase power flow is only implemented for the transformer "
-                    "vector groups 'YNyn', 'Dyn', 'Yzn'"
-                )
             # =============================================================================
             #     Changing base from transformer base to Network base to get Zpu(Net)
             #     Zbase = (kV).squared/S_mva
@@ -532,9 +533,6 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     if mode == "pf_3ph":
         z_grid = c / (s_sc / 3)
     x_grid = z_grid / np.sqrt(rx**2 + 1)
-    r_grid = rx * x_grid
-    eg["r"] = r_grid
-    eg["x"] = x_grid
 
     # ext_grid zero sequence impedance
     x0_grid = net.ext_grid[is_egs]["x0x_%s" % case].values * x_grid

@@ -537,7 +537,7 @@ def init_ne_line(net, new_line_index, construction_costs=None):
     # set in service, but only in ne line dataframe
     net["ne_line"].loc[new_line_index, "in_service"] = True
     # init res_ne_line to save built status afterwards
-    net["res_ne_line"] = pd.DataFrame(data=0, index=new_line_index, columns=["built"], dtype=np.int64)
+    net["res_ne_line"] = pd.DataFrame(data=False, index=new_line_index, columns=["built"], dtype=bool)
 
 
 def add_params_to_pm(net, pm):

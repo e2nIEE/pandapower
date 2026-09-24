@@ -107,7 +107,7 @@ def add_column_from_element_to_elements(net, column, replace, elements=None,
             column].isnull().all()]
     for el in elements_to_replace:
         et_col = "element_type" if "element_type" in net[el].columns else "et"
-        element_type = net[el][et_col]
+        element_type = net[el][et_col].copy()
         for short, complete in [("t", "trafo"), ("t3", "trafo3w"), ("l", "line"), ("s", "switch"),
                                 ("b", "bus")]:
             element_type.loc[element_type == short] = complete

@@ -65,10 +65,10 @@ def read_pm_storage_results(net):
                                    dtype=float)
         for t in timesteps:
             pm_storage = net.res_ts_opt[str(t)].res_storage
-            res_storage.at[t, "p_mw"] = pm_storage["ps"]
-            res_storage.at[t, "q_mvar"] = pm_storage["qs"]
-            res_storage.at[t, "soc_percent"] = pm_storage["se"] * 1e2
-            res_storage.at[t, "soc_mwh"] = pm_storage["se"] * \
+            res_storage.at[t, "p_mw"] = pm_storage.at[idx, "ps"]
+            res_storage.at[t, "q_mvar"] = pm_storage.at[idx, "qs"]
+            res_storage.at[t, "soc_percent"] = pm_storage.at[idx, "se"] * 1e2
+            res_storage.at[t, "soc_mwh"] = pm_storage.at[idx, "se"] * \
                                            (net["storage"].at[idx, "max_e_mwh"] - net["storage"].at[idx, "min_e_mwh"])
 
         storage_results[idx] = res_storage

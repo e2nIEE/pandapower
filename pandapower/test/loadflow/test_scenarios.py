@@ -30,7 +30,8 @@ def test_2gen_1ext_grid():
     create_gen(net, 2, p_mw=0.100)
     net.trafo.shift_degree = 150
     net.trafo.tap_changer_type = "Ratio"
-    runpp(net, init='dc', calculate_voltage_angles=True)
+    with pytest.warns(DeprecationWarning, match="tap_dependency_table is missing in net"):
+        runpp(net, init='dc', calculate_voltage_angles=True)
 
     assert np.allclose(net.res_gen.p_mw.values, [0.100, 0.100])
     assert np.allclose(net.res_gen.q_mvar.values, [-0.447397232056, -0.0518152713776], atol=1e-2)
@@ -58,7 +59,8 @@ def test_0gen_2ext_grid():
     net.ext_grid.at[1, "in_service"] = False
     create_ext_grid(net, 3)
 
-    runpp(net, init='dc', calculate_voltage_angles=True)
+    with pytest.warns(DeprecationWarning, match="tap_dependency_table is missing in net"):
+        runpp(net, init='dc', calculate_voltage_angles=True)
     assert np.allclose(net.res_bus.p_mw.values, [-0.000000, 0.03000000, 0.000000, -0.032993015])
     assert np.allclose(net.res_bus.q_mvar.values, [0.00408411026001, 0.002000000,
                                                    -0.0286340014753, 0.027437210083])
@@ -90,7 +92,8 @@ def test_0gen_2ext_grid_decoupled():
                 std_type="NAYSEY 3x35rm/16 6/10kV")  # NAYSEY 3x35rm/16 6/10kV
     create_ext_grid(net, auxbus)
     create_switch(net, auxbus, 2, et="l", closed=0, type="LS")
-    runpp(net, init='dc', calculate_voltage_angles=True)
+    with pytest.warns(DeprecationWarning, match="tap_dependency_table is missing in net"):
+        runpp(net, init='dc', calculate_voltage_angles=True)
 
     assert np.allclose(net.res_bus.p_mw.values * 1e3, [-133.158732, 30.000000,
                                                        0.000000, 100.000000, 0.000000])
