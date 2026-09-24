@@ -75,12 +75,12 @@ def create_cigre_grid_with_time_series(json_path, net=None, add_ts_constaints=Fa
     sgen_p = net["sgen"].loc[:7, "p_mw"].values
     wind_p = net["sgen"].loc[8, "p_mw"]
 
-    load_ts = pd.DataFrame(index=time_series.index.tolist(), columns=net.load.index.tolist())
-    sgen_ts = pd.DataFrame(index=time_series.index.tolist(), columns=net.sgen.index.tolist())
+    load_ts = pd.DataFrame(index=time_series.index.tolist(), columns=net.load.index.tolist(), dtype=float)
+    sgen_ts = pd.DataFrame(index=time_series.index.tolist(), columns=net.sgen.index.tolist(), dtype=float)
     for t in range(n_timesteps):
         load_ts.loc[t] = load_p * time_series.at[t, "residential"]
-        sgen_ts.loc[t][:8] = sgen_p * time_series.at[t, "pv"]
-        sgen_ts.loc[t][8] = wind_p * time_series.at[t, "wind"]
+        sgen_ts.loc[t, net.sgen.index[:8]] = sgen_p * time_series.at[t, "pv"]
+        sgen_ts.loc[t, net.sgen.index[8]] = wind_p * time_series.at[t, "wind"]
 
     # create time series controller for load and sgen
     ConstControl(net, element="load", variable="p_mw",
