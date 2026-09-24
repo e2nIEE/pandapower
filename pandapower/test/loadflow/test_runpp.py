@@ -1702,6 +1702,14 @@ def _test_net_for_q_capability_curve():
                  cos_phi=0.8, pg_percent=0.0, vn_kv=19.0, vm_pu=1.0) #,min_q_mvar=-255, max_q_mvar=255,  min_p_mw=-331.01001, max_p_mw=331.01001)
     return net
 
+def test_prevent_ns_ms_supply():
+    net = create_empty_network()
+    hv = create_bus(net, 20)
+    lv = create_bus(net, 0.4)
+    create_transformer(net, hv, lv, '0.63 MVA 20/0.4 kV')
+    create_ext_grid(net, lv)
+    runpp(net)
+
 
 def test_q_capability_curve():
     net = _test_net_for_q_capability_curve()

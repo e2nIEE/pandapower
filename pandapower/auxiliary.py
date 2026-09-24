@@ -50,7 +50,7 @@ import scipy as sp
 from geojson import loads, GeoJSON
 from packaging.version import Version
 
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
+from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, DIRECTED
 from pandapower.pypower.idx_brch_dc import DC_BR_STATUS, DC_F_BUS, DC_T_BUS
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, PQ, VMIN, VMAX, PV
 from pandapower.pypower.idx_bus_dc import DC_VMAX, DC_VMIN, DC_BUS_I, DC_BUS_TYPE, DC_NONE, DC_REF, DC_B2B
@@ -1123,10 +1123,14 @@ def _check_connectivity(ppc: PyPowerNetwork) -> tuple[NDArray[bool], int, int, N
     :return:
     """
     br_status = ppc['branch'][:, BR_STATUS].astype(bool)
+    directed = ppc['branch'][:, DIRECTED].astype(bool)
     nobranch = ppc['branch'][br_status, :].shape[0]
+    nobranch_ud = ppc['branch'][br_status & ~directed, :].shape[0]
     nobus = ppc['bus'].shape[0]
     bus_from = ppc['branch'][br_status, F_BUS].real.astype(np.int64)
     bus_to = ppc['branch'][br_status, T_BUS].real.astype(np.int64)
+    bus_from_ud = bus_from[~directed[br_status]]
+    bus_to_ud = bus_to[~directed[br_status]]
     slacks = ppc['bus'][ppc['bus'][:, BUS_TYPE] == REF, BUS_I]
     tcsc_status = ppc["tcsc"][:, TCSC_STATUS].real.astype(bool)
     notcsc = ppc["tcsc"][tcsc_status, :].shape[0]
@@ -1143,13 +1147,13 @@ def _check_connectivity(ppc: PyPowerNetwork) -> tuple[NDArray[bool], int, int, N
 
     # we create a "virtual" bus thats connected to all slack nodes and start the connectivity
     # search at this bus
-    bus_from = np.hstack([bus_from, bus_from_tcsc, bus_from_ssc, bus_from_vsc, slacks])
-    bus_to = np.hstack([bus_to, bus_to_tcsc, bus_to_ssc, bus_to_vsc, np.ones(len(slacks)) * nobus])
-    nolinks = nobranch + notcsc + nossc + novsc + len(slacks)
+    bus_from = np.hstack([bus_from, bus_to_ud, bus_from_tcsc, bus_to_tcsc, bus_from_ssc, bus_to_ssc, bus_from_vsc, bus_to_vsc, np.ones(len(slacks)) * nobus])
+    bus_to = np.hstack([bus_to, bus_from_ud, bus_to_tcsc, bus_from_tcsc, bus_to_ssc, bus_from_ssc, bus_to_vsc, bus_from_vsc, slacks])
+    nolinks = nobranch + nobranch_ud + notcsc * 2 + nossc * 2 + novsc * 2 + len(slacks)
 
     adj_matrix = sp.sparse.coo_matrix((np.ones(nolinks), (bus_from, bus_to)), shape=(nobus + 1, nobus + 1))
 
-    reachable = sp.sparse.csgraph.breadth_first_order(adj_matrix, nobus, False, False)
+    reachable = sp.sparse.csgraph.breadth_first_order(adj_matrix, nobus, True, False)
     # TODO: the former impl. excluded ppc buses that are already oos, but is this necessary ?
     # if so: bus_not_reachable = np.hstack([ppc['bus'][:, BUS_TYPE] != 4, np.array([False])])
     bus_not_reachable = np.ones(ppc["bus"].shape[0] + 1, dtype=bool)
