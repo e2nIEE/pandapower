@@ -10,7 +10,7 @@ shunt_schema = pa.DataFrameSchema(
             int,
             pa.Check.ge(0),
             description="index of bus where the impedance starts",
-            metadata={"foreign_key": "bus.index"},
+            metadata={"foreign_key": "bus"},
         ),
         "p_mw": pa.Column(
             float,

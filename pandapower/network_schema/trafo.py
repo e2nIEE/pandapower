@@ -26,7 +26,7 @@ _trafo_columns = {
         int,
         pa.Check.ge(0),
         description="high voltage bus index of the transformer",
-        metadata={"foreign_key": "bus.index"},
+        metadata={"foreign_key": "bus"},
     ),
     "lv_bus": pa.Column(
         int, pa.Check.ge(0), description="low voltage bus index of the transformer", metadata={"foreign_key": "bus"}

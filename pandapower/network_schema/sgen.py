@@ -9,7 +9,7 @@ _sgen_columns = {
         description="name of the static generator",
         metadata={"cim": True},
     ),
-    "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}),
+    "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus"}),
     "p_mw": pa.Column(float, description="active power of the static generator [MW]"),
     "q_mvar": pa.Column(float, description="reactive power of the static generator [MVAr]", metadata={"default": 0.0}),
     "sn_mva": pa.Column(
