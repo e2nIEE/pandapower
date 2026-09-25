@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [ADDED] set_opf_controllable parameter in from_mpc to mark converted external grids and generators as controllable
 - [FIXED] creating a branch element (e.g. ``create_line_from_parameters``) without an ``index`` on a non-existing bus raised ``TypeError`` instead of the intended ``UserWarning``, because the error message formatted the ``None`` index with ``%d`` (#3141)
 - [FIXED] ``PPJSONEncoder`` accepts the legacy ``encoding`` keyword supplied by ``simplejson``.
 - [FIXED] ``wls_with_zero_constraint`` now converges for any ``sn_mva``; the zero-injection constraint was scaled by ``baseMVA`` while its Jacobian was not
@@ -206,7 +207,7 @@ Change Log
 - [FIXED] DC OPF bug if verbose = True
 - [CHANGED] cim2pp conversion of SVC parameter active power: p is set to 0, instead of using the p-value from the SV-profile
 - [ADDED] Parellel contingency analysis using multiple cores through a multiprocessing worker pool
-- [Changed] DC-line mode to handle negative values in 2 different ways, inversing the line direction or considering powerflow always to correlate with the given from_bus 
+- [Changed] DC-line mode to handle negative values in 2 different ways, inversing the line direction or considering powerflow always to correlate with the given from_bus
 - [FIXED] type annotations in create methods
 - [CHANGED] drop_inactive_elements performance improvements: using pandas methods instead of looping
 - [ADDED] add a few more tests for the grid modification functions

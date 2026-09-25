@@ -67,7 +67,6 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs) -> pandapowerNet
         logger.setLevel(logging.DEBUG)
         if not validate_from_ppc(ppc, net, **kwargs):
             logger.error("Validation failed.")
-
     return net
 
 
