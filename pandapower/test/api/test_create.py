@@ -19,7 +19,8 @@ from pandapower.create import (
     create_transformer3w_from_parameters, create_impedance, create_switch, create_gens, load_std_type,
     create_buses, create_lines, create_lines_from_parameters, create_transformers_from_parameters,
     create_transformers3w_from_parameters, create_switches, create_loads, create_storage, create_storages,
-    create_wards, create_sgens, create_transformers, create_transformers3w
+    create_wards, create_sgens, create_transformers, create_transformers3w, create_bus_dc,
+    create_load_dc, create_source_dc
 )
 from pandapower.run import runpp
 from pandapower.std_types import create_std_type
@@ -114,6 +115,32 @@ def test_convenience_create_functions():
     with pytest.raises(UserWarning):
         runpp(net)
     assert net.trafo.test_kwargs.at[tid] == "dummy_string"
+
+
+def test_create_load_dc_assigns_indexes_from_load_dc():
+    net = create_empty_network()
+    bus_dc = create_bus_dc(net, vn_kv=1.0)
+
+    first = create_load_dc(net, bus_dc, p_dc_mw=1.0, name="first")
+    second = create_load_dc(net, bus_dc, p_dc_mw=2.0, name="second")
+
+    assert [first, second] == [0, 1]
+    assert net.load_dc.index.tolist() == [0, 1]
+    assert net.load_dc.name.tolist() == ["first", "second"]
+
+
+def test_create_load_dc_validates_indexes_within_load_dc():
+    net = create_empty_network()
+    bus_dc = create_bus_dc(net, vn_kv=1.0)
+
+    # Element indexes are local to each table, so source_dc and load_dc may both use index 7.
+    create_source_dc(net, bus_dc, index=7)
+    load_index = create_load_dc(net, bus_dc, p_dc_mw=1.0, index=7)
+    create_load_dc(net, bus_dc, p_dc_mw=2.0, index=8)
+
+    assert load_index == 7
+    with pytest.raises(UserWarning, match="A load_dc with the id 8 already exists"):
+        create_load_dc(net, bus_dc, p_dc_mw=3.0, index=8)
 
 
 def test_nonexistent_bus():
@@ -241,6 +268,42 @@ def test_nonexistent_bus():
         ):  # exception is raised because index already exists
             func()
 
+
+@pytest.mark.parametrize(
+    "create_function, kwargs",
+    [
+        (create_line, dict(length_km=1.0, std_type="NAYY 4x50 SE")),
+        (
+            create_line_from_parameters,
+            dict(length_km=1.0, r_ohm_per_km=0.1, x_ohm_per_km=0.1, c_nf_per_km=10, max_i_ka=0.4),
+        ),
+        (create_impedance, dict(rft_pu=0.1, xft_pu=0.1, sn_mva=1.0)),
+    ],
+)
+def test_nonexistent_bus_without_index(create_function, kwargs):
+    # #3138: without an index the error message failed to format and raised a TypeError
+    net = create_empty_network()
+    create_bus(net, vn_kv=20.0, index=0)
+    with pytest.raises(UserWarning, match=r"tries to attach to non-existing bus\(es\) \{1\}"):
+        create_function(net, from_bus=0, to_bus=1, **kwargs)
+
+
+@pytest.mark.parametrize(
+    "create_function, kwargs",
+    [
+        (create_transformer, dict(std_type="63 MVA 110/20 kV")),
+        (
+            create_transformer_from_parameters,
+            dict(sn_mva=40, vn_hv_kv=110, vn_lv_kv=20, vk_percent=10, vkr_percent=0.3, pfe_kw=30,
+                 i0_percent=0.1),
+        ),
+    ],
+)
+def test_nonexistent_bus_without_index_trafo(create_function, kwargs):
+    net = create_empty_network()
+    create_bus(net, vn_kv=110.0, index=0)
+    with pytest.raises(UserWarning, match=r"^Trafo tries to attach to non-existing bus\(es\) \{1\}"):
+        create_function(net, hv_bus=0, lv_bus=1, **kwargs)
 
 def test_tap_changer_type_default():
     expected_default = math.nan # comment: wanted to implement "None" as default, but some test rely on that some function converts NaN to ratio tap changer.
