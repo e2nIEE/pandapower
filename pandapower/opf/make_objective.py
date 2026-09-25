@@ -82,17 +82,16 @@ def _fill_gencost_poly(ppci, net, is_quadratic, q_costs):
     gens, cost, signs = _map_costs_to_gen(net, net.poly_cost)
     c0 = cost["cp0_eur"].values
     c1 = cost["cp1_eur_per_mw"].values
-    signs = array([-1 if element in ["load", "storage", "dcline"] else 1 for element in cost.et])
     if is_quadratic:
         c2 = cost["cp2_eur_per_mw2"]
         ppci["gencost"][gens, NCOST] = 3
-        ppci["gencost"][gens, COST] = c2 * signs
+        ppci["gencost"][gens, COST] = c2
         ppci["gencost"][gens, COST + 1] = c1 * signs
-        ppci["gencost"][gens, COST + 2] = c0 * signs
+        ppci["gencost"][gens, COST + 2] = c0
     else:
         ppci["gencost"][gens, NCOST] = 2
         ppci["gencost"][gens, COST] = c1 * signs
-        ppci["gencost"][gens, COST + 1] = c0 * signs
+        ppci["gencost"][gens, COST + 1] = c0
     if q_costs:
         gens_q = gens + len(ppci["gen"])
         c0 = cost["cq0_eur"].values
