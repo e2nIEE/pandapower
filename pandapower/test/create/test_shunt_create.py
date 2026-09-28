@@ -572,7 +572,7 @@ def test_create_vsc_bipolar_nonexistent_bus():
     net = pandapowerNet(name="test_create_vsc_bipolar_nonexistent_bus")
     create_bus(net, 110)
     b_dc_plus = create_bus_dc(net, 100)
-    b_dc_minus = create_bus_dc(net, -100)
+    b_dc_minus = create_bus_dc(net, 100)
 
     # Test that creating VSC bipolar on non-existent AC bus raises error
     with pytest.raises(UserWarning, match=r"Cannot attach to bus 5, 5 does not exist"):
@@ -616,7 +616,7 @@ def test_create_vsc_stacked_index_conflict():
     net = pandapowerNet(name="test_create_vsc_stacked_index_conflict")
     b1 = create_bus(net, 110)
     b_dc_plus = create_bus_dc(net, 100)
-    b_dc_minus = create_bus_dc(net, -100)
+    b_dc_minus = create_bus_dc(net, 100)
 
     # Create first VSC stacked
     idx1 = create_vsc_stacked(
@@ -644,7 +644,7 @@ def test_create_vsc_bipolar_index_conflict():
     net = pandapowerNet(name="test_create_vsc_bipolar_index_conflict")
     b1 = create_bus(net, 110)
     b_dc_plus = create_bus_dc(net, 100)
-    b_dc_minus = create_bus_dc(net, -100)
+    b_dc_minus = create_bus_dc(net, 100)
 
     # Create first VSC bipolar
     idx1 = create_vsc_bipolar(

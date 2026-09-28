@@ -5,21 +5,31 @@ import pytest
 from pandas._testing import assert_series_equal
 
 from pandapower.create import (
-    create_transformer, create_line, create_transformer3w_from_parameters, create_pwl_cost, create_poly_cost,
-    create_group, create_transformer3w, create_measurement, create_buses, create_loads, create_xward,
-    create_group_from_dict, create_transformer_from_parameters
+    create_buses,
+    create_group,
+    create_group_from_dict,
+    create_line,
+    create_lines,
+    create_loads,
+    create_measurement,
+    create_poly_cost,
+    create_pwl_cost,
+    create_transformer,
+    create_transformer3w,
+    create_transformer3w_from_parameters,
+    create_transformer_from_parameters,
+    create_xward,
 )
-from pandapower.groups import group_element_index, count_group_elements
-from pandapower.network import pandapowerNet
-from pandapower.networks.cigre_networks import create_cigre_network_mv, create_cigre_network_lv
-from pandapower.networks.create_examples import example_simple, example_multivoltage
+from pandapower.groups import count_group_elements, group_element_index
+from pandapower.networks.cigre_networks import create_cigre_network_lv, create_cigre_network_mv
+from pandapower.networks.create_examples import example_multivoltage, example_simple
 from pandapower.networks.ieee_european_lv_asymmetric import ieee_european_lv_asymmetric
 from pandapower.networks.mv_oberrhein import mv_oberrhein
 from pandapower.networks.power_system_test_cases import case9, case24_ieee_rts
 from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_system
 from pandapower.test.helper_functions import assert_net_equal
-from pandapower.toolbox.comparison import nets_equal, dataframes_equal
-from pandapower.toolbox.data_modification import reindex_buses, add_zones_to_elements
+from pandapower.toolbox.comparison import dataframes_equal, nets_equal
+from pandapower.toolbox.data_modification import add_zones_to_elements, reindex_buses
 from pandapower.toolbox.element_selection import count_elements
 from pandapower.toolbox.grid_modification import *
 
@@ -554,11 +564,21 @@ def net():
 
     create_ext_grid(net, bus0, vm_pu=0.4)
 
-    create_line(net, bus0, bus1, length_km=0, std_type="NAYY 4x50 SE")  # line0
-    create_line_from_parameters(net, bus2, bus3, length_km=1, r_ohm_per_km=0, x_ohm_per_km=0.1,
-                                c_nf_per_km=0, max_i_ka=1)  # line1
-    create_line_from_parameters(net, bus3, bus4, length_km=1, r_ohm_per_km=0, x_ohm_per_km=0,
-                                c_nf_per_km=0, max_i_ka=1)  # line2
+    create_lines(net, [bus0], [bus1], length_km=0, line_params="NAYY 4x50 SE")  # line0
+    create_lines(
+        net,
+        [bus2],
+        [bus3],
+        length_km=1,
+        line_params={"r_ohm_per_km": 0, "x_ohm_per_km": 0.1, "c_nf_per_km": 0, "max_i_ka": 1},
+    )  # line1
+    create_lines(
+        net,
+        [bus3],
+        [bus4],
+        length_km=1,
+        line_params={"r_ohm_per_km": 0, "x_ohm_per_km": 0, "c_nf_per_km": 0, "max_i_ka": 1},
+    )  # line2
 
     create_impedance(net, bus1, bus2, 0.01, 0.01, sn_mva=100)  # impedance0
     create_impedance(net, bus4, bus5, 0, 0, sn_mva=100)  # impedance1
@@ -622,12 +642,7 @@ def test_all(net):
 def test_drop_elements_at_buses():
     net = pandapowerNet(name="test_drop_elements_at_buses")
 
-    bus0 = create_bus(net, vn_kv=110)
-    bus1 = create_bus(net, vn_kv=20)
-    bus2 = create_bus(net, vn_kv=10)
-    bus3 = create_bus(net, vn_kv=0.4)
-    bus4 = create_bus(net, vn_kv=0.4)
-    bus5 = create_bus(net, vn_kv=20)
+    bus0, bus1, bus2, bus3, bus4, bus5 = create_buses(net, 6, vn_kv=[110, 20, 10, 0.4, 0.4, 20])
 
     create_ext_grid(net, 0)
 
@@ -635,8 +650,9 @@ def test_drop_elements_at_buses():
                                   std_type='63/25/38 MVA 110/20/10 kV')
     trafo1 = create_transformer(net, hv_bus=bus2, lv_bus=bus3, std_type='0.4 MVA 10/0.4 kV')
 
-    line1 = create_line(net, from_bus=bus3, to_bus=bus4, length_km=20.1,
-                        std_type='24-AL1/4-ST1A 0.4', name='line1')
+    (line1,) = create_lines(
+        net, from_buses=[bus3], to_buses=[bus4], length_km=20.1, line_params="24-AL1/4-ST1A 0.4", name="line1"
+    )
     create_sgen(net, 1, 0)
 
     create_switch(net, bus=bus0, element=trafo0, et='t3')
@@ -1158,7 +1174,7 @@ def test_drop_elements_lines():
 
 def test_drop_elements_trafos():
     net = pandapowerNet(name="test_drop_elements_trafos")
-    bus_sl = create_bus(net, vn_kv=.4, in_service=True)
+    (bus_sl,) = create_buses(net, 1, vn_kv=0.4, in_service=True)
     __create_trafo3w(net, bus_sl, service=True)
     drop_elements(net, "trafo", element_index=[0])
     assert 0 not in net.trafo.index
@@ -1169,12 +1185,14 @@ def _simple_line_net():
     Two buses connected by one line.
     """
     net = pandapowerNet(name="_simple_line_net")
-    bus0 = create_bus(net, vn_kv=20.)
-    bus1 = create_bus(net, vn_kv=20.)
-    create_line_from_parameters(
-        net, from_bus=bus0, to_bus=bus1, length_km=1.0,
-        r_ohm_per_km=0.1, x_ohm_per_km=0.1, c_nf_per_km=0.0,
-        max_i_ka=1.0, name="L01"
+    bus0, bus1 = create_buses(net, 2, vn_kv=20.0)
+    create_lines(
+        net,
+        from_buses=[bus0],
+        to_buses=[bus1],
+        length_km=1.0,
+        line_params={"r_ohm_per_km": 0.1, "x_ohm_per_km": 0.1, "c_nf_per_km": 0.0, "max_i_ka": 1.0},
+        name="L01",
     )
     return net, bus0, bus1, net.line.index[0]
 

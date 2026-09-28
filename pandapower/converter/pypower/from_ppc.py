@@ -1,21 +1,32 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
 from math import pi
+
 import numpy as np
 import pandas as pd
-from pandapower.network import pandapowerNet
-from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, PD, QD, GS, BS, VA, BASE_KV, ZONE, VMAX, VMIN
-from pandapower.pypower.idx_gen import GEN_BUS, PG, QG, QMAX, QMIN, VG, MBASE, GEN_STATUS, PMAX, PMIN
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, RATE_A, TAP, SHIFT, BR_STATUS
-from pandapower.pypower.idx_cost import MODEL, COST, NCOST
+
 from pandapower.create import (
-    create_buses, create_loads, create_sgens, create_gens, create_lines_from_parameters, create_shunts, create_ext_grid,
-    create_transformers_from_parameters, create_pwl_costs, create_poly_costs, create_impedances
+    create_buses,
+    create_ext_grid,
+    create_gens,
+    create_impedances,
+    create_lines,
+    create_loads,
+    create_poly_costs,
+    create_pwl_costs,
+    create_sgens,
+    create_shunts,
+    create_transformers_from_parameters,
 )
+from pandapower.network import pandapowerNet
+from pandapower.pypower.idx_brch import BR_B, BR_R, BR_STATUS, BR_X, F_BUS, RATE_A, SHIFT, T_BUS, TAP
+from pandapower.pypower.idx_bus import BASE_KV, BS, BUS_I, BUS_TYPE, GS, PD, QD, VA, VMAX, VMIN, ZONE
+from pandapower.pypower.idx_cost import COST, MODEL, NCOST
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, MBASE, PG, PMAX, PMIN, QG, QMAX, QMIN, VG
 from pandapower.run import runpp
 
-import logging
 logger = logging.getLogger(__name__)
 
 ppc_elms = ["bus", "branch", "gen"]
@@ -213,16 +224,23 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         max_i_ka[i_is_zero] = MAX_VAL
         logger.debug("ppc branch rateA is zero -> Using MAX_VAL instead to calculate " +
                      "maximum branch flow")
-    idx_line = create_lines_from_parameters(
-        net, from_buses=net.bus.index[from_bus[is_line]], to_buses=net.bus.index[to_bus[is_line]],
-        length_km=1, name=bra_name[is_line],
-        r_ohm_per_km=(ppc['branch'][is_line, BR_R]*Zni[is_line]),
-        x_ohm_per_km=(ppc['branch'][is_line, BR_X]*Zni[is_line]),
-        c_nf_per_km=(ppc['branch'][is_line, BR_B]/Zni[is_line]/omega*1e9/2),
-        g_us_per_km=(br_g[is_line]/Zni[is_line]*1e6/2),
-        max_i_ka=max_i_ka[is_line], type='ol', max_loading_percent=100,
-        in_service=ppc['branch'][is_line, BR_STATUS].astype(bool))
-
+    idx_line = create_lines(
+        net,
+        from_buses=net.bus.index[from_bus[is_line]],
+        to_buses=net.bus.index[to_bus[is_line]],
+        length_km=1,
+        name=bra_name[is_line],
+        line_params={
+            "r_ohm_per_km": (ppc["branch"][is_line, BR_R] * Zni[is_line]),
+            "x_ohm_per_km": (ppc["branch"][is_line, BR_X] * Zni[is_line]),
+            "c_nf_per_km": (ppc["branch"][is_line, BR_B] / Zni[is_line] / omega * 1e9 / 2),
+            "g_us_per_km": (br_g[is_line] / Zni[is_line] * 1e6 / 2),
+            "max_i_ka": max_i_ka[is_line],
+            "type": "ol",
+        },
+        max_loading_percent=100,
+        in_service=ppc["branch"][is_line, BR_STATUS].astype(bool),
+    )
     # --- create transformer
     if np.any(is_trafo):
         hv_bus = from_bus[is_trafo]

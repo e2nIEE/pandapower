@@ -3,6 +3,7 @@
 
 import copy
 
+from pandapower import create_buses
 from pandapower.auxiliary import get_free_id
 from pandapower.create import (
     create_load,
@@ -108,7 +109,7 @@ def add_test_line(net):
 
 def add_test_ext_grid(net):
     _, b2, _ = add_grid_connection(net, zone="test_ext_grid")
-    b3 = create_bus(net, vn_kv=20.0, zone="test_ext_grid")
+    (b3,) = create_buses(net, 1, vn_kv=20.0, zone="test_ext_grid")
     create_test_line(net, b2, b3)
     create_ext_grid(net, b3, vm_pu=1.02, va_degree=3.0)
     return net
@@ -165,8 +166,8 @@ def add_test_load_sgen_split(net):
 
 def add_test_trafo(net):
     _, b2, _ = add_grid_connection(net, zone="test_trafo")
-    b3 = create_bus(net, vn_kv=0.4, zone="test_trafo")
-    create_transformer_from_parameters(
+    (b3,) = create_buses(net, 1, vn_kv=0.4, zone="test_trafo")
+    create_transformer_from_parameters(  # TODO: missing tap_step_degree
         net,
         b2,
         b3,
@@ -187,7 +188,7 @@ def add_test_trafo(net):
         tap_side="hv",
         parallel=2,
     )
-    t2 = create_transformer_from_parameters(
+    t2 = create_transformer_from_parameters(  # TODO: missing tap_step_degree
         net,
         b2,
         b3,
@@ -227,8 +228,8 @@ def add_test_trafo(net):
     return net
 
 
-def add_test_single_load_single_eg(net):
-    b1 = create_bus(net, vn_kv=20.0, zone="test_single_load_single_eg")
+def add_test_single_load_single_eg(net: pandapowerNet):
+    (b1,) = create_buses(net, 1, vn_kv=20.0, zone="test_single_load_single_eg")
     create_ext_grid(net, b1)
     create_load(net, b1, p_mw=0.1, q_mvar=0.1)
     net.last_added_case = "test_single_load_single_eg"
@@ -612,7 +613,7 @@ def add_test_shunt(net):
     qz = -1.2
     # one shunt at a bus
     create_shunt_as_capacitor(net, b2, q_mvar=1.2, loss_factor=0.1, vn_kv=22.0, step=2)
-    # add out of service shunt shuold not change the result
+    # add out of service shunt should not change the result
     create_shunt(net, b2, p_mw=pz, q_mvar=qz, in_service=False)
     net.last_added_case = "test_shunt"
     return net
