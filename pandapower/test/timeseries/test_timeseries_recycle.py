@@ -5,16 +5,26 @@ import numpy as np
 import pytest
 
 from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
-from pandapower.create import create_gen, create_bus, create_line, create_transformer, create_transformer3w
-from pandapower.run import runpp, rundcpp
-from pandapower.test.timeseries.test_output_writer import create_data_source, OutputWriter, ConstControl, \
-    run_timeseries, simple_test_net
+from pandapower.create import create_buses, create_gen, create_lines, create_transformer, create_transformer3w
+from pandapower.run import rundcpp, runpp
+from pandapower.test.timeseries.test_output_writer import (
+    ConstControl,
+    OutputWriter,
+    create_data_source,
+    run_timeseries,
+    simple_test_net,
+)
 from pandapower.timeseries.data_sources.frame_data import DFData
-from pandapower.timeseries.read_batch_results import get_batch_line_results, get_batch_trafo_results, \
-    get_batch_trafo3w_results, v_to_i_s, polar_to_rad
+from pandapower.timeseries.read_batch_results import (
+    get_batch_line_results,
+    get_batch_trafo3w_results,
+    get_batch_trafo_results,
+    polar_to_rad,
+    v_to_i_s,
+)
 
 n_timesteps = 5
-time_steps = range(0, n_timesteps)
+time_steps = range(n_timesteps)
 
 
 @pytest.fixture(params=[runpp, rundcpp])
@@ -359,8 +369,8 @@ def test_const_pq_out_of_service(simple_test_net, run_function):
     # allows to use recycle = {"bus_pq"} and fast output read
     net = simple_test_net
     for _ in range(3):
-        b = create_bus(net, 20., in_service=False)
-        create_line(net, 2, b, std_type="149-AL1/24-ST1A 20.0", length_km=1., in_service=False)
+        (b,) = create_buses(net, 1, 20.0, in_service=False)
+        create_lines(net, 2, b, line_params="149-AL1/24-ST1A 20.0", length_km=1.0, in_service=False)
         create_transformer(net, 2, b, std_type="25 MVA 110/20 kV", in_service=False)
         create_transformer3w(net, 1, 2, b, std_type="63/25/38 MVA 110/20/10 kV", in_service=False)
     _, ds = create_data_source(n_timesteps)

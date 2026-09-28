@@ -234,7 +234,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
 
         Z = Z.drop([elm + "_separate_total"], axis=1)
         vn_kv = net_zpbn.bus.vn_kv[all_external_buses].values[0]
-        new_g_bus = create_bus(net_zpbn, vn_kv, name=elm + "_integrated-ground ")
+        (new_g_bus,) = create_buses(net_zpbn, 1, vn_kv, name=elm + "_integrated-ground ")
         i_all_integrated = []
         for i in Z.index[~np.isnan(Z[elm + "_ground"].values)]:
             rft_pu, xft_pu = adapt_impedance_params(Z[elm + "_ground"][i])
@@ -244,15 +244,19 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
         # in case of integrated, the tightest vm limits are assumed
         ext_buses = Z.ext_bus[~np.isnan(Z[elm + "_ground"])].values
         ext_buses_name = "/".join([str(eb) for eb in ext_buses])
-        new_t_bus = create_bus(
-            net_zpbn, vn_kv, name=elm + "_integrated-total " + ext_buses_name,
+        (new_t_bus,) = create_buses(
+            net_zpbn,
+            1,
+            vn_kv,
+            name=elm + "_integrated-total " + ext_buses_name,
             max_vm_pu=limits.max_vm_pu.loc[i_all_integrated].min(),
-            min_vm_pu=limits.min_vm_pu.loc[i_all_integrated].max())
+            min_vm_pu=limits.min_vm_pu.loc[i_all_integrated].max(),
+        )
         rft_pu, xft_pu = adapt_impedance_params(Z[elm + "_integrated_total"][0])
         create_impedance(net_zpbn, new_g_bus, new_t_bus, rft_pu, xft_pu,
                          sn_mva, name="eq_impedance_ground_to_total")
-        g_buses += [new_g_bus.tolist()]
-        t_buses += [new_t_bus.tolist()]
+        g_buses += [new_g_bus]
+        t_buses += [new_t_bus]
     # --- create load, sgen and gen
     elm_old = None
     max_load_idx = max(-1, net.load.index[~net.load.bus.isin(all_external_buses)].max() - len(net_zpbn.load))

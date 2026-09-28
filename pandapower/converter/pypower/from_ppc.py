@@ -88,6 +88,8 @@ def _from_ppc_bus(net, ppc):
         max_vm_pu=ppc['bus'][:, VMAX], min_vm_pu=ppc['bus'][:, VMIN],
         index=ppc['bus'][:, BUS_I].astype(np.int64))
 
+    idx_buses = np.array(idx_buses)
+
     # create loads
     is_load = (ppc['bus'][:, PD] > 0) | ((ppc['bus'][:, PD] == 0) & (ppc['bus'][:, QD] != 0))
     create_loads(net, idx_buses[is_load], p_mw=ppc['bus'][is_load, PD], q_mvar=ppc['bus'][
