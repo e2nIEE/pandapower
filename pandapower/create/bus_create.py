@@ -219,6 +219,8 @@ def create_buses(
     index = _get_multiple_index_with_check(net, "bus", index, nr_buses)
     if np.isscalar(index):
         index = [index]
+    if not isinstance(index, list):
+        index = index.tolist()
 
     if geodata is not None and isinstance(geodata, tuple) and isinstance(geodata[0], (int, float)):
         geo = _geodata_to_geo_series([geodata], coords, nr_buses)

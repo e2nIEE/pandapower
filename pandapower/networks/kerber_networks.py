@@ -4,7 +4,7 @@
 
 import random as rd
 
-from pandapower.create import create_bus, create_ext_grid, create_line, create_load, create_transformer
+from pandapower.create import create_buses, create_ext_grid, create_lines, create_load, create_transformer
 from pandapower.network import pandapowerNet
 from pandapower.std_types import create_std_type
 
@@ -44,9 +44,9 @@ def _create_empty_network_with_transformer(trafotype, V_OS=10., V_US=0.4):
     create_std_type(net=pd_net, data=T100kVA, name="0.1 MVA 10/0.4 kV", element="trafo")
     create_std_type(net=pd_net, data=T160kVA, name="0.16 MVA 10/0.4 kV", element="trafo")
 
-    busnr1 = create_bus(pd_net, name="Trafostation_OS", vn_kv=V_OS)
+    (busnr1,) = create_buses(pd_net, 1, name="Trafostation_OS", vn_kv=V_OS)
     create_ext_grid(pd_net, bus=busnr1)
-    main_busbar_nr = create_bus(pd_net, name="main_busbar", vn_kv=V_US, type="b")
+    (main_busbar_nr,) = create_buses(pd_net, 1, name="main_busbar", vn_kv=V_US, type="b")
     create_transformer(pd_net, hv_bus=busnr1, lv_bus=main_busbar_nr, std_type=trafotype,
                           name="trafo 1")
     return pd_net, main_busbar_nr
@@ -73,15 +73,21 @@ def _add_lines_and_loads(pd_net, n_lines, startbusnr, length_per_line,
     for i in list(range(n_lines)):
         buscounter = startpoint_bus + i
         linecounter = startpoint_line + i
-        created_bus_nr = create_bus(pd_net, name="bus_%d_%d" % (branchnr, buscounter), vn_kv=.4)
+        (created_bus_nr,) = create_buses(pd_net, 1, name=f"bus_{branchnr:d}_{buscounter:d}", vn_kv=0.4)
 
-        create_line(pd_net, bus_before, created_bus_nr, length_km=length_per_line,
-                       name="line_%d_%d" % (branchnr, linecounter), std_type=std_type)
+        create_lines(
+            pd_net,
+            bus_before,
+            created_bus_nr,
+            length_km=length_per_line,
+            name=f"line_{branchnr:d}_{linecounter:d}",
+            line_params=std_type,
+        )
 
         if p_load_mw or q_load_mvar:
             create_load(pd_net, created_bus_nr, p_mw=p_load_mw, q_mvar=q_load_mvar)
 
-        bus_before = created_bus_nr  # rueckgefuehrter Wert in der Schleife
+        bus_before = created_bus_nr
 
     return pd_net
 
@@ -128,25 +134,34 @@ def _add_lines_with_branched_loads(net, n_lines, startbus, length_per_line,
     for i in range(n_lines):
         buscounter = startpoint_bus + i
         linecounter = startpoint_line + i
-        created_bus_nr = create_bus(net, name="%s_%d_%d" % (bustype, branchnr, buscounter),
-                                       type="b" if bustype == "KV" else "n", vn_kv=.4)
-        create_line(net, bus_before, created_bus_nr,
-                       length_km=length_per_line,
-                       name="line_%d_%d" % (branchnr, linecounter),
-                       std_type=std_type)
+        (created_bus_nr,) = create_buses(
+            net, 1, name=f"{bustype}_{branchnr:d}_{buscounter:d}", type="b" if bustype == "KV" else "n", vn_kv=0.4
+        )
+        create_lines(
+            net,
+            bus_before,
+            created_bus_nr,
+            length_km=length_per_line,
+            name="line_{branchnr:d}_{linecounter:d}",
+            line_params=std_type,
+        )
 
-        loadbusnr = create_bus(net, name="loadbus_%d_%d" % (branchnr, buscounter), vn_kv=.4)
+        loadbusnr = create_buses(net, 1, name=f"loadbus_{branchnr:d}_{buscounter:d}", vn_kv=0.4)
 
-        create_line(net, created_bus_nr, loadbusnr,
-                       length_km=length_branchout_line,
-                       name="branchout_line_%d_%d" % (branchnr, linecounter),
-                       std_type=std_type_branchout_line)
+        create_lines(
+            net,
+            created_bus_nr,
+            loadbusnr,
+            length_km=length_branchout_line,
+            name=f"branchout_line_{branchnr:d}_{linecounter:d}",
+            std_type=std_type_branchout_line,
+        )
 
         if p_load_mw or q_load_mvar:
             create_load(net, loadbusnr,
                            p_mw=p_load_mw, q_mvar=q_load_mvar)
 
-        bus_before = created_bus_nr  # rueckgefuehrter Wert in der Schleife
+        bus_before = created_bus_nr
 
         # alternates the length of the branch out lines if needed
         if length_branchout_line_2:
@@ -156,7 +171,7 @@ def _add_lines_with_branched_loads(net, n_lines, startbus, length_per_line,
             else:
                 length_branchout_line = length_branchout_line_1
                 bustype = "MUF"
-        #  changes branch out lines according to the probabillity if needed
+        #  changes branch out lines according to the probability if needed
         if std_type_branchout_line_2:
             if rd.random() > prob_branchout_line_1:
                 std_type_branchout_line = std_type_branchout_line_2
