@@ -167,7 +167,7 @@ def create_lines(
             line_params["g0_us_per_km"] = G0_US_PER_KM_DEFAULT
 
         for param in ("r0_ohm_per_km", "x0_ohm_per_km", "c0_nf_per_km", "endtemp_degree"):
-            value = line_params.pop(param, nan)
+            value = line_params.pop(param, nan)  # type: ignore[misc]
             _add_to_entries_if_not_nan(net, "line", entries, index, param, value)
 
         entries.update(line_params)
@@ -403,7 +403,7 @@ def create_lines_dc(
     std_type: str | Sequence[str],
     name: Iterable[str] | None = None,
     index: Int | Iterable[Int] | None = None,
-    geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
+    geodata: Iterable[Iterable[tuple[float, float]]] | Iterable[tuple[float, float]] | None = None,
     df: float | Iterable[float] = get_default_value("line", "df"),
     parallel: int | Iterable[int] = get_default_value("line", "parallel"),
     in_service: bool | Iterable[bool] = get_default_value("line", "in_service"),
@@ -873,7 +873,7 @@ def create_lines_dc_from_parameters(
     name: Iterable[str] | None = None,
     index: Int | Iterable[Int] | None = None,
     type: LineType | Iterable[str] | None = None,
-    geodata: Iterable[Iterable[tuple[float, float]]] | None = None,
+    geodata: Iterable[Iterable[tuple[float, float]]] | Iterable[tuple[float, float]] | None = None,
     in_service: bool | Iterable[bool] = get_default_value("line_dc", "in_service"),
     df: float | Iterable[float] = get_default_value("line_dc", "df"),
     parallel: int | Iterable[int] = get_default_value("line_dc", "parallel"),
