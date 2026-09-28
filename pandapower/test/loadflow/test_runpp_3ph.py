@@ -4,45 +4,47 @@ Tests 3 phase power flow algorithm
 @author: sghosh
 """
 
+import copy
 import os
 
 import numpy as np
 import pytest
-import copy
 
-from pandapower.networks import create_cigre_network_mv
 from pandapower import pp_dir
-from pandapower.toolbox.grid_modification import replace_line_by_impedance
 from pandapower.auxiliary import get_free_id
 from pandapower.create import (
-    create_bus,
-    create_ext_grid,
-    create_line,
     create_asymmetric_load,
-    create_line_from_parameters,
-    create_load,
-    create_transformer_from_parameters,
-    create_sgen,
     create_asymmetric_sgen,
-    create_shunt,
+    create_bus,
+    create_buses,
+    create_ext_grid,
     create_gen,
+    create_line,
+    create_line_from_parameters,
+    create_lines,
+    create_load,
+    create_sgen,
+    create_shunt,
     create_switch,
+    create_transformer_from_parameters,
 )
 from pandapower.file_io import from_json
 from pandapower.network import pandapowerNet
+from pandapower.networks import create_cigre_network_mv
 from pandapower.pf.runpp_3ph import runpp_3ph
 from pandapower.run import runpp
-from pandapower.std_types import create_std_type, add_zero_impedance_parameters
+from pandapower.std_types import add_zero_impedance_parameters, create_std_type
+from pandapower.test.conftest import result_test_network
 from pandapower.test.consistency_checks import (
     runpp_3ph_with_consistency_checks,
     runpp_with_consistency_checks,
     trafo_currents_consistent_3ph,
 )
-from pandapower.test.loadflow.PF_Results import get_PF_Results
-from pandapower.toolbox.comparison import dataframes_equal
-from pandapower.test.conftest import result_test_network
 from pandapower.test.helper_functions import add_grid_connection
+from pandapower.test.loadflow.PF_Results import get_PF_Results
 from pandapower.test.loadflow.test_runpp import get_isolated
+from pandapower.toolbox.comparison import dataframes_equal
+from pandapower.toolbox.grid_modification import replace_line_by_impedance
 
 
 @pytest.fixture
@@ -50,8 +52,7 @@ def test_net():
     v_base = 110  # 110kV Base Voltage
     k_va_base = 100  # 100 MVA
     net = pandapowerNet(name="test_net", sn_mva=k_va_base)
-    create_bus(net, vn_kv=v_base, index=1)
-    create_bus(net, vn_kv=v_base, index=5)
+    create_buses(net, 2, vn_kv=v_base, index=[1, 5])
     create_ext_grid(net, bus=1, vm_pu=1.0, s_sc_max_mva=5000, rx_max=0.1, r0x0_max=0.1, x0x_max=1.0)
     create_std_type(
         net,
@@ -67,7 +68,23 @@ def test_net():
         },
         "example_type",
     )
-    create_line(net, from_bus=1, to_bus=5, length_km=50.0, std_type="example_type")
+    (l0,) = create_lines(
+        net,
+        from_buses=[1],
+        to_buses=[5],
+        length_km=50.0,
+        line_params={
+            "r0_ohm_per_km": 0.0848,
+            "x0_ohm_per_km": 0.4649556,
+            "c0_nf_per_km": 230.6,
+            "g0_us_per_km": 0,
+            "max_i_ka": 0.963,
+            "r_ohm_per_km": 0.0212,
+            "x_ohm_per_km": 0.1162389,
+            "c_nf_per_km": 230,
+        },
+    )
+    net.line.loc[l0, "std_type"] = "example_type"
 
     create_asymmetric_load(net, 5, p_a_mw=50, q_a_mvar=50, p_b_mw=10, q_b_mvar=15, p_c_mw=10, q_c_mvar=5)
     return net
@@ -802,12 +819,24 @@ def test_trafo_asym_currents__high_neg_seq():
     """
     net = pandapowerNet(name="test_trafo_asym_currents__high_neg_seq")
     add_zero_impedance_parameters(net)
-    create_bus(net, 11, "source")
-    create_bus(net, 11, "HT")
-    create_bus(net, 0.4, "LT")
+    create_buses(net, 2, 11, name=["source", "HT"])
+    create_buses(net, 1, 0.4, name="LT")
     create_ext_grid(net, bus=0, vm_pu=1.0, s_sc_max_mva=9.99e20, rx_max=0.1, x0x_max=1.0, r0x0_max=0.1)
-    create_line_from_parameters(
-        net, 0, 1, 1, 0.2, 0.33, 0, max_i_ka=10, r0_ohm_per_km=0.2, x0_ohm_per_km=0.33, c0_nf_per_km=0, g0_gs_per_km=0
+    create_lines(
+        net,
+        0,
+        1,
+        1,
+        {
+            "r_ohm_per_km": 0.2,
+            "x_ohm_per_km": 0.33,
+            "c_nf_per_km": 0,
+            "max_i_ka": 10,
+            "r0_ohm_per_km": 0.2,
+            "x0_ohm_per_km": 0.33,
+            "c0_nf_per_km": 0,
+            "g0_gs_per_km": 0,
+        },
     )
     create_transformer_from_parameters(
         net=net,

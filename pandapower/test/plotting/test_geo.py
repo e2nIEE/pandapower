@@ -317,7 +317,7 @@ def test_convert_geodata_to_geojson():
     create_bus(_net, 1, geodata=(30, 40))
 
     # Füge Leitungen hinzu
-    create_line(_net, 0, 1, 1, std_type="NAYY 4x50 SE", geodata=[[10, 20], [30, 40]])
+    create_line(_net, 0, 1, 1, std_type="NAYY 4x50 SE", geodata=[(10, 20), (30, 40)])
 
     _bus_geojson_to_geodata_(_net)
     _line_geojson_to_geodata_(_net)
