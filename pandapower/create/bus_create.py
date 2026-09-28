@@ -8,15 +8,15 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 from numpy import nan
-from pandapower.auxiliary import ensure_iterability
 from typing_extensions import deprecated
 
-from pandapower import pandapowerNet
+from pandapower.auxiliary import ensure_iterability
 from pandapower.create._utils import (
     _add_to_entries_if_not_nan,
     _get_multiple_index_with_check,
     _set_multiple_entries,
 )
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 from pandapower.network_structure import get_default_value
 from pandapower.plotting.geo import _is_valid_number
@@ -119,7 +119,7 @@ def create_bus(
         in_service,
         max_vm_pu,
         min_vm_pu,
-        coords,
+        [coords] if coords is not None else None,
         **kwargs,
     )[0]
 
@@ -167,7 +167,19 @@ def create_bus_dc(
         >>> create_bus_dc(net, 20., name="bus1")
     """
     return create_buses_dc(
-        net, 1, vn_kv, index, name, type, geodata, zone, in_service, max_vm_pu, min_vm_pu, coords, **kwargs
+        net,
+        1,
+        vn_kv,
+        index,
+        name,
+        type,
+        geodata,
+        zone,
+        in_service,
+        max_vm_pu,
+        min_vm_pu,
+        [coords] if coords is not None else None,
+        **kwargs,
     )[0]
 
 
@@ -225,7 +237,7 @@ def create_buses(
     if geodata is not None and isinstance(geodata, tuple) and isinstance(geodata[0], (int, float)):
         geo = _geodata_to_geo_series([geodata], coords, nr_buses)
     else:
-        geo = _geodata_to_geo_series(geodata, coords, nr_buses)
+        geo = _geodata_to_geo_series(geodata, coords, nr_buses)  # type: ignore[arg-type]
 
     entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo, **kwargs}
 
@@ -273,7 +285,7 @@ def create_buses_dc(
     index: Int | Iterable[Int] | None = None,
     name: Iterable[str] | None = None,
     type: BusType | Iterable[BusType] = DEFAULT_BUS_DC_TYPE,
-    geodata: Iterable[tuple[float, float]] | None = None,
+    geodata: Iterable[tuple[float, float]] | tuple[float, float] | None = None,
     zone: str | None = None,
     in_service: bool | Iterable[bool] = get_default_value("bus_dc", "in_service"),
     max_vm_pu: float | Iterable[float] = nan,
