@@ -17,7 +17,7 @@ from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.test.shortcircuit.test_meshing_detection import meshed_grid
 
 
-# @pytest.fixture
+# @pytest.fixture  # TODO: convert to fixture: duplicate as fixture in test_sc_multi_bus.py
 def radial_grid():
     net = pandapowerNet(name="radial_grid", sn_mva=2.)
     (b0,) = create_buses(net, 1, 220)
@@ -34,7 +34,7 @@ def radial_grid():
     return net
 
 
-# @pytest.fixture
+# @pytest.fixture  # TODO: convert to fixture: duplicate as fixture in test_sc_multi_bus.py
 def three_bus_big_sgen_example():
     net = pandapowerNet(name="three_bus_big_sgen_example", sn_mva=4)
     b1, b2, b3 = create_buses(net, 3, 110)
