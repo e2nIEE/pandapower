@@ -1,29 +1,29 @@
 # test_pandera_svc_elements.py
 
 import itertools
+
 import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_bus, create_svc
+from pandapower.create import create_buses, create_svc
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
-
 from pandapower.test.network_schema.elements.helper import (
-    strings,
+    all_allowed_floats,
     all_floats,
     bools,
-    not_strings_list,
-    not_floats_list,
-    not_boolean_list,
-    positiv_ints_plus_zero,
-    negativ_ints,
-    not_ints_list,
-    positiv_floats_plus_zero,
-    negativ_floats_plus_zero,
-    positiv_floats,
     negativ_floats,
-    all_allowed_floats,
+    negativ_floats_plus_zero,
+    negativ_ints,
+    not_boolean_list,
+    not_floats_list,
+    not_ints_list,
+    not_strings_list,
+    positiv_floats,
+    positiv_floats_plus_zero,
+    positiv_ints_plus_zero,
+    strings,
 )
 
 # Angle ranges per schema (inclusive)
@@ -54,9 +54,8 @@ class TestSvcRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = pandapowerNet(name="test_valid_required_values")
-        create_bus(net, 0.4)
-        create_bus(net, 0.4)
-        create_bus(net, 0.4, index=42)
+        create_buses(net, 2, 0.4)
+        create_buses(net, 1, 0.4, index=42)
 
         create_svc(
             net,
@@ -89,8 +88,7 @@ class TestSvcRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
         net = pandapowerNet(name="test_invalid_required_values")
-        create_bus(net, 0.4)
-        create_bus(net, 0.4)
+        create_buses(net, 2, 0.4)
 
         create_svc(
             net,
@@ -114,7 +112,7 @@ class TestSvcOptionalFields:
     def test_all_optional_fields_valid(self):
         """Test: SVC with all optional fields is valid"""
         net = pandapowerNet(name="test_all_optional_fields_valid")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         create_svc(
             net,
@@ -136,7 +134,7 @@ class TestSvcOptionalFields:
     def test_optional_fields_with_nulls(self):
         """Test: optional fields including nulls are valid"""
         net = pandapowerNet(name="test_optional_fields_with_nulls")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         # Row 1: name set, angles NaN later
         create_svc(
@@ -189,7 +187,7 @@ class TestSvcOptionalFields:
     def test_valid_optional_values(self, parameter, valid_value):
         """Test: valid optional values are accepted"""
         net = pandapowerNet(name="test_valid_optional_values")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         create_svc(
             net,
@@ -222,7 +220,7 @@ class TestSvcOptionalFields:
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Test: invalid optional values are rejected"""
         net = pandapowerNet(name="test_invalid_optional_values")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         create_svc(
             net,
@@ -242,7 +240,7 @@ class TestSvcOptionalFields:
     def test_min_less_equal_max_check_passes(self):
         """Test: min_angle_degree <= max_angle_degree passes"""
         net = pandapowerNet(name="test_min_less_equal_max_check_passes")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         create_svc(
             net,
@@ -262,7 +260,7 @@ class TestSvcOptionalFields:
     def test_min_greater_than_max_fails(self):
         """Test: min_angle_degree > max_angle_degree fails"""
         net = pandapowerNet(name="test_min_greater_than_max_fails")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         create_svc(
             net,
@@ -287,7 +285,7 @@ class TestSvcForeignKey:
     def test_invalid_bus_index(self):
         """Test: bus FK must reference an existing bus index"""
         net = pandapowerNet(name="test_invalid_bus_index")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         create_svc(
             net,

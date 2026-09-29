@@ -110,7 +110,7 @@ class TestBusIndexValidation:
         net = pandapowerNet(name="test_line_with_invalid_buses")
         b0, b1 = create_buses(net, 2, vn_kv=0.4)
         invalid_bus = _get_index_with_check(net, "bus", 99)
-        l0 = create_lines(net, from_buses=b0, to_buses=b1, length_km=0.1, line_params="NAYY 4x50 SE")
+        (l0,) = create_lines(net, from_buses=b0, to_buses=b1, length_km=0.1, line_params="NAYY 4x50 SE")
         # Test with incorrect index at from_bus
         net.line.at[l0, "from_bus"] = invalid_bus
         test_schema = copy.deepcopy(line_schema)

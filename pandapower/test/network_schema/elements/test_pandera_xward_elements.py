@@ -6,7 +6,7 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_bus, create_xward
+from pandapower.create import create_buses, create_xward
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
@@ -47,9 +47,8 @@ class TestXWardRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = pandapowerNet(name="test_valid_required_values")
-        create_bus(net, 0.4)  # index 0
-        create_bus(net, 0.4)  # index 1
-        create_bus(net, 0.4, index=42)
+        create_buses(net, 2, 0.4)  # index 0, 1
+        create_buses(net, 1, 0.4, index=42)
 
         create_xward(
             net,
@@ -91,8 +90,7 @@ class TestXWardRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
         net = pandapowerNet(name="test_invalid_required_values")
-        create_bus(net, 0.4)  # 0
-        create_bus(net, 0.4)  # 1
+        create_buses(net, 2, 0.4)  # 0, 1
 
         create_xward(
             net,
@@ -118,7 +116,7 @@ class TestXWardOptionalFields:
     def test_all_optional_fields_valid(self):
         """Test: xward with optional fields set is valid"""
         net = pandapowerNet(name="test_all_optional_fields_valid")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         create_xward(
             net,
@@ -140,8 +138,7 @@ class TestXWardOptionalFields:
     def test_optional_fields_with_nulls(self):
         """Test: optional fields including nulls are valid"""
         net = pandapowerNet(name="test_optional_fields_with_nulls")
-        b0 = create_bus(net, 0.4)
-        b1 = create_bus(net, 0.4)
+        b0, b1 = create_buses(net, 2, 0.4)
 
         create_xward(
             net,
@@ -187,7 +184,7 @@ class TestXWardOptionalFields:
     def test_valid_optional_values(self, parameter, valid_value):
         """Test: valid optional values are accepted"""
         net = pandapowerNet(name="test_valid_optional_values")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         create_xward(
             net,
@@ -220,7 +217,7 @@ class TestXWardOptionalFields:
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Test: invalid optional values are rejected"""
         net = pandapowerNet(name="test_invalid_optional_values")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         create_xward(
             net,
@@ -245,7 +242,7 @@ class TestXWardForeignKey:
 
     def test_invalid_bus_index(self):
         net = pandapowerNet(name="test_invalid_bus_index")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         create_xward(
             net,

@@ -1,28 +1,29 @@
 # test_pandera_trafo3w_elements.py
 
 import itertools
+
 import numpy as np
 import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_bus
+from pandapower.create import create_buses
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 from pandapower.test.network_schema.elements.helper import (
-    strings,
+    all_allowed_floats,
     bools,
-    not_strings_list,
-    not_floats_list,
-    not_boolean_list,
-    positiv_ints_plus_zero,
-    negativ_ints,
-    not_ints_list,
-    positiv_floats,
-    positiv_floats_plus_zero,
     negativ_floats,
     negativ_floats_plus_zero,
-    all_allowed_floats,
+    negativ_ints,
+    not_boolean_list,
+    not_floats_list,
+    not_ints_list,
+    not_strings_list,
+    positiv_floats,
+    positiv_floats_plus_zero,
+    positiv_ints_plus_zero,
+    strings,
 )
 
 # Allowed/invalid categorical values for tap-related columns
@@ -53,10 +54,8 @@ class TestTrafo3wRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = pandapowerNet(name="test_valid_required_values")
-        create_bus(net, 110.0)  # index 0 (HV)
-        create_bus(net, 20.0)  # index 1 (MV)
-        create_bus(net, 10.0)  # index 2 (LV)
-        create_bus(net, 0.4, index=42)
+        create_buses(net, 3, [110.0, 20.0, 10.0])  # index 0 (HV), 1 (MV), 2 (LV)
+        create_buses(net, 1, 0.4, index=42)
 
         net.trafo3w = pd.DataFrame(
             [
@@ -122,9 +121,7 @@ class TestTrafo3wRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
         net = pandapowerNet(name="test_invalid_required_values")
-        create_bus(net, 110.0)  # index 0 (HV)
-        create_bus(net, 20.0)  # index 1 (MV)
-        create_bus(net, 10.0)  # index 2 (LV)
+        create_buses(net, 3, [110.0, 20.0, 10.0])  # index 0 (HV), 1 (MV), 2 (LV)
 
         net.trafo3w = pd.DataFrame(
             [
@@ -164,9 +161,7 @@ class TestTrafo3wRequiredFields:
 
     def test_vkr_less_than_vk_checks_pass(self):
         net = pandapowerNet(name="test_vkr_less_than_vk_checks_pass")
-        create_bus(net, 110.0)
-        create_bus(net, 20.0)
-        create_bus(net, 10.0)
+        create_buses(net, 3, [110.0, 20.0, 10.0])
 
         net.trafo3w = pd.DataFrame(
             [
@@ -198,9 +193,7 @@ class TestTrafo3wRequiredFields:
 
     def test_vkr_greater_than_vk_fails(self):
         net = pandapowerNet(name="test_vkr_greater_than_vk_fails")
-        create_bus(net, 110.0)
-        create_bus(net, 20.0)
-        create_bus(net, 10.0)
+        create_buses(net, 3, [110.0, 20.0, 10.0])
 
         net.trafo3w = pd.DataFrame(
             [
@@ -237,9 +230,7 @@ class TestTrafo3wOptionalFields:
 
     def test_all_optional_fields_valid(self):
         net = pandapowerNet(name="test_all_optional_fields_valid")
-        create_bus(net, 110.0)
-        create_bus(net, 20.0)
-        create_bus(net, 10.0)
+        create_buses(net, 3, [110.0, 20.0, 10.0])
 
         net.trafo3w = pd.DataFrame(
             [
@@ -295,9 +286,7 @@ class TestTrafo3wOptionalFields:
 
     def test_optional_fields_with_nulls(self):
         net = pandapowerNet(name="test_optional_fields_with_nulls")
-        create_bus(net, 110.0)
-        create_bus(net, 20.0)
-        create_bus(net, 10.0)
+        create_buses(net, 3, [110.0, 20.0, 10.0])
 
         net.trafo3w = pd.DataFrame(
             [
@@ -368,10 +357,8 @@ class TestTrafo3wOptionalFields:
     )
     def test_valid_optional_values(self, parameter, valid_value):
         net = pandapowerNet(name="test_valid_optional_values")
-        create_bus(net, 110.0)
-        create_bus(net, 20.0)
-        create_bus(net, 10.0)
-        create_bus(net, 0.4, index=42)
+        create_buses(net, 3, [110.0, 20.0, 10.0])
+        create_buses(net, 1, 0.4, index=42)
 
         net.trafo3w = pd.DataFrame(
             [
@@ -444,9 +431,7 @@ class TestTrafo3wOptionalFields:
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
         net = pandapowerNet(name="test_invalid_optional_values")
-        create_bus(net, 110.0)
-        create_bus(net, 20.0)
-        create_bus(net, 10.0)
+        create_buses(net, 3, [110.0, 20.0, 10.0])
 
         net.trafo3w = pd.DataFrame(
             [
@@ -492,9 +477,7 @@ class TestTrafo3wDependencies:
 
     def test_tap_group_partial_missing_invalid(self):
         net = pandapowerNet(name="test_tap_group_partial_missing_invalid")
-        create_bus(net, 110.0)
-        create_bus(net, 20.0)
-        create_bus(net, 10.0)
+        create_buses(net, 3, [110.0, 20.0, 10.0])
 
         net.trafo3w = pd.DataFrame(
             [
@@ -532,9 +515,7 @@ class TestTrafo3wDependencies:
 
     def test_tap_group_complete_valid(self):
         net = pandapowerNet(name="test_tap_group_complete_valid")
-        create_bus(net, 110.0)
-        create_bus(net, 20.0)
-        create_bus(net, 10.0)
+        create_buses(net, 3, [110.0, 20.0, 10.0])
 
         net.trafo3w = pd.DataFrame(
             [
@@ -570,9 +551,7 @@ class TestTrafo3wDependencies:
 
     def test_tdt_group_partial_missing_invalid(self):
         net = pandapowerNet(name="test_tdt_group_partial_missing_invalid")
-        create_bus(net, 110.0)
-        create_bus(net, 20.0)
-        create_bus(net, 10.0)
+        create_buses(net, 3, [110.0, 20.0, 10.0])
 
         net.trafo3w = pd.DataFrame(
             [
@@ -608,9 +587,7 @@ class TestTrafo3wDependencies:
 
     def test_tdt_group_complete_valid(self):
         net = pandapowerNet(name="test_tdt_group_complete_valid")
-        create_bus(net, 110.0)
-        create_bus(net, 20.0)
-        create_bus(net, 10.0)
+        create_buses(net, 3, [110.0, 20.0, 10.0])
 
         net.trafo3w = pd.DataFrame(
             [
@@ -645,9 +622,7 @@ class TestTrafo3wDependencies:
 
     def test_invalid_bus_fk(self):
         net = pandapowerNet(name="test_invalid_bus_fk")
-        create_bus(net, 110.0)
-        create_bus(net, 20.0)
-        create_bus(net, 10.0)
+        create_buses(net, 3, [110.0, 20.0, 10.0])
 
         net.trafo3w = pd.DataFrame(
             [

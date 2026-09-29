@@ -5,7 +5,7 @@ import pandera as pa
 import pytest
 
 from pandapower import create_measurement
-from pandapower.create import create_bus, create_line, create_transformer, create_transformer3w
+from pandapower.create import create_buses, create_lines, create_transformer, create_transformer3w
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 from pandapower.test.network_schema.elements.helper import (
@@ -57,9 +57,8 @@ class TestMeasurementRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = pandapowerNet(name="test_valid_required_values")
-        b0 = create_bus(net, 0.4)  # index 0
-        create_bus(net, 0.4)  # index 1
-        create_bus(net, 0.4, index=42)
+        b0, _ = create_buses(net, 2, 0.4)  # index 0, 1
+        create_buses(net, 1, 0.4, index=42)
 
         # TODO: add line/trafo/trafo3w to net for enabling foreign_key check.
 
@@ -105,8 +104,7 @@ class TestMeasurementRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
         net = pandapowerNet(name="test_invalid_required_values")
-        create_bus(net, 0.4)  # index 0
-        create_bus(net, 0.4)  # index 1
+        create_buses(net, 2, 0.4)  # index 0, 1
 
         create_measurement(
             net=net, meas_type="p", element_type="bus", value=10.0, std_dev=0.1, element=0, check_existing=True
@@ -125,12 +123,9 @@ class TestMeasurementRequiredFields:
     )
     def test_valid_et_side_combinations(self, element_type, side):
         net = pandapowerNet("test_valid_et_side_combinations")
-        b0 = create_bus(net, 0.4)  # index 0
-        b1 = create_bus(net, 0.4)  # index 1
-        b2 = create_bus(net, 0.8)  # index 2
-        b3 = create_bus(net, 1.2)  # index 3
+        b0, b1, b2, b3 = create_buses(net, 4, [0.4, 0.4, 0.8, 1.2])  # index 0, 1, 2, 3
 
-        l0 = create_line(net, b0, b1, 1, "NAYY 4x50 SE")
+        (l0,) = create_lines(net, b0, b1, 1, "NAYY 4x50 SE")
         t0 = create_transformer(net, b2, b1, "160 MVA 380/110 kV")
         t3w0 = create_transformer3w(net, b3, b2, b1, "63/25/38 MVA 110/20/10 kV")
 
@@ -166,12 +161,9 @@ class TestMeasurementRequiredFields:
     )
     def test_invalid_et_side_combiantions(self, element_type, side):
         net = pandapowerNet("test_valid_et_side_combinations")
-        b0 = create_bus(net, 0.4)  # index 0
-        b1 = create_bus(net, 0.4)  # index 1
-        b2 = create_bus(net, 0.8)  # index 2
-        b3 = create_bus(net, 1.2)  # index 3
+        b0, b1, b2, b3 = create_buses(net, 4, [0.4, 0.4, 0.8, 1.2])  # index 0, 1, 2, 3
 
-        l0 = create_line(net, b0, b1, 1, "NAYY 4x50 SE")
+        (l0,) = create_lines(net, b0, b1, 1, "NAYY 4x50 SE")
         t0 = create_transformer(net, b2, b1, "160 MVA 380/110 kV")
         t3w0 = create_transformer3w(net, b3, b2, b1, "63/25/38 MVA 110/20/10 kV")
 
@@ -206,7 +198,7 @@ class TestMeasurementOptionalFields:
     def test_measurement_without_bus_column_is_valid(self):
         """Test: 'bus' column is optional and may be absent"""
         net = pandapowerNet(name="test_measurement_without_bus_column_is_valid")
-        create_bus(net, 0.4)
+        create_buses(net, 1, 0.4)
 
         net.measurement = pd.DataFrame(
             {
