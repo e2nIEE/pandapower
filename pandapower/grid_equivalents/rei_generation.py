@@ -1,27 +1,29 @@
+import logging
+import operator
+import re
+import time
+from copy import deepcopy
+from functools import reduce
+
+import numpy as np
+import pandas as pd
 from numpy._typing import NDArray
 from pandas.api.types import is_bool_dtype, is_numeric_dtype
 
 from pandapower.auxiliary import LoadflowNotConverged
-from pandapower.create import create_buses, create_bus, create_load, create_sgen, create_gen, create_impedance
-from pandapower.toolbox.grid_modification import drop_buses
+from pandapower.create import create_buses, create_gen, create_impedance, create_load, create_sgen
 from pandapower.grid_equivalents.auxiliary import (
+    _runpp_except_voltage_angles,
+    build_ppc_and_Ybus,
     calc_zpbn_parameters,
+    drop_and_edit_cost_functions,
     drop_internal_branch_elements,
-    build_ppc_and_Ybus, drop_measurements_and_controllers,
-    drop_and_edit_cost_functions, _runpp_except_voltage_angles,
+    drop_measurements_and_controllers,
+    impedance_columns,
     replace_motor_by_load,
-    impedance_columns
 )
 from pandapower.grid_equivalents.toolbox import get_connected_switch_buses_groups
-from copy import deepcopy
-import pandas as pd
-import numpy as np
-import operator
-import time
-import re
-from functools import reduce
-
-import logging
+from pandapower.toolbox.grid_modification import drop_buses
 
 logger = logging.getLogger(__name__)
 
