@@ -1,15 +1,23 @@
+import copy
 import os
+import zipfile
 from codecs import ignore_errors
 
 import numpy as np
 import pytest
 import math
 import pandas as pd
+from lxml import etree
 
 from pandapower.test import test_path
 
 from pandapower.converter.cim.cim2pp.from_cim import from_cim, from_cim_dict
 from pandapower.converter.cim.cim_classes import CimParser
+from pandapower.converter.cim.pp_tools import fuse_bus_pairs, get_line_string_coordinates
+from pandapower.create import (create_empty_network, create_buses, create_line, create_transformer,
+                               create_transformer3w, create_switch, create_impedance, create_load, create_sgen,
+                               create_ext_grid, create_ward, create_measurement)
+from pandapower.toolbox.grid_modification import fuse_buses
 from pandapower.run import runpp
 
 from pandapower.control.util.auxiliary import create_trafo_characteristic_object, create_shunt_characteristic_object
@@ -1868,6 +1876,231 @@ def test_sv_mapping():
 
     # test the trafo tap changer
     assert net.trafo.loc[net.trafo['origin_id'] == '_trafo1', 'tap_pos'].item() == pytest.approx(12.0, abs=0.000001)
+
+
+def _parse_cim_files(file_list):
+    cim_parser = CimParser(cgmes_version='2.4.15')
+    cim_parser.parse_files(file_list=file_list, prepare_cim_net=True, set_data_types=True)
+    return cim_parser
+
+
+def _assert_cim_dicts_equal(cim_a, cim_b):
+    assert set(cim_a) == set(cim_b)
+    for profile in cim_a:
+        assert set(cim_a[profile]) == set(cim_b[profile])
+        for cim_type in cim_a[profile]:
+            pd.testing.assert_frame_equal(cim_a[profile][cim_type], cim_b[profile][cim_type], check_exact=True)
+
+
+def test_parse_zip_equals_xml_files(tmp_path):
+    folder_path = os.path.join(test_path, "test_files", "example_cim")
+    zip_files = [os.path.join(folder_path, 'CGMES_v2.4.15_FullGridTestConfiguration_BB_BE_v1.zip'),
+                 os.path.join(folder_path, 'CGMES_v2.4.15_FullGridTestConfiguration_BD_v1.zip')]
+    xml_files = []
+    for zip_file in zip_files:
+        with zipfile.ZipFile(zip_file) as zip_ref:
+            zip_ref.extractall(tmp_path)
+            xml_files += [os.path.join(tmp_path, name) for name in sorted(zip_ref.namelist())]
+
+    from_zip = _parse_cim_files(zip_files)
+    from_xml = _parse_cim_files(xml_files)
+
+    assert from_zip.get_cim_dict()['eq']['ACLineSegment'].index.size > 0
+    _assert_cim_dicts_equal(from_zip.get_cim_dict(), from_xml.get_cim_dict())
+    # the file names point to the members of the archives
+    assert from_zip.get_file_names()['eq'] == os.path.join(zip_files[0], '20171002T0930Z_BE_EQ_1.xml')
+
+
+def test_parse_zip_with_sub_folder_and_nested_zip(tmp_path):
+    folder_path = os.path.join(test_path, "test_files", "example_cim")
+    grid_zip = os.path.join(folder_path, 'CGMES_v2.4.15_FullGridTestConfiguration_BB_BE_v1.zip')
+    boundary_zip = os.path.join(folder_path, 'CGMES_v2.4.15_FullGridTestConfiguration_BD_v1.zip')
+    archive = os.path.join(tmp_path, 'archive.zip')
+    with zipfile.ZipFile(grid_zip) as grid_ref, zipfile.ZipFile(archive, 'w') as archive_ref:
+        for name in grid_ref.namelist():
+            # CIM files in a first level sub folder are parsed
+            archive_ref.writestr('a_grid/' + name, grid_ref.read(name))
+        # CIM files in deeper sub folders are ignored (would duplicate the equipment if parsed)
+        archive_ref.writestr('a_grid/deeper/20171002T0930Z_BE_EQ_1.xml', grid_ref.read('20171002T0930Z_BE_EQ_1.xml'))
+        # zip archives inside the archive are parsed
+        archive_ref.write(boundary_zip, 'b_boundary/boundary.zip')
+        # other files are ignored
+        archive_ref.writestr('readme.txt', 'not a CIM file')
+
+    from_archive = _parse_cim_files([archive])
+    reference = _parse_cim_files([grid_zip, boundary_zip])
+
+    assert from_archive.get_cim_dict()['eq_bd']['ConnectivityNode'].index.size > 0
+    _assert_cim_dicts_equal(from_archive.get_cim_dict(), reference.get_cim_dict())
+
+
+_BASE_VOLTAGE_XML = ('<cim:BaseVoltage rdf:ID="_bv1"><cim:BaseVoltage.nominalVoltage>110'
+                     '</cim:BaseVoltage.nominalVoltage></cim:BaseVoltage>')
+
+
+def _full_model_xml(*profiles):
+    return ('<md:FullModel rdf:about="urn:uuid:1">' +
+            ''.join('<md:Model.profile>%s</md:Model.profile>' % p for p in profiles) + '</md:FullModel>')
+
+
+def _cim_xml_root(*elements):
+    return etree.fromstring(
+        ('<rdf:RDF xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#" '
+         'xmlns:md="http://iec.ch/TC57/61970-552/ModelDescription/1#" '
+         'xmlns:cim="http://iec.ch/TC57/2013/CIM-schema-cim16#">' + ''.join(elements) + '</rdf:RDF>').encode())
+
+
+def test_get_df_rules():
+    cim = '{http://iec.ch/TC57/2013/CIM-schema-cim16#}'
+    rdf = '{http://www.w3.org/1999/02/22-rdf-syntax-ns#}'
+    root = _cim_xml_root(
+        '<cim:X rdf:ID="_1"><cim:X.name>a</cim:X.name><cim:X.name>b</cim:X.name>'
+        '<cim:X.T rdf:resource="#_t1"/><cim:X.T rdf:resource="#_t2"/></cim:X>',
+        '<cim:X rdf:ID="_2"><cim:X.description> \n </cim:X.description><cim:X.T rdf:resource="#_t3"/>'
+        '<cim:X.nested><cim:Y.value>5</cim:Y.value></cim:X.nested></cim:X>')
+    expected = pd.DataFrame({
+        cim + 'X-' + rdf + 'ID': ['_1', '_2'],
+        # only the first text of a tag is kept, whitespace is no text
+        cim + 'X.name': ['a', np.nan],
+        # the values of a repeated attribute become a list
+        cim + 'X.T-' + rdf + 'resource': [['#_t1', '#_t2'], '#_t3'],
+        # elements nested deeper than the properties are parsed with the same rules
+        cim + 'Y.value': [np.nan, '5'],
+    })
+    pd.testing.assert_frame_equal(CimParser()._get_df(list(root)), expected, check_exact=True)
+    assert CimParser()._get_df([]).index.size == 0
+
+
+@pytest.mark.parametrize("elements, profile", [
+    ((_full_model_xml('http://entsoe.eu/CIM/EquipmentCore/3/1'), _BASE_VOLTAGE_XML), 'eq'),
+    # the FullModel does not need to be the first element
+    ((_BASE_VOLTAGE_XML, _full_model_xml('http://entsoe.eu/CIM/Topology/4/1')), 'tp'),
+    # several profiles: only the first one is used
+    ((_full_model_xml('http://entsoe.eu/CIM/SteadyStateHypothesis/1/1', 'http://entsoe.eu/CIM/EquipmentCore/3/1'),),
+     'ssh'),
+])
+def test_get_cgmes_profile_from_xml(elements, profile):
+    assert CimParser()._get_cgmes_profile_from_xml(_cim_xml_root(*elements)) == profile
+
+
+_DIFFERENCE_MODEL_XML = (
+    '<dm:DifferenceModel xmlns:dm="http://iec.ch/TC57/61970-552/DifferenceModel/1#" rdf:about="urn:uuid:2">'
+    '<md:Model.profile>http://entsoe.eu/CIM/Topology/4/1</md:Model.profile>'
+    '<dm:forwardDifferences rdf:parseType="Statements">' + _BASE_VOLTAGE_XML + '</dm:forwardDifferences>'
+    '</dm:DifferenceModel>')
+
+
+@pytest.mark.parametrize("elements, error_message, profile_ignore_errors", [
+    # no FullModel
+    ((_BASE_VOLTAGE_XML,), 'FullModel .* not found', 'unknown'),
+    # difference models are not supported
+    ((_DIFFERENCE_MODEL_XML,), 'difference model, which is not supported', 'unknown'),
+    # the FullModel has to be a direct child of rdf:RDF
+    (('<cim:X rdf:ID="_1">' + _full_model_xml('http://entsoe.eu/CIM/EquipmentCore/3/1') + '</cim:X>',),
+     'FullModel .* not found', 'unknown'),
+    # more than one FullModel: with ignore_errors the profile of the first one is used
+    ((_full_model_xml('http://entsoe.eu/CIM/StateVariables/4/1'),
+      _full_model_xml('http://entsoe.eu/CIM/EquipmentCore/3/1')), 'More than one FullModel', 'sv'),
+    # FullModel without profile
+    ((_full_model_xml(),), 'profile is not given', 'unknown'),
+])
+def test_get_cgmes_profile_from_xml_errors(elements, error_message, profile_ignore_errors):
+    root = _cim_xml_root(*elements)
+    with pytest.raises(Exception, match=error_message):
+        CimParser(ignore_errors=False)._get_cgmes_profile_from_xml(root)
+    assert CimParser(ignore_errors=True)._get_cgmes_profile_from_xml(root) == profile_ignore_errors
+
+
+def _fuse_bus_pairs_test_net():
+    net = create_empty_network()
+    b = create_buses(net, 12, vn_kv=110.)
+    # pairs (keep, drop): (b0, b1), (b2, b3), (b4, b5), (b6, b7)
+    line_in_pair = create_line(net, b[0], b[1], 1., "149-AL1/24-ST1A 110.0")  # -> loop at b0, dropped
+    create_switch(net, b[0], line_in_pair, et='l')  # dropped together with the line
+    create_line(net, b[1], b[2], 1., "149-AL1/24-ST1A 110.0")  # -> b0-b2, two kept buses, not dropped
+    create_line(net, b[3], b[8], 1., "149-AL1/24-ST1A 110.0")  # -> b2-b8
+    create_line(net, b[9], b[9], 1., "149-AL1/24-ST1A 110.0")  # loop at a bus of no pair, not dropped
+    create_transformer(net, b[4], b[5], "25 MVA 110/20 kV")  # -> loop at b4, dropped
+    create_transformer3w(net, b[6], b[7], b[8], "63/25/38 MVA 110/20/10 kV")  # -> b6, b6, b8
+    create_switch(net, b[2], b[3], et='b')  # -> loop at b2, dropped
+    create_switch(net, b[0], b[2], et='b')  # two kept buses, not dropped
+    create_switch(net, b[4], b[4], et='b')  # existing loop at a kept bus, dropped
+    create_impedance(net, b[5], b[9], rft_pu=0.01, xft_pu=0.01, sn_mva=10.)  # -> b4-b9
+    create_load(net, b[1], p_mw=1.)
+    create_load(net, b[3], p_mw=2.)
+    create_sgen(net, b[5], p_mw=3.)
+    create_ext_grid(net, b[7])
+    create_ward(net, b[3], ps_mw=1., qs_mvar=0., pz_mw=0., qz_mvar=0.)
+    create_measurement(net, 'v', 'bus', 1.01, 0.01, element=b[0])
+    create_measurement(net, 'v', 'bus', 1.02, 0.01, element=b[1])  # duplicate at b0 after fusing, dropped
+    create_measurement(net, 'p', 'bus', 5., 0.1, element=b[3])
+    create_measurement(net, 'p', 'line', 5., 0.1, element=line_in_pair, side='from')  # dropped with the line
+    net.res_bus = pd.DataFrame({'vm_pu': 1., 'va_degree': 0., 'p_mw': 0., 'q_mvar': 0.}, index=net.bus.index)
+    return net, [b[0], b[2], b[4], b[6]], [b[1], b[3], b[5], b[7]]
+
+
+def _assert_nets_equal(net_a, net_b):
+    assert set(net_a.keys()) == set(net_b.keys())
+    for key, value in net_a.items():
+        if isinstance(value, pd.DataFrame):
+            pd.testing.assert_frame_equal(value, net_b[key], check_exact=True, obj='net.' + key)
+
+
+def _fuse_pair_by_pair(net, buses_keep, buses_drop):
+    for b1, b2 in zip(buses_keep, buses_drop):
+        fuse_buses(net, b1, b2, drop=True, fuse_bus_measurements=True)
+
+
+def test_fuse_bus_pairs_equals_fuse_buses():
+    net, buses_keep, buses_drop = _fuse_bus_pairs_test_net()
+    net_expected = copy.deepcopy(net)
+    _fuse_pair_by_pair(net_expected, buses_keep, buses_drop)
+    fuse_bus_pairs(net, buses_keep, buses_drop)
+    _assert_nets_equal(net_expected, net)
+    # check some expectations of the scenario itself
+    assert net.line.shape[0] == 3 and net.trafo.shape[0] == 0 and net.switch.shape[0] == 1
+    assert net.measurement.shape[0] == 2
+
+
+def test_fuse_bus_pairs_dependent_pairs():
+    # a bus is dropped and kept -> fused pair by pair like before
+    net, buses_keep, buses_drop = _fuse_bus_pairs_test_net()
+    buses_keep, buses_drop = buses_keep + [buses_drop[0]], buses_drop + [8]
+    net_expected = copy.deepcopy(net)
+    _fuse_pair_by_pair(net_expected, buses_keep, buses_drop)
+    fuse_bus_pairs(net, buses_keep, buses_drop)
+    _assert_nets_equal(net_expected, net)
+
+
+def test_fuse_bus_pairs_converted_net(fullgrid_node_breaker):
+    # pairs from the bus-bus switches of a converted net (realistic data types)
+    net = copy.deepcopy(fullgrid_node_breaker)
+    switches = net.switch.loc[(net.switch.et == 'b') & (net.switch.bus != net.switch.element)]
+    buses_keep, buses_drop, used = [], [], set()
+    for bus, element in zip(switches.bus.tolist(), switches.element.tolist()):
+        if bus not in used and element not in used:
+            buses_keep.append(bus)
+            buses_drop.append(element)
+            used.update([bus, element])
+    assert len(buses_keep) >= 5
+    net_expected = copy.deepcopy(net)
+    _fuse_pair_by_pair(net_expected, buses_keep, buses_drop)
+    fuse_bus_pairs(net, buses_keep, buses_drop)
+    _assert_nets_equal(net_expected, net)
+
+
+def test_get_line_string_coordinates():
+    points = pd.DataFrame({
+        'id': ['l2', 'l2', 'l1', 'l2', 'l3'],
+        'xPosition': [1., 0.1, -0.0, 1e16, np.nan],
+        'yPosition': [2., 51.123456789012345, 1e-05, 3.5, 7.],
+    })
+    coords = get_line_string_coordinates(points, 'id')
+    # the same strings as str() of the lists of [x, y], in the order of the points
+    expected = {one_id: str(df[['xPosition', 'yPosition']].values.tolist()) for one_id, df in points.groupby('id')}
+    assert coords.to_dict() == expected
+    assert coords['l2'] == '[[1.0, 2.0], [0.1, 51.123456789012344], [1e+16, 3.5]]'
+    assert get_line_string_coordinates(points.iloc[0:0], 'id').empty
 
 
 if __name__ == "__main__":

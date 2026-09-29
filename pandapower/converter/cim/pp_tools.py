@@ -6,12 +6,16 @@ import logging
 import time
 from typing import Union, Dict, List
 
+import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import pandapowerNet
 from pandapower.create import create_bus, create_ext_grid, create_lines
 from pandapower.network_structure import get_structure_dict
 from pandapower.std_types import create_std_type
+from pandapower.toolbox.element_selection import branch_element_bus_dict, element_bus_tuples
+from pandapower.toolbox.grid_modification import (fuse_buses, drop_buses, drop_lines, drop_trafos,
+                                                  drop_duplicated_measurements)
 from . import cim_tools
 
 logger = logging.getLogger(__name__)
@@ -126,3 +130,84 @@ def get_not_existing_column(df: pd.DataFrame) -> str:
     while col + str(i) in df.columns:
         i += 1
     return col + str(i)
+
+
+def fuse_bus_pairs(net: pandapowerNet, buses_keep, buses_drop) -> None:
+    """
+    Fuses bus pairs: each bus in buses_drop is fused into the bus at the same position in buses_keep. The result is the
+    same as calling fuse_buses(net, b1, b2, drop=True, fuse_bus_measurements=True) for each pair, but the connections
+    are rerouted and the buses are dropped in one pass. This is much faster for many pairs, because every fuse_buses
+    call works on all element tables.
+
+    :param net: The pandapower net.
+    :param buses_keep: The indices of the buses to keep.
+    :param buses_drop: The indices of the buses to fuse into the bus to keep at the same position and to drop.
+    """
+    buses_keep = np.asarray(buses_keep, dtype=np.int64)
+    buses_drop = np.asarray(buses_drop, dtype=np.int64)
+    if not len(buses_drop):
+        return
+    drop_index = pd.Index(buses_drop)
+    if drop_index.has_duplicates or np.isin(buses_keep, buses_drop).any():
+        # the pairs depend on each other (a bus is dropped twice or is kept and dropped), fuse them one by one
+        for b1, b2 in zip(buses_keep.tolist(), buses_drop.tolist()):
+            fuse_buses(net, b1, b2, drop=True, fuse_bus_measurements=True)
+        return
+
+    def reroute(df: pd.DataFrame, column: str, mask=None):
+        to_reroute = df[column].isin(drop_index)
+        if mask is not None:
+            to_reroute &= mask
+        if to_reroute.any():
+            df.loc[to_reroute, column] = buses_keep[drop_index.get_indexer(df.loc[to_reroute, column])]
+
+    # reroute the connections of elements, bus-bus switches and bus measurements to the buses to keep
+    for element, column in element_bus_tuples():
+        if net[element].shape[0]:
+            reroute(net[element], column)
+    reroute(net['switch'], 'element', net['switch']['et'] == 'b')
+    if net.measurement.shape[0]:
+        reroute(net.measurement, 'element', net.measurement['element_type'] == 'bus')
+
+    drop_buses(net, buses_drop, drop_elements=False)
+    # branches which connected a pair now connect the kept bus with itself. fuse_buses drops them with
+    # drop_inner_branches(net, buses=[b1]), here they are dropped for all kept buses at once in the same way
+    unique_buses_keep = pd.unique(buses_keep)
+    for element, columns in branch_element_bus_dict(include_switch=True).items():
+        df = net[element]
+        if not df.shape[0]:
+            continue
+        first_bus = df[columns[0]]
+        is_loop = first_bus.isin(unique_buses_keep)
+        for column in columns[1:]:
+            is_loop &= df[column] == first_bus
+        if element == 'switch':
+            is_loop &= (df['element'] == first_bus) & (df['et'] == 'b')
+        if not is_loop.any():
+            continue
+        if element == 'line':
+            drop_lines(net, df.index[is_loop])
+        elif 'trafo' in element:
+            # like drop_inner_branches, which calls drop_trafos with its default table for trafo3w as well
+            drop_trafos(net, df.index[is_loop])
+        else:
+            net[element] = df.drop(df.index[is_loop])
+    # measurements which were at both buses of a pair are duplicated now
+    if net.measurement.shape[0]:
+        drop_duplicated_measurements(net, buses=unique_buses_keep)
+
+
+def get_line_string_coordinates(points: pd.DataFrame, id_column: str) -> pd.Series:
+    """
+    Get the coordinates of line strings as strings like '[[x1, y1], [x2, y2]]', one per id. The strings are the same as
+    str() of the list of [x, y] lists, but they are created for all ids at once.
+
+    :param points: The points with the columns id_column, 'xPosition' and 'yPosition' (floats), sorted in the order of
+        the points of each line string (e.g. by id and sequence number).
+    :param id_column: The name of the column with the ids of the line strings.
+    :return: The coordinate strings, indexed by the ids.
+    """
+    if points.empty:
+        return pd.Series([], index=pd.Index([], name=id_column), dtype=object)
+    point_strings = '[' + points['xPosition'].map(repr) + ', ' + points['yPosition'].map(repr) + ']'
+    return '[' + point_strings.groupby(points[id_column], sort=False).agg(', '.join) + ']'

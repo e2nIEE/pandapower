@@ -35,3 +35,4 @@ sonar-project.properties
 .scannerwork/
 uv.lock
 *.code-workspace
+temp/
