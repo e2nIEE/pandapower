@@ -10,14 +10,21 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal, assert_index_equal
 
+from pandapower.create import create_buses, create_lines
 from pandapower.network import pandapowerNet
-from pandapower.create import create_bus, create_line
 from pandapower.networks.mv_oberrhein import mv_oberrhein
-from pandapower.plotting.geo import _node_geometries_from_geodata, _branch_geometries_from_geodata, \
-    _transform_node_geometry_to_geodata, _transform_branch_geometry_to_coords, _convert_xy_epsg, \
-    convert_geodata_to_geojson, dump_to_geojson, convert_crs
-from pandapower.test.helper_functions import create_test_network
+from pandapower.plotting.geo import (
+    _branch_geometries_from_geodata,
+    _convert_xy_epsg,
+    _node_geometries_from_geodata,
+    _transform_branch_geometry_to_coords,
+    _transform_node_geometry_to_geodata,
+    convert_crs,
+    convert_geodata_to_geojson,
+    dump_to_geojson,
+)
 from pandapower.run import runpp
+from pandapower.test.helper_functions import create_test_network
 
 
 def _bus_geojson_to_geodata_(_net):
@@ -313,11 +320,10 @@ def test_convert_geodata_to_geojson():
     _net = pandapowerNet(name="test_convert_geodata_to_geojson")
 
     # Füge Busse hinzu
-    create_bus(_net, 0, geodata=(10, 20))
-    create_bus(_net, 1, geodata=(30, 40))
+    create_buses(_net, 2, [0, 1], geodata=[(10, 20), (30, 40)])
 
     # Füge Leitungen hinzu
-    create_line(_net, 0, 1, 1, std_type="NAYY 4x50 SE", geodata=[(10, 20), (30, 40)])
+    create_lines(_net, 0, 1, 1, line_params="NAYY 4x50 SE", geodata=[(10, 20), (30, 40)])
 
     _bus_geojson_to_geodata_(_net)
     _line_geojson_to_geodata_(_net)
