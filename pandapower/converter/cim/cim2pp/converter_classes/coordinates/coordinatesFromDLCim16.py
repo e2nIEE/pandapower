@@ -4,7 +4,7 @@ import time
 import numpy
 import pandas as pd
 
-from pandapower.converter.cim import cim_tools
+from pandapower.converter.cim import cim_tools, pp_tools
 from pandapower.converter.cim.cim2pp import build_pp_net
 from pandapower.converter.cim.other_classes import Report, LogLevel, ReportCode
 
@@ -55,15 +55,8 @@ class CoordinatesFromDLCim16:
                 one_ele_df['diagram'] = '{"coordinates": ' + one_ele_df["coords_str"] + ', "type": "Point"}'
             else:
                 # line strings
-                one_ele_df['coords'] = one_ele_df[['xPosition', 'yPosition']].values.tolist()
-                one_ele_df['coords'] = one_ele_df[['coords']].values.tolist()
-                for _, df_group in one_ele_df.groupby(by=sc['o_id']):
-                    one_ele_df.at[df_group.index.values[0], 'coords'] = df_group[  # type: ignore[assignment, index]
-                        ['xPosition', 'yPosition']
-                    ].values.tolist()
-                one_ele_df = one_ele_df.drop_duplicates([sc['o_id']], keep='first')
-                one_ele_df['coords'] = one_ele_df['coords'].astype(str)
-                one_ele_df['diagram'] = '{"coordinates": '+one_ele_df['coords'].astype(str)+', "type": "LineString"}'
+                one_ele_df = ('{"coordinates": ' + pp_tools.get_line_string_coordinates(one_ele_df, sc['o_id']) +
+                              ', "type": "LineString"}').rename('diagram').reset_index()
 
             self.cimConverter.net[one_ele]['diagram'] = self.cimConverter.net[one_ele][sc['o_id']].map(
                 one_ele_df.set_index(sc['o_id']).to_dict(orient='dict').get('diagram'))
