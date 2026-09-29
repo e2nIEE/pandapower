@@ -7,7 +7,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower.create import create_bus, create_gen, create_line_from_parameters, create_switch, create_ext_grid
+from pandapower.create import create_buses, create_ext_grid, create_gen, create_lines, create_switch
 from pandapower.network import pandapowerNet
 from pandapower.shortcircuit.calc_sc import calc_sc
 
@@ -15,15 +15,23 @@ from pandapower.shortcircuit.calc_sc import calc_sc
 @pytest.fixture
 def one_line_one_generator():
     net = pandapowerNet(name="one_line_one_generator", sn_mva=23)
-    b1 = create_bus(net, vn_kv=10.)
-    b2 = create_bus(net, vn_kv=10.)
-    b3 = create_bus(net, vn_kv=10.)
-    create_bus(net, vn_kv=0.4, in_service=False)
+    b1, b2, b3 = create_buses(net, 3, vn_kv=10.0)
+    create_buses(net, 1, vn_kv=0.4, in_service=False)
     create_gen(net, b1, vn_kv=10.5, xdss_pu=0.2, rdss_ohm=0.001, cos_phi=0.8, p_mw=0.1, sn_mva=2.5)
     create_gen(net, b1, vn_kv=10.5, xdss_pu=0.2, rdss_ohm=0.001, cos_phi=0.8, p_mw=0.1, sn_mva=2.5)
-    line = create_line_from_parameters(net, b2, b1, length_km=1.0, max_i_ka=0.29, r_ohm_per_km=0.1548,
-                                       x_ohm_per_km=0.0816814, c_nf_per_km=165)
-    net.line.loc[line, "endtemp_degree"] = 165
+    create_lines(
+        net,
+        b2,
+        b1,
+        length_km=1.0,
+        line_params={
+            "max_i_ka": 0.29,
+            "r_ohm_per_km": 0.1548,
+            "x_ohm_per_km": 0.0816814,
+            "c_nf_per_km": 165,
+            "endtemp_degree": 165,
+        },
+    )
     create_switch(net, b3, b1, et="b")
     return net
 
@@ -31,16 +39,22 @@ def one_line_one_generator():
 @pytest.fixture
 def gen_three_bus_example():
     net = pandapowerNet(name="gen_three_bus_example", sn_mva=12)
-    b1 = create_bus(net, vn_kv=10.)
-    b2 = create_bus(net, vn_kv=10.)
-    b3 = create_bus(net, vn_kv=10.)
+    b1, b2, b3 = create_buses(net, 3, vn_kv=10.0)
     # create_bus(net, vn_kv=0.4, in_service=False)
     create_gen(net, b2, vn_kv=10.5, xdss_pu=0.2, rdss_ohm=0.001, cos_phi=0.8, p_mw=0.1, sn_mva=2.5)
-    create_line_from_parameters(net, b1, b2, length_km=1.0, max_i_ka=0.29, r_ohm_per_km=0.1548, x_ohm_per_km=0.0816814,
-                                c_nf_per_km=165)
-    create_line_from_parameters(net, b2, b3, length_km=1.0, max_i_ka=0.29, r_ohm_per_km=0.1548, x_ohm_per_km=0.0816814,
-                                c_nf_per_km=165)
-    net.line["endtemp_degree"] = 165
+    create_lines(
+        net,
+        [b1, b2],
+        [b2, b3],
+        length_km=1.0,
+        line_params={
+            "max_i_ka": 0.29,
+            "r_ohm_per_km": 0.1548,
+            "x_ohm_per_km": 0.0816814,
+            "c_nf_per_km": 165,
+            "endtemp_degree": 165,
+        },
+    )
     create_ext_grid(net, b1, s_sc_max_mva=10., s_sc_min_mva=8., rx_min=0.4, rx_max=0.4)
     # create_switch(net, b3, b1, et="b")
     return net
@@ -90,7 +104,7 @@ def test_max_gen_fault_impedance(one_line_one_generator):
 
 def test_gen_ext_grid_same_bus():
     net = pandapowerNet(name="test_gen_ext_grid_same_bus")
-    b = create_bus(net, 110)
+    (b,) = create_buses(net, 1, 110)
 
     net1 = copy.deepcopy(net)
     create_ext_grid(net1, b, s_sc_max_mva=1000, rx_max=0.4)

@@ -5,7 +5,7 @@
 import numpy as np
 import pytest
 
-from pandapower.create import create_bus, create_ext_grid, create_line_from_parameters, create_motor
+from pandapower.create import create_buses, create_ext_grid, create_lines, create_motor
 from pandapower.network import pandapowerNet
 from pandapower.shortcircuit.calc_sc import calc_sc
 
@@ -13,21 +13,25 @@ from pandapower.shortcircuit.calc_sc import calc_sc
 @pytest.fixture
 def motor_net():
     net = pandapowerNet(name="motor_net", sn_mva=14)
-    b1 = create_bus(net, vn_kv=0.4)
-    b2 = create_bus(net, vn_kv=0.4)
-    b3 = create_bus(net, vn_kv=0.4)
+    b1, b2, b3 = create_buses(net, 3, vn_kv=0.4)
     create_ext_grid(net, b1, s_sc_max_mva=10., rx_max=0.1, s_sc_min_mva=8.,
                     rx_min=0.1)
-    create_line_from_parameters(net, from_bus=b1, to_bus=b2, length_km=1.,
-                                r_ohm_per_km=0.32, c_nf_per_km=0,
-                                x_ohm_per_km=0.07, max_i_ka=1,
-                                endtemp_degree=80)
+    create_lines(
+        net,
+        from_buses=b1,
+        to_buses=b2,
+        length_km=1.0,
+        line_params={"r_ohm_per_km": 0.32, "c_nf_per_km": 0, "x_ohm_per_km": 0.07, "max_i_ka": 1, "endtemp_degree": 80},
+    )
     create_motor(net, b2, pn_mech_mw=0.5, lrc_pu=7., vn_kv=0.45, rx=0.4,
                  efficiency_n_percent=95, cos_phi_n=0.9, cos_phi=0.9)
-    create_line_from_parameters(net, from_bus=b2, to_bus=b3, length_km=2.,
-                                r_ohm_per_km=0.32, c_nf_per_km=0,
-                                x_ohm_per_km=0.07, max_i_ka=1,
-                                endtemp_degree=80)
+    create_lines(
+        net,
+        from_buses=b2,
+        to_buses=b3,
+        length_km=2.0,
+        line_params={"r_ohm_per_km": 0.32, "c_nf_per_km": 0, "x_ohm_per_km": 0.07, "max_i_ka": 1, "endtemp_degree": 80},
+    )
     return net
 
 

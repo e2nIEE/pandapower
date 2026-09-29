@@ -7,7 +7,7 @@ import numpy as np
 import pytest
 
 from pandapower import pp_dir
-from pandapower.create import create_bus, create_switch
+from pandapower.create import create_buses, create_switch
 from pandapower.file_io import from_json
 from pandapower.shortcircuit.calc_sc import calc_sc
 
@@ -15,10 +15,10 @@ from pandapower.shortcircuit.calc_sc import calc_sc
 @pytest.fixture
 def meshed_grid():
     net = from_json(os.path.join(pp_dir, "test", "shortcircuit", "sc_test_meshed_grid.json"))
-    bid = create_bus(net, vn_kv=10.)
+    (bid,) = create_buses(net, 1, vn_kv=10.0)
     create_switch(net, net.ext_grid.bus.iloc[0], bid, et="b")
     net.ext_grid.loc[net.ext_grid.index[0], "bus"] = bid
-    create_bus(net, vn_kv=0.4, in_service=False)
+    create_buses(net, 1, vn_kv=0.4, in_service=False)
     return net
 
 
