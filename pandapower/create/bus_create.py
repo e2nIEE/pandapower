@@ -211,7 +211,7 @@ def create_buses(
     Parameters:
         net: The pandapower network in which the element is created
         nr_buses: The number of buses that is created
-        vn_kv: The grid voltage level.
+        vn_kv: Reference voltage level for the bus.
         name: the name for this bus
         index: Force specified IDs if available. If None, the indices higher than the highest already existing index are
             selected.
@@ -292,7 +292,7 @@ def create_buses_dc(
     Parameters:
         net: The pandapower network in which the element is created
         nr_buses_dc: The number of dc buses that is created
-        vn_kv: The grid voltage level.
+        vn_kv: Reference voltage level for the bus.
         index: Force specified IDs if available. If None, the indices \
             higher than the highest already existing index are selected.
         name: the name for this dc bus
