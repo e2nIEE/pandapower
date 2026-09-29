@@ -35,6 +35,9 @@ columns 0-12 must be included in the input matrix (vsc in ppc dict)
     13. C{VSC_P}                        AC bus resultant active power (MW)
     14. C{VSC_Q}                        AC bus resultant reactive power (MVAr)
     15. C{VSC_P_DC}                     DC bus resultant active power (MW)
+    18. C{VSC_BUS_DC_MINUS}             minus terminal DC bus number for bipolar VSC, -1 for ground
+    19. C{VSC_P_DC_MINUS}               DC resultant active power at the minus terminal bus (MW)
+    20. C{VSC_I_DC}                     DC current of the VSC from the plus terminal bus into the VSC (p.u.)
 
 """
 # define AC modes
@@ -73,4 +76,10 @@ VSC_P_DC = 16  # result for P
 
 VSC_DIFF_REF_BUS = 17 # reference bus for difference regulation
 
-vsc_cols = 18
+# bipolar VSC: the converter is connected between VSC_BUS_DC (plus terminal) and VSC_BUS_DC_MINUS (minus terminal)
+# instead of between VSC_BUS_DC and ground. -1 means the minus terminal is ground (monopolar VSC).
+VSC_BUS_DC_MINUS = 18
+VSC_P_DC_MINUS = 19  # result: DC power flowing from the minus terminal bus into the VSC (MW)
+VSC_I_DC = 20  # result: DC current flowing from the plus terminal bus into the VSC (p.u.)
+
+vsc_cols = 21

@@ -6,6 +6,8 @@ import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import get_vsc_stacked_names, pandapowerNet
+from pandapower.pypower.idx_bus_dc import DC_BASE_KV
+from pandapower.pypower.idx_vsc import VSC_P_DC, VSC_P_DC_MINUS, VSC_I_DC
 from pandapower.results_branch import _get_branch_results, _get_branch_results_3ph
 from pandapower.results_bus import _get_bus_results, _get_bus_dc_results, _set_buses_out_of_service, \
     _get_shunt_results, _get_p_q_results, _get_bus_v_results, _get_bus_v_results_3ph, _get_p_q_results_3ph, \
@@ -47,6 +49,7 @@ def _extract_results(net, ppc):
     _get_bus_dc_results(net, bus_p_dc)
     _get_vsc_stacked_results(net)
     _overwrite_out_of_service(net)
+    _get_vsc_bipolar_results(net, ppc)
     if net._options["mode"] == "opf":
         _get_costs(net, ppc)
     else:
@@ -87,6 +90,42 @@ def _get_vsc_stacked_results(net):
 
         # remove the vsc_stacked results from the res table
         net.res_vsc.drop(vsc_idx, axis=0, inplace=True)
+
+def _get_vsc_bipolar_results(net, ppc):
+    """
+    Writes the results of the auxiliary net.vsc entries (see _add_vsc_bipolar) to net.res_vsc_bipolar.
+    The auxiliary entries are removed from net.res_vsc in _clean_up.
+    """
+    aux = net.get("_vsc_bipolar_aux", None)
+    if aux is None or len(net.vsc_bipolar) == 0:
+        return
+    vsc_index = aux["vsc_index"]
+    res_vsc = net.res_vsc.loc[vsc_index]
+    rows = net.vsc.index.get_indexer(vsc_index)
+    p_dc_p = ppc["vsc"][rows, VSC_P_DC]
+    p_dc_m = ppc["vsc"][rows, VSC_P_DC_MINUS]
+    bus_dc_lookup = net._pd2ppc_lookups["bus_dc"]
+    base_i_ka = ppc["baseMVA"] / ppc["bus_dc"][bus_dc_lookup[net.vsc_bipolar.bus_dc_plus.values], DC_BASE_KV]
+    vm_dc_m = net.res_bus_dc.loc[net.vsc_bipolar.bus_dc_minus.values, "vm_pu"].values
+    in_service = net._is_elements["vsc"][rows]
+
+    res = pd.DataFrame(index=net.vsc_bipolar.index)
+    res["p_mw"] = res_vsc["p_mw"].values
+    res["q_mvar"] = res_vsc["q_mvar"].values
+    res["p_dc_mw"] = p_dc_p + p_dc_m
+    res["p_dc_mw_p"] = p_dc_p
+    res["p_dc_mw_m"] = p_dc_m
+    res["i_dc_ka"] = ppc["vsc"][rows, VSC_I_DC] * base_i_ka
+    res["vm_internal_pu"] = res_vsc["vm_internal_pu"].values
+    res["va_internal_degree"] = res_vsc["va_internal_degree"].values
+    res["vm_pu"] = res_vsc["vm_pu"].values
+    res["va_degree"] = res_vsc["va_degree"].values
+    res["vm_internal_dc_pu"] = res_vsc["vm_internal_dc_pu"].values
+    res["vm_dc_pu_p"] = res_vsc["vm_dc_pu"].values
+    res["vm_dc_pu_m"] = np.where(in_service, vm_dc_m, np.nan)
+    res.loc[~in_service, ["p_dc_mw", "p_dc_mw_p", "p_dc_mw_m", "i_dc_ka"]] = 0.
+    net.res_vsc_bipolar = res
+
 
 def _extract_results_3ph(net, ppc0, ppc1, ppc2):
     # reset_results(net, False)

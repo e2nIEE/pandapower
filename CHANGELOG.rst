@@ -3,6 +3,11 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [ADDED] runpp: bipolar VSC (create_vsc_bipolar) connected between a plus and a minus DC bus instead of ground, enables bipolar HVDC systems with dedicated metallic return (DMR); the DMR current is calculated by the power flow
+- [CHANGED] vsc_bipolar: control parameters changed to control_mode_ac, control_value_ac, control_mode_dc, control_value_dc (same as vsc); the element was not considered in the power flow before
+- [CHANGED] runpp: the DC grid is solved with current balance equations and a revised Jacobian; several VSC in DC voltage control at the same DC bus share the current equally
+- [DEPRECATED] create_vsc_stacked and DmrControl, use create_vsc_bipolar instead
+- [FIXED] runpp: out of service VSC in AC slack mode defined a slack bus
 - [FIXED] creating a branch element (e.g. ``create_line_from_parameters``) without an ``index`` on a non-existing bus raised ``TypeError`` instead of the intended ``UserWarning``, because the error message formatted the ``None`` index with ``%d`` (#3141)
 - [FIXED] ``PPJSONEncoder`` accepts the legacy ``encoding`` keyword supplied by ``simplejson``.
 - [FIXED] ``wls_with_zero_constraint`` now converges for any ``sn_mva``; the zero-injection constraint was scaled by ``baseMVA`` while its Jacobian was not
