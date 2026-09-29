@@ -66,7 +66,7 @@ def _geodata_to_geo_series(
     return geo if nr_buses > 1 else geo[0]
 
 
-@deprecated("Use create_buses with nr_buses=1 instead.")
+@deprecated("Use create_buses with nr_buses=1 instead.")  # since v4.0.0
 def create_bus(
     net: pandapowerNet,
     vn_kv: float,
@@ -124,7 +124,7 @@ def create_bus(
     )[0]
 
 
-@deprecated("Use create_buses_dc with nr_buses=1 instead.")
+@deprecated("Use create_buses_dc with nr_buses=1 instead.")  # since v4.0.0
 def create_bus_dc(
     net: pandapowerNet,
     vn_kv: float,
