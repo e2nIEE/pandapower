@@ -16,7 +16,8 @@ from pandapower.converter.powerfactory.validate import validate_pf_conversion
 from pandapower.create import (
     create_impedance, create_shunts, create_buses, create_gens, create_bus, create_empty_network,
     create_line_from_parameters, create_gen, create_load, create_ext_grid, create_vsc, create_line_dc_from_parameters,
-    create_buses_dc, create_bus_dc, create_line_dc, create_lines_from_parameters, create_lines_dc, create_vsc_bipolar
+    create_buses_dc, create_bus_dc, create_line_dc, create_lines_from_parameters, create_lines_dc, create_vsc_bipolar,
+    create_source_dc
 )
 
 from pandapower.file_io import from_json
@@ -185,13 +186,16 @@ def test_vsc_hvdc():
 
 
 def test_vsc_bipolar_hvdc():
+    """
+    HVDC link with two conductors: the VSC are connected between A-B and C-D (not to ground), B is grounded.
+    """
     net = create_empty_network()
     # AC part
-    create_buses(net, 4, 380, geodata=[(0, 0), (100, 0), (200, 0), (300, 0)])
+    create_buses(net, 3, 380, geodata=[(0, 0), (100, 0), (200, 0)])
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
-    create_line_from_parameters(net, 2, 3, 30, 0.0487, 0.13823, 160, 0.664)
+    create_line_from_parameters(net, 0, 2, 30, 0.0487, 0.13823, 160, 0.664)
     create_ext_grid(net, 0)
-    create_load(net, 3, 100, 0)
+    create_load(net, 2, 100, 0)
 
     # DC part
     A = create_bus_dc(net, 380, 'A', geodata=(120, 10))
@@ -203,13 +207,26 @@ def test_vsc_bipolar_hvdc():
     create_line_dc_from_parameters(net, B, D, 100, 0.1, 1)
 
     create_vsc_bipolar(net, 1, A, B, 0.1, 5, 0.15,
-               control_mode="Vdc_Qac", control_value_1=1., control_value_2=1.)
+                       control_mode_ac="q_mvar", control_value_ac=0.,
+                       control_mode_dc="vm_pu", control_value_dc=1.)
     create_vsc_bipolar(net, 2, C, D, 0.1, 5, 0.15,
-               control_mode_ac="vm_pu", control_value_ac=1.,
-               control_mode_dc="p_mw", control_value_dc=5)
+                       control_mode_ac="vm_pu", control_value_ac=1.,
+                       control_mode_dc="p_mw", control_value_dc=50)
+    create_source_dc(net, B, vm_pu=0.)
 
-    runpp(net)
     runpp_with_consistency_checks(net)
+
+    assert np.allclose(net.res_bus_dc.loc[[A, B], "vm_pu"].values, [1., 0.], rtol=0, atol=1e-9)
+    assert np.isclose(net.res_vsc_bipolar.at[1, "p_dc_mw"], 50., rtol=0, atol=1e-6)
+    assert np.isclose(net.res_vsc_bipolar.at[0, "q_mvar"], 0., rtol=0, atol=1e-6)
+    # the current of the plus conductor returns through the minus conductor, not through ground
+    assert np.isclose(net.res_line_dc.at[0, "i_from_ka"], -net.res_line_dc.at[1, "i_from_ka"], rtol=0, atol=1e-9)
+    assert np.isclose(net.res_source_dc.at[0, "p_dc_mw"], 0., rtol=0, atol=1e-9)
+    assert np.isclose(net.res_vsc_bipolar.at[1, "i_dc_ka"], net.res_line_dc.at[0, "i_ka"], rtol=0, atol=1e-9)
+    # minus conductor has a voltage drop
+    assert net.res_bus_dc.at[D, "vm_pu"] > 0.
+    assert np.isclose(net.res_vsc_bipolar.at[1, "vm_dc_pu_p"] - net.res_vsc_bipolar.at[1, "vm_dc_pu_m"],
+                      net.res_bus_dc.at[C, "vm_pu"] - net.res_bus_dc.at[D, "vm_pu"], rtol=0, atol=1e-9)
 
 
 def test_vsc_hvdc_control_q():

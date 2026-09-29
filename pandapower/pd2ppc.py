@@ -24,7 +24,7 @@ from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 from pandapower.pypower.idx_svc import SVC_STATUS, SVC_BUS
 from pandapower.pypower.idx_vsc import VSC_BUS, VSC_INTERNAL_BUS, VSC_BUS_DC, VSC_STATUS, VSC_MODE_AC, VSC_MODE_AC_V, \
-    VSC_MODE_AC_Q, VSC_MODE_AC_SL, VSC_INTERNAL_BUS_DC
+    VSC_MODE_AC_Q, VSC_MODE_AC_SL, VSC_INTERNAL_BUS_DC, VSC_BUS_DC_MINUS
 from pandapower.pypower.idx_source_dc import SOURCE_DC_BUS, SOURCE_DC_STATUS
 from pandapower.pypower.run_userfcn import run_userfcn
 from itertools import combinations
@@ -346,6 +346,8 @@ def _ppc2ppci(ppc, net, ppci=None):
     ppc['vsc'][:, VSC_INTERNAL_BUS] = e2i[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS]).astype(np.int64)].copy()
     ppc['vsc'][:, VSC_BUS_DC] = e2i_dc[np.real(ppc["vsc"][:, VSC_BUS_DC]).astype(np.int64)].copy()
     ppc['vsc'][:, VSC_INTERNAL_BUS_DC] = e2i_dc[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS_DC]).astype(np.int64)].copy()
+    vsc_has_minus = np.real(ppc["vsc"][:, VSC_BUS_DC_MINUS]) >= 0  # -1: minus terminal is ground
+    ppc['vsc'][vsc_has_minus, VSC_BUS_DC_MINUS] = e2i_dc[np.real(ppc["vsc"][vsc_has_minus, VSC_BUS_DC_MINUS]).astype(np.int64)].copy()
     ppc["branch"][:, F_BUS] = e2i[np.real(ppc["branch"][:, F_BUS]).astype(np.int64)].copy()
     ppc["branch"][:, T_BUS] = e2i[np.real(ppc["branch"][:, T_BUS]).astype(np.int64)].copy()
     ppc["branch_dc"][:, DC_F_BUS] = e2i_dc[np.real(ppc["branch_dc"][:, DC_F_BUS]).astype(np.int64)].copy()
@@ -393,6 +395,8 @@ def _ppc2ppci(ppc, net, ppci=None):
             bus_status[n2i[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS]).astype(np.int64)]] &
             bus_status_dc[n2i_dc[np.real(ppc["vsc"][:, VSC_BUS_DC]).astype(np.int64)]] &
             bus_status_dc[n2i_dc[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS_DC]).astype(np.int64)]])
+    vsc_has_minus = np.real(ppc["vsc"][:, VSC_BUS_DC_MINUS]) >= 0
+    vscs[vsc_has_minus] &= bus_status_dc[n2i_dc[np.real(ppc["vsc"][vsc_has_minus, VSC_BUS_DC_MINUS]).astype(np.int64)]]
     ppci["internal"]["vsc_is"] = vscs
 
     brs = (np.real(ppc["branch"][:, BR_STATUS]).astype(np.int64) &  # branch status
