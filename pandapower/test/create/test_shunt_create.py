@@ -616,7 +616,7 @@ def test_create_vsc_stacked_index_conflict():
     net = pandapowerNet(name="test_create_vsc_stacked_index_conflict")
     b1 = create_bus(net, 110)
     b_dc_plus = create_bus_dc(net, 100)
-    b_dc_minus = create_bus_dc(net, 100)
+    b_dc_minus = create_bus_dc(net, -100)
 
     # Create first VSC stacked
     idx1 = create_vsc_stacked(
