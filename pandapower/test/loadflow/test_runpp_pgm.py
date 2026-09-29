@@ -1,12 +1,12 @@
 import sys
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
-from pandapower.create import create_bus, create_ext_grid, create_load, create_switch, create_sgen, create_line
+from pandapower.create import create_buses, create_ext_grid, create_lines, create_load, create_sgen, create_switch
 from pandapower.network import pandapowerNet
 from pandapower.run import runpp_pgm
-from pandapower.test.consistency_checks import runpp_pgm_with_consistency_checks, runpp_pgm_3ph_with_consistency_checks
+from pandapower.test.consistency_checks import runpp_pgm_3ph_with_consistency_checks, runpp_pgm_with_consistency_checks
 
 pytest.importorskip("power_grid_model")
 pytest.importorskip("power_grid_model_io")
@@ -22,14 +22,14 @@ pytest.importorskip("power_grid_model_io")
 def test_minimal_net_pgm(consistency_fn):
     # tests corner-case when the grid only has 1 bus and an ext-grid
     net = pandapowerNet(name="test_minimal_net_pgm")
-    b = create_bus(net, 110)
+    (b,) = create_buses(net, 1, 110)
     create_ext_grid(net, b)
     consistency_fn(net)
 
     create_load(net, b, p_mw=0.1)
     consistency_fn(net)
 
-    b2 = create_bus(net, 110)
+    (b2,) = create_buses(net, 1, 110)
     create_switch(net, b, b2, "b")
     create_sgen(net, b2, p_mw=0.2, q_mvar=0.1)
     consistency_fn(net)
@@ -47,10 +47,9 @@ def test_runpp_pgm__invalid_algorithm():
 @patch("pandapower.run.logger")
 def test_runpp_pgm__internal_pgm_error(mock_logger: MagicMock):
     net = pandapowerNet(name="test_runpp_pgm__internal_pgm_error")
-    b1 = create_bus(net, 110)
+    b1, b2 = create_buses(net, 2, [110, 50])
     create_ext_grid(net, b1, vm_pu=1)
-    b2 = create_bus(net, 50)
-    create_line(net, b1, b2, 1, std_type="NAYY 4x50 SE")
+    create_lines(net, b1, b2, 1, std_type="NAYY 4x50 SE")
     runpp_pgm(net)
 
     assert net["converged"] is False
@@ -67,7 +66,7 @@ def test_runpp_pgm__internal_pgm_error(mock_logger: MagicMock):
 @patch("pandapower.run.logger")
 def test_runpp_pgm__validation_fail(mock_logger: MagicMock):
     net = pandapowerNet(name="test_runpp_pgm__validation_fail")
-    create_bus(net, -110, index=123)
+    create_buses(net, 1, -110, index=123)
     runpp_pgm(net, validate_input=True)
 
     mock_logger.error.assert_called_once_with("1. Power Grid Model validation error: Check bus-123")

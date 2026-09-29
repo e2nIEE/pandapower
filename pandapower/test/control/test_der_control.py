@@ -8,9 +8,9 @@ import pandas as pd
 import pytest
 
 from pandapower.control.controller import DERController as DERModels
-from pandapower.control.controller.DERController import DERController
 from pandapower.control.controller.const_control import ConstControl
-from pandapower.create import create_buses, create_ext_grid, create_sgen, create_line, create_bus
+from pandapower.control.controller.DERController import DERController
+from pandapower.create import create_buses, create_ext_grid, create_lines, create_sgen
 from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 from pandapower.timeseries.data_sources.frame_data import DFData
@@ -31,14 +31,14 @@ def simple_test_net():
     create_buses(net, 2, vn_kv=20)
     create_ext_grid(net, 0)
     create_sgen(net, 1, p_mw=2., sn_mva=3, name="DER1", type='wye')
-    create_line(net, 0, 1, length_km=0.1, std_type="NAYY 4x50 SE")
+    create_lines(net, 0, 1, length_km=0.1, line_params="NAYY 4x50 SE")
     return net
 
 
 def simple_test_net2():
     net = simple_test_net()
-    bus = create_bus(net, vn_kv=20)
-    create_line(net, 0, bus, 0.1, std_type="NAYY 4x50 SE")
+    (bus,) = create_buses(net, 1, vn_kv=20)
+    create_lines(net, 0, bus, 0.1, line_params="NAYY 4x50 SE")
     create_sgen(net, bus, 2., sn_mva=3., name="DER2", type='wye')
     return net
 
@@ -209,37 +209,6 @@ def test_cosphi_of_p_timeseries():
     net.controller.at[DER_no_q2.index, "in_service"] = True
     run_timeseries(net, time_steps=range(len(ts_data)))
     res_no_q2 = deepcopy(ow.output)
-
-    if False:  # plot cosphi course
-        import matplotlib.pyplot as plt
-
-        res_to_plot = {
-            "no_q": res_no_q,
-            "no_q2": res_no_q2,
-            "ue": res_ue,
-            "ue2": res_ue2,
-            "oe": res_oe,
-        }
-        colors = "bgrcmyk"
-        fig = plt.figure(figsize=(9, 5))
-        ax = fig.gca()
-        for i_key, (key, res) in enumerate(res_to_plot.items()):
-            cosphi_pos_neg = toolbox.cosphi_pos_neg_from_pq(
-                res["res_sgen.p_mw"], res["res_sgen.q_mvar"])
-            cosphi_pos_neg[np.isnan(cosphi_pos_neg[0])] = 1
-            cosphi_pos = toolbox.cosphi_to_pos(cosphi_pos_neg)
-            x = res["res_sgen.p_mw"].values.flatten() / net.sgen.sn_mva.at[0]
-            plt.plot(x, cosphi_pos, label=key, c=colors[i_key], marker="+")
-        yticks = ax.get_yticks()
-        yticks_signed = deepcopy(yticks)
-        yticks_signed[yticks > 1] -= 2
-        yticks_signed = np.round(yticks_signed, 3)
-        ax.set_yticks(yticks, yticks_signed)
-        plt.xlabel('p/sn')
-        plt.ylabel('cosphi (negative=underexcited)')
-        plt.legend()
-        plt.tight_layout()
-        plt.show()
 
     # check results
     assert np.allclose(res_no_q["res_sgen.q_mvar"].values, 0, atol=1e-5)

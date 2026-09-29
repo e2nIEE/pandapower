@@ -1,17 +1,24 @@
-import pytest
 import os
+
 import pandas as pd
+import pytest
+
 from pandapower import pp_dir
-from pandapower.run import runpp
-from pandapower.create import create_bus, create_transformer, create_transformer3w, create_dcline
+from pandapower.control import ConstControl
+from pandapower.create import create_buses, create_dcline, create_transformer, create_transformer3w
+from pandapower.grid_equivalents.auxiliary import (
+    _check_network,
+    adaptation_phase_shifter,
+    drop_internal_branch_elements,
+    drop_measurements_and_controllers,
+    get_boundary_vp,
+)
+from pandapower.grid_equivalents.get_equivalent import get_equivalent
+from pandapower.networks.cigre_networks import create_cigre_network_mv
 from pandapower.networks.create_examples import example_simple
 from pandapower.networks.power_system_test_cases import case9
-from pandapower.networks.cigre_networks import create_cigre_network_mv
+from pandapower.run import runpp
 from pandapower.timeseries import DFData
-from pandapower.control import ConstControl
-from pandapower.grid_equivalents.auxiliary import drop_measurements_and_controllers, \
-    _check_network, get_boundary_vp, adaptation_phase_shifter, drop_internal_branch_elements
-from pandapower.grid_equivalents.get_equivalent import get_equivalent
 
 
 def test_drop_internal_branch_elements():
@@ -56,9 +63,7 @@ def test_drop_measurements_and_controllers():
     # create measurements
     net = case9()
     runpp(net)
-    create_bus(net, net.bus.vn_kv.values[0])
-    create_bus(net, net.bus.vn_kv.values[0])
-    create_bus(net, net.bus.vn_kv.values[0])
+    create_buses(net, 3, net.bus.vn_kv.values[0])
     buses = [1, 2, 5, 6, 7, 9, 10, 11]
     create_transformer(net, 1, 9, "0.4 MVA 10/0.4 kV")
     create_transformer3w (net, 2, 10, 11, "63/25/38 MVA 110/20/10 kV")
@@ -111,8 +116,7 @@ def test_check_network():
 
     net.bus.loc[5, 'in_service'] = True
     runpp(net)
-    create_bus(net, net.bus.vn_kv.values[0])
-    create_bus(net, net.bus.vn_kv.values[0])
+    create_buses(net, 2, net.bus.vn_kv.values[0])
     create_dcline(net, from_bus=4, to_bus=9, p_mw=1e4, loss_percent=1.2, loss_mw=25, \
                      vm_from_pu=1.01, vm_to_pu=1.02)
     create_dcline(net, from_bus=8, to_bus=10, p_mw=1e4, loss_percent=1.2, loss_mw=25, \

@@ -50,7 +50,7 @@ class TestAsymmetricLoadRequiredFields:
         """Test: valid required values are accepted"""
         net = pandapowerNet(name="test_valid_required_values")
         create_buses(net, 2, 0.4)
-        create_buses(net, 0.4, index=42)
+        create_buses(net, 1, 0.4, index=42)
 
         create_asymmetric_load(
             net,
