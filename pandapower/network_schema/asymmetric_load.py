@@ -5,7 +5,7 @@ asymmetric_load_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the load"),
         "bus": pa.Column(
-            int, pa.Check.ge(0), description="	index of connected bus", metadata={"foreign_key": "bus"}
+            int, pa.Check.ge(0), description="	index of connected bus", metadata={"foreign_key": "bus.index"}
         ),
         "p_a_mw": pa.Column(
             float, pa.Check.ge(0), description="Phase A active power of the load [MW]", metadata={"default": 0.0}
@@ -42,7 +42,7 @@ asymmetric_load_schema = pa.DataFrameSchema(
         ),
         "in_service": pa.Column(bool, description="specifies if the load is in service.", metadata={"default": True}),
         "type": pa.Column(
-            str, pa.Check.isin(["wye", "delta"]), description="type of load", metadata={"default": "wye"}
+            str, description="type of load", metadata={"default": "wye"}
         ),
     },
     name="asymmetric_load",
