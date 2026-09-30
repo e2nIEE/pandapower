@@ -44,7 +44,7 @@ class TestBusRequiredFields:
         net = pandapowerNet(name="test_valid_required_values")
         kwargs = {parameter: valid_value}
         vn_kv = kwargs.pop("vn_kv", 0.4)
-        create_buses(nr_buses=1, net=net, vn_kv=vn_kv, **kwargs)
+        create_buses(net, 1, vn_kv=vn_kv, **kwargs)
 
         validate_network(net)
 
@@ -61,7 +61,7 @@ class TestBusRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: Invalid required values are rejected"""
         net = pandapowerNet(name="test_invalid_required_values")
-        create_buses(nr_buses=1, net=net, vn_kv=0.4)
+        create_buses(net, 1, vn_kv=0.4)
         net.bus[parameter] = invalid_value
 
         with pytest.raises(pa.errors.SchemaError):
@@ -74,24 +74,23 @@ class TestBusOptionalFields:
     def test_bus_with_optional_fields(self):
         """Test: Bus with every optional fields is valid"""
         net = pandapowerNet(name="test_bus_with_optional_fields")
-        create_buses(nr_buses=1, net=net, vn_kv=0.4, zone="everywhere", max_vm_pu=1.1, min_vm_pu=0.9, geodata=(0, 0), type="b")
+        create_buses(net, 1, vn_kv=0.4, zone="everywhere", max_vm_pu=1.1, min_vm_pu=0.9, geodata=(0, 0), type="b")
         validate_network(net)
 
     def test_buses_with_optional_fields_including_nullvalues(self):
         """Test: Buses with some optional fields is valid"""
         net = pandapowerNet(name="test_buses_with_optional_fields_including_nullvalues")
-        create_buses(nr_buses=1, net=net, vn_kv=0.4, zone="nowhere")
-        create_buses(nr_buses=1, net=net, vn_kv=0.4, max_vm_pu=1.1, min_vm_pu=0.9)
-        create_buses(nr_buses=1, net=net, vn_kv=0.4, geodata=(1, 2))
-        create_buses(nr_buses=1, net=net, vn_kv=0.4, type="x")
+        create_buses(net, 1, vn_kv=0.4, zone="nowhere")
+        create_buses(net, 1, vn_kv=0.4, max_vm_pu=1.1, min_vm_pu=0.9)
+        create_buses(net, 1, vn_kv=0.4, geodata=(1, 2))
+        create_buses(net, 1, vn_kv=0.4, type="x")
 
         validate_network(net)
 
     def test_valid_type_values(self):
         """Test: Valid 'type' values are accepted"""
         net = pandapowerNet(name="test_valid_type_values")
-        create_buses(nr_buses=1, net=net, vn_kv=0.4)
-        create_buses(nr_buses=1, net=net, vn_kv=0.4)
+        create_buses(net, 2, vn_kv=0.4)
 
         net.bus["type"].at[0] = "x"
         net.bus["type"].at[1] = pd.NA
@@ -117,7 +116,7 @@ class TestBusOptionalFields:
     def test_valid_optional_values(self, parameter, valid_value):
         """Test: valid optional values are accepted"""
         net = pandapowerNet(name="test_valid_optional_values")
-        create_buses(nr_buses=1, net=net, vn_kv=0.4, **{parameter: valid_value})
+        create_buses(net, 1, vn_kv=0.4, **{parameter: valid_value})
 
         validate_network(net)
 
@@ -141,7 +140,7 @@ class TestBusOptionalFields:
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Test: Invalid optional values are rejected"""
         net = pandapowerNet(name="test_invalid_optional_values")
-        create_buses(nr_buses=1, net=net, vn_kv=0.4)
+        create_buses(net, 1, vn_kv=0.4)
 
         # for OPF columns, add group dependency so only target parameter triggers failure
         #  otherwise the "min < max" check will fail.
@@ -160,20 +159,20 @@ class TestBusCrossFieldConstraints:
     def test_min_vm_pu_greater_than_max_vm_pu_rejected(self):
         """Test: min_vm_pu must be <= max_vm_pu"""
         net = pandapowerNet(name="test_min_max_constraint")
-        create_buses(nr_buses=1, net=net, vn_kv=0.4, min_vm_pu=1.5, max_vm_pu=1.0)
+        create_buses(net, 1, vn_kv=0.4, min_vm_pu=1.5, max_vm_pu=1.0)
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 
     def test_max_vm_pu_valid_upper_bound(self):
         """Test: max_vm_pu = 2 is valid (boundary)"""
         net = pandapowerNet(name="test_max_vm_pu_valid")
-        create_buses(nr_buses=1, net=net, vn_kv=0.4, min_vm_pu=0.0, max_vm_pu=2.0)
+        create_buses(net, 1, vn_kv=0.4, min_vm_pu=0.0, max_vm_pu=2.0)
         validate_network(net)
 
     def test_min_vm_pu_valid_zero(self):
         """Test: min_vm_pu = 0 is valid (boundary)"""
         net = pandapowerNet(name="test_min_vm_pu_valid")
-        create_buses(nr_buses=1, net=net, vn_kv=0.4, min_vm_pu=0.0, max_vm_pu=1.0)
+        create_buses(net, 1, vn_kv=0.4, min_vm_pu=0.0, max_vm_pu=1.0)
         validate_network(net)
 
     @pytest.mark.parametrize("invalid_value", [2.1, 3.0, 100.0])
@@ -192,7 +191,7 @@ class TestBusCimUcteFields:
     def test_cim_fields_valid(self):
         """Test: CIM fields with valid string values are accepted"""
         net = pandapowerNet(name="test_cim_fields")
-        create_buses(nr_buses=1, net=net, vn_kv=0.4)
+        create_buses(net, 1, vn_kv=0.4)
         net.bus["origin_id"] = pd.Series(["cim_123"], dtype=pd.StringDtype())
         net.bus["origin_class"] = pd.Series(["BusbarSection"], dtype=pd.StringDtype())
         net.bus["origin_profile"] = pd.Series(["CIM"], dtype=pd.StringDtype())
@@ -212,7 +211,7 @@ class TestBusCimUcteFields:
     def test_cim_fields_nullable(self):
         """Test: CIM fields can be null"""
         net = pandapowerNet(name="test_cim_null")
-        create_buses(nr_buses=1, net=net, vn_kv=0.4)
+        create_buses(net, 1, vn_kv=0.4)
         net.bus["origin_id"] = pd.Series([pd.NA], dtype=pd.StringDtype())
         validate_network(net)
 
