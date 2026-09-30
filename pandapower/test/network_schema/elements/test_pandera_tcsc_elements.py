@@ -1,29 +1,30 @@
 import itertools
+
 import numpy as np
 import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_bus, create_tcsc
+from pandapower.create import create_buses, create_tcsc
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 from pandapower.test.network_schema.elements.helper import (
-    strings,
+    all_allowed_floats,
     all_floats,
+    all_ints,
     bools,
-    not_strings_list,
-    not_floats_list,
+    negativ_floats,
+    negativ_floats_plus_zero,
+    negativ_ints,
     not_boolean_list,
+    not_floats_list,
+    not_ints_list,
+    not_strings_list,
+    positiv_floats,
+    positiv_floats_plus_zero,
     positiv_ints,
     positiv_ints_plus_zero,
-    positiv_floats_plus_zero,
-    negativ_floats_plus_zero,
-    all_ints,
-    negativ_ints,
-    not_ints_list,
-    negativ_floats,
-    positiv_floats,
-    all_allowed_floats,
+    strings,
 )
 
 float_range = [x for x in all_allowed_floats if 90 <= x <= 180]
@@ -54,9 +55,8 @@ class TestTcscRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are rejected"""
         net = pandapowerNet(name="test_valid_required_values")
-        create_bus(net, 0.4)
-        create_bus(net, 0.4)
-        create_bus(net, 0.4, index=42)
+        create_buses(net, 2, 0.4)
+        create_buses(net, 1, 0.4, index=42)
         create_tcsc(
             net,
             from_bus=0,
@@ -89,8 +89,7 @@ class TestTcscRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: Invalid required values are rejected"""
         net = pandapowerNet(name="test_invalid_required_values")
-        create_bus(net, 0.4)
-        create_bus(net, 0.4)
+        create_buses(net, 2, 0.4)
         create_tcsc(
             net,
             from_bus=0,
@@ -114,8 +113,7 @@ class TestTcscOptionalFields:
     def test_empty_network_validation(self):
         """Test: tcsc with every optional fields is valid"""
         net = pandapowerNet(name="test_empty_network_validation")
-        create_bus(net, 0.4)
-        create_bus(net, 0.4)
+        create_buses(net, 2, 0.4)
         create_tcsc(
             net,
             from_bus=0,
@@ -135,9 +133,8 @@ class TestTcscOptionalFields:
     def test_optional_fields_with_nulls(self):
         """Test: TCSC with some optional fields (including nulls) is valid"""
         net = pandapowerNet(name="test_optional_fields_with_nulls")
-        b0 = create_bus(net, 0.4)  # index 0
-        b1 = create_bus(net, 0.4)  # index 1
-        create_bus(net, 0.4, index=42)  # ensure 42 exists for FK-positive tests
+        b0, b1 = create_buses(net, 2, 0.4)  # index 0, 1
+        create_buses(net, 1, 0.4, index=42)  # ensure 42 exists for FK-positive tests
         create_tcsc(
             net,
             from_bus=b0,
@@ -194,9 +191,8 @@ class TestTcscOptionalFields:
     )
     def test_valid_optional_values(self, parameter, valid_value):
         net = pandapowerNet(name="test_valid_optional_values")
-        b0 = create_bus(net, 0.4)  # index 0
-        b1 = create_bus(net, 0.4)  # index 1
-        create_bus(net, 0.4, index=42)  # ensure 42 exists for FK-positive tests
+        b0, b1 = create_buses(net, 2, 0.4)  # index 0, 1
+        create_buses(net, 1, 0.4, index=42)  # ensure 42 exists for FK-positive tests
         create_tcsc(
             net,
             from_bus=b0,
@@ -227,9 +223,8 @@ class TestTcscOptionalFields:
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Test: Invalid optional values are rejected"""
         net = pandapowerNet(name="test_invalid_optional_values")
-        b0 = create_bus(net, 0.4)  # index 0
-        b1 = create_bus(net, 0.4)  # index 1
-        create_bus(net, 0.4, index=42)  # ensure 42 exists for FK-positive tests
+        b0, b1 = create_buses(net, 2, 0.4)  # index 0, 1
+        create_buses(net, 1, 0.4, index=42)  # ensure 42 exists for FK-positive tests
         create_tcsc(
             net,
             from_bus=b0,
@@ -247,9 +242,8 @@ class TestTcscOptionalFields:
 
     def test_min_less_equal_max_check_passes(self):
         net = pandapowerNet(name="test_min_less_equal_max_check_passes")
-        b0 = create_bus(net, 0.4)  # index 0
-        b1 = create_bus(net, 0.4)  # index 1
-        create_bus(net, 0.4, index=42)  # ensure 42 exists for FK-positive tests
+        b0, b1 = create_buses(net, 2, 0.4)  # index 0, 1
+        create_buses(net, 1, 0.4, index=42)  # ensure 42 exists for FK-positive tests
         create_tcsc(
             net,
             from_bus=b0,
@@ -267,9 +261,8 @@ class TestTcscOptionalFields:
 
     def test_min_greater_than_max_fails(self):
         net = pandapowerNet(name="test_min_greater_than_max_fails")
-        b0 = create_bus(net, 0.4)  # index 0
-        b1 = create_bus(net, 0.4)  # index 1
-        create_bus(net, 0.4, index=42)  # ensure 42 exists for FK-positive tests
+        b0, b1 = create_buses(net, 2, 0.4)  # index 0, 1
+        create_buses(net, 1, 0.4, index=42)  # ensure 42 exists for FK-positive tests
         create_tcsc(
             net,
             from_bus=b0,

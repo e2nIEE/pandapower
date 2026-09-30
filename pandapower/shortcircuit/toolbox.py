@@ -6,19 +6,19 @@ import logging
 
 logger = logging.getLogger(__name__)
 
-import numpy as np
-import pandas as pd
-import networkx as nx
 from copy import deepcopy
 
-from pandapower.create import create_bus
-from pandapower.run import rundcpp
-from pandapower.topology.graph_searches import connected_component
-from pandapower.shortcircuit.calc_sc import calc_sc
-from pandapower.create import _get_index_with_check
-from pandapower.topology import create_nxgraph
-from pandapower.pypower.idx_bus import BUS_I
+import networkx as nx
+import numpy as np
+import pandas as pd
+
+from pandapower.create import _get_index_with_check, create_buses
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, TAP
+from pandapower.pypower.idx_bus import BUS_I
+from pandapower.run import rundcpp
+from pandapower.shortcircuit.calc_sc import calc_sc
+from pandapower.topology import create_nxgraph
+from pandapower.topology.graph_searches import connected_component
 
 __all__ = ["detect_power_station_unit", "calc_sc_on_line"]
 
@@ -96,8 +96,9 @@ def _create_aux_net(net, line_ix, distance_to_bus0):
     aux_net = deepcopy(net)
 
     # Create auxiliary bus
-    aux_bus = create_bus(aux_net, vn_kv=aux_net.bus.at[aux_net.line.at[line_ix, "from_bus"], "vn_kv"],
-                            name="aux_bus_sc_calc")
+    (aux_bus,) = create_buses(
+        aux_net, 1, vn_kv=aux_net.bus.at[aux_net.line.at[line_ix, "from_bus"], "vn_kv"], name="aux_bus_sc_calc"
+    )
 
     # Create auxiliary line, while preserve the original index
     aux_line0 = _create_element_from_exisiting(aux_net, "line", line_ix)

@@ -1,31 +1,31 @@
 # test_pandera_shunt_elements.py
 
 import itertools
+
+import numpy as np
 import pandas as pd
 import pandera as pa
 import pytest
-import numpy as np
 
-from pandapower.create import create_bus, create_shunt
+from pandapower.create import create_buses, create_shunt
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
-
 from pandapower.test.network_schema.elements.helper import (
-    strings,
-    bools,
-    not_strings_list,
-    not_floats_list,
-    not_boolean_list,
-    positiv_ints_plus_zero,
-    positiv_floats,
-    negativ_floats,
-    positiv_floats_plus_zero,
-    negativ_floats_plus_zero,
-    positiv_ints,
-    negativ_ints_plus_zero,
-    negativ_ints,
-    not_ints_list,
     all_allowed_floats,
+    bools,
+    negativ_floats,
+    negativ_floats_plus_zero,
+    negativ_ints,
+    negativ_ints_plus_zero,
+    not_boolean_list,
+    not_floats_list,
+    not_ints_list,
+    not_strings_list,
+    positiv_floats,
+    positiv_floats_plus_zero,
+    positiv_ints,
+    positiv_ints_plus_zero,
+    strings,
 )
 
 
@@ -49,9 +49,8 @@ class TestShuntRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = pandapowerNet(name="test_valid_required_values")
-        create_bus(net, 0.4)  # index 0
-        create_bus(net, 0.4)  # index 1
-        create_bus(net, 0.4, index=42)
+        create_buses(net, 2, 0.4)  # index 0, 1
+        create_buses(net, 1, 0.4, index=42)
 
         create_shunt(
             net, bus=0, q_mvar=0.0, p_mw=0.0, in_service=True, vn_kv=0.4, step=1, id_characteristic_table=0, max_step=42
@@ -81,8 +80,7 @@ class TestShuntRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
         net = pandapowerNet(name="test_invalid_required_values")
-        b0 = create_bus(net, 0.4)  # 0
-        create_bus(net, 0.4)  # 1
+        b0, b1 = create_buses(net, 2, 0.4)  # 0, 1
         create_shunt(
             net,
             bus=b0,
@@ -114,8 +112,7 @@ class TestShuntOptionalFields:
     def test_all_optional_fields_valid(self):
         """Test: shunt with all optional fields is valid"""
         net = pandapowerNet(name="test_all_optional_fields_valid")
-        b0 = create_bus(net, 0.4)
-        create_bus(net, 0.4)
+        b0, _ = create_buses(net, 2, 0.4)
         create_shunt(
             net,
             bus=b0,
@@ -137,7 +134,7 @@ class TestShuntOptionalFields:
     def test_optional_fields_with_nulls(self):
         """Test: optional fields including nulls are valid"""
         net = pandapowerNet(name="test_optional_fields_with_nulls")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         # Row 1: name only
         create_shunt(
@@ -182,7 +179,7 @@ class TestShuntOptionalFields:
     def test_valid_optional_values(self, parameter, valid_value):
         """Test: valid optional values are accepted"""
         net = pandapowerNet(name="test_valid_optional_values")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
         create_shunt(
             net,
             bus=b0,
@@ -218,7 +215,7 @@ class TestShuntOptionalFields:
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Test: invalid optional values are rejected"""
         net = pandapowerNet(name="test_invalid_optional_values")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
         create_shunt(
             net,
             bus=b0,
@@ -237,7 +234,7 @@ class TestShuntOptionalFields:
     def test_step_less_equal_max_check_passes(self):
         """Test: 'step' <= 'max_step' passes"""
         net = pandapowerNet(name="test_step_less_equal_max_check_passes")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
         create_shunt(
             net,
             bus=b0,
@@ -255,7 +252,7 @@ class TestShuntOptionalFields:
     def test_step_greater_than_max_fails(self):
         """Test: 'step' > 'max_step' fails"""
         net = pandapowerNet(name="test_step_greater_than_max_fails")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
         create_shunt(
             net,
             bus=b0,
@@ -278,7 +275,7 @@ class TestShuntForeignKey:
     def test_invalid_bus_index(self):
         """Test: bus must reference an existing bus index"""
         net = pandapowerNet(name="test_invalid_bus_index")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
         create_shunt(
             net,
             bus=b0,

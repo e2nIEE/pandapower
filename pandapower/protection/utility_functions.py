@@ -1,30 +1,37 @@
 # This function includes various function used for general functionalities such as plotting, grid search
 
 import copy
+import heapq
+import logging as log
+import math
+import warnings
+from math import isinf
 from typing import TYPE_CHECKING
 
 import geojson
-import math
-from math import isinf
-import heapq
-import pandas as pd
-import numpy as np
 import networkx as nx
-import logging as log
+import numpy as np
+import pandas as pd
 
 from pandapower import pandapowerNet
-from pandapower.topology.create_graph import create_nxgraph
+from pandapower.create import create_buses, create_lines
 from pandapower.create._utils import add_column_to_df
-from pandapower.create import create_bus, create_line_from_parameters
-from pandapower.plotting.collections import create_annotation_collection, create_line_collection, \
-    create_bus_collection, create_line_switch_collection, draw_collections, create_trafo_collection, \
-    create_trafo_connection_collection, create_load_collection, create_bus_bus_switch_collection
-from pandapower.toolbox.grid_modification import fuse_buses
-from pandapower.toolbox.element_selection import get_connected_buses_at_element, get_connected_elements, next_bus
+from pandapower.plotting.collections import (
+    create_annotation_collection,
+    create_bus_bus_switch_collection,
+    create_bus_collection,
+    create_line_collection,
+    create_line_switch_collection,
+    create_load_collection,
+    create_trafo_collection,
+    create_trafo_connection_collection,
+    draw_collections,
+)
 from pandapower.run import runpp
 from pandapower.shortcircuit.calc_sc import calc_sc
-
-import warnings
+from pandapower.toolbox.element_selection import get_connected_buses_at_element, get_connected_elements, next_bus
+from pandapower.toolbox.grid_modification import fuse_buses
+from pandapower.topology.create_graph import create_nxgraph
 
 logger = log.getLogger(__name__)
 
@@ -91,7 +98,7 @@ def create_sc_bus(net_copy, sc_line_id, sc_fraction):
     bus_vn_kv = net.bus.vn_kv.at[aux_line.from_bus]
 
     # set new virtual short circuit bus with give line and location
-    bus_sc = create_bus(net, name="Bus_SC", vn_kv=bus_vn_kv, type="b", index=max_idx_bus + 1)
+    (bus_sc,) = create_buses(net, 1, vn_kv=bus_vn_kv, index=max_idx_bus + 1, name="Bus_SC", type="b")
 
     # sim bench grids
     if 's_sc_max_mva' not in net.ext_grid:
@@ -112,11 +119,19 @@ def create_sc_bus(net_copy, sc_line_id, sc_fraction):
     net.line.at[sc_line1, 'to_bus'] = bus_sc
     net.line.at[sc_line1, 'length_km'] *= sc_fraction
 
-    sc_line2 = create_line_from_parameters(net, bus_sc, aux_line.to_bus,
-                                              length_km=aux_line.length_km * (1 - sc_fraction),
-                                              index=max_idx_line + 1, r_ohm_per_km=aux_line.r_ohm_per_km,
-                                              x_ohm_per_km=aux_line.x_ohm_per_km, c_nf_per_km=aux_line.c_nf_per_km,
-                                              max_i_ka=aux_line.max_i_ka)
+    (sc_line2,) = create_lines(
+        net,
+        bus_sc,
+        aux_line.to_bus,
+        length_km=aux_line.length_km * (1 - sc_fraction),
+        index=max_idx_line + 1,
+        line_params={
+            "r_ohm_per_km": aux_line.r_ohm_per_km,
+            "x_ohm_per_km": aux_line.x_ohm_per_km,
+            "c_nf_per_km": aux_line.c_nf_per_km,
+            "max_i_ka": aux_line.max_i_ka,
+        },
+    )
 
     if 'endtemp_degree' in net.line.columns:
         net.line.at[sc_line2, "endtemp_degree"] = net.line.endtemp_degree.at[sc_line1]

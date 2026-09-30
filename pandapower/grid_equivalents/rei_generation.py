@@ -1,27 +1,29 @@
+import logging
+import operator
+import re
+import time
+from copy import deepcopy
+from functools import reduce
+
+import numpy as np
+import pandas as pd
 from numpy._typing import NDArray
 from pandas.api.types import is_bool_dtype, is_numeric_dtype
 
 from pandapower.auxiliary import LoadflowNotConverged
-from pandapower.create import create_buses, create_bus, create_load, create_sgen, create_gen, create_impedance
-from pandapower.toolbox.grid_modification import drop_buses
+from pandapower.create import create_buses, create_gen, create_impedance, create_load, create_sgen
 from pandapower.grid_equivalents.auxiliary import (
+    _runpp_except_voltage_angles,
+    build_ppc_and_Ybus,
     calc_zpbn_parameters,
+    drop_and_edit_cost_functions,
     drop_internal_branch_elements,
-    build_ppc_and_Ybus, drop_measurements_and_controllers,
-    drop_and_edit_cost_functions, _runpp_except_voltage_angles,
+    drop_measurements_and_controllers,
+    impedance_columns,
     replace_motor_by_load,
-    impedance_columns
 )
 from pandapower.grid_equivalents.toolbox import get_connected_switch_buses_groups
-from copy import deepcopy
-import pandas as pd
-import numpy as np
-import operator
-import time
-import re
-from functools import reduce
-
-import logging
+from pandapower.toolbox.grid_modification import drop_buses
 
 logger = logging.getLogger(__name__)
 
@@ -234,7 +236,7 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
 
         Z = Z.drop([elm + "_separate_total"], axis=1)
         vn_kv = net_zpbn.bus.vn_kv[all_external_buses].values[0]
-        new_g_bus = create_bus(net_zpbn, vn_kv, name=elm + "_integrated-ground ")
+        (new_g_bus,) = create_buses(net_zpbn, 1, vn_kv, name=elm + "_integrated-ground ")
         i_all_integrated = []
         for i in Z.index[~np.isnan(Z[elm + "_ground"].values)]:
             rft_pu, xft_pu = adapt_impedance_params(Z[elm + "_ground"][i])
@@ -244,15 +246,19 @@ def _create_net_zpbn(net, boundary_buses, all_internal_buses, all_external_buses
         # in case of integrated, the tightest vm limits are assumed
         ext_buses = Z.ext_bus[~np.isnan(Z[elm + "_ground"])].values
         ext_buses_name = "/".join([str(eb) for eb in ext_buses])
-        new_t_bus = create_bus(
-            net_zpbn, vn_kv, name=elm + "_integrated-total " + ext_buses_name,
+        (new_t_bus,) = create_buses(
+            net_zpbn,
+            1,
+            vn_kv,
+            name=elm + "_integrated-total " + ext_buses_name,
             max_vm_pu=limits.max_vm_pu.loc[i_all_integrated].min(),
-            min_vm_pu=limits.min_vm_pu.loc[i_all_integrated].max())
+            min_vm_pu=limits.min_vm_pu.loc[i_all_integrated].max(),
+        )
         rft_pu, xft_pu = adapt_impedance_params(Z[elm + "_integrated_total"][0])
         create_impedance(net_zpbn, new_g_bus, new_t_bus, rft_pu, xft_pu,
                          sn_mva, name="eq_impedance_ground_to_total")
-        g_buses += [new_g_bus.tolist()]
-        t_buses += [new_t_bus.tolist()]
+        g_buses += [new_g_bus]
+        t_buses += [new_t_bus]
     # --- create load, sgen and gen
     elm_old = None
     max_load_idx = max(-1, net.load.index[~net.load.bus.isin(all_external_buses)].max() - len(net_zpbn.load))

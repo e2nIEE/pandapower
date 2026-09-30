@@ -1,26 +1,26 @@
 # test_pandera_motor_elements.py
 
 import itertools
+
 import numpy as np
 import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_bus, create_motor
+from pandapower.create import create_buses, create_motor
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
-
 from pandapower.test.network_schema.elements.helper import (
-    strings,
     bools,
-    not_strings_list,
-    not_floats_list,
-    not_boolean_list,
-    positiv_ints_plus_zero,
-    negativ_ints,
-    not_ints_list,
-    positiv_floats_plus_zero,
     negativ_floats,
+    negativ_ints,
+    not_boolean_list,
+    not_floats_list,
+    not_ints_list,
+    not_strings_list,
+    positiv_floats_plus_zero,
+    positiv_ints_plus_zero,
+    strings,
     zero_float,
 )
 
@@ -56,9 +56,8 @@ class TestMotorRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         net = pandapowerNet(name="test_valid_required_values")
-        create_bus(net, 0.4)  # 0
-        create_bus(net, 0.4)  # 1
-        create_bus(net, 0.4, index=42)
+        create_buses(net, 2, 0.4)  # 0, 1
+        create_buses(net, 1, 0.4, index=42)
 
         create_motor(
             net,
@@ -101,8 +100,7 @@ class TestMotorRequiredFields:
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         net = pandapowerNet(name="test_invalid_required_values")
-        create_bus(net, 0.4)
-        create_bus(net, 0.4)
+        create_buses(net, 2, 0.4)
 
         create_motor(
             net,
@@ -143,7 +141,7 @@ class TestMotorRequiredFields:
     )
     def test_required_fields_nan_invalid(self, parameter):
         net = pandapowerNet(name="test_required_fields_nan_invalid")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         create_motor(
             net,
@@ -171,7 +169,7 @@ class TestMotorOptionalFields:
 
     def test_optional_fields_with_nulls(self):
         net = pandapowerNet(name="test_optional_fields_with_nulls")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         create_motor(
             net,
@@ -219,7 +217,7 @@ class TestMotorOptionalFields:
     )
     def test_valid_optional_values(self, parameter, valid_value):
         net = pandapowerNet(name="test_valid_optional_values")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         create_motor(
             net,
@@ -246,7 +244,7 @@ class TestMotorOptionalFields:
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
         net = pandapowerNet(name="test_invalid_optional_values")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         create_motor(
             net,
@@ -274,7 +272,7 @@ class TestMotorForeignKey:
 
     def test_invalid_bus_index(self):
         net = pandapowerNet(name="test_invalid_bus_index")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         create_motor(
             net,

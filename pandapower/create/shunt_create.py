@@ -85,7 +85,7 @@ def create_shunt(
         "q_mvar": q_mvar,
         "vn_kv": vn_kv,
         "step": step,
-        "max_step": max_step,
+        "max_step": max_step,  # TODO: check max_step > step or set max(max_step, step)
         "in_service": in_service,
         "step_dependency_table": step_dependency_table,
         "id_characteristic_table": id_characteristic_table,

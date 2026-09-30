@@ -136,15 +136,33 @@ def warn_and_fix_parameter_renaming(
     new_parameter_name: str,
     new_parameter: T,
     default_value: T,
-    category: Type[Warning] = DeprecationWarning,
-    **kwargs: T
-) -> T:
+    kwargs: dict[str, T | Any],
+    category: type[Warning] = DeprecationWarning,
+) -> tuple[T, dict[str, Any]]:
+    """
+    Helper function to raise deprecation warning if a parameter has been renamed.
+    A comparison is made between the default_value and new_parameter.
+    This function can only be used if a comparison is possible for the types of values.
+
+    Parameters:
+        old_parameter_name: The now defunct name of the parameter
+        new_parameter_name: The new name of the parameter
+        new_parameter: The value passed to the parameter itself
+        default_value: The default value for the parameter itself
+        kwargs: The kwargs passed to the function (not as kwargs here).
+            This function will remove the old_parameter_name from the kwargs if present.
+        category: The Warning Category that should be used for the warning.
+
+    Returns:
+        value that should be used for new_parameter, updated kwargs
+    """
     if old_parameter_name in kwargs:
-        warnings.warn("Parameter '%s' has been renamed to '%s'." % (
-            old_parameter_name, new_parameter_name), category=category)
+        warnings.warn(
+            f"Parameter '{old_parameter_name}' has been renamed to '{new_parameter_name}'.", category=category
+        )
         if new_parameter == default_value:
-            return kwargs.pop(old_parameter_name)
-    return new_parameter
+            return kwargs.pop(old_parameter_name), kwargs
+    return new_parameter, kwargs
 
 
 @pd.api.extensions.register_series_accessor("geojson")

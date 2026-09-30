@@ -1,19 +1,19 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pytest
 import numpy as np
+import pytest
 
-from pandapower.network_structure import get_default_value
-from pandapower.create import create_bus, create_ext_grid
+from pandapower.create import create_buses, create_ext_grid
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
+from pandapower.network_structure import get_default_value
 
 
 def test_create_ext_grid():
     """Test basic external grid creation with required parameters."""
     net = pandapowerNet(name="test_create_ext_grid")
-    b1 = create_bus(net, 110.0)
+    (b1,) = create_buses(net, 1, 110)
 
     # Create external grid with only required parameter (bus)
     idx = create_ext_grid(net, bus=b1)
@@ -31,7 +31,7 @@ def test_create_ext_grid():
 def test_create_ext_grid_with_optional_params():
     """Test external grid creation with optional parameters."""
     net = pandapowerNet(name="test_create_ext_grid_with_optional_params")
-    b1 = create_bus(net, 110.0)
+    (b1,) = create_buses(net, 1, 110)
 
     idx = create_ext_grid(
         net,
@@ -83,7 +83,7 @@ def test_create_ext_grid_with_optional_params():
 def test_create_ext_grid_out_of_service():
     """Test external grid creation with in_service=False."""
     net = pandapowerNet(name="test_create_ext_grid_out_of_service")
-    b1 = create_bus(net, 110.0)
+    (b1,) = create_buses(net, 1, 110)
 
     idx = create_ext_grid(net, bus=b1, in_service=False)
 
@@ -96,7 +96,7 @@ def test_create_ext_grid_out_of_service():
 def test_create_ext_grid_with_custom_index():
     """Test external grid creation with custom index."""
     net = pandapowerNet(name="test_create_ext_grid_with_custom_index")
-    b1 = create_bus(net, 110.0)
+    (b1,) = create_buses(net, 1, 110)
 
     idx = create_ext_grid(net, bus=b1, index=10)
 
@@ -117,8 +117,7 @@ def test_create_ext_grid_nonexistent_bus():
 def test_create_ext_grid_multiple():
     """Test creating multiple external grids."""
     net = pandapowerNet(name="test_create_ext_grid_multiple")
-    b1 = create_bus(net, 110.0)
-    b2 = create_bus(net, 110.0)
+    b1, b2 = create_buses(net, 2, 110)
 
     idx1 = create_ext_grid(net, bus=b1, name="slack_1")
     idx2 = create_ext_grid(net, bus=b2, name="slack_2")
@@ -133,7 +132,7 @@ def test_create_ext_grid_multiple():
 def test_create_ext_grid_opf_limits():
     """Test external grid with OPF limit parameters."""
     net = pandapowerNet(name="test_create_ext_grid_opf_limits")
-    b1 = create_bus(net, 110.0)
+    (b1,) = create_buses(net, 1, 110)
 
     idx = create_ext_grid(
         net,
@@ -155,7 +154,7 @@ def test_create_ext_grid_opf_limits():
 def test_create_ext_grid_short_circuit_params():
     """Test external grid with short circuit parameters."""
     net = pandapowerNet(name="test_create_ext_grid_short_circuit_params")
-    b1 = create_bus(net, 110.0)
+    (b1,) = create_buses(net, 1, 110)
 
     idx = create_ext_grid(
         net,
@@ -181,7 +180,7 @@ def test_create_ext_grid_short_circuit_params():
 def test_create_ext_grid_controllable():
     """Test external grid controllable parameter."""
     net = pandapowerNet(name="test_create_ext_grid_controllable")
-    b1 = create_bus(net, 110.0)
+    (b1,) = create_buses(net, 1, 110)
 
     # Create first ext_grid without controllable
     idx1 = create_ext_grid(net, bus=b1)
@@ -199,7 +198,7 @@ def test_create_ext_grid_controllable():
 def test_create_ext_grid_slack_weight():
     """Test external grid slack_weight parameter."""
     net = pandapowerNet(name="test_create_ext_grid_slack_weight")
-    b1 = create_bus(net, 110.0)
+    (b1,) = create_buses(net, 1, 110)
 
     idx = create_ext_grid(net, bus=b1, slack_weight=3.5)
 
@@ -211,7 +210,7 @@ def test_create_ext_grid_slack_weight():
 def test_create_ext_grid_default_values():
     """Test that default values are set correctly."""
     net = pandapowerNet(name="test_create_ext_grid_default_values")
-    b1 = create_bus(net, 110.0)
+    (b1,) = create_buses(net, 1, 110)
 
     idx = create_ext_grid(net, bus=b1)
 

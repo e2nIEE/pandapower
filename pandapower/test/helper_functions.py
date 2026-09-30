@@ -5,11 +5,16 @@
 import os
 from copy import deepcopy
 
-from pandapower import pp_dir, pandapowerNet
+from pandapower import pandapowerNet, pp_dir
 from pandapower.auxiliary import get_free_id
 from pandapower.create import (
-    create_bus, create_ext_grid, create_transformer_from_parameters, create_line_from_parameters, create_load,
-    create_gen, create_sgen
+    create_buses,
+    create_ext_grid,
+    create_gen,
+    create_lines,
+    create_load,
+    create_sgen,
+    create_transformer_from_parameters,
 )
 from pandapower.file_io import from_pickle
 from pandapower.toolbox.comparison import nets_equal
@@ -39,24 +44,56 @@ def create_test_network():
     Creates a simple pandapower test network
     """
     net = pandapowerNet(name='test_network')
-    b1 = create_bus(net, name="bus1", vn_kv=10.)
+    (b1,) = create_buses(net, 1, name="bus1", vn_kv=10.0)
     create_ext_grid(net, b1)
-    b2 = create_bus(net, name="bus2", geodata=(1., 2.), vn_kv=.4)
-    b3 = create_bus(net, name="bus3", geodata=(1., 3.), vn_kv=.4, index=7)
-    b4 = create_bus(net, name="bus4", vn_kv=10.)
+    (b2,) = create_buses(net, 1, name="bus2", geodata=(1.0, 2.0), vn_kv=0.4)
+    (b3,) = create_buses(net, 1, name="bus3", geodata=(1.0, 3.0), vn_kv=0.4, index=7)
+    (b4,) = create_buses(net, 1, name="bus4", vn_kv=10.0)
     create_transformer_from_parameters(
-        net, b4, b2, vk_percent=3.75, tap_max=2, vn_lv_kv=0.4, shift_degree=150, tap_neutral=0, vn_hv_kv=10.0,
-        vkr_percent=2.8125, tap_pos=0, tap_side="hv", tap_min=-2, tap_step_percent=2.5, i0_percent=0.68751,
-        sn_mva=0.016, pfe_kw=0.11, name=None, in_service=True, index=None, tap_changer_type="Ratio"
+        net,
+        b4,
+        b2,
+        vk_percent=3.75,
+        tap_max=2,
+        vn_lv_kv=0.4,
+        shift_degree=150,
+        tap_neutral=0,
+        vn_hv_kv=10.0,
+        vkr_percent=2.8125,
+        tap_pos=0,
+        tap_side="hv",
+        tap_min=-2,
+        tap_step_percent=2.5,
+        tap_step_degree=0,
+        i0_percent=0.68751,
+        sn_mva=0.016,
+        pfe_kw=0.11,
+        name=None,
+        in_service=True,
+        index=None,
+        tap_changer_type="Ratio",
     )
     # 0.016 MVA 10/0.4 kV ET 16/23  SGB
 
-    create_line_from_parameters(net, b2, b3, 1, name="line1", r_ohm_per_km=0.2067,
-                                ices=0.389985, c_nf_per_km=720.0, max_i_ka=0.328,
-                                x_ohm_per_km=0.1897522, geodata=[[1., 2.], [3., 4.]])
+    create_lines(
+        net,
+        b2,
+        b3,
+        1,
+        {"r_ohm_per_km": 0.2067, "x_ohm_per_km": 0.1897522, "c_nf_per_km": 720.0, "max_i_ka": 0.328},
+        name="line1",
+        ices=0.389985,
+        geodata=[(1.0, 2.0), (3.0, 4.0)],
+    )
     # NAYY 1x150RM 0.6/1kV ir
-    create_line_from_parameters(net, b1, b4, 1, name="line2", r_ohm_per_km=0.876,
-                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876)
+    create_lines(
+        net,
+        b1,
+        b4,
+        1,
+        {"r_ohm_per_km": 0.876, "x_ohm_per_km": 0.1159876, "c_nf_per_km": 260.0, "max_i_ka": 0.123},
+        name="line2",
+    )
 
     # NAYSEY 3x35rm/16 6/10kV
 
@@ -77,16 +114,27 @@ def create_test_network2():
 def add_grid_connection(net, vn_kv=20., zone=None):
     """Creates a new grid connection for create_result_test_network()
     """
-    b1 = create_bus(net, vn_kv=vn_kv, zone=zone)
+    (b1,) = create_buses(net, 1, vn_kv=vn_kv, zone=zone)
     create_ext_grid(net, b1, vm_pu=1.01)
     b2 = get_free_id(net.bus) + 2  # shake up the indices so that non-consecutive indices are tested
-    b2 = create_bus(net, vn_kv=vn_kv, zone=zone, index=b2)
+    (b2,) = create_buses(net, 1, vn_kv=vn_kv, zone=zone, index=b2)
     l1 = create_test_line(net, b1, b2)
     return b1, b2, l1
 
 
 def create_test_line(net, b1, b2, in_service=True):
-    return create_line_from_parameters(
-        net, b1, b2, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=.2, df=.8,
-        in_service=in_service, index=get_free_id(net.line) + 1
-    )
+    return create_lines(
+        net,
+        b1,
+        b2,
+        12.2,
+        {
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+        },
+        df=0.8,
+        in_service=in_service,
+        index=get_free_id(net.line) + 1,
+    )[0]

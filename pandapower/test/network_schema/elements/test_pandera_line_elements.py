@@ -1,31 +1,30 @@
 # test_pandera_line_elements.py
 
 import itertools
-import numpy as np
+
 import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_bus, create_line
+from pandapower.create import create_buses, create_lines
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
-
 from pandapower.test.network_schema.elements.helper import (
-    strings,
+    all_allowed_floats,
     bools,
-    not_strings_list,
-    not_floats_list,
-    not_boolean_list,
-    positiv_ints_plus_zero,
-    positiv_ints,
-    negativ_ints,
-    negativ_ints_plus_zero,
-    positiv_floats,
-    positiv_floats_plus_zero,
     negativ_floats,
     negativ_floats_plus_zero,
-    all_allowed_floats,
+    negativ_ints,
+    negativ_ints_plus_zero,
+    not_boolean_list,
+    not_floats_list,
     not_ints_list,
+    not_strings_list,
+    positiv_floats,
+    positiv_floats_plus_zero,
+    positiv_ints,
+    positiv_ints_plus_zero,
+    strings,
 )
 
 # Additional ranges and helpers
@@ -68,11 +67,10 @@ class TestLineRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = pandapowerNet(name="test_valid_required_values")
-        create_bus(net, 0.4)  # index 0
-        create_bus(net, 0.4)  # index 1
-        create_bus(net, 0.4, index=42)  # ensure FK-positive for 42
+        create_buses(net, 2, 0.4)  # index 0, 1
+        create_buses(net, 1, 0.4, index=42)  # ensure FK-positive for 42
 
-        create_line(net, from_bus=0, to_bus=1, length_km=1.0, in_service=True, std_type="NAYY 4x50 SE")
+        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, line_params="NAYY 4x50 SE")
 
         net.line[parameter] = valid_value
         validate_network(net)
@@ -98,10 +96,9 @@ class TestLineRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
         net = pandapowerNet(name="test_invalid_required_values")
-        create_bus(net, 0.4)  # index 0
-        create_bus(net, 0.4)  # index 1
+        create_buses(net, 2, 0.4)  # index 0, 1
 
-        create_line(net, from_bus=0, to_bus=1, length_km=1.0, in_service=True, std_type="NAYY 4x50 SE")
+        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, line_params="NAYY 4x50 SE")
 
         net.line[parameter] = invalid_value
         with pytest.raises(pa.errors.SchemaError):
@@ -114,10 +111,9 @@ class TestLineOptionalFields:
     def test_all_optional_fields_valid(self):
         """Test: line with every optional field and tdpf group complete is valid"""
         net = pandapowerNet(name="test_all_optional_fields_valid")
-        b0 = create_bus(net, 0.4)
-        b1 = create_bus(net, 0.4)
+        b0, b1 = create_buses(net, 2, 0.4)
 
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        create_lines(net, from_buses=b0, to_buses=b1, length_km=1.0, in_service=True, line_params=STD_TYPE)
 
         # Optional text fields
         net.line["name"] = pd.Series(["Line A"], dtype="string")
@@ -156,40 +152,46 @@ class TestLineOptionalFields:
     def test_optional_fields_with_nulls(self):
         """Test: optional fields including nulls are valid when tdpf group is not triggered"""
         net = pandapowerNet(name="test_optional_fields_with_nulls")
-        b0 = create_bus(net, 0.4)
-        b1 = create_bus(net, 0.4)
+        b0, b1 = create_buses(net, 2, 0.4)
 
         # Line 1: name/type/alpha
-        create_line(
-            net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, name="test", alpha=0.0, std_type=STD_TYPE
+        create_lines(
+            net,
+            from_buses=b0,
+            to_buses=b1,
+            length_km=1.0,
+            in_service=True,
+            name="test",
+            alpha=0.0,
+            line_params=STD_TYPE,
         )
         # Line 2: max_loading_percent only (opf)
-        create_line(
+        create_lines(
             net,
-            from_bus=b0,
-            to_bus=b1,
+            from_buses=b0,
+            to_buses=b1,
             length_km=1.0,
             in_service=True,
             name="test",
             alpha=0.0,
             max_loading_percent=80.0,
-            std_type=STD_TYPE,
+            line_params=STD_TYPE,
         )
         # Line 3: zero-sequence params only
-        create_line(
+        (l3,) = create_lines(
             net,
-            from_bus=b0,
-            to_bus=b1,
+            from_buses=b0,
+            to_buses=b1,
             length_km=1.0,
             in_service=True,
             name="test",
             alpha=0.0,
-            r0_ohm_per_km=0.1,
-            x0_ohm_per_km=0.2,
-            c0_nf_per_km=1.0,
-            g0_us_per_km=0.0,
-            std_type=STD_TYPE,
+            line_params=STD_TYPE,
         )
+        net.line.at[l3, "r0_ohm_per_km"] = 0.1
+        net.line.at[l3, "x0_ohm_per_km"] = 0.2
+        net.line.at[l3, "c0_nf_per_km"] = 1.0
+        net.line.at[l3, "g0_us_per_km"] = 0.0
 
         net.line["name"].iat[0] = pd.NA
         net.line["std_type"].iat[1] = pd.NA
@@ -202,27 +204,24 @@ class TestLineOptionalFields:
 
         # Case 1: tdpf flag only -> invalid
         net = pandapowerNet(name="test_tdpf_group_partial_missing_invalid0")
-        b0 = create_bus(net, 0.4)
-        b1 = create_bus(net, 0.4)
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        b0, b1 = create_buses(net, 2, 0.4)
+        create_lines(net, from_buses=b0, to_buses=b1, length_km=1.0, in_service=True, line_params=STD_TYPE)
         net.line["tdpf"] = True
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net, "tdpf")
 
         # Case 2: one tdpf param only -> invalid
         net = pandapowerNet(name="test_tdpf_group_partial_missing_invalid1")
-        b0 = create_bus(net, 0.4)
-        b1 = create_bus(net, 0.4)
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        b0, b1 = create_buses(net, 2, 0.4)
+        create_lines(net, from_buses=b0, to_buses=b1, length_km=1.0, in_service=True, line_params=STD_TYPE)
         net.line["wind_speed_m_per_s"] = 3.0
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net, "tdpf")
 
         # Case 3: another tdpf param only -> invalid
         net = pandapowerNet(name="test_tdpf_group_partial_missing_invalid2")
-        b0 = create_bus(net, 0.4)
-        b1 = create_bus(net, 0.4)
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        b0, b1 = create_buses(net, 2, 0.4)
+        create_lines(net, from_buses=b0, to_buses=b1, length_km=1.0, in_service=True, line_params=STD_TYPE)
         net.line["reference_temperature_degree_celsius"] = 20.0
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net, "tdpf")
@@ -261,10 +260,9 @@ class TestLineOptionalFields:
     def test_valid_optional_values(self, parameter, valid_value):
         """Test: valid optional values are accepted (tdpf group satisfied)"""
         net = pandapowerNet(name="test_valid_optional_values")
-        b0 = create_bus(net, 0.4)
-        b1 = create_bus(net, 0.4)
+        b0, b1 = create_buses(net, 2, 0.4)
 
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type="NAYY 4x50 SE")
+        create_lines(net, from_buses=b0, to_buses=b1, length_km=1.0, in_service=True, line_params="NAYY 4x50 SE")
 
         # Satisfy tdpf group to avoid dependency failures when setting tdpf-related columns
         net.line["tdpf"] = pd.Series([True], dtype="boolean")
@@ -322,10 +320,9 @@ class TestLineOptionalFields:
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Test: invalid optional values are rejected (tdpf group satisfied)"""
         net = pandapowerNet(name="test_invalid_optional_values")
-        b0 = create_bus(net, 0.4)
-        b1 = create_bus(net, 0.4)
+        b0, b1 = create_buses(net, 2, 0.4)
 
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type="NAYY 4x50 SE")
+        create_lines(net, from_buses=b0, to_buses=b1, length_km=1.0, in_service=True, line_params="NAYY 4x50 SE")
 
         # Provide complete tdpf group so only the target parameter triggers failure
         net.line["tdpf"] = pd.Series([True], dtype="boolean")
@@ -352,10 +349,9 @@ class TestLineForeignKey:
     def test_invalid_bus_index(self):
         """Test: from_bus/to_bus must reference existing bus indices"""
         net = pandapowerNet(name="test_invalid_bus_index")
-        b0 = create_bus(net, 0.4)
-        b1 = create_bus(net, 0.4)
+        b0, b1 = create_buses(net, 2, 0.4)
 
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, in_service=True, std_type="NAYY 4x50 SE")
+        create_lines(net, from_buses=b0, to_buses=b1, length_km=1.0, in_service=True, line_params="NAYY 4x50 SE")
 
         net.line["from_bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):

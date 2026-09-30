@@ -1,10 +1,10 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pytest
 import numpy as np
+import pytest
 
-from pandapower.create import create_bus, create_motor
+from pandapower.create import create_buses, create_motor
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
@@ -12,7 +12,7 @@ from pandapower.network_schema.tools.validation.network_validation import valida
 def test_create_motor():
     # Test basic motor creation with required parameters
     net = pandapowerNet(name="test_create_motor")
-    b1 = create_bus(net, 110.0)
+    (b1,) = create_buses(net, 1, 110)
 
     # Create motor with required parameters
     midx = create_motor(
@@ -33,7 +33,7 @@ def test_create_motor():
 def test_create_motor_with_optional_params():
     # Test motor creation with optional parameters
     net = pandapowerNet(name="test_create_motor_with_optional_params")
-    b1 = create_bus(net, 110.0)
+    (b1,) = create_buses(net, 1, 110)
 
     midx = create_motor(
         net,
@@ -75,7 +75,7 @@ def test_create_motor_with_optional_params():
 def test_create_motor_out_of_service():
     # Test motor creation with in_service=False
     net = pandapowerNet(name="test_create_motor_out_of_service")
-    b1 = create_bus(net, 110.0)
+    (b1,) = create_buses(net, 1, 110)
 
     midx = create_motor(
         net,
@@ -94,7 +94,7 @@ def test_create_motor_out_of_service():
 def test_create_motor_with_index():
     # Test motor creation with custom index
     net = pandapowerNet(name="test_create_motor_with_index")
-    b1 = create_bus(net, 110.0)
+    (b1,) = create_buses(net, 1, 110)
 
     midx = create_motor(
         net,

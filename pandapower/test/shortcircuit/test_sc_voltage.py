@@ -4,7 +4,7 @@
 import numpy as np
 import pytest
 
-from pandapower.create import create_bus, create_line, create_ext_grid, create_sgen, create_gen
+from pandapower.create import create_buses, create_ext_grid, create_gen, create_lines, create_sgen
 from pandapower.network import pandapowerNet
 from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.test.shortcircuit.test_iec60909_4 import iec_60909_4
@@ -12,13 +12,16 @@ from pandapower.test.shortcircuit.test_iec60909_4 import iec_60909_4
 
 def simple_grid():
     net = pandapowerNet(name="simple_grid", sn_mva=4)
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    b3 = create_bus(net, 110)
+    b1, b2, b3 = create_buses(net, 3, 110)
 
     create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.4, rx_max=0.4)
-    create_line(net, b1, b2, std_type="305-AL1/39-ST1A 110.0", length_km=20.)
-    create_line(net, b2, b3, std_type="N2XS(FL)2Y 1x185 RM/35 64/110 kV", length_km=15.)
+    create_lines(
+        net,
+        [b1, b2],
+        [b2, b3],
+        line_params=["305-AL1/39-ST1A 110.0", "N2XS(FL)2Y 1x185 RM/35 64/110 kV"],
+        length_km=[20.0, 15.0],
+    )
     net.line["endtemp_degree"] = 80
 
     return net
@@ -124,10 +127,9 @@ def test_voltage_simple():
 
 def test_voltage_very_simple():
     net = pandapowerNet(name="test_voltage_very_simple", sn_mva=12)
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
+    b1, b2 = create_buses(net, 2, 110)
     create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.4, rx_max=0.4)
-    create_line(net, b1, b2, std_type="305-AL1/39-ST1A 110.0", length_km=20.)
+    create_lines(net, b1, b2, std_type="305-AL1/39-ST1A 110.0", length_km=20.)
     calc_sc(net, case="max", ip=True, ith=True, branch_results=True, bus=1)
 
     assert np.isclose(net.res_bus_sc.at[1, "ikss_ka"], 0.49593, atol=1e-6, rtol=0)

@@ -3,32 +3,38 @@ Test for the :module:`pandapower.network_schema.tools.validation.bus_index_valid
 """
 
 import copy
+
 import pandas as pd
-import pytest
 import pandera as pa
+import pytest
 from pandera.errors import SchemaError
 
 from pandapower import create_std_type
-from pandapower.network_schema.tools.validation.bus_index_validation import (
-    _create_multi_column_reference_schema,
-)
 from pandapower.create import (
-    create_bus, create_load, create_ext_grid, create_line,
-    create_transformer, create_gen, create_bus_dc, create_vsc, create_switch
+    create_buses,
+    create_buses_dc,
+    create_ext_grid,
+    create_gen,
+    create_lines,
+    create_load,
+    create_switch,
+    create_transformer,
+    create_vsc,
 )
 from pandapower.create._utils import _get_index_with_check
 from pandapower.network import pandapowerNet
-from pandapower.network_schema.line import line_schema
 from pandapower.network_schema.bus import bus_schema
 from pandapower.network_schema.bus_dc import bus_dc_schema
-from pandapower.network_schema.switch import switch_schema
-from pandapower.network_schema.vsc import vsc_schema
+from pandapower.network_schema.line import line_schema
 from pandapower.network_schema.load import load_schema
-from pandapower.network_schema.trafo import trafo_schema
+from pandapower.network_schema.switch import switch_schema
 from pandapower.network_schema.tools.helper import get_element_schema
 from pandapower.network_schema.tools.validation.bus_index_validation import (
+    _create_multi_column_reference_schema,
     build_foreign_key_index_checks,
 )
+from pandapower.network_schema.trafo import trafo_schema
+from pandapower.network_schema.vsc import vsc_schema
 
 
 class TestCreateMultiColumnReferenceSchema:
@@ -89,12 +95,9 @@ class TestBusIndexValidation:
         """
         Test that validation passes for line with valid bus references.
         """
-        from pandapower.create import create_bus, create_line
-
         net = pandapowerNet(name="test_line_with_valid_buses")
-        b0 = create_bus(net, vn_kv=0.4)
-        b1 = create_bus(net, vn_kv=0.4)
-        create_line(net, from_bus=b0, to_bus=b1, length_km=0.1, std_type="NAYY 4x50 SE")
+        b0, b1 = create_buses(net, 2, vn_kv=0.4)
+        create_lines(net, from_buses=b0, to_buses=b1, length_km=0.1, line_params="NAYY 4x50 SE")
 
         # Should not raise any error
         build_foreign_key_index_checks(line_schema, net)
@@ -105,10 +108,9 @@ class TestBusIndexValidation:
         """
 
         net = pandapowerNet(name="test_line_with_invalid_buses")
-        b0 = create_bus(net, vn_kv=0.4)
-        b1 = create_bus(net, vn_kv=0.4)
+        b0, b1 = create_buses(net, 2, vn_kv=0.4)
         invalid_bus = _get_index_with_check(net, "bus", 99)
-        l0 = create_line(net, from_bus=b0, to_bus=b1, length_km=0.1, std_type="NAYY 4x50 SE")
+        (l0,) = create_lines(net, from_buses=b0, to_buses=b1, length_km=0.1, line_params="NAYY 4x50 SE")
         # Test with incorrect index at from_bus
         net.line.at[l0, "from_bus"] = invalid_bus
         test_schema = copy.deepcopy(line_schema)
@@ -134,7 +136,7 @@ class TestBusIndexValidation:
         Test that validation is skipped for 'bus' element.
         """
         net = pandapowerNet(name="test_skips_validation_for_bus_element")
-        create_bus(net, vn_kv=0.4)
+        create_buses(net, 1, vn_kv=0.4)
 
         # Should not raise any error - bus is the reference table itself
         build_foreign_key_index_checks(bus_schema, net)
@@ -144,7 +146,7 @@ class TestBusIndexValidation:
         Test that validation is skipped for 'bus_dc' element.
         """
         net = pandapowerNet(name="test_skips_validation_for_bus_dc_element")
-        create_bus_dc(net, vn_kv=0.4)
+        create_buses_dc(net, 1, vn_kv=0.4)
 
         # Should not raise any error - bus_dc is the reference table itself
         build_foreign_key_index_checks(bus_dc_schema, net)
@@ -154,9 +156,8 @@ class TestBusIndexValidation:
         Test that switch validation includes the 'element' column.
         """
         net = pandapowerNet(name="test_validates_switch_with_element_column")
-        b1 = create_bus(net, vn_kv=0.4)
-        b2 = create_bus(net, vn_kv=0.4)
-        l1 = create_line(net, from_bus=b1, to_bus=b2, length_km=0.1, std_type="NAYY 4x50 SE")
+        b1, b2 = create_buses(net, 2, vn_kv=0.4)
+        (l1,) = create_lines(net, from_buses=b1, to_buses=b2, length_km=0.1, std_type="NAYY 4x50 SE")
         # Create switch from bus to line
         create_switch(net, bus=b1, element=l1, et="l")
 
@@ -169,9 +170,9 @@ class TestBusIndexValidation:
         """
         net = pandapowerNet(name="test_validates_vsc_with_ac_and_dc_buses")
         # AC buses
-        b0 = create_bus(net, vn_kv=110.0)
+        (b0,) = create_buses(net, 1, vn_kv=110.0)
         # DC buses
-        dc0 = create_bus_dc(net, vn_kv=0.4)
+        (dc0,) = create_buses_dc(net, 1, vn_kv=0.4)
 
         # Create VSC with both AC and DC bus references
         create_vsc(net, b0, dc0, r_ohm=1, x_ohm=1, r_dc_ohm=1)
@@ -184,8 +185,8 @@ class TestBusIndexValidation:
         Test validation fails when DC bus reference is invalid in VSC.
         """
         net = pandapowerNet(name="test_vsc_with_invalid_dc_bus")
-        b0 = create_bus(net, vn_kv=110.0)
-        dc0 = create_bus_dc(net, vn_kv=0.4)
+        (b0,) = create_buses(net, 1, vn_kv=110.0)
+        (dc0,) = create_buses_dc(net, 1, vn_kv=0.4)
         invalid_dc_bus = _get_index_with_check(net, "bus_dc", 99)
 
         vsc0 = create_vsc(net, b0, dc0, r_ohm=1, x_ohm=1, r_dc_ohm=1)
@@ -203,7 +204,7 @@ class TestBusIndexValidation:
         Test that only columns present in net[element] are validated.
         """
         net = pandapowerNet(name="test_load_with_valid_bus")
-        b1 = create_bus(net, vn_kv=0.4)
+        (b1,) = create_buses(net, 1, vn_kv=0.4)
 
         # Create a load (which only has 'bus' column, not 'from_bus' or 'to_bus')
         create_load(net, bus=b1, p_mw=0.1, q_mvar=0.05)
@@ -225,16 +226,15 @@ class TestBusIndexValidationIntegration:
         net = pandapowerNet(name="test_full_network_validation")
 
         # Create buses
-        b1 = create_bus(net, vn_kv=110.0, name="Bus 1")
-        b2 = create_bus(net, vn_kv=110.0, name="Bus 2")
-        b3 = create_bus(net, vn_kv=20.0, name="Bus 3")
+        b1, b2, b3 = create_buses(net, 3, vn_kv=[110.0, 110.0, 20.0], name=["Bus 1", "Bus 2", "Bus 3"])
 
         # Create external grid
         create_ext_grid(net, bus=b1, vm_pu=1.0)
 
         # Create lines
-        create_line(net, from_bus=b1, to_bus=b2, length_km=10.0, std_type="149-AL1/24-ST1A 10.0")
-        create_line(net, from_bus=b2, to_bus=b3, length_km=5.0, std_type="149-AL1/24-ST1A 10.0")
+        create_lines(
+            net, from_buses=[b1, b2], to_buses=[b2, b3], length_km=[10.0, 5.0], line_params="149-AL1/24-ST1A 10.0"
+        )
 
         # Create transformers
         create_transformer(net, hv_bus=b2, lv_bus=b3, std_type="25 MVA 110/20 kV")
@@ -261,8 +261,7 @@ class TestBuildForeignKeyChecks:
     def test_build_fk_checks_load(self):
         """Test: foreign key checks are added for load.bus column"""
         net = pandapowerNet(name="test_build_fk")
-        create_bus(net, 0.4)
-        create_bus(net, 0.4)
+        create_buses(net, 2, 0.4)
 
         schema = get_element_schema("load")
         original_checks = len(schema.columns["bus"].checks)
@@ -274,8 +273,7 @@ class TestBuildForeignKeyChecks:
     def test_valid_foreign_key_passes(self):
         """Test: valid foreign key references pass validation"""
         net = pandapowerNet(name="test_valid_fk")
-        b0 = create_bus(net, 0.4)
-        b1 = create_bus(net, 0.4)
+        b0, b1 = create_buses(net, 2, 0.4)
 
         create_load(net, bus=b0, p_mw=1.0, q_mvar=0.0)
         create_load(net, bus=b1, p_mw=1.0, q_mvar=0.0)
@@ -286,8 +284,7 @@ class TestBuildForeignKeyChecks:
     def test_invalid_foreign_key_fails(self):
         """Test: invalid foreign key references raise ValidationError"""
         net = pandapowerNet(name="test_invalid_fk")
-        create_bus(net, 0.4)
-        create_bus(net, 0.4)
+        create_buses(net, 2, 0.4)
 
 
         create_load(net, bus=0, p_mw=1.0, q_mvar=0.0)
@@ -303,7 +300,7 @@ class TestBuildForeignKeyChecks:
     def test_schema_not_mutated(self):
         """Test: original schema is not mutated after validation when using deepcopy"""
         net = pandapowerNet(name="test_no_mutation")
-        create_bus(net, 0.4)
+        create_buses(net, 1, 0.4)
         create_load(net, bus=0, p_mw=1.0, q_mvar=0.0)
 
         schema = get_element_schema("load")
@@ -322,10 +319,9 @@ class TestForeignKeyMultipleColumns:
     def test_line_two_bus_references(self):
         """Test: line has both from_bus and to_bus validated"""
         net = pandapowerNet(name="test_line_fk")
-        b0 = create_bus(net, 0.4)
-        b1 = create_bus(net, 0.4)
+        b0, b1 = create_buses(net, 2, 0.4)
 
-        create_line(net, from_bus=b0, to_bus=b1, length_km=1.0, std_type="NAYY 4x50 SE")
+        create_lines(net, from_buses=b0, to_buses=b1, length_km=1.0, line_params="NAYY 4x50 SE")
 
         # Should not raise
         build_foreign_key_index_checks(get_element_schema("line"), net)
@@ -333,8 +329,7 @@ class TestForeignKeyMultipleColumns:
     def test_trafo_hv_lv_bus(self):
         """Test: trafo has hv_bus and lv_bus validated"""
         net = pandapowerNet(name="test_trafo_fk")
-        b0 = create_bus(net, 110.0)
-        b1 = create_bus(net, 20.0)
+        b0, b1 = create_buses(net, 2, [110.0, 20.0])
 
         # create_std_type call removed - test incomplete, needs actual trafo creation
         # (Note: may need actual trafo creation - simplified for test structure)

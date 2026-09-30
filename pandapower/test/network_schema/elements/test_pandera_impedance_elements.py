@@ -1,26 +1,26 @@
 import itertools
+
 import numpy as np
 import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_bus, create_impedance
+from pandapower.create import create_buses, create_impedance
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 from pandapower.test.network_schema.elements.helper import (
-    strings,
     all_allowed_floats,
-    not_floats_list,
-    not_strings_list,
-    not_boolean_list,
-    positiv_ints_plus_zero,
-    negativ_ints,
-    not_ints_list,
-    positiv_floats,
-    negativ_floats_plus_zero,
-    positiv_floats_plus_zero,
-    negativ_floats,
     bools,
+    negativ_floats_plus_zero,
+    negativ_ints,
+    not_boolean_list,
+    not_floats_list,
+    not_ints_list,
+    not_strings_list,
+    positiv_floats,
+    positiv_floats_plus_zero,
+    positiv_ints_plus_zero,
+    strings,
 )
 
 
@@ -48,9 +48,7 @@ class TestImpedanceRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         net = pandapowerNet(name="test_valid_required_values")
-        create_bus(net, 0.4, index=0)
-        create_bus(net, 0.4, index=1)
-        create_bus(net, 0.4, index=42)
+        create_buses(net, 3, 0.4, index=[0, 1, 42])
         # Provide all required fields explicitly
         create_impedance(
             net,
@@ -91,8 +89,7 @@ class TestImpedanceRequiredFields:
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         net = pandapowerNet(name="test_invalid_required_values")
-        create_bus(net, 0.4)
-        create_bus(net, 0.4)
+        create_buses(net, 2, 0.4)
         create_impedance(
             net,
             from_bus=0,
@@ -119,8 +116,7 @@ class TestImpedanceOptionalFields:
     def test_full_optional_fields_validation(self):
         """Impedance with all optional fields is valid"""
         net = pandapowerNet(name="test_full_optional_fields_validation")
-        b0 = create_bus(net, 0.4)
-        b1 = create_bus(net, 0.4)
+        b0, b1 = create_buses(net, 2, 0.4)
         # Optional zero-sequence and name provided
         create_impedance(
             net,
@@ -151,8 +147,7 @@ class TestImpedanceOptionalFields:
     def test_optional_fields_with_nulls(self):
         """Optional fields can be missing or null"""
         net = pandapowerNet(name="test_optional_fields_with_nulls")
-        b0 = create_bus(net, 0.4)
-        b1 = create_bus(net, 0.4)
+        b0, b1 = create_buses(net, 2, 0.4)
 
         # Only required fields
         create_impedance(
@@ -201,8 +196,7 @@ class TestImpedanceOptionalFields:
     )
     def test_valid_optional_values(self, parameter, valid_value):
         net = pandapowerNet(name="test_valid_optional_values")
-        b0 = create_bus(net, 0.4)
-        b1 = create_bus(net, 0.4)
+        b0, b1 = create_buses(net, 2, 0.4)
         create_impedance(
             net,
             from_bus=b0,
@@ -244,8 +238,7 @@ class TestImpedanceOptionalFields:
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
         net = pandapowerNet(name="test_invalid_optional_values")
-        b0 = create_bus(net, 0.4)
-        b1 = create_bus(net, 0.4)
+        b0, b1 = create_buses(net, 2, 0.4)
         create_impedance(
             net,
             from_bus=b0,

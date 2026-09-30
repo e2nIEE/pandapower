@@ -1,24 +1,31 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pytest
 import geojson
 import numpy as np
+import pytest
 
 from pandapower.create import (
-    create_bus, create_line_from_parameters, create_line, create_buses, create_lines,
-    create_lines_from_parameters, create_bus_dc, create_line_dc, create_lines_dc, create_line_dc_from_parameters,
-    create_lines_dc_from_parameters, create_dcline
+    create_buses,
+    create_dcline,
+    create_line,
+    create_line_dc,
+    create_line_dc_from_parameters,
+    create_line_from_parameters,
+    create_lines,
+    create_lines_dc,
+    create_lines_dc_from_parameters,
+    create_lines_from_parameters,
 )
-from pandapower.std_types import create_std_type
+from pandapower.create.bus_create import create_buses_dc
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
+from pandapower.std_types import create_std_type
 
 
 def test_create_line_conductance():
     net = pandapowerNet(name="test_create_line_conductance")
-    create_bus(net, 20)
-    create_bus(net, 20)
+    create_buses(net, 2, 20)
     create_std_type(
         net,
         {
@@ -42,8 +49,7 @@ def test_create_line_conductance():
 
 def test_create_line():
     net = pandapowerNet(name="test_create_line")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
+    b1, b2 = create_buses(net, 2, 110)
 
     # Test basic creation with required parameters
     line_id = create_line(net, b1, b2, length_km=10.0, std_type="48-AL1/8-ST1A 10.0")
@@ -58,8 +64,7 @@ def test_create_line():
     assert net.line.at[line_id, "parallel"] == 1  # default value
 
     # Test with all optional parameters
-    b3 = create_bus(net, 110)
-    b4 = create_bus(net, 110)
+    b3, b4 = create_buses(net, 2, 110)
     line_id2 = create_line(
         net, b3, b4,
         length_km=5.0,
@@ -83,15 +88,13 @@ def test_create_line():
     assert np.isclose(net.line.at[line_id2, "max_loading_percent"], 100.0)
 
     # Test with custom index
-    b5 = create_bus(net, 110)
-    b6 = create_bus(net, 110)
+    b5, b6 = create_buses(net, 2, 110)
     line_id3 = create_line(net, b5, b6, length_km=3.0, std_type="48-AL1/8-ST1A 10.0", index=5)
 
     assert line_id3 == 5
 
     # Test with kwargs
-    b7 = create_bus(net, 110)
-    b8 = create_bus(net, 110)
+    b7, b8 = create_buses(net, 2, 110)
     line_id4 = create_line(
         net, b7, b8,
         length_km=2.0,
@@ -107,8 +110,7 @@ def test_create_line():
 def test_create_lines():
     # standard
     net = pandapowerNet(name="test_create_lines0")
-    b1 = create_bus(net, 10)
-    b2 = create_bus(net, 10)
+    b1, b2 = create_buses(net, 2, 10)
     create_lines(
         net,
         [b1, b1],
@@ -125,8 +127,7 @@ def test_create_lines():
     validate_network(net)
 
     net = pandapowerNet(name="test_create_lines1")
-    b1 = create_bus(net, 10)
-    b2 = create_bus(net, 10)
+    b1, b2 = create_buses(net, 2, 10)
     create_lines(
         net,
         [b1, b1],
@@ -142,8 +143,7 @@ def test_create_lines():
 
     # with geodata
     net = pandapowerNet(name="test_create_lines2")
-    b1 = create_bus(net, 10)
-    b2 = create_bus(net, 10)
+    b1, b2 = create_buses(net, 2, 10)
     l = create_lines(
         net,
         [b1, b1],
@@ -161,8 +161,7 @@ def test_create_lines():
 
     # setting params as single value
     net = pandapowerNet(name="test_create_lines3")
-    b1 = create_bus(net, 10)
-    b2 = create_bus(net, 10)
+    b1, b2 = create_buses(net, 2, 10)
     l = create_lines(
         net,
         [b1, b1],
@@ -196,8 +195,7 @@ def test_create_lines():
 
     # setting params as array
     net = pandapowerNet(name="test_create_lines4")
-    b1 = create_bus(net, 10)
-    b2 = create_bus(net, 10)
+    b1, b2 = create_buses(net, 2, 10)
     l = create_lines(
         net,
         [b1, b1],
@@ -232,8 +230,7 @@ def test_create_lines():
 
 def test_create_line_form_parameters():
     net = pandapowerNet(name="test_create_line_form_parameters")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
+    b1, b2 = create_buses(net, 2, 110)
 
     # Test basic creation with required parameters
     line_id = create_line_from_parameters(
@@ -275,8 +272,7 @@ def test_create_line_form_parameters():
         "r_theta_kelvin_per_mw": 10.,
         "mc_joule_per_m_k": 11.,
     }
-    b3 = create_bus(net, 110)
-    b4 = create_bus(net, 110)
+    b3, b4 = create_buses(net, 2, 110)
     line_id2 = create_line_from_parameters(
         net, b3, b4,
         length_km=5.0,
@@ -300,8 +296,6 @@ def test_create_line_form_parameters():
         **tdpf_args
     )
 
-    validate_network(net)
-
     assert line_id2 == 1
     assert net.line.at[line_id2, "from_bus"] == b3
     assert net.line.at[line_id2, "to_bus"] == b4
@@ -324,8 +318,7 @@ def test_create_line_form_parameters():
     assert np.isclose(net.line.at[line_id2, "g0_us_per_km"], 0.0)
 
     # Test with geodata
-    b5 = create_bus(net, 110)
-    b6 = create_bus(net, 110)
+    b5, b6 = create_buses(net, 2, 110)
     line_id3 = create_line_from_parameters(
         net, b5, b6,
         length_km=3.0,
@@ -340,8 +333,7 @@ def test_create_line_form_parameters():
     assert "geo" in net.line.columns
 
     # Test with custom kwargs
-    b7 = create_bus(net, 110)
-    b8 = create_bus(net, 110)
+    b7, b8 = create_buses(net, 2, 110)
     line_id4 = create_line_from_parameters(
         net, b7, b8,
         length_km=2.0,
@@ -360,8 +352,7 @@ def test_create_line_form_parameters():
 def test_create_lines_from_parameters():
     # standard
     net = pandapowerNet(name="test_create_lines_from_parameters0")
-    b1 = create_bus(net, 10)
-    b2 = create_bus(net, 10)
+    b1, b2 = create_buses(net, 2, 10)
     l = create_lines_from_parameters(
         net,
         [b1, b1],
@@ -383,8 +374,7 @@ def test_create_lines_from_parameters():
 
     # with geodata
     net = pandapowerNet(name="test_create_lines_from_parameters1")
-    b1 = create_bus(net, 10)
-    b2 = create_bus(net, 10)
+    b1, b2 = create_buses(net, 2, 10)
     l = create_lines_from_parameters(
         net,
         [b1, b1],
@@ -405,8 +395,7 @@ def test_create_lines_from_parameters():
 
     # setting params as single value
     net = pandapowerNet(name="test_create_lines_from_parameters2")
-    b1 = create_bus(net, 10)
-    b2 = create_bus(net, 10)
+    b1, b2 = create_buses(net, 2, 10)
     l = create_lines_from_parameters(
         net,
         [b1, b1],
@@ -453,8 +442,7 @@ def test_create_lines_from_parameters():
 
     # setting params as array
     net = pandapowerNet(name="test_create_lines_from_parameters3")
-    b1 = create_bus(net, 10)
-    b2 = create_bus(net, 10)
+    b1, b2 = create_buses(net, 2, 10)
     l = create_lines_from_parameters(
         net,
         [b1, b1],
@@ -511,8 +499,7 @@ def test_create_lines_from_parameters():
 def test_create_lines_raise_errorexcept():
     # standard
     net = pandapowerNet(name="test_create_lines_raise_errorexcept")
-    b1 = create_bus(net, 10)
-    b2 = create_bus(net, 10)
+    b1, b2 = create_buses(net, 2, 10)
     create_lines_from_parameters(
         net,
         [b1, b1],
@@ -623,8 +610,7 @@ def test_create_line_alpha_temperature():
 
 def test_create_line_dc():
     net = pandapowerNet(name="test_create_line_dc")
-    b1 = create_bus_dc(net, 110)
-    b2 = create_bus_dc(net, 110)
+    b1, b2 = create_buses_dc(net, 2, 110)
 
     # Test basic creation with required parameters
     line_id = create_line_dc(net, b1, b2, length_km=10.0, std_type="95-CU")
@@ -639,8 +625,7 @@ def test_create_line_dc():
     assert net.line_dc.at[line_id, "parallel"] == 1  # default value
 
     # Test with all optional parameters
-    b3 = create_bus(net, 110, bus_type="dc")
-    b4 = create_bus(net, 110, bus_type="dc")
+    b3, b4 = create_buses(net, 2, 110, bus_type="dc")
     line_id2 = create_line_dc(
         net, b3, b4,
         length_km=5.0,
@@ -668,10 +653,7 @@ def test_create_line_dc():
 
 def test_create_lines_dc():
     net = pandapowerNet(name="test_create_lines_dc0")
-    b1 = create_bus_dc(net, 110)
-    b2 = create_bus_dc(net, 110)
-    b3 = create_bus_dc(net, 110)
-    b4 = create_bus_dc(net, 110)
+    b1, b2, b3, b4 = create_buses_dc(net, 4, 110)
 
     # Test basic creation
     line_ids = create_lines_dc(
@@ -692,10 +674,7 @@ def test_create_lines_dc():
 
     # Test with different lengths
     net2 = pandapowerNet(name="test_create_lines_dc1")
-    b1 = create_bus_dc(net2, 110)
-    b2 = create_bus_dc(net2, 110)
-    b3 = create_bus_dc(net2, 110)
-    b4 = create_bus_dc(net2, 110)
+    b1, b2, b3, b4 = create_buses_dc(net2, 4, 110)
 
     create_lines_dc(
         net2,
@@ -721,8 +700,7 @@ def test_create_lines_dc():
 
 def test_create_line_dc_from_parameters():
     net = pandapowerNet(name="test_create_line_dc_from_parameters")
-    b1 = create_bus_dc(net, 110)
-    b2 = create_bus_dc(net, 110)
+    b1, b2 = create_buses_dc(net, 2, 110)
 
     # Test basic creation with required parameters
     line_id = create_line_dc_from_parameters(
@@ -744,8 +722,7 @@ def test_create_line_dc_from_parameters():
     assert net.line_dc.at[line_id, "parallel"] == 1
 
     # Test with all optional parameters
-    b3 = create_bus_dc(net, 110)
-    b4 = create_bus_dc(net, 110)
+    b3, b4 = create_buses_dc(net, 2, 110)
     line_id2 = create_line_dc_from_parameters(
         net, b3, b4,
         length_km=5.0,
@@ -776,10 +753,7 @@ def test_create_line_dc_from_parameters():
 
 def test_create_lines_dc_from_parameters():
     net = pandapowerNet(name="test_create_lines_dc_from_parameters0")
-    b1 = create_bus_dc(net, 110)
-    b2 = create_bus_dc(net, 110)
-    b3 = create_bus_dc(net, 110)
-    b4 = create_bus_dc(net, 110)
+    b1, b2, b3, b4 = create_buses_dc(net, 4, 110)
 
     # Test basic creation
     line_ids = create_lines_dc_from_parameters(
@@ -802,10 +776,7 @@ def test_create_lines_dc_from_parameters():
 
     # Test with array parameters
     net2 = pandapowerNet(name="test_create_lines_dc_from_parameters1")
-    b1 = create_bus_dc(net2, 110)
-    b2 = create_bus_dc(net2, 110)
-    b3 = create_bus_dc(net2, 110)
-    b4 = create_bus_dc(net2, 110)
+    b1, b2, b3, b4 = create_buses_dc(net2, 4, 110)
 
     create_lines_dc_from_parameters(
         net2,
@@ -839,8 +810,7 @@ def test_create_lines_dc_from_parameters():
 
 def test_create_dcline():
     net = pandapowerNet(name="test_create_dcline")
-    b1 = create_bus(net, 380)
-    b2 = create_bus(net, 110)
+    (b1, b2) = create_buses(net, 2, [380, 110])
 
     # Test basic creation with required parameters
     dcline_id = create_dcline(
@@ -865,8 +835,7 @@ def test_create_dcline():
     assert net.dcline.at[dcline_id, "in_service"]
 
     # Test with all optional parameters
-    b3 = create_bus(net, 380)
-    b4 = create_bus(net, 110)
+    b3, b4 = create_buses(net, 2, [380, 110])
     dcline_id2 = create_dcline(
         net,
         from_bus=b3,

@@ -6,15 +6,14 @@ import pytest
 from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
 from pandapower.control.controller.trafo.VmSetTapControl import VmSetTapControl
 from pandapower.control.util.characteristic import Characteristic
-from pandapower.create import create_bus, create_ext_grid, create_load, create_sgen, create_transformer
+from pandapower.create import create_buses, create_ext_grid, create_load, create_sgen, create_transformer
 from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 
 
 def test_continuous_p():
     net = pandapowerNet(name="test_continuous_p")
-    hv = create_bus(net, vn_kv=110.)
-    lv = create_bus(net, vn_kv=20)
+    hv, lv = create_buses(net, 2, vn_kv=[110.0, 20.0])
     t = create_transformer(net, hv, lv, std_type='40 MVA 110/20 kV')
     create_ext_grid(net, hv)
     eps = 0.0005
@@ -65,8 +64,7 @@ def test_continuous_p():
 
 def test_continuous_i():
     net = pandapowerNet(name="test_continuous_i")
-    hv = create_bus(net, vn_kv=110.)
-    lv = create_bus(net, vn_kv=20)
+    hv, lv = create_buses(net, 2, vn_kv=[110.0, 20.0])
     t = create_transformer(net, hv, lv, std_type='40 MVA 110/20 kV')
     create_ext_grid(net, hv)
     eps = 0.0005
