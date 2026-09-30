@@ -50,9 +50,7 @@ class TestAsymmetricLoadRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = pandapowerNet(name="test_valid_required_values")
-        create_buses(net, 1, 0.4)
-        create_buses(net, 1, 0.4)
-        create_buses(net, 1, 0.4, index=42)
+        create_buses(net, 3, 0.4, index=[0, 1, 42])
 
         create_asymmetric_load(
             net,
@@ -93,8 +91,7 @@ class TestAsymmetricLoadRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
         net = pandapowerNet(name="test_invalid_required_values")
-        create_buses(net, 1, 0.4)
-        create_buses(net, 1, 0.4)
+        create_buses(net, 2, 0.4)
 
         create_asymmetric_load(
             net,
@@ -328,9 +325,7 @@ class TestAsymmetricLoadForeignKey:
     def test_valid_bus_index_non_sequential(self):
         """Test: bus FK works with non-sequential bus indices"""
         net = pandapowerNet(name="test_valid_bus_index_non_sequential")
-        create_buses(net, 1, 0.4, index=10)
-        create_buses(net, 1, 0.4, index=42)
-        create_buses(net, 1, 0.4, index=100)
+        create_buses(net, 3, 0.4, index=[10, 42, 100])
 
         create_asymmetric_load(
             net, bus=10, p_a_mw=1.0, p_b_mw=1.0, p_c_mw=1.0,

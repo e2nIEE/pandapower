@@ -51,9 +51,7 @@ class TestAsymmetricSgenRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = pandapowerNet(name="test_valid_required_values")
-        create_buses(net = net, vn_kv=0.4, nr_buses=1)
-        create_buses(net = net, vn_kv=0.4, nr_buses=1)
-        create_buses(net = net, vn_kv=0.4, nr_buses=1, index=42)
+        create_buses(net, 3, vn_kv=0.4, index=[0, 1, 42])
 
         create_asymmetric_sgen(
             net,
@@ -94,8 +92,7 @@ class TestAsymmetricSgenRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
         net = pandapowerNet(name="test_invalid_required_values")
-        create_buses(net = net, vn_kv=0.4, nr_buses=1)
-        create_buses(net = net, vn_kv=0.4, nr_buses=1)
+        create_buses(net, 2, vn_kv=0.4)
 
         create_asymmetric_sgen(
             net,
@@ -125,7 +122,7 @@ class TestAsymmetricSgenOptionalFields:
     def test_all_optional_fields_valid(self):
         """Test: asymmetric_sgen with every optional field is valid"""
         net = pandapowerNet(name="test_all_optional_fields_valid")
-        (b0,) = create_buses(net = net, vn_kv=0.4, nr_buses=1)
+        (b0,) = create_buses(net, 1, vn_kv=0.4)
 
         create_asymmetric_sgen(
             net,
@@ -154,7 +151,7 @@ class TestAsymmetricSgenOptionalFields:
     def test_optional_fields_with_nulls(self):
         """Test: asymmetric_sgen with optional fields including nulls is valid"""
         net = pandapowerNet(name="test_optional_fields_with_nulls")
-        (b0,) =create_buses(net = net, vn_kv=0.4, nr_buses=1)
+        (b0,) = create_buses(net, 1, vn_kv=0.4)
 
         create_asymmetric_sgen(
             net,
@@ -220,7 +217,7 @@ class TestAsymmetricSgenOptionalFields:
     def test_valid_optional_values(self, parameter, valid_value):
         """Test: valid optional values are accepted"""
         net = pandapowerNet(name="test_valid_optional_values")
-        (b0,) = create_buses(net = net, vn_kv=0.4, nr_buses=1)
+        (b0,) = create_buses(net, 1, vn_kv=0.4)
 
         create_asymmetric_sgen(
             net,
@@ -254,7 +251,7 @@ class TestAsymmetricSgenOptionalFields:
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Test: invalid optional values are rejected"""
         net = pandapowerNet(name="test_invalid_optional_values")
-        (b0,) = create_buses(net = net, vn_kv=0.4, nr_buses=1)
+        (b0,) = create_buses(net, 1, vn_kv=0.4)
 
         create_asymmetric_sgen(
             net,
@@ -280,7 +277,7 @@ class TestAsymmetricSgenForeignKey:
     def test_invalid_bus_index(self):
         """Test: bus FK must reference an existing bus index"""
         net = pandapowerNet(name="test_invalid_bus_index")
-        (b0,) = create_buses(net = net, vn_kv=0.4, nr_buses=1)
+        (b0,) = create_buses(net, 1, vn_kv=0.4)
 
         create_asymmetric_sgen(
             net,
@@ -305,10 +302,7 @@ class TestAsymmetricSgenForeignKey:
     def test_valid_bus_index_non_sequential(self):
         """Test: bus FK works with non-sequential bus indices"""
         net = pandapowerNet(name="test_valid_bus_index_non_sequential")
-
-        create_buses(net = net, vn_kv=0.4, nr_buses=1, index=10)
-        create_buses(net = net, vn_kv=0.4, nr_buses=1, index=42)
-        create_buses(net = net, vn_kv=0.4, nr_buses=1, index=100)
+        create_buses(net, 3, vn_kv=0.4, index=[10, 42, 100])
 
         create_asymmetric_sgen(
             net, bus=10, p_a_mw=-1.0, q_a_mvar=0.5,
