@@ -1,26 +1,26 @@
 import itertools
+
 import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_bus, create_load
+from pandapower.create import create_buses, create_load
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
-
 from pandapower.test.network_schema.elements.helper import (
-    strings,
+    all_allowed_floats,
     bools,
-    not_strings_list,
-    not_floats_list,
-    not_boolean_list,
-    positiv_ints_plus_zero,
-    positiv_floats,
-    positiv_floats_plus_zero,
     negativ_floats,
     negativ_floats_plus_zero,
-    not_ints_list,
     negativ_ints,
-    all_allowed_floats,
+    not_boolean_list,
+    not_floats_list,
+    not_ints_list,
+    not_strings_list,
+    positiv_floats,
+    positiv_floats_plus_zero,
+    positiv_ints_plus_zero,
+    strings,
 )
 
 # ZIP percentage ranges
@@ -47,9 +47,8 @@ class TestLoadRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = pandapowerNet(name="test_valid_required_values")
-        create_bus(net, 0.4)  # index 0
-        create_bus(net, 0.4)  # index 1
-        create_bus(net, 0.4, index=42)
+        create_buses(net, 2, 0.4)  # index 0, 1
+        create_buses(net, 1, 0.4, index=42)
 
         create_load(net, bus=0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
         net.load[parameter] = valid_value
@@ -71,8 +70,7 @@ class TestLoadRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
         net = pandapowerNet(name="test_invalid_required_values")
-        create_bus(net, 0.4)  # index 0
-        create_bus(net, 0.4)  # index 1
+        create_buses(net, 2, 0.4)  # index 0, 1
 
         create_load(net, bus=0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
         net.load[parameter] = invalid_value
@@ -87,7 +85,7 @@ class TestLoadOptionalFields:
     def test_all_optional_fields_valid(self):
         """Test: load with all optional fields and complete ZIP group is valid"""
         net = pandapowerNet(name="test_all_optional_fields_valid")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         create_load(
             net,
@@ -124,7 +122,7 @@ class TestLoadOptionalFields:
     def test_optional_fields_with_nulls(self):
         """Test: optional fields including nulls are valid when ZIP group is not triggered"""
         net = pandapowerNet(name="test_optional_fields_with_nulls")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         # Create 3 loads with different optional fields
         create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
@@ -162,7 +160,7 @@ class TestLoadOptionalFields:
     def test_valid_optional_values(self, parameter, valid_value):
         """Test: valid optional values are accepted (ZIP group satisfied when needed)"""
         net = pandapowerNet(name="test_valid_optional_values")
-        b0 = create_bus(net, 0.4)
+        (b0) = create_buses(net, 1, 0.4)
 
         create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
 
@@ -204,7 +202,7 @@ class TestLoadOptionalFields:
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Test: invalid optional values are rejected (ZIP group satisfied when needed)"""
         net = pandapowerNet(name="test_invalid_optional_values")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         create_load(net, bus=b0, p_mw=1.0, q_mvar=0.1, scaling=1.0, in_service=True)
 
@@ -225,7 +223,7 @@ class TestLoadForeignKey:
     def test_invalid_bus_index(self):
         """Test: bus FK must reference an existing bus index"""
         net = pandapowerNet(name="test_invalid_bus_index")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
         create_load(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
 
         net.load["bus"] = 9999

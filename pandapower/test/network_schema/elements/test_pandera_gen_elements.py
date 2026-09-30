@@ -1,28 +1,28 @@
 import itertools
+
 import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_bus, create_gen
+from pandapower.create import create_buses, create_gen
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
-
 from pandapower.test.network_schema.elements.helper import (
-    strings,
+    all_allowed_floats,
+    all_allowed_ints,
     bools,
-    not_strings_list,
-    not_floats_list,
-    not_boolean_list,
-    positiv_ints_plus_zero,
-    positiv_floats,
-    positiv_floats_plus_zero,
     negativ_floats,
     negativ_floats_plus_zero,
-    not_ints_list,
     negativ_ints,
-    all_allowed_floats,
+    not_boolean_list,
+    not_floats_list,
+    not_ints_list,
+    not_strings_list,
+    positiv_floats,
+    positiv_floats_plus_zero,
+    positiv_ints_plus_zero,
+    strings,
     zero_float,
-    all_allowed_ints,
 )
 
 
@@ -45,9 +45,8 @@ class TestGenRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Test: valid required values are accepted"""
         net = pandapowerNet(name="test_valid_required_values")
-        create_bus(net, 0.4)  # index 0
-        create_bus(net, 0.4)  # index 1
-        create_bus(net, 0.4, index=42)
+        create_buses(net, 2, 0.4)  # index 0, 1
+        create_buses(net, 1, 0.4, index=42)
 
         create_gen(
             net,
@@ -77,9 +76,8 @@ class TestGenRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are not accepted"""
         net = pandapowerNet(name="test_invalid_required_values")
-        create_bus(net, 0.4)  # index 0
-        create_bus(net, 0.4)  # index 1
-        create_bus(net, 0.4, index=42)
+        create_buses(net, 2, 0.4)  # index 0, 1
+        create_buses(net, 1, 0.4, index=42)
 
         create_gen(
             net,
@@ -101,7 +99,7 @@ class TestGenOptionalFields:
     def test_all_optional_fields_valid(self):
         """Test: gen with every optional field is valid and dependencies satisfied"""
         net = pandapowerNet(name="test_all_optional_fields_valid")
-        create_bus(net, 0.4)
+        create_buses(net, 1, 0.4)
         create_gen(
             net,
             bus=0,
@@ -137,7 +135,7 @@ class TestGenOptionalFields:
     def test_optional_fields_opf_q_lim_enforced_with_nulls(self):
         """Test: gen with optional fields including nulls, with dependencies respected"""
         net = pandapowerNet(name="test_optional_fields_opf_q_lim_enforced_with_nulls")
-        create_bus(net, 0.4)
+        create_buses(net, 1, 0.4)
 
         # Row 1: opf + q_lim_enforced present
         create_gen(
@@ -161,7 +159,7 @@ class TestGenOptionalFields:
     def test_optional_fields_qcc_with_nulls(self):
         """Test: gen with optional fields including nulls, with dependencies respected"""
         net = pandapowerNet(name="test_optional_fields_qcc_with_nulls")
-        create_bus(net, 0.4)
+        create_buses(net, 1, 0.4)
         # Row 2: qcc present
         create_gen(
             net,
@@ -231,7 +229,7 @@ class TestGenOptionalFields:
         # TODO: bool or pd.BooleanDtype
         """Test: valid optional values are accepted"""
         net = pandapowerNet(name="test_valid_optional_values")
-        create_bus(net, 0.4)
+        create_buses(net, 1, 0.4)
         create_gen(
             net,
             bus=0,
@@ -273,7 +271,7 @@ class TestGenOptionalFields:
     def test_opf_group_partial_missing_invalid(self):
         """Test: OPF group must be complete if any OPF value is set (gen)"""
         net = pandapowerNet(name="test_opf_group_partial_missing_invalid")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
         create_gen(net, bus=b0, p_mw=-1.0, vm_pu=0.5, scaling=1.0, in_service=True, slack=True)
 
         # Set only one OPF column -> should fail due to group dependency
@@ -286,7 +284,7 @@ class TestGenOptionalFields:
     def test_q_lim_enforced_group_partial_missing_invalid(self):
         """Test: q_lim_enforced group (max_q_mvar/min_q_mvar) must be complete"""
         net = pandapowerNet(name="test_q_lim_enforced_group_partial_missing_invalid")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
         create_gen(net, bus=b0, p_mw=-1.0, vm_pu=0.5, scaling=1.0, in_service=True, slack=True)
 
         # Set only max_q_mvar -> should fail because min_q_mvar is missing/NaN
@@ -298,7 +296,7 @@ class TestGenOptionalFields:
     def test_qcc_group_partial_missing_invalid(self):
         """Test: QCC group must be complete if any value is set"""
         net = pandapowerNet(name="test_qcc_group_partial_missing_invalid")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
         create_gen(net, bus=b0, p_mw=-1.0, vm_pu=0.5, scaling=1.0, in_service=True, slack=True)
 
         # Set only one QCC column at a time -> each should fail
@@ -348,7 +346,7 @@ class TestGenOptionalFields:
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Test: invalid optional values are not accepted"""
         net = pandapowerNet(name="test_invalid_optional_values")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
         create_gen(
             net,
             bus=b0,
@@ -380,7 +378,7 @@ class TestGenForeignKey:
     def test_invalid_bus_index(self):
         """Test: bus FK must reference an existing bus index"""
         net = pandapowerNet(name="test_invalid_bus_index")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
         create_gen(net, bus=b0, p_mw=-1.0, vm_pu=0.5, scaling=1.0, in_service=True, slack=True)
 
         net.gen["bus"] = 9999
