@@ -42,7 +42,7 @@ asymmetric_load_schema = pa.DataFrameSchema(
         ),
         "in_service": pa.Column(bool, description="specifies if the load is in service.", metadata={"default": True}),
         "type": pa.Column(
-            str, pa.Check.isin(["wye", "delta"]), description="type of load", metadata={"default": "wye"}
+            str, description="type of load", metadata={"default": "wye"}
         ),
     },
     name="asymmetric_load",
