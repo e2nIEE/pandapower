@@ -47,7 +47,7 @@ class TestBusRequiredFields:
         list(
             itertools.chain(
                 itertools.product(["name"], [float(np.nan), *not_strings_list]),
-                itertools.product(["vn_kv"], [float(np.nan), pd.NA, *not_floats_list, *negativ_floats]),
+                itertools.product(["vn_kv"], [float(np.nan), pd.NA, *not_floats_list]),
                 itertools.product(["in_service"], [float(np.nan), pd.NA, *not_boolean_list]),
             )
         ),

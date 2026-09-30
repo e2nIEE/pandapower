@@ -49,7 +49,7 @@ class TestBusDCRequiredFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["vn_kv"], [*not_floats_list, *negativ_floats, *zero_float]),
+                itertools.product(["vn_kv"], [float(np.nan), *not_floats_list]),
                 itertools.product(["in_service"], [*not_boolean_list]),
             )
         ),

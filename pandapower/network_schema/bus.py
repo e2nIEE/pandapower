@@ -5,7 +5,7 @@ from pandapower.network_schema.tools.validation.column_condition import create_l
 
 _bus_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=True, description="name of the bus"),
-    "vn_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage of the bus [kV]"),
+    "vn_kv": pa.Column(float, description="reference voltage of the bus [kV]"),
     "type": pa.Column(
         pd.StringDtype,
         nullable=True,
