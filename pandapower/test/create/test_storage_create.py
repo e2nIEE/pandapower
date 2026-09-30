@@ -1,12 +1,13 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-from pandapower.create import create_bus, create_storage, create_storages
+from pandapower.create import create_buses, create_storage, create_storages
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
+
 
 def _check_storage_table(table: pd.DataFrame, buses: tuple[int, int, int]):
     assert table.bus.at[0] == buses[0]
@@ -34,9 +35,7 @@ def _check_storage_table(table: pd.DataFrame, buses: tuple[int, int, int]):
 
 def test_create_storage():
     net = pandapowerNet(name="test_create_storage")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    b3 = create_bus(net, 110)
+    b1, b2, b3 = create_buses(net, 3, 110)
 
     create_storage(
         net, b1, 0, 3, 0.5, controllable=True, max_p_mw=0.2, min_p_mw=0, max_q_mvar=0.2,
@@ -57,9 +56,7 @@ def test_create_storage():
 
 def test_create_storages():
     net = pandapowerNet(name="test_create_storages")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    b3 = create_bus(net, 110)
+    b1, b2, b3 = create_buses(net, 3, 110)
 
     create_storages(
         net,
