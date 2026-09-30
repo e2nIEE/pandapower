@@ -3,7 +3,7 @@ from copy import deepcopy
 from numpy import append, ceil
 
 from pandapower import pandapowerNet
-from pandapower.create import create_load, create_buses, create_line, create_bus, create_ext_grid, create_transformer
+from pandapower.create import create_buses, create_ext_grid, create_lines, create_load, create_transformer
 from pandapower.std_types import change_std_type, create_std_type
 from pandapower.toolbox.element_selection import get_connected_elements
 from pandapower.toolbox.power_factor import pq_from_cosphi
@@ -107,13 +107,12 @@ def _create_feeder(net, net_data, branching, idx_busbar, linetype, lv_vn_kv):
         from_bus[idx_B2] = buses[2 * n_LS - 1]
         from_bus[idx_B3] = buses[n_LS - 1]
     elif branching != 0:
-        raise ValueError("branching must be in (0, 1, 2, 3), but is %s" % str(branching))
+        raise ValueError(f"branching must be in (0, 1, 2, 3), but is {branching}")
 
     # create lines
     new_lines = set()
     for i, f_bus in enumerate(from_bus):
-        new_lines.add(create_line(net, f_bus, buses[i], length_km=d_DP * 1e-3,
-                                  std_type='NAYY 4x150 SE'))
+        new_lines.add(create_lines(net, f_bus, buses[i], length_km=d_DP * 1e-3, line_params="NAYY 4x150 SE")[0])
 
     # line type consideration
     if linetype == 'C&OHL':
@@ -251,10 +250,9 @@ def create_dickert_lv_network(feeders_range='short', linetype='cable', customer=
     lv_vn_kv = 0.4
 
     # create mv connection
-    mv_bus = create_bus(net, mv_vn_kv, name='mv bus')
-    busbar_index = create_bus(net, lv_vn_kv, name='busbar')
+    mv_bus, busbar_index = create_buses(net, 2, [mv_vn_kv, lv_vn_kv], name=["mv bus", "busbar"])
     create_ext_grid(net, mv_bus)
-    if trafo_type_name not in net.std_types['trafo'].keys():
+    if trafo_type_name not in net.std_types["trafo"]:
         create_std_type(net, trafo_type_data, name=trafo_type_name, element="trafo")
     create_transformer(net, mv_bus, busbar_index, std_type=trafo_type_name)
 

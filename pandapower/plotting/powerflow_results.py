@@ -3,18 +3,18 @@
 
 import sys
 from itertools import combinations
-import warnings
 
+import networkx as nx
 import numpy as np
 import pandas as pd
-import networkx as nx
+from pandapower.auxiliary import soft_dependency_error
+
 try:
     import matplotlib.pyplot as plt
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
 
-from pandapower.auxiliary import soft_dependency_error, warn_and_fix_parameter_renaming
 from pandapower.topology.create_graph import create_nxgraph
 from pandapower.topology.graph_searches import calc_distance_to_bus
 
@@ -63,10 +63,6 @@ def plot_voltage_profile(net, ax=None, plot_transformers=True, xlabel="Distance 
     # handle exceptions and inputs
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
-    if "voltage_column" in kwargs:
-        raise DeprecationWarning("Parameter 'voltage_column' has been removed.")
-    trafo_color = warn_and_fix_parameter_renaming(
-        "trafocolor", "trafo_color", trafo_color, "r", **kwargs)
     if ax is None:
         plt.figure(facecolor="white", dpi=120)
         ax = plt.gca()
@@ -161,13 +157,6 @@ def plot_loading(net, ax=None, element_type="line", box_color="b", median_color=
         axis of the plot
     """
     # handle exceptions and inputs
-    deprecated = [("boxcolor", "box_color", "b"),
-                  ("mediancolor", "median_color", "r"),
-                  ("whiskercolor", "whisker_color", "k"),
-                  ("element", "element_type", "line")]
-    for (old, new, default) in deprecated:
-        locals()[new] = warn_and_fix_parameter_renaming(
-            old, new, locals()[new], default, **kwargs)
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name)+"()", "matplotlib")
     if ax is None:

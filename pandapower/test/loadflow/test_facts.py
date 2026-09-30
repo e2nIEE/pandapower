@@ -3,12 +3,23 @@ from itertools import product
 
 import numpy as np
 import pytest
+
 from pandapower.create import (
-    create_impedance, create_shunts, create_buses, create_gens, create_svc, create_tcsc, create_bus, create_load,
-    create_line_from_parameters, create_ext_grid, create_transformer_from_parameters, create_gen, create_ssc
+    create_buses,
+    create_ext_grid,
+    create_gen,
+    create_gens,
+    create_impedance,
+    create_lines,
+    create_load,
+    create_shunts,
+    create_ssc,
+    create_svc,
+    create_tcsc,
+    create_transformer_from_parameters,
 )
-from pandapower.network import pandapowerNet
 from pandapower.create._utils import add_column_to_df
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 
@@ -21,19 +32,19 @@ def _many_tcsc_test_net():
     # have the same from_bus or to_bus
     baseMVA = 100
     baseV = 110
-    baseZ = baseV ** 2 / baseMVA
     xl = 0.2
     xc = -15
 
     net = pandapowerNet(name="_many_tcsc_test_net", sn_mva=baseMVA)
     create_buses(net, 7, baseV)
     create_ext_grid(net, 0)
-    create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)
-    create_line_from_parameters(net, 1, 3, 20, 0.0487, 0.13823, 160, 0.664)
-    create_line_from_parameters(net, 2, 3, 20, 0.0487, 0.13823, 160, 0.664)
-    create_line_from_parameters(net, 4, 3, 20, 0.0487, 0.13823, 160, 0.664)
-    create_line_from_parameters(net, 1, 5, 20, 0.0487, 0.13823, 160, 0.664)
-    create_line_from_parameters(net, 3, 6, 20, 0.0487, 0.13823, 160, 0.664)
+    create_lines(
+        net,
+        [0, 1, 2, 4, 1, 3],
+        [1, 3, 3, 3, 5, 6],
+        20,
+        {"r_ohm_per_km": 0.0487, "x_ohm_per_km": 0.13823, "c_nf_per_km": 160, "max_i_ka": 0.664},
+    )
 
     create_load(net, 3, 100, 40)
 
@@ -49,7 +60,7 @@ def _many_tcsc_test_net():
     return net
 
 
-def compare_tcsc_impedance(net, net_ref, idx_tcsc, idx_impedance):
+def compare_tcsc_impedance(net: pandapowerNet, net_ref: pandapowerNet, idx_tcsc, idx_impedance):
     backup_q = net_ref.res_bus.loc[net.ssc.bus.values, "q_mvar"].copy()
     if "name" in net_ref.impedance.columns:
         net_ref.res_bus.loc[net.ssc.bus.values, "q_mvar"] += net_ref.res_impedance.loc[
@@ -174,12 +185,14 @@ def test_multiple_facts():
     net = pandapowerNet(name="test_multiple_facts", sn_mva=baseMVA)
     create_buses(net, 7, baseV)
     create_ext_grid(net, 0)
-    create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)
-    create_line_from_parameters(net, 1, 3, 20, 0.0487, 0.13823, 160, 0.664)
-    create_line_from_parameters(net, 2, 3, 20, 0.0487, 0.13823, 160, 0.664)
-    create_line_from_parameters(net, 4, 3, 20, 0.0487, 0.13823, 160, 0.664)
-    create_line_from_parameters(net, 1, 5, 20, 0.0487, 0.13823, 160, 0.664)
-    create_line_from_parameters(net, 3, 6, 20, 0.0487, 0.13823, 160, 0.664)
+    create_lines(
+        net,
+        [0, 1, 2, 4, 1, 3],
+        [1, 3, 3, 3, 5, 6],
+        20,
+        {"r_ohm_per_km": 0.0487, "x_ohm_per_km": 0.13823, "c_nf_per_km": 160, "max_i_ka": 0.664},
+    )
+
 
     create_load(net, 3, 100, 40)
 
@@ -249,7 +262,7 @@ def test_svc_tcsc_case_study():
     # plot_z(baseZ, xl, xc)
     f = net.bus.loc[net.bus.name == "B4"].index.values[0]
     t = net.bus.loc[net.bus.name == "B6"].index.values[0]
-    aux = create_bus(net, 230, "aux")
+    (aux,) = create_buses(net, 1, 230, name="aux")
     l = net.line.loc[(net.line.from_bus == f) & (net.line.to_bus == t)].index.values[0]
     net.line.loc[l, "from_bus"] = aux
 
@@ -274,33 +287,41 @@ def test_svc_tcsc_case_study():
 def facts_case_study_grid():
     net = pandapowerNet(name="facts_case_study_grid")
 
-    b1 = create_bus(net, name="B1", vn_kv=18)
-    b2 = create_bus(net, name="B2", vn_kv=16.5)
-    b3 = create_bus(net, name="B3", vn_kv=230)
-    b4 = create_bus(net, name="B4", vn_kv=230)
-    b5 = create_bus(net, name="B5", vn_kv=230)
-    b6 = create_bus(net, name="B6", vn_kv=230)
-    b7 = create_bus(net, name="B7", vn_kv=230)
-    b8 = create_bus(net, name="B8", vn_kv=230)
+    b1, b2, b3, b4, b5, b6, b7, b8 = create_buses(
+        net, 8, name=["B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8"], vn_kv=[18, 16.5, 230, 230, 230, 230, 230, 230]
+    )
 
     create_ext_grid(net, bus=b1, vm_pu=1, va_degree=0)
 
-    create_line_from_parameters(net, name="L1", from_bus=b3, to_bus=b4, length_km=30, r_ohm_per_km=0.049,
-                                x_ohm_per_km=0.136, g_us_per_km=0, c_nf_per_km=142, max_i_ka=1.5)
-    create_line_from_parameters(net, name="L2", from_bus=b3, to_bus=b4, length_km=30, r_ohm_per_km=0.049,
-                                x_ohm_per_km=0.136, g_us_per_km=0, c_nf_per_km=142, max_i_ka=1.5)
-    create_line_from_parameters(net, name="L3", from_bus=b4, to_bus=b5, length_km=100, r_ohm_per_km=0.081,
-                                x_ohm_per_km=0.312, g_us_per_km=0, c_nf_per_km=11, max_i_ka=1.5)
-    create_line_from_parameters(net, name="L4", from_bus=b4, to_bus=b6, length_km=100, r_ohm_per_km=0.081,
-                                x_ohm_per_km=0.312, g_us_per_km=0, c_nf_per_km=11, max_i_ka=1.5)
-    create_line_from_parameters(net, name="L5", from_bus=b5, to_bus=b7, length_km=220, r_ohm_per_km=0.081,
-                                x_ohm_per_km=0.312, g_us_per_km=0, c_nf_per_km=11, max_i_ka=1.5)
-    create_line_from_parameters(net, name="L6", from_bus=b6, to_bus=b8, length_km=140, r_ohm_per_km=0.081,
-                                x_ohm_per_km=0.312, g_us_per_km=0, c_nf_per_km=11, max_i_ka=1.5)
-    create_line_from_parameters(net, name="L7", from_bus=b5, to_bus=b6, length_km=180, r_ohm_per_km=0.081,
-                                x_ohm_per_km=0.312, g_us_per_km=0, c_nf_per_km=11, max_i_ka=1.5)
-    create_line_from_parameters(net, name="L8", from_bus=b7, to_bus=b8, length_km=180, r_ohm_per_km=0.081,
-                                x_ohm_per_km=0.312, g_us_per_km=0, c_nf_per_km=11, max_i_ka=1.5)
+    create_lines(
+        net,
+        name=["L1", "L2"],
+        from_buses=[b3, b3],
+        to_buses=[b4, b4],
+        length_km=30,
+        line_params={
+            "r_ohm_per_km": 0.049,
+            "x_ohm_per_km": 0.136,
+            "g_us_per_km": 0,
+            "c_nf_per_km": 142,
+            "max_i_ka": 1.5,
+        },
+    )
+
+    create_lines(
+        net,
+        name=["L3", "L4", "L5", "L6", "L7", "L8"],
+        from_buses=[b4, b4, b5, b6, b5, b7],
+        to_buses=[b5, b6, b7, b8, b6, b8],
+        length_km=[100, 100, 220, 140, 180, 180],
+        line_params={
+            "r_ohm_per_km": 0.081,
+            "x_ohm_per_km": 0.312,
+            "g_us_per_km": 0,
+            "c_nf_per_km": 11,
+            "max_i_ka": 1.5,
+        },
+    )
 
     # create_line_from_parameters(net,name="L9",from_bus=3,to_bus=4,length_km=100, r_ohm_per_km=0.312,
     # x_ohm_per_km=0.312,g_us_per_km=0,c_nf_per_km=11)

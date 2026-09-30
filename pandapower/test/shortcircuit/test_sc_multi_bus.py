@@ -4,7 +4,7 @@
 import numpy as np
 import pytest
 
-from pandapower.create import create_bus, create_line, create_ext_grid, create_transformer, create_sgen
+from pandapower.create import create_buses, create_ext_grid, create_lines, create_sgen, create_transformer
 from pandapower.network import pandapowerNet
 from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.test.shortcircuit.test_meshing_detection import meshed_grid
@@ -13,27 +13,33 @@ from pandapower.test.shortcircuit.test_meshing_detection import meshed_grid
 @pytest.fixture
 def radial_grid():
     net = pandapowerNet(name="radial_grid", sn_mva=2.)
-    b0 = create_bus(net, 220)
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    b3 = create_bus(net, 110)
+    (b0,) = create_buses(net, 1, 220)
+    b1, b2, b3 = create_buses(net, 3, 110)
     create_ext_grid(net, b0, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.4, rx_max=0.4)
     create_transformer(net, b0, b1, "100 MVA 220/110 kV")
-    create_line(net, b1, b2, std_type="305-AL1/39-ST1A 110.0", length_km=20.)
-    create_line(net, b2, b3, std_type="N2XS(FL)2Y 1x185 RM/35 64/110 kV", length_km=15.)
+    create_lines(
+        net,
+        [b1, b2],
+        [b2, b3],
+        line_params=["305-AL1/39-ST1A 110.0", "N2XS(FL)2Y 1x185 RM/35 64/110 kV"],
+        length_km=[20.0, 15.0],
+    )
     return net
 
 
 @pytest.fixture
 def three_bus_big_sgen_example():
     net = pandapowerNet(name="three_bus_big_sgen_example", sn_mva=3)
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    b3 = create_bus(net, 110)
+    b1, b2, b3 = create_buses(net, 3, 110)
 
     create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.4, rx_max=0.4)
-    create_line(net, b1, b2, std_type="305-AL1/39-ST1A 110.0", length_km=20.)
-    create_line(net, b2, b3, std_type="N2XS(FL)2Y 1x185 RM/35 64/110 kV", length_km=15.)
+    create_lines(
+        net,
+        [b1, b2],
+        [b2, b3],
+        line_params=["305-AL1/39-ST1A 110.0", "N2XS(FL)2Y 1x185 RM/35 64/110 kV"],
+        length_km=[20.0, 15.0],
+    )
     net.line["endtemp_degree"] = 80
 
     create_sgen(net, b2, sn_mva=200., p_mw=0, k=1.2)

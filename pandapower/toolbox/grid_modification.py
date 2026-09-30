@@ -15,8 +15,17 @@ from pandapower.network import pandapowerNet, plural_s
 from pandapower.std_types import change_std_type
 from pandapower.create._utils import add_column_to_df
 from pandapower.create import (
-    create_switch, create_line_from_parameters, create_impedance, create_gen, create_ext_grid,
-    create_load, create_shunt, create_bus, create_sgen, create_storage, create_ward
+    create_switch,
+    create_lines,
+    create_impedance,
+    create_gen,
+    create_ext_grid,
+    create_load,
+    create_shunt,
+    create_bus,
+    create_sgen,
+    create_storage,
+    create_ward,
 )
 from pandapower.pp_types import Int
 from pandapower.results import EmptyResults
@@ -424,11 +433,22 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
 
     # if this line is in service to the existing line, the power flow result should be the same as
     # when replacing the existing line with the desired standard type
-    new_idx = create_line_from_parameters(
-        net, from_bus=net.line.at[idx, "from_bus"], to_bus=net.line.at[idx, "to_bus"],
-        length_km=net.line.at[idx, "length_km"], r_ohm_per_km=r_ohm_per_km,
-        x_ohm_per_km=x_ohm_per_km, c_nf_per_km=c_nf_per_km, max_i_ka=max_i_ka,
-        g_us_per_km=g_us_per_km, in_service=in_service, name=name, **kwargs)
+    (new_idx,) = create_lines(
+        net,
+        from_buses=[net.line.at[idx, "from_bus"]],
+        to_buses=[net.line.at[idx, "to_bus"]],
+        length_km=net.line.at[idx, "length_km"],
+        line_params={
+            "r_ohm_per_km": r_ohm_per_km,
+            "x_ohm_per_km": x_ohm_per_km,
+            "c_nf_per_km": c_nf_per_km,
+            "max_i_ka": max_i_ka,
+            "g_us_per_km": g_us_per_km,
+        },
+        in_service=in_service,
+        name=name,
+        **kwargs,
+    )
     # restore the previous line parameters before changing the standard type
     net.line.loc[idx, :] = bak
 
@@ -1168,22 +1188,24 @@ def replace_impedance_by_line(
         if max_i == 'imp.sn_mva':
             max_i = imp.sn_mva / vn / np.sqrt(3)
         new_index.append(
-            create_line_from_parameters(
+            create_lines(
                 net,
                 imp.from_bus,
                 imp.to_bus,
                 length_km=1,
-                r_ohm_per_km=imp.rft_pu * Zni,
-                x_ohm_per_km=imp.xft_pu * Zni,
-                c_nf_per_km=0,
-                max_i_ka=max_i,
-                r0_ohm_per_km=imp.rft0_pu * Zni if "rft0_pu" in net.impedance.columns else np.nan,
-                x0_ohm_per_km=imp.xft0_pu * Zni if "xft0_pu" in net.impedance.columns else np.nan,
-                c0_nf_per_km=0,
+                line_params={
+                    "r_ohm_per_km": imp.rft_pu * Zni,
+                    "x_ohm_per_km": imp.xft_pu * Zni,
+                    "c_nf_per_km": 0,
+                    "max_i_ka": max_i,
+                    "r0_ohm_per_km": imp.rft0_pu * Zni if "rft0_pu" in net.impedance.columns else np.nan,
+                    "x0_ohm_per_km": imp.xft0_pu * Zni if "xft0_pu" in net.impedance.columns else np.nan,
+                    "c0_nf_per_km": 0,
+                },
                 parallel=1,
                 name=imp.name,  # type: ignore[arg-type]
                 in_service=imp.in_service,
-            )
+            )[0]
         )
     _replace_group_member_element_type(net, index, "impedance", new_index, "line",
                                        detach_from_gr=False)

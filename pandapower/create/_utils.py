@@ -5,23 +5,27 @@ from __future__ import annotations
 
 import logging
 import warnings
-from typing import Iterable, Any
+from collections.abc import Iterable, Collection
+from typing import Any
 
-import pandas as pd
-from numpy import isnan, arange, isin, any as np_any, all as np_all, intersect1d, unique as uni, c_
 import numpy.typing as npt
+import pandas as pd
+from numpy import all as np_all
+from numpy import any as np_any
+from numpy import arange, c_, intersect1d, isin, isnan, issubdtype
+from numpy import unique as uni
 from pandas import isnull
 from pandas.api.types import is_object_dtype
 
 from pandapower.auxiliary import (
-    get_free_id,
     _preserve_dtypes,
-    ensure_iterability,
     empty_defaults_per_dtype,
+    ensure_iterability,
+    get_free_id,
 )
-from pandapower.network import pandapowerNet, ADict
+from pandapower.network import ADict, pandapowerNet
+from pandapower.network_structure import get_column_info, get_default_value, get_structure_dict
 from pandapower.pp_types import Int
-from pandapower.network_structure import get_structure_dict, get_column_info, get_default_value
 
 logger = logging.getLogger(__name__)
 
@@ -216,12 +220,12 @@ def _get_multiple_index_with_check(net, table, index, number, name=None):
         return arange(bid, bid + number, 1)
     u, c = uni(index, return_counts=True)
     if np_any(c > 1):
-        raise UserWarning("Passed indexes %s exist multiple times" % (u[c > 1]))
+        raise UserWarning(f"Passed indexes {u[c > 1]} exist multiple times")
     intersect = intersect1d(index, net[table].index.values)
     if len(intersect) > 0:
         if name is None:
             name = table.capitalize() + "s"
-        raise UserWarning("%s with indexes %s already exist." % (name, intersect))
+        raise UserWarning(f"{name} with indexes {intersect} already exist.")
     return index
 
 
@@ -229,7 +233,7 @@ def _check_element(net, element_index, element="bus"):
     if element not in net:
         raise UserWarning(f"Node table {element} does not exist")
     if element_index not in net[element].index.values:
-        raise UserWarning("Cannot attach to %s %s, %s does not exist" % (element, element_index, element_index))
+        raise UserWarning(f"Cannot attach to {element} {element_index}, {element_index} does not exist")
 
 
 def _check_multiple_elements(net, element_indices, element="bus", name="buses"):
@@ -246,8 +250,7 @@ def _check_branch_element(net, element_name, index, from_node, to_node, node_nam
     missing_nodes = {from_node, to_node} - set(net[node_name].index.values)
     if len(missing_nodes) > 0:
         raise UserWarning(
-            "%s %d tries to attach to non-existing %s(%s) %s"
-            % (element_name.capitalize(), index, node_name, plural, missing_nodes)
+            f"{element_name.capitalize()} {index} tries to attach to non-existing {node_name}({plural}) {missing_nodes}"
         )
 
 
@@ -257,9 +260,7 @@ def _check_multiple_branch_elements(net, from_nodes, to_nodes, element_name, nod
     all_nodes = set(from_nodes) | set(to_nodes)
     node_not_exist = all_nodes - set(net[node_name].index)
     if len(node_not_exist) > 0:
-        raise UserWarning(
-            "%s trying to attach to non existing %s%s %s" % (element_name, node_name, plural, node_not_exist)
-        )
+        raise UserWarning(f"{element_name} trying to attach to non existing {node_name}{plural} {node_not_exist}")
 
 
 def _not_nan(value, all_=True):
@@ -281,9 +282,9 @@ def _not_nan(value, all_=True):
             return True
 
 
-def _try_astype(df, column, dtyp):
+def _try_astype(df, column, dtype):
     try:
-        df[column] = df[column].astype(dtyp)
+        df[column] = df[column].astype(dtype)
     except TypeError:
         pass
 
@@ -326,9 +327,13 @@ def _set_value_if_not_nan(
 
 
 def _add_to_entries_if_not_nan(
-    net: pandapowerNet, element_type, entries, index: int, column, values, dtype=None, default_val=pd.NA
+    net: pandapowerNet, element_type, entries, index: Collection[Int], column, values, dtype=None, default_val=pd.NA
 ):
     """
+    If the column exists in the network the values will be added to the entries dict.
+
+    For ease of use if the column has dtype float it will use 'nan' as default_val without explicitly setting it.
+
 
     See Also
     --------
@@ -337,14 +342,20 @@ def _add_to_entries_if_not_nan(
     column_exists = column in net[element_type].columns
     dtype = get_structure_dict(required_only=False)[element_type][column]
     col_info = get_column_info(element_type, column)
-    if col_info is not None and pd.isna(default_val) and not col_info["nullable"] and col_info["default"] is not None:
-        default_val = col_info["default"]
+    # if dtype is not from pandas (pandas dtypes are pd.NA capable) check if subdtype of float and default_val is pd.NA
+    if getattr(dtype, "__module__", None) != "pandas" and issubdtype(dtype, float) and pd.isna(default_val):
+        default_val = float("nan")
+    if col_info is not None and pd.isna(default_val) and not col_info["nullable"]:
+        if col_info["default"] is not None:
+            default_val = col_info["default"]
+        elif col_info["metadata"] is not None and "default" in col_info["metadata"]:
+            default_val = col_info["metadata"]["default"]
     if _not_nan(values):
         entries[column] = pd.Series(values, index=index)
         if _not_nan(default_val):
             entries[column] = entries[column].fillna(default_val)
         _try_astype(entries, column, dtype)
-    elif column_exists:
+    elif column_exists and column not in entries:
         entries[column] = pd.Series(data=default_val, index=index)
         _try_astype(entries, column, dtype)
 
