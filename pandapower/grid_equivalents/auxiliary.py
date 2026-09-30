@@ -1,3 +1,4 @@
+import logging
 import os
 import uuid
 from copy import deepcopy
@@ -7,24 +8,31 @@ import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import (
-    _init_runpp_options,
-    _add_dcline_gens,
     LoadflowNotConverged,
+    _add_dcline_gens,
+    _init_runpp_options,
     pandapowerNet,
 )
-from pandapower.create import create_ext_grid, create_bus, create_impedance, create_transformer_from_parameters, \
-    create_load
+from pandapower.create import (
+    create_buses,
+    create_ext_grid,
+    create_impedance,
+    create_load,
+    create_transformer_from_parameters,
+)
 from pandapower.diagnostic import diagnostic
 from pandapower.file_io import to_json
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.pf.run_newton_raphson_pf import _get_numba_functions, _get_Y_bus
 from pandapower.run import _passed_runpp_parameters, runpp
-from pandapower.toolbox.element_selection import pp_elements, get_connected_elements_dict, branch_element_bus_dict
-from pandapower.toolbox.grid_modification import drop_lines, drop_trafos, drop_measurements_at_elements, \
-    drop_controllers_at_buses
-
-import logging
+from pandapower.toolbox.element_selection import branch_element_bus_dict, get_connected_elements_dict, pp_elements
+from pandapower.toolbox.grid_modification import (
+    drop_controllers_at_buses,
+    drop_lines,
+    drop_measurements_at_elements,
+    drop_trafos,
+)
 
 logger = logging.getLogger(__name__)
 home = str(Path.home())
@@ -77,7 +85,7 @@ def add_ext_grids_to_boundaries(net, boundary_buses, adapt_va_degree=False,
     for ext_bus, vm, va in zip(buses_to_add_ext_grids, vms, vas):
         add_eg += [create_ext_grid(net, ext_bus,
                                    vm, va, name="assist_ext_grid")]
-        new_bus = create_bus(net, net.bus.vn_kv[ext_bus], name="assist_bus")
+        (new_bus,) = create_buses(net, 1, net.bus.vn_kv[ext_bus], name="assist_bus")
         create_impedance(net, ext_bus, new_bus, 1e6, 1e6, net.sn_mva,
                          name="assist_impedance")
 
@@ -454,8 +462,9 @@ def adaptation_phase_shifter(net, v_boundary):
                 net.res_bus.vm_pu[target_buses].values
     for idx, lb in enumerate(target_buses):
         if abs(vm_errors[idx]) > 1e-6 and abs(vm_errors[idx]) > 1e-6:
-            hb = create_bus(net, net.bus.vn_kv[lb] * (1 - vm_errors[idx]),
-                            name="phase_shifter_adapter_" + str(lb))
+            (hb,) = create_buses(
+                net, 1, net.bus.vn_kv[lb] * (1 - vm_errors[idx]), name="phase_shifter_adapter_" + str(lb)
+            )
             elm_dict = get_connected_elements_dict(net, lb)
             for e, e_list in elm_dict.items():
                 for i in e_list:

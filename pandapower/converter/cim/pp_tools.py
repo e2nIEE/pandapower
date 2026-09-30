@@ -2,14 +2,14 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import logging
 import time
-from typing import Union, Dict, List
 
 import pandas as pd
 
 from pandapower import pandapowerNet
-from pandapower.create import create_bus, create_ext_grid, create_lines
+from pandapower.create import create_buses, create_ext_grid, create_lines
 from pandapower.network_structure import get_structure_dict
 from pandapower.std_types import create_std_type
+
 from . import cim_tools
 
 logger = logging.getLogger(__name__)
@@ -80,7 +80,7 @@ def set_pp_col_types(net: pandapowerNet, ignore_errors: bool = False) -> pandapo
     return net
 
 
-def add_slack_and_lines_to_boundary_nodes(net: pandapowerNet, voltage_levels: List[int] | None = None):
+def add_slack_and_lines_to_boundary_nodes(net: pandapowerNet, voltage_levels: list[int] | None = None):
     """
     Add lines with low impedance and a slack to the boundary nodes with the highest voltage.
     :param net: The pandapower network
@@ -100,8 +100,9 @@ def add_slack_and_lines_to_boundary_nodes(net: pandapowerNet, voltage_levels: Li
     for one_voltage_level in voltage_levels:
         logger.info("Processing voltage level %skV" % one_voltage_level)
         busses_t = busses.loc[busses['vn_kv'] == one_voltage_level]
-        new_bus_id = create_bus(net, vn_kv=one_voltage_level,
-                                name='virtual slack bus at voltage level ' + str(one_voltage_level))
+        (new_bus_id,) = create_buses(
+            net, 1, vn_kv=one_voltage_level, name="virtual slack bus at voltage level " + str(one_voltage_level)
+        )
         logger.info("Added virtual slack bus with ID: %s" % new_bus_id)
         create_ext_grid(net, bus=new_bus_id, vm_pu=1.0,
                         name='virtual slack at voltage level ' + str(one_voltage_level))
