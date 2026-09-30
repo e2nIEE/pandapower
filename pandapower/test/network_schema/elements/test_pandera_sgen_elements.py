@@ -1,28 +1,29 @@
 # test_pandera_sgen_elements.py
 
 import itertools
+
 import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_bus, create_sgen
+from pandapower.create import create_buses, create_sgen
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 from pandapower.test.network_schema.elements.helper import (
-    strings,
-    bools,
-    not_strings_list,
-    not_floats_list,
-    not_boolean_list,
-    positiv_ints_plus_zero,
-    positiv_floats,
-    positiv_floats_plus_zero,
-    negativ_floats_plus_zero,
-    negativ_floats,
-    not_ints_list,
-    negativ_ints,
     all_allowed_floats,
     all_allowed_ints,
+    bools,
+    negativ_floats,
+    negativ_floats_plus_zero,
+    negativ_ints,
+    not_boolean_list,
+    not_floats_list,
+    not_ints_list,
+    not_strings_list,
+    positiv_floats,
+    positiv_floats_plus_zero,
+    positiv_ints_plus_zero,
+    strings,
 )
 
 
@@ -43,9 +44,8 @@ class TestSgenRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         net = pandapowerNet(name="test_valid_required_values")
-        create_bus(net, 0.4)  # 0
-        create_bus(net, 0.4)  # 1
-        create_bus(net, 0.4, index=42)
+        create_buses(net, 2, 0.4)  # 0, 1
+        create_buses(net, 1, 0.4, index=42)
 
         create_sgen(net, bus=0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
         net.sgen[parameter] = valid_value
@@ -65,8 +65,7 @@ class TestSgenRequiredFields:
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         net = pandapowerNet(name="test_invalid_required_values")
-        create_bus(net, 0.4)
-        create_bus(net, 0.4)
+        create_buses(net, 2, 0.4)
 
         create_sgen(net, bus=0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
         net.sgen[parameter] = invalid_value
@@ -79,7 +78,7 @@ class TestSgenOptionalFields:
 
     def test_all_optional_fields_valid(self):
         net = pandapowerNet(name="test_all_optional_fields_valid")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         # Create base sgen
         create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.2, scaling=1.0, in_service=True)
@@ -115,7 +114,7 @@ class TestSgenOptionalFields:
     def test_optional_fields_with_nulls(self):
         """Optional fields incl. nulls; groups satisfied when present"""
         net = pandapowerNet(name="test_optional_fields_with_nulls")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         # Row 1: OPF group complete
         create_sgen(
@@ -178,7 +177,7 @@ class TestSgenOptionalFields:
     )
     def test_valid_optional_values(self, parameter, valid_value):
         net = pandapowerNet(name="test_valid_optional_values")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
 
@@ -204,7 +203,7 @@ class TestSgenOptionalFields:
 
     def test_opf_group_partial_missing_invalid(self):
         net = pandapowerNet(name="test_opf_group_partial_missing_invalid")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
         create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
 
         # Set only one OPF column -> should fail
@@ -215,7 +214,7 @@ class TestSgenOptionalFields:
     def test_qcc_group_partial_missing_invalid(self):
         # Only id_q_capability_characteristic
         net = pandapowerNet(name="test_qcc_group_partial_missing_invalid0")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
         create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
         net.sgen["id_q_capability_characteristic"] = pd.Series([0], dtype="Int64")
         with pytest.raises(pa.errors.SchemaError):
@@ -223,7 +222,7 @@ class TestSgenOptionalFields:
 
         # Only curve_style
         net = pandapowerNet(name="test_qcc_group_partial_missing_invalid1")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
         create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
         create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
         net.sgen["curve_style"] = pd.Series([pd.NA, "straightLineYValues"], dtype="string")
@@ -232,7 +231,7 @@ class TestSgenOptionalFields:
 
         # Only reactive_capability_curve
         net = pandapowerNet(name="test_qcc_group_partial_missing_invalid2")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
         create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
         create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
         net.sgen["reactive_capability_curve"] = pd.Series([pd.NA, pd.NA, True], dtype="boolean")
@@ -265,7 +264,7 @@ class TestSgenOptionalFields:
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
         net = pandapowerNet(name="test_invalid_optional_values")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
 
         create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
 
@@ -288,7 +287,7 @@ class TestSgenForeignKey:
 
     def test_invalid_bus_index(self):
         net = pandapowerNet(name="")
-        b0 = create_bus(net, 0.4)
+        (b0,) = create_buses(net, 1, 0.4)
         create_sgen(net, bus=b0, p_mw=1.0, q_mvar=0.0, scaling=1.0, in_service=True)
 
         net.sgen["bus"] = 9999

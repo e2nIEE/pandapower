@@ -5,7 +5,7 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_bus, create_transformer
+from pandapower.create import create_buses, create_transformer
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
@@ -55,9 +55,9 @@ class TestTrafoRequiredFields:
     )
     def test_valid_required_values(self, parameter, valid_value):
         net = pandapowerNet(name="test_valid_required_values")
-        create_bus(net, 110)  # index 0 (HV)
-        create_bus(net, 10)  # index 1 (LV)
-        create_bus(net, 0.4, index=42)
+        create_buses(net, 1, 110)  # index 0 (HV)
+        create_buses(net, 1, 10)  # index 1 (LV)
+        create_buses(net, 1, 0.4, index=42)
 
         create_transformer(net, hv_bus=0, lv_bus=1, std_type=STD_TYPE, in_service=True, parallel=1)
 
@@ -84,8 +84,7 @@ class TestTrafoRequiredFields:
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         net = pandapowerNet(name="test_invalid_required_values")
-        create_bus(net, 110)
-        create_bus(net, 10)
+        create_buses(net, 2, [110, 10])
 
         create_transformer(net, hv_bus=0, lv_bus=1, std_type=STD_TYPE, in_service=True, parallel=1)
 
@@ -100,8 +99,7 @@ class TestTrafoOptionalFields:
     def test_all_optional_fields_valid(self):
         """All optional fields set; tap/tap2/tdt groups complete; OPF present"""
         net = pandapowerNet(name="test_all_optional_fields_valid")
-        b_hv = create_bus(net, 110)
-        b_lv = create_bus(net, 10)
+        b_hv, b_lv = create_buses(net, 2, [110, 10])
 
         create_transformer(net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=True, parallel=1)
 
@@ -159,8 +157,7 @@ class TestTrafoOptionalFields:
     def test_optional_fields_with_nulls(self):
         """Optionals with nulls; ensure groups not partially triggered"""
         net = pandapowerNet(name="test_optional_fields_with_nulls")
-        b_hv = create_bus(net, 110)
-        b_lv = create_bus(net, 10)
+        b_hv, b_lv = create_buses(net, 2, [110, 10])
 
         # Row 1: name/vector_group only
         create_transformer(
@@ -184,8 +181,7 @@ class TestTrafoOptionalFields:
     def test_tap_group_partial_missing_invalid(self):
         """Any tap column set -> all tap columns must be present"""
         net = pandapowerNet(name="test_tap_group_partial_missing_invalid0")
-        b_hv = create_bus(net, 110)
-        b_lv = create_bus(net, 10)
+        b_hv, b_lv = create_buses(net, 2, [110, 10])
 
         create_transformer(net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=True, parallel=1)
 
@@ -194,8 +190,7 @@ class TestTrafoOptionalFields:
             validate_network(net)
 
         net = pandapowerNet(name="test_tap_group_partial_missing_invalid1")
-        b_hv = create_bus(net, 110)
-        b_lv = create_bus(net, 10)
+        b_hv, b_lv = create_buses(net, 2, [110, 10])
 
         # Another partial case
         create_transformer(net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=True, parallel=1)
@@ -205,8 +200,7 @@ class TestTrafoOptionalFields:
 
     def test_tap2_group_partial_missing_invalid(self):
         net = pandapowerNet(name="test_tap2_group_partial_missing_invalid0")
-        b_hv = create_bus(net, 110)
-        b_lv = create_bus(net, 10)
+        b_hv, b_lv = create_buses(net, 2, [110, 10])
 
         create_transformer(net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=True, parallel=1)
 
@@ -215,8 +209,7 @@ class TestTrafoOptionalFields:
             validate_network(net)
 
         net = pandapowerNet(name="test_tap2_group_partial_missing_invalid1")
-        b_hv = create_bus(net, 110)
-        b_lv = create_bus(net, 10)
+        b_hv, b_lv = create_buses(net, 2, [110, 10])
 
         create_transformer(net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=True, parallel=1)
         net.trafo["tap2_side"] = pd.Series(["lv"], dtype="string")
@@ -226,8 +219,7 @@ class TestTrafoOptionalFields:
     def test_tdt_group_partial_missing_invalid(self):
         """Tap dependency table group must be complete"""
         net = pandapowerNet(name="test_tdt_group_partial_missing_invalid0")
-        b_hv = create_bus(net, 110)
-        b_lv = create_bus(net, 10)
+        b_hv, b_lv = create_buses(net, 2, [110, 10])
 
         create_transformer(net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=True, parallel=1)
         net.trafo["tap_dependency_table"] = pd.Series([True], dtype="boolean")
@@ -235,8 +227,7 @@ class TestTrafoOptionalFields:
             validate_network(net)
 
         net = pandapowerNet(name="test_tdt_group_partial_missing_invalid1")
-        b_hv = create_bus(net, 110)
-        b_lv = create_bus(net, 10)
+        b_hv, b_lv = create_buses(net, 2, [110, 10])
 
         create_transformer(net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=True, parallel=1)
         net.trafo["id_characteristic_table"] = pd.Series([pd.NA, 1], dtype="Int64")
@@ -270,8 +261,7 @@ class TestTrafoOptionalFields:
     def test_valid_optional_values(self, parameter, valid_value):
         """Valid optional values accepted (groups satisfied)"""
         net = pandapowerNet(name="test_valid_optional_values")
-        b_hv = create_bus(net, 110)
-        b_lv = create_bus(net, 10)
+        b_hv, b_lv = create_buses(net, 2, [110, 10])
 
         create_transformer(net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=True, parallel=1)
 
@@ -330,8 +320,7 @@ class TestTrafoOptionalFields:
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Invalid optional values rejected (groups satisfied)"""
         net = pandapowerNet(name="test_invalid_optional_values")
-        b_hv = create_bus(net, 110)
-        b_lv = create_bus(net, 10)
+        b_hv, b_lv = create_buses(net, 2, [110, 10])
 
         create_transformer(net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=True, parallel=1)
 
@@ -362,8 +351,7 @@ class TestTrafoOptionalFields:
     def test_min_less_equal_max_check_passes(self):
         """Schema check: min_angle_degree <= max_angle_degree"""
         net = pandapowerNet(name="test_min_less_equal_max_check_passes")
-        b_hv = create_bus(net, 110)
-        b_lv = create_bus(net, 10)
+        b_hv, b_lv = create_buses(net, 2, [110, 10])
         create_transformer(net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=True, parallel=1)
 
         net.trafo["min_angle_degree"] = 0.0
@@ -373,8 +361,7 @@ class TestTrafoOptionalFields:
     def test_min_greater_than_max_fails(self):
         """Schema check: min_angle_degree > max_angle_degree -> fail"""
         net = pandapowerNet(name="test_min_greater_than_max_fails")
-        b_hv = create_bus(net, 110)
-        b_lv = create_bus(net, 10)
+        b_hv, b_lv = create_buses(net, 2, [110, 10])
         create_transformer(net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=True, parallel=1)
 
         net.trafo["min_angle_degree"] = 20.0
@@ -388,8 +375,7 @@ class TestTrafoForeignKey:
 
     def test_invalid_hv_bus_index(self):
         net = pandapowerNet(name="test_invalid_hv_bus_index")
-        b_hv = create_bus(net, 110)
-        b_lv = create_bus(net, 10)
+        b_hv, b_lv = create_buses(net, 2, [110, 10])
         create_transformer(net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=True, parallel=1)
 
         net.trafo["hv_bus"] = 9999
@@ -398,8 +384,7 @@ class TestTrafoForeignKey:
 
     def test_invalid_lv_bus_index(self):
         net = pandapowerNet(name="test_invalid_lv_bus_index")
-        b_hv = create_bus(net, 110)
-        b_lv = create_bus(net, 10)
+        b_hv, b_lv = create_buses(net, 2, [110, 10])
         create_transformer(net, hv_bus=b_hv, lv_bus=b_lv, std_type=STD_TYPE, in_service=True, parallel=1)
 
         net.trafo["lv_bus"] = 9999
