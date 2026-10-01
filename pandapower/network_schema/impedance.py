@@ -111,7 +111,11 @@ impedance_schema = pa.DataFrameSchema(
             bool, description="specifies if the impedance is in service.", metadata={"default": True}
         ),
         "origin_id": pa.Column(
-            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="element rdfId from CIM",
+            metadata={"cim": True, "doc": False},
         ),
         "origin_class": pa.Column(
             pd.StringDtype,
