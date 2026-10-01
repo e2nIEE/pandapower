@@ -11,9 +11,7 @@ asymmetric_sgen_schema = pa.DataFrameSchema(
             description="type of generator",
             metadata={"default": "wye"},
         ),
-        "bus": pa.Column(
-            int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus"}
-        ),
+        "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus"}),
         "p_a_mw": pa.Column(
             float,
             pa.Check.le(0),
@@ -78,7 +76,7 @@ asymmetric_sgen_schema = pa.DataFrameSchema(
         "in_service": pa.Column(
             bool, description="specifies if the generator is in service.", metadata={"default": True}
         ),
-        #"current_source": pa.Column(bool, description=""),  # TODO: missing in docu and create function
+        # "current_source": pa.Column(bool, description=""),  # TODO: missing in docu and create function
     },
     name="asymmetric_sgen",
     strict=False,

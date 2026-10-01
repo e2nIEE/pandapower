@@ -41,9 +41,7 @@ asymmetric_load_schema = pa.DataFrameSchema(
             float, pa.Check.ge(0), description="scaling factor for active and reactive power", metadata={"default": 1.0}
         ),
         "in_service": pa.Column(bool, description="specifies if the load is in service.", metadata={"default": True}),
-        "type": pa.Column(
-            str, description="type of load", metadata={"default": "wye"}
-        ),
+        "type": pa.Column(str, description="type of load", metadata={"default": "wye"}),
     },
     name="asymmetric_load",
     strict=False,
