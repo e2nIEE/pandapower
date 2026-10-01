@@ -74,7 +74,9 @@ class TestBusDCOptionalFields:
 
     def test_bus_dc_with_optional_fields(self):
         net = pandapowerNet(name="test_bus_dc_with_optional_fields")
-        create_buses_dc(net, 1,
+        create_buses_dc(
+            net,
+            1,
             vn_kv=1.0,
             in_service=True,
             name="my_dc_bus",

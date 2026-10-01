@@ -104,12 +104,24 @@ class TestBusOptionalFields:
                 itertools.product(["min_vm_pu", "max_vm_pu"], [np.nan, *positiv_floats]),
                 itertools.product(["type", "zone", "geo"], [pd.NA, *strings]),
                 itertools.product(
-                    ["origin_id", "origin_class", "origin_profile", "cim_topnode",
-                     "ConnectivityNodeContainer_id", "Substation_id", "description",
-                     "Busbar_id", "Busbar_name", "GeographicalRegion_id", "GeographicalRegion_name",
-                     "SubGeographicalRegion_id", "SubGeographicalRegion_name", "ucte_country"],
-                    [pd.NA, *strings]
-                )
+                    [
+                        "origin_id",
+                        "origin_class",
+                        "origin_profile",
+                        "cim_topnode",
+                        "ConnectivityNodeContainer_id",
+                        "Substation_id",
+                        "description",
+                        "Busbar_id",
+                        "Busbar_name",
+                        "GeographicalRegion_id",
+                        "GeographicalRegion_name",
+                        "SubGeographicalRegion_id",
+                        "SubGeographicalRegion_name",
+                        "ucte_country",
+                    ],
+                    [pd.NA, *strings],
+                ),
             )
         ),
     )
@@ -128,12 +140,24 @@ class TestBusOptionalFields:
                 itertools.product(["max_vm_pu"], [*negativ_floats_plus_zero, *not_floats_list, *not_allowed_floats]),
                 itertools.product(["type", "zone", "geo"], [np.nan, float(np.nan), *not_strings_list]),
                 itertools.product(
-                    ["origin_id", "origin_class", "origin_profile", "cim_topnode",
-                     "ConnectivityNodeContainer_id", "Substation_id", "description",
-                     "Busbar_id", "Busbar_name", "GeographicalRegion_id", "GeographicalRegion_name",
-                     "SubGeographicalRegion_id", "SubGeographicalRegion_name", "ucte_country"],
-                    [np.nan, float(np.nan), *not_strings_list]
-                )
+                    [
+                        "origin_id",
+                        "origin_class",
+                        "origin_profile",
+                        "cim_topnode",
+                        "ConnectivityNodeContainer_id",
+                        "Substation_id",
+                        "description",
+                        "Busbar_id",
+                        "Busbar_name",
+                        "GeographicalRegion_id",
+                        "GeographicalRegion_name",
+                        "SubGeographicalRegion_id",
+                        "SubGeographicalRegion_name",
+                        "ucte_country",
+                    ],
+                    [np.nan, float(np.nan), *not_strings_list],
+                ),
             )
         ),
     )
