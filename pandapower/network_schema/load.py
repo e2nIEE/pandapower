@@ -54,7 +54,6 @@ _load_columns = {
     "in_service": pa.Column(bool, description="specifies if the load is in service.", metadata={"default": True}),
     "type": pa.Column(
         pd.StringDtype,
-        pa.Check.isin(["wye", "delta"]),
         nullable=True,
         required=False,
         description="Connection Type of 3 Phase Load(Valid for three phase load flow only) Naming convention: wye, delta",
@@ -77,10 +76,18 @@ _load_columns = {
     "max_q_mvar": pa.Column(float, nullable=True, required=False, description="Maximum reactive power"),
     "min_q_mvar": pa.Column(float, nullable=True, required=False, description="Minimum reactive power"),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="element rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="origin_class rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "terminal": pa.Column(
         pd.StringDtype,
