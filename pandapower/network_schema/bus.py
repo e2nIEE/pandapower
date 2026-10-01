@@ -30,7 +30,7 @@ _bus_columns = {
     ),
     "min_vm_pu": pa.Column(
         float,
-        pa.Check.ge(0),
+        checks=[pa.Check.ge(0), pa.Check.le(2)],
         nullable=True,
         required=False,
         description="Minimum voltage",

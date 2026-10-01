@@ -126,8 +126,8 @@ class TestBusDCOptionalFields:
                 itertools.product(["type"], [np.nan, *not_strings_list]),
                 itertools.product(["zone"], [np.nan, *not_strings_list]),
                 itertools.product(["geo"], [np.nan, *not_strings_list]),
-                itertools.product(["min_vm_pu"], [*not_floats_list, *not_allowed_floats]),
-                itertools.product(["max_vm_pu"], [*not_floats_list, *not_allowed_floats]),
+                itertools.product(["min_vm_pu"], [*not_floats_list, *not_allowed_floats, -3.0, 3.0]),
+                itertools.product(["max_vm_pu"], [*not_floats_list, *not_allowed_floats, -3.0, 3.0]),
             )
         ),
     )
