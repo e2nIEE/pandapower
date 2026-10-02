@@ -778,6 +778,19 @@ def test_trafo_asym():
         check_results(net, trafo_vector_group, get_PF_Results(trafo_vector_group))
 
 
+@pytest.mark.parametrize("trafo_vector_group", ["Dy", "Yy", "Yd", "Dd"])
+def test_trafo_asym_rejects_unsupported_vector_groups(trafo_vector_group):
+    nw_dir = os.path.abspath(os.path.join(pp_dir, "test/loadflow"))
+    net = from_json(nw_dir + "/runpp_3ph Validation.json")
+    net["trafo"].vector_group = trafo_vector_group
+
+    with pytest.raises(
+        NotImplementedError,
+        match="Calculation of 3-phase power flow is only implemented for",
+    ):
+        runpp_3ph(net)
+
+
 def _test_trafo_shifts(net, rtol):
     # Dyn
     for clock in [-30, 30, 150, 210, -150]:

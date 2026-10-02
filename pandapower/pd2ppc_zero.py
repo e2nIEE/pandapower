@@ -182,6 +182,11 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         ppc_idx = trafos["_ppc_idx"].values.astype(np.int64)
 
         if vector_group.lower() in ["yy", "yd", "dy", "dd"]:
+            if mode == "pf_3ph":
+                raise NotImplementedError(
+                    "Calculation of 3-phase power flow is only implemented for the transformer "
+                    "vector groups 'YNyn', 'Dyn', 'Yzn'"
+                )
             continue
 
         vk_percent = trafos["vk_percent"].values.astype(float)
