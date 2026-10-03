@@ -376,9 +376,9 @@ class BinarySearchControl(Controller):
                         p_input_values.append(read_from_net(net,self.input_element, input_index,
                                                         self.input_variable_p[counter], self.read_flag[counter]))
                 counter += 1
-            input_values = (self.input_sign * np.asarray(input_values)).tolist()
+            input_values = (np.atleast_1d(self.input_sign)[np.atleast_1d(self.input_element_in_service)] * np.asarray(input_values)).tolist()
             if self.control_modus in ControlModusEnum.pf_modes() or self.control_modus == ControlModusEnum.tan_phi_ctrl:
-                p_input_values = (self.input_sign * np.asarray(p_input_values)).tolist()
+                p_input_values = (np.atleast_1d(self.input_sign)[np.atleast_1d(self.input_element_in_service)] * np.asarray(p_input_values)).tolist()
         # compare old and new set values
         if self.control_modus in ControlModusEnum.q_modes() or (self.control_modus in ControlModusEnum.v_modes()
                                                                 and self.input_element_index is None):
@@ -880,7 +880,7 @@ class DroopControl(Controller):
                                   net.controller.at[self.controller_idx, "object"].read_flag[counter]))
                 counter += 1
             input_sign = np.asarray(net.controller.at[self.controller_idx, "object"].input_sign)
-            input_values = (input_sign * np.asarray(input_values)).tolist()
+            input_values = (np.atleast_1d(input_sign)[np.atleast_1d(self.input_element_in_service)] * np.asarray(input_values)).tolist()
             self.diff = (net.controller.at[self.controller_idx, "object"].set_point - sum(input_values))
         self.converged = np.all(np.abs(self.diff) < self.tol)
         return self.converged
@@ -924,7 +924,7 @@ class DroopControl(Controller):
                 input_values.append(read_from_net(net, input_element, input_index,
                                                   input_variable[counter], read_flag[counter]))
             input_values = (
-                        net.controller.at[self.controller_idx, "object"].input_sign * np.asarray(input_values)).tolist()
+                        np.atleast_1d(net.controller.at[self.controller_idx, "object"].input_sign)[np.atleast_1d(self.input_element_in_service)] * np.asarray(input_values)).tolist()
             self.vm_set_pu = getattr(self, 'vm_set_pu', net.controller.object[self.controller_idx].set_point)
             self.vm_set_pu_new = self.vm_set_pu + sum(
                 input_values) / self.q_droop_mvar
@@ -1007,7 +1007,8 @@ class VDroopControl_local(Controller):
         for input_index in input_element_index:
             input_values.append(read_from_net(net, input_element, input_index,
                                               input_variable[counter], read_flag[counter]))
-        input_values = (net.controller.at[self.controller_idx, "object"].input_sign * np.asarray(input_values)).tolist()
+        input_values = (np.atleast_1d(net.controller.at[self.controller_idx, "object"].input_sign)[
+                np.atleast_1d(self.input_element_in_service)] * np.asarray(input_values)).tolist()
         self.vm_set_pu_new = self.vm_set_pu_bsc - (sum(
             input_values) - self.q_set_mvar) / self.q_droop_mvar
         net.controller.at[self.controller_idx, "object"].set_point = self.vm_set_pu_new
