@@ -783,6 +783,10 @@ def test_trafo_asym():
 def test_trafo_asym_rejects_unsupported_vector_groups_before_conversion(vector_group, recycle):
     nw_dir = os.path.abspath(os.path.join(pp_dir, "test/loadflow"))
     net = from_json(nw_dir + "/runpp_3ph Validation.json")
+    # This legacy fixture has static transformer data and predates this column.
+    for element in ("trafo", "trafo3w"):
+        if "tap_dependency_table" not in net[element]:
+            net[element]["tap_dependency_table"] = False
     net.trafo.at[0, "vector_group"] = vector_group
 
     with pytest.raises(NotImplementedError, match="unsupported in-service transformer") as exc_info:
@@ -799,6 +803,13 @@ def test_trafo_asym_reports_all_unsupported_groups_in_index_order():
     net.trafo.loc[1, "vector_group"] = "Dd"
 
     with pytest.raises(NotImplementedError) as exc_info:
+        runpp_3ph(net)
+
+    message = str(exc_info.value)
+    assert "0='Dy'" in message
+    assert "1='Dd'" in message
+    assert message.index("0='Dy'") < message.index("1='Dd'")
+
         runpp_3ph(net)
 
     message = str(exc_info.value)
