@@ -1788,8 +1788,6 @@ def test_create_storages():
         net.storage.test_kwargs.values
         == ["dummy_string_1", "dummy_string_2", "dummy_string_3"]
     )
-    for col in ["name", "type"]:
-        net.storage.loc[net.storage[col].isnull(), col] = ""
     assert nets_equal(net, net_bulk)
 
 
@@ -2121,6 +2119,12 @@ def test_create_gens_raise_errorexcept():
             cos_phi=1.0,
             index=g,
         )
+
+
+def test_create_buses_without_names_stay_none():
+    net = create_empty_network()
+    create_buses(net, 3, vn_kv=0.4)
+    assert net.bus.name.isna().all()
 
 
 if __name__ == "__main__":
