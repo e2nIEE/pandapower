@@ -229,7 +229,11 @@ jobs:
       - name: Install pandapipes and simbench
         run: |
           uv pip install git+https://github.com/e2nIEE/pandapipes@develop#egg=pandapipes
-          uv pip install git+https://github.com/e2nIEE/simbench@develop#egg=simbench
+          if [ "${{ matrix.python-version }}" = "3.10" ]; then
+            uv pip install git+https://github.com/e2nIEE/simbench@v1.6.2#egg=simbench
+          else
+            uv pip install git+https://github.com/e2nIEE/simbench@develop#egg=simbench
+          fi
       - name: List of installed packages
         run: |
           uv pip list
