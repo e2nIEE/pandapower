@@ -313,6 +313,43 @@ def test_dump_to_geojson():
                                              '"type": "Feature"}], "type": "FeatureCollection"}')
 
 
+def _switch_trafo_network(lv_bus_geo):
+    from pandapower.create import create_bus, create_empty_network, create_switch, create_transformer
+
+    _net = create_empty_network()
+    hv_bus = create_bus(_net, 20.0, geodata=(0.0, 0.0))
+    lv_bus = create_bus(_net, 0.4, geodata=(1.0, 1.0))
+    create_transformer(_net, hv_bus, lv_bus, std_type="0.4 MVA 20/0.4 kV")
+    create_switch(_net, lv_bus, hv_bus, et="b")
+    _net.bus.at[lv_bus, "geo"] = lv_bus_geo
+    return _net
+
+
+def test_dump_to_geojson_no_missing_geometry_warning(caplog):
+    pytest.importorskip("geojson")
+    caplog.set_level("WARNING", logger="pandapower.plotting.geo")
+    _net = _switch_trafo_network(geojson.dumps(geojson.Point((1.0, 1.0))))
+
+    result = dump_to_geojson(_net, buses=True, switches=True, trafos=True)
+    assert [feature["id"] for feature in result["features"]] == ["bus-0", "bus-1", "switch-0", "trafo-0"]
+    assert "could not be converted to geojson" not in caplog.text
+
+
+@pytest.mark.parametrize("element", ["switch", "trafo"])
+@pytest.mark.parametrize(
+    "lv_bus_geo", [geojson.dumps(geojson.LineString([(1.0, 1.0), (2.0, 2.0)])), None], ids=["linestring", "no_geo"]
+)
+def test_dump_to_geojson_skips_switch_and_trafo_without_point(caplog, element, lv_bus_geo):
+    pytest.importorskip("geojson")
+    caplog.set_level("WARNING", logger="pandapower.plotting.geo")
+    _net = _switch_trafo_network(lv_bus_geo)
+
+    # switches and trafos take their geometry from a bus, they are skipped and counted if it is not a Point
+    result = dump_to_geojson(_net, switches=element == "switch", trafos=element == "trafo")
+    assert result["features"] == []
+    assert f"1 {element} geometries could not be converted to geojson" in caplog.text
+
+
 def test_convert_geodata_to_geojson():
     pytest.importorskip("geojson")
     pytest.importorskip("pandapower")
