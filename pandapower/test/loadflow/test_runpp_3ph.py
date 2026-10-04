@@ -782,6 +782,10 @@ def test_trafo_asym():
 def test_trafo_asym_rejects_unsupported_vector_groups(trafo_vector_group):
     nw_dir = os.path.abspath(os.path.join(pp_dir, "test/loadflow"))
     net = from_json(nw_dir + "/runpp_3ph Validation.json")
+    # This legacy fixture has static transformer data and predates this column.
+    for element in ("trafo", "trafo3w"):
+        if "tap_dependency_table" not in net[element]:
+            net[element]["tap_dependency_table"] = False
     net["trafo"].vector_group = trafo_vector_group
 
     with pytest.raises(

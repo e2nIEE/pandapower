@@ -488,6 +488,9 @@ def case2848rte(ref_bus_idx=271, **kwargs):
          >>> net = case2848rte()
     """
     case2848rte = sorted_from_json(_get_cases_path("case2848rte.json"), **kwargs)
+    # This bundled case predates tap_dependency_table and uses static transformer parameters.
+    if "tap_dependency_table" not in case2848rte.trafo:
+        case2848rte.trafo["tap_dependency_table"] = False
     if ref_bus_idx != 271:  # change reference bus
         _change_ref_bus(case2848rte, ref_bus_idx, ext_grid_p=[44.01])
     return case2848rte
