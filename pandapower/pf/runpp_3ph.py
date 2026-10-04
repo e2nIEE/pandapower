@@ -344,7 +344,9 @@ def runpp_3ph(
         - Three phase load flow uses Sequence Frame for power flow solution.
         - Three phase system is modelled with earth return.
         - PH-E load type is called as wye since Neutral and Earth are considered same
-        - This solver has proved successful only for Earthed transformers (i.e Dyn,Yyn,YNyn & Yzn vector groups)
+        - This solver currently supports the earthed transformer vector groups
+          Dyn, YNyn, and Yzn.  The generic zero-sequence vector-group list in
+          the transformer element documentation is not a runpp_3ph support list.
     """
     # =============================================================================
     # pandapower settings
