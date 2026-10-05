@@ -434,7 +434,7 @@ class QVArea4110(QVAreaPOLYGON):
     def __init__(self):
         q_points_pu =  (0.33, 0,    -0.33, -0.33, 0,   0.33)
         vm_points_pu = (0.9,  0.9,  0.925,  1.1, 1.1, 1.075)
-        
+
         super().__init__(q_points_pu, vm_points_pu)
 
 
