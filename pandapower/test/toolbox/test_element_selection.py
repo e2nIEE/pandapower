@@ -5,16 +5,33 @@ import pandas as pd
 import pytest
 
 from pandapower.create import (
-    create_bus, create_transformer3w, create_transformer, create_line, create_switch, create_buses, create_gens,
-    create_sgens, create_measurement, create_poly_cost
+    create_buses,
+    create_gens,
+    create_lines,
+    create_measurement,
+    create_poly_cost,
+    create_sgens,
+    create_switch,
+    create_transformer,
+    create_transformer3w,
 )
 from pandapower.network import pandapowerNet
 from pandapower.networks.create_examples import example_multivoltage
 from pandapower.networks.power_system_test_cases import case9
 from pandapower.run import runpp
-from pandapower.toolbox.element_selection import get_element_indices, next_bus, get_connected_elements, \
-    get_connected_buses, false_elm_links_loop, get_connected_buses_at_switches, pp_elements, element_bus_tuples, \
-    count_elements, branch_element_bus_dict, get_all_elements
+from pandapower.toolbox.element_selection import (
+    branch_element_bus_dict,
+    count_elements,
+    element_bus_tuples,
+    false_elm_links_loop,
+    get_all_elements,
+    get_connected_buses,
+    get_connected_buses_at_switches,
+    get_connected_elements,
+    get_element_indices,
+    next_bus,
+    pp_elements,
+)
 
 
 def test_get_element_indices():
@@ -31,19 +48,15 @@ def test_get_element_indices():
 def test_next_bus():
     net = pandapowerNet(name="test_next_bus")
 
-    bus0 = create_bus(net, vn_kv=110)
-    bus1 = create_bus(net, vn_kv=20)
-    bus2 = create_bus(net, vn_kv=10)
-    bus3 = create_bus(net, vn_kv=0.4)
-    bus4 = create_bus(net, vn_kv=0.4)
-    bus5 = create_bus(net, vn_kv=20)
+    bus0, bus1, bus2, bus3, bus4, bus5 = create_buses(net, 6, vn_kv=[110, 20, 10, 0.4, 0.4, 20])
 
     create_transformer3w(net, hv_bus=bus0, mv_bus=bus1, lv_bus=bus2, name='trafo0',
                                   std_type='63/25/38 MVA 110/20/10 kV')
     trafo1 = create_transformer(net, hv_bus=bus2, lv_bus=bus3, std_type='0.4 MVA 10/0.4 kV')
 
-    line1 = create_line(net, from_bus=bus3, to_bus=bus4, length_km=20.1,
-                        std_type='24-AL1/4-ST1A 0.4', name='line1')
+    (line1,) = create_lines(
+        net, from_buses=bus3, to_buses=bus4, length_km=20.1, line_params="24-AL1/4-ST1A 0.4", name="line1"
+    )
 
     # switch0=create_switch(net, bus = bus0, element = trafo0, et = 't3') #~~~~~ not implementable now
     switch1 = create_switch(net, bus=bus1, element=bus5, et='b')
@@ -64,13 +77,11 @@ def test_next_bus():
 def test_get_connected_lines_at_bus():
     net = pandapowerNet(name="test_get_connected_lines_at_bus")
 
-    bus0 = create_bus(net, 0.4)
-    bus1 = create_bus(net, 0.4)
+    bus0, bus1 = create_buses(net, 2, 0.4)
 
-    line0 = create_line(net, bus0, bus1, length_km=1., std_type="NAYY 4x50 SE")
-    line1 = create_line(net, bus0, bus1, length_km=1., std_type="NAYY 4x50 SE")
-    line2 = create_line(net, bus0, bus1, in_service=False, length_km=1., std_type="NAYY 4x50 SE")
-    line3 = create_line(net, bus0, bus1, length_km=1., std_type="NAYY 4x50 SE")
+    line0, line1, line2, line3 = create_lines(
+        net, [bus0] * 4, [bus1] * 4, length_km=1.0, std_type="NAYY 4x50 SE", in_service=[True, True, False, True]
+    )
 
     create_switch(net, bus0, line0, "l")
     create_switch(net, bus0, line1, "l", closed=False)
@@ -97,18 +108,12 @@ def test_get_connected_lines_at_bus():
 def test_get_connected_buses():
     net = pandapowerNet(name="test_get_connected_buses")
 
-    bus0 = create_bus(net, vn_kv=110)
-    bus1 = create_bus(net, vn_kv=20)
-    bus2 = create_bus(net, vn_kv=10)
-    bus3 = create_bus(net, vn_kv=0.4)
-    bus4 = create_bus(net, vn_kv=0.4)
-    bus5 = create_bus(net, vn_kv=20)
+    bus0, bus1, bus2, bus3, bus4, bus5 = create_buses(net, 6, vn_kv=[110, 20, 10, 0.4, 0.4, 20])
 
     trafo0 = create_transformer3w(net, hv_bus=bus0, mv_bus=bus1, lv_bus=bus2,
                                   std_type='63/25/38 MVA 110/20/10 kV')
     trafo1 = create_transformer(net, hv_bus=bus2, lv_bus=bus3, std_type='0.4 MVA 10/0.4 kV')
-    line1 = create_line(net, from_bus=bus3, to_bus=bus4, length_km=20.1,
-                        std_type='24-AL1/4-ST1A 0.4')
+    (line1,) = create_lines(net, from_buses=bus3, to_buses=bus4, length_km=20.1, line_params="24-AL1/4-ST1A 0.4")
 
     create_switch(net, bus=bus0, element=trafo0, et='t3')
     switch0b = create_switch(net, bus=bus2, element=trafo0, et='t3')
@@ -156,7 +161,7 @@ def test_get_false_links():
 
     # --- lines
     for fbus, tbus in zip([0, 1, 4, 6, 7], [1, 4, 6, 7, 3]):
-        create_line(net, fbus, tbus, 2., "NA2XS2Y 1x185 RM/25 6/10 kV")
+        create_lines(net, fbus, tbus, 2.0, "NA2XS2Y 1x185 RM/25 6/10 kV")
     # manipulate to not existing
     net.line.at[1, "from_bus"] = 2
     net.line.at[4, "to_bus"] = 999
