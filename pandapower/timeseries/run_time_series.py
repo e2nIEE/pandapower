@@ -124,6 +124,8 @@ def run_time_step(net, time_step, ts_variables, run_control_fct=run_control, out
     output_writer_fct(net, time_step, pf_converged, ctrl_converged, ts_variables)
 
     finalize_step(ts_variables['controller_order'], time_step)
+    if not pf_converged:
+        cleanup(net, ts_variables)
 
 
 def _check_controller_recyclability(net):
