@@ -13,7 +13,7 @@ from pandapower.auxiliary import soft_dependency_error
 from pandapower.control.controller.DERController.DERBasics import BaseModel
 
 import logging
-
+PQArea4110
 logger = logging.getLogger(__name__)
 
 # -------------------------------------------------------------------------------------------------
@@ -417,9 +417,9 @@ class PQVArea4130V3(PQVArea4130Base):
 
 
 class PQArea4110(PQAreaPOLYGON):
-        """ This class models the P(Q) area of flexible Q for medium-voltage plants according to
-            VDE AR-N-4110 (Figure 6; identical in the 2018 and 2023 revisions).
-                """
+    """This class models the P(Q) area of flexible Q for medium-voltage plants according to
+    VDE AR-N-4110 (Figure 6; identical in the 2018 and 2023 revisions).
+    """
     def __init__(self):
         p_points_pu = (1,    0.2,  0.1, 0.099,  0,     0,    0.099,   0.1,   0.2,    1)
         q_points_pu = (0.33, 0.33, 0.1, 0.02, 0.02, -0.05, -0.05, -0.1, -0.33, -0.33)
