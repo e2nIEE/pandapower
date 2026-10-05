@@ -13,7 +13,7 @@ from pandapower.auxiliary import soft_dependency_error
 from pandapower.control.controller.DERController.DERBasics import BaseModel
 
 import logging
-PQArea4110
+
 logger = logging.getLogger(__name__)
 
 # -------------------------------------------------------------------------------------------------
