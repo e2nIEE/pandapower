@@ -230,7 +230,7 @@ jobs:
         run: |
           uv pip install git+https://github.com/e2nIEE/pandapipes@develop#egg=pandapipes
           if [ "${{ matrix.python-version }}" = "3.10" ]; then
-            uv pip install git+https://github.com/e2nIEE/simbench@v1.6.2#egg=simbench
+            uv pip install --only-binary :all: "simbench==1.6.2"
           else
             uv pip install git+https://github.com/e2nIEE/simbench@develop#egg=simbench
           fi
