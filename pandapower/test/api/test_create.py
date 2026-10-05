@@ -269,6 +269,42 @@ def test_nonexistent_bus():
             func()
 
 
+@pytest.mark.parametrize(
+    "create_function, kwargs",
+    [
+        (create_line, dict(length_km=1.0, std_type="NAYY 4x50 SE")),
+        (
+            create_line_from_parameters,
+            dict(length_km=1.0, r_ohm_per_km=0.1, x_ohm_per_km=0.1, c_nf_per_km=10, max_i_ka=0.4),
+        ),
+        (create_impedance, dict(rft_pu=0.1, xft_pu=0.1, sn_mva=1.0)),
+    ],
+)
+def test_nonexistent_bus_without_index(create_function, kwargs):
+    # #3138: without an index the error message failed to format and raised a TypeError
+    net = create_empty_network()
+    create_bus(net, vn_kv=20.0, index=0)
+    with pytest.raises(UserWarning, match=r"tries to attach to non-existing bus\(es\) \{1\}"):
+        create_function(net, from_bus=0, to_bus=1, **kwargs)
+
+
+@pytest.mark.parametrize(
+    "create_function, kwargs",
+    [
+        (create_transformer, dict(std_type="63 MVA 110/20 kV")),
+        (
+            create_transformer_from_parameters,
+            dict(sn_mva=40, vn_hv_kv=110, vn_lv_kv=20, vk_percent=10, vkr_percent=0.3, pfe_kw=30,
+                 i0_percent=0.1),
+        ),
+    ],
+)
+def test_nonexistent_bus_without_index_trafo(create_function, kwargs):
+    net = create_empty_network()
+    create_bus(net, vn_kv=110.0, index=0)
+    with pytest.raises(UserWarning, match=r"^Trafo tries to attach to non-existing bus\(es\) \{1\}"):
+        create_function(net, hv_bus=0, lv_bus=1, **kwargs)
+
 def test_tap_changer_type_default():
     expected_default = math.nan # comment: wanted to implement "None" as default, but some test rely on that some function converts NaN to ratio tap changer.
     net = create_empty_network()

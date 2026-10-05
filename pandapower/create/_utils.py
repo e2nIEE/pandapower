@@ -150,10 +150,9 @@ def _check_branch_element(net, element_name, index, from_node, to_node, node_nam
         raise UserWarning(f"Node table {node_name} does not exist")
     missing_nodes = {from_node, to_node} - set(net[node_name].index.values)
     if len(missing_nodes) > 0:
-        raise UserWarning(
-            "%s %d tries to attach to non-existing %s(%s) %s"
-            % (element_name.capitalize(), index, node_name, plural, missing_nodes)
-        )
+        # index is None when the caller lets the create function assign it
+        element = element_name.capitalize() if index is None else f"{element_name.capitalize()} {index}"
+        raise UserWarning(f"{element} tries to attach to non-existing {node_name}({plural}) {missing_nodes}")
 
 
 def _check_multiple_branch_elements(net, from_nodes, to_nodes, element_name, node_name="bus", plural="es"):
