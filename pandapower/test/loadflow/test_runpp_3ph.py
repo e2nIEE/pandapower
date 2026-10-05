@@ -810,13 +810,6 @@ def test_trafo_asym_reports_all_unsupported_groups_in_index_order():
     assert "1='Dd'" in message
     assert message.index("0='Dy'") < message.index("1='Dd'")
 
-        runpp_3ph(net)
-
-    message = str(exc_info.value)
-    assert "0='Dy'" in message
-    assert "1='Dd'" in message
-    assert message.index("0='Dy'") < message.index("1='Dd'")
-
 
 def test_trafo_asym_ignores_unsupported_out_of_service_transformer():
     nw_dir = os.path.abspath(os.path.join(pp_dir, "test/loadflow"))
