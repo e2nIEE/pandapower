@@ -19,6 +19,7 @@ from pandapower.pypower.pfsoln import pfsoln
 from pandapower.pypower.idx_gen import PG, QG, GEN_BUS
 from pandapower.pypower.idx_bus import GS, BS, PD, QD, VM, VA
 from pandapower.pd2ppc import _pd2ppc_recycle
+from pandapower.pd2ppc_zero import _SUPPORTED_3PH_TRAFO_VECTOR_GROUPS
 from pandapower.pypower.makeYbus import makeYbus
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.pypower.bustypes import bustypes
@@ -27,6 +28,27 @@ from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_3ph,\
     init_results
 import logging
 logger = logging.getLogger(__name__)
+
+
+def _validate_trafo_vector_groups(net):
+    """Reject unsupported in-service transformer groups before PPC conversion."""
+    trafos = net.trafo
+    if trafos.empty or "vector_group" not in trafos or "in_service" not in trafos:
+        return
+
+    in_service = trafos["in_service"].fillna(False).astype(bool)
+    vector_groups = trafos.loc[in_service, "vector_group"]
+    unsupported = vector_groups.map(
+        lambda group: not isinstance(group, str) or group.lower() not in _SUPPORTED_3PH_TRAFO_VECTOR_GROUPS
+    )
+    if unsupported.any():
+        offending = vector_groups.loc[unsupported]
+        details = ", ".join(f"{index}={group!r}" for index, group in offending.items())
+        raise NotImplementedError(
+            "Calculation of 3-phase power flow is only implemented for the transformer "
+            "vector groups 'YNyn', 'Dyn', 'Yzn'; unsupported in-service transformer(s): "
+            f"{details}"
+        )
 
 
 def _get_pf_variables_from_ppci(ppci):
@@ -344,7 +366,8 @@ def runpp_3ph(
         - Three phase load flow uses Sequence Frame for power flow solution.
         - Three phase system is modelled with earth return.
         - PH-E load type is called as wye since Neutral and Earth are considered same
-        - This solver has proved successful only for Earthed transformers (i.e Dyn,Yyn,YNyn & Yzn vector groups)
+        - This solver currently supports the earthed transformer vector groups Dyn, YNyn, and Yzn.
+          The generic zero-sequence transformer vector-group list is not a runpp_3ph support list.
     """
     # =============================================================================
     # pandapower settings
@@ -362,6 +385,7 @@ def runpp_3ph(
     copy_constraints_to_ppc = False
     if trafo_model == 'pi':
         raise NotImplementedError("Three phase Power Flow doesnot support pi model because of lack of accuracy")
+    _validate_trafo_vector_groups(net)
 #    if calculate_voltage_angles == "auto":
 #        calculate_voltage_angles = False
 #        hv_buses = np.where(net.bus.vn_kv.values > 70)[0]  # Todo: Where does that number come from?
