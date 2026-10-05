@@ -1,6 +1,4 @@
-# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
-
-# and Energy System Technology (IEE), Kassel. All rights reserved.
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics# and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
 try:
@@ -246,8 +244,7 @@ class PQArea4120(BaseArea):
         return q_flex
 
 
-class QVArea4120(BaseArea):
-    
+class QVArea4120(BaseArea):    
     """ This class models the QV area of flexible Q for high-voltage power plants according to
     VDE AR-N-4120.
     It is used to be combined with active power dependencies in PQVArea4120V1, PQVArea4120V2, or
