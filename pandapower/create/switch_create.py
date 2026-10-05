@@ -7,10 +7,11 @@ import logging
 from typing import Iterable, Sequence
 
 import numpy as np
-from numpy import nan, any as np_any
+import numpy.typing as npt
+from numpy import any as np_any
+from numpy import nan
 
 from pandapower import pandapowerNet
-from pandapower.pp_types import Int, SwitchElementType, SwitchType
 from pandapower.create._utils import (
     _check_element,
     _check_multiple_elements,
@@ -20,6 +21,7 @@ from pandapower.create._utils import (
     _set_multiple_entries,
 )
 from pandapower.network_structure import get_default_value
+from pandapower.pp_types import Int, SwitchElementType, SwitchType
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +147,7 @@ def create_switches(
     z_ohm: float = get_default_value("switch", "z_ohm"),
     in_ka: float = nan,
     **kwargs,
-) -> Int:
+) -> list[Int] | npt.NDArray[np.integer]:
     """
     Adds a switch in the net["switch"] table.
 

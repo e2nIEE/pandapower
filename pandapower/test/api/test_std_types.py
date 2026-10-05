@@ -4,13 +4,7 @@
 
 import pytest
 
-from pandapower.create import (
-    create_bus,
-    create_buses,
-    create_transformer3w,
-    create_line,
-    create_line_from_parameters
-)
+from pandapower.create import create_buses, create_lines, create_transformer3w
 from pandapower.network import pandapowerNet
 from pandapower.networks import simple_mv_open_ring_net
 from pandapower.std_types import (
@@ -297,9 +291,8 @@ def test_change_type_line():
     typ2 = {"c_nf_per_km": c2, "r_ohm_per_km": r2, "x_ohm_per_km": x2, "max_i_ka": i2}
     create_std_type(net, data=typ2, name=name2, element="line")
 
-    b1 = create_bus(net, vn_kv=0.4)
-    b2 = create_bus(net, vn_kv=0.4)
-    lid = create_line(net, b1, b2, 1., std_type=name1)
+    b1, b2 = create_buses(net, 2, vn_kv=0.4)
+    (lid,) = create_lines(net, b1, b2, 1.0, line_params=name1)
     assert net.line.r_ohm_per_km.at[lid] == r1
     assert net.line.x_ohm_per_km.at[lid] == x1
     assert net.line.c_nf_per_km.at[lid] == c1
@@ -338,12 +331,11 @@ def test_parameter_from_std_type_line():
             "endtemp_degree": endtemp2}
     create_std_type(net, data=typ2, name=name2, element="line")
 
-    b1 = create_bus(net, vn_kv=0.4)
-    b2 = create_bus(net, vn_kv=0.4)
-    lid1 = create_line(net, b1, b2, 1., std_type=name1)
-    lid2 = create_line(net, b1, b2, 1., std_type=name2)
-    lid3 = create_line_from_parameters(net, b1, b2, 1., r_ohm_per_km=0.03, x_ohm_per_km=0.04,
-                                          c_nf_per_km=20, max_i_ka=0.3)
+    b1, b2 = create_buses(net, 2, vn_kv=0.4)
+    lid1, lid2 = create_lines(net, [b1, b1], [b2, b2], 1.0, line_params=[name1, name2])
+    (lid3,) = create_lines(
+        net, b1, b2, 1.0, line_params={"r_ohm_per_km": 0.03, "x_ohm_per_km": 0.04, "c_nf_per_km": 20, "max_i_ka": 0.3}
+    )
 
     parameter_from_std_type(net, "endtemp_degree", fill=endtemp_fill)
     assert net.line.endtemp_degree.at[lid1] == endtemp_fill #type1 one has not specified an endtemp
@@ -365,35 +357,34 @@ def test_add_temperature_coefficient():
 def test_delete_std_type():
     net = pandapowerNet(name="test_delete_std_type")
     trafo3w_types = set(net.std_types["trafo3w"].keys())
-    existing_trafo3w_std_type = sorted(trafo3w_types)[0]
+    existing_trafo3w_std_type = min(trafo3w_types)
     delete_std_type(net, existing_trafo3w_std_type, "trafo3w")
     assert trafo3w_types == set(net.std_types["trafo3w"].keys()) | {existing_trafo3w_std_type}
 
 
 def test_rename_std_type():
     net = pandapowerNet(name="test_rename_std_type")
-    existing_line_std_type = sorted(net.std_types["line"].keys())[0]
+    existing_line_std_type = min(net.std_types["line"].keys())
     existing_line_std_type2 = sorted(net.std_types["line"].keys())[1]
-    existing_trafo3w_std_type = sorted(net.std_types["trafo3w"].keys())[0]
+    existing_trafo3w_std_type = min(net.std_types["trafo3w"].keys())
     tr3w_std_type_params = load_std_type(net, existing_trafo3w_std_type, "trafo3w")
 
     vn_kvs = [tr3w_std_type_params["vn_hv_kv"], tr3w_std_type_params["vn_hv_kv"],
               tr3w_std_type_params["vn_mv_kv"], tr3w_std_type_params["vn_lv_kv"]]
     create_buses(net, 4, vn_kvs)
-    create_line(net, 0, 1, 1.2, existing_line_std_type)
-    create_line(net, 0, 1, 1.2, existing_line_std_type2)
+    create_lines(net, [0, 0], [1, 1], 1.2, [existing_line_std_type, existing_line_std_type2])
     create_transformer3w(net, 0, 2, 3, existing_trafo3w_std_type)
 
     rename_std_type(net, existing_line_std_type, "new_line_std_type")
     rename_std_type(net, existing_trafo3w_std_type, "new_trafo3w_std_type", "trafo3w")
 
-    assert existing_line_std_type not in net.std_types["line"].keys()
-    assert "new_line_std_type" in net.std_types["line"].keys()
+    assert existing_line_std_type not in net.std_types["line"]
+    assert "new_line_std_type" in net.std_types["line"]
     assert (net.line.std_type == existing_line_std_type).sum() == 0
     assert (net.line.std_type == "new_line_std_type").sum() == 1
 
-    assert existing_line_std_type not in net.std_types["trafo3w"].keys()
-    assert "new_trafo3w_std_type" in net.std_types["trafo3w"].keys()
+    assert existing_line_std_type not in net.std_types["trafo3w"]
+    assert "new_trafo3w_std_type" in net.std_types["trafo3w"]
     assert (net.trafo3w.std_type == existing_line_std_type).sum() == 0
     assert (net.trafo3w.std_type == "new_trafo3w_std_type").sum() == 1
 
