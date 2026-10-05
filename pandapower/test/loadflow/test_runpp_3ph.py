@@ -778,6 +778,47 @@ def test_trafo_asym():
         check_results(net, trafo_vector_group, get_PF_Results(trafo_vector_group))
 
 
+@pytest.mark.parametrize("vector_group", ["Dy", "Yy", "Yd", "Dd"])
+@pytest.mark.parametrize("recycle", [None, {"trafo": False, "gen": False, "bus_pq": True}])
+def test_trafo_asym_rejects_unsupported_vector_groups_before_conversion(vector_group, recycle):
+    nw_dir = os.path.abspath(os.path.join(pp_dir, "test/loadflow"))
+    net = from_json(nw_dir + "/runpp_3ph Validation.json")
+    net.trafo.at[0, "vector_group"] = vector_group
+
+    with pytest.raises(NotImplementedError, match="unsupported in-service transformer") as exc_info:
+        runpp_3ph(net, recycle=recycle)
+
+    assert "0=" in str(exc_info.value)
+    assert "_options" not in net
+
+
+def test_trafo_asym_reports_all_unsupported_groups_in_index_order():
+    nw_dir = os.path.abspath(os.path.join(pp_dir, "test/loadflow"))
+    net = from_json(nw_dir + "/runpp_3ph Validation.json")
+    net.trafo.loc[0, "vector_group"] = "Dy"
+    net.trafo.loc[1, "vector_group"] = "Dd"
+
+    with pytest.raises(NotImplementedError) as exc_info:
+        runpp_3ph(net)
+
+    message = str(exc_info.value)
+    assert "0='Dy'" in message
+    assert "1='Dd'" in message
+    assert message.index("0='Dy'") < message.index("1='Dd'")
+
+
+def test_trafo_asym_ignores_unsupported_out_of_service_transformer():
+    nw_dir = os.path.abspath(os.path.join(pp_dir, "test/loadflow"))
+    net = from_json(nw_dir + "/runpp_3ph Validation.json")
+    net.trafo["vector_group"] = "Dyn"
+    net.trafo.loc[0, "vector_group"] = "YNd"
+    net.trafo.loc[0, "in_service"] = False
+
+    runpp_3ph(net)
+
+    assert net.converged
+
+
 def _test_trafo_shifts(net, rtol):
     # Dyn
     for clock in [-30, 30, 150, 210, -150]:

@@ -60,6 +60,9 @@ from pandapower.build_branch import (
 from pandapower.pd2ppc import _ppc2ppci, _init_ppc
 
 
+_SUPPORTED_3PH_TRAFO_VECTOR_GROUPS = {"ynyn", "dyn", "yzn"}
+
+
 def _pd2ppc_zero(net, k_st, sequence=0):
     """
     Builds the ppc data structure for zero impedance system. Includes the impedance values of
@@ -177,6 +180,9 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             "sequence modelling \n Try : net.trafo[\"vector_group\"] = 'Dyn'"
         )
 
+    if mode == "pf_3ph":
+        trafo_df = trafo_df.loc[trafo_df["in_service"].fillna(False).astype(bool)]
+
     for vector_group, trafos in trafo_df.groupby("vector_group"):
         # TODO Roman: check this/expand this
         ppc_idx = trafos["_ppc_idx"].values.astype(np.int64)
@@ -253,7 +259,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         tap_lv = np.square(vn_trafo_lv / vn_bus_lv) * net.sn_mva
         tap_hv = np.square(vn_trafo_hv / vn_bus_hv) * net.sn_mva
         if mode == "pf_3ph":
-            if vector_group.lower() not in ["ynyn", "dyn", "yzn"]:
+            if vector_group.lower() not in _SUPPORTED_3PH_TRAFO_VECTOR_GROUPS:
                 raise NotImplementedError(
                     "Calculation of 3-phase power flow is only implemented for the transformer "
                     "vector groups 'YNyn', 'Dyn', 'Yzn'"
