@@ -135,6 +135,13 @@ def _pd2ppc(net, sequence=None, **kwargs):
     check_connectivity = net["_options"]["check_connectivity"]
     calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
 
+    if sequence == 0 or mode == "pf_3ph":
+        # the zero sequence network is built from parameters that the balanced power flow does not
+        # need. They are checked here, i.e. before the positive sequence network of an unbalanced
+        # power flow is built, so that all of them are reported at once
+        from pandapower.pd2ppc_zero import _check_zero_sequence_parameters
+        _check_zero_sequence_parameters(net)
+
     ppc = _init_ppc(net, mode=mode, sequence=sequence)
 
     # generate ppc['bus'] and the bus lookup
