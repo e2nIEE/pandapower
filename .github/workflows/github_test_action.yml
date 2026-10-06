@@ -3,10 +3,6 @@
 
 name: pandapower
 on:
-  push:
-    paths-ignore:
-      - 'CHANGELOG.rst'
-      - '**/CHANGELOG.rst'
   pull_request:
     paths-ignore:
       - 'CHANGELOG.rst'
