@@ -1,5 +1,3 @@
-import math
-
 import pytest
 
 import pandapower as pp
@@ -40,10 +38,11 @@ def test_convert_pp_to_pm_init_results_propagates_bus_vm_and_va():
     pm_bus_slack = int(net._pd2pm_lookups["bus"][b_slack])
     pm_bus_load = int(net._pd2pm_lookups["bus"][b_load])
 
+    # MATPOWER units: angles in degrees, PandaModels.jl converts them to rad
+    assert not pm["per_unit"]
+
     assert pm["bus"][str(pm_bus_slack)]["vm"] == pytest.approx(net.res_bus.at[b_slack, "vm_pu"])
-    assert pm["bus"][str(pm_bus_slack)]["va"] == pytest.approx(
-        math.radians(net.res_bus.at[b_slack, "va_degree"])
-    )
+    assert pm["bus"][str(pm_bus_slack)]["va"] == pytest.approx(net.res_bus.at[b_slack, "va_degree"])
 
     assert pm["bus"][str(pm_bus_load)]["vm"] == pytest.approx(0.987)
-    assert pm["bus"][str(pm_bus_load)]["va"] == pytest.approx(math.radians(7.123))
+    assert pm["bus"][str(pm_bus_load)]["va"] == pytest.approx(7.123)
