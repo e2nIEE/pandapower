@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] P(Q) and Q(V) polygon points of PQVArea4110 for VDE-AR-N 4110
 - [FIXED] timeseries recycling recovers after a failed power flow step
 - [FIXED] time series now runs every step in a ``(start, stop)`` tuple, including the stop step (#2676).
 - [FIXED] ``dump_to_geojson``: switches and trafos on a bus without geodata or with a ``LineString`` geometry are now skipped and counted as missing instead of raising ``TypeError``/``KeyError`` or exporting the trafo as a ``LineString``; the warning about missing geometries is no longer logged when nothing is missing
