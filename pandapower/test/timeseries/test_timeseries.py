@@ -9,18 +9,22 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower.control import ContinuousTapControl, ConstControl
+from pandapower.control import ConstControl, ContinuousTapControl
 from pandapower.control.util.diagnostic import logger as diagnostic_logger
 from pandapower.create import (
-    create_bus, create_ext_grid, create_line, create_transformer, create_load, create_loads, create_buses,
-    create_switch, create_lines, create_transformer3w_from_parameters
+    create_buses,
+    create_ext_grid,
+    create_lines,
+    create_load,
+    create_loads,
+    create_switch,
+    create_transformer,
+    create_transformer3w_from_parameters,
 )
 from pandapower.network import pandapowerNet
-from pandapower.run import set_user_pf_options, runpp
-from pandapower.timeseries import DFData
-from pandapower.timeseries import OutputWriter
-from pandapower.timeseries import OutputStreamer
-from pandapower.timeseries.run_time_series import run_timeseries, control_diagnostic
+from pandapower.run import runpp, set_user_pf_options
+from pandapower.timeseries import DFData, OutputStreamer, OutputWriter
+from pandapower.timeseries.run_time_series import control_diagnostic, run_timeseries
 
 logger = logging.getLogger(__name__)
 
@@ -29,14 +33,10 @@ logger = logging.getLogger(__name__)
 def simple_test_net():
     net = pandapowerNet(name="simple_test_net")
     set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
-    b0 = create_bus(net, 110)
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
-    b3 = create_bus(net, 20)
-    b4 = create_bus(net, 6)
+    b0, b1, b2, b3, b4 = create_buses(net, 5, [110, 110, 20, 20, 6])
 
     create_ext_grid(net, b0)
-    create_line(net, b0, b1, 10, "149-AL1/24-ST1A 110.0")
+    create_lines(net, b0, b1, 10, "149-AL1/24-ST1A 110.0")
 
     create_transformer(net, b1, b2, "25 MVA 110/20 kV", name='tr1')
 

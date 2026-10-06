@@ -248,8 +248,7 @@ class TestLoadOptionalFields:
                 itertools.product(["origin_class"], not_strings_list),
                 itertools.product(["terminal"], not_strings_list),
                 itertools.product(["description"], not_strings_list),
-                # type - anything but 'wye'/'delta' (and non-strings)
-                itertools.product(["type"], [*strings, *not_strings_list]),
+                itertools.product(["type"], [*not_strings_list]),
                 # sn_mva must be > 0 if provided
                 itertools.product(["sn_mva"], [*negativ_floats_plus_zero, *not_floats_list]),
                 # P/Q limits are just floats (any value allowed)

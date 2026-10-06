@@ -5,8 +5,13 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_bus, create_ext_grid, create_transformer, create_sgen, create_buses, create_transformer_from_parameters,
-    create_line_from_parameters, create_lines_from_parameters, create_sgens, create_line
+    create_buses,
+    create_ext_grid,
+    create_lines,
+    create_sgen,
+    create_sgens,
+    create_transformer,
+    create_transformer_from_parameters,
 )
 from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_brch import BR_R, BR_X
@@ -16,11 +21,11 @@ from pandapower.shortcircuit.calc_sc import calc_sc
 def simplest_test_grid(generator_type, step_up_trafo=False):
     net = pandapowerNet(name="simplest_test_grid", sn_mva=6)
     if step_up_trafo:
-        b0 = create_bus(net, 20)
-        b1 = create_bus(net, 0.4)
+        b0, b1 = create_buses(net, 2, [20, 0.4])
         create_transformer(net, b0, b1, "0.25 MVA 20/0.4 kV", parallel=10)
     else:
-        b0 = b1 = create_bus(net, 20)
+        (b0,) = create_buses(net, 1, 20)
+        b1 = b0
 
     create_ext_grid(net, b0, s_sc_max_mva=1e-12, rx_max=0)
     if generator_type == "async_doubly_fed":
@@ -38,20 +43,35 @@ def simplest_test_grid(generator_type, step_up_trafo=False):
 
 def wind_park_grid(case):
     net = pandapowerNet(name="wind_park_grid", sn_mva=7)
-    create_bus(net, 110, index=1)
+    create_buses(net, 1, 110, index=1)
     create_buses(net, 13, 20)
 
     create_ext_grid(net, 1, 1, s_sc_max_mva=10.5 * 110 * np.sqrt(3), rx_max=0.1)
 
     create_transformer_from_parameters(net, 1, 2, 31.5, 110, 20, 0.6, 12, 0, 0)
 
-    create_line_from_parameters(net, 2, 3, 13.1, 0.0681, 0.102, 0, 1e3, 'L1', parallel=2)
+    create_lines(
+        net,
+        from_buses=2,
+        to_buses=3,
+        length_km=13.1,
+        line_params={"r_ohm_per_km": 0.0681, "x_ohm_per_km": 0.102, "c_nf_per_km": 0, "max_i_ka": 1e3},
+        names="L1",
+        parallel=2,
+    )
 
     from_buses = np.array([3, 4, 3, 6, 7, 7, 3, 10, 11, 11, 12])
     to_buses = np.array([4, 5, 6, 7, 8, 9, 10, 11, 12, 14, 13])
     length_km = [1.1, 0.55, 0.79, 0.17, 0.4, 0.55, 0.95, 0.24, 0.29, 0.15, 0.495]
     names = [f"L{i}" for i in range(2, 13)]
-    create_lines_from_parameters(net, from_buses, to_buses, length_km, 0.211, 0.122, 0, 1e3, names)
+    create_lines(
+        net,
+        from_buses,
+        to_buses,
+        length_km,
+        line_params={"r_ohm_per_km": 0.211, "x_ohm_per_km": 0.122, "c_nf_per_km": 0, "max_i_ka": 1e3},
+        names=names,
+    )
 
     sgen_buses = np.array([4, 5, 6, 8, 9, 10, 12, 13, 3, 14])
     if case == "all_async_doubly_fed":
@@ -75,20 +95,17 @@ def wind_park_grid(case):
 
 def wind_park_example():
     net = pandapowerNet(name="wind_park_example", sn_mva=8)
-    b1 = create_bus(net, vn_kv=110., index=1)
-    b2 = create_bus(net, vn_kv=110., index=2)
-    b3 = create_bus(net, vn_kv=110., index=3)
-    b4 = create_bus(net, vn_kv=110., index=4)
+    b1, b2, b3, b4 = create_buses(net, 4, vn_kv=110.0, index=[1, 2, 3, 4])
     create_ext_grid(net, b1, s_sc_max_mva=20 * 110 * np.sqrt(3), rx_max=0.1)
 
-    create_line_from_parameters(net, from_bus=b1, to_bus=b2, length_km=100, r_ohm_per_km=0.120, x_ohm_per_km=0.393,
-                                c_nf_per_km=0, max_i_ka=10)
-    create_line_from_parameters(net, from_bus=b1, to_bus=b3, length_km=50, r_ohm_per_km=0.120, x_ohm_per_km=0.393,
-                                c_nf_per_km=0, max_i_ka=10)
-    create_line_from_parameters(net, from_bus=b2, to_bus=b3, length_km=50, r_ohm_per_km=0.120, x_ohm_per_km=0.393,
-                                c_nf_per_km=0, max_i_ka=10)
-    create_line_from_parameters(net, from_bus=b3, to_bus=b4, length_km=25, r_ohm_per_km=0.120, x_ohm_per_km=0.393,
-                                c_nf_per_km=0, max_i_ka=10)
+    create_lines(
+        net,
+        from_buses=[b1, b1, b2, b3],
+        to_buses=[b2, b3, b3, b4],
+        length_km=[100, 50, 50, 25],
+        line_params={"r_ohm_per_km": 0.120, "x_ohm_per_km": 0.393, "c_nf_per_km": 0, "max_i_ka": 10},
+    )
+
 
     create_sgen(net, b2, p_mw=0.1e3, sn_mva=100)
     create_sgen(net, b3, p_mw=0.050e3, sn_mva=50)
@@ -99,16 +116,19 @@ def wind_park_example():
 
 def three_bus_example():
     net = pandapowerNet(name="three_bus_example", sn_mva=9)
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    b3 = create_bus(net, 110)
+    b1, b2, b3 = create_buses(net, 3, 110)
 
     create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.4, rx_max=0.4, x0x_max=0.2, x0x_min=0.1,
                     r0x0_max=0.3, r0x0_min=0.2)
     net.ext_grid['x0x_min'] = 0.1
     net.ext_grid['r0x0_min'] = 0.1
-    create_line(net, b1, b2, std_type="305-AL1/39-ST1A 110.0", length_km=20.)
-    create_line(net, b2, b3, std_type="N2XS(FL)2Y 1x185 RM/35 64/110 kV", length_km=15.)
+    create_lines(
+        net,
+        [b1, b2],
+        [b2, b3],
+        line_params=["305-AL1/39-ST1A 110.0", "N2XS(FL)2Y 1x185 RM/35 64/110 kV"],
+        length_km=[20.0, 15.0],
+    )
     net.line['r0_ohm_per_km'] = 0.1
     net.line['x0_ohm_per_km'] = 0.1
     net.line['c0_nf_per_km'] = 0.1
@@ -123,9 +143,7 @@ def big_sgen_three_bus_example():
     #                        |
     #                       sgen0
     net = pandapowerNet(name="big_sgen_three_bus_example", sn_mva=2)
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    b3 = create_bus(net, 110)
+    b1, b2, b3 = create_buses(net, 3, 110)
 
     create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.4, rx_max=0.4)
     net.ext_grid['x0x_min'] = 0.1
@@ -133,8 +151,13 @@ def big_sgen_three_bus_example():
     net.ext_grid['x0x_max'] = 0.1
     net.ext_grid['r0x0_max'] = 0.1
 
-    create_line(net, b1, b2, std_type="305-AL1/39-ST1A 110.0", length_km=20.)
-    create_line(net, b2, b3, std_type="N2XS(FL)2Y 1x185 RM/35 64/110 kV", length_km=15.)
+    create_lines(
+        net,
+        [b1, b2],
+        [b2, b3],
+        line_params=["305-AL1/39-ST1A 110.0", "N2XS(FL)2Y 1x185 RM/35 64/110 kV"],
+        length_km=[20.0, 15.0],
+    )
     net.line['r0_ohm_per_km'] = 0.1
     net.line['x0_ohm_per_km'] = 0.1
     net.line['c0_nf_per_km'] = 0.1
