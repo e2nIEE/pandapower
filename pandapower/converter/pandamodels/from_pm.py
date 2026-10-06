@@ -57,9 +57,9 @@ def _read_multinetwork_results(net: pandapowerNet, ppc, ppci, sol):
     from_time_step = net._options.get("from_time_step") or 0
     # the net inputs are changed per time step -> work on one copy
     neti = deepcopy(net)
-    res_tables = None
-    frames = {}
-    time_steps = []
+    res_tables: list[str] | None = None
+    frames: dict[str, list[pd.DataFrame]] = {}
+    time_steps: list[int] = []
     for nw in sorted(sol["nw"], key=int):
         time_step = from_time_step + int(nw) - 1
         soli = sol["nw"][nw]

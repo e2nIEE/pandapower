@@ -798,7 +798,7 @@ def test_ac_opf_differnt_snmva(net_func):
 
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 @pytest.mark.parametrize("sn_mva, pm_base_mva", [(1., None), (13., None), (100., None), (1., 100.)])
-@pytest.mark.parametrize("net_func", [case30, create_cigre_network_mv])
+@pytest.mark.parametrize("net_func", (case30, create_cigre_network_mv))
 def test_pm_ac_powerflow_sn_mva(net_func, sn_mva, pm_base_mva):
     # unit conversion of bus shunts (case30), branch conductances and impedances for different bases.
     # PowerModels' Newton power flow, the Ipopt power flow can fail numerically on some bases
