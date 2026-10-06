@@ -5,6 +5,9 @@ on:
     paths:
       - pandapower/network_schema/**
 
+permissions:
+  contents: read
+
 jobs:
   network_schema:
     # This tests only the network_schema tests due to the large amount these are only tested on min/max python version
