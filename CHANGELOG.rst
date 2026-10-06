@@ -3,6 +3,14 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [CHANGED] PandaModels.jl interface: the network is sent in MATPOWER units (MW, MVAr, degrees, ``per_unit=False``) and converted to per unit by PandaModels.jl, which is now required in version >= 0.10. The new keyword ``pm_base_mva`` (default ``net.sn_mva``) sets the per unit base; Ipopt is much faster on a base fitting the grid (e.g. case118: 0.1 s at 100 MVA instead of 2.2 s at 1 MVA).
+- [CHANGED] time series optimizations (``runpm_storage_opf``, ``runpm_multi_vstab``, ``runpm_multi_qflex``) store their results in ``net.res_ts_opt`` as dict ``"res_<table>.<column>"`` -> DataFrame (index: time steps, columns: element indices) instead of one copy of the net per time step. Reading the results is several times faster.
+- [CHANGED] ``juliapkg.json`` moved into the ``pandapower`` package, so juliapkg finds it independent of the working directory and it is shipped with the wheel. PandaModels.jl is no longer installed or built at runtime; ``pdm_dev_mode`` is deprecated, a local checkout is registered with ``juliapkg.add(..., path=..., dev=True)``.
+- [FIXED] PandaModels.jl interface: bus shunts and branch conductances were scaled wrongly for ``sn_mva != 1``.
+- [FIXED] PandaModels.jl interface: ``ne_line`` construction costs overwrote the ``BR_G`` column; ``opf_flow_lim="I"`` used a different current rating for ``ne_line`` than for lines.
+- [FIXED] PandaModels.jl interface: time series optimizations with ``from_time_step != 0`` used the time series values of the wrong time steps.
+- [FIXED] PandaModels.jl interface: ``read_pm_storage_results`` treated the stored energy as a fraction; ``soc_mwh`` and ``soc_percent`` were only correct for 1 MWh storages.
+- [FIXED] PandaModels.jl interface: the native power flows (``pm_model="ACNative"/"DCNative"``) were reported as not converged; SOC models wrote ``w = vm^2`` as ``vm``.
 - [FIXED] timeseries recycling recovers after a failed power flow step
 - [FIXED] time series now runs every step in a ``(start, stop)`` tuple, including the stop step (#2676).
 - [FIXED] ``dump_to_geojson``: switches and trafos on a bus without geodata or with a ``LineString`` geometry are now skipped and counted as missing instead of raising ``TypeError``/``KeyError`` or exporting the trafo as a ``LineString``; the warning about missing geometries is no longer logged when nothing is missing

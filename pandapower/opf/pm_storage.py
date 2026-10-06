@@ -54,23 +54,10 @@ def add_storage_opf_settings(net, ppci, pm):
 
 
 def read_pm_storage_results(net):
-    # reads the storage results from multiple time steps from the PowerModels optimization
-    storage_results = {}
-    timesteps = list(net.res_ts_opt.keys())
-    for idx in net.storage.index:
-        # read storage results for each storage from power models to a dataframe with rows = timesteps
-        res_storage = pd.DataFrame(data=None,
-                                   index=timesteps,
-                                   columns=["p_mw", "q_mvar", "soc_mwh", "soc_percent"],
-                                   dtype=float)
-        for t in timesteps:
-            pm_storage = net.res_ts_opt[str(t)].res_storage
-            res_storage.at[t, "p_mw"] = pm_storage["ps"]
-            res_storage.at[t, "q_mvar"] = pm_storage["qs"]
-            res_storage.at[t, "soc_percent"] = pm_storage["se"] * 1e2
-            res_storage.at[t, "soc_mwh"] = pm_storage["se"] * \
-                                           (net["storage"].at[idx, "max_e_mwh"] - net["storage"].at[idx, "min_e_mwh"])
-
-        storage_results[idx] = res_storage
-
-    return storage_results
+    """
+    Returns the storage results of a time series optimization as dict storage index -> DataFrame
+    (index: time steps, columns: p_mw, q_mvar, soc_mwh, soc_percent).
+    """
+    columns = ["p_mw", "q_mvar", "soc_mwh", "soc_percent"]
+    return {idx: pd.DataFrame({col: net.res_ts_opt["res_storage." + col][idx] for col in columns})
+            for idx in net.storage.index}

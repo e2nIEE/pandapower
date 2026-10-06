@@ -74,7 +74,11 @@ def runpm(net, julia_file=None, pp_to_pm_callback=None, calculate_voltage_angles
                     "I" - current magnitude (limit in MVA at 1 p.u. voltage)
 
         pm_tol (float, 1e-8): default desired convergence tolerance for solver to use.
-        pdm_dev_mode (bool, False): If True, the develop mode of PdM is called.
+        pdm_dev_mode (bool, False): deprecated, without effect. A local PandaModels.jl checkout is
+            registered with juliapkg instead, see :func:`pandapower.opf.run_pandamodels._load_pandamodels`.
+        pm_base_mva (float, None): keyword argument, power base of the per unit system PowerModels.jl
+            solves in. Defaults to net.sn_mva. Ipopt is sensitive to the scaling: for transmission
+            grids a base of 100 MVA is typically much faster than 1 MVA.
         init_vm_pu (str, "flat"): Initialization of bus voltage magnitudes for
             PowerModels. If "results", voltage magnitudes are initialized from net.res_bus.vm_pu.
         init_va_degree (str, "flat"): Initialization of bus voltage angles for 

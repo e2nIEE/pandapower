@@ -17,39 +17,35 @@ Presently, users can solve some reactive power optimization problems with PandaM
 Installation
 --------------
 
-If you are not yet using `Julia <https://julialang.org/downloads/>`__, install it. For the interface to work, note that
-you need a version that is supported by PowerModels, PyCall and pyjulia. Currently, Former julia versions are available
-`here <https://julialang.org/downloads/oldreleases/>`__.
+pandapower calls Julia through `juliacall <https://github.com/JuliaPy/PythonCall.jl>`__. Install it with the
+``pandamodels`` extra:
 
-.. note:: You don't necessarily need a Julia IDE if you are using PandaModels through pandapower, but it might help for
-    debugging to install an IDE such as `Juno <https://docs.junolab.org/latest/man/installation/>`__. Also, PyCharm has
-    a Julia Plugin.
+::
 
-1. Add the Julia binary folder
-    (e.g. `C:\\Users\\username\\AppData\\Local\\Programs\\Julia-1.8.0\\bin\\` on Windows or
-    `/Applications/Julia-1.5.app/Contents/Resources/julia/bin` on MacOS) to the
-    `system variable PATH <https://www.computerhope.com/issues/ch000549.htm>`_. Providing the path is correct, you can
-    now enter the julia prompt by executing :code:`julia` in your shell (on Windows, rebooting the system is needed to
-    take advantage of changes to the :code:`PATH`.
+    pip install pandapower[pandamodels]
 
-2. The library `PythonCall.jl <https://github.com/JuliaPy/PythonCall.jl>`__ allows to use Python from inside julia.
-    By default, PythonCall uses the CondaPkg.jl package to create an environment private to each Julia project.
+Julia and PandaModels.jl do not need to be installed by hand. pandapower declares PandaModels.jl in
+``pandapower/juliapkg.json``, and `juliapkg <https://github.com/JuliaPy/pyjuliapkg>`__ installs a suitable Julia
+version and all Julia packages into its own environment the first time ``juliacall`` is imported. This first import
+takes a few minutes; later imports only take a few seconds. To check the installation, run the PandaModels tests:
 
-.. FIXME: Anything past this point needs to be converted to PythonCall + JuliaCall
+::
 
-3. Access the package manager by typing :code:`]`. Now install the packages: :code:`add Ipopt PowerModels PyCall`. To pass the python environment variable, running :code:`build PyCall` inside the julia package manager may be necessary.
+    pytest pandapower/test/opf/test_pandamodels_runpm.py
 
-4. Inside package manager, test your `PowerModels <https://lanl-ansi.github.io/PowerModels.jl/stable/#Installation-1>`__ installation by executing :code:`test PowerModels`. Alternatively, you can call :code:`using Pkg` and then :code:`Pkg.test("PowerModels")` outside the package manager directly as julia expression. Then, test whether calling Python from Julia works, as described `here <https://github.com/JuliaPy/PyCall.jl#usage>`__.
+.. note:: The first optimization in a Python process additionally compiles the Julia code (about 10 s). Run all
+    optimizations of a study in one Python process to pay this only once.
 
-.. note:: If you cannot plot using PyCall and PyPlot in Julia, see the workarounds offered `here <https://github.com/JuliaPy/PyCall.jl/issues/665>`__.
+**Using a local custom PandaModels.jl checkout:** register it once in the juliapkg project. juliapkg then uses the checkout
+in development mode instead of the released package:
 
-5. To call Julia from Python, install the pyjulia package with :code:`pip install julia`. Afterwards, test if everything works by importing PowerModels from Python with: :code:`from julia.PowerModels import run_ac_opf`. This takes some time, since Python starts a julia instance in the background, but it if the import completes without error everything is configured correctly and you can now use PowerModels to optimize pandapower networks.
+::
 
-6. Additional packages are required to use the pandapower - PowerModels.jl interface with all features like TNEP or OTS. Install the "JSON" and "JuMP" packages with, e.g., :code:`julia -e 'import Pkg; Pkg.add("JSON"); Pkg.add("JuMP");` and maybe also `julia -e 'import Pkg; Pkg.add("Cbc"); Pkg.add("Juniper")'` to get the TNEP and OTS libraries. Alternatively, install these packages by entering :code:`]` inside the julia console and calling :code:`add JSON` :code:`add JuMP`
+    import juliapkg
+    juliapkg.add("PandaModels", "2dbab86a-7cbf-476f-9afe-75ffd3079e7c", path="path/to/PandaModels.jl", dev=True)
 
-7. Now install our interface `PandaModels.jl` by type :code:`add PandaModels` inside Julia package manager.
-
-8. Finally, you can then test whether the PandaModels.jl interface works: Navigate to your local pandapower test folder :code:`pandapower/pandapower/test/opf` folder and run :code:`python-jl test_pandamodels_runpm.py` or :code:`pytest test_pandamodels_runpm.py` if pytest is installed. If everything works there should be no error.
+Remove it again with ``juliapkg.rm("PandaModels")``. The environment variable ``PYTHON_JULIAPKG_PROJECT`` selects a
+separate Julia project, which keeps such a development setup apart from the default one.
 
 
 Additional Solvers
