@@ -350,7 +350,7 @@ def dump_to_geojson(
         logger.warning(e)
         return geojson.FeatureCollection([])
 
-    missing_geom: dict[str, int] = {}
+    missing_geom: dict[str, int] = {"bus": 0, "line": 0, "switch": 0, "trafo": 0, "trafo3w": 0}
     features, missing_geom["bus"], missing_geom["line"] = dump_to_geojson_node_branch(
         net, "bus", "line", buses, lines, include_type_id=include_type_id
     )
@@ -384,7 +384,8 @@ def dump_to_geojson(
                 _get_props(row, cols, prop)
 
                 # getting geodata for switches
-                geom = geojson.loads(net.bus.geo.at[row.bus])
+                geo = net.bus.geo.at[row.bus]
+                geom = None if pd.isna(geo) else geojson.loads(geo)
                 if isinstance(geom, geojson.LineString):
                     logger.warning(f"LineString geometry not supported for type 'switch'. Skipping switch {ind}")
                     geom = None
@@ -410,17 +411,19 @@ def dump_to_geojson(
                 _get_props(row, cols, prop)
 
                 # getting geodata for trafos
-                geom = geojson.loads(net.bus.geo.at[row.lv_bus])
+                geo = net.bus.geo.at[row.lv_bus]
+                geom = None if pd.isna(geo) else geojson.loads(geo)
                 if isinstance(geom, geojson.LineString):
                     logger.warning(f"LineString geometry not supported for type '{t_type}'. Skipping trafo {ind}")
+                    geom = None
                 if geom is None:
                     missing_geom[t_type] += 1
                     continue
                 features.append(geojson.Feature(geometry=geom, id=uid, properties=prop))
 
-    if any(missing_geom):
+    if any(missing_geom.values()):
         missing_str = []
-        for count, name in missing_geom.items():
+        for name, count in missing_geom.items():
             if count:
                 missing_str.append(f"{count} {name} geometries")
         logger.warning(f"{', '.join(missing_str)} could not be converted to geojson. Please update network's geodata!")
