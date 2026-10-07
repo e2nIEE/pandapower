@@ -4,6 +4,8 @@ Change Log
 [upcoming release] - 2026-..-..
 -------------------------------
 
+- [FIXED] ``compute_switch_flows`` read ``z_ohm`` by row position instead of by switch index, so with a non-default ``net.switch`` index it raised ``IndexError``, left zero-impedance switches without results or overwrote the results of switches with ``z_ohm > 0``
+
 [3.5.6] - 2026-10-07
 -------------------------------
 

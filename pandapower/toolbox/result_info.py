@@ -547,10 +547,9 @@ def compute_switch_flows(net):
 
     # Index closed zero-impedance bus-bus switches by fused group
     sw_by_group = defaultdict(list)
-    z_ohm = net.switch["z_ohm"].values if "z_ohm" in net.switch.columns else np.zeros(len(net.switch))
     for sw_idx in net.switch.index:
         row = net.switch.loc[sw_idx]
-        if row["et"] != "b" or not row["closed"] or z_ohm[sw_idx] > 0:
+        if row["et"] != "b" or not row["closed"] or row.get("z_ohm", 0.) > 0:
             continue
         a = int(row["bus"])
         b = int(row["element"])

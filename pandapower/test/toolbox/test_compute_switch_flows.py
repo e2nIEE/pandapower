@@ -443,6 +443,35 @@ class TestComputeSwitchFlowsMultipleGroups:
                            net.res_load.at[1, "p_mw"], atol=1e-6)
 
 
+class TestComputeSwitchFlowsNonDefaultIndex:
+    """Switch indices that differ from the row position in net.switch."""
+
+    @pytest.mark.parametrize("coupler_idx, impedance_idx", [(1, 0), (5, 7)])
+    def test_non_default_switch_index(self, coupler_idx, impedance_idx):
+        """z_ohm must be read by switch index, not by row position.
+
+        ext_grid--(b0)--line--(b1)--coupler--(b2)--load
+                    |
+                    +--switch with z_ohm > 0--(b3)--load
+        """
+        net, b0, b1, b2 = _make_two_bus_coupler_net()
+        net.switch.index = [coupler_idx]
+        b3 = create_bus(net, vn_kv=20.0)
+        create_switch(net, bus=b0, element=b3, et="b", z_ohm=0.01, index=impedance_idx)
+        create_load(net, b3, p_mw=2.0)
+
+        runpp(net)
+        p_impedance = net.res_switch.at[impedance_idx, "p_from_mw"]
+        compute_switch_flows(net)
+
+        assert np.isclose(net.res_switch.at[coupler_idx, "p_from_mw"],
+                          net.res_load.at[0, "p_mw"], atol=1e-6)
+        assert np.isclose(net.res_switch.at[coupler_idx, "q_from_mvar"],
+                          net.res_load.at[0, "q_mvar"], atol=1e-6)
+        assert net.res_switch.at[coupler_idx, "i_ka"] > 0
+        assert net.res_switch.at[impedance_idx, "p_from_mw"] == p_impedance
+
+
 class TestComputeSwitchFlowsLoadingPercent:
     """Loading percent computation when in_ka is available."""
 
