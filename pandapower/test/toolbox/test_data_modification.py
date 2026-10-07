@@ -8,13 +8,13 @@ import pandas as pd
 import pytest
 
 from pandapower.create import (
-    create_bus,
-    create_load,
+    create_buses,
+    create_loads,
     create_measurement,
-    create_sgen,
-    create_shunt,
-    create_ward,
+    create_sgens,
+    create_shunts,
     create_ssc,
+    create_wards,
 )
 from pandapower.estimation.util import add_virtual_meas_from_loadflow
 from pandapower.network import pandapowerNet
@@ -129,29 +129,12 @@ def test_reindex_buses__create_duplicate_index():
 def test_continuos_bus_numbering():
     net = pandapowerNet(name="test_continuos_bus_numbering")
 
-    bus0 = create_bus(net, 0.4, index=12)
-    create_load(net, bus0, p_mw=0.)
-    create_load(net, bus0, p_mw=0.)
-    create_load(net, bus0, p_mw=0.)
-    create_load(net, bus0, p_mw=0.)
-
-    bus0 = create_bus(net, 0.4, index=42)
-    create_sgen(net, bus0, p_mw=0.)
-    create_sgen(net, bus0, p_mw=0.)
-    create_sgen(net, bus0, p_mw=0.)
-
-    bus0 = create_bus(net, 0.4, index=543)
-    create_shunt(net, bus0, 2, 1)
-    create_shunt(net, bus0, 2, 1)
-    create_shunt(net, bus0, 2, 1)
-
-    bus0 = create_bus(net, 0.4, index=5675)
-    create_ward(net, bus0, 2, 1, 1, 2)
-    create_ward(net, bus0, 2, 1, 1, 2)
-    create_ward(net, bus0, 2, 1, 1, 2)
-
-    bus0 = create_bus(net, 0.4, index=9821)
-    create_ssc(net, bus0, r_ohm=1.0, x_ohm=1.0)
+    bus0, bus1, bus2, bus3, bus4 = create_buses(net, 5, 0.4, index=[12, 42, 543, 5675, 9821])
+    create_loads(net, [bus0] * 4, p_mw=0.0)
+    create_sgens(net, [bus1] * 3, p_mw=0.0)
+    create_shunts(net, [bus2] * 3, 2, 1)
+    create_wards(net, [bus3] * 3, 2, 1, 1, 2)
+    create_ssc(net, bus4, r_ohm=1.0, x_ohm=1.0)
 
     create_continuous_bus_index(net)
 
@@ -236,9 +219,9 @@ def test_continuous_element_numbering():
 def test_scaling_by_type():
     net = pandapowerNet(name="test_scaling_by_type")
 
-    bus0 = create_bus(net, 0.4)
-    create_load(net, bus0, p_mw=0., type="Household")
-    create_sgen(net, bus0, p_mw=0., type="PV")
+    (bus0,) = create_buses(net, 1, 0.4)
+    create_loads(net, [bus0], p_mw=0.0, type="Household")
+    create_sgens(net, [bus0], p_mw=0.0, type="PV")
 
     set_scaling_by_type(net, {"Household": 42., "PV": 12})
 
