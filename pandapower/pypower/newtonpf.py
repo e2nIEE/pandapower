@@ -178,7 +178,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     relevant_bus_dc = flatnonzero(bus_dc[:, DC_BUS_TYPE] != DC_NONE)
     num_bus_dc = len(relevant_bus_dc)
     any_branch_dc = num_branch_dc > 0
-    P_dc = -bus_dc[relevant_bus_dc, DC_PD] # load is negative here
+    P_dc = -bus_dc[relevant_bus_dc, DC_PD] / baseMVA  # load is negative here
     p_set_point_index = vsc_controllable & (vsc_mode_dc == VSC_MODE_DC_P) & (vsc_mode_ac != VSC_MODE_AC_SL)
     # P_dc[vsc[p_set_point_index, VSC_BUS_DC].astype(np.int64)] = -vsc_value_dc[vsc_mode_dc == 1]  # todo sum by group
     # todo vsc
@@ -647,7 +647,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
 
         # Pbus_dc = V_dc * (Ybus_hvdc + Ybus_vsc_dc).dot(V_dc)
         Pbus_dc = V_dc * Ybus_hvdc.dot(V_dc)
-        bus_dc[relevant_bus_dc, DC_PD] = Pbus_dc
+        bus_dc[relevant_bus_dc, DC_PD] = Pbus_dc * baseMVA
 
         # update branch flows
         i_hvdc_f = Yf_hvdc.dot(V_dc)
