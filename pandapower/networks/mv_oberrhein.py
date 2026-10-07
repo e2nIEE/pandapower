@@ -63,6 +63,11 @@ def mv_oberrhein(
         net = from_json(os.path.join(pp_dir, "networks", "mv_oberrhein.json"), **kwargs)
         # geo.convert_epsg_bus_geodata(net, epsg_out=4326, epsg_in=31467)
         # geo.convert_geodata_to_geojson(net, lonlat=False)
+    # These bundled networks predate the tap-dependency table schema. Mark
+    # their transformers as using the static parameters they contain so that
+    # loading the fixture does not trigger the legacy-schema warning.
+    if "tap_dependency_table" not in net.trafo:
+        net.trafo["tap_dependency_table"] = False
     net.load.q_mvar = np.tan(np.arccos(cosphi_load)) * net.load.p_mw
     net.sgen.q_mvar = np.tan(np.arccos(cosphi_pv)) * net.sgen.p_mw
 

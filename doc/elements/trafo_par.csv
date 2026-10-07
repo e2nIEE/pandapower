@@ -17,7 +17,7 @@ mag0_percent***;float;:math:`\geq` 0;"z_mag0 / z0
 ratio between magnetizing and short circuit impedance (zero sequence) as a percent"
 mag0_rx***;float;;zero sequence magnetizing r/x  ratio
 si0_hv_partial***;float;:math:`\geq` 0;zero sequence short circuit impedance  distribution in hv side
-vector_group***;String;'Dyn','Yyn','Yzn','YNyn'; Vector Groups ( required for zero sequence model of transformer )
+vector_group***;String;'Dyn','Yyn','Yzn','YNyn'; Vector groups required for the zero-sequence transformer model. runpp_3ph currently supports the subset Dyn, YNyn, and Yzn.
 shift_degree*;float;;transformer phase shift angle
 tap_side;string;"""hv"", ""lv""";defines if tap changer is at the high- or low voltage side
 tap_neutral;integer;;rated tap position
