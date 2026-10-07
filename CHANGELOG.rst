@@ -3,12 +3,20 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+
+[3.5.6] - 2026-10-07
+-------------------------------
+
 - [FIXED] bulk create functions (e.g. create_buses) filled missing object values such as name with "" instead of None (#2612)
 - [FIXED] P(Q) and Q(V) polygon points of PQVArea4110 for VDE-AR-N 4110
 - [FIXED] timeseries recycling recovers after a failed power flow step
 - [FIXED] time series now runs every step in a ``(start, stop)`` tuple, including the stop step (#2676).
 - [FIXED] ``dump_to_geojson``: switches and trafos on a bus without geodata or with a ``LineString`` geometry are now skipped and counted as missing instead of raising ``TypeError``/``KeyError`` or exporting the trafo as a ``LineString``; the warning about missing geometries is no longer logged when nothing is missing
 - [FIXED] creating a branch element (e.g. ``create_line_from_parameters``) without an ``index`` on a non-existing bus raised ``TypeError`` instead of the intended ``UserWarning``, because the error message formatted the ``None`` index with ``%d`` (#3141)
+
+[3.5.5] - 2026-09-22
+-------------------------------
+
 - [FIXED] ``PPJSONEncoder`` accepts the legacy ``encoding`` keyword supplied by ``simplejson``.
 - [FIXED] ``wls_with_zero_constraint`` now converges for any ``sn_mva``; the zero-injection constraint was scaled by ``baseMVA`` while its Jacobian was not
 - [FIXED] ``create_load_dc`` now allocates and validates indexes against ``load_dc``, preventing overwrites and false ``source_dc`` conflicts.
