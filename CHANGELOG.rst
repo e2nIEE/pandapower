@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] bulk create functions (e.g. create_buses) filled missing object values such as name with "" instead of None (#2612)
 - [FIXED] P(Q) and Q(V) polygon points of PQVArea4110 for VDE-AR-N 4110
 - [FIXED] timeseries recycling recovers after a failed power flow step
 - [FIXED] time series now runs every step in a ``(start, stop)`` tuple, including the stop step (#2676).

@@ -653,10 +653,10 @@ def element_types_to_ets(element_types: ElementType | list[ElementType] | None =
 def empty_defaults_per_dtype(dtype: np.dtype[Any]) -> Any:
     if is_numeric_dtype(dtype):
         return np.nan
-    elif is_string_dtype(dtype):
-        return ""
     elif is_object_dtype(dtype):
         return None
+    elif is_string_dtype(dtype):
+        return ""
     else:
         raise NotImplementedError(f"{dtype=} is not implemented in _empty_defaults()")
 
