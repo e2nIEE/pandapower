@@ -335,7 +335,10 @@ def _create_lines(
             length_km,
             data[key][("Electrical Parameters", "Resistance_R(Ω)")].values / length_km,  # type: ignore[operator]
             data[key][("Electrical Parameters", "Reactance_X(Ω)")].values / length_km,  # type: ignore[operator]
-            data[key][("Electrical Parameters", "Susceptance_B(μS)")].values / length_km,  # type: ignore[operator]
+            # B is a susceptance in µS, c_nf_per_km expects a capacitance in nF/km:
+            # C[nF] = B[µS] * 1e-6 / (2*pi*f) * 1e9
+            data[key][("Electrical Parameters", "Susceptance_B(μS)")].values * 1e3 / (  # type: ignore[operator]
+                2 * np.pi * net.f_hz) / length_km,
             data[key][("Maximum Current Imax (A)", "Fixed")].fillna(  # type: ignore[operator]
                 max_i_ka_fillna*1e3).values / 1e3,
             name=data[key].xs("NE_name", level=1, axis=1).values[:, 0],  # type: ignore[call-overload]
