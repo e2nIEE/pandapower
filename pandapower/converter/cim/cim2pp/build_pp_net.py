@@ -8,7 +8,6 @@ from typing import Dict, List
 
 import pandas as pd
 
-from pandapower.toolbox.grid_modification import fuse_buses
 from pandapower.run import runpp
 from pandapower.create import create_empty_network
 from pandapower.auxiliary import pandapowerNet
@@ -233,7 +232,7 @@ class CimConverter:
         if bus_drop.index.size > 0:
             for b1, b2 in bus_drop[['b1', 'b2']].itertuples(index=False):
                 self.logger.info("Fusing buses: b1: %s, b2: %s" % (b1, b2))
-                fuse_buses(self.net, b1, b2, drop=True, fuse_bus_measurements=True)
+            pp_tools.fuse_bus_pairs(self.net, bus_drop['b1'].values, bus_drop['b2'].values)
         # finally a fix for EquivalentInjections: If an EquivalentInjection is attached to boundary node, check if the
         # network behind this boundary node is attached. In this case, disable the EquivalentInjection.
         for w in ["ward", "xward"]:

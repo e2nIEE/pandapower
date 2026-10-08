@@ -206,11 +206,13 @@ class ConnectivityNodesCim16:
         # the terminals are used for the mapping asset -> node later during the conversion of other assets
         eqssh_terminals = self.cimConverter.cim['eq']['Terminal'][['rdfId', 'ConnectivityNode', 'ConductingEquipment',
                                                                    'sequenceNumber']]
-        eqssh_terminals = \
-            pd.concat([eqssh_terminals, self.cimConverter.cim['eq_bd']['Terminal'][['rdfId', 'ConductingEquipment',
-                                                                                    'ConnectivityNode',
-                                                                                    'sequenceNumber']]],
-                      ignore_index=True, sort=False)
+        eq_bd_terminals = self.cimConverter.cim['eq_bd']['Terminal'][['rdfId', 'ConductingEquipment',
+                                                                      'ConnectivityNode', 'sequenceNumber']]
+        # the boundary terminals usually have no sequenceNumber (all NaN with dtype object): use the dtype of the eq
+        # terminals like pd.concat does (it ignores all-NA columns for the result dtype, which is deprecated)
+        if eq_bd_terminals['sequenceNumber'].isna().all() and not eqssh_terminals['sequenceNumber'].isna().all():
+            eq_bd_terminals = eq_bd_terminals.astype({'sequenceNumber': eqssh_terminals['sequenceNumber'].dtype})
+        eqssh_terminals = pd.concat([eqssh_terminals, eq_bd_terminals], ignore_index=True, sort=False)
         eqssh_terminals = pd.merge(eqssh_terminals, self.cimConverter.cim['ssh']['Terminal'], how='left', on='rdfId')
         eqssh_terminals = pd.merge(eqssh_terminals, self.cimConverter.cim['tp']['Terminal'], how='left', on='rdfId')
         eqssh_terminals['ConnectivityNode'] = eqssh_terminals['ConnectivityNode'].fillna(

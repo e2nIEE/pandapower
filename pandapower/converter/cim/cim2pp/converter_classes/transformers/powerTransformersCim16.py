@@ -442,9 +442,9 @@ class PowerTransformersCim16:
         # get the Terminal, ConnectivityNode and bus voltage
         eq_ssh_tap_controllers = \
             pd.merge(eq_ssh_tap_controllers,
-                     pd.concat([self.cimConverter.cim['eq']['Terminal'], self.cimConverter.cim['eq_bd']['Terminal']],
-                               ignore_index=True, sort=False)[
-                         ['rdfId', 'ConnectivityNode']], how='left', on='rdfId')
+                     pd.concat([self.cimConverter.cim['eq']['Terminal'][['rdfId', 'ConnectivityNode']],
+                                self.cimConverter.cim['eq_bd']['Terminal'][['rdfId', 'ConnectivityNode']]],
+                               ignore_index=True, sort=False), how='left', on='rdfId')
         eq_ssh_tap_controllers = eq_ssh_tap_controllers.drop(columns=['rdfId'])
         eq_ssh_tap_controllers = eq_ssh_tap_controllers.rename(columns={'ConnectivityNode': sc['o_id']})
         eq_ssh_tap_controllers = pd.merge(eq_ssh_tap_controllers,

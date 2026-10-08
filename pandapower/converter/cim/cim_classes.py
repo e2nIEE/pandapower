@@ -3,10 +3,10 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from __future__ import annotations
+import io
 import logging
 import os
 import re
-import tempfile
 import zipfile
 from types import MappingProxyType
 import pandas as pd
@@ -382,57 +382,126 @@ class CimParser:
                 'PositionPoint': pd.DataFrame(columns=['rdfId', 'Location', 'sequenceNumber', 'xPosition', 'yPosition'])
             })})
 
-    def _parse_element(self, element, parsed=None):
-        if parsed is None:
-            parsed = {}
-        tag = element.tag
-        for key, value in element.attrib.items():
-            combined_key = tag + '-' + key
-            if combined_key not in parsed:
-                parsed[combined_key] = value
-            else:
-                existing = parsed[combined_key]
-                if not isinstance(existing, list):
-                    existing = parsed[combined_key] = [existing]
-                existing.append(value)
-        if tag not in parsed and element.text is not None and element.text.strip(' \t\n\r'):
-            parsed[tag] = element.text
-        for child in element:
-            self._parse_element(child, parsed)
-        return parsed
-
-    def _get_df(self, items):
-        return pd.DataFrame([self._parse_element(child) for child in iter(items)])
-
-    def _get_cgmes_profile_from_xml(self, root: etree._Element, default_profile: str = 'unknown') -> str:
+    @staticmethod
+    def _group_elements_by_type(root: etree._Element) -> dict[str, list]:
         """
-        Get the CGMES profile from the XML file.
+        Group the direct children of the root (the CIM objects) by their tag in a single pass. The dict keeps the order
+        in which the tags appear first in the file.
+        """
+        elements_by_type: dict[str, list] = {}
+        for ele in root:
+            tag = ele.tag
+            if not isinstance(tag, str):
+                continue
+            elements_by_type.setdefault(tag, []).append(ele)
+        return elements_by_type
+
+    @staticmethod
+    def _add_attribute_value(columns: dict[str, list], key: str, value: str, row: int, n_rows: int):
+        column = columns.get(key)
+        if column is None:
+            column = columns[key] = [np.nan] * n_rows
+            column[row] = value
+            return
+        existing = column[row]
+        if existing is np.nan:
+            column[row] = value
+        elif isinstance(existing, list):
+            existing.append(value)
+        else:
+            column[row] = [existing, value]
+
+    @staticmethod
+    def _add_text_value(columns: dict[str, list], tag: str, text: str | None, row: int, n_rows: int):
+        if text is None or not text.strip(' \t\n\r'):
+            return
+        column = columns.get(tag)
+        if column is None:
+            column = columns[tag] = [np.nan] * n_rows
+            column[row] = text
+        elif column[row] is np.nan:
+            column[row] = text
+
+    def _parse_element_into_columns(self, element, columns: dict[str, list], row: int, n_rows: int):
+        """
+        Recursive version of the rules in _get_df, used for elements that are nested deeper than the properties of a
+        CIM object (not used in CGMES RDF/XML).
+        """
+        tag = element.tag
+        for key, value in element.items():
+            self._add_attribute_value(columns, tag + '-' + key, value, row, n_rows)
+        self._add_text_value(columns, tag, element.text, row, n_rows)
+        for child in element:
+            if isinstance(child.tag, str):
+                self._parse_element_into_columns(child, columns, row, n_rows)
+
+    def _get_df(self, items) -> pd.DataFrame:
+        """
+        Create a DataFrame from CIM objects (XML elements), one row per object. The columns are named
+        '<tag>-<attribute>' for the attribute values of the object and of its properties (the values of a repeated
+        attribute become a list) and '<tag>' for the text of a property (only the first text of a tag is kept).
+        Missing values are NaN, the columns are ordered by their first appearance.
+        The CIM objects in RDF/XML are flat (object -> properties), therefore the properties are read in a loop and
+        collected column by column, which is much faster than a recursion and a list of dicts per object.
+        """
+        items = list(items)
+        n_rows = len(items)
+        columns: dict[str, list] = {}
+        add_attribute_value, add_text_value = self._add_attribute_value, self._add_text_value
+        for row, element in enumerate(items):
+            # the object itself, e.g. <cim:Terminal rdf:ID="...">
+            tag = element.tag
+            for key, value in element.items():
+                add_attribute_value(columns, tag + '-' + key, value, row, n_rows)
+            add_text_value(columns, tag, element.text, row, n_rows)
+            # its properties, e.g. <cim:Terminal.ConductingEquipment rdf:resource="#..."/> or <cim:x.name>abc</cim:x.name>
+            for child in element:
+                tag = child.tag
+                if not isinstance(tag, str):
+                    continue
+                if len(child):
+                    self._parse_element_into_columns(child, columns, row, n_rows)
+                    continue
+                for key, value in child.items():
+                    add_attribute_value(columns, tag + '-' + key, value, row, n_rows)
+                add_text_value(columns, tag, child.text, row, n_rows)
+        return pd.DataFrame(columns)
+
+    def _get_cgmes_profile_from_xml(self, root: etree._Element, default_profile: str = 'unknown',
+                                    elements_by_type: dict[str, list] | None = None) -> str:
+        """
+        Get the CGMES profile from the XML file. The profile is taken from the file header (FullModel), a CGMES file
+        contains exactly one as a direct child of the root. Difference models (file header DifferenceModel) are not
+        supported.
 
         :param root: The root element from the XML tree
         :param default_profile: The default profile name which will be returned if ignore_errors is set to True.
         Optional, default: 'unknown'
+        :param elements_by_type: The direct children of the root grouped by tag (see _group_elements_by_type), if
+        already available. Optional, default: None
         :return: The profile in short from: 'eq' for Equipment, 'eq_bd' for EquipmentBoundary,
         'ssh' for SteadyStateHypothesis, 'sv' for StateVariables,
         'tp' for Topology, 'tp_bd' for TopologyBoundary
         """
-        element_types = pd.Series([ele.tag for ele in root])
-        element_types = element_types.drop_duplicates()
-        full_model = element_types.str.find('FullModel')
-        if full_model.max() >= 0:
-            full_model = element_types[full_model >= 0].values[0]  # type: ignore[assignment]
-        else:
-            full_model = 'FullModel'  # type: ignore[assignment]
-        full_model_profile = full_model[:-9] + "Model.profile"  # type: ignore[operator]
-        full_model_df = self._get_df(root.findall(".//" + full_model))  # type: ignore[arg-type,operator]
-        if full_model_df.index.size == 0 and self.ignore_errors:
-            self.logger.warning("The FullModel is not given in the XML tree, returning %s" % default_profile)
-            return default_profile
-        elif full_model_df.index.size == 0:
-            raise Exception("The FullModel is not given in the XML tree.")
-        if full_model_df.index.size > 1 and self.ignore_errors:
-            self.logger.warning("It is more than one FullModel given, returning the profile from the first FullModel.")
-        elif full_model_df.index.size > 1:
-            raise Exception("It is more than one FullModel given.")
+        if elements_by_type is None:
+            elements_by_type = self._group_elements_by_type(root)
+        # the tag (with namespace) of the FullModel, e.g. {http://iec.ch/TC57/61970-552/ModelDescription/1#}FullModel
+        full_model = next((tag for tag in elements_by_type if 'FullModel' in tag), 'FullModel')
+        full_model_profile = full_model[:-9] + "Model.profile"
+        full_model_df = self._get_df(elements_by_type.get(full_model, []))
+        if full_model_df.index.size == 0:
+            message = ("The FullModel (file header) was not found in the XML file, maybe the file is corrupt or it is "
+                       "a CGMES difference model, which is not supported.")
+            if self.ignore_errors:
+                self.logger.warning("%s Returning %s" % (message, default_profile))
+                return default_profile
+            raise Exception(message)
+        if full_model_df.index.size > 1:
+            message = "More than one FullModel (file header) found in the XML file, a CGMES file contains exactly one."
+            if self.ignore_errors:
+                self.logger.warning("%s Returning the profile from the first FullModel." % message)
+            else:
+                raise Exception(message)
         if full_model_profile not in full_model_df.columns and self.ignore_errors:
             self.logger.warning("The profile is not given in the FullModel, returning %s" % default_profile)
             return default_profile
@@ -484,39 +553,46 @@ class CimParser:
             return
         # check if the file is a zip archive
         if file.lower().endswith('.zip'):
-            # extract the zip in a temporary folder and delete it later
-            temp_dir = tempfile.TemporaryDirectory()
-            temp_dir_path = os.path.realpath(temp_dir.name)
             with zipfile.ZipFile(file, "r") as zip_ref:
-                zip_ref.extractall(temp_dir_path)
-            # parse the extracted CIM files
-            for temp_file in os.listdir(temp_dir_path):
-                temp_file = os.path.join(temp_dir_path, temp_file)
-                if os.path.isfile(temp_file):
-                    self._parse_source_file(temp_file, output=output, encoding=encoding)
-                elif os.path.isdir(temp_file):
-                    for sub_temp_file in os.listdir(temp_file):
-                        sub_temp_file = os.path.join(temp_file, sub_temp_file)
-                        self._parse_source_file(sub_temp_file, output=output, encoding=encoding)
-            temp_dir.cleanup()
-            del temp_dir, temp_dir_path
+                self._parse_zip_archive(zip_ref, file, output=output, encoding=encoding)
             return
-        parser = etree.XMLParser(encoding=encoding, resolve_entities=False, remove_comments=True)
-        xml_tree = etree.parse(file, parser)
-        prf = self._get_cgmes_profile_from_xml(xml_tree.getroot())
-        self.file_names[prf] = file
-        self._parse_xml_tree(xml_tree.getroot(), prf, output)  # type: ignore[arg-type]
+        self._parse_xml_source(file, file, output=output, encoding=encoding)
 
-    def _parse_xml_tree(self, xml_tree: etree._Element, profile_name: str, output: dict | None = None):
+    def _parse_zip_archive(self, zip_ref: zipfile.ZipFile, archive_name: str, output: dict, encoding: str | None):
+        """
+        Parse the CIM files of a zip archive directly from memory. Extracting them to a temporary folder and parsing
+        them from there is much slower (the freshly written files are read with a cold file cache).
+        Like before, only the files in the root folder and in first level sub folders of the archive are parsed.
+        """
+        members = [m for m in zip_ref.infolist() if not m.is_dir() and m.filename.count('/') <= 1]
+        # sort like os.listdir on Windows did when the archive was extracted to a temporary folder
+        members.sort(key=lambda m: [part.upper() for part in m.filename.split('/')])
+        for member in members:
+            member_name = os.path.join(archive_name, member.filename)
+            file_name_lower = member.filename.lower()
+            if file_name_lower.endswith('.zip'):
+                self.logger.info(f"Parsing file: {member_name}")
+                with zipfile.ZipFile(io.BytesIO(zip_ref.read(member)), "r") as inner_zip_ref:
+                    self._parse_zip_archive(inner_zip_ref, member_name, output=output, encoding=encoding)
+            elif file_name_lower.endswith('xml') or file_name_lower.endswith('rdf'):
+                self.logger.info(f"Parsing file: {member_name}")
+                with zip_ref.open(member) as source:
+                    self._parse_xml_source(source, member_name, output=output, encoding=encoding)
+
+    def _parse_xml_source(self, source, file_name: str, output: dict, encoding: str | None):
+        parser = etree.XMLParser(encoding=encoding, resolve_entities=False, remove_comments=True)
+        root = etree.parse(source, parser).getroot()
+        # group the CIM objects once, used for the profile detection and for parsing the objects
+        elements_by_type = self._group_elements_by_type(root)
+        prf = self._get_cgmes_profile_from_xml(root, elements_by_type=elements_by_type)
+        self.file_names[prf] = file_name
+        self._parse_xml_tree(root, prf, output, elements_by_type=elements_by_type)
+
+    def _parse_xml_tree(self, xml_tree: etree._Element, profile_name: str, output: dict | None = None,
+                        elements_by_type: dict[str, list] | None = None):
         output = self.cim if output is None else output
-        # group the direct children by tag in a single pass; dict insertion order matches the previous
-        # drop_duplicates ordering while avoiding a separate findall scan of the tree per element type
-        elements_by_type: dict[str, list] = {}
-        for ele in xml_tree:
-            tag = ele.tag
-            if not isinstance(tag, str):
-                continue
-            elements_by_type.setdefault(tag, []).append(ele)
+        if elements_by_type is None:
+            elements_by_type = self._group_elements_by_type(xml_tree)
         prf_content: dict[str, pd.DataFrame] = {}
         ns_dict: dict = {}
         prf = profile_name

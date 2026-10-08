@@ -4,7 +4,7 @@ import time
 import numpy as np
 import pandas as pd
 
-from pandapower.converter.cim import cim_tools
+from pandapower.converter.cim import cim_tools, pp_tools
 from pandapower.converter.cim.cim2pp import build_pp_net
 from pandapower.converter.cim.other_classes import Report, LogLevel, ReportCode
 
@@ -56,16 +56,10 @@ class GeoCoordinatesFromGLCim16:
         line_geo = gl_data.rename(columns={'PowerSystemResources': sc['o_id']})
         line_geo = pd.merge(line_geo, lines, how='inner', on=sc['o_id'])
         line_geo = line_geo.sort_values(by=[sc['o_id'], 'sequenceNumber'])
-        line_geo['coords'] = line_geo[['xPosition', 'yPosition']].values.tolist()
-        line_geo['coords'] = line_geo[['coords']].values.tolist()
-        for _, df_group in line_geo.groupby(by=sc['o_id']):
-            line_geo.at[df_group.index.values[0], 'coords'] = df_group[['xPosition', 'yPosition']].values.tolist()
-        line_geo = line_geo.drop_duplicates([sc['o_id']], keep='first')
-        line_geo = line_geo.sort_values(by='index')
-        line_geo['geo'] = '{"coordinates": ' + line_geo['coords'].astype(str) + ', "type": "LineString"}'
+        line_geo = ('{"coordinates": ' + pp_tools.get_line_string_coordinates(line_geo, sc['o_id']) +
+                    ', "type": "LineString"}')
         # now add the line coordinates
-        self.cimConverter.net['line']['geo'] = self.cimConverter.net['line'][sc['o_id']].map(
-            line_geo.set_index(sc['o_id']).to_dict(orient='dict').get('geo'))
+        self.cimConverter.net['line']['geo'] = self.cimConverter.net['line'][sc['o_id']].map(line_geo.to_dict())
 
         gl_data = gl_data.rename(columns={'PowerSystemResources': sc['o_id']})
         # now create geo coordinates which are official not supported by pandapower, e.g. for transformer
@@ -80,14 +74,8 @@ class GeoCoordinatesFromGLCim16:
                 one_ele_df['geo'] = '{"coordinates": [' + one_ele_df["coords_str"] + '], "type": "Point"}'
             else:
                 # line strings
-                one_ele_df['coords'] = one_ele_df[['xPosition', 'yPosition']].values.tolist()
-                one_ele_df['coords'] = one_ele_df[['coords']].values.tolist()
-                for _, df_group in one_ele_df.groupby(by=sc['o_id']):
-                    one_ele_df.at[df_group.index.values[0], 'coords'] = df_group[
-                        ['xPosition', 'yPosition']].values.tolist()
-                one_ele_df = one_ele_df.drop_duplicates([sc['o_id']], keep='first')
-                one_ele_df['coords'] = one_ele_df['coords'].astype(str)
-                one_ele_df['geo'] = '{"coordinates": ' + one_ele_df['coords'].astype(str) + ', "type": "LineString"}'
+                one_ele_df = ('{"coordinates": ' + pp_tools.get_line_string_coordinates(one_ele_df, sc['o_id']) +
+                              ', "type": "LineString"}').rename('geo').reset_index()
             # now add the coordinates
             self.cimConverter.net[one_ele]['geo'] = self.cimConverter.net[one_ele][sc['o_id']].map(
                 one_ele_df.set_index(sc['o_id']).to_dict(orient='dict').get('geo'))
