@@ -1791,13 +1791,12 @@ def _calculate_3w_tap_changers(t3, t2, sides):
             tap_arrays["tap_step_degree"][side][ideal_star_point] *= -1
 
             complex_star_point = mask_star_point & ~ideal_tap
-            if np.any(complex_star_point):
-                t = tap_arrays["tap_step_percent"][side][complex_star_point] * np.exp(
-                    1j * np.deg2rad(tap_arrays["tap_step_degree"][side][complex_star_point]))
-                tap_pos = tap_arrays["tap_pos"][side][complex_star_point]
-                tap_neutral = tap_arrays["tap_neutral"][side][complex_star_point]
-                t_corrected = 100 * t / (100 + (t * (tap_pos-tap_neutral)))
-                tap_arrays["tap_step_percent"][side][complex_star_point] = np.abs(t_corrected)
-                tap_arrays["tap_step_degree"][side][complex_star_point] = np.rad2deg(np.angle(t_corrected))
-                tap_arrays["tap_step_degree"][side][complex_star_point] -= 180
+            t = tap_arrays["tap_step_percent"][side][complex_star_point] * np.exp(
+                1j * np.deg2rad(tap_arrays["tap_step_degree"][side][complex_star_point]))
+            tap_pos = tap_arrays["tap_pos"][side][complex_star_point]
+            tap_neutral = tap_arrays["tap_neutral"][side][complex_star_point]
+            t_corrected = 100 * t / (100 + (t * (tap_pos-tap_neutral)))
+            tap_arrays["tap_step_percent"][side][complex_star_point] = np.abs(t_corrected)
+            tap_arrays["tap_step_degree"][side][complex_star_point] = np.rad2deg(np.angle(t_corrected))
+            tap_arrays["tap_step_degree"][side][complex_star_point] -= 180
     t2.update(tap_arrays)
