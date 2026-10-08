@@ -3,6 +3,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] Ideal three-winding transformer taps at the star point now preserve their phase shift when moved to the equivalent transformer side (#2692).
 
 [3.5.6] - 2026-10-07
 -------------------------------
