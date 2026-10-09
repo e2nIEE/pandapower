@@ -4,7 +4,11 @@
 import pytest
 
 from pandapower.create import (
-    create_bus, create_ext_grid, create_switch, create_shunt, create_transformer_from_parameters
+    create_buses,
+    create_ext_grid,
+    create_shunt,
+    create_switch,
+    create_transformer_from_parameters,
 )
 from pandapower.network import pandapowerNet
 from pandapower.shortcircuit.calc_sc import calc_sc
@@ -13,10 +17,8 @@ from pandapower.shortcircuit.calc_sc import calc_sc
 @pytest.fixture
 def net_transformer():
     net = pandapowerNet(name="net_transformer", sn_mva=2)
-    b1a = create_bus(net, vn_kv=10.)
-    b1b = create_bus(net, vn_kv=10.)
-    b2 = create_bus(net, vn_kv=.4)
-    create_bus(net, vn_kv=0.4, in_service=False)  # add out of service bus to test oos indexing
+    b1a, b1b, b2 = create_buses(net, 3, vn_kv=[10.0, 10.0, 0.4])
+    create_buses(net, 1, vn_kv=0.4, in_service=False)  # add out of service bus to test oos indexing
     create_ext_grid(net, b1a, s_sc_max_mva=100., s_sc_min_mva=40., rx_min=0.1, rx_max=0.1)
     create_switch(net, b1a, b1b, et="b")
     create_transformer_from_parameters(net, b1b, b2, vn_hv_kv=11., vn_lv_kv=0.42, vk_percent=6.,
