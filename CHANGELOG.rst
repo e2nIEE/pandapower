@@ -8,6 +8,7 @@ Change Log
 - [ADDED] create function for trafo characteristic entries
 - [ADDED] converter for trafo characteristics
 - [FIXED] create_gen and create_gens now use connected bus voltage limits as generator voltage-limit defaults.
+- [FIXED] ``from_ppc``/``from_mpc``: the ppc tap ratio and phase shift act at the branch FROM bus. When the FROM bus is the lv bus, the converter applied them to the hv winding (inverted ratio and shift sign) for both ``tap_side`` options. Fixed, and the ``case6``/``case57``/``case24_ieee_rts`` converter fixtures and the ``case24_ieee_rts`` network now hold PYPOWER-consistent data
 
 [upcoming release] - 2026-..-..
 -------------------------------

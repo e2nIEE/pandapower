@@ -346,5 +346,39 @@ def overwrite_results_data_of_ppc_pickle(file_name, grid_names):
         pickle.dump(ppcs, handle, protocol=4)  # as long as py3.7 is supported, 4 is the highest protocol
 
 
+def _two_bus_trafo_ppc(from_lv, tap, shift):
+    bus = np.array([[1, 3, 0, 0, 0, 0, 1, 1.0, 0, 345.0, 1, 1.1, 0.9],
+                    [2, 1, 80, 20, 0, 0, 1, 1.0, 0, 138.0, 1, 1.1, 0.9]], dtype=float)
+    gen = np.array([[1, 0, 0, 999, -999, 1.0, 100, 1, 999, 0] + [0] * 11], dtype=float)
+    f_bus, t_bus = (2, 1) if from_lv else (1, 2)
+    branch = np.array([[f_bus, t_bus, 0.002, 0.08, 0.0, 250, 250, 250, tap, shift, 1, -360, 360]],
+                      dtype=float)
+    return {"version": "2", "baseMVA": 100.0, "bus": bus, "gen": gen, "branch": branch}
+
+
+@pytest.mark.parametrize("from_lv", [False, True])
+@pytest.mark.parametrize("tap, shift", [(1.05, 0.), (0.95, 0.), (1.05, 10.), (1., -15.)])
+@pytest.mark.parametrize("tap_side", ["hv", "lv"])
+def test_trafo_tap_at_from_bus(from_lv, tap, shift, tap_side):
+    """The ppc tap ratio and phase shift act at the FROM bus, also when it is the lv bus."""
+    ppc = _two_bus_trafo_ppc(from_lv, tap, shift)
+    net = from_ppc(ppc, f_hz=60, tap_side=tap_side)
+    runpp(net)
+    ybus = net._ppc["internal"]["Ybus"].toarray()
+    lookup = net._pd2ppc_lookups["bus"][net.bus.index.values]
+    ybus = ybus[np.ix_(lookup, lookup)]
+
+    r, x, t_ratio, sh = ppc["branch"][0, [2, 3, 8, 9]]
+    f, t = ppc["branch"][0, :2].astype(np.int64) - 1
+    ys = 1 / (r + 1j * x)
+    tps = t_ratio * np.exp(1j * np.deg2rad(sh))
+    expected = np.zeros((2, 2), dtype=complex)
+    expected[f, f] = ys / (tps * np.conj(tps))
+    expected[f, t] = -ys / np.conj(tps)
+    expected[t, f] = -ys / tps
+    expected[t, t] = ys
+    assert np.allclose(ybus, expected, atol=1e-10)
+
+
 if __name__ == '__main__':
     pytest.main([__file__, "-xs"])

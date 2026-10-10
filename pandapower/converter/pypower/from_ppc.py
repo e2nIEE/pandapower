@@ -273,9 +273,14 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
             tap_side_is_hv = np.array([tap_side == "hv"]*sum(is_trafo))
         else:
             tap_side_is_hv = np.array(tap_side == "hv")
+        # MATPOWER/PYPOWER apply the tap ratio at the FROM bus. The FROM bus is the hv bus only
+        # where to_vn_is_leq; otherwise the tap physically sits on the lv winding. Represent the
+        # tap on the requested side and invert the ratio (and refer vk/vkr) only where the
+        # requested side differs from the side the ppc tap is on.
+        invert_ratio = tap_side_is_hv != to_vn_is_leq
         ratio_1 = ppc['branch'][is_trafo, TAP]
         ratio_is_zero = np.isclose(ratio_1, 0)
-        ratio_1[~ratio_is_zero & ~tap_side_is_hv] **= -1
+        ratio_1[~ratio_is_zero & invert_ratio] **= -1
         ratio_1[~ratio_is_zero] -= 1
         br_b = ppc['branch'][is_trafo, BR_B]
         if np.any(br_b > 0):
@@ -293,9 +298,14 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         pfe_kw = br_g[is_trafo] * baseMVA * 1e3 
         # pfe_kw = 0.
         vk_percent = np.sign(xk) * zk * sn * 100 / baseMVA
-        vk_percent[~tap_side_is_hv] /= (1+ratio_1[~tap_side_is_hv])**2
+        vk_percent[invert_ratio] /= (1+ratio_1[invert_ratio])**2
         vkr_percent = rk * sn * 100 / baseMVA
-        vkr_percent[~tap_side_is_hv] /= (1+ratio_1[~tap_side_is_hv])**2
+        vkr_percent[invert_ratio] /= (1+ratio_1[invert_ratio])**2
+
+        # the ppc phase shift is also applied at the FROM bus; pandapower's shift_degree is
+        # hv -> lv, so it changes sign where the FROM bus is the lv bus
+        shift_degree = ppc['branch'][is_trafo, SHIFT].copy()
+        shift_degree[~to_vn_is_leq] = 0.0 - shift_degree[~to_vn_is_leq]
 
         tap_step_percent = np.abs(ratio_1)*100
         tap_changer_type = np.where(tap_step_percent > 0, "Ratio", None)
@@ -305,7 +315,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
             vn_hv_kv=vn_hv_kv, vn_lv_kv=vn_lv_kv, name=bra_name[is_trafo],
             vk_percent=vk_percent, vkr_percent=vkr_percent,
             max_loading_percent=100, pfe_kw=pfe_kw, i0_percent=i0_percent,
-            shift_degree=ppc['branch'][is_trafo, SHIFT],
+            shift_degree=shift_degree,
             tap_step_percent=tap_step_percent, tap_pos=np.sign(ratio_1),
             tap_side=tap_side, tap_neutral=0, tap_changer_type=tap_changer_type)
     else:
