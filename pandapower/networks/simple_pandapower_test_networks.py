@@ -1,10 +1,15 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
-from pandapower import pandapowerNet
 from pandapower.create import (
-    create_bus, create_ext_grid, create_line, create_load, create_switch, create_sgen, create_transformer
+    create_buses,
+    create_ext_grid,
+    create_lines,
+    create_loads,
+    create_sgen,
+    create_switches,
+    create_transformer,
 )
+from pandapower.network import pandapowerNet
 
 
 def panda_four_load_branch():
@@ -21,30 +26,19 @@ def panda_four_load_branch():
     """
     net = pandapowerNet(name='four_load_branch')
 
-    busnr1 = create_bus(net, name="bus1", vn_kv=10., geodata=(0, 0))
-    busnr2 = create_bus(net, name="bus2", vn_kv=.4, geodata=(0, -1))
-    busnr3 = create_bus(net, name="bus3", vn_kv=.4, geodata=(0, -2))
-    busnr4 = create_bus(net, name="bus4", vn_kv=.4, geodata=(0, -3))
-    busnr5 = create_bus(net, name="bus5", vn_kv=.4, geodata=(0, -4))
-    busnr6 = create_bus(net, name="bus6", vn_kv=.4, geodata=(0, -5))
+    geo = [(0, -1), (0, -2), (0, -3), (0, -4), (0, -5)]
+    names = [f"bus{i}" for i in range(2, 7)]
+    (busnr1,) = create_buses(net, 1, name="bus1", vn_kv=10.0, geodata=(0, 0))
+    buses = create_buses(net, 5, name=names, vn_kv=0.4, geodata=geo)
 
     create_ext_grid(net, busnr1)
 
-    create_transformer(net, busnr1, busnr2, std_type="0.25 MVA 10/0.4 kV")
+    create_transformer(net, busnr1, buses[0], std_type="0.25 MVA 10/0.4 kV")
 
-    create_line(net, busnr2, busnr3, name="line1", length_km=0.05,
-                std_type="NAYY 4x120 SE")
-    create_line(net, busnr3, busnr4, name="line2", length_km=0.05,
-                std_type="NAYY 4x120 SE")
-    create_line(net, busnr4, busnr5, name="line3", length_km=0.05,
-                std_type="NAYY 4x120 SE")
-    create_line(net, busnr5, busnr6, name="line4", length_km=0.05,
-                std_type="NAYY 4x120 SE")
+    names = [f"line{i}" for i in range(1, 5)]
+    create_lines(net, buses[:4], buses[1:5], name=names, length_km=0.05, line_params="NAYY 4x120 SE")
 
-    create_load(net, busnr3, 0.030, 0.010)
-    create_load(net, busnr4, 0.030, 0.010)
-    create_load(net, busnr5, 0.030, 0.010)
-    create_load(net, busnr6, 0.030, 0.010)
+    create_loads(net, buses[1:5], 0.030, 0.010)
     return net
 
 
@@ -63,39 +57,20 @@ def four_loads_with_branches_out():
     """
     net = pandapowerNet(name='four_loads_with_branches_out')
 
-    busnr1 = create_bus(net, name="bus1ref", vn_kv=10., geodata=(0, 0))
-    create_ext_grid(net, busnr1)
-    busnr2 = create_bus(net, name="bus2", vn_kv=.4, geodata=(0, -1))
-    create_transformer(net, busnr1, busnr2, std_type="0.25 MVA 10/0.4 kV")
-    busnr3 = create_bus(net, name="bus3", vn_kv=.4, geodata=(0, -2))
-    create_line(net, busnr2, busnr3, name="line1", length_km=0.05,
-                std_type="NAYY 4x120 SE")
-    busnr4 = create_bus(net, name="bus4", vn_kv=.4, geodata=(0, -3))
-    create_line(net, busnr3, busnr4, name="line2", length_km=0.05,
-                std_type="NAYY 4x120 SE")
-    busnr5 = create_bus(net, name="bus5", vn_kv=.4, geodata=(0, -4))
-    create_line(net, busnr4, busnr5, name="line3", length_km=0.05,
-                std_type="NAYY 4x120 SE")
-    busnr6 = create_bus(net, name="bus6", vn_kv=.4, geodata=(0, -5))
-    create_line(net, busnr5, busnr6, name="line4", length_km=0.05,
-                std_type="NAYY 4x120 SE")
-    busnr7 = create_bus(net, name="bus7", vn_kv=.4, geodata=(1, -3))
-    create_line(net, busnr3, busnr7, name="line5", length_km=0.05,
-                std_type="NAYY 4x120 SE")
-    busnr8 = create_bus(net, name="bus8", vn_kv=.4, geodata=(1, -4))
-    create_line(net, busnr4, busnr8, name="line6", length_km=0.05,
-                std_type="NAYY 4x120 SE")
-    busnr9 = create_bus(net, name="bus9", vn_kv=.4, geodata=(1, -5))
-    create_line(net, busnr5, busnr9, name="line7", length_km=0.05,
-                std_type="NAYY 4x120 SE")
-    busnr10 = create_bus(net, name="bus10", vn_kv=.4, geodata=(1, -6))
-    create_line(net, busnr6, busnr10, name="line8", length_km=0.05,
-                std_type="NAYY 4x120 SE")
+    geo = [(0, -1), (0, -2), (0, -3), (0, -4), (0, -5), (1, -3), (1, -4), (1, -5), (1, -6)]
+    names = [f"bus{i}" for i in range(2, 11)]
+    (busnr1,) = create_buses(net, 1, name="bus1ref", vn_kv=10.0, geodata=(0, 0))
+    buses = create_buses(net, 9, name=names, vn_kv=0.4, geodata=geo)
 
-    create_load(net, busnr7, p_mw=0.030, q_mvar=0.010)
-    create_load(net, busnr8, p_mw=0.030, q_mvar=0.010)
-    create_load(net, busnr9, p_mw=0.030, q_mvar=0.010)
-    create_load(net, busnr10, p_mw=0.030, q_mvar=0.010)
+    create_ext_grid(net, busnr1)
+    create_transformer(net, busnr1, buses[0], std_type="0.25 MVA 10/0.4 kV")
+
+    from_buses = [buses[i] for i in (0, 1, 2, 3, 1, 2, 3, 4)]
+    to_buses = buses[1:]
+    names = [f"line{i}" for i in range(1, 9)]
+    create_lines(net, from_buses, to_buses, name=names, length_km=0.05, line_params="NAYY 4x120 SE")
+
+    create_loads(net, buses[-4:], p_mw=0.030, q_mvar=0.010)
     return net
 
 
@@ -113,16 +88,17 @@ def simple_four_bus_system():
         >>> net_simple_four_bus = simple_four_bus_system()
     """
     net = pandapowerNet(name='simple_four_bus_system')
-    busnr1 = create_bus(net, name="bus1ref", vn_kv=10, geodata=(0, 0))
+    names = ["bus2", "bus3", "bus4"]
+    geo = [(0, -1), (0, -2), (0, -3)]
+    (busnr1,) = create_buses(net, 1, name="bus1ref", vn_kv=10, geodata=(0, 0))
+    busnr2, busnr3, busnr4 = create_buses(net, 3, name=names, vn_kv=0.4, geodata=geo)
+
     create_ext_grid(net, busnr1)
-    busnr2 = create_bus(net, name="bus2", vn_kv=.4, geodata=(0, -1))
     create_transformer(net, busnr1, busnr2, name="transformer", std_type="0.25 MVA 10/0.4 kV")
-    busnr3 = create_bus(net, name="bus3", vn_kv=.4, geodata=(0, -2))
-    create_line(net, busnr2, busnr3, name="line1", length_km=0.50000, std_type="NAYY 4x50 SE")
-    busnr4 = create_bus(net, name="bus4", vn_kv=.4, geodata=(0, -3))
-    create_line(net, busnr3, busnr4, name="line2", length_km=0.50000, std_type="NAYY 4x50 SE")
-    create_load(net, busnr3, 0.030, 0.010, name="load1")
-    create_load(net, busnr4, 0.030, 0.010, name="load2")
+    create_lines(
+        net, [busnr2, busnr3], [busnr3, busnr4], name=["line1", "line2"], length_km=0.50000, line_params="NAYY 4x50 SE"
+    )
+    create_loads(net, [busnr3, busnr4], 0.030, 0.010, name=["load1", "load2"])
     create_sgen(net, busnr3, p_mw=0.020, q_mvar=0.005, name="pv1", sn_mva=0.03)
     create_sgen(net, busnr4, p_mw=0.015, q_mvar=0.002, name="pv2", sn_mva=0.02)
     return net
@@ -144,47 +120,26 @@ def simple_mv_open_ring_net():
 
     net = pandapowerNet(name='simple_mv_open_ring_net')
 
-    create_bus(net, name="110 kV bar", vn_kv=110, type='b', geodata=(0, 0))
-    create_bus(net, name="20 kV bar", vn_kv=20, type='b', geodata=(0, -1))
-    create_bus(net, name="bus 2", vn_kv=20, type='b', geodata=(-0.5, -2))
-    create_bus(net, name="bus 3", vn_kv=20, type='b', geodata=(-0.5, -3))
-    create_bus(net, name="bus 4", vn_kv=20, type='b', geodata=(-0.5, -4))
-    create_bus(net, name="bus 5", vn_kv=20, type='b', geodata=(0.5, -4))
-    create_bus(net, name="bus 6", vn_kv=20, type='b', geodata=(0.5, -3))
+    names = ["20 kV bar", "bus 2", "bus 3", "bus 4", "bus 5", "bus 6"]
+    geo = [(0, -1), (-0.5, -2), (-0.5, -3), (-0.5, -4), (0.5, -4), (0.5, -3)]
+    create_buses(net, 1, name="110 kV bar", vn_kv=110, type="b", geodata=(0, 0))
+    create_buses(net, 6, name=names, vn_kv=20, type="b", geodata=geo)
 
     create_ext_grid(net, 0, vm_pu=1)
 
-    create_line(net, name="line 0", from_bus=1, to_bus=2, length_km=1,
-                std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
-    create_line(net, name="line 1", from_bus=2, to_bus=3, length_km=1,
-                std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
-    create_line(net, name="line 2", from_bus=3, to_bus=4, length_km=1,
-                std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
-    create_line(net, name="line 3", from_bus=4, to_bus=5, length_km=1,
-                std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
-    create_line(net, name="line 4", from_bus=5, to_bus=6, length_km=1,
-                std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
-    create_line(net, name="line 5", from_bus=6, to_bus=1, length_km=1,
-                std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
+    names = [f"line {i}" for i in range(6)]
+    from_buses = list(range(1, 7))
+    to_buses = list(range(2, 7)) + [1]
+    create_lines(net, from_buses, to_buses, 1, "NA2XS2Y 1x185 RM/25 12/20 kV", names)
 
     create_transformer(net, hv_bus=0, lv_bus=1, std_type="25 MVA 110/20 kV")
 
-    create_load(net, 2, p_mw=1, q_mvar=0.200, name="load 0")
-    create_load(net, 3, p_mw=1, q_mvar=0.200, name="load 1")
-    create_load(net, 4, p_mw=1, q_mvar=0.200, name="load 2")
-    create_load(net, 5, p_mw=1, q_mvar=0.200, name="load 3")
-    create_load(net, 6, p_mw=1, q_mvar=0.200, name="load 4")
+    buses = [2, 3, 4, 5, 6]
+    names = [f"load {i}" for i in range(5)]
+    create_loads(net, buses, p_mw=1, q_mvar=0.200, name=names)
 
-    create_switch(net, bus=1, element=0, et='l')
-    create_switch(net, bus=2, element=0, et='l')
-    create_switch(net, bus=2, element=1, et='l')
-    create_switch(net, bus=3, element=1, et='l')
-    create_switch(net, bus=3, element=2, et='l')
-    create_switch(net, bus=4, element=2, et='l')
-    create_switch(net, bus=4, element=3, et='l', closed=0)
-    create_switch(net, bus=5, element=3, et='l')
-    create_switch(net, bus=5, element=4, et='l')
-    create_switch(net, bus=6, element=4, et='l')
-    create_switch(net, bus=6, element=5, et='l')
-    create_switch(net, bus=1, element=5, et='l')
+    buses = [1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 1]
+    elements = [0, 0, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5]
+    *_, cs, _, _, _, _, _ = create_switches(net, buses, elements, et="l")
+    net.switch.at[cs, "closed"] = False
     return net

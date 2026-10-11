@@ -8,7 +8,6 @@ from pandapower.create import (
     create_buses,
     create_group,
     create_group_from_dict,
-    create_line,
     create_lines,
     create_loads,
     create_measurement,
@@ -43,25 +42,20 @@ def mock_logger(monkeypatch):
 
 def __create_trafo3w(net, bus_sl, service: bool = True):
     create_ext_grid(net, bus_sl, in_service=service)
-    bus0 = create_bus(net, vn_kv=.4, in_service=service)
+    bus0, bus1, bus2, bus3, bus4 = create_buses(net, 5, vn_kv=0.4, in_service=service)
     create_switch(net, bus_sl, bus0, 'b', not service)
-    bus1 = create_bus(net, vn_kv=.4, in_service=service)
     create_transformer(net, bus0, bus1, in_service=service,
                        std_type='63 MVA 110/20 kV')
-    bus2 = create_bus(net, vn_kv=.4, in_service=service)
-    create_line(net, bus1, bus2, length_km=1, in_service=service,
-                std_type='149-AL1/24-ST1A 10.0')
+    create_lines(net, bus1, bus2, length_km=1, in_service=service, line_params="149-AL1/24-ST1A 10.0")
     create_load(net, bus2, p_mw=0., in_service=service)
     create_sgen(net, bus2, p_mw=0., in_service=service)
-    bus3 = create_bus(net, vn_kv=.4, in_service=service)
-    bus4 = create_bus(net, vn_kv=.4, in_service=service)
     create_transformer3w_from_parameters(net, bus2, bus3, bus4, 0.4, 0.4, 0.4, 100, 50, 50,
                                          3, 3, 3, 1, 1, 1, 5, 1)
 
 @pytest.mark.parametrize('service', [True, False])
 def test_drop_inactive_elements(service):
     net = pandapowerNet(name=f"test_drop_inactive_elements service={service}")
-    bus_sl = create_bus(net, vn_kv=.4, in_service=service)
+    (bus_sl,) = create_buses(net, 1, vn_kv=0.4, in_service=service)
     __create_trafo3w(net, bus_sl, service=service)
     # drop them
     drop_inactive_elements(net)
@@ -90,11 +84,9 @@ def test_drop_inactive_elements(service):
 
     net = pandapowerNet(name=f"test_drop_inactive_elements")
 
-    bus0 = create_bus(net, vn_kv=.4, in_service=True)
+    bus0, bus1 = create_buses(net, 2, vn_kv=0.4, in_service=[True, False])
     create_ext_grid(net, bus0, in_service=True)
-    bus1 = create_bus(net, vn_kv=.4, in_service=False)
-    create_line(net, bus0, bus1, length_km=1, in_service=False,
-                std_type='149-AL1/24-ST1A 10.0')
+    create_lines(net, bus0, bus1, length_km=1, in_service=False, line_params="149-AL1/24-ST1A 10.0")
     gen0 = create_gen(net, bus=bus1, p_mw=0.001)
 
     drop_inactive_elements(net)
@@ -112,9 +104,8 @@ def test_drop_inactive_elements_with_empty_net():
 
 def test_drop_inactive_elements_with_missing_in_service_column(mock_logger):
     net = pandapowerNet(name="test_drop_inactive_elements_with_missing_in_service_column 0")
-    bus_sl = create_bus(net, vn_kv=.4)
+    bus_sl, bus0 = create_buses(net, 2, vn_kv=0.4)
     create_ext_grid(net, bus_sl)
-    bus0 = create_bus(net, vn_kv=.4)
     create_ward(
         net, bus0, ps_mw=0,
         qs_mvar=0,
@@ -130,10 +121,9 @@ def test_drop_inactive_elements_with_missing_in_service_column(mock_logger):
     )
 
     net = pandapowerNet(name="test_drop_inactive_elements_with_missing_in_service_column 1")
-    bus0 = create_bus(net, vn_kv=.4)
+    bus0, bus1 = create_buses(net, 2, vn_kv=0.4)
     create_ext_grid(net, bus0)
-    bus1 = create_bus(net, vn_kv=.4)
-    create_line(net, bus0, bus1, length_km=1, std_type='149-AL1/24-ST1A 10.0')
+    create_lines(net, bus0, bus1, length_km=1, line_params="149-AL1/24-ST1A 10.0")
     gen0 = create_gen(net, bus=bus1, p_mw=0.001, in_service=False)
 
     drop_inactive_elements(net)
@@ -144,10 +134,9 @@ def test_drop_inactive_elements_with_missing_in_service_column(mock_logger):
 def test_drop_inactive_elements_other_branches():
     net = pandapowerNet(name="test_drop_inactive_elements_other_branches")
 
-    bus0 = create_bus(net, vn_kv=.4)
+    bus0, bus1 = create_buses(net, 2, vn_kv=0.4)
     create_ext_grid(net, bus0)
-    bus1 = create_bus(net, vn_kv=.4)
-    create_line(net, bus0, bus1, length_km=1, std_type='149-AL1/24-ST1A 10.0')
+    create_lines(net, bus0, bus1, length_km=1, line_params="149-AL1/24-ST1A 10.0")
 
     impedance0 = create_impedance(
         net, from_bus=bus0,
@@ -163,7 +152,7 @@ def test_drop_inactive_elements_other_branches():
 
 def test_drop_elements_simple_with_trafo(mock_logger):
     net = pandapowerNet(name="test_drop_elements_simple_with_trafo")
-    bus0 = create_bus(net, vn_kv=.4)
+    (bus0,) = create_buses(net, 1, vn_kv=0.4)
     create_ext_grid(net, bus0)
     drop_elements_simple(net, "bus", 0)
 
@@ -433,12 +422,9 @@ def test_drop_inner_branches():
 
 def test_fuse_buses():
     net = pandapowerNet(name="test_fuse_buses")
-    b1 = create_bus(net, vn_kv=1, name="b1")
-    b2 = create_bus(net, vn_kv=1.5, name="b2")
-    b3 = create_bus(net, vn_kv=2, name="b2")
+    b1, b2, b3 = create_buses(net, 3, vn_kv=[1, 1.5, 2], name=["b1", "b2", "b3"])
 
-    line1 = create_line(net, b2, b1, length_km=1, std_type="NAYY 4x50 SE")
-    line2 = create_line(net, b2, b3, length_km=1, std_type="NAYY 4x50 SE")
+    line1, line2 = create_lines(net, [b2, b2], [b1, b3], length_km=1, line_params="NAYY 4x50 SE")
 
     sw1 = create_switch(net, b2, line1, et="l")
     sw2 = create_switch(net, b1, b2, et="b")
@@ -482,13 +468,9 @@ def test_fuse_buses():
 def test_close_switch_at_line_with_two_open_switches():
     net = pandapowerNet(name="test_close_switch_at_line_with_two_open_switches")
 
-    bus1 = create_bus(net, vn_kv=.4)
-    bus2 = create_bus(net, vn_kv=.4)
-    bus3 = create_bus(net, vn_kv=.4)
+    bus1, bus2, bus3 = create_buses(net, 3, vn_kv=0.4)
 
-    line1 = create_line(net, bus2, bus3, length_km=1., std_type="NAYY 4x50 SE")
-    line2 = create_line(net, bus2, bus3, length_km=1., std_type="NAYY 4x50 SE")
-    create_line(net, bus2, bus3, length_km=1., std_type="NAYY 4x50 SE")  # line3
+    line1, line2, _ = create_lines(net, [bus2] * 3, [bus3] * 3, length_km=1.0, line_params="NAYY 4x50 SE")
 
     create_switch(net, bus1, bus2, et="b", closed=True)  # sw0
 
@@ -510,15 +492,11 @@ def test_close_switch_at_line_with_two_open_switches():
 def test_create_replacement_switch_for_branch():
     net = pandapowerNet(name="test_create_replacement_switch_for_branch")
 
-    bus0 = create_bus(net, vn_kv=0.4)
-    bus1 = create_bus(net, vn_kv=0.4)
-    bus2 = create_bus(net, vn_kv=0.4)
-    bus3 = create_bus(net, vn_kv=0.4)
+    bus0, bus1, bus2, bus3 = create_buses(net, 4, vn_kv=0.4)
 
     create_ext_grid(net, bus0, vm_pu=0.4)
 
-    line0 = create_line(net, bus0, bus1, length_km=1, std_type="NAYY 4x50 SE")
-    line1 = create_line(net, bus2, bus3, length_km=1, std_type="NAYY 4x50 SE")
+    line0, line1 = create_lines(net, [bus0, bus2], [bus1, bus3], length_km=1, line_params="NAYY 4x50 SE")
     impedance0 = create_impedance(net, bus1, bus2, 0.01, 0.01, sn_mva=100)
     impedance1 = create_impedance(net, bus1, bus2, 0.01, 0.01, sn_mva=100)
 
@@ -554,13 +532,7 @@ def test_create_replacement_switch_for_branch():
 def net():
     net = pandapowerNet(name="net")
 
-    bus0 = create_bus(net, vn_kv=0.4)
-    bus1 = create_bus(net, vn_kv=0.4)
-    bus2 = create_bus(net, vn_kv=0.4)
-    bus3 = create_bus(net, vn_kv=0.4)
-    bus4 = create_bus(net, vn_kv=0.4)
-    bus5 = create_bus(net, vn_kv=0.4)
-    bus6 = create_bus(net, vn_kv=0.4)
+    bus0, bus1, bus2, bus3, bus4, bus5, bus6 = create_buses(net, 7, vn_kv=0.4)
 
     create_ext_grid(net, bus0, vm_pu=0.4)
 
@@ -801,7 +773,7 @@ def test_replace_pq_elmtype():
     create_buses(net, 3, 20)
     create_ext_grid(net, 0)
     for to_bus in [1, 2]:
-        create_line(net, 0, to_bus, 0.6, 'NA2XS2Y 1x95 RM/25 12/20 kV')
+        create_lines(net, 0, to_bus, 0.6, "NA2XS2Y 1x95 RM/25 12/20 kV")
     names = ["load 1", "load 2"]
     create_loads(net, [1, 2], 0.8, 0.1, sn_mva=1, min_p_mw=0.5, max_p_mw=1.0, controllable=True,
                  name=names, scaling=[0.8, 1])
@@ -992,7 +964,7 @@ def test_repl_to_line_with_switch():
                 std = "24-AL1/4-ST1A 0.4"
 
             # create an oos line at the same buses
-            REPL = create_line(net, from_bus=fbus, to_bus=tbus, length_km=len_, std_type=std)
+            (REPL,) = create_lines(net, from_buses=fbus, to_buses=tbus, length_km=len_, line_params=std)
 
             for bus in fbus, tbus:
                 if bus in net.switch[~net.switch.closed & (net.switch.element == testindex)].bus.values:
@@ -1136,20 +1108,15 @@ def test_set_isolated_areas_out_of_service():
 
 def test_drop_trafos_incorrect_table_names():
     net = pandapowerNet(name="test_drop_trafos_incorrect_table_names")
-    bus_sl = create_bus(net, vn_kv=.4)
+    bus_sl, bus0, bus1, bus2 = create_buses(net, 4, vn_kv=0.4)
     create_ext_grid(net, bus_sl)
-    bus0 = create_bus(net, vn_kv=.4)
     create_switch(net, bus_sl, bus0, 'b')
-    bus1 = create_bus(net, vn_kv=.4)
     create_transformer(net, bus0, bus1,
                        std_type='63 MVA 110/20 kV')
-    bus2 = create_bus(net, vn_kv=.4)
-    create_line(net, bus1, bus2, length_km=1,
-                std_type='149-AL1/24-ST1A 10.0')
+    create_lines(net, bus1, bus2, length_km=1, line_params="149-AL1/24-ST1A 10.0")
     create_load(net, bus2, p_mw=0.)
     create_sgen(net, bus2, p_mw=0.)
-    bus3 = create_bus(net, vn_kv=.4)
-    bus4 = create_bus(net, vn_kv=.4)
+    bus3, bus4 = create_buses(net, 2, vn_kv=0.4)
     create_transformer3w_from_parameters(net, bus2, bus3, bus4, 0.4, 0.4, 0.4, 100, 50, 50,
                                          3, 3, 3, 1, 1, 1, 5, 1)
 
@@ -1160,15 +1127,14 @@ def test_drop_trafos_incorrect_table_names():
 
 def test_drop_elements_buses():
     net = pandapowerNet(name="test_drop_elements_buses")
-    bus0 = create_bus(net, vn_kv=.4)
+    (bus0,) = create_buses(net, 1, vn_kv=0.4)
     drop_elements(net, "bus", element_index=[0])
     assert bus0 not in net.bus.index
 
 def test_drop_elements_lines():
     net = pandapowerNet(name="test_drop_elements_lines")
-    bus0 = create_bus(net, vn_kv=.4)
-    bus1 = create_bus(net, vn_kv=.4)
-    line0 = create_line(net, bus0, bus1, length_km=1, std_type='149-AL1/24-ST1A 10.0')
+    bus0, bus1 = create_buses(net, 2, vn_kv=0.4)
+    (line0,) = create_lines(net, bus0, bus1, length_km=1, line_params="149-AL1/24-ST1A 10.0")
     drop_elements(net, "line", element_index=[0])
     assert line0 not in net.line.index
 

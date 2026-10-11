@@ -139,7 +139,7 @@ _ext_grid_columns = {
         metadata={"cim": True, "doc": False},
     ),
     "RegulatingControl.enabled": pa.Column(
-        float,
+        pd.BooleanDtype,
         nullable=True,
         required=False,
         description="RegulatingControl.enabled from converter, not relevant for calculations",
