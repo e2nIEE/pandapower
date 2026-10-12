@@ -179,10 +179,10 @@ class TestLineDcOptionalFields:
             in_service=[True, True, True],
             name=["Line 1", pd.NA, pd.NA],
             type=["ol", pd.NA, pd.NA],
-            max_loading_percent=[pd.NA, 80.0, pd.NA],
-            alpha=[pd.NA, pd.NA, 0.003],
-            temperature_degree_celsius=[pd.NA, pd.NA, 30.0],
-        ) #TODO Talk to Hjalmar and David about iterables
+            max_loading_percent=[float("nan"), 80.0, float("nan")],
+            alpha=[float("nan"), float("nan"), 0.003],
+            temperature_degree_celsius=[float("nan"), float("nan"), 30.0],
+        )
 
         # Set nullable string columns with mixed values including NA
         net.line_dc["name"] = pd.Series(["Line 1", pd.NA, pd.NA], dtype=pd.StringDtype())

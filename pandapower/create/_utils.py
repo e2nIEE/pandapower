@@ -5,16 +5,16 @@ from __future__ import annotations
 
 import logging
 import warnings
-from collections.abc import Iterable, Collection
+from collections.abc import Collection, Iterable
 from typing import Any
 
 import numpy.typing as npt
 import pandas as pd
 from numpy import all as np_all
 from numpy import any as np_any
-from numpy import arange, c_, intersect1d, isin, isnan, issubdtype
+from numpy import arange, c_, intersect1d, isin, issubdtype
 from numpy import unique as uni
-from pandas import isnull
+from pandas import isna, isnull
 from pandas.api.types import is_object_dtype
 
 from pandapower.auxiliary import (
@@ -270,11 +270,11 @@ def _not_nan(value, all_=True):
         if all_:
             if is_object_dtype(value):
                 return not all(isnull(value))
-            return not all(isnan(value))
+            return not all(isna(value))
         else:
             if is_object_dtype(value):
                 return not any(isnull(value))
-            return not any(isnan(value))
+            return not any(isna(value))
     else:
         try:
             return pd.notna(value)
