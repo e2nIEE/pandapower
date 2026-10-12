@@ -5,31 +5,25 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_bus, create_ext_grid, create_transformer_from_parameters, create_gen, create_transformer3w_from_parameters,
-    create_line_from_parameters, create_xward, create_motor
+    create_buses,
+    create_ext_grid,
+    create_gen,
+    create_lines,
+    create_motor,
+    create_transformer3w_from_parameters,
+    create_transformer_from_parameters,
+    create_xward,
 )
 from pandapower.network import pandapowerNet
 from pandapower.shortcircuit.calc_sc import calc_sc
-from pandapower.shortcircuit.toolbox import detect_power_station_unit, calc_sc_on_line
+from pandapower.shortcircuit.toolbox import calc_sc_on_line, detect_power_station_unit
 
 
 def iec_60909_4():
     net = pandapowerNet(name="iec_60909_4", sn_mva=34)
 
-    b1 = create_bus(net, vn_kv=380.)
-    b2 = create_bus(net, vn_kv=110.)
-    b3 = create_bus(net, vn_kv=110.)
-    b4 = create_bus(net, vn_kv=110.)
-    b5 = create_bus(net, vn_kv=110.)
-    b6 = create_bus(net, vn_kv=10.)
-    b7 = create_bus(net, vn_kv=10.)
-    b8 = create_bus(net, vn_kv=30.)
-
-    HG1 = create_bus(net, vn_kv=20)
-    HG2 = create_bus(net, vn_kv=10)  # 10.5kV?
-    T_T5 = create_bus(net, vn_kv=10)
-    T_T6 = create_bus(net, vn_kv=10)
-    H = create_bus(net, vn_kv=30.)
+    b1, b2, b3, b4, b5, b6, b7, b8 = create_buses(net, 8, vn_kv=[380.0, 110.0, 110.0, 110.0, 110.0, 10.0, 10.0, 30.0])
+    HG1, HG2, T_T5, T_T6, H = create_buses(net, 5, vn_kv=[20.0, 10.0, 10.0, 10.0, 30.0])  # 10.5kV?
 
     create_ext_grid(net, b1, s_sc_max_mva=38 * 380 * np.sqrt(3), rx_max=0.1, x0x_max=3, r0x0_max=0.15)
     create_ext_grid(net, b5, s_sc_max_mva=16 * 110 * np.sqrt(3), rx_max=0.1, x0x_max=3.3, r0x0_max=0.2)
@@ -98,27 +92,91 @@ def iec_60909_4():
         create_motor(net, b7, pn_mech_mw=2.0, cos_phi=0.89, cos_phi_n=0.89, efficiency_n_percent=96.8, vn_kv=10, rx=0.1,
                      lrc_pu=5.2)
 
-    create_line_from_parameters(net, b2, b3, name="L1", c_nf_per_km=0, max_i_ka=0,  # FIXME: Optional for SC
-                                length_km=20, r_ohm_per_km=0.12, x_ohm_per_km=0.39, r0_ohm_per_km=0.32,
-                                x0_ohm_per_km=1.26, c0_nf_per_km=0, g0_us_per_km=0)
-    create_line_from_parameters(net, b3, b4, name="L2", c_nf_per_km=0, max_i_ka=0, length_km=10, r_ohm_per_km=0.12,
-                                x_ohm_per_km=0.39, r0_ohm_per_km=0.32, x0_ohm_per_km=1.26, c0_nf_per_km=0,
-                                g0_us_per_km=0)
-    create_line_from_parameters(net, b2, b5, name="L3a", c_nf_per_km=0, max_i_ka=0, length_km=5, r_ohm_per_km=0.12,
-                                x_ohm_per_km=0.39, r0_ohm_per_km=0.52, x0_ohm_per_km=1.86, c0_nf_per_km=0,
-                                g0_us_per_km=0)
-    create_line_from_parameters(net, b2, b5, name="L3b", c_nf_per_km=0, max_i_ka=0, length_km=5, r_ohm_per_km=0.12,
-                                x_ohm_per_km=0.39, r0_ohm_per_km=0.52, x0_ohm_per_km=1.86, c0_nf_per_km=0,
-                                g0_us_per_km=0)
-    create_line_from_parameters(net, b5, b3, name="L4", c_nf_per_km=0, max_i_ka=0, length_km=10, r_ohm_per_km=0.096,
-                                x_ohm_per_km=0.388, r0_ohm_per_km=0.22, x0_ohm_per_km=1.1, c0_nf_per_km=0,
-                                g0_us_per_km=0)
-    create_line_from_parameters(net, b5, b4, name="L5", c_nf_per_km=0, max_i_ka=0, length_km=15, r_ohm_per_km=0.12,
-                                x_ohm_per_km=0.386, r0_ohm_per_km=0.22, x0_ohm_per_km=1.1, c0_nf_per_km=0,
-                                g0_us_per_km=0)
-    create_line_from_parameters(net, b6, b7, name="L6", c_nf_per_km=0, max_i_ka=0, length_km=1, r_ohm_per_km=0.082,
-                                x_ohm_per_km=0.086, r0_ohm_per_km=0.082, x0_ohm_per_km=0.086, c0_nf_per_km=0,
-                                g0_us_per_km=0)
+    create_lines(
+        net,
+        [b2, b3],
+        [b3, b4],
+        name=["L1", "L2"],
+        length_km=[20, 10],
+        line_params={
+            "r_ohm_per_km": 0.12,
+            "x_ohm_per_km": 0.39,
+            "c_nf_per_km": 0,
+            "max_i_ka": 0,  # FIXME: Optional for SC
+            "r0_ohm_per_km": 0.32,
+            "x0_ohm_per_km": 1.26,
+            "c0_nf_per_km": 0,
+            "g0_us_per_km": 0,
+        },
+    )
+    create_lines(
+        net,
+        [b2, b2],
+        [b5, b5],
+        name=["L3a", "L3b"],
+        length_km=5,
+        line_params={
+            "r_ohm_per_km": 0.12,
+            "x_ohm_per_km": 0.39,
+            "c_nf_per_km": 0,
+            "max_i_ka": 0,
+            "r0_ohm_per_km": 0.52,
+            "x0_ohm_per_km": 1.86,
+            "c0_nf_per_km": 0,
+            "g0_us_per_km": 0,
+        },
+    )
+    create_lines(
+        net,
+        b5,
+        b3,
+        name="L4",
+        length_km=10,
+        line_params={
+            "r_ohm_per_km": 0.096,
+            "x_ohm_per_km": 0.388,
+            "c_nf_per_km": 0,
+            "max_i_ka": 0,
+            "r0_ohm_per_km": 0.22,
+            "x0_ohm_per_km": 1.1,
+            "c0_nf_per_km": 0,
+            "g0_us_per_km": 0,
+        },
+    )
+    create_lines(
+        net,
+        b5,
+        b4,
+        name="L5",
+        length_km=15,
+        line_params={
+            "r_ohm_per_km": 0.12,
+            "x_ohm_per_km": 0.386,
+            "c_nf_per_km": 0,
+            "max_i_ka": 0,
+            "r0_ohm_per_km": 0.22,
+            "x0_ohm_per_km": 1.1,
+            "c0_nf_per_km": 0,
+            "g0_us_per_km": 0,
+        },
+    )
+    create_lines(
+        net,
+        b6,
+        b7,
+        name="L6",
+        length_km=1,
+        line_params={
+            "r_ohm_per_km": 0.082,
+            "x_ohm_per_km": 0.086,
+            "c_nf_per_km": 0,
+            "max_i_ka": 0,
+            "r0_ohm_per_km": 0.082,
+            "x0_ohm_per_km": 0.086,
+            "c0_nf_per_km": 0,
+            "g0_us_per_km": 0,
+        },
+    )
     # bus F for 1ph fault: 1, 2, 3, 4
     return net
 
@@ -126,13 +184,7 @@ def iec_60909_4():
 def iec_60909_4_small(with_xward=False):
     net = pandapowerNet(name="iec_60909_4_small", sn_mva=6)
 
-    b1 = create_bus(net, vn_kv=380.)
-    b2 = create_bus(net, vn_kv=110.)
-    b3 = create_bus(net, vn_kv=110.)
-    b5 = create_bus(net, vn_kv=110.)
-    b8 = create_bus(net, vn_kv=30.)
-    H = create_bus(net, vn_kv=30.)
-    HG2 = create_bus(net, vn_kv=10)
+    b1, b2, b3, b5, b8, H, HG2 = create_buses(net, 7, vn_kv=[380.0, 110.0, 110.0, 110.0, 30.0, 30.0, 10.0])
 
     create_ext_grid(net, b1, s_sc_max_mva=38 * 380 * np.sqrt(3), rx_max=0.1, x0x_max=3, r0x0_max=0.15)
     create_ext_grid(net, b5, s_sc_max_mva=16 * 110 * np.sqrt(3), rx_max=0.1, x0x_max=3.3, r0x0_max=0.2)
@@ -154,21 +206,60 @@ def iec_60909_4_small(with_xward=False):
                                          vk_hv_percent=21, vkr_hv_percent=.26, vk_mv_percent=7, vkr_mv_percent=.16,
                                          vk_lv_percent=10., vkr_lv_percent=.16)
 
-    create_line_from_parameters(net, b2, b3, name="L1", c_nf_per_km=0, max_i_ka=0,  # FIXME: Optional for SC
-                                length_km=20, r_ohm_per_km=0.12, x_ohm_per_km=0.39, r0_ohm_per_km=0.32,
-                                x0_ohm_per_km=1.26, c0_nf_per_km=0, g0_us_per_km=0)
-    create_line_from_parameters(net, b2, b5, name="L3a", c_nf_per_km=0, max_i_ka=0, length_km=5, r_ohm_per_km=0.12,
-                                x_ohm_per_km=0.39, r0_ohm_per_km=0.52, x0_ohm_per_km=1.86, c0_nf_per_km=0,
-                                g0_us_per_km=0)
-    create_line_from_parameters(net, b2, b5, name="L3b", c_nf_per_km=0, max_i_ka=0, length_km=5, r_ohm_per_km=0.12,
-                                x_ohm_per_km=0.39, r0_ohm_per_km=0.52, x0_ohm_per_km=1.86, c0_nf_per_km=0,
-                                g0_us_per_km=0)
-    create_line_from_parameters(net, b5, b3, name="L4", c_nf_per_km=0, max_i_ka=0, length_km=10, r_ohm_per_km=0.096,
-                                x_ohm_per_km=0.388, r0_ohm_per_km=0.22, x0_ohm_per_km=1.1, c0_nf_per_km=0,
-                                g0_us_per_km=0)
+    create_lines(
+        net,
+        b2,
+        b3,
+        name="L1",
+        length_km=20,
+        line_params={
+            "r_ohm_per_km": 0.12,
+            "x_ohm_per_km": 0.39,
+            "c_nf_per_km": 0,
+            "max_i_ka": 0,  # FIXME: Optional for SC
+            "r0_ohm_per_km": 0.32,
+            "x0_ohm_per_km": 1.26,
+            "c0_nf_per_km": 0,
+            "g0_us_per_km": 0,
+        },
+    )
+    create_lines(
+        net,
+        [b2, b2],
+        [b5, b5],
+        name=["L3a", "L3b"],
+        length_km=5,
+        line_params={
+            "r_ohm_per_km": 0.12,
+            "x_ohm_per_km": 0.39,
+            "c_nf_per_km": 0,
+            "max_i_ka": 0,
+            "r0_ohm_per_km": 0.52,
+            "x0_ohm_per_km": 1.86,
+            "c0_nf_per_km": 0,
+            "g0_us_per_km": 0,
+        },
+    )
+    create_lines(
+        net,
+        b5,
+        b3,
+        name="L4",
+        length_km=10,
+        line_params={
+            "r_ohm_per_km": 0.096,
+            "x_ohm_per_km": 0.388,
+            "c_nf_per_km": 0,
+            "max_i_ka": 0,
+            "r0_ohm_per_km": 0.22,
+            "x0_ohm_per_km": 1.1,
+            "c0_nf_per_km": 0,
+            "g0_us_per_km": 0,
+        },
+    )
 
     if with_xward:
-        # impedance 10 Ohm and 20 Ohm is different than the 10 Ohm and 20 Ohm
+        # impedance 10 Ohm and 20 Ohm is different from the 10 Ohm and 20 Ohm
         # in PowerFactory in "Short-Circuit VDE/IEC". In order to get to the 10 Ohm and 20 Ohm,
         # one must calculate the pz_mw and qz_mva so that the resulting
         # shunt impedance ends up being 10 Ohm and 20 Ohm.
@@ -185,8 +276,7 @@ def iec_60909_4_small(with_xward=False):
 def iec_60909_4_small_gen_only():
     net = pandapowerNet(name="iec_60909_4_small_gen_only", sn_mva=56)
 
-    b3 = create_bus(net, vn_kv=110.)
-    HG2 = create_bus(net, vn_kv=10)
+    b3, HG2 = create_buses(net, 2, vn_kv=[110.0, 10.0])
 
     t1 = create_transformer_from_parameters(net, b3, HG2, sn_mva=100, pfe_kw=0, i0_percent=0, vn_hv_kv=120.,
                                             vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5, vk0_percent=12,
@@ -201,10 +291,7 @@ def iec_60909_4_small_gen_only():
 def iec_60909_4_2gen():
     net = pandapowerNet(name="iec_60909_4_2gen", sn_mva=12)
 
-    b3 = create_bus(net, vn_kv=110.)
-    b4 = create_bus(net, vn_kv=110.)
-    HG1 = create_bus(net, vn_kv=20.)
-    HG2 = create_bus(net, vn_kv=10.)
+    b3, b4, HG1, HG2 = create_buses(net, 4, vn_kv=[110.0, 110.0, 20.0, 10.0])
 
     t1 = create_transformer_from_parameters(net, b4, HG1, sn_mva=150, pfe_kw=0, i0_percent=0, vn_hv_kv=115.,
                                             vn_lv_kv=21, vk_percent=16, vkr_percent=0.5, pt_percent=12, oltc=True,
@@ -218,8 +305,19 @@ def iec_60909_4_2gen():
     create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5, xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100,
                pg_percent=7.5, slack=True, power_station_trafo=t2)
 
-    create_line_from_parameters(net, b3, b4, name="L2", c_nf_per_km=0, max_i_ka=0, length_km=10, r_ohm_per_km=0.12,
-                                x_ohm_per_km=0.39)
+    create_lines(
+        net,
+        b3,
+        b4,
+        name="L2",
+        length_km=10,
+        line_params={
+            "r_ohm_per_km": 0.12,
+            "x_ohm_per_km": 0.39,
+            "c_nf_per_km": 0,
+            "max_i_ka": 0,
+        },
+    )
 
     return net
 
@@ -227,8 +325,7 @@ def iec_60909_4_2gen():
 def vde_232():
     net = pandapowerNet(name="vde_232", sn_mva=13)
     # hv buses
-    create_bus(net, 110)
-    create_bus(net, 21)
+    create_buses(net, 2, [110.0, 21.0])
 
     create_ext_grid(net, 0, s_sc_max_mva=13.61213 * 110 * np.sqrt(3), rx_max=0.20328, x0x_max=3.47927, r0x0_max=3.03361)
     create_transformer_from_parameters(net, 0, 1, 150, 115, 21, 0.5, 16, pfe_kw=0, i0_percent=0, tap_step_percent=1,

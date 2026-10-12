@@ -2,52 +2,49 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
-from collections.abc import Iterable, Collection
-import warnings
-from typing import Literal, get_type_hints, cast
+import logging
+from collections.abc import Collection, Iterable
+from typing import Literal, cast, get_type_hints
 
 import numpy as np
 import pandas as pd
 
-from pandapower.pp_types import StandardTypesDict, StandardTypesDictKeys
 from pandapower.auxiliary import _preserve_dtypes, ensure_iterability, log_to_level
-from pandapower.network import pandapowerNet, plural_s
-from pandapower.std_types import change_std_type
-from pandapower.create._utils import add_column_to_df
 from pandapower.create import (
-    create_switch,
-    create_lines,
-    create_impedance,
-    create_gen,
+    create_buses,
     create_ext_grid,
+    create_gen,
+    create_impedance,
+    create_lines,
     create_load,
-    create_shunt,
-    create_bus,
     create_sgen,
+    create_shunt,
     create_storage,
+    create_switch,
     create_ward,
 )
-from pandapower.pp_types import Int
-from pandapower.results import EmptyResults
-from pandapower.run import runpp
-from pandapower.toolbox.element_selection import (
-    branch_element_bus_dict,
-    element_bus_tuples,
-    pp_elements,
-    get_connected_elements,
-    get_connected_elements_dict
-)
-from pandapower.toolbox.result_info import clear_result_tables
-from pandapower.toolbox.data_modification import reindex_elements
+from pandapower.create._utils import add_column_to_df
 from pandapower.groups import (
-    detach_from_groups,
     attach_to_group,
     attach_to_groups,
     check_unique_group_rows,
-    element_associated_groups
+    detach_from_groups,
+    element_associated_groups,
 )
-
-import logging
+from pandapower.network import pandapowerNet, plural_s
+from pandapower.pp_types import Int, StandardTypesDict, StandardTypesDictKeys
+from pandapower.results import EmptyResults
+from pandapower.run import runpp
+from pandapower.std_types import change_std_type
+from pandapower.toolbox.data_modification import reindex_elements
+from pandapower.toolbox.element_selection import (
+    branch_element_bus_dict,
+    element_bus_tuples,
+    get_connected_elements,
+    get_connected_elements_dict,
+    pp_elements,
+)
+from pandapower.toolbox.result_info import clear_result_tables
 
 logger = logging.getLogger(__name__)
 
@@ -1902,8 +1899,15 @@ def replace_xward_by_internal_elements(net, xwards=None, set_xward_bus_limits=Fa
         vn = net.bus.vn_kv.at[xward.bus]
         vm_lims = net.bus.loc[xward.bus, ["min_vm_pu", "max_vm_pu"]].tolist() if \
             set_xward_bus_limits else default_vm_lims
-        new_bus = create_bus(net, net.bus.vn_kv[xward.bus], in_service=xward.in_service,
-                             name=xward.name, min_vm_pu=vm_lims[0], max_vm_pu=vm_lims[1])
+        (new_bus,) = create_buses(
+            net,
+            1,
+            net.bus.vn_kv[xward.bus],
+            in_service=xward.in_service,
+            name=xward.name,
+            min_vm_pu=vm_lims[0],
+            max_vm_pu=vm_lims[1],
+        )
         new_load = create_load(net, xward.bus, xward.ps_mw, xward.qs_mvar,
             in_service=xward.in_service, name=xward.name)
         new_shunt = create_shunt(net, xward.bus, q_mvar=xward.qz_mvar, p_mw=xward.pz_mw,

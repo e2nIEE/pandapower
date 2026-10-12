@@ -4,17 +4,30 @@
 import numpy as np
 import pytest
 
-from pandapower.run import runpp
 from pandapower.create import (
-    create_buses, create_ext_grid, create_gen, create_load, create_sgen, create_storage, create_dcline, create_line,
-    create_transformer, create_bus, create_poly_cost, create_pwl_cost
+    create_buses,
+    create_dcline,
+    create_ext_grid,
+    create_gen,
+    create_lines,
+    create_load,
+    create_poly_cost,
+    create_pwl_cost,
+    create_sgen,
+    create_storage,
+    create_transformer,
 )
-from pandapower.network import pandapowerNet
 from pandapower.create._utils import add_column_to_df
-from pandapower.networks import create_cigre_network_lv, case9
+from pandapower.network import pandapowerNet
+from pandapower.networks import case9, create_cigre_network_lv
+from pandapower.run import runpp
 from pandapower.toolbox import dataframes_equal
 from pandapower.toolbox.result_info import (
-    opf_task, overloaded_lines, violated_buses, clear_result_tables, res_power_columns
+    clear_result_tables,
+    opf_task,
+    overloaded_lines,
+    res_power_columns,
+    violated_buses,
 )
 
 
@@ -38,7 +51,7 @@ def test_opf_task():
     add_column_to_df(net, "dcline", "max_q_from_mvar")
     add_column_to_df(net, "dcline", "max_q_to_mvar")
 
-    create_line(net, 3, 4, 5, "122-AL1/20-ST1A 10.0", max_loading_percent=50)
+    create_lines(net, 3, 4, 5, "122-AL1/20-ST1A 10.0", max_loading_percent=50)
     create_transformer(net, 2, 3, "0.25 MVA 10/0.4 kV")
 
     # --- run and check opf_task()
@@ -89,15 +102,17 @@ def test_opf_task():
 def test_overloaded_lines():
     net = pandapowerNet(name="test_overloaded_lines")
 
-    bus0 = create_bus(net, vn_kv=.4)
-    bus1 = create_bus(net, vn_kv=.4)
+    bus0, bus1 = create_buses(net, 2, vn_kv=0.4)
 
     create_ext_grid(net, bus0)
 
-    line0 = create_line(net, bus0, bus1, length_km=1, std_type="NAYY 4x50 SE")
-    line1 = create_line(net, bus0, bus1, length_km=1, std_type="NA2XS2Y 1x95 RM/25 12/20 kV")
-    line2 = create_line(net, bus0, bus1, length_km=1, std_type="15-AL1/3-ST1A 0.4")
-    create_line(net, bus0, bus1, length_km=10, std_type="149-AL1/24-ST1A 10.0")
+    line0, line1, line2, _ = create_lines(
+        net,
+        [bus0] * 4,
+        [bus1] * 4,
+        length_km=[1, 1, 1, 10],
+        line_params=["NAYY 4x50 SE", "NA2XS2Y 1x95 RM/25 12/20 kV", "15-AL1/3-ST1A 0.4", "149-AL1/24-ST1A 10.0"],
+    )
 
     create_load(net, bus1, p_mw=0.2, q_mvar=0.05)
 
@@ -133,10 +148,10 @@ def test_clear_result_tables():
     runpp(net)
     elms_to_check = ["bus", "line", "load"]
     for elm in elms_to_check:
-        assert net["res_%s" % elm].shape[0]
+        assert net[f"res_{elm}"].shape[0]
     clear_result_tables(net)
     for elm in elms_to_check:
-        assert not net["res_%s" % elm].shape[0]
+        assert not net[f"res_{elm}"].shape[0]
 
 
 def test_res_power_columns():

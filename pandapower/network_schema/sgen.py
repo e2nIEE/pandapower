@@ -130,10 +130,18 @@ _sgen_columns = {
         metadata={"sc": True},
     ),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="element rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="origin_class rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "terminal": pa.Column(
         pd.StringDtype,
