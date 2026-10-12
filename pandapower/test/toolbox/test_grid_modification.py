@@ -402,7 +402,7 @@ def test_drop_inner_branches():
             assert net1[elm].shape[0] == net2[elm].shape[0]
 
     net = example_simple()
-    new_bus = create_bus(net, 10)
+    (new_bus,) = create_buses(net, 1, 10)
     create_transformer3w(net, 2, 3, new_bus, "63/25/38 MVA 110/20/10 kV")
 
     net1 = copy.deepcopy(net)
@@ -1174,8 +1174,7 @@ def test_set_isolated_areas_out_of_service_switch_marks_line():
 
 def test_set_isolated_areas_out_of_service_marks_trafo_oos():
     net = pandapowerNet(name="test_set_isolated_areas_out_of_service_marks_trafo_oos")
-    b_hv = create_bus(net, vn_kv=110.)
-    b_lv = create_bus(net, vn_kv=20.)
+    b_hv, b_lv = create_buses(net, 2, vn_kv=[110.0, 20.0])
     t_idx = create_transformer_from_parameters(
         net, hv_bus=b_hv, lv_bus=b_lv,
         sn_mva=40, vn_hv_kv=110, vn_lv_kv=20,
