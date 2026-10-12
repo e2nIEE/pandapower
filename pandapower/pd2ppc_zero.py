@@ -56,6 +56,15 @@ from pandapower.build_branch import (
     _end_temperature_correction_factor,
 )
 from pandapower.pd2ppc import _ppc2ppci, _init_ppc
+from pandapower.network_schema.tools.helper import get_element_schema
+
+# parameters that are needed to build the zero sequence network. The case dependent ones are
+# formatted with the short-circuit case, the example values reported for them by
+# _check_zero_sequence_parameters come from the "example" metadata of the pandera schemas.
+_ZERO_SEQUENCE_PARAMETERS = {
+    "ext_grid": ("s_sc_{case}_mva", "rx_{case}", "x0x_{case}", "r0x0_{case}"),
+    "line": ("r0_ohm_per_km", "x0_ohm_per_km", "c0_nf_per_km"),
+}
 
 
 def _pd2ppc_zero(net, k_st, sequence=0):
@@ -67,6 +76,7 @@ def _pd2ppc_zero(net, k_st, sequence=0):
     """
     # select elements in service (time consuming, so we do it once)
     net["_is_elements"] = _select_is_elements_numba(net, sequence=sequence)
+    _check_zero_sequence_parameters(net)
 
     ppc = _init_ppc(net, sequence)
 
@@ -98,6 +108,81 @@ def _pd2ppc_zero(net, k_st, sequence=0):
     ppci = _ppc2ppci(ppc, net)
     # net._ppc0 = ppc    <--Obsolete. now covered in _init_ppc
     return ppc, ppci
+
+
+def _example_value(element, parameter):
+    """
+    Read the example value of a parameter from the pandera schema of its element.
+
+    Args:
+        element: name of the element table, e.g. "ext_grid".
+        parameter: name of the column in that table, e.g. "x0x_max".
+
+    Returns:
+        The value shown for the parameter in the hint of _check_zero_sequence_parameters, taken
+        from the "example" metadata of the schema column, or "..." if the schema does not define
+        one.
+    """
+    schema = get_element_schema(element)
+    if schema is None or parameter not in schema.columns:
+        return "..."
+    return (schema.columns[parameter].metadata or {}).get("example", "...")
+
+
+def _check_zero_sequence_parameters(net):
+    """
+    Check that the parameters needed to build the zero sequence network are available.
+
+    The unbalanced power flow and the unbalanced short-circuit calculation need zero sequence
+    parameters of ext_grid and line that the balanced power flow does not require. They are
+    collected here in one place, so that all of them are reported at once with a hint on how to
+    add them, instead of raising a KeyError on the first one that happens to be used.
+
+    Args:
+        net: the pandapower network whose zero sequence parameters are checked.
+
+    Raises:
+        ValueError: if a parameter is missing from the element table, or is undefined for an
+            element that is in service.
+    """
+    case = net["_options"]["case"] if net["_options"]["mode"] == "sc" else "max"
+    # the ext_grid impedance is only added for ext_grids in service, while the line impedances are
+    # read from the whole line table as soon as it holds any line. The values are only used for the
+    # elements in service though, so undefined values are reported for those only.
+    is_element = {
+        "ext_grid": net["_is_elements"]["ext_grid"],
+        "line": net["line"].index.isin(net["_is_elements"]["line_is_idx"]),
+    }
+    missing, incomplete = {}, {}
+    for element, parameters in _ZERO_SEQUENCE_PARAMETERS.items():
+        if len(net[element]) == 0 or (element == "ext_grid" and not is_element[element].any()):
+            continue
+        for parameter in parameters:
+            parameter = parameter.format(case=case)
+            if parameter not in net[element].columns:
+                missing.setdefault(element, []).append(parameter)
+            elif net[element][parameter].isnull().values[is_element[element]].any():
+                incomplete.setdefault(element, []).append(parameter)
+
+    if not missing and not incomplete:
+        return
+
+    message = "Zero sequence parameters are needed for unbalanced calculations:"
+    for element, parameters in missing.items():
+        message += f"\n net.{element} is missing the column(s) {parameters}"
+    for element, parameters in incomplete.items():
+        message += f"\n net.{element} has undefined values in the column(s) {parameters}"
+    if missing:
+        message += "\n Try:"
+        for element, parameters in missing.items():
+            for parameter in parameters:
+                message += f"\n  net.{element}['{parameter}'] = {_example_value(element, parameter)}"
+    message += (
+        "\n For lines and transformers that have a standard type, the zero sequence parameters "
+        "can be taken from the standard type library with "
+        "pandapower.add_zero_impedance_parameters(net)."
+    )
+    raise ValueError(message)
 
 
 def _build_branch_ppc_zero(net, ppc, k_st=None):

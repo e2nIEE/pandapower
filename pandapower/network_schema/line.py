@@ -39,7 +39,7 @@ _line_columns = {
         nullable=True,
         required=False,
         description="zero sequence resistance of the line [Ohm per km]",
-        metadata={"sc": True, "3ph": True, "cim": True},
+        metadata={"sc": True, "3ph": True, "cim": True, "example": "0.1"},
     ),
     "x0_ohm_per_km": pa.Column(
         float,
@@ -47,7 +47,7 @@ _line_columns = {
         nullable=True,
         required=False,
         description="zero sequence reactance of the line [Ohm per km]",
-        metadata={"sc": True, "3ph": True, "cim": True},
+        metadata={"sc": True, "3ph": True, "cim": True, "example": "0.1"},
     ),
     "c0_nf_per_km": pa.Column(
         float,
@@ -55,7 +55,7 @@ _line_columns = {
         nullable=True,
         required=False,
         description="zero sequence capacitance of the line [nano Farad per km]",
-        metadata={"sc": True, "3ph": True, "cim": True},
+        metadata={"sc": True, "3ph": True, "cim": True, "example": "0.0"},
     ),
     "g0_us_per_km": pa.Column(
         float,
