@@ -5,7 +5,7 @@
 import pandas as pd
 
 from pandapower.create import (
-    create_switch, create_bus, create_ext_grid, create_load, create_gen, create_sgen, create_line, create_shunt,
+    create_buses, create_switch, create_ext_grid, create_load, create_gen, create_sgen, create_lines, create_shunt,
     create_transformer, create_transformer_from_parameters, create_transformer3w_from_parameters, create_impedance,
     create_xward
 )
@@ -27,36 +27,32 @@ def example_simple():
 
     """
     net = pandapowerNet(name="example_simple")
-
+    
     # create buses
-    bus1 = create_bus(net, name="HV Busbar", vn_kv=110., type="b")
-    bus2 = create_bus(net, name="HV Busbar 2", vn_kv=110., type="b")
-    bus3 = create_bus(net, name="HV Transformer Bus", vn_kv=110., type="n")
-    bus4 = create_bus(net, name="MV Transformer Bus", vn_kv=20., type="n")
-    bus5 = create_bus(net, name="MV Main Bus", vn_kv=20., type="b")
-    bus6 = create_bus(net, name="MV Bus 1", vn_kv=20., type="b")
-    bus7 = create_bus(net, name="MV Bus 2", vn_kv=20., type="b")
-
+    names = ["HV Busbar", "HV Busbar 2", "HV Transformer Bus", "MV Transformer Bus", "MV Main Bus", "MV Bus 1",
+             "MV Bus 2"]
+    vn_kv = [110., 110., 110., 20., 20., 20., 20.]
+    types = ["b", "b", "n", "n", "b", "b", "b"]
+    bus1, bus2, bus3, bus4, bus5, bus6, bus7 = create_buses(net, 7, vn_kv, name=names, type=types)
+    
     # create external grid
     create_ext_grid(net, bus1, vm_pu=1.02, va_degree=50)
-
+    
     # create transformer
     create_transformer(net, bus3, bus4, name="110kV/20kV transformer",
                        std_type="25 MVA 110/20 kV")
     # create lines
-    create_line(net, bus1, bus2, length_km=10,
-                std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="Line 1")
-    line2 = create_line(net, bus5, bus6, length_km=2.0,
-                        std_type="NA2XS2Y 1x240 RM/25 12/20 kV", name="Line 2")
-    line3 = create_line(net, bus6, bus7, length_km=3.5,
-                        std_type="48-AL1/8-ST1A 20.0", name="Line 3")
-    line4 = create_line(net, bus7, bus5, length_km=2.5,
-                        std_type="NA2XS2Y 1x240 RM/25 12/20 kV", name="Line 4")
-
+    std_types = ["N2XS(FL)2Y 1x300 RM/35 64/110 kV", "NA2XS2Y 1x240 RM/25 12/20 kV", "48-AL1/8-ST1A 20.0",
+                 "NA2XS2Y 1x240 RM/25 12/20 kV"]
+    length_km = [10, 2., 3.5, 2.5]
+    line1, line2, line3, line4 = create_lines(net, [bus1, bus5, bus6, bus7], [bus2, bus6, bus7, bus5],
+                                              length_km=length_km, line_params=std_types,
+                                              name=[f"Line {i}" for i in range(1, 5)])
+    
     # create bus-bus switches
     create_switch(net, bus2, bus3, et="b", type="CB")
     create_switch(net, bus4, bus5, et="b", type="CB")
-
+    
     # create bus-line switches
     create_switch(net, bus5, line2, et="l", type="LBS", closed=True)
     create_switch(net, bus6, line2, et="l", type="LBS", closed=True)
@@ -64,20 +60,20 @@ def example_simple():
     create_switch(net, bus7, line3, et="l", type="LBS", closed=False)
     create_switch(net, bus7, line4, et="l", type="LBS", closed=True)
     create_switch(net, bus5, line4, et="l", type="LBS", closed=True)
-
+    
     # create load
     create_load(net, bus7, p_mw=2, q_mvar=4, scaling=0.6, name="load")
-
+    
     # create generator
     create_gen(net, bus6, p_mw=6, max_q_mvar=3, min_q_mvar=-3, vm_pu=1.03,
                name="generator")
-
+    
     # create static generator
     create_sgen(net, bus7, p_mw=2, q_mvar=-0.5, name="static generator")
-
+    
     # create shunt
     create_shunt(net, bus3, q_mvar=-0.96, p_mw=0, name='Shunt')
-
+    
     return net
 
 
@@ -94,54 +90,43 @@ def example_multivoltage():
 
     """
     net = pandapowerNet(name="example_multivoltage")
-
+    
     # --- Busses
-
+    
     # HV
     # Double busbar
-    create_bus(net, name='Double Busbar 1', vn_kv=380, type='b')
-    create_bus(net, name='Double Busbar 2', vn_kv=380, type='b')
-
-    for i in range(10):
-        create_bus(net, name='Bus DB T%s' % i, vn_kv=380, type='n')
-
-    for i in range(1, 5):
-        create_bus(net, name='Bus DB %s' % i, vn_kv=380, type='n')
-
+    create_buses(net, 2, name=['Double Busbar 1', 'Double Busbar 2'], vn_kv=380, type='b')
+    
+    create_buses(net, 10, name=[f'Bus DB T{i}' for i in range(10)], vn_kv=380, type='n')
+    
+    create_buses(net, 4, name=[f'Bus DB {i}' for i in range(1, 5)], vn_kv=380, type='n')
+    
     # Single busbar
-    create_bus(net, name='Single Busbar', vn_kv=110, type='b')
-
-    for i in range(1, 6):
-        create_bus(net, name='Bus SB %s' % i, vn_kv=110, type='n')
-
-    for i in range(1, 6):
-        for j in [1, 2]:
-            create_bus(net, name='Bus SB T%s.%s' % (i, j), vn_kv=110, type='n')
-
+    create_buses(net, 1, name='Single Busbar', vn_kv=110, type='b')
+    
+    create_buses(net, 5, name=[f'Bus SB {i}' for i in range(1, 6)], vn_kv=110, type='n')
+    
+    create_buses(net, 10, name=[f'Bus SB T{i}.{j}' for i in range(1, 6) for j in (1, 2)], vn_kv=110, type='n')
+    
     # Remaining
-    for i in range(1, 5):
-        create_bus(net, name='Bus HV%s' % i, vn_kv=110, type='n')
-
+    create_buses(net, 4, name=[f'Bus HV{i}' for i in range(1, 5)], vn_kv=110, type='n')
+    
     # MV
-    create_bus(net, name='Bus MV0 20kV', vn_kv=20, type='n')
-
-    for i in range(8):
-        create_bus(net, name='Bus MV%s' % i, vn_kv=10, type='n')
-
+    create_buses(net, 1, name='Bus MV0 20kV', vn_kv=20, type='n')
+    
+    create_buses(net, 8, name=[f'Bus MV{i}' for i in range(8)], vn_kv=10, type='n')
+    
     # LV
-    create_bus(net, name='Bus LV0', vn_kv=0.4, type='n')
-
-    for i in range(1, 6):
-        create_bus(net, name='Bus LV1.%s' % i, vn_kv=0.4, type='m')
-
-    for i in range(1, 5):
-        create_bus(net, name='Bus LV2.%s' % i, vn_kv=0.4, type='m')
-
-    create_bus(net, name='Bus LV2.2.1', vn_kv=0.4, type='m')
-    create_bus(net, name='Bus LV2.2.2', vn_kv=0.4, type='m')
-
+    create_buses(net, 1, name='Bus LV0', vn_kv=0.4, type='n')
+    
+    create_buses(net, 5, name=[f'Bus LV1.{i}' for i in range(1, 6)], vn_kv=0.4, type='m')
+    
+    create_buses(net, 4, name=[f'Bus LV2.{i}' for i in range(1, 5)], vn_kv=0.4, type='m')
+    
+    create_buses(net, 2, name=['Bus LV2.2.1', 'Bus LV2.2.2'], vn_kv=0.4, type='m')
+    
     # --- Lines
-
+    
     # HV
     hv_lines = pd.DataFrame()
     hv_lines['line_name'] = ['HV Line%s' % i for i in range(1, 7)]
@@ -150,13 +135,13 @@ def example_multivoltage():
     hv_lines['std_type'] = '184-AL1/30-ST1A 110.0'
     hv_lines['length'] = [30, 20, 30, 15, 25, 30]
     hv_lines['parallel'] = [1, 1, 1, 1, 1, 2]
-
+    
     for _, hv_line in hv_lines.iterrows():
         from_bus = get_element_index(net, "bus", hv_line.from_bus)
         to_bus = get_element_index(net, "bus", hv_line.to_bus)
-        create_line(net, from_bus, to_bus, length_km=hv_line.length,
-                    std_type=hv_line.std_type, name=hv_line.line_name, parallel=hv_line.parallel)
-
+        create_lines(net, from_bus, to_bus, length_km=hv_line.length,
+                     line_params=hv_line.std_type, name=hv_line.line_name, parallel=hv_line.parallel)
+    
     # MV
     mv_lines = pd.DataFrame()
     mv_lines['line_name'] = ['MV Line%s' % i for i in range(1, 9)]
@@ -164,13 +149,13 @@ def example_multivoltage():
     mv_lines['to_bus'] = ['Bus MV%s' % i for i in list(range(1, 8)) + [7]]
     mv_lines['length'] = 1.5
     mv_lines['std_type'] = 'NA2XS2Y 1x185 RM/25 12/20 kV'
-
+    
     for _, mv_line in mv_lines.iterrows():
         from_bus = get_element_index(net, "bus", mv_line.from_bus)
         to_bus = get_element_index(net, "bus", mv_line.to_bus)
-        create_line(net, from_bus, to_bus, length_km=mv_line.length,
-                    std_type=mv_line.std_type, name=mv_line.line_name)
-
+        create_lines(net, from_bus, to_bus, length_km=mv_line.length,
+                     line_params=mv_line.std_type, name=mv_line.line_name)
+    
     # LV
     lv_lines = pd.DataFrame()
     lv_line_idx = ['1.1', '1.2', '1.3', '1.4', '1.6', '2.1', '2.2', '2.3', '2.4', '2.2.1', '2.2.2']
@@ -181,15 +166,15 @@ def example_multivoltage():
     lv_lines['to_bus'] = ['Bus LV%s' % i for i in lv_line_idx]
     lv_lines['length'] = [0.08] * 5 + [0.12] * 6
     lv_lines['std_type'] = ['NAYY 4x120 SE'] * 7 + ['15-AL1/3-ST1A 0.4'] * 4
-
+    
     for _, lv_line in lv_lines.iterrows():
         from_bus = get_element_index(net, "bus", lv_line.from_bus)
         to_bus = get_element_index(net, "bus", lv_line.to_bus)
-        create_line(net, from_bus, to_bus, length_km=lv_line.length,
-                    std_type=lv_line.std_type, name=lv_line.line_name)
-
+        create_lines(net, from_bus, to_bus, length_km=lv_line.length,
+                     line_params=lv_line.std_type, name=lv_line.line_name)
+    
     # --- Transformer
-
+    
     hv_bus = get_element_index(net, "bus", "Bus DB 2")
     lv_bus = get_element_index(net, "bus", "Bus SB 1")
     create_transformer_from_parameters(net, hv_bus, lv_bus,
@@ -197,7 +182,7 @@ def example_multivoltage():
                                        vkr_percent=0.06, vk_percent=8, pfe_kw=0,
                                        i0_percent=0, tap_pos=0, shift_degree=0,
                                        name='EHV-HV-Trafo')
-
+    
     hv_bus = get_element_index(net, "bus", "Bus MV4")
     lv_bus = get_element_index(net, "bus", "Bus LV0")
     create_transformer_from_parameters(net, hv_bus, lv_bus,
@@ -207,7 +192,7 @@ def example_multivoltage():
                                        tap_neutral=0, tap_min=-2, tap_max=2,
                                        tap_step_percent=2.5, tap_pos=0,
                                        shift_degree=150, name='MV-LV-Trafo', tap_changer_type="Ratio")
-
+    
     # Trafo3w
     hv_bus = get_element_index(net, "bus", "Bus HV2")
     mv_bus = get_element_index(net, "bus", "Bus MV0 20kV")
@@ -222,13 +207,13 @@ def example_multivoltage():
                                          shift_lv_degree=30, tap_side="hv", tap_neutral=0,
                                          tap_min=-8, tap_max=8, tap_step_percent=1.25,
                                          tap_pos=0, name='HV-MV-MV-Trafo', tap_changer_type="Ratio")
-
+    
     # --- Static generators
-
+    
     # HV
     create_sgen(net, get_element_index(net, "bus", 'Bus SB 5'), p_mw=20,
                 q_mvar=4, sn_mva=45, type='WP', name='Wind Park')
-
+    
     # MV
     mv_sgens = pd.DataFrame()
     mv_sgens['sgen_name'] = ['Biogas plant', 'Further MV Generator', 'Industry Generator',
@@ -238,12 +223,12 @@ def example_multivoltage():
     mv_sgens['q'] = [0, 0.05, 3, 0.1]
     mv_sgens['sn'] = [0.75, 1, 20, 5]
     mv_sgens['type'] = ['SGEN', 'SGEN', 'SGEN', 'PV']
-
+    
     for _, sgen in mv_sgens.iterrows():
         bus_idx = get_element_index(net, "bus", sgen.bus)
         create_sgen(net, bus_idx, p_mw=sgen.p, q_mvar=sgen.q, sn_mva=sgen.sn,
                     type=sgen.type, name=sgen.sgen_name)
-
+    
     # LV
     lv_sgens = pd.DataFrame()
     lv_sgens['sgen_name'] = ['PV'] + ['PV(%s)' % i for i in range(1, 6)]
@@ -252,25 +237,25 @@ def example_multivoltage():
     lv_sgens['q'] = 0
     lv_sgens['sn'] = [0.012, 0.01, 0.01, 0.01, 0.01, 0.01]
     lv_sgens['type'] = 'PV'
-
+    
     for _, sgen in lv_sgens.iterrows():
         bus_idx = get_element_index(net, "bus", sgen.bus)
         create_sgen(net, bus_idx, p_mw=sgen.p, q_mvar=sgen.q, sn_mva=sgen.sn,
                     type=sgen.type, name=sgen.sgen_name)
-
+    
     # --- Loads
-
+    
     # HV
     hv_loads = pd.DataFrame()
     hv_loads['load_name'] = ['MV Net %s' % i for i in range(5)]
     hv_loads['bus'] = ['Bus SB 4', 'Bus HV1', 'Bus HV2', 'Bus HV3', 'Bus HV4']
     hv_loads['p'] = 38
     hv_loads['q'] = 6
-
+    
     for _, load in hv_loads.iterrows():
         bus_idx = get_element_index(net, "bus", load.bus)
         create_load(net, bus_idx, p_mw=load.p, q_mvar=load.q, name=load.load_name)
-
+    
     # MV
     mv_loads = pd.DataFrame()
     mv_loads['load_name'] = ['Further MV-Rings', 'Industry Load'] + ['LV Net %s' % i for i in
@@ -278,11 +263,11 @@ def example_multivoltage():
     mv_loads['bus'] = ['Bus MV0', 'Bus MV0 20kV'] + ['Bus MV%s' % i for i in [1, 2, 3, 5, 6, 7]]
     mv_loads['p'] = [6, 18, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
     mv_loads['q'] = [2, 4, 0.1, 0.06, 0.06, 0.06, 0.06, 0.06]
-
+    
     for _, load in mv_loads.iterrows():
         bus_idx = get_element_index(net, "bus", load.bus)
         create_load(net, bus_idx, p_mw=load.p, q_mvar=load.q, name=load.load_name)
-
+    
     # LV
     lv_loads = pd.DataFrame()
     idx = ['', '(1)', '(2)', '(3)', '(4)', '(5)']
@@ -292,17 +277,17 @@ def example_multivoltage():
                                                 '2.2', '2.3', '2.4', '2.2.1', '2.2.2']]
     lv_loads['p'] = [0.1] + [0.01] * 11
     lv_loads['q'] = [0.01] + [0.03] * 11
-
+    
     for _, load in lv_loads.iterrows():
         bus_idx = get_element_index(net, "bus", load.bus)
         create_load(net, bus_idx, p_mw=load.p, q_mvar=load.q, name=load.load_name)
-
+    
     # --- Other
-
+    
     # Shunt
     create_shunt(net, get_element_index(net, "bus", 'Bus HV1'), p_mw=0, q_mvar=-0.96,
                  name='Shunt')
-
+    
     # ExtGrids
     create_ext_grid(net, get_element_index(net, "bus", 'Double Busbar 1'), vm_pu=1.03,
                     va_degree=0, name='External grid', s_sc_max_mva=10000, rx_max=0.1,
@@ -310,12 +295,12 @@ def example_multivoltage():
     # Gen
     create_gen(net, get_element_index(net, "bus", 'Bus HV4'), vm_pu=1.03, p_mw=100,
                name='Gas turbine')
-
+    
     # Impedance
     create_impedance(net, get_element_index(net, "bus", 'Bus HV3'),
                      get_element_index(net, "bus", 'Bus HV1'), rft_pu=0.074873,
                      xft_pu=0.198872, sn_mva=100, name='Impedance')
-
+    
     # xwards
     create_xward(net, get_element_index(net, "bus", 'Bus HV3'), ps_mw=23.942,
                  qs_mvar=-12.24187, pz_mw=2.814571, qz_mvar=0, r_ohm=0, x_ohm=12.18951,
@@ -323,9 +308,9 @@ def example_multivoltage():
     create_xward(net, get_element_index(net, "bus", 'Bus HV1'), ps_mw=3.776,
                  qs_mvar=-7.769979, pz_mw=9.174917, qz_mvar=0, r_ohm=0, x_ohm=50.56217,
                  vm_pu=1.024001, name='XWard 2')
-
+    
     # --- Switches
-
+    
     # HV
     # Bus-bus switches
     hv_bus_sw = pd.DataFrame()
@@ -349,13 +334,13 @@ def example_multivoltage():
     hv_bus_sw['et'] = 'b'
     hv_bus_sw['closed'] = [bool(i) for i in [1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 1, 1, 1,
                                              1] + [1] * 15]
-
+    
     for _, switch in hv_bus_sw.iterrows():
         from_bus = get_element_index(net, "bus", switch.from_bus)
         to_bus = get_element_index(net, "bus", switch.to_bus)
         create_switch(net, from_bus, to_bus, et=switch.et,
                       closed=switch.closed, type=switch.type, name=switch.bus_name)
-
+    
     # Bus-Line switches
     hv_buses = net.bus[(net.bus.vn_kv == 380) | (net.bus.vn_kv == 110)].index
     hv_ls = net.line[(net.line.from_bus.isin(hv_buses)) & (net.line.to_bus.isin(hv_buses))]
@@ -363,7 +348,7 @@ def example_multivoltage():
         for bus in [line.from_bus, line.to_bus]:
             create_switch(net, bus, line.name, et='l', closed=True, type='LBS',
                           name='Switch %s - %s' % (net.bus.name.at[bus], line['name']))
-
+    
     # MV
     # Bus-line switches
     mv_buses = net.bus[(net.bus.vn_kv == 10) | (net.bus.vn_kv == 20)].index
@@ -372,10 +357,10 @@ def example_multivoltage():
         for bus in [line.from_bus, line.to_bus]:
             create_switch(net, bus, line.name, et='l', closed=True, type='LBS',
                           name='Switch %s - %s' % (net.bus.name.at[bus], line['name']))
-
+    
     open_switch_id = net.switch[(net.switch.name == 'Switch Bus MV5 - MV Line5')].index
     net.switch.loc[open_switch_id, "closed"] = False
-
+    
     # LV
     # Bus-line switches
     lv_buses = net.bus[net.bus.vn_kv == 0.4].index
@@ -384,7 +369,7 @@ def example_multivoltage():
         for bus in [line.from_bus, line.to_bus]:
             create_switch(net, bus, line.name, et='l', closed=True, type='LBS',
                           name='Switch %s - %s' % (net.bus.name.at[bus], line['name']))
-
+    
     # Trafoswitches
     # HV
     create_switch(net, get_element_index(net, "bus", 'Bus DB 2'),
@@ -400,10 +385,10 @@ def example_multivoltage():
     create_switch(net, get_element_index(net, "bus", 'Bus LV0'),
                   get_element_index(net, "trafo", 'MV-LV-Trafo'), et='t', closed=True,
                   type='LBS', name='Switch LV0 - MV-LV-Trafo')
-
+    
     # --- Powerflow
-
+    
     # run power flow and generate result tables
     runpp(net, init='dc', calculate_voltage_angles=True, Numba=False)
-
+    
     return net
