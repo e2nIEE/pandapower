@@ -101,7 +101,7 @@ class TestBusOptionalFields:
         "parameter,valid_value",
         list(
             itertools.chain(
-                itertools.product(["min_vm_pu", "max_vm_pu"], [np.nan, *positiv_floats]),
+                itertools.product(["min_vm_pu", "max_vm_pu"], positiv_floats),
                 itertools.product(["type", "zone", "geo"], [pd.NA, *strings]),
                 itertools.product(
                     [

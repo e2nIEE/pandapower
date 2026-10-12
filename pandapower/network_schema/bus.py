@@ -23,7 +23,7 @@ _bus_columns = {
     "max_vm_pu": pa.Column(
         float,
         checks=[pa.Check.gt(0), pa.Check.le(2)],
-        nullable=True,
+        nullable=False,
         required=False,
         description="Maximum voltage",
         metadata={"opf": True, "default": 2.0},
@@ -31,7 +31,7 @@ _bus_columns = {
     "min_vm_pu": pa.Column(
         float,
         checks=[pa.Check.ge(0), pa.Check.le(2)],
-        nullable=True,
+        nullable=False,
         required=False,
         description="Minimum voltage",
         metadata={"opf": True, "default": 0.0},
