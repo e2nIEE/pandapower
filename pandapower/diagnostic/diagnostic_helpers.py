@@ -35,14 +35,15 @@ def add_log_level(levelno: int, levelname: str) -> None:
 add_log_level(logging.WARNING + 2, "compact")
 add_log_level(logging.WARNING + 4, "detailed")
 
-T = TypeVar('T')
-N = TypeVar('N', bound=ADict)
+T = TypeVar("T")
+N = TypeVar("N", bound=ADict)
 
 
 class DiagnosticFunction(ABC, Generic[N, T]):
     """
     A meta class for creating custom Diagnostic Functions that can be executed with the pandapower Diagnostic API.
     """
+
     def __init__(self):
         self.out = logger
 
@@ -50,11 +51,11 @@ class DiagnosticFunction(ABC, Generic[N, T]):
     def diagnostic(self, net: N, **kwargs) -> T | None:
         """
         A diagnostic method that should be run on the network.
-        
+
         Parameters:
             net: the network to run it on
             kwargs: any kwargs passed to diagnose_network
-        
+
         Returns:
             the diagnostic result or None if successful
         """
@@ -64,13 +65,13 @@ class DiagnosticFunction(ABC, Generic[N, T]):
     def report(self, error: Exception | None, results: T | None) -> None:
         """
         A method to generate a report for the result of diagnostic.
-        
+
         Parameters:
             error: when the diagnostic encountered an error it will be passed here
             results: when the diagnostic produced an output it will be passed here
 
         The first lines should always check if an error occurred or there are no results
-        
+
         >>> # error and success checks
         >>> if error is not None:
         >>>     self.out.warning("Check for < > failed due to the following error:")
@@ -86,13 +87,13 @@ class DiagnosticFunction(ABC, Generic[N, T]):
         >>> # message summary
 
         There are additional levels defined for the `self.out` logger.
-        
+
         >>> self.out.detailed
-        
+
         and
-        
+
         >>> self.out.compact
-        
+
         These will only print in the resepctive reports.
         Use info if the message should only show when warnings_only is False.
         Use warning if the message should always be shown.
@@ -243,30 +244,28 @@ def check_switch_type(element, element_index, column):
 
 
 def check_vkr_larger(element, element_index, column):
-    if column not in ['vkr_percent', 'vkr_hv_percent', 'vkr_mv_percent', 'vkr_lv_percent'] or column not in element:
+    if column not in ["vkr_percent", "vkr_hv_percent", "vkr_mv_percent", "vkr_lv_percent"] or column not in element:
         raise TypeError(f"{element}, {column}, not a valid argument for checking vkr_percent.")
 
     # if vkr_percent, the real part of vk, is larger than vk_percent: Error. (Same for vkr_hv_percent ...)
     try:
-        if element[column] > element[f'vk_{column[4:]}']:
+        if element[column] > element[f"vk_{column[4:]}"]:
             return element_index
     except TypeError:
         return element_index
     return None
 
 
-
-
 def diagnostic(
-        net: pandapowerNet,
-        report_style: Literal['compact', 'detailed'] | None = 'detailed',
-        warnings_only: bool = False,
-        return_result_dict: bool = True,
-        overload_scaling_factor: float = 0.001,
-        lines_min_length_km: float = 0.,
-        lines_min_z_ohm: float = 0.,
-        nom_voltage_tolerance: float = 0.3,
-        **kwargs
+    net: pandapowerNet,
+    report_style: Literal["compact", "detailed"] | None = "detailed",
+    warnings_only: bool = False,
+    return_result_dict: bool = True,
+    overload_scaling_factor: float = 0.001,
+    lines_min_length_km: float = 0.0,
+    lines_min_z_ohm: float = 0.0,
+    nom_voltage_tolerance: float = 0.3,
+    **kwargs,
 ):
     """
     Tool for diagnosis of pandapower networks. Identifies possible reasons for non converging loadflows.
@@ -288,7 +287,7 @@ def diagnostic(
         lines_min_z_ohm: minimum z_ohm allowed for lines
         nom_voltage_tolerance** (float, 0.3): highest allowed relative deviation between nominal voltages and bus
             voltages
-            
+
     Keyword Arguments:
         Any: Keyword arguments for the power flow function to use during tests. If "run" is in kwargs the default call to
             runpp() is replaced by the function kwargs["run"]
@@ -303,9 +302,10 @@ def diagnostic(
 
     """
     from pandapower.diagnostic.diagnostic import Diagnostic
+
     d = Diagnostic()
-    kwargs['overload_scaling_factor'] = overload_scaling_factor
-    kwargs['lines_min_length_km'] = lines_min_length_km
-    kwargs['nom_voltage_tolerance'] = nom_voltage_tolerance
-    kwargs['lines_min_z_ohm'] = lines_min_z_ohm
+    kwargs["overload_scaling_factor"] = overload_scaling_factor
+    kwargs["lines_min_length_km"] = lines_min_length_km
+    kwargs["nom_voltage_tolerance"] = nom_voltage_tolerance
+    kwargs["lines_min_z_ohm"] = lines_min_z_ohm
     return d.diagnose_network(net, report_style, warnings_only, return_result_dict, **kwargs)

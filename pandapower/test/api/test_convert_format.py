@@ -23,8 +23,8 @@ def test_convert_format(version):
         raise ValueError(f"File for version {version} does not exist")
     try:
         net = from_json(filename, convert=False)
-        if 'version' in net and vs.parse(str(net.version)) > vs.parse('2.0.1'):
-            _ = from_json(filename, elements_to_deserialize=['bus', 'load'])
+        if "version" in net and vs.parse(str(net.version)) > vs.parse("2.0.1"):
+            _ = from_json(filename, elements_to_deserialize=["bus", "load"])
     except:
         raise UserWarning(f"Can not load network saved in pandapower version {version}")
     vm_pu_old = net.res_bus["vm_pu"].copy()
@@ -63,41 +63,45 @@ def test_convert_format_characteristics():
 
 def test_convert_format_adding_characteristic_columns():
     net = from_json(os.path.join(folder, "example_3.1.2.json"), convert=True)
-    assert 'id_characteristic_table' in net.shunt
-    assert 'step_dependency_table' in net.shunt
-    assert 'id_q_capability_characteristic' in net.sgen
-    assert 'reactive_capability_curve' in net.sgen
-    assert 'curve_style' in net.sgen
-    assert 'id_q_capability_characteristic' in net.gen
-    assert 'reactive_capability_curve' in net.gen
-    assert 'curve_style' in net.gen
+    assert "id_characteristic_table" in net.shunt
+    assert "step_dependency_table" in net.shunt
+    assert "id_q_capability_characteristic" in net.sgen
+    assert "reactive_capability_curve" in net.sgen
+    assert "curve_style" in net.sgen
+    assert "id_q_capability_characteristic" in net.gen
+    assert "reactive_capability_curve" in net.gen
+    assert "curve_style" in net.gen
     net = from_json(os.path.join(folder, "example_3.1.2.json"), convert=False)
-    assert 'id_characteristic_table' not in net.shunt
-    assert 'step_dependency_table' not in net.shunt
-    assert 'id_q_capability_characteristic' not in net.sgen
-    assert 'reactive_capability_curve' not in net.sgen
-    assert 'curve_style' not in net.sgen
-    assert 'id_q_capability_characteristic' not in net.gen
-    assert 'reactive_capability_curve' not in net.gen
-    assert 'curve_style' not in net.gen
+    assert "id_characteristic_table" not in net.shunt
+    assert "step_dependency_table" not in net.shunt
+    assert "id_q_capability_characteristic" not in net.sgen
+    assert "reactive_capability_curve" not in net.sgen
+    assert "curve_style" not in net.sgen
+    assert "id_q_capability_characteristic" not in net.gen
+    assert "reactive_capability_curve" not in net.gen
+    assert "curve_style" not in net.gen
 
 
 def test_convert_format_renaming_characteristic_table():
-    capa_df = pd.DataFrame({'id_q_capability_curve': {0: 0, 1: 0, 2: 0},
-                            'p_mw': {0: -100.0, 1: 0.0, 2: 100.0},
-                            'q_min_mvar': {0: -200.0, 1: -300.0, 2: -200.0},
-                            'q_max_mvar': {0: 200.0, 1: 300.0, 2: 200.0}})
-    capa_df['id_q_capability_curve'] = capa_df['id_q_capability_curve'].astype('Int64')
+    capa_df = pd.DataFrame(
+        {
+            "id_q_capability_curve": {0: 0, 1: 0, 2: 0},
+            "p_mw": {0: -100.0, 1: 0.0, 2: 100.0},
+            "q_min_mvar": {0: -200.0, 1: -300.0, 2: -200.0},
+            "q_max_mvar": {0: 200.0, 1: 300.0, 2: 200.0},
+        }
+    )
+    capa_df["id_q_capability_curve"] = capa_df["id_q_capability_curve"].astype("Int64")
     net = from_json(os.path.join(folder, "example_3.1.2_capability.json"), convert=True)
-    assert 'q_capability_curve_table' in net
-    assert 'q_capability_characteristic' in net
-    assert 'q_capability_curve_characteristic' not in net
-    pd.testing.assert_frame_equal(net['q_capability_curve_table'], capa_df, atol=1e-5)
+    assert "q_capability_curve_table" in net
+    assert "q_capability_characteristic" in net
+    assert "q_capability_curve_characteristic" not in net
+    pd.testing.assert_frame_equal(net["q_capability_curve_table"], capa_df, atol=1e-5)
     net = from_json(os.path.join(folder, "example_3.1.2_capability.json"), convert=False)
-    assert 'q_capability_curve_table' in net
-    assert 'q_capability_characteristic' not in net
-    assert 'q_capability_curve_characteristic' in net
-    pd.testing.assert_frame_equal(net['q_capability_curve_table'], capa_df, atol=1e-5)
+    assert "q_capability_curve_table" in net
+    assert "q_capability_characteristic" not in net
+    assert "q_capability_curve_characteristic" in net
+    pd.testing.assert_frame_equal(net["q_capability_curve_table"], capa_df, atol=1e-5)
 
 
 def test_convert_format_newer_format_version():
@@ -112,5 +116,5 @@ def test_convert_format_newer_format_version():
     convert_format(net, donot_open_newer=False)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

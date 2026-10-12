@@ -2,8 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""Computes partial derivatives of branch currents w.r.t. voltage.
-"""
+"""Computes partial derivatives of branch currents w.r.t. voltage."""
 
 from numpy import diag, asmatrix, asarray, conj
 from scipy.sparse import issparse, csr_matrix as sparse
@@ -43,8 +42,8 @@ def dIbr_dV(branch, Yf, Yt, V):
         diagV = sparse((V, (i, i)))
         diagVnorm = sparse((Vnorm, (i, i)))
     else:
-        diagV       = asmatrix( diag(V) )
-        diagVnorm   = asmatrix( diag(Vnorm) )
+        diagV = asmatrix(diag(V))
+        diagVnorm = asmatrix(diag(Vnorm))
 
     dIf_dVa = Yf * 1j * diagV
     dIf_dVm = Yf * diagVnorm
@@ -56,10 +55,11 @@ def dIbr_dV(branch, Yf, Yt, V):
         If = Yf * V
         It = Yt * V
     else:
-        If = asarray( Yf * asmatrix(V).T ).flatten()
-        It = asarray( Yt * asmatrix(V).T ).flatten()
+        If = asarray(Yf * asmatrix(V).T).flatten()
+        It = asarray(Yt * asmatrix(V).T).flatten()
 
     return dIf_dVa, dIf_dVm, dIt_dVa, dIt_dVm, If, It
+
 
 def dIbr_dV_new(branch, Yf, Yt, V):
     # Compute currents.
@@ -67,8 +67,8 @@ def dIbr_dV_new(branch, Yf, Yt, V):
         If = Yf * V
         It = Yt * V
     else:
-        If = asarray( Yf * asmatrix(V).T ).flatten()
-        It = asarray( Yt * asmatrix(V).T ).flatten()
+        If = asarray(Yf * asmatrix(V).T).flatten()
+        It = asarray(Yt * asmatrix(V).T).flatten()
 
     vb = range(len(V))
     diagV = sparse((V, (vb, vb)))
@@ -78,14 +78,14 @@ def dIbr_dV_new(branch, Yf, Yt, V):
     idxt = abs(It) == 0
     diagIfnorm = sparse((conj(If) / abs(If), (ib, ib)))
     diagItnorm = sparse((conj(It) / abs(It), (ib, ib)))
-    diagIfnorm[idxf,idxf] = 0
-    diagItnorm[idxt,idxt] = 0
+    diagIfnorm[idxf, idxf] = 0
+    diagItnorm[idxt, idxt] = 0
     a = diagIfnorm * Yf * diagV
-    dIf_dVa = - a.imag
+    dIf_dVa = -a.imag
     b = diagIfnorm * Yf * diagVnorm
     dIf_dVm = b.real
     c = diagItnorm * Yt * diagV
-    dIt_dVa = - c.imag
+    dIt_dVa = -c.imag
     d = diagItnorm * Yt * diagVnorm
     dIt_dVm = d.real
 

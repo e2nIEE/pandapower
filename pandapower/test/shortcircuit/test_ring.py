@@ -11,10 +11,10 @@ from pandapower.shortcircuit.calc_sc import calc_sc
 
 @pytest.fixture
 def ring_network():
-    net = pandapowerNet(name="ring_network", sn_mva=2.)
+    net = pandapowerNet(name="ring_network", sn_mva=2.0)
     (b0,) = create_buses(net, 1, 220)
     b1, b2, b3 = create_buses(net, 3, 110)
-    create_ext_grid(net, b0, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.4, rx_max=0.4)
+    create_ext_grid(net, b0, s_sc_max_mva=100.0, s_sc_min_mva=80.0, rx_min=0.4, rx_max=0.4)
     create_transformer(net, b0, b1, "100 MVA 220/110 kV")
     _, l2, _ = create_lines(
         net,
@@ -58,12 +58,10 @@ def test_kappa_methods(ring_network):
     net = ring_network
     net.switch.closed = True
     calc_sc(net, kappa_method="B", ip=True, inverse_y=False)
-    assert np.allclose(net.res_bus_sc.ip_ka.values,
-                       [0.48810547956, 0.91192962511, 1.0264898716, 1.0360554521])
+    assert np.allclose(net.res_bus_sc.ip_ka.values, [0.48810547956, 0.91192962511, 1.0264898716, 1.0360554521])
     calc_sc(net, kappa_method="C", ip=True, topology="auto")
-    assert np.allclose(net.res_bus_sc.ip_ka.values,
-                       [0.48810547956, 0.91192962511, 0.89331396461, 0.90103415924])
+    assert np.allclose(net.res_bus_sc.ip_ka.values, [0.48810547956, 0.91192962511, 0.89331396461, 0.90103415924])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

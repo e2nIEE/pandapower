@@ -189,8 +189,7 @@ class TestComputeSwitchFlowsChain:
         compute_switch_flows(net)
 
         # sw1 carries only load at b3
-        assert np.isclose(abs(net.res_switch.at[sw1, "p_from_mw"]),
-                           net.res_load.at[1, "p_mw"], atol=1e-6)
+        assert np.isclose(abs(net.res_switch.at[sw1, "p_from_mw"]), net.res_load.at[1, "p_mw"], atol=1e-6)
         # sw0 carries both loads
         total_load = net.res_load.at[0, "p_mw"] + net.res_load.at[1, "p_mw"]
         assert np.isclose(abs(net.res_switch.at[sw0, "p_from_mw"]), total_load, atol=1e-6)
@@ -200,7 +199,7 @@ class TestComputeSwitchFlowsBranching:
     """Tree topologies with branches."""
 
     def test_t_junction(self):
-        """            load1=1MW
+        """load1=1MW
                           |
         ext_grid--(b0)--line--(b1)--sw0--(b2)--sw1--(b3)--load2=2MW
                                           |
@@ -436,12 +435,9 @@ class TestComputeSwitchFlowsValidation:
         i_z = net.res_switch.at[0, "i_ka"]
 
         # Tolerances account for the non-zero impedance introducing small losses
-        assert np.isclose(p_nodal, p_z, rtol=1e-2), \
-            f"P mismatch: nodal={p_nodal:.6f}, z_ohm={p_z:.6f}"
-        assert np.isclose(q_nodal, q_z, rtol=1e-2), \
-            f"Q mismatch: nodal={q_nodal:.6f}, z_ohm={q_z:.6f}"
-        assert np.isclose(i_nodal, i_z, rtol=5e-2), \
-            f"I mismatch: nodal={i_nodal:.6f}, z_ohm={i_z:.6f}"
+        assert np.isclose(p_nodal, p_z, rtol=1e-2), f"P mismatch: nodal={p_nodal:.6f}, z_ohm={p_z:.6f}"
+        assert np.isclose(q_nodal, q_z, rtol=1e-2), f"Q mismatch: nodal={q_nodal:.6f}, z_ohm={q_z:.6f}"
+        assert np.isclose(i_nodal, i_z, rtol=5e-2), f"I mismatch: nodal={i_nodal:.6f}, z_ohm={i_z:.6f}"
 
 
 class TestComputeSwitchFlowsMultipleGroups:
@@ -470,10 +466,8 @@ class TestComputeSwitchFlowsMultipleGroups:
         runpp(net)
         compute_switch_flows(net)
 
-        assert np.isclose(abs(net.res_switch.at[sw0, "p_from_mw"]),
-                           net.res_load.at[0, "p_mw"], atol=1e-6)
-        assert np.isclose(abs(net.res_switch.at[sw1, "p_from_mw"]),
-                           net.res_load.at[1, "p_mw"], atol=1e-6)
+        assert np.isclose(abs(net.res_switch.at[sw0, "p_from_mw"]), net.res_load.at[0, "p_mw"], atol=1e-6)
+        assert np.isclose(abs(net.res_switch.at[sw1, "p_from_mw"]), net.res_load.at[1, "p_mw"], atol=1e-6)
 
 
 class TestComputeSwitchFlowsLoadingPercent:
@@ -514,8 +508,9 @@ class TestComputeSwitchFlowsDcline:
             line_params={"r_ohm_per_km": 0.1, "x_ohm_per_km": 0.1, "c_nf_per_km": 0, "max_i_ka": 1},
         )
         sw = create_switch(net, bus=b1, element=b2, et="b")
-        create_dcline(net, from_bus=b2, to_bus=b3, p_mw=5.0, loss_percent=1.0,
-                      loss_mw=0.1, vm_from_pu=1.0, vm_to_pu=1.0)
+        create_dcline(
+            net, from_bus=b2, to_bus=b3, p_mw=5.0, loss_percent=1.0, loss_mw=0.1, vm_from_pu=1.0, vm_to_pu=1.0
+        )
         create_load(net, b3, p_mw=10.0)
 
         runpp(net)
@@ -524,8 +519,7 @@ class TestComputeSwitchFlowsDcline:
         # Switch must carry the dcline from-side flow
         p_dcline = abs(net.res_dcline.at[0, "p_from_mw"])
         p_sw = abs(net.res_switch.at[sw, "p_from_mw"])
-        assert np.isclose(p_sw, p_dcline, atol=1e-4), \
-            f"Switch P={p_sw:.4f} should match dcline from P={p_dcline:.4f}"
+        assert np.isclose(p_sw, p_dcline, atol=1e-4), f"Switch P={p_sw:.4f} should match dcline from P={p_dcline:.4f}"
         assert net.res_switch.at[sw, "i_ka"] > 0
 
 

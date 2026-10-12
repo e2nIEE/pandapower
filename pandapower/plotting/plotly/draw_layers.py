@@ -2,8 +2,6 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-import math
-
 import numpy as np
 import pandas as pd
 from packaging import version
@@ -31,17 +29,31 @@ except ImportError:
 
 def version_check():
     if "plotly_version" not in locals() and "plotly_version" not in globals():
-        raise UserWarning("You are trying to use plotly, which is not installed.\r\n"
-                          "Please upgrade your python-plotly installation, "
-                          "e.g., via pip install --upgrade plotly")
+        raise UserWarning(
+            "You are trying to use plotly, which is not installed.\r\n"
+            "Please upgrade your python-plotly installation, "
+            "e.g., via pip install --upgrade plotly"
+        )
     if version.parse(plotly_version) < version.parse("3.1.1"):
-        raise UserWarning(f"Your plotly version {plotly_version} is no longer supported.\r\n"
-                          "Please upgrade your python-plotly installation, "
-                          "e.g., via pip install --upgrade plotly")
+        raise UserWarning(
+            f"Your plotly version {plotly_version} is no longer supported.\r\n"
+            "Please upgrade your python-plotly installation, "
+            "e.g., via pip install --upgrade plotly"
+        )
 
 
-def draw_layers(traces, num_layers=0, on_map=False, map_style='basic', showlegend=True, figsize=1,
-                aspectratio='auto', filename=None, auto_open=True, **kwargs):
+def draw_layers(
+    traces,
+    num_layers=0,
+    on_map=False,
+    map_style="basic",
+    showlegend=True,
+    figsize=1,
+    aspectratio="auto",
+    filename=None,
+    auto_open=True,
+    **kwargs,
+):
     """
     plots all the traces (which can be created using :func:`create_bus_trace`, :func:`create_line_trace`,
     :func:`create_trafo_trace`)
@@ -80,25 +92,28 @@ def draw_layers(traces, num_layers=0, on_map=False, map_style='basic', showlegen
     """
     if on_map:
         try:
-            on_map = _on_map_test(traces[0]['x'][0], traces[0]['y'][0])
+            on_map = _on_map_test(traces[0]["x"][0], traces[0]["y"][0])
         except:
-            logger.warning("Test if geo-data are in lat/long cannot be performed using geopy -> "
-                           "eventual plot errors are possible.")
+            logger.warning(
+                "Test if geo-data are in lat/long cannot be performed using geopy -> eventual plot errors are possible."
+            )
 
         if on_map is False:
-            logger.warning("Existing geodata are not real lat/lon geographical coordinates. -> "
-                           "plot on maps is not possible.\n"
-                           "Use geo_data_to_latlong(net, projection) to transform geodata from specific projection.")
+            logger.warning(
+                "Existing geodata are not real lat/lon geographical coordinates. -> "
+                "plot on maps is not possible.\n"
+                "Use geo_data_to_latlong(net, projection) to transform geodata from specific projection."
+            )
 
     if on_map:
         # change traces for mapbox
         # change trace_type to scattermapbox and rename x to lat and y to lon
         for trace in traces:
-            if 'x' in trace.keys():
-                trace['lon'] = trace.pop('x')
-            if 'y' in trace.keys():
-                trace['lat'] = trace.pop('y')
-            trace['type'] = 'scattermapbox'
+            if "x" in trace.keys():
+                trace["lon"] = trace.pop("x")
+            if "y" in trace.keys():
+                trace["lat"] = trace.pop("y")
+            trace["type"] = "scattermapbox"
             if "line" in trace and isinstance(trace["line"], Line):
                 # scattermapboxplot lines do not support dash for some reason, make it a red line instead
                 if "dash" in trace["line"]._props:
@@ -112,71 +127,74 @@ def draw_layers(traces, num_layers=0, on_map=False, map_style='basic', showlegen
                 trace["marker"] = scmMarker(trace["marker"]._props)
 
     # setting Figure object
-    fig = Figure(data=traces,  # edge_trace
-                 layout=Layout(
-                     title_font={"size": 16},
-                     showlegend=showlegend,
-                     autosize=(aspectratio == 'auto'),
-                     hovermode='closest',
-                     margin={"b": 5, "l": 5, "r": 5, "t": 5},
-                     xaxis=XAxis(showgrid=False, zeroline=False, showticklabels=False),
-                     yaxis=YAxis(showgrid=False, zeroline=False, showticklabels=False),
-                 ),
-                 )
-    a = kwargs.get('annotation')
+    fig = Figure(
+        data=traces,  # edge_trace
+        layout=Layout(
+            title_font={"size": 16},
+            showlegend=showlegend,
+            autosize=(aspectratio == "auto"),
+            hovermode="closest",
+            margin={"b": 5, "l": 5, "r": 5, "t": 5},
+            xaxis=XAxis(showgrid=False, zeroline=False, showticklabels=False),
+            yaxis=YAxis(showgrid=False, zeroline=False, showticklabels=False),
+        ),
+    )
+    a = kwargs.get("annotation")
     if a:
         fig.add_annotation(a)
 
     # check if geodata are real geographical lat/lon coordinates using geopy
     if on_map:
-        fig['layout']['mapbox'] = {
+        fig["layout"]["mapbox"] = {
             "bearing": 0,
             "center": {
-                "lat": pd.Series(traces[0]['lat']).dropna().mean(),
-                "lon": pd.Series(traces[0]['lon']).dropna().mean()
+                "lat": pd.Series(traces[0]["lat"]).dropna().mean(),
+                "lon": pd.Series(traces[0]["lon"]).dropna().mean(),
             },
             "style": map_style,
             "pitch": 0,
-            "zoom": kwargs.pop('zoomlevel', 11)
+            "zoom": kwargs.pop("zoomlevel", 11),
         }
 
     # default aspectratio: if on_map use auto, else use 'original'
-    aspectratio = 'original' if not on_map and aspectratio == 'auto' else aspectratio
+    aspectratio = "original" if not on_map and aspectratio == "auto" else aspectratio
 
-    if aspectratio != 'auto':
-        if aspectratio == 'original':
+    if aspectratio != "auto":
+        if aspectratio == "original":
             # TODO improve this workaround for getting original aspectratio
             xs = []
             ys = []
             for trace in traces:
-                xs += trace.get('x') or trace['lon']
-                ys += trace.get('y') or trace['lat']
+                xs += trace.get("x") or trace["lon"]
+                ys += trace.get("y") or trace["lat"]
             x_dropna = pd.Series(xs).dropna()
             y_dropna = pd.Series(ys).dropna()
             xrange = x_dropna.max() - x_dropna.min()
             yrange = y_dropna.max() - y_dropna.min()
             ratio = xrange / yrange
             if ratio < 1:
-                aspectratio = (ratio, 1.)
+                aspectratio = (ratio, 1.0)
             else:
-                aspectratio = (1., 1 / ratio)
+                aspectratio = (1.0, 1 / ratio)
 
         aspectratio = np.array(aspectratio) / max(aspectratio)
-        fig['layout']['width'], fig['layout']['height'] = ([ar * figsize * 700 for ar in aspectratio])
+        fig["layout"]["width"], fig["layout"]["height"] = [ar * figsize * 700 for ar in aspectratio]
 
     # check if called from ipynb or not in order to consider appropriate plot function
     if _in_ipynb():
         from plotly.offline import init_notebook_mode, iplot as plot
+
         init_notebook_mode()
         if filename is not None:
             plot(fig, filename=filename)
         else:
-            plot(fig, filename=f'Layers_{num_layers}.html')
+            plot(fig, filename=f"Layers_{num_layers}.html")
     else:
         from plotly.offline import plot as plot
+
         if filename is not None:
             plot(fig, filename=filename, auto_open=auto_open)
         else:
-            plot(fig, filename=f'Layers_{num_layers}.html', auto_open=auto_open)
+            plot(fig, filename=f"Layers_{num_layers}.html", auto_open=auto_open)
 
     return fig

@@ -5,10 +5,12 @@ from datetime import datetime
 import numpy as np
 from scipy.stats import chi2
 
-from pandapower.estimation.algorithm.base import (WLSAlgorithm,
-                                                  WLSZeroInjectionConstraintsAlgorithm,
-                                                  IRWLSAlgorithm,
-                                                  AFWLSAlgorithm)
+from pandapower.estimation.algorithm.base import (
+    WLSAlgorithm,
+    WLSZeroInjectionConstraintsAlgorithm,
+    IRWLSAlgorithm,
+    AFWLSAlgorithm,
+)
 from pandapower.estimation.algorithm.lp import LPAlgorithm
 from pandapower.estimation.algorithm.optimization import OptAlgorithm
 from pandapower.estimation.ppc_conversion import pp2eppci, _initialize_voltage
@@ -16,20 +18,30 @@ from pandapower.estimation.results import eppci2pp
 from pandapower.estimation.util import set_bb_switch_impedance, reset_bb_switch_impedance
 
 import logging
+
 std_logger = logging.getLogger(__name__)
 
-ALGORITHM_MAPPING = {'wls': WLSAlgorithm,
-                     'wls_with_zero_constraint': WLSZeroInjectionConstraintsAlgorithm,
-                     'opt': OptAlgorithm,
-                     'irwls': IRWLSAlgorithm,
-                     'lp': LPAlgorithm,
-                     'af-wls': AFWLSAlgorithm}
+ALGORITHM_MAPPING = {
+    "wls": WLSAlgorithm,
+    "wls_with_zero_constraint": WLSZeroInjectionConstraintsAlgorithm,
+    "opt": OptAlgorithm,
+    "irwls": IRWLSAlgorithm,
+    "lp": LPAlgorithm,
+    "af-wls": AFWLSAlgorithm,
+}
 ALLOWED_OPT_VAR = {"a", "opt_method", "estimator"}
 
 
 def estimate(
-        net, algorithm='wls', init='flat', tolerance=1e-6, maximum_iterations=50, zero_injection='aux_bus',
-        fuse_buses_with_bb_switch='all', debug_mode=False, **opt_vars
+    net,
+    algorithm="wls",
+    init="flat",
+    tolerance=1e-6,
+    maximum_iterations=50,
+    zero_injection="aux_bus",
+    fuse_buses_with_bb_switch="all",
+    debug_mode=False,
+    **opt_vars,
 ):
     """
     Wrapper function for WLS state estimation.
@@ -76,14 +88,20 @@ def estimate(
 
     se = StateEstimation(net, tolerance, maximum_iterations, algorithm=algorithm)
     v_start, delta_start = _initialize_voltage(net, init)
-    return se.estimate(v_start=v_start, delta_start=delta_start,
-                       zero_injection=zero_injection,
-                       fuse_buses_with_bb_switch=fuse_buses_with_bb_switch, 
-                       algorithm=algorithm, debug_mode=debug_mode, **opt_vars)
+    return se.estimate(
+        v_start=v_start,
+        delta_start=delta_start,
+        zero_injection=zero_injection,
+        fuse_buses_with_bb_switch=fuse_buses_with_bb_switch,
+        algorithm=algorithm,
+        debug_mode=debug_mode,
+        **opt_vars,
+    )
 
 
-def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
-                    calculate_voltage_angles=True, rn_max_threshold=3.0):
+def remove_bad_data(
+    net, init="flat", tolerance=1e-6, maximum_iterations=10, calculate_voltage_angles=True, rn_max_threshold=3.0
+):
     """
     Wrapper function for bad data removal.
 
@@ -105,12 +123,12 @@ def remove_bad_data(net, init='flat', tolerance=1e-6, maximum_iterations=10,
     """
     wls_se = StateEstimation(net, tolerance, maximum_iterations, algorithm="wls")
     v_start, delta_start = _initialize_voltage(net, init)
-    return wls_se.perform_rn_max_test(v_start, delta_start, calculate_voltage_angles,
-                                      rn_max_threshold)
+    return wls_se.perform_rn_max_test(v_start, delta_start, calculate_voltage_angles, rn_max_threshold)
 
 
-def chi2_analysis(net, init='flat', tolerance=1e-6, maximum_iterations=10,
-                  calculate_voltage_angles=True, chi2_prob_false=0.05):
+def chi2_analysis(
+    net, init="flat", tolerance=1e-6, maximum_iterations=10, calculate_voltage_angles=True, chi2_prob_false=0.05
+):
     """
     Wrapper function for the chi-squared test.
 
@@ -142,14 +160,13 @@ class StateEstimation:
     process.
     """
 
-    def __init__(self, net, tolerance=1e-6, maximum_iterations=50, algorithm='wls', logger=None, recycle=False):
+    def __init__(self, net, tolerance=1e-6, maximum_iterations=50, algorithm="wls", logger=None, recycle=False):
         self.logger = logger
         if self.logger is None:
             self.logger = std_logger
             # self.logger.setLevel(logging.DEBUG)
         self.net = net
-        self.solver = ALGORITHM_MAPPING[algorithm](tolerance,
-                                                   maximum_iterations, self.logger)
+        self.solver = ALGORITHM_MAPPING[algorithm](tolerance, maximum_iterations, self.logger)
         self.ppc = None
         self.eppci = None
         self.recycle = recycle
@@ -159,16 +176,24 @@ class StateEstimation:
         self.delta = None
         self.bad_data_present = None
 
-    def estimate(self, v_start='flat', delta_start='flat', zero_injection=None, 
-                 fuse_buses_with_bb_switch='all', algorithm='wls', debug_mode=False, **opt_vars):
+    def estimate(
+        self,
+        v_start="flat",
+        delta_start="flat",
+        zero_injection=None,
+        fuse_buses_with_bb_switch="all",
+        algorithm="wls",
+        debug_mode=False,
+        **opt_vars,
+    ):
         """
         The function estimate is the main function of the module. It takes the inputs
-        v_start and delta_start to initialize the state variables for the estimation process. 
-        Usually they can be initialized in a "flat-start" condition: All voltages being 1.0 pu and 
-        all voltage angles being 0 degrees. In this case, the parameters can be left at their 
-        default values (None). If the estimation is applied continuously, using the results from 
-        the last estimation as the starting condition for the current estimation can decrease the 
-        amount of iterations needed to estimate the current state. 
+        v_start and delta_start to initialize the state variables for the estimation process.
+        Usually they can be initialized in a "flat-start" condition: All voltages being 1.0 pu and
+        all voltage angles being 0 degrees. In this case, the parameters can be left at their
+        default values (None). If the estimation is applied continuously, using the results from
+        the last estimation as the starting condition for the current estimation can decrease the
+        amount of iterations needed to estimate the current state.
         Returned is a boolean value, which is true after a successful estimation and false otherwise.
         The resulting complex voltage will be written into the pandapower network. The result
         fields are found res_bus_est of the pandapower network.
@@ -217,8 +242,9 @@ class StateEstimation:
         # check if all parameter are allowed
         for var_name in opt_vars.keys():
             if var_name not in ALLOWED_OPT_VAR:
-                self.logger.warning("Caution! %s is not allowed as parameter" % var_name \
-                                    + " for estimate and will be ignored!")
+                self.logger.warning(
+                    "Caution! %s is not allowed as parameter" % var_name + " for estimate and will be ignored!"
+                )
 
         if self.net is None:
             raise UserWarning("SE Component was not initialized with a network.")
@@ -226,17 +252,23 @@ class StateEstimation:
         # change the configuration of the pp net to avoid auto fusing of buses connected
         # through bb switch with elements on each bus if this feature enabled
         bus_to_be_fused = None
-        if fuse_buses_with_bb_switch != 'all' and not self.net.switch.empty:
+        if fuse_buses_with_bb_switch != "all" and not self.net.switch.empty:
             if isinstance(fuse_buses_with_bb_switch, str):
                 raise UserWarning("fuse_buses_with_bb_switch parameter is not correctly initialized")
-            elif hasattr(fuse_buses_with_bb_switch, '__iter__'):
+            elif hasattr(fuse_buses_with_bb_switch, "__iter__"):
                 bus_to_be_fused = fuse_buses_with_bb_switch
             set_bb_switch_impedance(self.net, bus_to_be_fused)
 
-        self.net, self.ppc, self.eppci = pp2eppci(self.net, v_start=v_start, delta_start=delta_start,
-                                                  calculate_voltage_angles=True,
-                                                  zero_injection=zero_injection, algorithm=algorithm, 
-                                                  ppc=self.ppc, eppci=self.eppci)
+        self.net, self.ppc, self.eppci = pp2eppci(
+            self.net,
+            v_start=v_start,
+            delta_start=delta_start,
+            calculate_voltage_angles=True,
+            zero_injection=zero_injection,
+            algorithm=algorithm,
+            ppc=self.ppc,
+            eppci=self.eppci,
+        )
 
         # Estimate voltage magnitude and angle with the given estimator
         self.eppci = self.solver.estimate(self.eppci, debug_mode=debug_mode, **opt_vars)
@@ -249,27 +281,27 @@ class StateEstimation:
             self.logger.warning("Estimation failed! Pandapower network failed to update!")
 
         # clear the aux elements and calculation results created for the substitution of bb switches
-        if fuse_buses_with_bb_switch != 'all' and not self.net.switch.empty:
+        if fuse_buses_with_bb_switch != "all" and not self.net.switch.empty:
             reset_bb_switch_impedance(self.net)
 
         # if recycle is not wished, reset ppc, ppci
         if not self.recycle:
             self.ppc, self.eppci = None, None
-        
+
         if algorithm == "wls" or algorithm == "af-wls":
             now = datetime.now()
             se_results = {
                 "success": self.solver.successful,
                 "num_iterations": self.solver.iterations,
                 "objective_function_value": self.solver.obj_func,
-                "time": now.strftime("%Y-%m-%d %H:%M:%S")}
+                "time": now.strftime("%Y-%m-%d %H:%M:%S"),
+            }
         else:
             se_results = self.solver.successful
 
         return se_results
 
-    def perform_chi2_test(self, v_in_out=None, delta_in_out=None,
-                          calculate_voltage_angles=True, chi2_prob_false=0.05):
+    def perform_chi2_test(self, v_in_out=None, delta_in_out=None, calculate_voltage_angles=True, chi2_prob_false=0.05):
         """
         The function perform_chi2_test performs a Chi^2 test for bad data and topology error
         detection. The function can be called with the optional input arguments v_in_out and
@@ -334,8 +366,9 @@ class StateEstimation:
         if self.solver.successful:
             return self.bad_data_present
 
-    def perform_rn_max_test(self, v_in_out=None, delta_in_out=None,
-                            calculate_voltage_angles=True, rn_max_threshold=3.0):
+    def perform_rn_max_test(
+        self, v_in_out=None, delta_in_out=None, calculate_voltage_angles=True, rn_max_threshold=3.0
+    ):
         """
         The function perform_rn_max_test performs a largest normalized residual test for bad data
         identification and removal. It takes two input arguments: v_in_out and delta_in_out.

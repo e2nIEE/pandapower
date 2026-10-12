@@ -4,9 +4,7 @@
 import pytest
 import numpy as np
 
-from pandapower.create import (
-    create_bus, create_sgen, create_sgens, create_asymmetric_sgen, create_sgen_from_cosphi
-)
+from pandapower.create import create_bus, create_sgen, create_sgens, create_asymmetric_sgen, create_sgen_from_cosphi
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
@@ -173,11 +171,11 @@ def test_create_sgen_controllable():
     b1 = create_bus(net, 110)
     s1 = create_sgen(net, b1, 50)
     # controllable column should not exist
-    assert 'controllable' not in net.sgen.columns
+    assert "controllable" not in net.sgen.columns
     s2 = create_sgen(net, b1, 50, controllable=True)
     # controllable should be created with default value False
-    assert not net.sgen.loc[s1, 'controllable']
-    assert net.sgen.loc[s2, 'controllable']
+    assert not net.sgen.loc[s1, "controllable"]
+    assert net.sgen.loc[s2, "controllable"]
 
 
 def test_create_sgens_controllable():
@@ -186,11 +184,11 @@ def test_create_sgens_controllable():
     b1 = create_bus(net, 110)
     s1 = create_sgens(net, [b1], 50)[0]
     # controllable column should not exist
-    assert 'controllable' not in net.sgen.columns
+    assert "controllable" not in net.sgen.columns
     s2 = create_sgens(net, [b1], 50, controllable=True)[0]
     # controllable should be created with default value False
-    assert not net.sgen.loc[s1, 'controllable']
-    assert net.sgen.loc[s2, 'controllable']
+    assert not net.sgen.loc[s1, "controllable"]
+    assert net.sgen.loc[s2, "controllable"]
 
     validate_network(net)
 
@@ -202,9 +200,7 @@ def test_create_sgens_raise_errorexcept():
     b2 = create_bus(net, 110)
     b3 = create_bus(net, 110)
 
-    with pytest.raises(
-            UserWarning, match=r"Cannot attach to buses \{3, 4, 5\}, they do not exist"
-    ):
+    with pytest.raises(UserWarning, match=r"Cannot attach to buses \{3, 4, 5\}, they do not exist"):
         create_sgens(
             net,
             buses=[3, 4, 5],
@@ -233,9 +229,7 @@ def test_create_sgens_raise_errorexcept():
         rx=0.4,
         current_source=True,
     )
-    with pytest.raises(
-            UserWarning, match=r"Sgens with indexes \[0 1 2\] already exist"
-    ):
+    with pytest.raises(UserWarning, match=r"Sgens with indexes \[0 1 2\] already exist"):
         create_sgens(
             net,
             buses=[b1, b2, b3],

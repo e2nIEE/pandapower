@@ -4,8 +4,7 @@
 import copy
 
 from pandapower.auxiliary import get_free_id
-from pandapower.control.util.auxiliary import \
-    drop_same_type_existing_controllers, log_same_type_existing_controllers
+from pandapower.control.util.auxiliary import drop_same_type_existing_controllers, log_same_type_existing_controllers
 from pandapower.io_utils import JSONSerializableClass
 
 try:
@@ -34,8 +33,8 @@ class BasicCtrl(JSONSerializableClass):
         for member in ["index", "json_excludes"]:
             rep += ("\n" + member + ": ").ljust(20)
             d = locals()
-            exec('value = self.' + member, d)
-            rep += str(d['value'])
+            exec("value = self." + member, d)
+            rep += str(d["value"])
 
         return rep
 
@@ -84,8 +83,7 @@ class BasicCtrl(JSONSerializableClass):
         where any target values are being calculated and compared to the actual
         measurements. Returns convergence of the controller.
         """
-        logger.warning("Method is_converged() has not been overwritten "
-                       "(and will always return True)!")
+        logger.warning("Method is_converged() has not been overwritten (and will always return True)!")
         return True
 
     def control_step(self, container):
@@ -142,8 +140,7 @@ class BasicCtrl(JSONSerializableClass):
         """
         Sets the controller in or out of service
         """
-        container.controller.loc[self.index, 'in_service'] = in_service
-
+        container.controller.loc[self.index, "in_service"] = in_service
 
     def level_reset(self, prosumer):
         pass
@@ -154,9 +151,20 @@ class Controller(BasicCtrl):
     Base-Class of all controllable elements within a network. Extension of BasicCtrl
     """
 
-    def __init__(self, net, name=None, in_service=True, order=0, level=0, index=None, recycle=False,
-                 drop_same_existing_ctrl=False, initial_run=True, overwrite=False,
-                 matching_params=None): 
+    def __init__(
+        self,
+        net,
+        name=None,
+        in_service=True,
+        order=0,
+        level=0,
+        index=None,
+        recycle=False,
+        drop_same_existing_ctrl=False,
+        initial_run=True,
+        overwrite=False,
+        matching_params=None,
+    ):
         super(Controller, self).__init__(net, index)
         self.matching_params = {} if matching_params is None else matching_params
         # add oneself to net, creating the ['controller'] DataFrame, if necessary
@@ -164,13 +172,34 @@ class Controller(BasicCtrl):
         # it is still needed in JSONSerializableClass because it is used for characteristics
         if index is None and "controller" in net.keys():
             index = get_free_id(net.controller)
-        self.index = self.add_controller_to_net(net=net, name=name, in_service=in_service, initial_run=initial_run,
-                                                order=order, level=level, index=index, recycle=recycle,
-                                                drop_same_existing_ctrl=drop_same_existing_ctrl,
-                                                overwrite=overwrite, matching_params=matching_params)
+        self.index = self.add_controller_to_net(
+            net=net,
+            name=name,
+            in_service=in_service,
+            initial_run=initial_run,
+            order=order,
+            level=level,
+            index=index,
+            recycle=recycle,
+            drop_same_existing_ctrl=drop_same_existing_ctrl,
+            overwrite=overwrite,
+            matching_params=matching_params,
+        )
 
-    def add_controller_to_net(self, net, name, in_service, initial_run, order, level, index, recycle,
-                              drop_same_existing_ctrl, overwrite, **kwargs):
+    def add_controller_to_net(
+        self,
+        net,
+        name,
+        in_service,
+        initial_run,
+        order,
+        level,
+        index,
+        recycle,
+        drop_same_existing_ctrl,
+        overwrite,
+        **kwargs,
+    ):
         """
         adds the controller to net['controller'] dataframe.
 
@@ -188,12 +217,19 @@ class Controller(BasicCtrl):
 
         # use base class method to raise an error if the object is in DF and overwrite = False
         # if the index is None, the base class is in charge of obtaining the next free index in the data frame
-        fill_dict = {"name": name, "in_service": in_service, "initial_run": initial_run, "recycle": recycle,
-                     "order": order, "level": level}
-        added_index = super().add_to_net(net=net, element='controller', index=index, overwrite=overwrite,
-                           fill_dict=fill_dict, preserve_dtypes=True)
+        fill_dict = {
+            "name": name,
+            "in_service": in_service,
+            "initial_run": initial_run,
+            "recycle": recycle,
+            "order": order,
+            "level": level,
+        }
+        added_index = super().add_to_net(
+            net=net, element="controller", index=index, overwrite=overwrite, fill_dict=fill_dict, preserve_dtypes=True
+        )
         return added_index
-    
+
     def set_recycle(self, net):
         """
         Checks the recyclability of this controller and changes the recyclability of the control handler if
@@ -204,4 +240,3 @@ class Controller(BasicCtrl):
         """
         # checks what can be reused from this controller - default is False in base controller
         pass
-

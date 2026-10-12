@@ -6,11 +6,25 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-"""Updates bus, gen, branch data structures to match power flow soln.
-"""
+"""Updates bus, gen, branch data structures to match power flow soln."""
 
-from numpy import asarray, angle, pi, conj, zeros, ones, finfo, c_, ix_, real, flatnonzero as find, \
-    setdiff1d, intersect1d, r_, isin, arange, flatnonzero, nan_to_num, int64
+from numpy import (
+    asarray,
+    angle,
+    pi,
+    conj,
+    zeros,
+    ones,
+    finfo,
+    c_,
+    ix_,
+    real,
+    setdiff1d,
+    intersect1d,
+    isin,
+    arange,
+    int64,
+)
 from scipy.sparse import csr_matrix
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
@@ -20,7 +34,9 @@ from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMIN, QMAX, 
 EPS = finfo(float).eps  # type: ignore[var-annotated]
 
 
-def pfsoln(baseMVA, bus0, gen0, branch0, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, limited_gens=None):
+def pfsoln(
+    baseMVA, bus0, gen0, branch0, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, limited_gens=None
+):
     """Updates bus, gen, branch data structures to match power flow soln.
 
     @author: Ray Zimmerman (PSERC Cornell)
@@ -68,7 +84,7 @@ def pfsoln(baseMVA, bus0, gen0, branch0, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, r
 def _update_v(bus, V):
     # ----- update bus voltages -----
     bus[:, VM] = abs(V)
-    bus[:, VA] = angle(V) * 180. / pi
+    bus[:, VA] = angle(V) * 180.0 / pi
 
 
 def _split_p_for_gens_at_same_bus(gen, p_bus, gens_at_bus, ref_gens):
@@ -81,8 +97,9 @@ def _split_p_for_gens_at_same_bus(gen, p_bus, gens_at_bus, ref_gens):
         sum_slack_weights = sum(slack_weights)
         if sum_slack_weights > 0:
             # distribute bus slack power according to the distributed slack contribution factors
-            gen[ext_grids, PG] = gen[ext_grids, PG] + (
-                        p_ext_grids - sum(gen[ext_grids, PG])) * slack_weights / sum_slack_weights
+            gen[ext_grids, PG] = (
+                gen[ext_grids, PG] + (p_ext_grids - sum(gen[ext_grids, PG])) * slack_weights / sum_slack_weights
+            )
         else:
             gen[ext_grids, PG] = p_ext_grids / len(ext_grids)
     else:
@@ -134,6 +151,7 @@ def _update_q(baseMVA, bus, gen, gbus, Sbus, on):
         # gens at buses with Qg range = 0
         ig = find(Cg * Qg_min == Cg * Qg_max)
         Qg_save = gen[on[ig], QG]
-        gen[on, QG] = gen[on, QMIN] + (Cg * ((Qg_tot - Qg_min) / (Qg_max - Qg_min + EPS))) * \
-                      (gen[on, QMAX] - gen[on, QMIN])  # ^ avoid div by 0
+        gen[on, QG] = gen[on, QMIN] + (Cg * ((Qg_tot - Qg_min) / (Qg_max - Qg_min + EPS))) * (
+            gen[on, QMAX] - gen[on, QMIN]
+        )  # ^ avoid div by 0
         gen[on[ig], QG] = Qg_save  # (terms are mult by 0 anyway)

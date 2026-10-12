@@ -163,10 +163,18 @@ _trafo3w_columns = {
         bool, description="specifies if the transformer is in service.", metadata={"default": True}
     ),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="element rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="origin_class rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "terminal_hv": pa.Column(
         pd.StringDtype,

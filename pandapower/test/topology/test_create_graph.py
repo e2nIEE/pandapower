@@ -11,9 +11,12 @@ from pandapower.pypower.idx_brch import BR_R, BR_X
 from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 from pandapower.test.loadflow.result_test_network_generator import (
-    add_test_trafo3w, add_test_trafo, add_test_line, add_test_impedance, add_test_bus_bus_switch
+    add_test_trafo3w,
+    add_test_trafo,
+    add_test_line,
+    add_test_impedance,
+    add_test_bus_bus_switch,
 )
-from pandapower.test.loadflow.test_scenarios import network_with_trafo3ws
 from pandapower.topology.create_graph import create_nxgraph, graph_tool_available
 
 libraries = ["networkx"]
@@ -49,7 +52,7 @@ def test_line(library):
     par = mg.get_edge_data(f, t, key=("line", line))
     r = line_tab.length_km / line_tab.parallel * line_tab.r_ohm_per_km
     x = line_tab.length_km / line_tab.parallel * line_tab.x_ohm_per_km
-    z = np.sqrt(r ** 2 + x ** 2)
+    z = np.sqrt(r**2 + x**2)
     assert np.isclose(par["r_ohm"], r)
     assert np.isclose(par["x_ohm"], x)
     assert np.isclose(par["z_ohm"], z)
@@ -94,7 +97,7 @@ def test_trafo(library):
     mg = create_nxgraph(net, calc_branch_impedances=True, library=library)
     trafo_tab = net.trafo.loc[trafo]
     par = mg.get_edge_data(f, t, key=("trafo", trafo))
-    base_Z = trafo_tab.sn_mva / (trafo_tab.vn_hv_kv ** 2)
+    base_Z = trafo_tab.sn_mva / (trafo_tab.vn_hv_kv**2)
     r = (trafo_tab.vkr_percent / 100) / base_Z / trafo_tab.parallel
     z = (trafo_tab.vk_percent / 100) / base_Z / trafo_tab.parallel
     assert np.isclose(par["r_ohm"], r)
@@ -148,13 +151,13 @@ def test_trafo3w_impedances(network_with_trafo3ws, library):
     net.trafo3w.vn_mv_kv = 0.6
     net.trafo3w.vn_lv_kv = 0.4
     t3 = net.trafo3w.index[0]
-    
+
     mg = create_nxgraph(net, calc_branch_impedances=True, library=library)
     trafo3 = net.trafo3w.loc[t3]
     hv, mv, lv = trafo3.hv_bus, trafo3.mv_bus, trafo3.lv_bus
-    base_Z_hv = min(trafo3.sn_hv_mva, trafo3.sn_mv_mva) / (trafo3.vn_hv_kv ** 2)
-    base_Z_mv = min(trafo3.sn_mv_mva, trafo3.sn_lv_mva) / (trafo3.vn_hv_kv ** 2)
-    base_Z_lv = min(trafo3.sn_hv_mva, trafo3.sn_lv_mva) / (trafo3.vn_hv_kv ** 2)
+    base_Z_hv = min(trafo3.sn_hv_mva, trafo3.sn_mv_mva) / (trafo3.vn_hv_kv**2)
+    base_Z_mv = min(trafo3.sn_mv_mva, trafo3.sn_lv_mva) / (trafo3.vn_hv_kv**2)
+    base_Z_lv = min(trafo3.sn_hv_mva, trafo3.sn_lv_mva) / (trafo3.vn_hv_kv**2)
 
     par = mg.get_edge_data(hv, mv, key=("trafo3w", t3))
     assert np.isclose(par["r_ohm"], (trafo3.vkr_hv_percent / 100) / base_Z_hv)
@@ -265,5 +268,5 @@ def test_nogo_graph_tool():
     assert set(net.bus.index) - {0} == {3}
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

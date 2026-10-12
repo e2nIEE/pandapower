@@ -6,7 +6,13 @@ import pytest
 from numpy import allclose, all
 
 from pandapower.create import (
-    create_bus, create_transformer, create_line, create_load, create_ext_grid, create_gen, create_poly_cost
+    create_bus,
+    create_transformer,
+    create_line,
+    create_load,
+    create_ext_grid,
+    create_gen,
+    create_poly_cost,
 )
 from pandapower.network import pandapowerNet
 from pandapower.create._utils import add_column_to_df
@@ -21,18 +27,18 @@ def test_minimize_active_power_curtailment():
     net = pandapowerNet(name="test_minimize_active_power_curtailment")
 
     # create buses
-    bus1 = create_bus(net, vn_kv=220.)
-    bus2 = create_bus(net, vn_kv=110.)
-    bus3 = create_bus(net, vn_kv=110.)
-    bus4 = create_bus(net, vn_kv=110.)
+    bus1 = create_bus(net, vn_kv=220.0)
+    bus2 = create_bus(net, vn_kv=110.0)
+    bus3 = create_bus(net, vn_kv=110.0)
+    bus4 = create_bus(net, vn_kv=110.0)
 
     # create 220/110 kV transformer
     create_transformer(net, bus1, bus2, std_type="100 MVA 220/110 kV")
 
     # create 110 kV lines
-    create_line(net, bus2, bus3, length_km=70., std_type='149-AL1/24-ST1A 110.0')
-    create_line(net, bus3, bus4, length_km=50., std_type='149-AL1/24-ST1A 110.0')
-    create_line(net, bus4, bus2, length_km=40., std_type='149-AL1/24-ST1A 110.0')
+    create_line(net, bus2, bus3, length_km=70.0, std_type="149-AL1/24-ST1A 110.0")
+    create_line(net, bus3, bus4, length_km=50.0, std_type="149-AL1/24-ST1A 110.0")
+    create_line(net, bus4, bus2, length_km=40.0, std_type="149-AL1/24-ST1A 110.0")
 
     # create loads
     create_load(net, bus2, p_mw=60, controllable=False)
@@ -41,14 +47,14 @@ def test_minimize_active_power_curtailment():
 
     # create generators
     create_ext_grid(net, bus1)
-    create_gen(net, bus3, p_mw=80., max_p_mw=80., min_p_mw=0., vm_pu=1.01, controllable=True)
-    create_gen(net, bus4, p_mw=0.1, max_p_mw=100., min_p_mw=0., vm_pu=1.01, controllable=True)
+    create_gen(net, bus3, p_mw=80.0, max_p_mw=80.0, min_p_mw=0.0, vm_pu=1.01, controllable=True)
+    create_gen(net, bus4, p_mw=0.1, max_p_mw=100.0, min_p_mw=0.0, vm_pu=1.01, controllable=True)
 
     add_column_to_df(net, "gen", "min_q_mvar")
     add_column_to_df(net, "gen", "max_q_mvar")
 
-    net.trafo["max_loading_percent"] = 50.
-    net.line["max_loading_percent"] = 50.
+    net.trafo["max_loading_percent"] = 50.0
+    net.line["max_loading_percent"] = 50.0
 
     net.bus["min_vm_pu"] = 1.0
     net.bus["max_vm_pu"] = 1.02

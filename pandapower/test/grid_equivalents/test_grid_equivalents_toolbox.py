@@ -1,5 +1,3 @@
-from collections.abc import Callable
-
 import numpy as np
 import pytest
 
@@ -28,8 +26,8 @@ def case9_27() -> tuple[pandapowerNet, dict, dict]:
     expected_bbr = {"line": {2, 7}}
     expected_bb = {
         "all": {4, 5, 7, 8},
-        '0': {"all": {4, 5, 7, 8}, "internal": {4, 8}, "external": {5, 7}, '1': {5, 7}},
-        '1': {"all": {4, 5, 7, 8}, "internal": {5, 7}, "external": {4, 8}, '0': {4, 8}},
+        "0": {"all": {4, 5, 7, 8}, "internal": {4, 8}, "external": {5, 7}, "1": {5, 7}},
+        "1": {"all": {4, 5, 7, 8}, "internal": {5, 7}, "external": {4, 8}, "0": {4, 8}},
     }
     net = convert_format(net)
     runpp(net)
@@ -60,22 +58,22 @@ def case9_ab_merged() -> tuple[pandapowerNet, dict, dict]:
     expected_bbr = {
         "line": {
             create_line_from_parameters(
-                net, net.bus.index[net.bus.name == '9'][0], net.bus.index[net.bus.name == '9'][1], 1, 0, 65, 0, 0.41
+                net, net.bus.index[net.bus.name == "9"][0], net.bus.index[net.bus.name == "9"][1], 1, 0, 65, 0, 0.41
             )
         },
         "impedance": {
             create_impedance(
-                net, net.bus.index[net.bus.name == '5'][0], net.bus.index[net.bus.name == '5'][1], 0, 0.06, 250
+                net, net.bus.index[net.bus.name == "5"][0], net.bus.index[net.bus.name == "5"][1], 0, 0.06, 250
             )
         },
         "switch": {
-            create_switch(net, net.bus.index[net.bus.name == '7'][0], net.bus.index[net.bus.name == '7'][1], "b")
+            create_switch(net, net.bus.index[net.bus.name == "7"][0], net.bus.index[net.bus.name == "7"][1], "b")
         },
         "trafo": {
             create_transformer_from_parameters(
                 net,
-                net.bus.index[net.bus.name == '8'][0],
-                net.bus.index[net.bus.name == '8'][1],
+                net.bus.index[net.bus.name == "8"][0],
+                net.bus.index[net.bus.name == "8"][1],
                 250,
                 345,
                 345,
@@ -88,9 +86,9 @@ def case9_ab_merged() -> tuple[pandapowerNet, dict, dict]:
         "trafo3w": {
             create_transformer3w_from_parameters(
                 net,
-                net.bus.index[net.bus.name == '3'][0],
+                net.bus.index[net.bus.name == "3"][0],
                 new_bus,
-                net.bus.index[net.bus.name == '3'][1],
+                net.bus.index[net.bus.name == "3"][1],
                 345,
                 345,
                 345,
@@ -112,10 +110,11 @@ def case9_ab_merged() -> tuple[pandapowerNet, dict, dict]:
     # expected_bb
     expected_bb = {
         "a": {
-            "internal": set(net.bus.index[net.bus.name.isin(['9', '5', '7', '8', '3']) & (net.bus.zone == "a")]),
-            "external": set(net.bus.index[net.bus.name.isin(['9', '5', '7', '8', '3']) & (net.bus.zone == "b")]) | {new_bus}
+            "internal": set(net.bus.index[net.bus.name.isin(["9", "5", "7", "8", "3"]) & (net.bus.zone == "a")]),
+            "external": set(net.bus.index[net.bus.name.isin(["9", "5", "7", "8", "3"]) & (net.bus.zone == "b")])
+            | {new_bus},
         },
-        "b": {}
+        "b": {},
     }
     expected_bb["b"]["internal"] = expected_bb["a"]["external"] - {18}
     expected_bb["b"]["external"] = expected_bb["a"]["internal"] | {18}
@@ -127,7 +126,7 @@ def case9_ab_merged() -> tuple[pandapowerNet, dict, dict]:
 def test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_boundary_branches1():
     net, expected_bb, expected_bbr = case9_27()
     set_bus_zone_by_boundary_branches(net, expected_bbr)
-    assert all(net.bus.zone.values == np.array(['0', '1', '1', '0', '0', '1', '1', '1', '0']))
+    assert all(net.bus.zone.values == np.array(["0", "1", "1", "0", "0", "1", "1", "1", "0"]))
 
     boundary_buses, boundary_branches = get_boundaries_by_bus_zone_with_boundary_branches(net)
 
@@ -137,7 +136,7 @@ def test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_b
     # --- test against set_bus_zone_by_boundary_branches()
     bb_in = {"line": {2, 4, 7}}
     set_bus_zone_by_boundary_branches(net, bb_in)
-    assert all(net.bus.zone.values == np.array(['0', '1', '2', '0', '0', '2', '1', '1', '0']))
+    assert all(net.bus.zone.values == np.array(["0", "1", "2", "0", "0", "2", "1", "1", "0"]))
 
 
 def test_set_bus_zone_by_boundary_branches_and_get_boundaries_by_bus_zone_with_boundary_branches2():

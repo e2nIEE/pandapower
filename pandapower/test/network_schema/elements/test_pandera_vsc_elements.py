@@ -1,7 +1,6 @@
 # test_pandera_vsc_elements.py
 
 import itertools
-import numpy as np
 import pandas as pd
 import pandera as pa
 import pytest

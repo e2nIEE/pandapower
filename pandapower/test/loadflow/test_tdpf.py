@@ -9,14 +9,27 @@ import copy
 
 from pandapower import pp_dir
 from pandapower.create import (
-    create_bus, create_line, create_load, create_ext_grid, create_buses, create_sgen, create_gen, create_gens,
-    create_line_from_parameters
+    create_bus,
+    create_line,
+    create_load,
+    create_ext_grid,
+    create_buses,
+    create_sgen,
+    create_gen,
+    create_gens,
+    create_line_from_parameters,
 )
 from pandapower.network import pandapowerNet
 from pandapower.networks.power_system_test_cases import case9, case30
 from pandapower.pf.create_jacobian_tdpf import (
-    calc_r_theta_from_t_rise, calc_i_square_p_loss, calc_g_b, calc_a0_a1_a2_tau, calc_T_ngoko, calc_r_theta,
-    calc_T_frank, ALPHA_TDPF
+    calc_r_theta_from_t_rise,
+    calc_i_square_p_loss,
+    calc_g_b,
+    calc_a0_a1_a2_tau,
+    calc_T_ngoko,
+    calc_r_theta,
+    calc_T_frank,
+    ALPHA_TDPF,
 )
 from pandapower.pypower.idx_brch import BR_R, BR_X
 from pandapower.run import set_user_pf_options, runpp
@@ -25,12 +38,30 @@ from pandapower.test.helper_functions import assert_res_equal
 
 
 @pytest.fixture(
-    params=["94-AL1/15-ST1A 0.4", "70-AL1/11-ST1A 10.0", "94-AL1/15-ST1A 10.0", "122-AL1/20-ST1A 10.0",
-            "149-AL1/24-ST1A 10.0", "70-AL1/11-ST1A 20.0", "94-AL1/15-ST1A 20.0", "122-AL1/20-ST1A 20.0",
-            "149-AL1/24-ST1A 20.0", "184-AL1/30-ST1A 20.0", "243-AL1/39-ST1A 20.0", "70-AL1/11-ST1A 110.0",
-            "94-AL1/15-ST1A 110.0", "122-AL1/20-ST1A 110.0", "149-AL1/24-ST1A 110.0", "184-AL1/30-ST1A 110.0",
-            "243-AL1/39-ST1A 110.0", "305-AL1/39-ST1A 110.0", "490-AL1/64-ST1A 110.0", "490-AL1/64-ST1A 220.0",
-            "490-AL1/64-ST1A 380.0"])
+    params=[
+        "94-AL1/15-ST1A 0.4",
+        "70-AL1/11-ST1A 10.0",
+        "94-AL1/15-ST1A 10.0",
+        "122-AL1/20-ST1A 10.0",
+        "149-AL1/24-ST1A 10.0",
+        "70-AL1/11-ST1A 20.0",
+        "94-AL1/15-ST1A 20.0",
+        "122-AL1/20-ST1A 20.0",
+        "149-AL1/24-ST1A 20.0",
+        "184-AL1/30-ST1A 20.0",
+        "243-AL1/39-ST1A 20.0",
+        "70-AL1/11-ST1A 110.0",
+        "94-AL1/15-ST1A 110.0",
+        "122-AL1/20-ST1A 110.0",
+        "149-AL1/24-ST1A 110.0",
+        "184-AL1/30-ST1A 110.0",
+        "243-AL1/39-ST1A 110.0",
+        "305-AL1/39-ST1A 110.0",
+        "490-AL1/64-ST1A 110.0",
+        "490-AL1/64-ST1A 220.0",
+        "490-AL1/64-ST1A 380.0",
+    ]
+)
 def en_net(request):
     # Create a Simple Example Network with 50 Hz
     # for 15, 24, 34, 48: the temperature is too low (ca. 71 °C rather than 80 °C), 679 ca. 76 °C
@@ -43,14 +74,14 @@ def create_single_line_net(std_type):
     set_user_pf_options(net, init="dc", max_iteration=100)
 
     vn_kv = float(std_type.split(" ")[-1])
-    b1 = create_bus(net, vn_kv=vn_kv, name='b1_hv', type='n')
-    b2 = create_bus(net, vn_kv=vn_kv, name='b10', type='n')
+    b1 = create_bus(net, vn_kv=vn_kv, name="b1_hv", type="n")
+    b2 = create_bus(net, vn_kv=vn_kv, name="b10", type="n")
 
-    create_line(net, from_bus=b1, to_bus=b2, length_km=vn_kv / 4, std_type=std_type, name='l3')
-    max_i_ka = net.line.at[0, 'max_i_ka']
+    create_line(net, from_bus=b1, to_bus=b2, length_km=vn_kv / 4, std_type=std_type, name="l3")
+    max_i_ka = net.line.at[0, "max_i_ka"]
 
     # Initial standard Value
-    net.line['max_loading_percent'] = 100
+    net.line["max_loading_percent"] = 100
 
     # Chose the load to match nominal current
     p_ac = vn_kv * max_i_ka * np.sqrt(3)  # Q=0
@@ -60,23 +91,23 @@ def create_single_line_net(std_type):
 
     # Declaration of overhead and cable systems
     ol_index = net.line.loc[net.line.type == "ol"].index.values
-    parameter_from_std_type(net, 'q_mm2')
+    parameter_from_std_type(net, "q_mm2")
     q_mm2 = net.line.loc[ol_index, "q_mm2"].values.astype(np.float64)
     # e.g. 0.0218 for 243-AL1/39-ST1A 110.0
     d_m = (np.sqrt(q_mm2 * 4 * (1 / np.pi))) * 1e-3 * 1.2  # 1.2 because not perfect circle
 
     # Standard Conditions Germany for Midsummer Weather
     net.line.loc[ol_index, "tdpf"] = True
-    net.line.loc[ol_index, 'alpha'] = 0.00403
-    net.line.loc[ol_index, 'wind_speed_m_per_s'] = 0.6
-    net.line.loc[ol_index, 'wind_angle_degree'] = 90
-    net.line.loc[ol_index, 'conductor_outer_diameter_m'] = d_m
-    net.line.loc[ol_index, 'air_temperature_degree_celsius'] = 35
-    net.line.loc[ol_index, 'temperature_degree_celsius'] = 20
-    net.line.loc[ol_index, 'reference_temperature_degree_celsius'] = 20
-    net.line.loc[ol_index, 'solar_radiation_w_per_sq_m'] = 900
-    net.line.loc[ol_index, 'solar_absorptivity'] = 0.9
-    net.line.loc[ol_index, 'emissivity'] = 0.72419
+    net.line.loc[ol_index, "alpha"] = 0.00403
+    net.line.loc[ol_index, "wind_speed_m_per_s"] = 0.6
+    net.line.loc[ol_index, "wind_angle_degree"] = 90
+    net.line.loc[ol_index, "conductor_outer_diameter_m"] = d_m
+    net.line.loc[ol_index, "air_temperature_degree_celsius"] = 35
+    net.line.loc[ol_index, "temperature_degree_celsius"] = 20
+    net.line.loc[ol_index, "reference_temperature_degree_celsius"] = 20
+    net.line.loc[ol_index, "solar_radiation_w_per_sq_m"] = 900
+    net.line.loc[ol_index, "solar_absorptivity"] = 0.9
+    net.line.loc[ol_index, "emissivity"] = 0.72419
 
     return net
 
@@ -85,7 +116,7 @@ def prepare_case_30():
     net = case30()
 
     for i in net.line.index.values:
-        net.line.at[i, 'name'] = f"{net.line.at[i, 'from_bus'] + 1} - {net.line.at[i, 'to_bus'] + 1}"
+        net.line.at[i, "name"] = f"{net.line.at[i, 'from_bus'] + 1} - {net.line.at[i, 'to_bus'] + 1}"
 
     # replicating the calculation from the paper Frank et.al.:
     net.line["alpha"] = 1 / (25 + 228.1)
@@ -105,14 +136,14 @@ def prepare_case_30():
     return net
 
 
-def simple_test_grid(load_scaling=1., sgen_scaling=1., with_gen=False, distributed_slack=False):
+def simple_test_grid(load_scaling=1.0, sgen_scaling=1.0, with_gen=False, distributed_slack=False):
     s_base = 100
 
     net = pandapowerNet(name="simple_test_grid", sn_mva=s_base)
     std_type = "490-AL1/64-ST1A 110.0"
     r = 0.059
     v_base = 132
-    z_base = v_base ** 2 / s_base
+    z_base = v_base**2 / s_base
 
     create_buses(net, 5, v_base, geodata=[(0, 1), (-1, 0.5), (0, 0), (1, 0.5), (0, 0.5)])
 
@@ -141,16 +172,16 @@ def simple_test_grid(load_scaling=1., sgen_scaling=1., with_gen=False, distribut
     create_sgen(net, 0, 200, scaling=sgen_scaling, name="R1")
     create_sgen(net, 1, 250, scaling=sgen_scaling, name="R2")
     if with_gen:
-        idx = create_gen(net, 2, 600, 1., scaling=sgen_scaling, name="G3")
-        create_gen(net, 4, 300, 1., scaling=sgen_scaling, name="G5")
+        idx = create_gen(net, 2, 600, 1.0, scaling=sgen_scaling, name="G3")
+        create_gen(net, 4, 300, 1.0, scaling=sgen_scaling, name="G5")
     else:
         idx = create_sgen(net, 2, 600, scaling=sgen_scaling, name="G3")
         create_sgen(net, 4, 300, scaling=sgen_scaling, name="G5")
 
     if distributed_slack:
-        if with_gen: # distributed slack is currently not supported for sgen.
+        if with_gen:  # distributed slack is currently not supported for sgen.
             net["gen"]["slack_weight"] = 0.0
-            net["gen"].at[idx, 'slack_weight'] = 1
+            net["gen"].at[idx, "slack_weight"] = 1
         set_user_pf_options(net, distributed_slack=True)
         net.sn_mva = 1000  # otherwise numerical issues
 
@@ -190,9 +221,15 @@ def test_tdpf_frank():
     r_delta = (net.res_line.r_ohm_per_km - net.line.r_ohm_per_km) / net.line.r_ohm_per_km * 100
     sorted_index = net.line.sort_values(by="r_theta_kelvin_per_mw", ascending=False).index
 
-    line_mva = np.max(np.vstack([
-        np.sqrt(net.res_line.p_from_mw ** 2 + net.res_line.q_from_mvar ** 2).loc[sorted_index].values,
-        np.sqrt(net.res_line.p_to_mw ** 2 + net.res_line.q_to_mvar ** 2).loc[sorted_index].values]), axis=0)
+    line_mva = np.max(
+        np.vstack(
+            [
+                np.sqrt(net.res_line.p_from_mw**2 + net.res_line.q_from_mvar**2).loc[sorted_index].values,
+                np.sqrt(net.res_line.p_to_mw**2 + net.res_line.q_to_mvar**2).loc[sorted_index].values,
+            ]
+        ),
+        axis=0,
+    )
     line_max_mva = net.line.max_i_ka.loc[sorted_index] * 135 * np.sqrt(3)
     line_loading = line_mva / line_max_mva
 
@@ -216,19 +253,17 @@ def calc_a0_a1_a2_tau_for_simple_test_grid():
     return calc_a0_a1_a2_tau(35, 80, 20, r_ref, 30.6e-3, 1490, 0.6, 45, 900, 4e-3, 0.5, 0.5)
 
 
-@pytest.mark.parametrize('with_gen', [False, True])
-@pytest.mark.parametrize('distributed_slack', [False, True])
+@pytest.mark.parametrize("with_gen", [False, True])
+@pytest.mark.parametrize("distributed_slack", [False, True])
 def test_temperature_r(calc_a0_a1_a2_tau_for_simple_test_grid, with_gen, distributed_slack):
     a0, a1, a2, _ = calc_a0_a1_a2_tau_for_simple_test_grid
-    net = simple_test_grid(load_scaling=0.25, sgen_scaling=0.5, with_gen=with_gen,
-                           distributed_slack=distributed_slack)
+    net = simple_test_grid(load_scaling=0.25, sgen_scaling=0.5, with_gen=with_gen, distributed_slack=distributed_slack)
     runpp(net, tdpf=True, max_iteration=100)
 
     T = calc_T_ngoko(np.square(net.res_line.i_ka.values * 1e3), a0, a1, a2, None, None, None)
     assert np.allclose(net.res_line.temperature_degree_celsius, T, rtol=0, atol=1e-6)
 
-    net2 = simple_test_grid(load_scaling=0.25, sgen_scaling=0.5, with_gen=with_gen,
-                            distributed_slack=distributed_slack)
+    net2 = simple_test_grid(load_scaling=0.25, sgen_scaling=0.5, with_gen=with_gen, distributed_slack=distributed_slack)
     net2.line["temperature_degree_celsius"] = net.res_line.temperature_degree_celsius
     runpp(net2, consider_line_temperature=True)
 
@@ -275,12 +310,12 @@ def test_ngoko_vs_frank():
     assert np.allclose(net.res_line.i_ka, 1e-3 * i_base_a * np.sqrt(i_square_pu), rtol=0, atol=1e-6)
     assert np.allclose(net.res_line.pl_mw, p_loss_pu * net.sn_mva, rtol=0, atol=1e-6)
 
-@pytest.mark.parametrize('with_gen', [False, True])
-@pytest.mark.parametrize('distributed_slack', [False, True])
+
+@pytest.mark.parametrize("with_gen", [False, True])
+@pytest.mark.parametrize("distributed_slack", [False, True])
 def test_tdpf_delay(calc_a0_a1_a2_tau_for_simple_test_grid, with_gen, distributed_slack):
     _, _, _, tau = calc_a0_a1_a2_tau_for_simple_test_grid
-    net = simple_test_grid(load_scaling=0.25, sgen_scaling=0.5, with_gen=with_gen,
-                           distributed_slack=distributed_slack)
+    net = simple_test_grid(load_scaling=0.25, sgen_scaling=0.5, with_gen=with_gen, distributed_slack=distributed_slack)
     # no delay
     runpp(net, tdpf=True, max_iteration=100, tdpf_delay_s=0)
     assert np.allclose(net.res_line.temperature_degree_celsius, 20, rtol=0, atol=1e-6)
@@ -344,12 +379,12 @@ def test_default_parameters():
     assert_res_equal(net, net_backup)
 
     # now define some tdpf lines with simplified method
-    net.line.loc[[1, 2, 4], 'tdpf'] = True, 1, -8
-    net.line.loc[1, 'alpha'] = 4.03e-3
+    net.line.loc[[1, 2, 4], "tdpf"] = True, 1, -8
+    net.line.loc[1, "alpha"] = 4.03e-3
     net.line["r_theta_kelvin_per_mw"] = calc_r_theta_from_t_rise(net, 25)
     with pytest.raises(UserWarning, match="required columns .* are missing"):
         runpp(net, tdpf=True, tdpf_update_r_theta=False)
-    net.line['alpha'] = 4.03e-3
+    net.line["alpha"] = 4.03e-3
     net.line["r_theta_kelvin_per_mw"] = calc_r_theta_from_t_rise(net, 25)
     runpp(net, tdpf=True, tdpf_update_r_theta=False)
 
@@ -363,13 +398,13 @@ def test_default_parameters():
     net = copy.deepcopy(net_backup)
     net.line.loc[net.line.r_ohm_per_km != 0, "tdpf"] = True
     net.line["conductor_outer_diameter_m"] = 2.5e-2  # 2.5 cm?
-    net.line.loc[[2, 4], 'temperature_degree_celsius'] = 40
-    net.line.loc[[2, 4], 'alpha'] = 3e-3
-    net.line.loc[[2, 4], 'wind_speed_m_per_s'] = 0
+    net.line.loc[[2, 4], "temperature_degree_celsius"] = 40
+    net.line.loc[[2, 4], "alpha"] = 3e-3
+    net.line.loc[[2, 4], "wind_speed_m_per_s"] = 0
     runpp(net, tdpf=True)
-    assert np.array_equal(net.line.loc[[2, 4], 'temperature_degree_celsius'].values, np.array([40, 40]))
-    assert np.array_equal(net.line.loc[[2, 4], 'alpha'].values, np.array([3e-3, 3e-3]))
-    assert np.array_equal(net.line.loc[[2, 4], 'wind_speed_m_per_s'].values, np.array([0, 0]))
+    assert np.array_equal(net.line.loc[[2, 4], "temperature_degree_celsius"].values, np.array([40, 40]))
+    assert np.array_equal(net.line.loc[[2, 4], "alpha"].values, np.array([3e-3, 3e-3]))
+    assert np.array_equal(net.line.loc[[2, 4], "wind_speed_m_per_s"].values, np.array([0, 0]))
 
     net.line["mc_joule_per_m_k"] = 500
     runpp(net, tdpf=True, tdpf_delay_s=10 * 60)
@@ -396,14 +431,23 @@ def test_with_user_pf_options():
 # Relationship of Bare Overhead Conductors" Basic Example with Calculation, Page 23 and following
 def test_IEEE_example_1():
     # 60Hz according to USA
-    net = pandapowerNet(name="test_IEEE_example_1",f_hz=60.0)
+    net = pandapowerNet(name="test_IEEE_example_1", f_hz=60.0)
 
-    b1 = create_bus(net, vn_kv=380, name='b1_hv', type='n')
-    b2 = create_bus(net, vn_kv=380, name='b10', type='n')
+    b1 = create_bus(net, vn_kv=380, name="b1_hv", type="n")
+    b2 = create_bus(net, vn_kv=380, name="b10", type="n")
 
     # 795 kcmil 26/7 Drake ACSR
-    create_line_from_parameters(net, from_bus=b1, to_bus=b2, length_km=1, r_ohm_per_km=0.07283, x_ohm_per_km=0.341,
-                                c_nf_per_km=7.7827795, max_i_ka=1.024, type='ol')
+    create_line_from_parameters(
+        net,
+        from_bus=b1,
+        to_bus=b2,
+        length_km=1,
+        r_ohm_per_km=0.07283,
+        x_ohm_per_km=0.341,
+        c_nf_per_km=7.7827795,
+        max_i_ka=1.024,
+        type="ol",
+    )
 
     # Chose the load to match nominal current
     p_ac = 380 * 1.024 * np.sqrt(3)
@@ -415,20 +459,20 @@ def test_IEEE_example_1():
     ol_index = net.line.loc[net.line.type == "ol"].index.values
 
     # Initial standard Value
-    net.line['max_loading_percent'] = 100
+    net.line["max_loading_percent"] = 100
 
     # Conditions according to IEEE-Example
     net.line.loc[ol_index, "tdpf"] = True
     net.line.loc[ol_index, "alpha"] = 0.003508
-    net.line.loc[ol_index, 'conductor_outer_diameter_m'] = 0.02814
-    net.line.loc[ol_index, 'air_temperature_degree_celsius'] = 40
-    net.line.loc[ol_index, 'temperature_degree_celsius'] = 20
-    net.line.loc[ol_index, 'reference_temperature_degree_celsius'] = 20
-    net.line.loc[ol_index, 'wind_speed_m_per_s'] = 0.61
-    net.line.loc[ol_index, 'wind_angle_degree'] = 90
-    net.line.loc[ol_index, 'solar_radiation_w_per_sq_m'] = 1027
-    net.line.loc[ol_index, 'solar_absorptivity'] = 0.8
-    net.line.loc[ol_index, 'emissivity'] = 0.8
+    net.line.loc[ol_index, "conductor_outer_diameter_m"] = 0.02814
+    net.line.loc[ol_index, "air_temperature_degree_celsius"] = 40
+    net.line.loc[ol_index, "temperature_degree_celsius"] = 20
+    net.line.loc[ol_index, "reference_temperature_degree_celsius"] = 20
+    net.line.loc[ol_index, "wind_speed_m_per_s"] = 0.61
+    net.line.loc[ol_index, "wind_angle_degree"] = 90
+    net.line.loc[ol_index, "solar_radiation_w_per_sq_m"] = 1027
+    net.line.loc[ol_index, "solar_absorptivity"] = 0.8
+    net.line.loc[ol_index, "emissivity"] = 0.8
 
     # Starting Control Loop
     runpp(net, tdpf=True, init="dc")
@@ -445,17 +489,26 @@ def test_IEEE_example_1():
 # Relationship of Bare Overhead Conductors", Annex B, Numerical example 1, Page 44
 def test_IEEE_example_2():
     # 60Hz according to USA
-    net = pandapowerNet(name="test_IEEE_example_2",f_hz=60.0)
+    net = pandapowerNet(name="test_IEEE_example_2", f_hz=60.0)
 
-    b1 = create_bus(net, vn_kv=380, name='b1_hv', type='n')
-    b2 = create_bus(net, vn_kv=380, name='b10', type='n')
+    b1 = create_bus(net, vn_kv=380, name="b1_hv", type="n")
+    b2 = create_bus(net, vn_kv=380, name="b10", type="n")
 
     # 400 MM2 26/7 Drake ACSR
-    create_line_from_parameters(net, from_bus=b1, to_bus=b2, length_km=1, r_ohm_per_km=0.07284, x_ohm_per_km=0.341,
-                                c_nf_per_km=7.7827795, max_i_ka=1.0, type='ol')
+    create_line_from_parameters(
+        net,
+        from_bus=b1,
+        to_bus=b2,
+        length_km=1,
+        r_ohm_per_km=0.07284,
+        x_ohm_per_km=0.341,
+        c_nf_per_km=7.7827795,
+        max_i_ka=1.0,
+        type="ol",
+    )
 
     # Initial standard Value
-    net.line['max_loading_percent'] = 100
+    net.line["max_loading_percent"] = 100
 
     # Chose the load to match nominal current
     p_ac = 380 * 1.0 * np.sqrt(3)  # Q=0
@@ -467,17 +520,17 @@ def test_IEEE_example_2():
     ol_index = net.line.loc[net.line.type == "ol"].index.values
 
     # Conditions according to IEEE-Example
-    net.line.loc[ol_index, 'tdpf'] = True
+    net.line.loc[ol_index, "tdpf"] = True
     net.line.loc[ol_index, "alpha"] = 0.003505
-    net.line.loc[ol_index, 'conductor_outer_diameter_m'] = 0.02812
-    net.line.loc[ol_index, 'air_temperature_degree_celsius'] = 40
-    net.line.loc[ol_index, 'temperature_degree_celsius'] = 20
-    net.line.loc[ol_index, 'reference_temperature_degree_celsius'] = 20
-    net.line.loc[ol_index, 'wind_speed_m_per_s'] = 0.61
-    net.line.loc[ol_index, 'wind_angle_degree'] = 90
-    net.line.loc[ol_index, 'solar_radiation_w_per_sq_m'] = 1015
-    net.line.loc[ol_index, 'solar_absorptivity'] = 0.5
-    net.line.loc[ol_index, 'emissivity'] = 0.5
+    net.line.loc[ol_index, "conductor_outer_diameter_m"] = 0.02812
+    net.line.loc[ol_index, "air_temperature_degree_celsius"] = 40
+    net.line.loc[ol_index, "temperature_degree_celsius"] = 20
+    net.line.loc[ol_index, "reference_temperature_degree_celsius"] = 20
+    net.line.loc[ol_index, "wind_speed_m_per_s"] = 0.61
+    net.line.loc[ol_index, "wind_angle_degree"] = 90
+    net.line.loc[ol_index, "solar_radiation_w_per_sq_m"] = 1015
+    net.line.loc[ol_index, "solar_absorptivity"] = 0.5
+    net.line.loc[ol_index, "emissivity"] = 0.5
 
     # Starting Control Loop
     runpp(net, tdpf=True, init="dc")
@@ -493,17 +546,26 @@ def test_IEEE_example_2():
 # Relationship of Bare Overhead Conductors", Annex B, Numerical example 2, Page 45
 def test_IEEE_example_3():
     # 60Hz according to USA
-    net = pandapowerNet(name="test_IEEE_example_3",f_hz=60.0)
+    net = pandapowerNet(name="test_IEEE_example_3", f_hz=60.0)
 
-    b1 = create_bus(net, vn_kv=380, name='b1_hv', type='n')
-    b2 = create_bus(net, vn_kv=380, name='b10', type='n')
+    b1 = create_bus(net, vn_kv=380, name="b1_hv", type="n")
+    b2 = create_bus(net, vn_kv=380, name="b10", type="n")
 
     # 400 MM2 26/7 Drake ACSR
-    create_line_from_parameters(net, from_bus=b1, to_bus=b2, length_km=1, r_ohm_per_km=0.07284, x_ohm_per_km=0.341,
-                                c_nf_per_km=7.7827795, max_i_ka=1.003, type='ol')
+    create_line_from_parameters(
+        net,
+        from_bus=b1,
+        to_bus=b2,
+        length_km=1,
+        r_ohm_per_km=0.07284,
+        x_ohm_per_km=0.341,
+        c_nf_per_km=7.7827795,
+        max_i_ka=1.003,
+        type="ol",
+    )
 
     # Initial standard Value
-    net.line['max_loading_percent'] = 100
+    net.line["max_loading_percent"] = 100
 
     # Chose the load to match nominal current
     p_ac = 380 * 1.003 * np.sqrt(3)  # Q=0
@@ -515,17 +577,17 @@ def test_IEEE_example_3():
     ol_index = net.line.loc[net.line.type == "ol"].index.values
 
     # Conditions according to IEEE-Example
-    net.line.loc[ol_index, 'tdpf'] = True
-    net.line.loc[ol_index, 'alpha'] = 0.003505
-    net.line.loc[ol_index, 'conductor_outer_diameter_m'] = 0.02812
-    net.line.loc[ol_index, 'air_temperature_degree_celsius'] = 40
-    net.line.loc[ol_index, 'temperature_degree_celsius'] = 20
-    net.line.loc[ol_index, 'reference_temperature_degree_celsius'] = 20
-    net.line.loc[ol_index, 'wind_speed_m_per_s'] = 0.61
-    net.line.loc[ol_index, 'wind_angle_degree'] = 90
-    net.line.loc[ol_index, 'solar_radiation_w_per_sq_m'] = 1015
-    net.line.loc[ol_index, 'solar_absorptivity'] = 0.5
-    net.line.loc[ol_index, 'emissivity'] = 0.5
+    net.line.loc[ol_index, "tdpf"] = True
+    net.line.loc[ol_index, "alpha"] = 0.003505
+    net.line.loc[ol_index, "conductor_outer_diameter_m"] = 0.02812
+    net.line.loc[ol_index, "air_temperature_degree_celsius"] = 40
+    net.line.loc[ol_index, "temperature_degree_celsius"] = 20
+    net.line.loc[ol_index, "reference_temperature_degree_celsius"] = 20
+    net.line.loc[ol_index, "wind_speed_m_per_s"] = 0.61
+    net.line.loc[ol_index, "wind_angle_degree"] = 90
+    net.line.loc[ol_index, "solar_radiation_w_per_sq_m"] = 1015
+    net.line.loc[ol_index, "solar_absorptivity"] = 0.5
+    net.line.loc[ol_index, "emissivity"] = 0.5
 
     # Starting Control Loop
     runpp(net, tdpf=True, init="dc")
@@ -548,9 +610,10 @@ def test_EN_standard(en_net):
     max_cond_temp = 80
 
     assert np.isclose(en_net.res_line.i_ka, en_net.line.max_i_ka, rtol=0, atol=1e-3)
-    assert np.isclose(en_net.res_line.temperature_degree_celsius, max_cond_temp, rtol=0,
-                      atol=2), en_net.res_line.temperature_degree_celsius
+    assert np.isclose(en_net.res_line.temperature_degree_celsius, max_cond_temp, rtol=0, atol=2), (
+        en_net.res_line.temperature_degree_celsius
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

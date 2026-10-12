@@ -165,3 +165,5 @@ exclude_lines = [
 # styling information for ruff formatter
 [tool.ruff]
 line-length = 120
+# Use `\n` line endings for all files
+line-ending = "lf"

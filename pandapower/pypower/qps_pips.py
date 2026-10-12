@@ -6,7 +6,7 @@
 programming) problems.
 """
 
-from numpy import inf, ones, zeros, dot, full
+from numpy import inf, zeros, dot, full
 
 from scipy.sparse import csr_matrix as sparse
 
@@ -127,47 +127,49 @@ def qps_pips(H, c, A, l, u, xmin=None, xmax=None, x0=None, opt=None):
     if isinstance(H, dict):
         p = H
     else:
-        p = {'H': H, 'c': c, 'A': A, 'l': l, 'u': u}
-        if xmin is not None: p['xmin'] = xmin
-        if xmax is not None: p['xmax'] = xmax
-        if x0 is not None: p['x0'] = x0
-        if opt is not None: p['opt'] = opt
+        p = {"H": H, "c": c, "A": A, "l": l, "u": u}
+        if xmin is not None:
+            p["xmin"] = xmin
+        if xmax is not None:
+            p["xmax"] = xmax
+        if x0 is not None:
+            p["x0"] = x0
+        if opt is not None:
+            p["opt"] = opt
 
-    if 'H' not in p or p['H'] == None:#p['H'].nnz == 0:
-        if p['A'] is None or p['A'].nnz == 0 and \
-           'xmin' not in p and \
-           'xmax' not in p:
-#           'xmin' not in p or len(p['xmin']) == 0 and \
-#           'xmax' not in p or len(p['xmax']) == 0:
-            print('qps_pips: LP problem must include constraints or variable bounds')
+    if "H" not in p or p["H"] == None:  # p['H'].nnz == 0:
+        if p["A"] is None or p["A"].nnz == 0 and "xmin" not in p and "xmax" not in p:
+            #           'xmin' not in p or len(p['xmin']) == 0 and \
+            #           'xmax' not in p or len(p['xmax']) == 0:
+            print("qps_pips: LP problem must include constraints or variable bounds")
             return
         else:
-            if p['A'] is not None and p['A'].nnz >= 0:
-                nx = p['A'].shape[1]
-            elif 'xmin' in p and len(p['xmin']) > 0:
-                nx = p['xmin'].shape[0]
-            elif 'xmax' in p and len(p['xmax']) > 0:
-                nx = p['xmax'].shape[0]
-        p['H'] = sparse((nx, nx))
+            if p["A"] is not None and p["A"].nnz >= 0:
+                nx = p["A"].shape[1]
+            elif "xmin" in p and len(p["xmin"]) > 0:
+                nx = p["xmin"].shape[0]
+            elif "xmax" in p and len(p["xmax"]) > 0:
+                nx = p["xmax"].shape[0]
+        p["H"] = sparse((nx, nx))
     else:
-        nx = p['H'].shape[0]
+        nx = p["H"].shape[0]
 
-    p['xmin'] = full(nx, -inf) if 'xmin' not in p else p['xmin']
-    p['xmax'] = full(nx, inf) if 'xmax' not in p else p['xmax']
+    p["xmin"] = full(nx, -inf) if "xmin" not in p else p["xmin"]
+    p["xmax"] = full(nx, inf) if "xmax" not in p else p["xmax"]
 
-    p['c'] = zeros(nx) if p['c'] is None else p['c']
+    p["c"] = zeros(nx) if p["c"] is None else p["c"]
 
-    p['x0'] = zeros(nx) if 'x0' not in p else p['x0']
+    p["x0"] = zeros(nx) if "x0" not in p else p["x0"]
 
     def qp_f(x, return_hessian=False):
-        f = 0.5 * dot(x * p['H'], x) + dot(p['c'], x)
-        df = p['H'] * x + p['c']
+        f = 0.5 * dot(x * p["H"], x) + dot(p["c"], x)
+        df = p["H"] * x + p["c"]
         if not return_hessian:
             return f, df
-        d2f = p['H']
+        d2f = p["H"]
         return f, df, d2f
 
-    p['f_fcn'] = qp_f
+    p["f_fcn"] = qp_f
 
     sol = pips(p)
 
@@ -176,4 +178,5 @@ def qps_pips(H, c, A, l, u, xmin=None, xmax=None, x0=None, opt=None):
 
 if __name__ == "__main__":
     import doctest
+
     doctest.testmod()

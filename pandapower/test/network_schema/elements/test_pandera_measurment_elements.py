@@ -208,7 +208,7 @@ class TestMeasurementOptionalFields:
                 "value": [5.0],
                 "std_dev": [0.2],
                 "element": [0],
-                "side": pd.Series(["from"], dtype="string")
+                "side": pd.Series(["from"], dtype="string"),
             }
         )
         validate_network(net)

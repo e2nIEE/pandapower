@@ -33,14 +33,11 @@ def lf_info(net, numv=1, numi=2):  # pragma: no cover
         logger.info("  %s at busidx %s (%s)", r.vm_pu, r.name, net.bus.name.at[r.name])
     logger.info("Max loading trafo in %:")
     if net.res_trafo is not None:
-        for _, r in net.res_trafo.sort_values("loading_percent", ascending=False).iloc[
-                    :numi].iterrows():
-            logger.info("  %s loading at trafo %s (%s)", r.loading_percent, r.name,
-                        net.trafo.name.at[r.name])
+        for _, r in net.res_trafo.sort_values("loading_percent", ascending=False).iloc[:numi].iterrows():
+            logger.info("  %s loading at trafo %s (%s)", r.loading_percent, r.name, net.trafo.name.at[r.name])
     logger.info("Max loading line in %:")
     for _, r in net.res_line.sort_values("loading_percent", ascending=False).iloc[:numi].iterrows():
-        logger.info("  %s loading at line %s (%s)", r.loading_percent, r.name,
-                    net.line.name.at[r.name])
+        logger.info("  %s loading at line %s (%s)", r.loading_percent, r.name, net.line.name.at[r.name])
 
 
 def opf_task(net, delta_pq=1e-3, keep=False, log=True):
@@ -51,9 +48,7 @@ def opf_task(net, delta_pq=1e-3, keep=False, log=True):
         net = copy.deepcopy(net)
     _check_necessary_opf_parameters(net, logger)
 
-    opf_task_overview = {"flexibilities": {},
-                         "network_constraints": {},
-                         "flexibilities_without_costs": {}}
+    opf_task_overview = {"flexibilities": {}, "network_constraints": {}, "flexibilities_without_costs": {}}
     _determine_flexibilities_dict(net, opf_task_overview["flexibilities"], delta_pq)
     _determine_network_constraints_dict(net, opf_task_overview["network_constraints"])
     _determine_costs_dict(net, opf_task_overview)
@@ -85,12 +80,12 @@ def _determine_flexibilities_dict(net: pandapowerNet, data: dict, delta_pq: floa
         for power_type in ["P", "Q"]:
             key = power_type + elm
             if elm != "dcline":
-                constraints = {"P": ["min_p_mw", "max_p_mw"],
-                               "Q": ["min_q_mvar", "max_q_mvar"]}[power_type]
+                constraints = {"P": ["min_p_mw", "max_p_mw"], "Q": ["min_q_mvar", "max_q_mvar"]}[power_type]
             else:
-                constraints = {"P": ["max_p_mw"],
-                               "Q": ["min_q_from_mvar", "max_q_from_mvar",
-                                     "min_q_to_mvar", "max_q_to_mvar"]}[power_type]
+                constraints = {
+                    "P": ["max_p_mw"],
+                    "Q": ["min_q_from_mvar", "max_q_from_mvar", "min_q_to_mvar", "max_q_to_mvar"],
+                }[power_type]
 
             # determine indices of controllable elements, continue if no controllable element exists
             if elm in ["ext_grid", "dcline"]:
@@ -107,13 +102,17 @@ def _determine_flexibilities_dict(net: pandapowerNet, data: dict, delta_pq: floa
             # consider delta_pq
             if len(constraints) >= 2 and pd.Series(constraints[:2]).isin(net[elm].columns).all():
                 controllables = _find_idx_without_numerical_difference(
-                    net[elm], constraints[0], constraints[1], delta_pq, idx=controllables,
-                    equal_nan=False)
-            if elm == "dcline" and power_type == "Q" and len(controllables) and \
-                    pd.Series(constraints[2:4]).isin(net[elm].columns).all():
+                    net[elm], constraints[0], constraints[1], delta_pq, idx=controllables, equal_nan=False
+                )
+            if (
+                elm == "dcline"
+                and power_type == "Q"
+                and len(controllables)
+                and pd.Series(constraints[2:4]).isin(net[elm].columns).all()
+            ):
                 controllables = _find_idx_without_numerical_difference(
-                    net[elm], constraints[2], constraints[3], delta_pq, idx=controllables,
-                    equal_nan=False)
+                    net[elm], constraints[2], constraints[3], delta_pq, idx=controllables, equal_nan=False
+                )
 
             # add missing constraint columns
             for col_to_add in set(constraints) - set(net[elm].columns):
@@ -153,8 +152,9 @@ def _find_idx_without_numerical_difference(df, column1, column2, delta, idx=None
     idx = idx if idx is not None else df.index
     idx_isnull = df.index[df[[column1, column2]].isnull().any(axis=1)]
     idx_without_null = idx.difference(idx_isnull)
-    idx_no_delta = idx_without_null[(df.loc[idx_without_null, column1] - df.loc[
-        idx_without_null, column2]).abs().values <= delta]
+    idx_no_delta = idx_without_null[
+        (df.loc[idx_without_null, column1] - df.loc[idx_without_null, column2]).abs().values <= delta
+    ]
 
     if equal_nan:
         return idx_without_null.difference(idx_no_delta)
@@ -174,15 +174,15 @@ def _determine_network_constraints_dict(net: pandapowerNet, data: dict, **kwargs
          for comparing constraint columns with numpy.isclose(): rtol and atol
     """
 
-    const_tuple = [("VMbus", "bus", ["min_vm_pu", "max_vm_pu"]),
-                   ("LOADINGline", "line", ["max_loading_percent"]),
-                   ("LOADINGtrafo", "trafo", ["max_loading_percent"]),
-                   ("LOADINGtrafo3w", "trafo3w", ["max_loading_percent"])
-                   ]
+    const_tuple = [
+        ("VMbus", "bus", ["min_vm_pu", "max_vm_pu"]),
+        ("LOADINGline", "line", ["max_loading_percent"]),
+        ("LOADINGtrafo", "trafo", ["max_loading_percent"]),
+        ("LOADINGtrafo3w", "trafo3w", ["max_loading_percent"]),
+    ]
     for key, elm, constraints in const_tuple:
         missing_columns = set(constraints) - set(net[elm].columns)
         if net[elm].shape[0] and len(missing_columns) != len(constraints):
-
             # add missing constraint columns
             for col_to_add in missing_columns:
                 net[elm][col_to_add] = np.nan
@@ -212,10 +212,12 @@ def _determine_costs_dict(net: pandapowerNet, opf_task_overview: dict):
     flex_elements = ["ext_grid", "gen", "sgen", "load", "dcline", "storage"]
 
     for flex_element in flex_elements:
-
         # determine keys of opf_task_overview["flexibilities"] ending with flex_element
-        keys = [power_type + flex_element for power_type in ["P", "Q"] if (
-                power_type + flex_element) in opf_task_overview["flexibilities"]]
+        keys = [
+            power_type + flex_element
+            for power_type in ["P", "Q"]
+            if (power_type + flex_element) in opf_task_overview["flexibilities"]
+        ]
 
         # determine indices of all flexibles
         idx_without_cost = set()
@@ -228,9 +230,13 @@ def _determine_costs_dict(net: pandapowerNet, opf_task_overview: dict):
         for cost_df in cost_dfs:
             idx_with_cost = set(net[cost_df].element[net[cost_df].et == flex_element].astype(np.int64))
             if len(idx_with_cost - idx_without_cost):
-                logger.warning("These " + flex_element + "s have cost data but aren't flexible or" +
-                               " have both, poly_cost and pwl_cost: " +
-                               str(sorted(idx_with_cost - idx_without_cost)))
+                logger.warning(
+                    "These "
+                    + flex_element
+                    + "s have cost data but aren't flexible or"
+                    + " have both, poly_cost and pwl_cost: "
+                    + str(sorted(idx_with_cost - idx_without_cost))
+                )
             idx_without_cost -= idx_with_cost
 
         if len(idx_without_cost):
@@ -252,8 +258,7 @@ def _cluster_same_floats(df: pd.DataFrame, subset: Collection[str] | None = None
         DataFrame of clustered values and corresponding lists of indices
     """
     if df.index.duplicated().any():
-        logger.error("There are duplicated indices in df. Clusters will be determined but remain " +
-                     "ambiguous.")
+        logger.error("There are duplicated indices in df. Clusters will be determined but remain " + "ambiguous.")
     if subset is None:
         subset = df.select_dtypes(include=[np.number]).columns.tolist()
     uniq: list[bool] = [not x for x in df.duplicated(subset=subset)]
@@ -272,9 +277,13 @@ def _cluster_same_floats(df: pd.DataFrame, subset: Collection[str] | None = None
     i2 = 0
     for i1, uni in enumerate(uniq):
         if uni:
-            cluster_df.at[i2, "index"] = list(df.index[np.isclose(  # type: ignore[assignment] # see comment above
-                df[subset].astype(float), df[subset].iloc[[i1]].astype(float), equal_nan=True, **kwargs
-            ).all(axis=1)])  # type: ignore[call-overload] # for some reason mypy does not like the axis=1 part.
+            cluster_df.at[i2, "index"] = list(
+                df.index[
+                    np.isclose(  # type: ignore[assignment] # see comment above
+                        df[subset].astype(float), df[subset].iloc[[i1]].astype(float), equal_nan=True, **kwargs
+                    ).all(axis=1)
+                ]
+            )  # type: ignore[call-overload] # for some reason mypy does not like the axis=1 part.
             i2 += 1
     return cluster_df
 
@@ -318,7 +327,7 @@ def _log_opf_task_overview(opf_task_overview):
         keys, elms = _get_keys_and_elements_from_opf_task_dict(data)
         for key, elm in zip(keys, elms):
             if elm not in key:
-                raise AssertionError('elm should be in key')
+                raise AssertionError("elm should be in key")
             df = data[key]
 
             if dict_key in ["flexibilities", "network_constraints"]:
@@ -334,8 +343,7 @@ def _log_opf_task_overview(opf_task_overview):
                     s += "\n    %ix %s" % (len_idx, key)
                 else:
                     if not len(set(df.columns).symmetric_difference({"index", "min", "max"})):
-                        s += "\n    %g <= %ix %s (all) <= %g" % (
-                            df.loc[0, "min"], len_idx, key, df.loc[0, "max"])
+                        s += "\n    %g <= %ix %s (all) <= %g" % (df.loc[0, "min"], len_idx, key, df.loc[0, "max"])
                     else:
                         s += "\n    %ix %s (all) with these constraints:" % (len_idx, key)
                         for col in set(df.columns) - {"index"}:
@@ -368,16 +376,13 @@ def switch_info(net, sidx):  # pragma: no cover
     eidx = net.switch.at[sidx, "element"]
     if switch_type == "b":
         bus2_name = net.bus.at[eidx, "name"]
-        logger.info("Switch %u connects bus %u (%s) with bus %u (%s)" % (sidx, bidx, bus_name,
-                                                                         eidx, bus2_name))
+        logger.info("Switch %u connects bus %u (%s) with bus %u (%s)" % (sidx, bidx, bus_name, eidx, bus2_name))
     elif switch_type == "l":
         line_name = net.line.at[eidx, "name"]
-        logger.info("Switch %u connects bus %u (%s) with line %u (%s)" % (sidx, bidx, bus_name,
-                                                                          eidx, line_name))
+        logger.info("Switch %u connects bus %u (%s) with line %u (%s)" % (sidx, bidx, bus_name, eidx, line_name))
     elif switch_type == "t":
         trafo_name = net.trafo.at[eidx, "name"]
-        logger.info("Switch %u connects bus %u (%s) with trafo %u (%s)" % (sidx, bidx, bus_name,
-                                                                           eidx, trafo_name))
+        logger.info("Switch %u connects bus %u (%s) with trafo %u (%s)" % (sidx, bidx, bus_name, eidx, trafo_name))
 
 
 def overloaded_lines(net, max_load=100):
@@ -397,8 +402,7 @@ def violated_buses(net, min_vm_pu, max_vm_pu):
     there are none of those buses.
     """
     if net.converged:
-        return net["bus"].index[(net["res_bus"]["vm_pu"] < min_vm_pu) |
-                                (net["res_bus"]["vm_pu"] > max_vm_pu)]
+        return net["bus"].index[(net["res_bus"]["vm_pu"] < min_vm_pu) | (net["res_bus"]["vm_pu"] > max_vm_pu)]
     else:
         raise UserWarning("The last loadflow terminated erratically, results are invalid!")
 
@@ -481,9 +485,15 @@ def compute_switch_flows(net):
     bus_q = defaultdict(float)
 
     _bus_element_names = [
-        ("load", 1.0), ("motor", 1.0),
-        ("shunt", 1.0), ("ward", 1.0), ("xward", 1.0),
-        ("ext_grid", -1.0), ("gen", -1.0), ("sgen", -1.0), ("storage", -1.0),
+        ("load", 1.0),
+        ("motor", 1.0),
+        ("shunt", 1.0),
+        ("ward", 1.0),
+        ("xward", 1.0),
+        ("ext_grid", -1.0),
+        ("gen", -1.0),
+        ("sgen", -1.0),
+        ("storage", -1.0),
     ]
     for tbl_name, sign in _bus_element_names:
         tbl = net.get(tbl_name)
@@ -510,17 +520,19 @@ def compute_switch_flows(net):
 
     # Add power carried by branches that leave the fused group
     _branch_specs = [
-        ("line", "res_line", [("from_bus", "p_from_mw", "q_from_mvar"),
-                              ("to_bus", "p_to_mw", "q_to_mvar")]),
-        ("trafo", "res_trafo", [("hv_bus", "p_hv_mw", "q_hv_mvar"),
-                                ("lv_bus", "p_lv_mw", "q_lv_mvar")]),
-        ("trafo3w", "res_trafo3w", [("hv_bus", "p_hv_mw", "q_hv_mvar"),
-                                    ("mv_bus", "p_mv_mw", "q_mv_mvar"),
-                                    ("lv_bus", "p_lv_mw", "q_lv_mvar")]),
-        ("impedance", "res_impedance", [("from_bus", "p_from_mw", "q_from_mvar"),
-                                        ("to_bus", "p_to_mw", "q_to_mvar")]),
-        ("dcline", "res_dcline", [("from_bus", "p_from_mw", "q_from_mvar"),
-                                  ("to_bus", "p_to_mw", "q_to_mvar")]),
+        ("line", "res_line", [("from_bus", "p_from_mw", "q_from_mvar"), ("to_bus", "p_to_mw", "q_to_mvar")]),
+        ("trafo", "res_trafo", [("hv_bus", "p_hv_mw", "q_hv_mvar"), ("lv_bus", "p_lv_mw", "q_lv_mvar")]),
+        (
+            "trafo3w",
+            "res_trafo3w",
+            [
+                ("hv_bus", "p_hv_mw", "q_hv_mvar"),
+                ("mv_bus", "p_mv_mw", "q_mv_mvar"),
+                ("lv_bus", "p_lv_mw", "q_lv_mvar"),
+            ],
+        ),
+        ("impedance", "res_impedance", [("from_bus", "p_from_mw", "q_from_mvar"), ("to_bus", "p_to_mw", "q_to_mvar")]),
+        ("dcline", "res_dcline", [("from_bus", "p_from_mw", "q_from_mvar"), ("to_bus", "p_to_mw", "q_to_mvar")]),
     ]
     for tbl_name, res_name, bus_pairs in _branch_specs:
         tbl = net.get(tbl_name)
@@ -586,7 +598,8 @@ def compute_switch_flows(net):
             raise ValueError(
                 "Zero-impedance bus-bus switches form a cycle in fused "
                 "group containing buses %s. The flow split is "
-                "indeterminate without impedance values." % sorted(grp_buses))
+                "indeterminate without impedance values." % sorted(grp_buses)
+            )
 
         # DFS to build tree order
         root = next(iter(grp_buses))
@@ -630,7 +643,7 @@ def compute_switch_flows(net):
                 net.res_switch.at[parent_sw, "q_to_mvar"] = q_to
 
                 # Derive current from apparent power and bus voltage
-                s_mva = np.sqrt(p_from ** 2 + q_from ** 2)
+                s_mva = np.sqrt(p_from**2 + q_from**2)
                 b_from = int(net.switch.at[parent_sw, "bus"])
                 vm_pu = net.res_bus.at[b_from, "vm_pu"] if b_from in net.res_bus.index else np.nan
                 vn_kv = net.bus.at[b_from, "vn_kv"] if b_from in net.bus.index else np.nan
@@ -642,8 +655,7 @@ def compute_switch_flows(net):
                 net.res_switch.at[parent_sw, "i_ka"] = i_ka
                 computed_switches.add(parent_sw)
 
-    if computed_switches and "in_ka" in net.switch.columns and \
-            "loading_percent" in net.res_switch.columns:
+    if computed_switches and "in_ka" in net.switch.columns and "loading_percent" in net.res_switch.columns:
         for sw_idx in computed_switches:
             in_val = net.switch.at[sw_idx, "in_ka"]
             if not np.isnan(in_val) and in_val > 0:
@@ -691,10 +703,9 @@ def res_power_columns(element_type, side=0):
         if side != "all":
             return [f"p_{side}_mw", f"q_{side}_mvar"]
         else:
-            cols = res_power_columns(element_type, side=0) + \
-                res_power_columns(element_type, side=1)
+            cols = res_power_columns(element_type, side=0) + res_power_columns(element_type, side=1)
             if element_type == "trafo3w":
                 cols += res_power_columns(element_type, side=2)
             return cols
     else:
-        raise ValueError(f'{element_type=} cannot be considered by res_power_columns().')
+        raise ValueError(f"{element_type=} cannot be considered by res_power_columns().")
