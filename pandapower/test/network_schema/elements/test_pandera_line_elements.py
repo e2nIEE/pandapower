@@ -185,7 +185,6 @@ class TestLineOptionalFields:
 
         validate_network(net)
 
-
     @pytest.mark.parametrize(
         "parameter,valid_value",
         list(
@@ -249,8 +248,17 @@ class TestLineOptionalFields:
 
         # Handle dtype preservation for nullable columns
         nullable_string_columns = [
-            "name", "std_type", "type", "geo", "origin_id", "origin_class",
-            "description", "terminal_to", "terminal_from", "EquipmentContainer_id", "amica_name"
+            "name",
+            "std_type",
+            "type",
+            "geo",
+            "origin_id",
+            "origin_class",
+            "description",
+            "terminal_to",
+            "terminal_from",
+            "EquipmentContainer_id",
+            "amica_name",
         ]
 
         if parameter in nullable_string_columns:
@@ -360,7 +368,14 @@ class TestLineForeignKey:
         net = pandapowerNet(name="test_valid_bus_index_non_sequential")
         create_buses(net, 1, 0.4, index=[10, 42, 100])
 
-        create_lines(net, from_buses=[10, 42, 100], to_buses=[42, 100, 10], length_km=[1.0, 2.0, 1.5], in_service=[True, True, False], std_type=STD_TYPE)
+        create_lines(
+            net,
+            from_buses=[10, 42, 100],
+            to_buses=[42, 100, 10],
+            length_km=[1.0, 2.0, 1.5],
+            in_service=[True, True, False],
+            std_type=STD_TYPE,
+        )
 
         validate_network(net)
 

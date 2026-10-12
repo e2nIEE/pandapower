@@ -192,7 +192,6 @@ class TestDclineOptionalFields:
                 itertools.product(["max_q_from_mvar"], all_allowed_floats),
                 itertools.product(["min_q_to_mvar"], all_allowed_floats),
                 itertools.product(["max_q_to_mvar"], all_allowed_floats),
-
                 itertools.product(["origin_id"], [pd.NA, *strings]),
                 itertools.product(["origin_class"], [pd.NA, *strings]),
                 itertools.product(["description"], [pd.NA, *strings]),
@@ -232,7 +231,7 @@ class TestDclineOptionalFields:
             vm_from_pu=1.02,
             vm_to_pu=1.01,
             in_service=True,
-            name="lorem ipsum"
+            name="lorem ipsum",
         )
         cim_string_fields = ["name", "origin_id", "origin_class", "description", "terminal_to", "terminal_from"]
         if parameter in cim_string_fields:
@@ -252,7 +251,6 @@ class TestDclineOptionalFields:
                 itertools.product(["max_q_from_mvar"], not_floats_list),
                 itertools.product(["min_q_to_mvar"], not_floats_list),
                 itertools.product(["max_q_to_mvar"], not_floats_list),
-
                 itertools.product(["origin_id"], not_strings_list),
                 itertools.product(["origin_class"], not_strings_list),
                 itertools.product(["description"], not_strings_list),
@@ -286,6 +284,7 @@ class TestDclineOptionalFields:
         net.dcline[parameter] = invalid_value
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
 
 class TestDclineForeignKey:
     """Tests for foreign key constraints"""
@@ -340,18 +339,36 @@ class TestDclineForeignKey:
         create_buses(net, 1, 0.4, index=100)
 
         create_dcline(
-            net, from_bus=10, to_bus=42, p_mw=10.0,
-            loss_percent=1.0, loss_mw=0.1, vm_from_pu=1.02, vm_to_pu=1.01,
+            net,
+            from_bus=10,
+            to_bus=42,
+            p_mw=10.0,
+            loss_percent=1.0,
+            loss_mw=0.1,
+            vm_from_pu=1.02,
+            vm_to_pu=1.01,
             in_service=True,
         )
         create_dcline(
-            net, from_bus=42, to_bus=100, p_mw=5.0,
-            loss_percent=0.5, loss_mw=0.05, vm_from_pu=1.01, vm_to_pu=1.0,
+            net,
+            from_bus=42,
+            to_bus=100,
+            p_mw=5.0,
+            loss_percent=0.5,
+            loss_mw=0.05,
+            vm_from_pu=1.01,
+            vm_to_pu=1.0,
             in_service=True,
         )
         create_dcline(
-            net, from_bus=100, to_bus=10, p_mw=8.0,
-            loss_percent=0.8, loss_mw=0.08, vm_from_pu=1.0, vm_to_pu=1.02,
+            net,
+            from_bus=100,
+            to_bus=10,
+            p_mw=8.0,
+            loss_percent=0.8,
+            loss_mw=0.08,
+            vm_from_pu=1.0,
+            vm_to_pu=1.02,
             in_service=False,
         )
 
@@ -365,18 +382,36 @@ class TestDclineForeignKey:
         create_buses(net, 1, 0.4, index=100)
 
         create_dcline(
-            net, from_bus=10, to_bus=42, p_mw=10.0,
-            loss_percent=1.0, loss_mw=0.1, vm_from_pu=1.02, vm_to_pu=1.01,
+            net,
+            from_bus=10,
+            to_bus=42,
+            p_mw=10.0,
+            loss_percent=1.0,
+            loss_mw=0.1,
+            vm_from_pu=1.02,
+            vm_to_pu=1.01,
             in_service=True,
         )
         create_dcline(
-            net, from_bus=42, to_bus=100, p_mw=5.0,
-            loss_percent=0.5, loss_mw=0.05, vm_from_pu=1.01, vm_to_pu=1.0,
+            net,
+            from_bus=42,
+            to_bus=100,
+            p_mw=5.0,
+            loss_percent=0.5,
+            loss_mw=0.05,
+            vm_from_pu=1.01,
+            vm_to_pu=1.0,
             in_service=True,
         )
         create_dcline(
-            net, from_bus=100, to_bus=10, p_mw=8.0,
-            loss_percent=0.8, loss_mw=0.08, vm_from_pu=1.0, vm_to_pu=1.02,
+            net,
+            from_bus=100,
+            to_bus=10,
+            p_mw=8.0,
+            loss_percent=0.8,
+            loss_mw=0.08,
+            vm_from_pu=1.0,
+            vm_to_pu=1.02,
             in_service=False,
         )
 
