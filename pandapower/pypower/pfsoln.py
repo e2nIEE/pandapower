@@ -24,6 +24,7 @@ from numpy import (
     isin,
     arange,
     int64,
+    flatnonzero
 )
 from scipy.sparse import csr_matrix
 
@@ -49,7 +50,7 @@ def pfsoln(
 
     # ----- update Qg for all gens and Pg for slack bus(es) -----
     # generator info
-    on = find(gen[:, GEN_STATUS] > 0)  # which generators are on?
+    on = flatnonzero(gen[:, GEN_STATUS] > 0)  # which generators are on?
     gbus = gen[on, GEN_BUS].astype(int64)  # what buses are they at?
 
     # compute total injected bus powers
@@ -60,14 +61,14 @@ def pfsoln(
     _update_q(baseMVA, bus, gen, gbus, Sbus[gbus], on)
 
     if limited_gens is not None and len(limited_gens) > 0:
-        on = find((gen[:, GEN_STATUS] > 0) | isin(arange(len(gen)), limited_gens))
+        on = flatnonzero((gen[:, GEN_STATUS] > 0) | isin(arange(len(gen)), limited_gens))
         gbus = gen[on, GEN_BUS].astype(int64)
 
     _update_p(baseMVA, bus, gen, ref, gbus, Sbus, ref_gens)
 
     # ----- update/compute branch power flows -----
-    out = find(branch[:, BR_STATUS] == 0)  # out-of-service branches
-    br = find(branch[:, BR_STATUS]).astype(int64)  # in-service branches
+    out = flatnonzero(branch[:, BR_STATUS] == 0)  # out-of-service branches
+    br = flatnonzero(branch[:, BR_STATUS]).astype(int64)  # in-service branches
 
     if len(out):
         raise RuntimeError
@@ -110,7 +111,7 @@ def _update_p(baseMVA, bus, gen, ref, gbus, Sbus, ref_gens):
     # update Pg for slack bus(es)
     # inj P + local Pd
     for slack_bus in ref:
-        gens_at_bus = find(gbus == slack_bus)  # which is(are) the reference gen(s)?
+        gens_at_bus = flatnonzero(gbus == slack_bus)  # which is(are) the reference gen(s)?
         # xward results come at the PQ buses and not at the PV buses:
         if len(gens_at_bus) == 0:
             bus[slack_bus, PD] = -Sbus[slack_bus].real * baseMVA  # negative because it is a PQ bus
@@ -149,7 +150,7 @@ def _update_q(baseMVA, bus, gen, gbus, Sbus, on):
         Qg_min = asarray(Qg_min).flatten()  # 1D array
         Qg_max = asarray(Qg_max).flatten()  # 1D array
         # gens at buses with Qg range = 0
-        ig = find(Cg * Qg_min == Cg * Qg_max)
+        ig = flatnonzero(Cg * Qg_min == Cg * Qg_max)
         Qg_save = gen[on[ig], QG]
         gen[on, QG] = gen[on, QMIN] + (Cg * ((Qg_tot - Qg_min) / (Qg_max - Qg_min + EPS))) * (
             gen[on, QMAX] - gen[on, QMIN]

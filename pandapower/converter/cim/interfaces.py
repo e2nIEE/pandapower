@@ -5,9 +5,10 @@
 
 from __future__ import annotations
 
-from typing import List, Dict, Union
-import pandas as pd
 import json
+from typing import List, Dict, Union
+
+import pandas as pd
 
 
 class ReportContainer:
@@ -44,10 +45,10 @@ class RepairMain(CustomLogger):
 class PandapowerRepair(RepairMain):
     def __init__(self, assets: List[AssetType] | None = None):
         super().__init__(assets)
-
-    def deserialize(
+    
+    def deserialize(  # type: ignore[empty-body]
         self, path_or_json_str: Union[str, PandapowerRepair], report_container: ReportContainer | None = None
-    ) -> PandapowerRepair:  # type: ignore[empty-body]
+    ) -> PandapowerRepair:
         pass
 
 
@@ -61,8 +62,8 @@ class CIMRepair(CustomLogger):
 
     def repair(self, cim_dict: Dict[str, Dict[str, pd.DataFrame]], report_container: ReportContainer | None = None):
         pass
-
-    def deserialize(
+    
+    def deserialize(  # type: ignore[empty-body]
         self, path_or_json_str: Union[str, CIMRepair], report_container: ReportContainer | None = None
-    ) -> CIMRepair:  # type: ignore[empty-body]
+    ) -> CIMRepair:
         pass

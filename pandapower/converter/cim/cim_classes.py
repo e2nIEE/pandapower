@@ -1,17 +1,20 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from __future__ import annotations
+
 import logging
 import os
 import re
 import tempfile
 import zipfile
 from types import MappingProxyType
-import pandas as pd
+
 import numpy as np
+import pandas as pd
 from lxml import etree
-from .other_classes import ReportContainer, Report, LogLevel, ReportCode
+
 from .cim_tools import get_cim_schema
+from .other_classes import ReportContainer, Report, LogLevel, ReportCode
 
 
 class CimParser:
@@ -120,8 +123,9 @@ class CimParser:
                         continue
                     if (
                         col in cim_schema[profile][cim_element_type]["fields"]
-                        and "data_type_prim" in cim_schema[profile][cim_element_type]["fields"][col]
-                    ):  # type: ignore[index]
+                            and "data_type_prim"
+                            in cim_schema[profile][cim_element_type]["fields"][col]  # type: ignore[index]
+                    ):
                         data_type_col_str = cim_schema[profile][cim_element_type]["fields"][col]["data_type_prim"]  # type: ignore[index]
                         if data_type_col_str in data_types_map:
                             data_type_col = data_types_map[data_type_col_str]
@@ -914,8 +918,8 @@ class CimParser:
                         ]  # type: ignore[index]
                         # remove the namespace from the literal
                         prf_content[element_type_c][col] = prf_content[element_type_c][col].str[
-                            name_space.rfind(".") + 1 :
-                        ]  # type: ignore[union-attr]
+                            name_space.rfind(".") + 1:  # type: ignore[union-attr]
+                        ]
                 elif col_new.endswith("-about"):
                     col_new = "rdfId"
                     prf_content[element_type_c][col] = prf_content[element_type_c][col].str[1:]

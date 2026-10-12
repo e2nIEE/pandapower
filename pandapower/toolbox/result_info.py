@@ -2,9 +2,9 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
+import logging
 from collections.abc import Collection
 from itertools import chain
-import logging
 
 import numpy as np
 import pandas as pd
@@ -281,9 +281,9 @@ def _cluster_same_floats(df: pd.DataFrame, subset: Collection[str] | None = None
                 df.index[
                     np.isclose(  # type: ignore[assignment] # see comment above
                         df[subset].astype(float), df[subset].iloc[[i1]].astype(float), equal_nan=True, **kwargs
-                    ).all(axis=1)
+                    ).all(axis=1)  # type: ignore[call-overload] # for some reason mypy does not like the axis=1 part.
                 ]
-            )  # type: ignore[call-overload] # for some reason mypy does not like the axis=1 part.
+            )
             i2 += 1
     return cluster_df
 

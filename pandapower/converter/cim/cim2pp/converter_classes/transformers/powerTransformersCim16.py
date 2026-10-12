@@ -574,9 +574,9 @@ class PowerTransformersCim16:
                 keep_index = keep_index[0]
             else:
                 self.logger.warning(
-                    "Ignoring PhaseTapChangerTabular with ID: %s. The current tap position is missing "
-                    "in the PhaseTapChangerTablePoints!" % one_id
-                )  # type: ignore[str-bytes-safe]
+                    f"Ignoring PhaseTapChangerTabular with ID: {one_id}. The current tap position is missing "
+                    f"in the PhaseTapChangerTablePoints!"
+                )
                 ptct = ptct.drop(drop_index)  # type: ignore[call-overload]
                 continue
             one_df = one_df.set_index("step")
