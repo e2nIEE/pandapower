@@ -9,13 +9,20 @@ import pytest
 from pandapower import pp_dir
 from pandapower.auxiliary import get_free_id
 from pandapower.create import (
-    create_bus, create_ext_grid, create_line, create_transformer, create_switch, create_transformer3w_from_parameters,
-    create_line_from_parameters, create_gen, create_transformer_from_parameters, create_buses, create_impedance
+    create_buses,
+    create_ext_grid,
+    create_gen,
+    create_impedance,
+    create_lines,
+    create_switch,
+    create_transformer,
+    create_transformer3w_from_parameters,
+    create_transformer_from_parameters,
 )
 from pandapower.file_io import from_json
 from pandapower.network import pandapowerNet
 from pandapower.shortcircuit.calc_sc import calc_sc
-from pandapower.std_types import create_std_type, add_zero_impedance_parameters
+from pandapower.std_types import add_zero_impedance_parameters, create_std_type
 
 
 def check_results(net, vc, result):
@@ -25,12 +32,11 @@ def check_results(net, vc, result):
 
 
 def add_network(net, vector_group):
-    b1 = create_bus(net, 110, zone=vector_group, index=get_free_id(net.bus))
-    b2 = create_bus(net, 20, zone=vector_group)
-    create_bus(net, 20, in_service=False)
-    b3 = create_bus(net, 20, zone=vector_group)
-    b4 = create_bus(net, 20, zone=vector_group)
-    create_bus(net, 20)
+    (b1,) = create_buses(net, 1, 110, zone=vector_group, index=get_free_id(net.bus))
+    (b2,) = create_buses(net, 1, 20, zone=vector_group)
+    create_buses(net, 1, 20, in_service=False)
+    b3, b4 = create_buses(net, 2, 20, zone=vector_group)
+    create_buses(net, 1, 20)
 
     create_ext_grid(net, b1, s_sc_max_mva=100, s_sc_min_mva=100, rx_min=0.35, rx_max=0.35)
     net.ext_grid["r0x0_max"] = 0.4
@@ -42,9 +48,12 @@ def add_network(net, vector_group):
     create_std_type(net, {"r_ohm_per_km": 0.122, "x_ohm_per_km": 0.112, "c_nf_per_km": 304, "max_i_ka": 0.421,
                           "endtemp_degree": 70.0, "r0_ohm_per_km": 0.244, "x0_ohm_per_km": 0.336, "c0_nf_per_km": 2000,
                           "g0_us_per_km": 0}, "unsymmetric_line_type")
-    l1 = create_line(net, b2, b3, length_km=10, std_type="unsymmetric_line_type", index=get_free_id(net.line) + 1)
-    l2 = create_line(net, b3, b4, length_km=15, std_type="unsymmetric_line_type")
-    create_line(net, b3, b4, length_km=15, std_type="unsymmetric_line_type", in_service=False)
+    (l1,) = create_lines(
+        net, b2, b3, length_km=10, line_params="unsymmetric_line_type", index=get_free_id(net.line) + 1
+    )
+    l2, _ = create_lines(
+        net, [b3, b3], [b4, b4], length_km=15, line_params="unsymmetric_line_type", in_service=[True, False]
+    )
 
     transformer_type = {"i0_percent": 0.071, "pfe_kw": 29, "vkr_percent": 0.282, "sn_mva": 25, "vn_lv_kv": 20.0,
                         "vn_hv_kv": 110.0, "vk_percent": 11.2, "shift_degree": 150, "vector_group": vector_group,
@@ -191,8 +200,14 @@ def test_1ph_with_switches(inverse_y):
     vc = "Yy"
     l1, l2, _ = add_network(net, vc)
     calc_sc(net, fault="1ph", case="max", inverse_y=inverse_y)
-    create_line(net, net.line.to_bus.at[l2], net.line.from_bus.at[l1], length_km=15, std_type="unsymmetric_line_type",
-                parallel=2)
+    create_lines(
+        net,
+        net.line.to_bus.at[l2],
+        net.line.from_bus.at[l1],
+        length_km=15,
+        line_params="unsymmetric_line_type",
+        parallel=2,
+    )
     add_zero_impedance_parameters(net)
     create_switch(net, bus=net.line.to_bus.at[l2], element=l2, et="l", closed=False)
     calc_sc(net, fault="1ph", case="max")
@@ -201,9 +216,7 @@ def test_1ph_with_switches(inverse_y):
 
 def single_3w_trafo_grid(vector_group, sn_mva=123):
     net = pandapowerNet(name="single_3w_trafo_grid", sn_mva=sn_mva)
-    b1 = create_bus(net, vn_kv=380., geodata=(1, 1))
-    b2 = create_bus(net, vn_kv=110., geodata=(0, 1))
-    b3 = create_bus(net, vn_kv=30., geodata=(1, 0))
+    b1, b2, b3 = create_buses(net, 3, vn_kv=[380.0, 110.0, 30.0], geodata=[(1, 1), (0, 1), (1, 0)])
     create_ext_grid(net, b1, s_sc_max_mva=1000, s_sc_min_mva=800, rx_max=0.1, x0x_max=1, r0x0_max=0.1, rx_min=0.1,
                     x0x_min=1, r0x0_min=0.1)
 
@@ -219,12 +232,7 @@ def single_3w_trafo_grid(vector_group, sn_mva=123):
 def iec_60909_4_small(n_t3=1, num_earth=1, with_gen=False):
     net = pandapowerNet(name="iec_60909_4_small", sn_mva=3)
 
-    b1 = create_bus(net, vn_kv=380.)
-    b2 = create_bus(net, vn_kv=110.)
-    b3 = create_bus(net, vn_kv=110.)
-    b5 = create_bus(net, vn_kv=110.)
-    b8 = create_bus(net, vn_kv=30.)
-    hg2 = create_bus(net, vn_kv=10)
+    b1, b2, b3, b5, b8, hg2 = create_buses(net, 6, vn_kv=[380.0, 110.0, 110.0, 110.0, 30.0, 10.0])
 
     create_ext_grid(net, b1, s_sc_max_mva=38 * 380 * np.sqrt(3), rx_max=0.1, x0x_max=3, r0x0_max=0.15,
                     s_sc_min_mva=38 * 380 * np.sqrt(3) / 10, rx_min=0.1, x0x_min=3, r0x0_min=0.15, )
@@ -251,18 +259,60 @@ def iec_60909_4_small(n_t3=1, num_earth=1, with_gen=False):
                                          vkr0_hv_percent=0.26, vk0_mv_percent=6.2996, vkr0_mv_percent=0.03714,
                                          vk0_lv_percent=6.2996, vkr0_lv_percent=0.03714, vector_group=vector_group[1])
 
-    create_line_from_parameters(net, b2, b3, name="L1", c_nf_per_km=0, max_i_ka=0,  # FIXME: Optional for SC
-                                length_km=20, r_ohm_per_km=0.12, x_ohm_per_km=0.39, r0_ohm_per_km=0.32,
-                                x0_ohm_per_km=1.26, c0_nf_per_km=0, g0_us_per_km=0, endtemp_degree=80)
-    create_line_from_parameters(net, b2, b5, name="L3a", c_nf_per_km=0, max_i_ka=0, length_km=5, r_ohm_per_km=0.12,
-                                x_ohm_per_km=0.39, r0_ohm_per_km=0.52, x0_ohm_per_km=1.86, c0_nf_per_km=0,
-                                g0_us_per_km=0, endtemp_degree=80)
-    create_line_from_parameters(net, b2, b5, name="L3b", c_nf_per_km=0, max_i_ka=0, length_km=5, r_ohm_per_km=0.12,
-                                x_ohm_per_km=0.39, r0_ohm_per_km=0.52, x0_ohm_per_km=1.86, c0_nf_per_km=0,
-                                g0_us_per_km=0, endtemp_degree=80)
-    create_line_from_parameters(net, b5, b3, name="L4", c_nf_per_km=0, max_i_ka=0, length_km=10, r_ohm_per_km=0.096,
-                                x_ohm_per_km=0.388, r0_ohm_per_km=0.22, x0_ohm_per_km=1.1, c0_nf_per_km=0,
-                                g0_us_per_km=0, endtemp_degree=80)
+    create_lines(
+        net,
+        b2,
+        b3,
+        name="L1",
+        length_km=20,
+        line_params={
+            "r_ohm_per_km": 0.12,
+            "x_ohm_per_km": 0.39,
+            "c_nf_per_km": 0,
+            "max_i_ka": 0,  # FIXME: Optional for SC
+            "r0_ohm_per_km": 0.32,
+            "x0_ohm_per_km": 1.26,
+            "c0_nf_per_km": 0,
+            "g0_us_per_km": 0,
+        },
+        endtemp_degree=80,
+    )
+    create_lines(
+        net,
+        [b2, b5],
+        [b5, b2],
+        name=["L3a", "L3b"],
+        length_km=5,
+        line_params={
+            "r_ohm_per_km": 0.12,
+            "x_ohm_per_km": 0.39,
+            "c_nf_per_km": 0,
+            "max_i_ka": 0,
+            "r0_ohm_per_km": 0.52,
+            "x0_ohm_per_km": 1.86,
+            "c0_nf_per_km": 0,
+            "g0_us_per_km": 0,
+        },
+        endtemp_degree=80,
+    )
+    create_lines(
+        net,
+        b5,
+        b3,
+        name="L4",
+        length_km=10,
+        c_nf_per_km=0,
+        max_i_ka=0,
+        line_params={
+            "r_ohm_per_km": 0.096,
+            "x_ohm_per_km": 0.388,
+            "r0_ohm_per_km": 0.22,
+            "x0_ohm_per_km": 1.1,
+            "c0_nf_per_km": 0,
+            "g0_us_per_km": 0,
+        },
+        endtemp_degree=80,
+    )
 
     if with_gen:
         t1 = create_transformer_from_parameters(net, b3, hg2, sn_mva=100, pfe_kw=0, i0_percent=0, vn_hv_kv=120.,
@@ -277,8 +327,7 @@ def iec_60909_4_small(n_t3=1, num_earth=1, with_gen=False):
 
 def iec_60909_4_t1():
     net = pandapowerNet(name="iec_60909_4_t1", sn_mva=26)
-    create_bus(net, vn_kv=110.)
-    create_bus(net, vn_kv=20.)
+    create_buses(net, 2, vn_kv=[110.0, 20.0])
 
     t1 = create_transformer_from_parameters(net, 0, 1, sn_mva=150, pfe_kw=0, i0_percent=0, vn_hv_kv=115., vn_lv_kv=21,
                                             vk_percent=16, vkr_percent=0.5, pt_percent=12, oltc=True, vk0_percent=15.2,
@@ -292,8 +341,7 @@ def iec_60909_4_t1():
 def vde_232():
     net = pandapowerNet(name="vde_232", sn_mva=12)
     # hv buses
-    create_bus(net, 110, geodata=(0, 0))
-    create_bus(net, 21, geodata=(1, 0))
+    create_buses(net, 2, [110, 21], geodata=[(0, 0), (1, 0)])
 
     create_ext_grid(net, 0, s_sc_max_mva=13.61213 * 110 * np.sqrt(3), rx_max=0.20328, x0x_max=3.47927,
                     r0x0_max=3.03361 * 0.20328 / 3.47927)
@@ -418,12 +466,12 @@ def test_t1_iec60909_4():
 
 def test_1ph_sn_mva_ext_grid():
     net1 = pandapowerNet(name="test_1ph_sn_mva_ext_grid 0", sn_mva=1)
-    b1 = create_bus(net1, 110)
+    (b1,) = create_buses(net1, 1, 110)
     create_ext_grid(net1, b1, s_sc_max_mva=1000, s_sc_min_mva=800, rx_max=0.1, x0x_max=1, r0x0_max=0.1, rx_min=0.1,
                     x0x_min=1, r0x0_min=0.1)
 
     net2 = pandapowerNet(name="test_1ph_sn_mva_ext_grid 1", sn_mva=17)
-    b1 = create_bus(net2, 110)
+    (b1,) = create_buses(net2, 1, 110)
     create_ext_grid(net2, b1, s_sc_max_mva=1000, s_sc_min_mva=800, rx_max=0.1, x0x_max=1, r0x0_max=0.1, rx_min=0.1,
                     x0x_min=1, r0x0_min=0.1)
 
@@ -440,13 +488,25 @@ def test_1ph_sn_mva_ext_grid():
 
 def test_line():
     net = pandapowerNet(name="test_line", sn_mva=17)
-    b1 = create_bus(net, 110)
+    b1, b2 = create_buses(net, 2, 110)
     create_ext_grid(net, b1, s_sc_max_mva=1000, s_sc_min_mva=800, rx_max=0.1, x0x_max=1, r0x0_max=0.1, rx_min=0.1,
                     x0x_min=1, r0x0_min=0.1)
 
-    b2 = create_bus(net, 110)
-
-    create_line_from_parameters(net, b1, b2, 1, 1, 0.5, 0., 10, r0_ohm_per_km=4, x0_ohm_per_km=0.25, c0_nf_per_km=0.)
+    create_lines(
+        net,
+        b1,
+        b2,
+        1,
+        line_params={
+            "r_ohm_per_km": 1,
+            "x_ohm_per_km": 0.5,
+            "c_nf_per_km": 0.0,
+            "max_i_ka": 10,
+            "r0_ohm_per_km": 4,
+            "x0_ohm_per_km": 0.25,
+            "c0_nf_per_km": 0.0,
+        },
+    )
     calc_sc(net, fault="1ph", case="max")
 
     assert np.allclose(net.res_bus_sc.ikss_ka, [5.248639, 4.968909], rtol=0, atol=1e-6)
@@ -463,8 +523,7 @@ def test_trafo():
 
     for vc in results.keys():
         net = pandapowerNet(name=f"test_trafo {vc}", sn_mva=1)
-        create_bus(net, vn_kv=110.)
-        create_bus(net, vn_kv=20.)
+        create_buses(net, 2, vn_kv=[110.0, 20.0])
 
         create_ext_grid(net, 0, s_sc_max_mva=1000, s_sc_min_mva=800, rx_max=0.1, x0x_max=1, r0x0_max=0.1, rx_min=0.1,
                         x0x_min=1, r0x0_min=0.1)
@@ -509,8 +568,7 @@ def test_trafo_neutral_earthing_impedance(inverse_y):
     # earthed LV bus (res_bus_sc.rk0_ohm / xk0_ohm).
     def build(rn_ohm=0.0, xn_ohm=0.0):
         net = pandapowerNet(name="test_trafo_neutral_earthing_impedance", sn_mva=1.0)
-        b_hv = create_bus(net, vn_kv=20.0)
-        b_lv = create_bus(net, vn_kv=0.4)
+        b_hv, b_lv = create_buses(net, 2, vn_kv=[20.0, 0.4])
         create_ext_grid(
             net,
             b_hv,
@@ -573,9 +631,7 @@ def test_zigzag_earthing_transformer(inverse_y):
     # (rn_ohm) must limit that current.
     def build(eat_vg, rn_ohm=0.0):
         net = pandapowerNet(name="test_zigzag_earthing_transformer", sn_mva=1.0)
-        b_src = create_bus(net, vn_kv=110.0)
-        b_mv = create_bus(net, vn_kv=20.0)  # delta side of the main trafo -> no earth
-        b_aux = create_bus(net, vn_kv=0.4)
+        b_src, b_mv, b_aux = create_buses(net, 3, vn_kv=[110.0, 20.0, 0.4])
         create_ext_grid(
             net,
             b_src,
