@@ -1,12 +1,12 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
+
 import pytest
 
 from pandapower.networks import mv_oberrhein
 from pandapower.run import runopp
-
-import logging
 
 logger = logging.getLogger(__name__)
 

@@ -14,18 +14,18 @@ from pandapower.control import ConstControl
 from pandapower.converter.pandamodels import convert_pp_to_pm
 from pandapower.converter.pandamodels.to_pm import init_ne_line
 from pandapower.create import (
-    create_storage,
-    create_shunt,
-    create_pwl_cost,
-    create_poly_cost,
     create_bus,
-    create_line,
-    create_gen,
-    create_load,
-    create_transformer3w_from_parameters,
-    create_sgen,
-    create_transformer3w,
     create_ext_grid,
+    create_gen,
+    create_line,
+    create_load,
+    create_poly_cost,
+    create_pwl_cost,
+    create_sgen,
+    create_shunt,
+    create_storage,
+    create_transformer3w,
+    create_transformer3w_from_parameters,
 )
 from pandapower.network import pandapowerNet
 from pandapower.networks.cigre_networks import create_cigre_network_mv
@@ -44,22 +44,25 @@ from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_
 from pandapower.opf.pm_storage import read_pm_storage_results
 from pandapower.run import rundcpp, runpp
 from pandapower.runpm import (
-    runpm_pf,
     runpm_ac_opf,
     runpm_dc_opf,
-    runpm_vstab,
-    runpm_tnep,
-    runpm_ots,
-    runpm_qflex,
-    runpm_storage_opf,
-    runpm_multi_qflex,
-    runpm_ploss,
     runpm_loading,
+    runpm_multi_qflex,
     runpm_multi_vstab,
+    runpm_ots,
+    runpm_pf,
+    runpm_ploss,
+    runpm_qflex,
     runpm_redispatch,
+    runpm_storage_opf,
+    runpm_tnep,
+    runpm_vstab,
 )
 from pandapower.test.consistency_checks import consistency_checks
 from pandapower.test.helper_functions import add_grid_connection, create_test_line
+
+# reexported with "as" to prevent ruff removing it as unused
+from pandapower.test.opf.test_basic import net_3w_trafo_opf as net_3w_trafo_opf
 from pandapower.timeseries import DFData, run_timeseries
 
 try:
