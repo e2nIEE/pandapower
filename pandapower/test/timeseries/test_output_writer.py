@@ -13,11 +13,16 @@ import pytest
 
 from pandapower.control import ConstControl
 from pandapower.create import create_pwl_cost
-from pandapower.file_io import to_json, from_json
+from pandapower.file_io import from_json, to_json
 from pandapower.networks import simple_four_bus_system
 from pandapower.networks.power_system_test_cases import case5
 from pandapower.run import runpp
 from pandapower.test.timeseries.test_timeseries import create_data_source
+
+# reexported with "as" to prevent ruff removing it as unused
+from pandapower.test.timeseries.test_timeseries import (
+    simple_test_net as simple_test_net,
+)
 from pandapower.timeseries.data_sources.frame_data import DFData
 from pandapower.timeseries.output_writer import OutputWriter
 from pandapower.timeseries.run_time_series import run_timeseries

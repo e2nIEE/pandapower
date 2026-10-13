@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import copy
 import logging
 import os
@@ -18,6 +17,11 @@ from pandapower.networks import simple_four_bus_system
 from pandapower.networks.power_system_test_cases import case5
 from pandapower.run import runpp
 from pandapower.test.timeseries.test_timeseries import create_data_source
+
+# reexported with "as" to prevent ruff removing it as unused
+from pandapower.test.timeseries.test_timeseries import (
+    simple_test_net as simple_test_net,
+)
 from pandapower.timeseries.data_sources.frame_data import DFData
 from pandapower.timeseries.output_streamer import OutputStreamer
 from pandapower.timeseries.run_time_series import run_timeseries

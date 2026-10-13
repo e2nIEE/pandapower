@@ -7,15 +7,20 @@ import numpy as np
 import pytest
 
 from pandapower.create import create_switch
-from pandapower.pypower.idx_brch import BR_R, BR_X
 from pandapower.network import pandapowerNet
+from pandapower.pypower.idx_brch import BR_R, BR_X
 from pandapower.run import runpp
 from pandapower.test.loadflow.result_test_network_generator import (
-    add_test_trafo3w,
-    add_test_trafo,
-    add_test_line,
-    add_test_impedance,
     add_test_bus_bus_switch,
+    add_test_impedance,
+    add_test_line,
+    add_test_trafo,
+    add_test_trafo3w,
+)
+
+# reexported with "as" to prevent ruff removing it as unused
+from pandapower.test.loadflow.test_scenarios import (
+    network_with_trafo3ws as network_with_trafo3ws,
 )
 from pandapower.topology.create_graph import create_nxgraph, graph_tool_available
 

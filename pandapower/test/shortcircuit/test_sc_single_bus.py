@@ -15,6 +15,11 @@ from pandapower.create import (
 from pandapower.network import pandapowerNet
 from pandapower.shortcircuit.calc_sc import calc_sc
 
+# reexported with "as" to prevent ruff removing it as unused
+from pandapower.test.shortcircuit.test_meshing_detection import (
+    meshed_grid as meshed_grid,
+)
+
 
 # @pytest.fixture  # TODO: convert to fixture: duplicate as fixture in test_sc_multi_bus.py
 def radial_grid():

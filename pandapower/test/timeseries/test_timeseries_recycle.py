@@ -4,14 +4,27 @@ import tempfile
 import numpy as np
 import pytest
 
-from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
-from pandapower.create import create_buses, create_gen, create_lines, create_transformer, create_transformer3w
+from pandapower.control.controller.trafo.ContinuousTapControl import (
+    ContinuousTapControl,
+)
+from pandapower.create import (
+    create_buses,
+    create_gen,
+    create_lines,
+    create_transformer,
+    create_transformer3w,
+)
 from pandapower.run import rundcpp, runpp
 from pandapower.test.timeseries.test_output_writer import (
     ConstControl,
     OutputWriter,
     create_data_source,
     run_timeseries,
+)
+
+# reexported with "as" to prevent ruff removing it as unused
+from pandapower.test.timeseries.test_timeseries import (
+    simple_test_net as simple_test_net,
 )
 from pandapower.timeseries.data_sources.frame_data import DFData
 from pandapower.timeseries.read_batch_results import (

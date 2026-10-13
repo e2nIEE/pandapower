@@ -4,9 +4,20 @@
 import numpy as np
 import pytest
 
-from pandapower.create import create_buses, create_ext_grid, create_lines, create_sgen, create_transformer
+from pandapower.create import (
+    create_buses,
+    create_ext_grid,
+    create_lines,
+    create_sgen,
+    create_transformer,
+)
 from pandapower.network import pandapowerNet
 from pandapower.shortcircuit.calc_sc import calc_sc
+
+# reexported with "as" to prevent ruff removing it as unused
+from pandapower.test.shortcircuit.test_meshing_detection import (
+    meshed_grid as meshed_grid,
+)
 
 
 @pytest.fixture
