@@ -273,29 +273,53 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
             tap_side_is_hv = np.array([tap_side == "hv"]*sum(is_trafo))
         else:
             tap_side_is_hv = np.array(tap_side == "hv")
+        # MATPOWER/PYPOWER apply the tap ratio at the FROM bus. The FROM bus is the hv bus only
+        # where to_vn_is_leq; otherwise the tap physically sits on the lv winding. Represent the
+        # tap on the requested side and invert the ratio (and refer vk/vkr) only where the
+        # requested side differs from the side the ppc tap is on.
+        invert_ratio = tap_side_is_hv != to_vn_is_leq
         ratio_1 = ppc['branch'][is_trafo, TAP]
         ratio_is_zero = np.isclose(ratio_1, 0)
-        ratio_1[~ratio_is_zero & ~tap_side_is_hv] **= -1
+        ratio_1[~ratio_is_zero & invert_ratio] **= -1
         ratio_1[~ratio_is_zero] -= 1
         br_b = ppc['branch'][is_trafo, BR_B]
-        if np.any(br_b > 0):
-            logger.warning("some BR_B of transformers in ppc['branch'] are positive, but transformers are inductive, therefore their B should be negative")
-        i0_percent = np.sqrt(br_b**2 + br_g[is_trafo]**2) * 100 * baseMVA / sn
-        # i0_percent = -ppc['branch'][is_trafo, BR_B] * 100 * baseMVA / sn
-        is_neg_i0_percent = i0_percent < 0
-        if np.any(is_neg_i0_percent):
-            logger.info(
-                'Transformers always behave inductive consumpting but the susceptance of pypower '
-                f'branches {np.arange(len(is_neg_i0_percent), dtype=np.int64)[is_neg_i0_percent]} '
-                f'(hv_bus, lv_bus)=({hv_bus[is_neg_i0_percent]}, {hv_bus[is_neg_i0_percent]}) '
-                'is positive.')
+        branch_g = br_g[is_trafo]
 
-        pfe_kw = br_g[is_trafo] * baseMVA * 1e3 
-        # pfe_kw = 0.
+        # MATPOWER models BR_G and BR_B as half-shunts at the two branch ends.
+        # Keep these shunts outside the transformer model: putting them into its
+        # magnetizing branch changes the series off-diagonal terms. The FROM-end
+        # shunt is referred through the complex tap, hence the |tap|^2 factor.
+        ppc_tap = ppc['branch'][is_trafo, TAP].copy()
+        ppc_tap[np.isclose(ppc_tap, 0)] = 1.
+        tap_squared = ppc_tap ** 2
+        shunt_from = (branch_g / 2 * baseMVA / tap_squared,
+                      -br_b / 2 * baseMVA / tap_squared)
+        shunt_to = (branch_g / 2 * baseMVA, -br_b / 2 * baseMVA)
+        has_branch_shunt = (branch_g != 0) | (br_b != 0)
+        if np.any(has_branch_shunt):
+            from_trafo_bus = from_bus[is_trafo][has_branch_shunt]
+            to_trafo_bus = to_bus[is_trafo][has_branch_shunt]
+            branch_status = ppc['branch'][is_trafo, BR_STATUS][has_branch_shunt].astype(bool)
+            create_shunts(
+                net,
+                buses=np.r_[net.bus.index[from_trafo_bus], net.bus.index[to_trafo_bus]],
+                p_mw=np.r_[shunt_from[0][has_branch_shunt], shunt_to[0][has_branch_shunt]],
+                q_mvar=np.r_[shunt_from[1][has_branch_shunt], shunt_to[1][has_branch_shunt]],
+                in_service=np.r_[branch_status, branch_status])
+
+        # Branch shunts are represented above, so the transformer itself has no
+        # magnetizing branch.
+        pfe_kw = np.zeros_like(branch_g)
+        i0_percent = np.zeros_like(branch_g)
         vk_percent = np.sign(xk) * zk * sn * 100 / baseMVA
-        vk_percent[~tap_side_is_hv] /= (1+ratio_1[~tap_side_is_hv])**2
+        vk_percent[invert_ratio] /= (1+ratio_1[invert_ratio])**2
         vkr_percent = rk * sn * 100 / baseMVA
-        vkr_percent[~tap_side_is_hv] /= (1+ratio_1[~tap_side_is_hv])**2
+        vkr_percent[invert_ratio] /= (1+ratio_1[invert_ratio])**2
+
+        # the ppc phase shift is also applied at the FROM bus; pandapower's shift_degree is
+        # hv -> lv, so it changes sign where the FROM bus is the lv bus
+        shift_degree = ppc['branch'][is_trafo, SHIFT].copy()
+        shift_degree[~to_vn_is_leq] = 0.0 - shift_degree[~to_vn_is_leq]
 
         tap_step_percent = np.abs(ratio_1)*100
         tap_changer_type = np.where(tap_step_percent > 0, "Ratio", None)
@@ -305,7 +329,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
             vn_hv_kv=vn_hv_kv, vn_lv_kv=vn_lv_kv, name=bra_name[is_trafo],
             vk_percent=vk_percent, vkr_percent=vkr_percent,
             max_loading_percent=100, pfe_kw=pfe_kw, i0_percent=i0_percent,
-            shift_degree=ppc['branch'][is_trafo, SHIFT],
+            shift_degree=shift_degree,
             tap_step_percent=tap_step_percent, tap_pos=np.sign(ratio_1),
             tap_side=tap_side, tap_neutral=0, tap_changer_type=tap_changer_type)
     else:
@@ -629,6 +653,27 @@ def validate_from_ppc(ppc: dict, net: pandapowerNet, max_diff_values: dict | Non
                         "hv and lv buses.")
     if np.any(switch_from_to):
         pp_res["branch"][switch_from_to, :] = pp_res["branch"][switch_from_to, :][:, [2, 3, 0, 1]]  # type: ignore[index]
+
+    # Transformer BR_G/BR_B are represented by separate bus shunts during
+    # conversion. Include their end flows in the branch result comparison so
+    # that it remains equivalent to MATPOWER's branch current convention.
+    is_trafo = net._from_ppc_lookups["branch"].element_type.values == "trafo"
+    if np.any(is_trafo):
+        branch_g = np.asarray(ppc.get("branch_g", np.zeros(len(ppc["branch"]))))[is_trafo]
+        branch_b = ppc["branch"][is_trafo, BR_B]
+        tap = ppc["branch"][is_trafo, TAP].copy()
+        tap[np.isclose(tap, 0)] = 1.
+        tap_squared = tap ** 2
+        branch_status = ppc["branch"][is_trafo, BR_STATUS]
+        from_bus = _get_bus_pos(ppc, ppc["branch"][is_trafo, F_BUS].astype(np.int64))
+        to_bus = _get_bus_pos(ppc, ppc["branch"][is_trafo, T_BUS].astype(np.int64))
+        vm = net.res_bus.loc[ppc["bus"][:, BUS_I].astype(np.int64), "vm_pu"].values
+        vm_from_squared = vm[from_bus] ** 2
+        vm_to_squared = vm[to_bus] ** 2
+        pp_res["branch"][is_trafo, 0] += branch_status * branch_g / 2 * ppc["baseMVA"] / tap_squared * vm_from_squared
+        pp_res["branch"][is_trafo, 1] += -branch_status * branch_b / 2 * ppc["baseMVA"] / tap_squared * vm_from_squared
+        pp_res["branch"][is_trafo, 2] += branch_status * branch_g / 2 * ppc["baseMVA"] * vm_to_squared
+        pp_res["branch"][is_trafo, 3] += -branch_status * branch_b / 2 * ppc["baseMVA"] * vm_to_squared
 
     # --- gen
     pp_res["gen"] = np.zeros(ppc_res["gen"].shape)  # type: ignore[union-attr]

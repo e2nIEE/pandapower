@@ -3,6 +3,7 @@
 
 import os
 import pickle
+from copy import deepcopy
 import pytest
 import numpy as np
 import pandas as pd
@@ -344,6 +345,77 @@ def overwrite_results_data_of_ppc_pickle(file_name, grid_names):
     with open(file, "wb") as handle:
         # pickle.dump(ppcs, handle, protocol=pickle.HIGHEST_PROTOCOL)
         pickle.dump(ppcs, handle, protocol=4)  # as long as py3.7 is supported, 4 is the highest protocol
+
+
+def _two_bus_trafo_ppc(from_lv, tap, shift, branch_b=0.):
+    bus = np.array([[1, 3, 0, 0, 0, 0, 1, 1.0, 0, 345.0, 1, 1.1, 0.9],
+                    [2, 1, 80, 20, 0, 0, 1, 1.0, 0, 138.0, 1, 1.1, 0.9]], dtype=float)
+    gen = np.array([[1, 0, 0, 999, -999, 1.0, 100, 1, 999, 0] + [0] * 11], dtype=float)
+    f_bus, t_bus = (2, 1) if from_lv else (1, 2)
+    branch = np.array([[f_bus, t_bus, 0.002, 0.08, branch_b, 250, 250, 250, tap, shift, 1, -360, 360]],
+                      dtype=float)
+    return {"version": "2", "baseMVA": 100.0, "bus": bus, "gen": gen, "branch": branch}
+
+
+@pytest.mark.parametrize("from_lv", [False, True])
+@pytest.mark.parametrize("tap, shift", [(1.05, 0.), (0.95, 0.), (1.05, 10.), (1., -15.)])
+@pytest.mark.parametrize("tap_side", ["hv", "lv"])
+def test_trafo_tap_at_from_bus(from_lv, tap, shift, tap_side):
+    """The ppc tap ratio and phase shift act at the FROM bus, also when it is the lv bus."""
+    ppc = _two_bus_trafo_ppc(from_lv, tap, shift)
+    net = from_ppc(ppc, f_hz=60, tap_side=tap_side)
+    runpp(net)
+    ybus = net._ppc["internal"]["Ybus"].toarray()
+    lookup = net._pd2ppc_lookups["bus"][net.bus.index.values]
+    ybus = ybus[np.ix_(lookup, lookup)]
+
+    r, x, t_ratio, sh = ppc["branch"][0, [2, 3, 8, 9]]
+    f, t = ppc["branch"][0, :2].astype(np.int64) - 1
+    ys = 1 / (r + 1j * x)
+    tps = t_ratio * np.exp(1j * np.deg2rad(sh))
+    expected = np.zeros((2, 2), dtype=complex)
+    expected[f, f] = ys / (tps * np.conj(tps))
+    expected[f, t] = -ys / np.conj(tps)
+    expected[t, f] = -ys / tps
+    expected[t, t] = ys
+    assert np.allclose(ybus, expected, atol=1e-10)
+
+
+@pytest.mark.parametrize("from_lv", [False, True])
+@pytest.mark.parametrize("tap_side", ["hv", "lv"])
+@pytest.mark.parametrize("branch_b", [-0.1, 0.1])
+def test_trafo_branch_charging_matches_ppc(from_lv, tap_side, branch_b):
+    """Transformer branch charging is represented by end shunts, including for B > 0."""
+    ppc = _two_bus_trafo_ppc(from_lv=from_lv, tap=1.05, shift=10., branch_b=branch_b)
+    net = from_ppc(ppc, f_hz=60, tap_side=tap_side)
+    runpp(net)
+    ybus = net._ppc["internal"]["Ybus"].toarray()
+    lookup = net._pd2ppc_lookups["bus"][net.bus.index.values]
+    ybus = ybus[np.ix_(lookup, lookup)]
+
+    r, x, tap_ratio, shift = ppc["branch"][0, [2, 3, 8, 9]]
+    ys = 1 / (r + 1j * x)
+    tap_complex = tap_ratio * np.exp(1j * np.deg2rad(shift))
+    f, t = ppc["branch"][0, :2].astype(np.int64) - 1
+    expected = np.zeros((2, 2), dtype=complex)
+    expected[f, f] = (ys + 1j * branch_b / 2) / abs(tap_complex) ** 2
+    expected[f, t] = -ys / np.conj(tap_complex)
+    expected[t, f] = -ys / tap_complex
+    expected[t, t] = ys + 1j * branch_b / 2
+    assert np.allclose(ybus, expected, atol=1e-10)
+    assert np.all(net.trafo.i0_percent == 0)
+
+
+def test_case300_from_ppc_matches_pypower():
+    pypower = pytest.importorskip("pypower")
+    from pypower.api import runpf
+    from pypower.ppoption import ppoption
+
+    ppc = get_testgrids('pypower_cases', 'case300.json')
+    ppc_reference, success = runpf(deepcopy(ppc), ppoption(OUT_ALL=0, VERBOSE=0))
+    assert success
+    net = from_ppc(ppc_reference, f_hz=60)
+    assert validate_from_ppc(ppc_reference, net, max_diff_values=max_diff_values1)
 
 
 if __name__ == '__main__':
