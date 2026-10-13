@@ -1,19 +1,23 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from copy import deepcopy
 import json
 import os
+from copy import deepcopy
 
 import numpy as np
 import pytest
 
-import pandapower.test as test
+from pandapower import test
 from pandapower.converter.pandamodels import convert_pp_to_pm
 from pandapower.converter.pandamodels.from_pm import read_pm_results_to_net
 from pandapower.create import create_poly_cost
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.run import runopp
+
+# reexported with "as" to prevent ruff removing it as unused
+from pandapower.test.opf.test_basic import net_3w_trafo_opf as net_3w_trafo_opf
+from pandapower.test.opf.test_basic import simple_opf_test_net as simple_opf_test_net
 
 try:
     from juliacall import JuliaError as UnsupportedPythonError  # type: ignore
