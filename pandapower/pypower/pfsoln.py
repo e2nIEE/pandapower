@@ -6,11 +6,26 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-"""Updates bus, gen, branch data structures to match power flow soln.
-"""
+"""Updates bus, gen, branch data structures to match power flow soln."""
 
-from numpy import asarray, angle, pi, conj, zeros, ones, finfo, c_, ix_, real, flatnonzero as find, \
-    setdiff1d, intersect1d, r_, isin, arange, flatnonzero, nan_to_num, int64
+from numpy import (
+    asarray,
+    angle,
+    pi,
+    conj,
+    zeros,
+    ones,
+    finfo,
+    c_,
+    ix_,
+    real,
+    setdiff1d,
+    intersect1d,
+    isin,
+    arange,
+    int64,
+    flatnonzero
+)
 from scipy.sparse import csr_matrix
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
@@ -20,7 +35,9 @@ from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMIN, QMAX, 
 EPS = finfo(float).eps  # type: ignore[var-annotated]
 
 
-def pfsoln(baseMVA, bus0, gen0, branch0, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, limited_gens=None):
+def pfsoln(
+    baseMVA, bus0, gen0, branch0, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, limited_gens=None
+):
     """Updates bus, gen, branch data structures to match power flow soln.
 
     @author: Ray Zimmerman (PSERC Cornell)
@@ -33,7 +50,7 @@ def pfsoln(baseMVA, bus0, gen0, branch0, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, r
 
     # ----- update Qg for all gens and Pg for slack bus(es) -----
     # generator info
-    on = find(gen[:, GEN_STATUS] > 0)  # which generators are on?
+    on = flatnonzero(gen[:, GEN_STATUS] > 0)  # which generators are on?
     gbus = gen[on, GEN_BUS].astype(int64)  # what buses are they at?
 
     # compute total injected bus powers
@@ -44,14 +61,14 @@ def pfsoln(baseMVA, bus0, gen0, branch0, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, r
     _update_q(baseMVA, bus, gen, gbus, Sbus[gbus], on)
 
     if limited_gens is not None and len(limited_gens) > 0:
-        on = find((gen[:, GEN_STATUS] > 0) | isin(arange(len(gen)), limited_gens))
+        on = flatnonzero((gen[:, GEN_STATUS] > 0) | isin(arange(len(gen)), limited_gens))
         gbus = gen[on, GEN_BUS].astype(int64)
 
     _update_p(baseMVA, bus, gen, ref, gbus, Sbus, ref_gens)
 
     # ----- update/compute branch power flows -----
-    out = find(branch[:, BR_STATUS] == 0)  # out-of-service branches
-    br = find(branch[:, BR_STATUS]).astype(int64)  # in-service branches
+    out = flatnonzero(branch[:, BR_STATUS] == 0)  # out-of-service branches
+    br = flatnonzero(branch[:, BR_STATUS]).astype(int64)  # in-service branches
 
     if len(out):
         raise RuntimeError
@@ -68,7 +85,7 @@ def pfsoln(baseMVA, bus0, gen0, branch0, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, r
 def _update_v(bus, V):
     # ----- update bus voltages -----
     bus[:, VM] = abs(V)
-    bus[:, VA] = angle(V) * 180. / pi
+    bus[:, VA] = angle(V) * 180.0 / pi
 
 
 def _split_p_for_gens_at_same_bus(gen, p_bus, gens_at_bus, ref_gens):
@@ -81,8 +98,9 @@ def _split_p_for_gens_at_same_bus(gen, p_bus, gens_at_bus, ref_gens):
         sum_slack_weights = sum(slack_weights)
         if sum_slack_weights > 0:
             # distribute bus slack power according to the distributed slack contribution factors
-            gen[ext_grids, PG] = gen[ext_grids, PG] + (
-                        p_ext_grids - sum(gen[ext_grids, PG])) * slack_weights / sum_slack_weights
+            gen[ext_grids, PG] = (
+                gen[ext_grids, PG] + (p_ext_grids - sum(gen[ext_grids, PG])) * slack_weights / sum_slack_weights
+            )
         else:
             gen[ext_grids, PG] = p_ext_grids / len(ext_grids)
     else:
@@ -93,7 +111,7 @@ def _update_p(baseMVA, bus, gen, ref, gbus, Sbus, ref_gens):
     # update Pg for slack bus(es)
     # inj P + local Pd
     for slack_bus in ref:
-        gens_at_bus = find(gbus == slack_bus)  # which is(are) the reference gen(s)?
+        gens_at_bus = flatnonzero(gbus == slack_bus)  # which is(are) the reference gen(s)?
         # xward results come at the PQ buses and not at the PV buses:
         if len(gens_at_bus) == 0:
             bus[slack_bus, PD] = -Sbus[slack_bus].real * baseMVA  # negative because it is a PQ bus
@@ -132,8 +150,9 @@ def _update_q(baseMVA, bus, gen, gbus, Sbus, on):
         Qg_min = asarray(Qg_min).flatten()  # 1D array
         Qg_max = asarray(Qg_max).flatten()  # 1D array
         # gens at buses with Qg range = 0
-        ig = find(Cg * Qg_min == Cg * Qg_max)
+        ig = flatnonzero(Cg * Qg_min == Cg * Qg_max)
         Qg_save = gen[on[ig], QG]
-        gen[on, QG] = gen[on, QMIN] + (Cg * ((Qg_tot - Qg_min) / (Qg_max - Qg_min + EPS))) * \
-                      (gen[on, QMAX] - gen[on, QMIN])  # ^ avoid div by 0
+        gen[on, QG] = gen[on, QMIN] + (Cg * ((Qg_tot - Qg_min) / (Qg_max - Qg_min + EPS))) * (
+            gen[on, QMAX] - gen[on, QMIN]
+        )  # ^ avoid div by 0
         gen[on[ig], QG] = Qg_save  # (terms are mult by 0 anyway)

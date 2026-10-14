@@ -9,15 +9,37 @@ import pandas.testing as pdt
 import pytest
 
 from pandapower.create import (
-    create_group_from_dict, create_group, create_buses, create_lines, create_ext_grid, create_loads, create_switches,
+    create_group_from_dict,
+    create_group,
+    create_buses,
+    create_lines,
+    create_ext_grid,
+    create_loads,
+    create_switches,
 )
 from pandapower.file_io import to_json, from_json_string
 from pandapower.groups import (
-    set_group_out_of_service, set_group_in_service, group_element_lists, attach_to_group, detach_from_groups,
-    compare_group_elements, group_res_p_mw, group_res_power_per_bus, group_res_q_mvar, count_group_elements, isin_group,
-    element_associated_groups, elements_connected_to_group, group_element_index, groups_equal, return_group_as_net,
-    set_group_reference_column, remove_not_existing_group_members, ensure_lists_in_group_element_column,
-    check_unique_group_rows, drop_group_and_elements,
+    set_group_out_of_service,
+    set_group_in_service,
+    group_element_lists,
+    attach_to_group,
+    detach_from_groups,
+    compare_group_elements,
+    group_res_p_mw,
+    group_res_power_per_bus,
+    group_res_q_mvar,
+    count_group_elements,
+    isin_group,
+    element_associated_groups,
+    elements_connected_to_group,
+    group_element_index,
+    groups_equal,
+    return_group_as_net,
+    set_group_reference_column,
+    remove_not_existing_group_members,
+    ensure_lists_in_group_element_column,
+    check_unique_group_rows,
+    drop_group_and_elements,
 )
 from pandapower.network import pandapowerNet
 from pandapower.networks import case24_ieee_rts, create_cigre_network_mv
@@ -42,29 +64,38 @@ def nets_to_test_group(request):
     net = case24_ieee_rts()
     for elm in pp_elements():
         net[elm]["name"] = np.arange(net[elm].shape[0]).astype(str)
-    idx0 = create_group_from_dict(net, {
-        "gen": typed_list([0, 1], type_),
-        "sgen": typed_list([2, 3], type_)}, name='1st Group',
-                                  reference_column=reference_column)
+    idx0 = create_group_from_dict(
+        net,
+        {"gen": typed_list([0, 1], type_), "sgen": typed_list([2, 3], type_)},
+        name="1st Group",
+        reference_column=reference_column,
+    )
     idx1 = create_group(
-        net, "trafo", [typed_list(net.trafo.loc[:2].index, type_)],
-        name='Group of transformers', index=3, reference_columns=reference_column)
+        net,
+        "trafo",
+        [typed_list(net.trafo.loc[:2].index, type_)],
+        name="Group of transformers",
+        index=3,
+        reference_columns=reference_column,
+    )
 
     return net, type_, reference_column, [idx0, idx1]
 
 
 def test_group_create(nets_to_test_group):
-
     net, type_, rc, idxs = nets_to_test_group
     net = deepcopy(net)
 
     # --- test definition of groups
     assert idxs[0] == 0
     assert idxs[1] == 3
-    assert len(net.group.loc[[idxs[0]]].set_index("element_type").at["gen", "element_index"]) == \
-           len(net.group.loc[[idxs[0]]].set_index("element_type").at["sgen", "element_index"]) == 2
+    assert (
+        len(net.group.loc[[idxs[0]]].set_index("element_type").at["gen", "element_index"])
+        == len(net.group.loc[[idxs[0]]].set_index("element_type").at["sgen", "element_index"])
+        == 2
+    )
     assert len(net.group.loc[[idxs[1]]].set_index("element_type").at["trafo", "element_index"]) == 3
-    assert net.group.name.loc[[idxs[1]]].values[0] == 'Group of transformers'
+    assert net.group.name.loc[[idxs[1]]].values[0] == "Group of transformers"
 
     with pytest.raises(
         UserWarning, match=r"Cannot create group with xward members Index\(\['?0'?\], dtype='(?:int64|object|str)'\)\."
@@ -81,7 +112,7 @@ def test_group_create(nets_to_test_group):
 
 def test_group_element_index(nets_to_test_group):
     net, *_ = nets_to_test_group
-        # ! group_element_index()
+    # ! group_element_index()
     assert all(group_element_index(net, 0, "gen") == pd.Index([0, 1], dtype=np.int64))
     assert all(group_element_index(net, 0, "sgen") == pd.Index([2, 3], dtype=np.int64))
     assert all(group_element_index(net, 0, "dcline") == pd.Index([], dtype=np.int64))
@@ -90,8 +121,9 @@ def test_group_element_index(nets_to_test_group):
 def test_groups_equal(nets_to_test_group):
     net, type_, rc, _ = nets_to_test_group
     net = deepcopy(net)
-    idx_new = create_group(net, "trafo", [typed_list(net.trafo.loc[:2].index, type_)],
-                           name='Group of transformers', reference_columns=rc)
+    idx_new = create_group(
+        net, "trafo", [typed_list(net.trafo.loc[:2].index, type_)], name="Group of transformers", reference_columns=rc
+    )
 
     # ! compare groups
     assert groups_equal(net, 3, idx_new)
@@ -100,8 +132,9 @@ def test_groups_equal(nets_to_test_group):
 def test_set_group_reference_column(nets_to_test_group):
     net, type_, rc, _ = nets_to_test_group
     net = deepcopy(net)
-    idx_new = create_group(net, "trafo", [typed_list(net.trafo.loc[:2].index, type_)],
-                           name='Group of transformers', reference_columns=rc)
+    idx_new = create_group(
+        net, "trafo", [typed_list(net.trafo.loc[:2].index, type_)], name="Group of transformers", reference_columns=rc
+    )
     assert groups_equal(net, 3, idx_new)  # ensure that we have an equal group idx_new to
     # compare with after using set_group_reference_column() for and back
 
@@ -116,9 +149,9 @@ def test_set_group_reference_column(nets_to_test_group):
 def test_compare_group_elements(nets_to_test_group):
     net, *_ = nets_to_test_group
     net = deepcopy(net)
-    ok = create_group(net, "trafo", [net.trafo.loc[:2].index], name='xxx')
-    fail1 = create_group(net, ["trafo", "bus"], [net.trafo.loc[:2].index, [0]], name='xxx')
-    fail2 = create_group(net, ["trafo"], [net.trafo.index[1:3]], name='xxx')
+    ok = create_group(net, "trafo", [net.trafo.loc[:2].index], name="xxx")
+    fail1 = create_group(net, ["trafo", "bus"], [net.trafo.loc[:2].index, [0]], name="xxx")
+    fail2 = create_group(net, ["trafo"], [net.trafo.index[1:3]], name="xxx")
 
     # ! compare_group_elements
     assert compare_group_elements(net, 3, ok)
@@ -156,15 +189,27 @@ def test_remove_not_existing_group_members(nets_to_test_group):
     assert set(net.group.loc[0].element_type.tolist()) == {"gen", "sgen"}
 
     # manipulate group table with false data
-    net.group.iat[-1, net.group.columns.get_loc("element_index")] = net.group.element_index.iat[-1] + [8]  # tafo 8 doesn't exist
-    net.group = pd.concat([net.group, pd.DataFrame({
-        "name": [net.group.name.iat[-1]] * 3,
-        "element_type": ["impedance", "line", "gen"],
-        "element_index": [typed_list([8], type_),  # impedances don't exist
-                          [],  # empty list
-                          typed_list([998, 999], type_)],  # gen 998, 999 don't exist
-        "reference_column": [rc] * 3,
-    }, index=[idxs[1]] * 3)])
+    net.group.iat[-1, net.group.columns.get_loc("element_index")] = net.group.element_index.iat[-1] + [
+        8
+    ]  # tafo 8 doesn't exist
+    net.group = pd.concat(
+        [
+            net.group,
+            pd.DataFrame(
+                {
+                    "name": [net.group.name.iat[-1]] * 3,
+                    "element_type": ["impedance", "line", "gen"],
+                    "element_index": [
+                        typed_list([8], type_),  # impedances don't exist
+                        [],  # empty list
+                        typed_list([998, 999], type_),
+                    ],  # gen 998, 999 don't exist
+                    "reference_column": [rc] * 3,
+                },
+                index=[idxs[1]] * 3,
+            ),
+        ]
+    )
 
     # ensure that maipulations are done as expected
     assert len(net.group.at[idxs[1], "element_index"]) == 4
@@ -185,11 +230,20 @@ def test_check_unique_group_rows():
     empty_group = deepcopy(net.group)
 
     # test with duplicated rows
-    net.group = pd.concat([empty_group, pd.DataFrame([
-        ["Gr1", "gen", [1, 2]],
-        ["Gr1", "sgen", [3, 4]],
-        ["Gr1", "gen", [2, 5]],
-    ], index=[0, 0, 0], columns=["name", "element_type", "element_index"])])
+    net.group = pd.concat(
+        [
+            empty_group,
+            pd.DataFrame(
+                [
+                    ["Gr1", "gen", [1, 2]],
+                    ["Gr1", "sgen", [3, 4]],
+                    ["Gr1", "gen", [2, 5]],
+                ],
+                index=[0, 0, 0],
+                columns=["name", "element_type", "element_index"],
+            ),
+        ]
+    )
     with pytest.raises(ValueError, match=r"There are multiple group rows with same index, name and element_type\."):
         check_unique_group_rows(net)
 
@@ -199,12 +253,16 @@ def test_check_unique_group_rows():
         check_unique_group_rows(net)
 
     # test with duplicated group name and index
-    net.group = pd.concat([empty_group, pd.DataFrame([
-        ["Gr1", "gen", [1, 2]],
-        ["Gr1", "sgen", [3, 4]],
-        ["Gr2", "gen", [2, 5]],
-        ["Gr3", "line", [0, 1]]
-    ], index=[0, 0, 1, 0], columns=["name", "element_type", "element_index"])])
+    net.group = pd.concat(
+        [
+            empty_group,
+            pd.DataFrame(
+                [["Gr1", "gen", [1, 2]], ["Gr1", "sgen", [3, 4]], ["Gr2", "gen", [2, 5]], ["Gr3", "line", [0, 1]]],
+                index=[0, 0, 1, 0],
+                columns=["name", "element_type", "element_index"],
+            ),
+        ]
+    )
     with pytest.raises(UserWarning, match=r"Groups with different names have the same index\."):
         check_unique_group_rows(net)
     check_unique_group_rows(net, raise_error=False, log_level="debug")
@@ -212,9 +270,12 @@ def test_check_unique_group_rows():
 
 def test_drop_element():
     net = case24_ieee_rts()
-    gr1 = create_group_from_dict(net, {
-        "bus": [0, 1, 2], "gen": [0, 1], "sgen": [2, 3], "line": [0, 1], "trafo": [0, 1]},
-                                 name='1st Group', index=2)
+    gr1 = create_group_from_dict(
+        net,
+        {"bus": [0, 1, 2], "gen": [0, 1], "sgen": [2, 3], "line": [0, 1], "trafo": [0, 1]},
+        name="1st Group",
+        index=2,
+    )
 
     drop_lines(net, [0])
     assert net.group.loc[[gr1]].set_index("element_type").at["line", "element_index"] == [1]
@@ -242,15 +303,13 @@ def test_drop_and_return(nets_to_test_group):
 
     # ! drop_elements_and_group & ! return_group_as_net
     for keep_everything_else in [False, True]:
-
         net2 = deepcopy(net)
         drop_group_and_elements(net2, 0)
 
         net2b = deepcopy(net)
         drop_group_and_elements(net2b, 3)
 
-        net3 = return_group_as_net(
-            net, 0, keep_everything_else=keep_everything_else, verbose=False)
+        net3 = return_group_as_net(net, 0, keep_everything_else=keep_everything_else, verbose=False)
         if keep_everything_else:
             assert len(set(net3.group.index)) == 2
         else:
@@ -293,13 +352,12 @@ def test_attach_to_group(nets_to_test_group):
         UserWarning,
         match=r"Cannot create group with xward members Index\(\[\'?0\'?\], dtype='(?:int64|object|str)'\)\.",
     ):
-        attach_to_group(net, idxs[1], ["xward"], [typed_list([0], type_)],
-                        reference_columns=rc)
+        attach_to_group(net, idxs[1], ["xward"], [typed_list([0], type_)], reference_columns=rc)
 
-    attach_to_group(net, idxs[1], ["trafo", "line"],
-                    [typed_list([3], type_), typed_list([2], type_)], reference_columns=rc)
-    assert set(net.group.loc[[idxs[1]]].element_type.tolist()) == {
-        "gen", "sgen", "trafo", "line"}
+    attach_to_group(
+        net, idxs[1], ["trafo", "line"], [typed_list([3], type_), typed_list([2], type_)], reference_columns=rc
+    )
+    assert set(net.group.loc[[idxs[1]]].element_type.tolist()) == {"gen", "sgen", "trafo", "line"}
     assert len(net.group.loc[[idxs[1]]].set_index("element_type").at["trafo", "element_index"]) == 4
 
 
@@ -337,8 +395,11 @@ def test_res_power(nets_to_test_group):
 
     # ! res_p_mw() and res_q_mvar()
     runpp(net)
-    p_val = net.res_trafo.pl_mw.loc[[0, 1, 2]].sum() - net.res_gen.p_mw.loc[[0, 1]].sum() - \
-            net.res_sgen.p_mw.loc[[2, 3]].sum()
+    p_val = (
+        net.res_trafo.pl_mw.loc[[0, 1, 2]].sum()
+        - net.res_gen.p_mw.loc[[0, 1]].sum()
+        - net.res_sgen.p_mw.loc[[2, 3]].sum()
+    )
     assert np.isclose(group_res_p_mw(net, 3), p_val)
 
     # compare per_bus and sum
@@ -356,20 +417,18 @@ def test_res_power_examples():
     net = create_cigre_network_mv(with_der="all")
     runpp(net)
     idx = create_group(net, ["sgen", "line"], [[0, 1], [0, 1]], name="test group")
-    expected = pd.DataFrame([
-        [2.953004, 1.328978],
-        [0., 0.],
-        [-2.875066, -1.318864],
-        [-0.02, 0.]
-    ], index=pd.Index([1, 2, 3, 4], name="bus"), columns=["p_mw", "q_mvar"])
+    expected = pd.DataFrame(
+        [[2.953004, 1.328978], [0.0, 0.0], [-2.875066, -1.318864], [-0.02, 0.0]],
+        index=pd.Index([1, 2, 3, 4], name="bus"),
+        columns=["p_mw", "q_mvar"],
+    )
     assert dataframes_equal(group_res_power_per_bus(net, idx), expected, atol=1e-6)
 
 
 def test_group_io():
     net = case24_ieee_rts()
-    gr1 = create_group_from_dict(net, {"gen": [0, 1], "sgen": [2, 3], "load": [0]},
-                                 name='1st Group', index=2)
-    gr2 = create_group_from_dict(net, {"trafo": net.trafo.index}, name='Group of transformers')
+    gr1 = create_group_from_dict(net, {"gen": [0, 1], "sgen": [2, 3], "load": [0]}, name="1st Group", index=2)
+    gr2 = create_group_from_dict(net, {"trafo": net.trafo.index}, name="Group of transformers")
     json_str = to_json(net)
     net2 = from_json_string(json_str)
     runpp(net)
@@ -400,8 +459,11 @@ def test_element_associated_groups(nets_to_test_group):
     net, *_ = nets_to_test_group
     net = deepcopy(net)
     assert element_associated_groups(net, "gen", [0, 1, 2, 3]) == {0: [0], 1: [0], 2: [], 3: []}
-    assert element_associated_groups(net, "gen", [0, 1, 2, 3], return_empties=False) == \
-           element_associated_groups(net, "gen", net.gen.index, return_empties=False) == {0: [0], 1: [0]}
+    assert (
+        element_associated_groups(net, "gen", [0, 1, 2, 3], return_empties=False)
+        == element_associated_groups(net, "gen", net.gen.index, return_empties=False)
+        == {0: [0], 1: [0]}
+    )
     assert element_associated_groups(net, "load", [0, 1]) == {0: [], 1: []}
     assert element_associated_groups(net, "trafo", [0, 1, 3]) == {0: [3], 1: [3], 3: []}
     assert element_associated_groups(net, "trafo", 0) == [3]
@@ -419,7 +481,7 @@ def test_elements_connected_to_group():
     create_switches(net, [0] * 2, [10, 11], "b", closed=[True, False])
     net.load.at[0, "in_service"] = False
     net.line.at[4, "in_service"] = False
-    net.bus.loc[[3, 9], 'in_service'] = False
+    net.bus.loc[[3, 9], "in_service"] = False
 
     # create group
     index = create_group(net, ["bus", "line", "switch"], [[0], [net.line.index[-1]], [6, 7]])
@@ -428,32 +490,51 @@ def test_elements_connected_to_group():
     ets_motor = element_types + ["motor"]
 
     # test elements_connected_to_group()
-    assert elements_connected_to_group(net, index, ets_motor) == \
-           {"bus": [10], "ext_grid": [0], "load": [0], "line": [0, 2, 3, 4],
-            "switch": [0, 1, 2, 3, 4, 5]}
+    assert elements_connected_to_group(net, index, ets_motor) == {
+        "bus": [10],
+        "ext_grid": [0],
+        "load": [0],
+        "line": [0, 2, 3, 4],
+        "switch": [0, 1, 2, 3, 4, 5],
+    }
 
-    assert elements_connected_to_group(net, index, ets_motor, include_empty_lists=True) == \
-           {"bus": [10], "ext_grid": [0], "load": [0], "line": [0, 2, 3, 4],
-            "switch": [0, 1, 2, 3, 4, 5], "motor": []}
+    assert elements_connected_to_group(net, index, ets_motor, include_empty_lists=True) == {
+        "bus": [10],
+        "ext_grid": [0],
+        "load": [0],
+        "line": [0, 2, 3, 4],
+        "switch": [0, 1, 2, 3, 4, 5],
+        "motor": [],
+    }
+
+    assert elements_connected_to_group(net, index, element_types, find_buses_only_from_buses=True) == {
+        "bus": [1, 3, 4, 5, 7, 9, 10],
+        "ext_grid": [0],
+        "load": [0],
+        "line": [0, 2, 3, 4],
+        "switch": [0, 1, 2, 3, 4, 5],
+    }
 
     assert elements_connected_to_group(
-        net, index, element_types, find_buses_only_from_buses=True) == \
-           {"bus": [1, 3, 4, 5, 7, 9, 10], "ext_grid": [0], "load": [0], "line": [0, 2, 3, 4],
-            "switch": [0, 1, 2, 3, 4, 5]}
+        net, index, element_types, find_buses_only_from_buses=True, respect_switches=False
+    ) == {
+        "bus": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11],
+        "ext_grid": [0],
+        "load": [0],
+        "line": [0, 1, 2, 3, 4],
+        "switch": [0, 1, 2, 3, 4, 5],
+    }
 
     assert elements_connected_to_group(
-        net, index, element_types, find_buses_only_from_buses=True, respect_switches=False) == \
-           {"bus": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11], "ext_grid": [0], "load": [0],
-            "line": [0, 1, 2, 3, 4], "switch": [0, 1, 2, 3, 4, 5]}
+        net, index, element_types, find_buses_only_from_buses=True, respect_switches=False, respect_in_service=True
+    ) == {"bus": [1, 2, 4, 6, 7, 8, 10, 11], "ext_grid": [0], "line": [0, 1, 2, 3], "switch": [0, 1, 2, 3, 4, 5]}
 
-    assert elements_connected_to_group(
-        net, index, element_types, find_buses_only_from_buses=True, respect_switches=False,
-        respect_in_service=True) == \
-           {"bus": [1, 2, 4, 6, 7, 8, 10, 11], "ext_grid": [0], "line": [0, 1, 2, 3],
-            "switch": [0, 1, 2, 3, 4, 5]}
-
-    assert elements_connected_to_group(net, index, element_types, respect_in_service=True) == \
-           {"bus": [10], "ext_grid": [0], "line": [0, 2, 3], "switch": [0, 1, 2, 3, 4, 5]}
+    assert elements_connected_to_group(net, index, element_types, respect_in_service=True) == {
+        "bus": [10],
+        "ext_grid": [0],
+        "line": [0, 2, 3],
+        "switch": [0, 1, 2, 3, 4, 5],
+    }
 
 
 if __name__ == "__main__":

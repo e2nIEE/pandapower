@@ -1,4 +1,5 @@
 import os
+
 pp_dir: str = os.path.dirname(os.path.realpath(__file__))
 
 from pandapower._version import __version__, __format_version__
@@ -20,6 +21,7 @@ from pandapower.runpm import *
 from pandapower.pf.runpp_3ph import runpp_3ph
 
 import geojson
+
 geojson.geometry.DEFAULT_PRECISION = 8
 
 
@@ -28,9 +30,11 @@ import pandapower.control
 import pandapower.estimation
 import pandapower.grid_equivalents
 import pandapower.networks
+
 # import pandapower.opf  # no imports available yet
 # import pandapower.pf  # no imports available yet
 import pandapower.plotting
+
 # import pandapower.protection  # no imports available yet
 # import pandapower.pypower  # no imports available yet
 import pandapower.shortcircuit

@@ -2,15 +2,13 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""PYPOWER utilities.
-"""
+"""PYPOWER utilities."""
 
 from numpy import int64
 
 
 def sub2ind(shape, I, J, row_major=False):
-    """Returns the linear indices of subscripts
-    """
+    """Returns the linear indices of subscripts"""
     if row_major:
         ind = (I % shape[0]) * shape[1] + (J % shape[1])
     else:

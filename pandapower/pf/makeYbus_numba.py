@@ -161,8 +161,9 @@ def makeYbus(baseMVA, bus, branch):
 
     Yf = coo_matrix((Yf_x, (i, col_Y)), (nl, nb)).tocsr()
     Yt = coo_matrix((Yt_x, (i, col_Y)), (nl, nb)).tocsr()
-    Yx, Yj, Yp, nnz = gen_Ybus(Yf_x, Yt_x, Ysh, col_Y, f, t, np.argsort(f), np.argsort(t), nb, nl,
-                               np.arange(nl, dtype=np.int64))
+    Yx, Yj, Yp, nnz = gen_Ybus(
+        Yf_x, Yt_x, Ysh, col_Y, f, t, np.argsort(f), np.argsort(t), nb, nl, np.arange(nl, dtype=np.int64)
+    )
     Ybus = csr_matrix((np.resize(Yx, nnz), np.resize(Yj, nnz), Yp), (nb, nb))
     for Y in (Ybus, Yf, Yt):
         Y.sort_indices()

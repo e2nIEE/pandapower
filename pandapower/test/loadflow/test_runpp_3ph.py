@@ -34,7 +34,6 @@ from pandapower.networks import create_cigre_network_mv
 from pandapower.pf.runpp_3ph import runpp_3ph
 from pandapower.run import runpp
 from pandapower.std_types import add_zero_impedance_parameters, create_std_type
-from pandapower.test.conftest import result_test_network
 from pandapower.test.consistency_checks import (
     runpp_3ph_with_consistency_checks,
     runpp_with_consistency_checks,
@@ -863,8 +862,8 @@ def test_trafo_asym_currents__high_neg_seq():
 
 def test_2trafos():
     net = pandapowerNet(name="test_2trafos")
-    make_nw(net, 10., 0., "wye", "YNyn")
-    make_nw(net, 10., 0., "wye", "YNyn")
+    make_nw(net, 10.0, 0.0, "wye", "YNyn")
+    make_nw(net, 10.0, 0.0, "wye", "YNyn")
     runpp_3ph_with_consistency_checks(net)
     assert net["converged"]
     assert np.allclose(net.res_ext_grid_3ph.iloc[0].values, net.res_ext_grid_3ph.iloc[1].values)
@@ -1064,6 +1063,7 @@ def test_3ph_enforce_q_lims(result_test_network):
     assert abs(_net.res_bus.vm_pu.at[b3] - u3) < v_tol
     assert abs(_net.res_gen.q_mvar.at[g1] - _net.gen.min_q_mvar.at[g1]) < s_tol
 
+
 def test_gen_3ph_loadflow():
     net = pandapowerNet(name="test_gen_3ph_loadflow", f_hz=50, add_stdtypes=False)
     add_zero_impedance_parameters(net)
@@ -1103,6 +1103,7 @@ def test_gen_3ph_loadflow():
 
     assert np.isclose(net.res_gen_3ph.loc[0, ["p_a_mw", "p_b_mw", "p_c_mw"]].sum(), 70.0)
     assert np.isclose(net.res_gen_3ph.loc[0, ["q_a_mvar", "q_b_mvar", "q_c_mvar"]].sum(), 33.165882)
+
 
 @pytest.mark.xfail
 def test_recycle_pq():
@@ -1147,7 +1148,12 @@ def test_connectivity_check_island_without_pv_bus():
     isolated_bus1 = create_bus(_net, vn_kv=20.0, name="isolated Bus1")
     isolated_bus2 = create_bus(_net, vn_kv=20.0, name="isolated Bus2")
     create_line(
-        _net, isolated_bus2, isolated_bus1, length_km=1, std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="IsolatedLine"
+        _net,
+        isolated_bus2,
+        isolated_bus1,
+        length_km=1,
+        std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV",
+        name="IsolatedLine",
     )
     iso_buses, iso_p, iso_q, *_ = get_isolated(_net)
     assert len(iso_buses) == 2

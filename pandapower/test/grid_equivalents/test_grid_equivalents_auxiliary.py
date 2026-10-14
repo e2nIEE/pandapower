@@ -48,10 +48,9 @@ def test_drop_internal_branch_elements():
 
 def test_trafo_phase_shifter():
     net = create_cigre_network_mv(with_der="pv_wind")
-    net.trafo.loc[0, 'shift_degree'] = 150
+    net.trafo.loc[0, "shift_degree"] = 150
     runpp(net)
-    net_eq = get_equivalent(net, "rei", [4, 8], [0],
-                                                retain_original_internal_indices=True)
+    net_eq = get_equivalent(net, "rei", [4, 8], [0], retain_original_internal_indices=True)
     v, _ = get_boundary_vp(net_eq, net_eq.bus_lookups)
     net.res_bus.vm_pu = net.res_bus.vm_pu.values + 1e-3
     net.res_bus.va_degree = net.res_bus.va_degree.values + 1e-3
@@ -66,7 +65,7 @@ def test_drop_measurements_and_controllers():
     create_buses(net, 3, net.bus.vn_kv.values[0])
     buses = [1, 2, 5, 6, 7, 9, 10, 11]
     create_transformer(net, 1, 9, "0.4 MVA 10/0.4 kV")
-    create_transformer3w (net, 2, 10, 11, "63/25/38 MVA 110/20/10 kV")
+    create_transformer3w(net, 2, 10, 11, "63/25/38 MVA 110/20/10 kV")
     net.measurement.loc[0] = ["mb", "v", "bus", 0, 1.0, 0.01, None]
     net.measurement.loc[1] = ["mb", "v", "bus", 5, 1.0, 0.01, None]
     net.measurement.loc[2] = ["mb", "i", "line", 0, 0.9, 0.01, "to"]
@@ -84,16 +83,40 @@ def test_drop_measurements_and_controllers():
         load_ts.loc[t] = net.load.p_mw.values * time_series.at[t, "residential"]
         gen_ts.loc[t] = net.gen.p_mw.values * time_series.at[t, "pv"]
 
-    ConstControl(net, element="load", variable="p_mw", element_index=net.load.index.tolist(),
-                 profile_name=net.load.index.tolist(), data_source=DFData(load_ts))
-    ConstControl(net, element="gen", variable="p_mw", element_index=net.gen.index.tolist(),
-                 profile_name=net.gen.index.tolist(), data_source=DFData(gen_ts))
+    ConstControl(
+        net,
+        element="load",
+        variable="p_mw",
+        element_index=net.load.index.tolist(),
+        profile_name=net.load.index.tolist(),
+        data_source=DFData(load_ts),
+    )
+    ConstControl(
+        net,
+        element="gen",
+        variable="p_mw",
+        element_index=net.gen.index.tolist(),
+        profile_name=net.gen.index.tolist(),
+        data_source=DFData(gen_ts),
+    )
     for i in net.gen.index:
-        ConstControl(net, element="gen", variable="p_mw", element_index=i,
-                     profile_name=net.gen.index[i], data_source=DFData(gen_ts))
+        ConstControl(
+            net,
+            element="gen",
+            variable="p_mw",
+            element_index=i,
+            profile_name=net.gen.index[i],
+            data_source=DFData(gen_ts),
+        )
     for i in net.load.index:
-        ConstControl(net, element="load", variable="p_mw", element_index=i,
-                     profile_name=net.load.index[i], data_source=DFData(load_ts))
+        ConstControl(
+            net,
+            element="load",
+            variable="p_mw",
+            element_index=i,
+            profile_name=net.load.index[i],
+            data_source=DFData(load_ts),
+        )
 
     assert net.controller.object[0].__dict__["element_index"] == [0, 1, 2]
     assert net.controller.object[1].__dict__["element_index"] == [0, 1]
@@ -110,17 +133,15 @@ def test_drop_measurements_and_controllers():
 
 def test_check_network():
     net = case9()
-    net.bus.loc[5, 'in_service'] = False
+    net.bus.loc[5, "in_service"] = False
     runpp(net)
     _check_network(net)
 
-    net.bus.loc[5, 'in_service'] = True
+    net.bus.loc[5, "in_service"] = True
     runpp(net)
     create_buses(net, 2, net.bus.vn_kv.values[0])
-    create_dcline(net, from_bus=4, to_bus=9, p_mw=1e4, loss_percent=1.2, loss_mw=25, \
-                     vm_from_pu=1.01, vm_to_pu=1.02)
-    create_dcline(net, from_bus=8, to_bus=10, p_mw=1e4, loss_percent=1.2, loss_mw=25, \
-                     vm_from_pu=1.01, vm_to_pu=1.02)
+    create_dcline(net, from_bus=4, to_bus=9, p_mw=1e4, loss_percent=1.2, loss_mw=25, vm_from_pu=1.01, vm_to_pu=1.02)
+    create_dcline(net, from_bus=8, to_bus=10, p_mw=1e4, loss_percent=1.2, loss_mw=25, vm_from_pu=1.01, vm_to_pu=1.02)
     _check_network(net)
     assert len(net.gen) == 6
 

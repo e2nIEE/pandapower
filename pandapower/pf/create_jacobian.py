@@ -71,27 +71,23 @@ def _create_J_without_numba(Ybus, V, ref, pvpq, pq, slack_weights, dist_slack):
         J21 = dS_dVa[array([pq]).T, cols_pvpq].imag
         J22 = dS_dVm[array([pq]).T, pq].imag
         if dist_slack:
-            J10 = sparse(slack_weights[rows_pvpq].reshape(-1,1))
+            J10 = sparse(slack_weights[rows_pvpq].reshape(-1, 1))
             J20 = sparse(zeros(shape=(len(pq), 1)))
-            J = vstack([
-                hstack([J10, J11, J12]),
-                hstack([J20, J21, J22])
-            ], format="csr")
+            J = vstack([hstack([J10, J11, J12]), hstack([J20, J21, J22])], format="csr")
         else:
-            J = vstack([
-                hstack([J11, J12]),
-                hstack([J21, J22])
-            ], format="csr")
+            J = vstack([hstack([J11, J12]), hstack([J21, J22])], format="csr")
     else:
-        J = vstack([
-            hstack([J11, J12])
-        ], format="csr")
+        J = vstack([hstack([J11, J12])], format="csr")
     return J
 
 
-def create_jacobian_matrix(Ybus, V, ref, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack):
+def create_jacobian_matrix(
+    Ybus, V, ref, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, numba, slack_weights, dist_slack
+):
     if numba:
-        J = _create_J_with_numba(Ybus, V, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, slack_weights, dist_slack)
+        J = _create_J_with_numba(
+            Ybus, V, refpvpq, pvpq, pq, createJ, pvpq_lookup, nref, npv, npq, slack_weights, dist_slack
+        )
     else:
         J = _create_J_without_numba(Ybus, V, ref, pvpq, pq, slack_weights, dist_slack)
     return J

@@ -6,6 +6,7 @@ from pandapower.network import pandapowerNet
 from pandapower.converter.pandamodels.to_pm import add_pm_gen_start_values_from_results
 from pandapower.runpm import runpm, runpm_dc_opf, runpm_ac_opf
 
+
 def test_add_pm_gen_start_values_from_results():
     net = pandapowerNet(name="test_add_pm_gen_start_values_from_results")
     net.res_ext_grid = pd.DataFrame({"p_mw": [100.0], "q_mvar": [50.0]}, index=[0])
@@ -26,6 +27,7 @@ def test_add_pm_gen_start_values_from_results():
     assert np.isclose(pm["gen"]["3"]["pg_start"], 5.0)
     assert np.isclose(pm["gen"]["3"]["qg_start"], 1.0)
 
+
 @pytest.mark.parametrize(
     "run_function",
     [
@@ -36,8 +38,10 @@ def test_add_pm_gen_start_values_from_results():
 )
 def test_runpm_wrappers_pass_init_pq_to_options(monkeypatch, run_function):
     captured_options = []
+
     def fake_runpm(net, *args, **kwargs):
         captured_options.append(net._options.copy())
+
     monkeypatch.setitem(run_function.__globals__, "_runpm", fake_runpm)
     net = pandapowerNet(name="test_runpm_wrappers_pass_init_pq_to_options")
     run_function(net, init_pq="results")

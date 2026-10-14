@@ -9,10 +9,24 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def from_pfd(app, prj_name: str, script_name=None, script_settings=None, path_dst=None,
-             pv_as_slack=False, pf_variable_p_loads='plini', pf_variable_p_gen='pgini',
-             flag_graphics='GPS', tap_opt='nntap', export_controller=True, handle_us="Deactivate",
-             is_unbalanced=False, create_sections=True, export_pf_ZoneArea=False, sc_name=None):
+def from_pfd(
+    app,
+    prj_name: str,
+    script_name=None,
+    script_settings=None,
+    path_dst=None,
+    pv_as_slack=False,
+    pf_variable_p_loads="plini",
+    pf_variable_p_gen="pgini",
+    flag_graphics="GPS",
+    tap_opt="nntap",
+    export_controller=True,
+    handle_us="Deactivate",
+    is_unbalanced=False,
+    create_sections=True,
+    export_pf_ZoneArea=False,
+    sc_name=None,
+):
     """
     Import a DIgSILENT PowerFactory project into a pandapower network.
 
@@ -94,14 +108,14 @@ def from_pfd(app, prj_name: str, script_name=None, script_settings=None, path_ds
     If ``path_dst`` is not None, the resulting pandapower network is additionally written
     to disk as a JSON file using :func:`pandapower.to_json`.
     """
-    logger.debug('started')
+    logger.debug("started")
     echo_off(app)
     user = app.GetCurrentUser()
-    logger.debug('user: %s' % user)
+    logger.debug("user: %s" % user)
 
     res = app.ActivateProject(prj_name)
     if res == 1:
-        raise RuntimeError('Project %s could not be found or activated' % prj_name)
+        raise RuntimeError("Project %s could not be found or activated" % prj_name)
 
     prj = app.GetActiveProject()
 
@@ -110,13 +124,13 @@ def from_pfd(app, prj_name: str, script_name=None, script_settings=None, path_ds
     logger.info(f"Available 'Study Cases': {scenario_name_list}")
 
     if sc_name is not None and sc_name in scenario_name_list:
-        sc = app.GetProjectFolder('scen').GetContents(sc_name)[0]
+        sc = app.GetProjectFolder("scen").GetContents(sc_name)[0]
         sc.Activate()
         logger.info(f"Study Case {app.GetActiveScenario().loc_name} is currently active!")
     else:
-        logger.info(f"No Study Case is currently active!")
+        logger.info("No Study Case is currently active!")
 
-    logger.info('gathering network elements')
+    logger.info("gathering network elements")
     dict_net = create_network_dict(app, flag_graphics)
 
     if script_name is not None:
@@ -124,28 +138,37 @@ def from_pfd(app, prj_name: str, script_name=None, script_settings=None, path_ds
         script_values = script.IntExpr
         for parameter_name, new_value in script_settings.items():
             if parameter_name not in script_settings:
-                raise UserWarning('Script settings are faulty. Some parameters do not exist!')
+                raise UserWarning("Script settings are faulty. Some parameters do not exist!")
             pos = script.IntName.index(parameter_name)
             if script_values[pos] != new_value:
                 script_values[pos] = new_value
             else:
                 continue
-        script.SetAttribute('IntExpr', script_values)
+        script.SetAttribute("IntExpr", script_values)
         pf_script_execution_failed = script.Execute()
         if pf_script_execution_failed != 0:
-            logger.error('Script execution failed.')
+            logger.error("Script execution failed.")
         pf_load_flow_failed = run_load_flow(app)
         if pf_load_flow_failed != 0:
-            logger.error('Load flow failed after executing DPL script.')
+            logger.error("Load flow failed after executing DPL script.")
     else:
         pf_load_flow_failed = run_load_flow(app)
 
-    logger.info('exporting network to pandapower')
+    logger.info("exporting network to pandapower")
     app.SetAttributeModeInternal(1)
-    net = from_pf(dict_net=dict_net, pv_as_slack=pv_as_slack, pf_variable_p_loads=pf_variable_p_loads,
-                  pf_variable_p_gen=pf_variable_p_gen, flag_graphics=flag_graphics, tap_opt=tap_opt,
-                  export_controller=export_controller, handle_us=handle_us, is_unbalanced=is_unbalanced,
-                  create_sections=create_sections, export_pf_ZoneArea=export_pf_ZoneArea)
+    net = from_pf(
+        dict_net=dict_net,
+        pv_as_slack=pv_as_slack,
+        pf_variable_p_loads=pf_variable_p_loads,
+        pf_variable_p_gen=pf_variable_p_gen,
+        flag_graphics=flag_graphics,
+        tap_opt=tap_opt,
+        export_controller=export_controller,
+        handle_us=handle_us,
+        is_unbalanced=is_unbalanced,
+        create_sections=create_sections,
+        export_pf_ZoneArea=export_pf_ZoneArea,
+    )
     # save a flag, whether the PowerFactory load flow failed
     app.SetAttributeModeInternal(0)
     net["pf_converged"] = not pf_load_flow_failed
@@ -156,8 +179,9 @@ def from_pfd(app, prj_name: str, script_name=None, script_settings=None, path_ds
     echo_on(app)
     if path_dst is not None:
         to_json(net, path_dst)
-        logger.info('saved net as %s', path_dst)
+        logger.info("saved net as %s", path_dst)
     return net
+
 
 def get_script(user, script_name):
     script = None
@@ -172,9 +196,19 @@ def get_script(user, script_name):
 
     return script
 
+
 # experimental feature
-def execute(app, path_src, path_dst, pv_as_slack, scale_feeder_loads=False, var_load='plini',
-            var_gen='pgini', flag_graphics='GPS', create_sections=True):
+def execute(
+    app,
+    path_src,
+    path_dst,
+    pv_as_slack,
+    scale_feeder_loads=False,
+    var_load="plini",
+    var_gen="pgini",
+    flag_graphics="GPS",
+    create_sections=True,
+):
     """
     Executes import of a .dgs file, runs load flow, and exports net as .p
     Args:
@@ -186,22 +220,28 @@ def execute(app, path_src, path_dst, pv_as_slack, scale_feeder_loads=False, var_
     Returns: net
 
     """
-    logger.debug('started')
+    logger.debug("started")
     echo_off(app)
     prj = import_project(path_src, app)
 
-    logger.info('activating project')
+    logger.info("activating project")
 
     prj.Activate()
     trafo_name, trafo_desc = _check_network(app)
 
-    logger.info('gathering network elements')
+    logger.info("gathering network elements")
     dict_net = create_network_dict(app, flag_graphics=flag_graphics)
     run_load_flow(app, scale_feeder_loads, gen_scaling=0)
-    logger.info('exporting network to pandapower')
+    logger.info("exporting network to pandapower")
     app.SetAttributeModeInternal(1)
-    net = from_pf(dict_net, pv_as_slack=pv_as_slack, pf_variable_p_loads=var_load, pf_variable_p_gen=var_gen,
-                  flag_graphics=flag_graphics, create_sections=create_sections)
+    net = from_pf(
+        dict_net,
+        pv_as_slack=pv_as_slack,
+        pf_variable_p_loads=var_load,
+        pf_variable_p_gen=var_gen,
+        flag_graphics=flag_graphics,
+        create_sections=create_sections,
+    )
     app.SetAttributeModeInternal(0)
 
     logger.info(net)
@@ -214,29 +254,29 @@ def execute(app, path_src, path_dst, pv_as_slack, scale_feeder_loads=False, var_
     return net, trafo_name, trafo_desc
 
 
-def import_project(path_src, app, name="Import" , import_folder="", template=None, clear_import_folder=False):
+def import_project(path_src, app, name="Import", import_folder="", template=None, clear_import_folder=False):
     user = app.GetCurrentUser()
-    logger.debug('user: %s' % user)
+    logger.debug("user: %s" % user)
 
     imp_dir = choose_imp_dir(user, import_folder)
-    logger.info('Auxiliary import folder: %s', imp_dir)
+    logger.info("Auxiliary import folder: %s", imp_dir)
 
     if clear_import_folder:
         clear_dir(imp_dir)
 
     # PF import object
     # com_import = app.GetFromStudyCase('ComPfdimport')
-    if '.dgs' in path_src:
-        com_import = app.GetFromStudyCase('ComImport')
-        logger.info('Importing .dgs project %s' % path_src)
+    if ".dgs" in path_src:
+        com_import = app.GetFromStudyCase("ComImport")
+        logger.info("Importing .dgs project %s" % path_src)
         if template is not None:
             app.ActivateProject(template)
             template = app.GetActiveProject()
         prj_dgs_import(com_import, imp_dir, path_src, name, template)
-    elif '.pfd' in path_src:
-        com_import = app.GetFromStudyCase('ComPfdimport')
-        logger.info('Importing .pfd project %s' % path_src)
-        #prj_import(com_import, imp_dir, path_src)
+    elif ".pfd" in path_src:
+        com_import = app.GetFromStudyCase("ComPfdimport")
+        logger.info("Importing .pfd project %s" % path_src)
+        # prj_import(com_import, imp_dir, path_src)
         com_import.g_file = path_src
         com_import.g_target = imp_dir
         # somehow this is not always the case
@@ -247,7 +287,7 @@ def import_project(path_src, app, name="Import" , import_folder="", template=Non
     try:
         prj = imp_dir.GetContents()[0]
     except:
-        raise RuntimeError('could not get the project - failed at import?')
+        raise RuntimeError("could not get the project - failed at import?")
 
     return prj
 
@@ -261,42 +301,42 @@ def _check_network(app):
     """
 
     # setting triggers out of service
-    triggers = app.GetCalcRelevantObjects('*.SetTime, *.SetTrigger')
+    triggers = app.GetCalcRelevantObjects("*.SetTime, *.SetTrigger")
     if len(triggers) > 0:
         for t in triggers:
             t.outserv = 1
 
     # checking if there are feeders in network
-    feeder_folder = app.GetDataFolder('ElmFeeder')
+    feeder_folder = app.GetDataFolder("ElmFeeder")
     feeders = feeder_folder.GetContents()
     if len(feeders) == 0:
-        raise RuntimeError('no feeders found in network!')
+        raise RuntimeError("no feeders found in network!")
 
     # check if there is External grid and Transformer
-    obj_types = ['ElmXnet', 'ElmTr2']
+    obj_types = ["ElmXnet", "ElmTr2"]
     for ot in obj_types:
-        elms = app.GetCalcRelevantObjects('*.%s' % ot)
+        elms = app.GetCalcRelevantObjects("*.%s" % ot)
         if len(elms) == 0:
-            raise RuntimeError('there are no elements of type %s in net' % ot)
+            raise RuntimeError("there are no elements of type %s in net" % ot)
 
     # check if there are more than 3 buses
-    buses = app.GetCalcRelevantObjects('*.ElmTerm')
+    buses = app.GetCalcRelevantObjects("*.ElmTerm")
     if len(buses) <= 3:
-        raise RuntimeError('less equal than 3 buses in net')
+        raise RuntimeError("less equal than 3 buses in net")
 
     # check if there is more than 1 load
-    loads = app.GetCalcRelevantObjects('*.ElmLod*')
+    loads = app.GetCalcRelevantObjects("*.ElmLod*")
     if len(loads) <= 1:
-        raise RuntimeError('less equal than 1 load in net')
+        raise RuntimeError("less equal than 1 load in net")
 
-    trafos = app.GetCalcRelevantObjects('*.ElmTr2')
+    trafos = app.GetCalcRelevantObjects("*.ElmTr2")
     if len(trafos) > 1:
-        raise RuntimeError('more tan 1 trafo in net')
+        raise RuntimeError("more tan 1 trafo in net")
 
     for load in loads:
         load_name = load.loc_name
-        if 'RLM' in load_name and load.i_scale != 0:
-            logger.warning('load %s.%s i_scale' % (load.loc_name, load.GetClassName()))
+        if "RLM" in load_name and load.i_scale != 0:
+            logger.warning("load %s.%s i_scale" % (load.loc_name, load.GetClassName()))
             load.i_scale = 0
             # raise Exception('Adjusted by load scaling set to True')
 

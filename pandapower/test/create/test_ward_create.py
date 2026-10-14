@@ -50,8 +50,7 @@ def test_create_wards():
     create_ward(net, *vals[1, :])
     create_ward(net, *vals[2, :])
 
-    create_wards(net_bulk, vals[:, 0], vals[:, 1], vals[:, 2], vals[:, 3], vals[:, 4],
-                    vals[:, 5], vals[:, 6])
+    create_wards(net_bulk, vals[:, 0], vals[:, 1], vals[:, 2], vals[:, 3], vals[:, 4], vals[:, 5], vals[:, 6])
 
     assert net.ward.bus.at[0] == b1
     assert net.ward.bus.at[1] == b2
@@ -83,16 +82,7 @@ def test_create_xward():
     net = pandapowerNet(name="test_create_xward")
     (bus,) = create_buses(net, 1, 110)
 
-    xward_id = create_xward(
-        net, bus,
-        ps_mw=1.0,
-        qs_mvar=0.5,
-        pz_mw=0.2,
-        qz_mvar=0.1,
-        r_ohm=10.0,
-        x_ohm=5.0,
-        vm_pu=1.0
-    )
+    xward_id = create_xward(net, bus, ps_mw=1.0, qs_mvar=0.5, pz_mw=0.2, qz_mvar=0.1, r_ohm=10.0, x_ohm=5.0, vm_pu=1.0)
 
     assert xward_id == 0
     assert net.xward.bus.at[0] == bus
@@ -109,13 +99,18 @@ def test_create_xward():
     # Test with all parameters
     (bus2,) = create_buses(net, 1, 110)
     xward_id2 = create_xward(
-        net, bus2,
-        ps_mw=2.0, qs_mvar=1.0,
-        pz_mw=0.4, qz_mvar=0.2,
-        r_ohm=20.0, x_ohm=10.0, vm_pu=1.02,
+        net,
+        bus2,
+        ps_mw=2.0,
+        qs_mvar=1.0,
+        pz_mw=0.4,
+        qz_mvar=0.2,
+        r_ohm=20.0,
+        x_ohm=10.0,
+        vm_pu=1.02,
         name="test_xward",
         in_service=False,
-        slack_weight=1.5
+        slack_weight=1.5,
     )
 
     assert xward_id2 == 1

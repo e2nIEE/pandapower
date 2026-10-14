@@ -28,6 +28,7 @@ from pandapower.create._utils import (
 
 logger = logging.getLogger(__name__)
 
+
 def _get_bus_voltage_limit(net: pandapowerNet, bus: Int, column: str):
     if column in net.bus.columns and _not_nan(net.bus.at[bus, column]):
         return net.bus.at[bus, column]

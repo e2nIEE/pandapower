@@ -24,6 +24,7 @@ def _make_hashable(obj):
         return tuple(_make_hashable(v) for v in obj.tolist())
     return obj
 
+
 class Characteristic(JSONSerializableClass):
     """
     This class represents a characteristics curve. The curve is described as a piecewise linear function.
@@ -109,7 +110,7 @@ class Characteristic(JSONSerializableClass):
         Parameters:
             x: The x-value at which the current y-value is measured
             actual: The actual y-value being measured.
-            
+
         Returns:
              The difference between actual and expected value.
         """
@@ -155,6 +156,7 @@ class SplineCharacteristic(Characteristic):
     Characteristic can be followed by providing a tuple for the fill value for x outside the specified range,
     refer to the documentation of interp1d for more details. We set the parameter bounds_error to False.
     """
+
     json_excludes = ["self", "__class__", "_interpolator"]
 
     def __init__(self, net, x_values, y_values, interpolator_kind="interp1d", table="characteristic", **kwargs):
@@ -162,7 +164,6 @@ class SplineCharacteristic(Characteristic):
         self.kwargs = kwargs
         self.interpolator_kind = interpolator_kind
         self._interpolator = None
-
 
     @property
     def interpolator(self):
@@ -206,7 +207,6 @@ class SplineCharacteristic(Characteristic):
             and np.array_equal(self.y_vals, other.y_vals)
         )
 
-
     def __repr__(self):
         return self.__class__.__name__ + f"({self.interpolator_kind}, {self.kwargs})"
 
@@ -226,7 +226,6 @@ class SplineCharacteristic(Characteristic):
 
 
 class LogSplineCharacteristic(SplineCharacteristic):
-
     def __init__(self, net, x_values, y_values, **kwargs):
         super().__init__(net, x_values, y_values, **kwargs)
 

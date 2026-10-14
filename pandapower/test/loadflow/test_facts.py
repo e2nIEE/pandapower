@@ -48,13 +48,11 @@ def _many_tcsc_test_net():
 
     create_load(net, 3, 100, 40)
 
-    create_tcsc(net, 5, 2, xl, xc, -10, 160, "Test", controllable=True, min_angle_degree=90,
-                max_angle_degree=180)
-    create_tcsc(net, 1, 4, xl, xc, -5, 160, "Test", controllable=True, min_angle_degree=90,
-                max_angle_degree=180)
+    create_tcsc(net, 5, 2, xl, xc, -10, 160, "Test", controllable=True, min_angle_degree=90, max_angle_degree=180)
+    create_tcsc(net, 1, 4, xl, xc, -5, 160, "Test", controllable=True, min_angle_degree=90, max_angle_degree=180)
 
     create_svc(net, 3, 1, -10, 1.01, 144)
-    create_svc(net, 2, 1, -10, 1., 144)
+    create_svc(net, 2, 1, -10, 1.0, 144)
 
     create_ssc(net, 6, 0, 5, 1, controllable=True, in_service=True)
     return net
@@ -64,77 +62,107 @@ def compare_tcsc_impedance(net: pandapowerNet, net_ref: pandapowerNet, idx_tcsc,
     backup_q = net_ref.res_bus.loc[net.ssc.bus.values, "q_mvar"].copy()
     if "name" in net_ref.impedance.columns:
         net_ref.res_bus.loc[net.ssc.bus.values, "q_mvar"] += net_ref.res_impedance.loc[
-            net_ref.impedance.query("name=='ssc'").index, "q_from_mvar"].values
+            net_ref.impedance.query("name=='ssc'").index, "q_from_mvar"
+        ].values
     bus_idx = net.bus.index.values
     for col in ("vm_pu", "va_degree", "p_mw", "q_mvar"):
         assert np.allclose(net.res_bus[col], net_ref.res_bus.loc[bus_idx, col], rtol=0, atol=1e-6)
     assert np.allclose(net.res_ext_grid.p_mw, net_ref.res_ext_grid.p_mw, rtol=0, atol=1e-6)
     assert np.allclose(net.res_ext_grid.q_mvar, net_ref.res_ext_grid.q_mvar, rtol=0, atol=1e-6)
 
-    for col in "p_from_mw", "q_from_mvar", "p_to_mw", 'q_to_mvar':
-        assert np.allclose(net.res_tcsc.loc[idx_tcsc, col], net_ref.res_impedance.loc[idx_impedance, col],
-                           rtol=0, atol=1e-6)
-    assert np.allclose(net._ppc["internal"]["Ybus"].toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0,
-                       atol=1e-6)
+    for col in "p_from_mw", "q_from_mvar", "p_to_mw", "q_to_mvar":
+        assert np.allclose(
+            net.res_tcsc.loc[idx_tcsc, col], net_ref.res_impedance.loc[idx_impedance, col], rtol=0, atol=1e-6
+        )
+    assert np.allclose(
+        net._ppc["internal"]["Ybus"].toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0, atol=1e-6
+    )
     net_ref.res_bus.loc[net.ssc.bus.values, "q_mvar"] = backup_q
 
 
 def compare_ssc_impedance_gen(net, net_ref, element="ssc"):
     backup_q = net_ref.res_bus.loc[net[element].bus.values, "q_mvar"].copy()
     ### comparing the original buses in net and net_ref(witout the auxilary buses)
-    net_ref.res_bus.loc[net[element].bus.values, "q_mvar"] += \
-        net_ref.res_impedance.loc[net_ref.impedance.query(f"name=='{element}'").index, "q_from_mvar"].values
-    assert np.allclose(np.abs(net._ppc["internal"]["V"][net.bus.index]),
-                       np.abs(net_ref._ppc["internal"]["V"][net.bus.index]), rtol=0, atol=1e-6)
+    net_ref.res_bus.loc[net[element].bus.values, "q_mvar"] += net_ref.res_impedance.loc[
+        net_ref.impedance.query(f"name=='{element}'").index, "q_from_mvar"
+    ].values
+    assert np.allclose(
+        np.abs(net._ppc["internal"]["V"][net.bus.index]),
+        np.abs(net_ref._ppc["internal"]["V"][net.bus.index]),
+        rtol=0,
+        atol=1e-6,
+    )
 
     for col in net.res_bus.columns:
         assert np.allclose(net.res_bus[col][net.bus.index], net_ref.res_bus[col][net.bus.index], rtol=0, atol=1e-6)
 
     ### compare the internal bus at ssc and the auxilary bus at net_ref
     in_service = net[element].in_service.values
-    for i, j in zip(['vm_internal_pu', 'va_internal_degree'], ['vm_pu', 'va_degree']):
-        assert np.allclose(net[f"res_{element}"][i][in_service],
-                           net_ref.res_bus[j][len(net.bus):].values[in_service], rtol=0, atol=1e-6)
+    for i, j in zip(["vm_internal_pu", "va_internal_degree"], ["vm_pu", "va_degree"]):
+        assert np.allclose(
+            net[f"res_{element}"][i][in_service],
+            net_ref.res_bus[j][len(net.bus) :].values[in_service],
+            rtol=0,
+            atol=1e-6,
+        )
 
-    assert np.allclose(np.abs(net._ppc["internal"]["V"][len(net.bus):]),
-                       net_ref.res_bus.vm_pu[len(net.bus):][in_service], rtol=0, atol=1e-6)
-    assert np.allclose(np.angle(net._ppc["internal"]["V"][len(net.bus):], deg=True),
-                       net_ref.res_bus.va_degree[len(net.bus):][in_service], rtol=0, atol=1e-6)
+    assert np.allclose(
+        np.abs(net._ppc["internal"]["V"][len(net.bus) :]),
+        net_ref.res_bus.vm_pu[len(net.bus) :][in_service],
+        rtol=0,
+        atol=1e-6,
+    )
+    assert np.allclose(
+        np.angle(net._ppc["internal"]["V"][len(net.bus) :], deg=True),
+        net_ref.res_bus.va_degree[len(net.bus) :][in_service],
+        rtol=0,
+        atol=1e-6,
+    )
 
     # compare ext_grid_result
     for col in net.res_ext_grid.columns:
-        assert np.allclose(net.res_ext_grid[col][net.ext_grid.index], net_ref.res_ext_grid[col][net.ext_grid.index],
-                           rtol=0, atol=1e-6)
+        assert np.allclose(
+            net.res_ext_grid[col][net.ext_grid.index], net_ref.res_ext_grid[col][net.ext_grid.index], rtol=0, atol=1e-6
+        )
 
     # compare line results
     ###
     if "res_line" in net:
         for col in net.res_line.columns:
-            assert np.allclose(net.res_line[col][net.line.index], net_ref.res_line[col][net.line.index], rtol=0, atol=1e-6)
+            assert np.allclose(
+                net.res_line[col][net.line.index], net_ref.res_line[col][net.line.index], rtol=0, atol=1e-6
+            )
 
-    assert np.allclose(net._ppc["internal"]["Ybus"].toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0,
-                       atol=1e-6)
+    assert np.allclose(
+        net._ppc["internal"]["Ybus"].toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0, atol=1e-6
+    )
     net_ref.res_bus.loc[net[element].bus.values, "q_mvar"] = backup_q
-
 
 
 def copy_with_impedance(net):
     baseMVA = net.sn_mva  # MVA
     baseV = net.bus.vn_kv.values  # kV
     baseI = baseMVA / (baseV * np.sqrt(3))
-    baseZ = baseV ** 2 / baseMVA
+    baseZ = baseV**2 / baseMVA
 
     net_ref = copy.deepcopy(net)
     for i in net.tcsc.index.values:
-        create_impedance(net_ref, net.tcsc.from_bus.at[i], net.tcsc.to_bus.at[i], 0,
-                         net.res_tcsc.x_ohm.at[i] / baseZ[net.tcsc.to_bus.at[i]], baseMVA,
-                         in_service=net.tcsc.in_service.at[i], name="tcsc")
+        create_impedance(
+            net_ref,
+            net.tcsc.from_bus.at[i],
+            net.tcsc.to_bus.at[i],
+            0,
+            net.res_tcsc.x_ohm.at[i] / baseZ[net.tcsc.to_bus.at[i]],
+            baseMVA,
+            in_service=net.tcsc.in_service.at[i],
+            name="tcsc",
+        )
     net_ref.tcsc.in_service = False
 
     if len(net.svc) > 0:
         # create_loads(net_ref, net.svc.bus.values, 0, net.res_svc.q_mvar.values, in_service=net.svc.in_service.values)
         # create shunts because of Ybus comparison
-        q = np.square(net.bus.loc[net.svc.bus.values, 'vn_kv']) / net.res_svc.x_ohm.values
+        q = np.square(net.bus.loc[net.svc.bus.values, "vn_kv"]) / net.res_svc.x_ohm.values
         create_shunts(net_ref, net.svc.bus.values, q.fillna(0), in_service=net.svc.in_service.values, name="svc")
         net_ref.svc.in_service = False
 
@@ -143,8 +171,9 @@ def copy_with_impedance(net):
         in_service = net.ssc.in_service.values
         ssc_bus = net.ssc.bus.values
         aux_bus = create_buses(net_ref, len(net.ssc), net.bus.loc[ssc_bus, "vn_kv"].values)
-        for fb, tb, r, x, i in zip(ssc_bus, aux_bus, net.ssc.r_ohm.values / baseZ[ssc_bus],
-                                   net.ssc.x_ohm.values / baseZ[ssc_bus], in_service):
+        for fb, tb, r, x, i in zip(
+            ssc_bus, aux_bus, net.ssc.r_ohm.values / baseZ[ssc_bus], net.ssc.x_ohm.values / baseZ[ssc_bus], in_service
+        ):
             create_impedance(net_ref, fb, tb, r, x, baseMVA, name="ssc", in_service=i)
         if len(net.res_ssc) > 0:
             vm_pu = net.res_ssc.vm_internal_pu.fillna(1)
@@ -158,8 +187,9 @@ def copy_with_impedance(net):
         in_service = net.vsc.in_service.values
         vsc_bus = net.vsc.bus.values
         aux_bus = create_buses(net_ref, len(net.vsc), net.bus.loc[vsc_bus, "vn_kv"].values)
-        for fb, tb, r, x, i in zip(vsc_bus, aux_bus, net.vsc.r_ohm.values / baseZ[vsc_bus],
-                                   net.vsc.x_ohm.values / baseZ[vsc_bus], in_service):
+        for fb, tb, r, x, i in zip(
+            vsc_bus, aux_bus, net.vsc.r_ohm.values / baseZ[vsc_bus], net.vsc.x_ohm.values / baseZ[vsc_bus], in_service
+        ):
             create_impedance(net_ref, fb, tb, r, x, baseMVA, name="vsc", in_service=i)
         g = create_gens(net_ref, aux_bus, 0, net.res_vsc.vm_internal_pu.fillna(1), in_service=in_service)
         vsc_pv = net.vsc.control_mode_ac.values == "vm_pu"
@@ -178,7 +208,7 @@ def test_multiple_facts():
     # have the same from_bus or to_bus
     baseMVA = 100
     baseV = 110
-    baseZ = baseV ** 2 / baseMVA
+    baseZ = baseV**2 / baseMVA
     xl = 0.2
     xc = -15
 
@@ -192,7 +222,6 @@ def test_multiple_facts():
         20,
         {"r_ohm_per_km": 0.0487, "x_ohm_per_km": 0.13823, "c_nf_per_km": 160, "max_i_ka": 0.664},
     )
-
 
     create_load(net, 3, 100, 40)
 
@@ -256,7 +285,7 @@ def test_svc_tcsc_case_study():
     net = facts_case_study_grid()
     baseMVA = net.sn_mva
     baseV = 230
-    baseZ = baseV ** 2 / baseMVA
+    baseZ = baseV**2 / baseMVA
     xl = 0.2
     xc = -20
     # plot_z(baseZ, xl, xc)
@@ -268,7 +297,7 @@ def test_svc_tcsc_case_study():
 
     create_tcsc(net, f, aux, xl, xc, -100, 100, controllable=True)
 
-    create_svc(net, net.bus.loc[net.bus.name == "B7"].index.values[0], 1, -10, 1., 90)
+    create_svc(net, net.bus.loc[net.bus.name == "B7"].index.values[0], 1, -10, 1.0, 90)
 
     runpp(net, init="dc")
 
@@ -326,12 +355,34 @@ def facts_case_study_grid():
     # create_line_from_parameters(net,name="L9",from_bus=3,to_bus=4,length_km=100, r_ohm_per_km=0.312,
     # x_ohm_per_km=0.312,g_us_per_km=0,c_nf_per_km=11)
 
-    create_transformer_from_parameters(net, name="trafo1", hv_bus=b8, lv_bus=b1, sn_mva=192, vn_hv_kv=230,
-                                       vn_lv_kv=18, vkr_percent=0, vector_group="Yy0", pfe_kw=0, vk_percent=12,
-                                       i0_percent=0)
-    create_transformer_from_parameters(net, name="trafo2", hv_bus=b3, lv_bus=b2, sn_mva=500, vn_hv_kv=230,
-                                       vn_lv_kv=16.5, vkr_percent=0, vector_group="Yy0", pfe_kw=0, vk_percent=16,
-                                       i0_percent=0)
+    create_transformer_from_parameters(
+        net,
+        name="trafo1",
+        hv_bus=b8,
+        lv_bus=b1,
+        sn_mva=192,
+        vn_hv_kv=230,
+        vn_lv_kv=18,
+        vkr_percent=0,
+        vector_group="Yy0",
+        pfe_kw=0,
+        vk_percent=12,
+        i0_percent=0,
+    )
+    create_transformer_from_parameters(
+        net,
+        name="trafo2",
+        hv_bus=b3,
+        lv_bus=b2,
+        sn_mva=500,
+        vn_hv_kv=230,
+        vn_lv_kv=16.5,
+        vkr_percent=0,
+        vector_group="Yy0",
+        pfe_kw=0,
+        vk_percent=16,
+        i0_percent=0,
+    )
 
     create_gen(net, bus=b2, p_mw=500, vm_pu=1)
     # create_sgen(net,bus = 2, p_mw=500,name="WT")

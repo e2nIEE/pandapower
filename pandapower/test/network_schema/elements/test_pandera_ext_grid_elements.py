@@ -174,7 +174,6 @@ class TestExtGridOptionalFields:
                 itertools.product(["rx_min"], positiv_floats_plus_zero),
                 itertools.product(["r0x0_max"], positiv_floats_plus_zero),
                 itertools.product(["x0x_max"], positiv_floats_plus_zero),
-
                 itertools.product(["origin_id"], [pd.NA, *strings]),
                 itertools.product(["origin_class"], [pd.NA, *strings]),
                 itertools.product(["substation"], [pd.NA, *strings]),
@@ -240,8 +239,14 @@ class TestExtGridOptionalFields:
         net.ext_grid.loc[e0, parameter] = valid_value
 
         # Initialize CIM columns with proper dtype first
-        if parameter in ["origin_id", "origin_class", "substation", "terminal", "description",
-                         "RegulatingControl.mode"]:
+        if parameter in [
+            "origin_id",
+            "origin_class",
+            "substation",
+            "terminal",
+            "description",
+            "RegulatingControl.mode",
+        ]:
             # Initialize all CIM columns with default values first
             for col in ["origin_id", "origin_class", "substation", "terminal", "description", "RegulatingControl.mode"]:
                 if col not in net.ext_grid.columns:
@@ -279,7 +284,6 @@ class TestExtGridOptionalFields:
                 itertools.product(["rx_min"], [*negativ_floats, *not_floats_list]),
                 itertools.product(["r0x0_max"], [*negativ_floats, *not_floats_list]),
                 itertools.product(["x0x_max"], [*negativ_floats, *not_floats_list]),
-
                 itertools.product(["origin_id"], not_strings_list),
                 itertools.product(["origin_class"], not_strings_list),
                 itertools.product(["substation"], not_strings_list),

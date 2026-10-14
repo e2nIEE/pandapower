@@ -20,26 +20,28 @@ from pandapower.plotting.geo import convert_crs
 logger = logging.getLogger(__name__)
 
 
-def pf_res_plotly(net: pandapowerNet,
-                  cmap: str="Jet",
-                  use_line_geo=None,
-                  on_map: bool=False,
-                  projection: int|None=None,
-                  map_style: str='basic',
-                  figsize: int=1,
-                  aspectratio: str='auto',
-                  line_width: int=2,
-                  bus_size: int=10,
-                  climits_volt: tuple[float, float]=(0.9, 1.1),
-                  climits_load: tuple[float, float]=(0, 100),
-                  cpos_volt: float=1.0,
-                  cpos_load: float=1.1,
-                  filename: str="temp-plot.html",
-                  auto_open: bool=True,
-                  power_unit: Literal["", "k", "M"]="M",
-                  current_unit: Literal["", "k"]="k",
-                  voltage_unit: Literal["", "k"]="k",
-                  zoomlevel: int=11):
+def pf_res_plotly(
+    net: pandapowerNet,
+    cmap: str = "Jet",
+    use_line_geo=None,
+    on_map: bool = False,
+    projection: int | None = None,
+    map_style: str = "basic",
+    figsize: int = 1,
+    aspectratio: str = "auto",
+    line_width: int = 2,
+    bus_size: int = 10,
+    climits_volt: tuple[float, float] = (0.9, 1.1),
+    climits_load: tuple[float, float] = (0, 100),
+    cpos_volt: float = 1.0,
+    cpos_load: float = 1.1,
+    filename: str = "temp-plot.html",
+    auto_open: bool = True,
+    power_unit: Literal["", "k", "M"] = "M",
+    current_unit: Literal["", "k"] = "k",
+    voltage_unit: Literal["", "k"] = "k",
+    zoomlevel: int = 11,
+):
     """
     Plots a pandapower network in plotly
 
@@ -57,7 +59,7 @@ def pf_res_plotly(net: pandapowerNet,
         projection (String, None): defines a projection from which network geo-data will be transformed to lat-long.
             For each projection a string can be found at https://spatialreference.org/ref/epsg/
         map_style (str, 'basic'): enables using mapLibre plot in plotly
-            
+
             - 'basic'
             - 'carto-darkmatter'
             - 'carto-darkmatter-nolabels'
@@ -101,18 +103,17 @@ def pf_res_plotly(net: pandapowerNet,
             **figure** (graph_objs._figure.Figure) figure object
     """
     if "res_bus" not in net or net.res_bus.shape[0] == 0:
-        logger.warning(
-            'There are no Power Flow results. A Newton-Raphson power flow will be executed.')
+        logger.warning("There are no Power Flow results. A Newton-Raphson power flow will be executed.")
         runpp(net)
 
     # create geocoord if none are available
     if any(net.line.geo.isna()) and any(net.bus.geo.isna()):
-        logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
-                       " This may take some time")
+        logger.warning(
+            "No or insufficient geodata available --> Creating artificial coordinates." + " This may take some time"
+        )
         create_generic_coordinates(net, respect_switches=True)
         if on_map:
-            logger.warning(
-                "Map plots not available with artificial coordinates and will be disabled!")
+            logger.warning("Map plots not available with artificial coordinates and will be disabled!")
             on_map = False
 
     # for geo_type in ["bus_geodata", "line_geodata"]:
@@ -151,26 +152,55 @@ def pf_res_plotly(net: pandapowerNet,
         power_factor = 1e6
 
     hoverinfo = (
-        net.bus.name.astype(str) + '<br />' +
-        'V_m = ' + net.res_bus.vm_pu.round(precision).astype(str) + ' pu' + '<br />' +
-        'V_m = ' + (net.res_bus.vm_pu * net.bus.vn_kv.round(2) * voltage_factor).round(precision).astype(str) + ' ' + voltage_unit + 'V' + '<br />' +
-        'V_a = ' + net.res_bus.va_degree.round(precision).astype(str) + ' deg' + '<br />' +
-        'P = ' + (net.res_bus.p_mw * power_factor).round(precision).astype(str) + ' ' + power_unit + 'W' + '<br />' +
-        'Q = ' + (net.res_bus.q_mvar * power_factor).round(precision).astype(str) + ' ' + power_unit + 'Var').tolist()
+        net.bus.name.astype(str)
+        + "<br />"
+        + "V_m = "
+        + net.res_bus.vm_pu.round(precision).astype(str)
+        + " pu"
+        + "<br />"
+        + "V_m = "
+        + (net.res_bus.vm_pu * net.bus.vn_kv.round(2) * voltage_factor).round(precision).astype(str)
+        + " "
+        + voltage_unit
+        + "V"
+        + "<br />"
+        + "V_a = "
+        + net.res_bus.va_degree.round(precision).astype(str)
+        + " deg"
+        + "<br />"
+        + "P = "
+        + (net.res_bus.p_mw * power_factor).round(precision).astype(str)
+        + " "
+        + power_unit
+        + "W"
+        + "<br />"
+        + "Q = "
+        + (net.res_bus.q_mvar * power_factor).round(precision).astype(str)
+        + " "
+        + power_unit
+        + "Var"
+    ).tolist()
     hoverinfo = pd.Series(index=net.bus.index, data=hoverinfo)
-    bus_trace = create_bus_trace(net, net.bus.index, size=bus_size, infofunc=hoverinfo, cmap=cmap,
-                                 cbar_title='Bus Voltage [pu]', cmin=climits_volt[0], cmax=climits_volt[1],
-                                 cpos=cpos_volt)
+    bus_trace = create_bus_trace(
+        net,
+        net.bus.index,
+        size=bus_size,
+        infofunc=hoverinfo,
+        cmap=cmap,
+        cbar_title="Bus Voltage [pu]",
+        cmin=climits_volt[0],
+        cmax=climits_volt[1],
+        cpos=cpos_volt,
+    )
 
     # ----- Lines ------
     # if bus geodata is available, but no line geodata
     # if bus geodata is available, but no line geodata
-    cmap_lines = 'jet' if cmap == 'Jet' else cmap
+    cmap_lines = "jet" if cmap == "Jet" else cmap
     if use_line_geo is None:
         use_line_geo = False if any(net.line.geo.isna()) else True
     elif use_line_geo and any(net.line.geo.isna()):
-        logger.warning(
-            "No or insufficient line geodata available --> only bus geodata will be used.")
+        logger.warning("No or insufficient line geodata available --> only bus geodata will be used.")
         use_line_geo = False
 
     # hoverinfo that contains name and pf results
@@ -181,51 +211,137 @@ def pf_res_plotly(net: pandapowerNet,
         current_factor = 1e3
 
     hoverinfo = (
-        net.line.name.astype(str) + '<br />' +
-        'I = ' + net.res_line.loading_percent.round(precision).astype(str) + ' %' + '<br />' +
-        'I_from = ' + (net.res_line.i_from_ka * current_factor).round(precision).astype(str) + ' ' + current_unit + 'A' + '<br />' +
-        'I_to = ' + (net.res_line.i_to_ka * current_factor).round(precision).astype(str) + ' ' + current_unit + 'A' + '<br />' +
-        'P_from = ' + (net.res_line.p_from_mw * power_factor).round(precision).astype(str) + ' ' + power_unit + 'W' + '<br />' +
-        'P_to = ' + (net.res_line.p_to_mw * power_factor).round(precision).astype(str) + ' ' + power_unit + 'W' + '<br />' +
-        'Q_from = ' + (net.res_line.q_from_mvar * power_factor).round(precision).astype(str) + ' ' + power_unit + 'Var' + '<br />' +
-        'Q_to = ' + (net.res_line.q_to_mvar * power_factor).round(precision).astype(str) + ' ' + power_unit + 'Var').tolist()
+        net.line.name.astype(str)
+        + "<br />"
+        + "I = "
+        + net.res_line.loading_percent.round(precision).astype(str)
+        + " %"
+        + "<br />"
+        + "I_from = "
+        + (net.res_line.i_from_ka * current_factor).round(precision).astype(str)
+        + " "
+        + current_unit
+        + "A"
+        + "<br />"
+        + "I_to = "
+        + (net.res_line.i_to_ka * current_factor).round(precision).astype(str)
+        + " "
+        + current_unit
+        + "A"
+        + "<br />"
+        + "P_from = "
+        + (net.res_line.p_from_mw * power_factor).round(precision).astype(str)
+        + " "
+        + power_unit
+        + "W"
+        + "<br />"
+        + "P_to = "
+        + (net.res_line.p_to_mw * power_factor).round(precision).astype(str)
+        + " "
+        + power_unit
+        + "W"
+        + "<br />"
+        + "Q_from = "
+        + (net.res_line.q_from_mvar * power_factor).round(precision).astype(str)
+        + " "
+        + power_unit
+        + "Var"
+        + "<br />"
+        + "Q_to = "
+        + (net.res_line.q_to_mvar * power_factor).round(precision).astype(str)
+        + " "
+        + power_unit
+        + "Var"
+    ).tolist()
 
     hoverinfo = pd.Series(index=net.line.index, data=hoverinfo)
-    line_traces = create_line_trace(net, use_line_geo=use_line_geo, respect_switches=True,
-                                    width=line_width,
-                                    infofunc=hoverinfo,
-                                    cmap=cmap_lines,
-                                    cmap_vals=net.res_line['loading_percent'].values,
-                                    cmin=climits_load[0],
-                                    cmax=climits_load[1],
-                                    cbar_title='Line Loading [%]',
-                                    cpos=cpos_load)
+    line_traces = create_line_trace(
+        net,
+        use_line_geo=use_line_geo,
+        respect_switches=True,
+        width=line_width,
+        infofunc=hoverinfo,
+        cmap=cmap_lines,
+        cmap_vals=net.res_line["loading_percent"].values,
+        cmin=climits_load[0],
+        cmax=climits_load[1],
+        cbar_title="Line Loading [%]",
+        cpos=cpos_load,
+    )
 
     # ----- Trafos ------
     # hoverinfo which contains name and pf results
     hoverinfo = (
-        net.trafo.name.astype(str) + '<br />' +
-        'I = ' + net.res_trafo.loading_percent.round(precision).astype(str) + ' %' + '<br />' +
-        'I_hv = ' + (net.res_trafo.i_hv_ka * current_factor).round(precision).astype(str) + ' ' + current_unit + 'A' + '<br />' +
-        'I_lv = ' + (net.res_trafo.i_lv_ka * current_factor).round(precision).astype(str) + ' ' + current_unit + 'A' + '<br />' +
-        'P_hv = ' + (net.res_trafo.p_hv_mw * power_factor).round(precision).astype(str) + ' ' + power_unit + 'W' + '<br />' +
-        'P_lv = ' + (net.res_trafo.p_lv_mw * power_factor).round(precision).astype(str) + ' ' + power_unit + 'W' + '<br />' +
-        'Q_hv = ' + (net.res_trafo.q_hv_mvar * power_factor).round(precision).astype(str) + ' ' + power_unit + 'Var' + '<br />' +
-        'Q_lv = ' + (net.res_trafo.q_lv_mvar * power_factor).round(precision).astype(str) + ' ' + power_unit + 'Var' + '<br />').tolist()
+        net.trafo.name.astype(str)
+        + "<br />"
+        + "I = "
+        + net.res_trafo.loading_percent.round(precision).astype(str)
+        + " %"
+        + "<br />"
+        + "I_hv = "
+        + (net.res_trafo.i_hv_ka * current_factor).round(precision).astype(str)
+        + " "
+        + current_unit
+        + "A"
+        + "<br />"
+        + "I_lv = "
+        + (net.res_trafo.i_lv_ka * current_factor).round(precision).astype(str)
+        + " "
+        + current_unit
+        + "A"
+        + "<br />"
+        + "P_hv = "
+        + (net.res_trafo.p_hv_mw * power_factor).round(precision).astype(str)
+        + " "
+        + power_unit
+        + "W"
+        + "<br />"
+        + "P_lv = "
+        + (net.res_trafo.p_lv_mw * power_factor).round(precision).astype(str)
+        + " "
+        + power_unit
+        + "W"
+        + "<br />"
+        + "Q_hv = "
+        + (net.res_trafo.q_hv_mvar * power_factor).round(precision).astype(str)
+        + " "
+        + power_unit
+        + "Var"
+        + "<br />"
+        + "Q_lv = "
+        + (net.res_trafo.q_lv_mvar * power_factor).round(precision).astype(str)
+        + " "
+        + power_unit
+        + "Var"
+        + "<br />"
+    ).tolist()
     hoverinfo = pd.Series(index=net.trafo.index, data=hoverinfo)
-    trafo_traces = create_trafo_trace(net, width=line_width * 1.5, infofunc=hoverinfo,
-                                      cmap=cmap_lines, cmin=0, cmax=100)
+    trafo_traces = create_trafo_trace(
+        net, width=line_width * 1.5, infofunc=hoverinfo, cmap=cmap_lines, cmin=0, cmax=100
+    )
 
     # ----- Ext grid ------
     ext_grid_trace = []
     # get external grid from create_bus_trace
-    if 'ext_grid' in net and len(net.ext_grid):
-        marker_type = 'circle' if on_map else 'square'
-        ext_grid_trace = create_bus_trace(net, buses=net.ext_grid.bus,
-                                          color='grey', size=bus_size * 2, trace_name='external_grid',
-                                          patch_type=marker_type)
+    if "ext_grid" in net and len(net.ext_grid):
+        marker_type = "circle" if on_map else "square"
+        ext_grid_trace = create_bus_trace(
+            net,
+            buses=net.ext_grid.bus,
+            color="grey",
+            size=bus_size * 2,
+            trace_name="external_grid",
+            patch_type=marker_type,
+        )
 
-    return draw_traces(line_traces + trafo_traces + ext_grid_trace + bus_trace,
-                       showlegend=False, aspectratio=aspectratio, on_map=on_map,
-                       map_style=map_style, figsize=figsize, filename=filename,
-                       auto_open=auto_open,zoomlevel=zoomlevel)
+    return draw_traces(
+        line_traces + trafo_traces + ext_grid_trace + bus_trace,
+        showlegend=False,
+        aspectratio=aspectratio,
+        on_map=on_map,
+        map_style=map_style,
+        figsize=figsize,
+        filename=filename,
+        auto_open=auto_open,
+        zoomlevel=zoomlevel,
+    )

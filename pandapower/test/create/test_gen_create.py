@@ -8,6 +8,7 @@ from pandapower.create import create_bus, create_buses, create_gen, create_gens
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
+
 def test_create_gen():
     # Test basic generator creation with required parameters
     net = pandapowerNet(name="test_create_gen")
@@ -199,11 +200,11 @@ def test_create_gen_controllable():
     b1 = create_bus(net, 110)
     s1 = create_gen(net, b1, 50)
     # controllable column should not exist
-    assert 'controllable' not in net.gen.columns
+    assert "controllable" not in net.gen.columns
     s2 = create_gen(net, b1, 50, controllable=True)
     # controllable should be created with default value False
-    assert not net.gen.loc[s1, 'controllable']
-    assert net.gen.loc[s2, 'controllable']
+    assert not net.gen.loc[s1, "controllable"]
+    assert net.gen.loc[s2, "controllable"]
 
 
 def test_create_gens_controllable():
@@ -212,11 +213,11 @@ def test_create_gens_controllable():
     b1 = create_bus(net, 110)
     s1 = create_gens(net, [b1], 50)[0]
     # controllable column should not exist
-    assert 'controllable' not in net.gen.columns
+    assert "controllable" not in net.gen.columns
     s2 = create_gens(net, [b1], 50, controllable=True)[0]
     # controllable should be created with default value False
-    assert not net.gen.loc[s1, 'controllable']
-    assert net.gen.loc[s2, 'controllable']
+    assert not net.gen.loc[s1, "controllable"]
+    assert net.gen.loc[s2, "controllable"]
 
 
 def test_create_gens_raise_errorexcept():
@@ -226,9 +227,7 @@ def test_create_gens_raise_errorexcept():
     b2 = create_bus(net, 110)
     b3 = create_bus(net, 110)
 
-    with pytest.raises(
-            UserWarning, match=r"Cannot attach to buses \{3, 4, 5\}, they do not exist"
-    ):
+    with pytest.raises(UserWarning, match=r"Cannot attach to buses \{3, 4, 5\}, they do not exist"):
         create_gens(
             net,
             buses=[3, 4, 5],
@@ -286,6 +285,7 @@ def test_create_gens_raise_errorexcept():
 
     validate_network(net)
 
+
 def test_create_gen_uses_bus_voltage_limits_as_defaults():
     net = pandapowerNet(name="test_create_gen_uses_bus_voltage_limits_as_defaults")
     bus = create_bus(net, vn_kv=20.0, min_vm_pu=0.95, max_vm_pu=1.05)
@@ -326,4 +326,3 @@ def test_create_gens_use_bus_voltage_limits_as_defaults():
 
     assert np.allclose(net.gen.loc[gens, "min_vm_pu"].values, [0.95, 0.96])
     assert np.allclose(net.gen.loc[gens, "max_vm_pu"].values, [1.05, 1.06])
-

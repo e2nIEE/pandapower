@@ -14,7 +14,7 @@ from pandapower.create import (
     create_ssc,
     create_vsc,
     create_vsc_bipolar,
-    create_vsc_stacked
+    create_vsc_stacked,
 )
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
@@ -33,10 +33,18 @@ def test_create_shunt():
 
     # Test shunt with all optional parameters
     idx2 = create_shunt(
-        net, bus=b2, q_mvar=-10.0, p_mw=0.5, vn_kv=110.0,
-        step=2, max_step=5, name="test_shunt",
-        step_dependency_table=True, id_characteristic_table=1,
-        in_service=False, test_kwargs="dummy_string"
+        net,
+        bus=b2,
+        q_mvar=-10.0,
+        p_mw=0.5,
+        vn_kv=110.0,
+        step=2,
+        max_step=5,
+        name="test_shunt",
+        step_dependency_table=True,
+        id_characteristic_table=1,
+        in_service=False,
+        test_kwargs="dummy_string",
     )
     assert net.shunt.at[idx2, "bus"] == b2
     assert np.isclose(net.shunt.at[idx2, "q_mvar"], -10.0)
@@ -79,7 +87,8 @@ def test_create_shunts():
 
     # Test creating multiple shunts with list values
     indices2 = create_shunts(
-        net, buses=[b1, b2, b3],
+        net,
+        buses=[b1, b2, b3],
         q_mvar=[-10.0, -15.0, -5.0],
         p_mw=[0.5, 0.8, 0.2],
         step=[1, 2, 3],
@@ -128,9 +137,16 @@ def test_create_shunt_as_capacitor():
 
     # Test with additional kwargs passed to create_shunt
     idx3 = create_shunt_as_capacitor(
-        net, bus=b2, q_mvar=5.0, loss_factor=0.005,
-        name="capacitor_bank", vn_kv=20.0, step=3, max_step=10,
-        in_service=False, test_kwargs="dummy_string"
+        net,
+        bus=b2,
+        q_mvar=5.0,
+        loss_factor=0.005,
+        name="capacitor_bank",
+        vn_kv=20.0,
+        step=3,
+        max_step=10,
+        in_service=False,
+        test_kwargs="dummy_string",
     )
     assert net.shunt.at[idx3, "bus"] == b2
     assert np.isclose(net.shunt.at[idx3, "q_mvar"], -5.0)
@@ -191,10 +207,7 @@ def test_create_svc():
     b2 = create_bus(net, 110)
 
     # Test basic SVC creation with required parameters
-    idx = create_svc(
-        net, bus=b1, x_l_ohm=10.0, x_cvar_ohm=-20.0,
-        set_vm_pu=1.0, thyristor_firing_angle_degree=120.0
-    )
+    idx = create_svc(net, bus=b1, x_l_ohm=10.0, x_cvar_ohm=-20.0, set_vm_pu=1.0, thyristor_firing_angle_degree=120.0)
     assert net.svc.at[idx, "bus"] == b1
     assert np.isclose(net.svc.at[idx, "x_l_ohm"], 10.0)
     assert np.isclose(net.svc.at[idx, "x_cvar_ohm"], -20.0)
@@ -203,11 +216,18 @@ def test_create_svc():
 
     # Test SVC with all optional parameters
     idx2 = create_svc(
-        net, bus=b2, x_l_ohm=5.0, x_cvar_ohm=-15.0,
-        set_vm_pu=1.02, thyristor_firing_angle_degree=135.0,
-        name="test_svc", controllable=False, in_service=False,
-        min_angle_degree=100.0, max_angle_degree=170.0,
-        test_kwargs="dummy_string"
+        net,
+        bus=b2,
+        x_l_ohm=5.0,
+        x_cvar_ohm=-15.0,
+        set_vm_pu=1.02,
+        thyristor_firing_angle_degree=135.0,
+        name="test_svc",
+        controllable=False,
+        in_service=False,
+        min_angle_degree=100.0,
+        max_angle_degree=170.0,
+        test_kwargs="dummy_string",
     )
     assert net.svc.at[idx2, "bus"] == b2
     assert np.isclose(net.svc.at[idx2, "x_l_ohm"], 5.0)
@@ -223,19 +243,15 @@ def test_create_svc():
 
     # Test default values
     b3 = create_bus(net, 20)
-    idx3 = create_svc(
-        net, bus=b3, x_l_ohm=2.0, x_cvar_ohm=-5.0,
-        set_vm_pu=1.0, thyristor_firing_angle_degree=90.0
-    )
+    idx3 = create_svc(net, bus=b3, x_l_ohm=2.0, x_cvar_ohm=-5.0, set_vm_pu=1.0, thyristor_firing_angle_degree=90.0)
     assert net.svc.at[idx3, "controllable"] == True  # default
-    assert net.svc.at[idx3, "in_service"] == True   # default
-    assert np.isclose(net.svc.at[idx3, "min_angle_degree"], 90.0)   # default
+    assert net.svc.at[idx3, "in_service"] == True  # default
+    assert np.isclose(net.svc.at[idx3, "min_angle_degree"], 90.0)  # default
     assert np.isclose(net.svc.at[idx3, "max_angle_degree"], 180.0)  # default
 
     # Test custom index
     idx4 = create_svc(
-        net, bus=b1, x_l_ohm=3.0, x_cvar_ohm=-8.0,
-        set_vm_pu=1.0, thyristor_firing_angle_degree=100.0, index=10
+        net, bus=b1, x_l_ohm=3.0, x_cvar_ohm=-8.0, set_vm_pu=1.0, thyristor_firing_angle_degree=100.0, index=10
     )
     assert idx4 == 10
 
@@ -255,10 +271,17 @@ def test_create_ssc():
 
     # Test SSC with all optional parameters
     idx2 = create_ssc(
-        net, bus=b2, r_ohm=0.5, x_ohm=-5.0,
-        set_vm_pu=1.02, vm_internal_pu=1.05, va_internal_degree=5.0,
-        name="test_ssc", controllable=False, in_service=False,
-        test_kwargs="dummy_string"
+        net,
+        bus=b2,
+        r_ohm=0.5,
+        x_ohm=-5.0,
+        set_vm_pu=1.02,
+        vm_internal_pu=1.05,
+        va_internal_degree=5.0,
+        name="test_ssc",
+        controllable=False,
+        in_service=False,
+        test_kwargs="dummy_string",
     )
     assert net.ssc.at[idx2, "bus"] == b2
     assert np.isclose(net.ssc.at[idx2, "r_ohm"], 0.5)
@@ -293,10 +316,7 @@ def test_create_svc_nonexistent_bus():
 
     # Test that creating SVC on non-existent bus raises error
     with pytest.raises(UserWarning, match=r"Cannot attach to bus 5, 5 does not exist"):
-        create_svc(
-            net, bus=5, x_l_ohm=10.0, x_cvar_ohm=-20.0,
-            set_vm_pu=1.0, thyristor_firing_angle_degree=120.0
-        )
+        create_svc(net, bus=5, x_l_ohm=10.0, x_cvar_ohm=-20.0, set_vm_pu=1.0, thyristor_firing_angle_degree=120.0)
 
 
 def test_create_ssc_nonexistent_bus():
@@ -313,23 +333,18 @@ def test_create_svc_index_conflict():
     b1 = create_bus(net, 110)
 
     # Create first SVC
-    idx1 = create_svc(
-        net, bus=b1, x_l_ohm=10.0, x_cvar_ohm=-20.0,
-        set_vm_pu=1.0, thyristor_firing_angle_degree=120.0
-    )
+    idx1 = create_svc(net, bus=b1, x_l_ohm=10.0, x_cvar_ohm=-20.0, set_vm_pu=1.0, thyristor_firing_angle_degree=120.0)
     assert idx1 == 0
 
     # Test that creating SVC with same index raises error
     with pytest.raises(UserWarning, match=r"A svc with the id \d already exists"):
         create_svc(
-            net, bus=b1, x_l_ohm=5.0, x_cvar_ohm=-10.0,
-            set_vm_pu=1.0, thyristor_firing_angle_degree=120.0, index=0
+            net, bus=b1, x_l_ohm=5.0, x_cvar_ohm=-10.0, set_vm_pu=1.0, thyristor_firing_angle_degree=120.0, index=0
         )
 
     # Test that custom index works when available
     idx2 = create_svc(
-        net, bus=b1, x_l_ohm=3.0, x_cvar_ohm=-8.0,
-        set_vm_pu=1.0, thyristor_firing_angle_degree=100.0, index=5
+        net, bus=b1, x_l_ohm=3.0, x_cvar_ohm=-8.0, set_vm_pu=1.0, thyristor_firing_angle_degree=100.0, index=5
     )
     assert idx2 == 5
 
@@ -360,8 +375,7 @@ def test_create_vsc_stacked():
 
     # Test basic VSC stacked creation with required parameters
     idx = create_vsc_stacked(
-        net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus,
-        r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5
+        net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus, r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5
     )
     assert net.vsc_stacked.at[idx, "bus"] == b1
     assert net.vsc_stacked.at[idx, "bus_dc_plus"] == b_dc_plus
@@ -372,12 +386,22 @@ def test_create_vsc_stacked():
 
     # Test VSC stacked with all optional parameters
     idx2 = create_vsc_stacked(
-        net, bus=b2, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus,
-        r_ohm=0.5, x_ohm=5.0, r_dc_ohm=0.2,
-        pl_dc_mw=0.1, control_mode_ac="vm_pu", control_value_ac=1.02,
-        control_mode_dc="p_mw", control_value_dc=50.0,
-        name="test_vsc_stacked", controllable=False, in_service=False,
-        test_kwargs="dummy_string"
+        net,
+        bus=b2,
+        bus_dc_plus=b_dc_plus,
+        bus_dc_minus=b_dc_minus,
+        r_ohm=0.5,
+        x_ohm=5.0,
+        r_dc_ohm=0.2,
+        pl_dc_mw=0.1,
+        control_mode_ac="vm_pu",
+        control_value_ac=1.02,
+        control_mode_dc="p_mw",
+        control_value_dc=50.0,
+        name="test_vsc_stacked",
+        controllable=False,
+        in_service=False,
+        test_kwargs="dummy_string",
     )
     assert net.vsc_stacked.at[idx2, "bus"] == b2
     assert np.isclose(net.vsc_stacked.at[idx2, "r_ohm"], 0.5)
@@ -396,8 +420,7 @@ def test_create_vsc_stacked():
     # Test default values
     b3 = create_bus(net, 20)
     idx3 = create_vsc_stacked(
-        net, bus=b3, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus,
-        r_ohm=0.1, x_ohm=2.0, r_dc_ohm=0.1
+        net, bus=b3, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus, r_ohm=0.1, x_ohm=2.0, r_dc_ohm=0.1
     )
     assert np.isclose(net.vsc_stacked.at[idx3, "pl_dc_mw"], 0.0)  # default
     assert net.vsc_stacked.at[idx3, "control_mode_ac"] == "p_mw"  # default
@@ -405,12 +428,11 @@ def test_create_vsc_stacked():
     assert net.vsc_stacked.at[idx3, "control_mode_dc"] == "p_mw"  # default
     assert np.isclose(net.vsc_stacked.at[idx3, "control_value_dc"], 0.0)  # default
     assert net.vsc_stacked.at[idx3, "controllable"] == True  # default
-    assert net.vsc_stacked.at[idx3, "in_service"] == True   # default
+    assert net.vsc_stacked.at[idx3, "in_service"] == True  # default
 
     # Test custom index
     idx4 = create_vsc_stacked(
-        net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus,
-        r_ohm=0.2, x_ohm=3.0, r_dc_ohm=0.1, index=10
+        net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus, r_ohm=0.2, x_ohm=3.0, r_dc_ohm=0.1, index=10
     )
     assert idx4 == 10
 
@@ -426,8 +448,7 @@ def test_create_vsc_bipolar():
 
     # Test basic VSC bipolar creation with required parameters
     idx = create_vsc_bipolar(
-        net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus,
-        r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5
+        net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus, r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5
     )
     assert net.vsc_bipolar.at[idx, "bus"] == b1
     assert net.vsc_bipolar.at[idx, "bus_dc_plus"] == b_dc_plus
@@ -438,11 +459,21 @@ def test_create_vsc_bipolar():
 
     # Test VSC bipolar with all optional parameters
     idx2 = create_vsc_bipolar(
-        net, bus=b2, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus,
-        r_ohm=0.5, x_ohm=5.0, r_dc_ohm=0.2,
-        pl_dc_mw=0.1, control_mode="Vac_phi", control_value_1=1.02, control_value_2=5.0,
-        name="test_vsc_bipolar", controllable=False, in_service=False,
-        test_kwargs="dummy_string"
+        net,
+        bus=b2,
+        bus_dc_plus=b_dc_plus,
+        bus_dc_minus=b_dc_minus,
+        r_ohm=0.5,
+        x_ohm=5.0,
+        r_dc_ohm=0.2,
+        pl_dc_mw=0.1,
+        control_mode="Vac_phi",
+        control_value_1=1.02,
+        control_value_2=5.0,
+        name="test_vsc_bipolar",
+        controllable=False,
+        in_service=False,
+        test_kwargs="dummy_string",
     )
     assert net.vsc_bipolar.at[idx2, "bus"] == b2
     assert np.isclose(net.vsc_bipolar.at[idx2, "r_ohm"], 0.5)
@@ -460,20 +491,18 @@ def test_create_vsc_bipolar():
     # Test default values
     b3 = create_bus(net, 110)
     idx3 = create_vsc_bipolar(
-        net, bus=b3, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus,
-        r_ohm=0.1, x_ohm=2.0, r_dc_ohm=0.1
+        net, bus=b3, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus, r_ohm=0.1, x_ohm=2.0, r_dc_ohm=0.1
     )
     assert np.isclose(net.vsc_bipolar.at[idx3, "pl_dc_mw"], 0.0)  # default
     assert net.vsc_bipolar.at[idx3, "control_mode"] == "Vac_phi"  # default
     assert np.isclose(net.vsc_bipolar.at[idx3, "control_value_1"], 1.0)  # default
     assert np.isclose(net.vsc_bipolar.at[idx3, "control_value_2"], 0.0)  # default
     assert net.vsc_bipolar.at[idx3, "controllable"] == True  # default
-    assert net.vsc_bipolar.at[idx3, "in_service"] == True   # default
+    assert net.vsc_bipolar.at[idx3, "in_service"] == True  # default
 
     # Test custom index
     idx4 = create_vsc_bipolar(
-        net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus,
-        r_ohm=0.2, x_ohm=3.0, r_dc_ohm=0.1, index=10
+        net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus, r_ohm=0.2, x_ohm=3.0, r_dc_ohm=0.1, index=10
     )
     assert idx4 == 10
 
@@ -487,9 +516,7 @@ def test_create_vsc():
     b_dc = create_bus_dc(net, 100)
 
     # Test basic VSC creation with required parameters
-    idx = create_vsc(
-        net, bus=b1, bus_dc=b_dc, r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5
-    )
+    idx = create_vsc(net, bus=b1, bus_dc=b_dc, r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5)
     assert net.vsc.at[idx, "bus"] == b1
     assert net.vsc.at[idx, "bus_dc"] == b_dc
     assert np.isclose(net.vsc.at[idx, "r_ohm"], 1.0)
@@ -498,11 +525,22 @@ def test_create_vsc():
 
     # Test VSC with all optional parameters
     idx2 = create_vsc(
-        net, bus=b2, bus_dc=b_dc, r_ohm=0.5, x_ohm=5.0, r_dc_ohm=0.2,
-        pl_dc_mw=0.1, control_mode_ac="vm_pu", control_value_ac=1.02,
-        control_mode_dc="p_mw", control_value_dc=50.0,
-        name="test_vsc", controllable=False, in_service=False,
-        ref_bus=0, test_kwargs="dummy_string"
+        net,
+        bus=b2,
+        bus_dc=b_dc,
+        r_ohm=0.5,
+        x_ohm=5.0,
+        r_dc_ohm=0.2,
+        pl_dc_mw=0.1,
+        control_mode_ac="vm_pu",
+        control_value_ac=1.02,
+        control_mode_dc="p_mw",
+        control_value_dc=50.0,
+        name="test_vsc",
+        controllable=False,
+        in_service=False,
+        ref_bus=0,
+        test_kwargs="dummy_string",
     )
     assert net.vsc.at[idx2, "bus"] == b2
     assert net.vsc.at[idx2, "bus_dc"] == b_dc
@@ -522,21 +560,17 @@ def test_create_vsc():
 
     # Test default values
     b3 = create_bus(net, 110)
-    idx3 = create_vsc(
-        net, bus=b3, bus_dc=b_dc, r_ohm=0.1, x_ohm=2.0, r_dc_ohm=0.1
-    )
+    idx3 = create_vsc(net, bus=b3, bus_dc=b_dc, r_ohm=0.1, x_ohm=2.0, r_dc_ohm=0.1)
     assert np.isclose(net.vsc.at[idx3, "pl_dc_mw"], 0.0)  # default
     assert net.vsc.at[idx3, "control_mode_ac"] == "vm_pu"  # default
     assert np.isclose(net.vsc.at[idx3, "control_value_ac"], 1.0)  # default
     assert net.vsc.at[idx3, "control_mode_dc"] == "p_mw"  # default
     assert np.isclose(net.vsc.at[idx3, "control_value_dc"], 0.0)  # default
     assert net.vsc.at[idx3, "controllable"] == True  # default
-    assert net.vsc.at[idx3, "in_service"] == True   # default
+    assert net.vsc.at[idx3, "in_service"] == True  # default
 
     # Test custom index
-    idx4 = create_vsc(
-        net, bus=b1, bus_dc=b_dc, r_ohm=0.2, x_ohm=3.0, r_dc_ohm=0.1, index=10
-    )
+    idx4 = create_vsc(net, bus=b1, bus_dc=b_dc, r_ohm=0.2, x_ohm=3.0, r_dc_ohm=0.1, index=10)
     assert idx4 == 10
 
     validate_network(net)
@@ -551,8 +585,7 @@ def test_create_vsc_stacked_nonexistent_bus():
     # Test that creating VSC on non-existent AC bus raises error
     with pytest.raises(UserWarning, match=r"Cannot attach to bus 5, 5 does not exist"):
         create_vsc_stacked(
-            net, bus=5, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus,
-            r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5
+            net, bus=5, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus, r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5
         )
 
 
@@ -562,10 +595,7 @@ def test_create_vsc_stacked_nonexistent_dc_buses():
 
     # Test that creating VSC on non-existent DC buses raises error
     with pytest.raises(UserWarning, match=r"Cannot attach to bus_dc 5, 5 does not exist"):
-        create_vsc_stacked(
-            net, bus=b1, bus_dc_plus=5, bus_dc_minus=6,
-            r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5
-        )
+        create_vsc_stacked(net, bus=b1, bus_dc_plus=5, bus_dc_minus=6, r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5)
 
 
 def test_create_vsc_bipolar_nonexistent_bus():
@@ -577,8 +607,7 @@ def test_create_vsc_bipolar_nonexistent_bus():
     # Test that creating VSC bipolar on non-existent AC bus raises error
     with pytest.raises(UserWarning, match=r"Cannot attach to bus 5, 5 does not exist"):
         create_vsc_bipolar(
-            net, bus=5, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus,
-            r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5
+            net, bus=5, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus, r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5
         )
 
 
@@ -588,10 +617,7 @@ def test_create_vsc_bipolar_nonexistent_dc_buses():
 
     # Test that creating VSC bipolar on non-existent DC buses raises error
     with pytest.raises(UserWarning, match=r"Cannot attach to bus_dc 5, 5 does not exist"):
-        create_vsc_bipolar(
-            net, bus=b1, bus_dc_plus=5, bus_dc_minus=6,
-            r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5
-        )
+        create_vsc_bipolar(net, bus=b1, bus_dc_plus=5, bus_dc_minus=6, r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5)
 
 
 def test_create_vsc_nonexistent_bus():
@@ -620,22 +646,19 @@ def test_create_vsc_stacked_index_conflict():
 
     # Create first VSC stacked
     idx1 = create_vsc_stacked(
-        net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus,
-        r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5
+        net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus, r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5
     )
     assert idx1 == 0
 
     # Test that creating with same index raises error
     with pytest.raises(UserWarning, match=r"A vsc_stacked with the id \d already exists"):
         create_vsc_stacked(
-            net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus,
-            r_ohm=0.5, x_ohm=5.0, r_dc_ohm=0.2, index=0
+            net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus, r_ohm=0.5, x_ohm=5.0, r_dc_ohm=0.2, index=0
         )
 
     # Test that custom index works when available
     idx2 = create_vsc_stacked(
-        net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus,
-        r_ohm=0.2, x_ohm=3.0, r_dc_ohm=0.1, index=5
+        net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus, r_ohm=0.2, x_ohm=3.0, r_dc_ohm=0.1, index=5
     )
     assert idx2 == 5
 
@@ -648,22 +671,19 @@ def test_create_vsc_bipolar_index_conflict():
 
     # Create first VSC bipolar
     idx1 = create_vsc_bipolar(
-        net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus,
-        r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5
+        net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus, r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5
     )
     assert idx1 == 0
 
     # Test that creating with same index raises error
     with pytest.raises(UserWarning, match=r"A vsc_bipolar with the id \d already exists"):
         create_vsc_bipolar(
-            net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus,
-            r_ohm=0.5, x_ohm=5.0, r_dc_ohm=0.2, index=0
+            net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus, r_ohm=0.5, x_ohm=5.0, r_dc_ohm=0.2, index=0
         )
 
     # Test that custom index works when available
     idx2 = create_vsc_bipolar(
-        net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus,
-        r_ohm=0.2, x_ohm=3.0, r_dc_ohm=0.1, index=5
+        net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus, r_ohm=0.2, x_ohm=3.0, r_dc_ohm=0.1, index=5
     )
     assert idx2 == 5
 
@@ -674,19 +694,13 @@ def test_create_vsc_index_conflict():
     b_dc = create_bus_dc(net, 100)
 
     # Create first VSC
-    idx1 = create_vsc(
-        net, bus=b1, bus_dc=b_dc, r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5
-    )
+    idx1 = create_vsc(net, bus=b1, bus_dc=b_dc, r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5)
     assert idx1 == 0
 
     # Test that creating with same index raises error
     with pytest.raises(UserWarning, match=r"A vsc with the id \d already exists"):
-        create_vsc(
-            net, bus=b1, bus_dc=b_dc, r_ohm=0.5, x_ohm=5.0, r_dc_ohm=0.2, index=0
-        )
+        create_vsc(net, bus=b1, bus_dc=b_dc, r_ohm=0.5, x_ohm=5.0, r_dc_ohm=0.2, index=0)
 
     # Test that custom index works when available
-    idx2 = create_vsc(
-        net, bus=b1, bus_dc=b_dc, r_ohm=0.2, x_ohm=3.0, r_dc_ohm=0.1, index=5
-    )
+    idx2 = create_vsc(net, bus=b1, bus_dc=b_dc, r_ohm=0.2, x_ohm=3.0, r_dc_ohm=0.1, index=5)
     assert idx2 == 5

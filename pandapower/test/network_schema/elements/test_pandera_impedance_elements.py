@@ -13,7 +13,6 @@ from pandapower.network_schema.tools.validation.network_validation import valida
 from pandapower.test.network_schema.elements.helper import (
     all_allowed_floats,
     bools,
-    negativ_floats,
     negativ_floats_plus_zero,
     negativ_ints,
     not_boolean_list,

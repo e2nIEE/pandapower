@@ -32,22 +32,49 @@ logger = logging.getLogger(__name__)
 @pytest.fixture
 def simple_test_net():
     net = pandapowerNet(name="simple_test_net")
-    set_user_pf_options(net, init='dc', calculate_voltage_angles=True)
+    set_user_pf_options(net, init="dc", calculate_voltage_angles=True)
     b0, b1, b2, b3, b4 = create_buses(net, 5, [110, 110, 20, 20, 6])
 
     create_ext_grid(net, b0)
     create_lines(net, b0, b1, 10, "149-AL1/24-ST1A 110.0")
 
-    create_transformer(net, b1, b2, "25 MVA 110/20 kV", name='tr1')
+    create_transformer(net, b1, b2, "25 MVA 110/20 kV", name="tr1")
 
-    create_transformer3w_from_parameters(net, b1, b3, b4, 110, 20, 6, 1e2, 1e2, 1e1, 3, 2, 2, 1,
-                                         1, 1, 100, 1, 60, 30, 'hv', tap_step_percent=1.5,
-                                         tap_step_degree=0, tap_pos=0, tap_neutral=0, tap_max=10,
-                                         tap_min=-10, name='tr2', tap_changer_type="Ratio")
+    create_transformer3w_from_parameters(
+        net,
+        b1,
+        b3,
+        b4,
+        110,
+        20,
+        6,
+        1e2,
+        1e2,
+        1e1,
+        3,
+        2,
+        2,
+        1,
+        1,
+        1,
+        100,
+        1,
+        60,
+        30,
+        "hv",
+        tap_step_percent=1.5,
+        tap_step_degree=0,
+        tap_pos=0,
+        tap_neutral=0,
+        tap_max=10,
+        tap_min=-10,
+        name="tr2",
+        tap_changer_type="Ratio",
+    )
 
-    create_load(net, b2, 1.5e1, 1, name='trafo1')
-    create_load(net, b3, 3e1, 1.5, name='trafo2_mv')
-    create_load(net, b4, 2, -0.15, name='trafo2_lv')
+    create_load(net, b2, 1.5e1, 1, name="trafo1")
+    create_load(net, b3, 3e1, 1.5, name="trafo2_mv")
+    create_load(net, b4, 2, -0.15, name="trafo2_lv")
 
     return net
 
@@ -73,15 +100,15 @@ def create_rand_data_source(net, n_timesteps=10):
 
 def create_data_source(n_timesteps=10):
     profiles = pd.DataFrame()
-    profiles['load1'] = np.random.random(n_timesteps) * 2e1
-    profiles['load2_mv_p'] = np.random.random(n_timesteps) * 4e1
-    profiles['load2_mv_q'] = np.random.random(n_timesteps) * 1e1
+    profiles["load1"] = np.random.random(n_timesteps) * 2e1
+    profiles["load2_mv_p"] = np.random.random(n_timesteps) * 4e1
+    profiles["load2_mv_q"] = np.random.random(n_timesteps) * 1e1
 
-    profiles['load3_hv_p'] = profiles.load2_mv_p + abs(np.random.random())
-    profiles['load3_hv_q'] = profiles.load2_mv_q + abs(np.random.random())
+    profiles["load3_hv_p"] = profiles.load2_mv_p + abs(np.random.random())
+    profiles["load3_hv_q"] = profiles.load2_mv_q + abs(np.random.random())
 
-    profiles['slack_v'] = np.clip(np.random.random(n_timesteps) + 0.5, 0.8, 1.2)
-    profiles['trafo_v'] = np.clip(np.random.random(n_timesteps) + 0.5, 0.9, 1.1)
+    profiles["slack_v"] = np.clip(np.random.random(n_timesteps) + 0.5, 0.8, 1.2)
+    profiles["trafo_v"] = np.clip(np.random.random(n_timesteps) + 0.5, 0.9, 1.1)
 
     profiles["trafo_tap"] = np.random.randint(-3, 3, n_timesteps)
 
@@ -92,23 +119,23 @@ def create_data_source(n_timesteps=10):
 
 def setup_output_writer(net, time_steps):
     ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir())
-    ow.log_variable('load', 'p_mw')
-    ow.log_variable('res_bus', 'vm_pu')
-    ow.log_variable('res_trafo3w', 'p_hv_mw')
-    ow.log_variable('res_trafo3w', 'q_hv_mvar')
+    ow.log_variable("load", "p_mw")
+    ow.log_variable("res_bus", "vm_pu")
+    ow.log_variable("res_trafo3w", "p_hv_mw")
+    ow.log_variable("res_trafo3w", "q_hv_mvar")
     return ow
+
 
 def setup_output_streamer(net, time_steps):
     output_streamer = OutputStreamer(net, time_steps, output_path=tempfile.gettempdir())
-    output_streamer.log_variable('load', 'p_mw')
-    output_streamer.log_variable('res_bus', 'vm_pu')
-    output_streamer.log_variable('res_trafo3w', 'p_hv_mw')
-    output_streamer.log_variable('res_trafo3w', 'q_hv_mvar')
+    output_streamer.log_variable("load", "p_mw")
+    output_streamer.log_variable("res_bus", "vm_pu")
+    output_streamer.log_variable("res_trafo3w", "p_hv_mw")
+    output_streamer.log_variable("res_trafo3w", "q_hv_mvar")
     return output_streamer
 
 
-@pytest.fixture(params=[setup_output_writer, setup_output_streamer], 
-                ids=["OutputWriter", "OutputStreamer"])
+@pytest.fixture(params=[setup_output_writer, setup_output_streamer], ids=["OutputWriter", "OutputStreamer"])
 def output_setup(request):
     """Returns the method that creates the right output object for the test case."""
     return request.param
@@ -120,15 +147,14 @@ def test_const_control(simple_test_net, output_setup):
     time_steps = range(0, 10)
     ow = output_setup(net, time_steps)
 
-    ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1',
-                 scale_factor=0.85)
+    ConstControl(net, "load", "p_mw", element_index=0, data_source=ds, profile_name="load1", scale_factor=0.85)
 
-    ConstControl(net, 'ext_grid', 'vm_pu', element_index=0, data_source=ds, profile_name='slack_v')
+    ConstControl(net, "ext_grid", "vm_pu", element_index=0, data_source=ds, profile_name="slack_v")
 
     run_timeseries(net, time_steps, verbose=False)
 
-    assert np.all(np.isclose(profiles['load1'].values * 0.85, ow.output['load.p_mw'][0].values))
-    assert np.all(np.isclose(profiles['slack_v'].values, ow.output['res_bus.vm_pu'][0].values))
+    assert np.all(np.isclose(profiles["load1"].values * 0.85, ow.output["load.p_mw"][0].values))
+    assert np.all(np.isclose(profiles["slack_v"].values, ow.output["res_bus.vm_pu"][0].values))
 
 
 def test_switch_states_in_time_series(output_setup):
@@ -142,23 +168,22 @@ def test_switch_states_in_time_series(output_setup):
     n_timesteps = 5
     time_steps = range(n_timesteps)
     profiles = pd.DataFrame()
-    profiles['load1'] = np.linspace(0.05, 0.1, n_timesteps)
+    profiles["load1"] = np.linspace(0.05, 0.1, n_timesteps)
     profiles["switch_pos"] = np.random.randint(2, size=n_timesteps, dtype=bool)
     ds = DFData(profiles)
 
     ow = output_setup(net, time_steps)
-    ow.log_variable('res_line', 'pl_mw')
-    ow.log_variable('res_ext_grid', 'p_mw')
+    ow.log_variable("res_line", "pl_mw")
+    ow.log_variable("res_ext_grid", "p_mw")
 
-    ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1')
-    ConstControl(net, 'switch', 'closed', element_index=0, data_source=ds, profile_name='switch_pos')
+    ConstControl(net, "load", "p_mw", element_index=0, data_source=ds, profile_name="load1")
+    ConstControl(net, "switch", "closed", element_index=0, data_source=ds, profile_name="switch_pos")
 
     run_timeseries(net, time_steps, verbose=False)
 
     assert np.allclose(
-        profiles['load1'].values * profiles["switch_pos"].values + 0.1 + \
-        ow.output['res_line.pl_mw'].sum(axis=1).values,
-        ow.output['res_ext_grid.p_mw'][0].values
+        profiles["load1"].values * profiles["switch_pos"].values + 0.1 + ow.output["res_line.pl_mw"].sum(axis=1).values,
+        ow.output["res_ext_grid.p_mw"][0].values,
     )
 
 
@@ -168,21 +193,21 @@ def test_const_control_write_to_object_attribute(simple_test_net, output_setup):
     time_steps = range(0, 10)
     ow = output_setup(net, time_steps)
 
-    ContinuousTapControl(net, 0, 1., tol=1e-4, level=1, check_tap_bounds=False)
+    ContinuousTapControl(net, 0, 1.0, tol=1e-4, level=1, check_tap_bounds=False)
 
-    ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1',
-                 scale_factor=0.85)
+    ConstControl(net, "load", "p_mw", element_index=0, data_source=ds, profile_name="load1", scale_factor=0.85)
 
-    ConstControl(net, 'ext_grid', 'vm_pu', element_index=0, data_source=ds, profile_name='slack_v')
+    ConstControl(net, "ext_grid", "vm_pu", element_index=0, data_source=ds, profile_name="slack_v")
 
-    ConstControl(net, 'controller', 'object.vm_set_pu', element_index=0, data_source=ds, profile_name='trafo_v')
+    ConstControl(net, "controller", "object.vm_set_pu", element_index=0, data_source=ds, profile_name="trafo_v")
 
     run_timeseries(net, time_steps, verbose=False)
 
-    assert np.all(profiles['load1'].values * 0.85 == ow.output['load.p_mw'][0].values)
-    assert np.all(profiles['slack_v'].values == ow.output['res_bus.vm_pu'][0].values)
-    assert np.allclose(profiles['trafo_v'].values, ow.output['res_bus.vm_pu'][net.trafo.at[0, 'lv_bus']].values,
-                       atol=1e-3, rtol=0)
+    assert np.all(profiles["load1"].values * 0.85 == ow.output["load.p_mw"][0].values)
+    assert np.all(profiles["slack_v"].values == ow.output["res_bus.vm_pu"][0].values)
+    assert np.allclose(
+        profiles["trafo_v"].values, ow.output["res_bus.vm_pu"][net.trafo.at[0, "lv_bus"]].values, atol=1e-3, rtol=0
+    )
 
 
 def test_false_alarm_trafos(simple_test_net):
@@ -193,16 +218,18 @@ def test_false_alarm_trafos(simple_test_net):
     diagnostic_logger.addHandler(h)
 
     ContinuousTapControl(net, 0, 1)
-    ContinuousTapControl(net, 0, 1, trafotype='3W')
+    ContinuousTapControl(net, 0, 1, trafotype="3W")
 
-    if 'convergence problems' in s.getvalue():
-        raise UserWarning('Control diagnostic raises false alarm! Controllers are fine, '
-                          'but warning is raised: %s' % s.getvalue())
+    if "convergence problems" in s.getvalue():
+        raise UserWarning(
+            "Control diagnostic raises false alarm! Controllers are fine, but warning is raised: %s" % s.getvalue()
+        )
 
     control_diagnostic(net)
-    if 'convergence problems' in s.getvalue():
-        raise UserWarning('Control diagnostic raises false alarm! Controllers are fine, '
-                          'but warning is raised: %s' % s.getvalue())
+    if "convergence problems" in s.getvalue():
+        raise UserWarning(
+            "Control diagnostic raises false alarm! Controllers are fine, but warning is raised: %s" % s.getvalue()
+        )
 
     diagnostic_logger.removeHandler(h)
     del h
@@ -219,29 +246,36 @@ def test_timeseries_results(simple_test_net):
     profiles, ds = create_data_source(n_timesteps)
 
     # 1load
-    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
-                 data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"],
-                 scale_factor=0.5)
+    ConstControl(
+        net,
+        element="load",
+        variable="p_mw",
+        element_index=[0, 1, 2],
+        data_source=ds,
+        profile_name=["load1", "load2_mv_p", "load3_hv_p"],
+        scale_factor=0.5,
+    )
 
     time_steps = range(0, n_timesteps)
     ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
-    ow.log_variable('res_load', 'p_mw')
-    ow.log_variable('res_bus', 'vm_pu')
+    ow.log_variable("res_load", "p_mw")
+    ow.log_variable("res_bus", "vm_pu")
 
-    ow.log_variable('res_line', 'loading_percent')
-    ow.log_variable('res_line', 'i_ka')
+    ow.log_variable("res_line", "loading_percent")
+    ow.log_variable("res_line", "i_ka")
     run_timeseries(net, time_steps, verbose=False)
-    assert np.allclose(ow.output['res_load.p_mw'].sum().values * 2,
-                       profiles[["load1", "load2_mv_p", "load3_hv_p"]].sum().values)
+    assert np.allclose(
+        ow.output["res_load.p_mw"].sum().values * 2, profiles[["load1", "load2_mv_p", "load3_hv_p"]].sum().values
+    )
 
     # 3load - @Rieke What is this test for compared to the first one?
     # @Flo in / out of service testen ...
-    ow.log_variable('res_load', 'p_mw')
+    ow.log_variable("res_load", "p_mw")
     net.controller.in_service = False  # set the first controller out of service
-    ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1')
+    ConstControl(net, "load", "p_mw", element_index=0, data_source=ds, profile_name="load1")
 
     run_timeseries(net, time_steps, verbose=False)
-    assert np.allclose(ow.output['res_load.p_mw'][0].sum(), profiles["load1"].sum())
+    assert np.allclose(ow.output["res_load.p_mw"][0].sum(), profiles["load1"].sum())
 
 
 def test_timeseries_var_func(simple_test_net):
@@ -254,15 +288,21 @@ def test_timeseries_var_func(simple_test_net):
     _, ds = create_data_source(n_timesteps)
 
     # 1load
-    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
-                 data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"],
-                 scale_factor=0.5)
+    ConstControl(
+        net,
+        element="load",
+        variable="p_mw",
+        element_index=[0, 1, 2],
+        data_source=ds,
+        profile_name=["load1", "load2_mv_p", "load3_hv_p"],
+        scale_factor=0.5,
+    )
 
     time_steps = range(0, n_timesteps)
     ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
-    ow.log_variable('res_load', 'p_mw', eval_function=np.max)
-    ow.log_variable('res_bus', 'vm_pu', eval_function=np.min)
-    ow.log_variable('res_bus', 'q_mvar', eval_function=np.sum)
+    ow.log_variable("res_load", "p_mw", eval_function=np.max)
+    ow.log_variable("res_bus", "vm_pu", eval_function=np.min)
+    ow.log_variable("res_bus", "q_mvar", eval_function=np.sum)
 
     run_timeseries(net, time_steps, verbose=False)
     # asserts if last value of output_writers output is the minimum value
@@ -275,15 +315,17 @@ def test_timeseries_var_func(simple_test_net):
     hv_busses_index = net.bus.loc[mask].index
     mask = (net.bus.vn_kv > 1.0) & (net.bus.vn_kv < 70.0)
     mv_busses_index = net.bus.loc[mask].index
-    ow.log_variable('res_bus', 'vm_pu', index=hv_busses_index, eval_function=np.min,
-                    eval_name="hv_bus_min")
-    ow.log_variable('res_bus', 'vm_pu', index=mv_busses_index, eval_function=np.min,
-                    eval_name="mv_bus_min")
+    ow.log_variable("res_bus", "vm_pu", index=hv_busses_index, eval_function=np.min, eval_name="hv_bus_min")
+    ow.log_variable("res_bus", "vm_pu", index=mv_busses_index, eval_function=np.min, eval_name="mv_bus_min")
     run_timeseries(net, time_steps, verbose=False)
-    assert net["res_bus"].loc[hv_busses_index, "vm_pu"].min() == ow.output["res_bus.vm_pu"].loc[
-        time_steps[-1], "hv_bus_min"]
-    assert net["res_bus"].loc[mv_busses_index, "vm_pu"].min() == ow.output["res_bus.vm_pu"].loc[
-        time_steps[-1], "mv_bus_min"]
+    assert (
+        net["res_bus"].loc[hv_busses_index, "vm_pu"].min()
+        == ow.output["res_bus.vm_pu"].loc[time_steps[-1], "hv_bus_min"]
+    )
+    assert (
+        net["res_bus"].loc[mv_busses_index, "vm_pu"].min()
+        == ow.output["res_bus.vm_pu"].loc[time_steps[-1], "mv_bus_min"]
+    )
 
 
 def test_time_steps(simple_test_net):
@@ -291,8 +333,14 @@ def test_time_steps(simple_test_net):
     n_timesteps = 11
     _, ds = create_data_source(n_timesteps)
     # 1load
-    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
-                 data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
+    ConstControl(
+        net,
+        element="load",
+        variable="p_mw",
+        element_index=[0, 1, 2],
+        data_source=ds,
+        profile_name=["load1", "load2_mv_p", "load3_hv_p"],
+    )
 
     # correct
     run_timeseries(net, time_steps=range(0, n_timesteps), verbose=False)
@@ -311,18 +359,23 @@ def test_output_dump_after_time(simple_test_net):
     _, ds = create_data_source(n_timesteps)
 
     # 1load
-    ConstControl(net, element='load', variable='p_mw', element_index=[0, 1, 2],
-                 data_source=ds, profile_name=["load1", "load2_mv_p", "load3_hv_p"])
+    ConstControl(
+        net,
+        element="load",
+        variable="p_mw",
+        element_index=[0, 1, 2],
+        data_source=ds,
+        profile_name=["load1", "load2_mv_p", "load3_hv_p"],
+    )
 
     time_steps = range(0, n_timesteps)
     # write output after 0.1 minutes to disk
-    ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json",
-                      write_time=0.05)
-    ow.log_variable('res_load', 'p_mw')
-    ow.log_variable('res_bus', 'vm_pu')
+    ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json", write_time=0.05)
+    ow.log_variable("res_load", "p_mw")
+    ow.log_variable("res_bus", "vm_pu")
 
-    ow.log_variable('res_line', 'loading_percent')
-    ow.log_variable('res_line', 'i_ka')
+    ow.log_variable("res_line", "loading_percent")
+    ow.log_variable("res_line", "i_ka")
     run_timeseries(net, time_steps, verbose=False)
     # ToDo: read partially dumped results and compare with all stored results
 
@@ -333,10 +386,9 @@ def test_pf_options(simple_test_net, output_setup):
     time_steps = range(0, 3)
     ow = output_setup(net, time_steps)
 
-    ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1',
-                 scale_factor=0.85)
+    ConstControl(net, "load", "p_mw", element_index=0, data_source=ds, profile_name="load1", scale_factor=0.85)
 
-    ConstControl(net, 'ext_grid', 'vm_pu', element_index=0, data_source=ds, profile_name='slack_v')
+    ConstControl(net, "ext_grid", "vm_pu", element_index=0, data_source=ds, profile_name="slack_v")
 
     run_timeseries(net, time_steps, verbose=False, distributed_slack=True)
     assert net._options["distributed_slack"]
@@ -348,10 +400,9 @@ def test_user_pf_options(simple_test_net, output_setup):
     time_steps = range(0, 3)
     ow = output_setup(net, time_steps)
 
-    ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1',
-                 scale_factor=0.85)
+    ConstControl(net, "load", "p_mw", element_index=0, data_source=ds, profile_name="load1", scale_factor=0.85)
 
-    ConstControl(net, 'ext_grid', 'vm_pu', element_index=0, data_source=ds, profile_name='slack_v')
+    ConstControl(net, "ext_grid", "vm_pu", element_index=0, data_source=ds, profile_name="slack_v")
 
     set_user_pf_options(net, distributed_slack=True)
     run_timeseries(net, time_steps, verbose=False)
@@ -369,10 +420,9 @@ def test_user_pf_options_init_run(simple_test_net, output_setup):
     time_steps = range(0, 3)
     ow = output_setup(net, time_steps)
 
-    ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1',
-                 scale_factor=0.85)
+    ConstControl(net, "load", "p_mw", element_index=0, data_source=ds, profile_name="load1", scale_factor=0.85)
 
-    ConstControl(net, 'ext_grid', 'vm_pu', element_index=0, data_source=ds, profile_name='slack_v')
+    ConstControl(net, "ext_grid", "vm_pu", element_index=0, data_source=ds, profile_name="slack_v")
 
     runpp(net)
 
@@ -387,10 +437,9 @@ def test_user_pf_options_recycle_manual(simple_test_net, output_setup):
     time_steps = range(0, 3)
     ow = output_setup(net, time_steps)
 
-    ConstControl(net, 'load', 'p_mw', element_index=0, data_source=ds, profile_name='load1',
-                 scale_factor=0.85)
+    ConstControl(net, "load", "p_mw", element_index=0, data_source=ds, profile_name="load1", scale_factor=0.85)
 
-    ConstControl(net, 'ext_grid', 'vm_pu', element_index=0, data_source=ds, profile_name='slack_v')
+    ConstControl(net, "ext_grid", "vm_pu", element_index=0, data_source=ds, profile_name="slack_v")
 
     runpp(net)
 
@@ -399,5 +448,5 @@ def test_user_pf_options_recycle_manual(simple_test_net, output_setup):
     assert net._options["distributed_slack"]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

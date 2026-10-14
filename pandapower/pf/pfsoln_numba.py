@@ -6,11 +6,10 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-"""Updates bus, gen, branch data structures to match power flow soln.
-"""
+"""Updates bus, gen, branch data structures to match power flow soln."""
 
 from numpy import conj, zeros, complex128, abs, float64, sqrt, real, isin, arange
-from numpy import finfo, c_, flatnonzero as find, setdiff1d, r_, int64
+from numpy import finfo, c_, flatnonzero as find, setdiff1d, int64
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, PF, PT, QF, QT
 from pandapower.pypower.idx_bus import PD, QD
@@ -24,7 +23,8 @@ from pandapower.auxiliary import version_check
 
 try:
     from numba import jit
-    version_check('numba')
+
+    version_check("numba")
 except ImportError:
     from pandapower.pf.no_numba import jit
 
@@ -32,7 +32,7 @@ EPS = finfo(float).eps  # type: ignore[var-annotated]
 
 
 def pfsoln(
-        baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, limited_gens=None
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, limited_gens=None
 ):
     """
     Updates bus, gen, branch data structures to match power flow soln.
@@ -67,8 +67,9 @@ def pfsoln(
     return bus, gen, branch
 
 
-def pf_solution_single_slack(baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens,
-                             Ibus=None, limited_gens=None):
+def pf_solution_single_slack(
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, Ybus, Yf, Yt, V, ref, ref_gens, Ibus=None, limited_gens=None
+):
     """
     faster version of pfsoln for a grid with a single slack bus
 
@@ -112,7 +113,6 @@ def _update_branch_flows(Yf, Yt, V, baseMVA, branch):
 
 @jit(nopython=True, cache=False)
 def calc_branch_flows(Yy_x, Yy_p, Yy_j, v, baseMVA, dim_x, bus_ind):  # pragma: no cover
-
     Sx = zeros(dim_x, dtype=complex128)
 
     # iterate through sparse matrix and get Sx = conj(Y_kj* V[j])

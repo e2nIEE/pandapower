@@ -31,7 +31,7 @@ def _bus_geojson_to_geodata_(_net):
     _net["bus_geodata"] = pd.DataFrame(
         _net.bus.geo.dropna().apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list(),
         index=_net.bus.geo.dropna().index,
-        columns=["x", "y"]
+        columns=["x", "y"],
     )
     _net["bus_geodata"]["coords"] = math.nan
     _net.bus_geodata.coords = _net.bus_geodata.coords.astype("object")
@@ -39,12 +39,18 @@ def _bus_geojson_to_geodata_(_net):
 
 
 def _line_geojson_to_geodata_(_net):
-    _net["line_geodata"] = _net.line.geo.dropna().apply(geojson.loads).apply(geojson.utils.coords).apply(
-        list).to_frame().rename(columns={"geo": "coords"})
+    _net["line_geodata"] = (
+        _net.line.geo.dropna()
+        .apply(geojson.loads)
+        .apply(geojson.utils.coords)
+        .apply(list)
+        .to_frame()
+        .rename(columns={"geo": "coords"})
+    )
     _net.line.drop("geo", axis=1, inplace=True)
 
 
-@pytest.fixture(name='net', params=(create_test_network(), mv_oberrhein()))
+@pytest.fixture(name="net", params=(create_test_network(), mv_oberrhein()))
 def test_network(request):
     """
     Fixture which yields different networks for testing.
@@ -82,8 +88,9 @@ def test__node_geometries_from_geodata(get_network_and_result):
     left2 = result.select_dtypes(exclude="geometry")
     right2 = expected.select_dtypes(exclude="geometry")
     assert_index_equal(result.columns, expected.columns, exact="equiv", obj="GeoDataFrame.columns")
-    assert_frame_equal(left2, right2, check_dtype=True, check_index_type="equiv", check_column_type="equiv",
-                       obj="GeoDataFrame")
+    assert_frame_equal(
+        left2, right2, check_dtype=True, check_index_type="equiv", check_column_type="equiv", obj="GeoDataFrame"
+    )
 
 
 @pytest.mark.xfail
@@ -99,14 +106,17 @@ def test__branch_geometries_from_geodata(get_network_and_result):
     # can't be adapted
     assert result.shape == expected.shape
     assert isinstance(result, type(expected))
-    assert (result.geom_equals_exact(expected.geometry, tolerance=1 * 10 ** (-6)) |
-            (result.geometry.is_empty & expected.geometry.is_empty) |
-            (result.geometry.isna() & expected.geometry.isna())).all()
+    assert (
+        result.geom_equals_exact(expected.geometry, tolerance=1 * 10 ** (-6))
+        | (result.geometry.is_empty & expected.geometry.is_empty)
+        | (result.geometry.isna() & expected.geometry.isna())
+    ).all()
     left2 = result.select_dtypes(exclude="geometry")
     right2 = expected.select_dtypes(exclude="geometry")
     assert_index_equal(result.columns, expected.columns, exact="equiv", obj="GeoDataFrame.columns")
-    assert_frame_equal(left2, right2, check_dtype=True, check_index_type="equiv", check_column_type="equiv",
-                       obj="GeoDataFrame")
+    assert_frame_equal(
+        left2, right2, check_dtype=True, check_index_type="equiv", check_column_type="equiv", obj="GeoDataFrame"
+    )
 
 
 @pytest.mark.xfail
@@ -123,14 +133,18 @@ def test__transform_node_geometry_to_geodata(get_network_and_result):
     # can't be adapted
     assert result.shape == expected.shape
     assert isinstance(result, type(expected))
-    assert (result.geom_equals_exact(expected.geometry, tolerance=1 * 10 ** (-6)) |
-            (result.geometry.is_empty & expected.geometry.is_empty) |
-            (result.geometry.isna() & expected.geometry.isna())).all()
+    assert (
+        result.geom_equals_exact(expected.geometry, tolerance=1 * 10 ** (-6))
+        | (result.geometry.is_empty & expected.geometry.is_empty)
+        | (result.geometry.isna() & expected.geometry.isna())
+    ).all()
     left2 = result.select_dtypes(exclude="geometry")
     right2 = expected.select_dtypes(exclude="geometry")
     assert_index_equal(result.columns, expected.columns, exact="equiv", obj="GeoDataFrame.columns")
-    assert_frame_equal(left2, right2, check_dtype=True, check_index_type="equiv", check_column_type="equiv",
-                       obj="GeoDataFrame")
+    assert_frame_equal(
+        left2, right2, check_dtype=True, check_index_type="equiv", check_column_type="equiv", obj="GeoDataFrame"
+    )
+
 
 @pytest.mark.xfail
 def test__transform_branch_geometry_to_coords(get_network_and_result):
@@ -145,14 +159,17 @@ def test__transform_branch_geometry_to_coords(get_network_and_result):
     # can't be adapted
     assert result.shape == expected.shape
     assert isinstance(result, type(expected))
-    assert (result.geom_equals_exact(expected.geometry, tolerance=1 * 10 ** (-6)) |
-            (result.geometry.is_empty & expected.geometry.is_empty) |
-            (result.geometry.isna() & expected.geometry.isna())).all()
+    assert (
+        result.geom_equals_exact(expected.geometry, tolerance=1 * 10 ** (-6))
+        | (result.geometry.is_empty & expected.geometry.is_empty)
+        | (result.geometry.isna() & expected.geometry.isna())
+    ).all()
     left2 = result.select_dtypes(exclude="geometry")
     right2 = expected.select_dtypes(exclude="geometry")
     assert_index_equal(result.columns, expected.columns, exact="equiv", obj="GeoDataFrame.columns")
-    assert_frame_equal(left2, right2, check_dtype=True, check_index_type="equiv", check_column_type="equiv",
-                       obj="GeoDataFrame")
+    assert_frame_equal(
+        left2, right2, check_dtype=True, check_index_type="equiv", check_column_type="equiv", obj="GeoDataFrame"
+    )
 
 
 def test__convert_xy_epsg():
@@ -176,6 +193,7 @@ def test__convert_xy_epsg():
     assert result_x == pytest.approx(expected_x)
     assert result_y == pytest.approx(expected_y)
 
+
 def test_convert_epsg_bus_geodata():
     pytest.skip("Not implemented")
 
@@ -183,11 +201,13 @@ def test_convert_epsg_bus_geodata():
 def test_convert_crs():
     pytest.skip("Not implemented")
 
+
 def test_convert_crs__bus_only():
     def get_net_with_bus_geo():
         net = mv_oberrhein()
         net.line.geo = None
         return net
+
     # Test with geojson
     net = get_net_with_bus_geo()
     convert_crs(net)
@@ -206,10 +226,11 @@ def test_convert_crs__bus_only():
     net = get_net_with_bus_geo()
     _bus_geojson_to_geodata_(net)
     for index, row in net.bus_geodata.iterrows():
-        net.bus_geodata.at[index, 'coords'] = [(row['x'], row['y']), (row['x'], row['y'])]
+        net.bus_geodata.at[index, "coords"] = [(row["x"], row["y"]), (row["x"], row["y"])]
     convert_crs(net)
     assert "coords" in net.bus_geodata.columns
     assert not (pd.isna(net.bus_geodata.coords)).any()
+
 
 def test_convert_crs__branch_only():
     net = mv_oberrhein()
@@ -217,6 +238,7 @@ def test_convert_crs__branch_only():
     convert_crs(net)
     _line_geojson_to_geodata_(net)
     convert_crs(net)
+
 
 def test_dump_to_geojson():
     pytest.importorskip("geojson")
@@ -332,9 +354,9 @@ def test_convert_geodata_to_geojson():
     convert_geodata_to_geojson(_net)
 
     # Überprüfe die Ergebnisse
-    assert _net.bus.at[0, "geo"] == geojson.dumps(geojson.Point((10., 20.)), sort_keys=True)
-    assert _net.bus.at[1, "geo"] == geojson.dumps(geojson.Point((30., 40.)), sort_keys=True)
-    assert _net.line.at[0, "geo"] == geojson.dumps(geojson.LineString([(10., 20.), (30., 40.)]), sort_keys=True)
+    assert _net.bus.at[0, "geo"] == geojson.dumps(geojson.Point((10.0, 20.0)), sort_keys=True)
+    assert _net.bus.at[1, "geo"] == geojson.dumps(geojson.Point((30.0, 40.0)), sort_keys=True)
+    assert _net.line.at[0, "geo"] == geojson.dumps(geojson.LineString([(10.0, 20.0), (30.0, 40.0)]), sort_keys=True)
     # TODO: Test could be more exhaustive (e.g. test delete=False, lonlat=True, geo_str=False)
 
 

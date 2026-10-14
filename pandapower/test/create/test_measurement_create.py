@@ -4,10 +4,7 @@
 import pytest
 import numpy as np
 
-from pandapower.create import (
-    create_bus, create_line_from_parameters,
-    create_load, create_gen, create_measurement
-)
+from pandapower.create import create_bus, create_line_from_parameters, create_load, create_gen, create_measurement
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
@@ -66,8 +63,7 @@ def test_create_measurement_line_with_side():
     b1 = create_bus(net, 110.0)
     b2 = create_bus(net, 110.0)
     create_line_from_parameters(
-        net, b1, b2, length_km=10.0, r_ohm_per_km=0.1,
-        x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1.0
+        net, b1, b2, length_km=10.0, r_ohm_per_km=0.1, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1.0
     )
 
     # Create measurement on "from" side of line
@@ -123,8 +119,7 @@ def test_create_measurement_missing_side_for_line():
     b1 = create_bus(net, 110.0)
     b2 = create_bus(net, 110.0)
     create_line_from_parameters(
-        net, b1, b2, length_km=10.0, r_ohm_per_km=0.1,
-        x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1.0
+        net, b1, b2, length_km=10.0, r_ohm_per_km=0.1, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1.0
     )
 
     with pytest.raises(UserWarning, match="requires parameter 'side'"):
@@ -160,8 +155,7 @@ def test_create_measurement_voltage_on_non_bus():
     b1 = create_bus(net, 110.0)
     b2 = create_bus(net, 110.0)
     l1 = create_line_from_parameters(
-        net, b1, b2, length_km=10.0, r_ohm_per_km=0.1,
-        x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1.0
+        net, b1, b2, length_km=10.0, r_ohm_per_km=0.1, x_ohm_per_km=0.1, c_nf_per_km=0, max_i_ka=1.0
     )
 
     with pytest.raises(UserWarning, match="Voltage measurements can only be placed at a bus"):

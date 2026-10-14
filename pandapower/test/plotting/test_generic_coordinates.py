@@ -1,7 +1,6 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import numpy as np
 import pandas as pd
 import pytest
 
@@ -25,8 +24,10 @@ def test_create_generic_coordinates_igraph():
     assert len(net.bus.geo.dropna()) == len(net.bus)
 
 
-@pytest.mark.xfail(reason="The current implementation is not working properly, as multigraph edges "
-                          "as AtlasViews are accessed with list logic.")
+@pytest.mark.xfail(
+    reason="The current implementation is not working properly, as multigraph edges "
+    "as AtlasViews are accessed with list logic."
+)
 def test_create_generic_coordinates_nx():
     net = create_test_network()
     net.bus_geodata = net.bus_geodata.drop(net.bus_geodata.index)

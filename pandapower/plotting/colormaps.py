@@ -4,6 +4,7 @@
 
 try:
     from matplotlib.colors import ListedColormap, BoundaryNorm, LinearSegmentedColormap, Normalize, LogNorm
+
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
@@ -72,43 +73,42 @@ def cmap_continuous(cmap_list):
         raise UserWarning("install matplotlib to use this function")
     min_loading = cmap_list[0][0]
     max_loading = cmap_list[-1][0]
-    cmap_colors = [((loading-min_loading)/(max_loading - min_loading), color) for
-                 (loading, color) in cmap_list]
-    cmap = LinearSegmentedColormap.from_list('name', cmap_colors)
+    cmap_colors = [((loading - min_loading) / (max_loading - min_loading), color) for (loading, color) in cmap_list]
+    cmap = LinearSegmentedColormap.from_list("name", cmap_colors)
     norm = Normalize(min_loading, max_loading)
     return cmap, norm
 
 
 def cmap_logarithmic(min_value, max_value, colors):
     """
-        Can be used to create a logarithmic colormap. The colormap itself has a linear segmentation of
-        the given colors. The values however will be matched to the colors based on a logarithmic
-        normalization (c.f. matplotlib.colors.LogNorm for more information on how the logarithmic
-        normalization works).
+    Can be used to create a logarithmic colormap. The colormap itself has a linear segmentation of
+    the given colors. The values however will be matched to the colors based on a logarithmic
+    normalization (c.f. matplotlib.colors.LogNorm for more information on how the logarithmic
+    normalization works).
 
-        .. note::
-            There are numerous ways of how a logarithmic scale might be created, the intermediate values on the scale
-            are created automatically based on the minimum and maximum given values in analogy to the LogNorm. Also, the
-            logarithmic colormap can only be used with at least 3 colors and increasing values which all have to be
-            above 0.
+    .. note::
+        There are numerous ways of how a logarithmic scale might be created, the intermediate values on the scale
+        are created automatically based on the minimum and maximum given values in analogy to the LogNorm. Also, the
+        logarithmic colormap can only be used with at least 3 colors and increasing values which all have to be
+        above 0.
 
-        Parameters:
-            min_value (float): the minimum value of the colorbar
-            max_value (float): the maximum value for the colorbar
-            colors (list): list of colors to be used for the colormap
+    Parameters:
+        min_value (float): the minimum value of the colorbar
+        max_value (float): the maximum value for the colorbar
+        colors (list): list of colors to be used for the colormap
 
-        Returns:
-            matplotlib colormap object, matplotlib norm object
+    Returns:
+        matplotlib colormap object, matplotlib norm object
 
-        Example:
-            >>> from pandapower.plotting import cmap_logarithmic, create_bus_collection, draw_collections
-            >>> from pandapower.networks import mv_oberrhein
-            >>> net = mv_oberrhein("generation")
-            >>> min_value, max_value = 1.0, 1.03
-            >>> colors = ["blue", "green", "red"]
-            >>> cmap, norm = cmap_logarithmic(min_value, max_value, colors)
-            >>> bc = create_bus_collection(net, size=70, cmap=cmap, norm=norm)
-            >>> draw_collections([bc])
+    Example:
+        >>> from pandapower.plotting import cmap_logarithmic, create_bus_collection, draw_collections
+        >>> from pandapower.networks import mv_oberrhein
+        >>> net = mv_oberrhein("generation")
+        >>> min_value, max_value = 1.0, 1.03
+        >>> colors = ["blue", "green", "red"]
+        >>> cmap, norm = cmap_logarithmic(min_value, max_value, colors)
+        >>> bc = create_bus_collection(net, size=70, cmap=cmap, norm=norm)
+        >>> draw_collections([bc])
     """
 
     num_values = len(colors)

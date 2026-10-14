@@ -2,7 +2,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from numbers import Number
-from typing import Final, Literal
+from typing import Literal
 
 import numpy as np
 from scipy.sparse.linalg import factorized
@@ -13,8 +13,14 @@ from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.pypower.idx_brch_sc import K_ST
 from pandapower.results import _copy_results_ppci_to_ppc
 from pandapower.results import init_results
-from pandapower.shortcircuit.currents import _calc_ikss, \
-    _calc_ikss_1ph, _calc_ip, _calc_ith, _calc_branch_currents, _calc_branch_currents_complex
+from pandapower.shortcircuit.currents import (
+    _calc_ikss,
+    _calc_ikss_1ph,
+    _calc_ip,
+    _calc_ith,
+    _calc_branch_currents,
+    _calc_branch_currents_complex,
+)
 from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx
 from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
 from pandapower.shortcircuit.ppc_conversion import _init_ppc, _create_k_updated_ppci, _get_is_ppci_bus
@@ -101,25 +107,23 @@ def calc_sc(
         >>> print(net.res_bus_sc)
     """
     if fault not in ["3ph", "2ph", "1ph"]:
-        raise NotImplementedError(
-            "Only 3ph, 2ph and 1ph short-circuit currents implemented")
+        raise NotImplementedError("Only 3ph, 2ph and 1ph short-circuit currents implemented")
 
     if len(net.gen) and (ip or ith):
-        logger.warning("aperiodic, thermal short-circuit currents are only implemented for "
-                       "faults far from generators!")
+        logger.warning("aperiodic, thermal short-circuit currents are only implemented for faults far from generators!")
 
-    if case not in ['max', 'min']:
-        raise ValueError('case can only be "min" or "max" for minimal or maximal short "\
-                                "circuit current')
+    if case not in ["max", "min"]:
+        raise ValueError(
+            'case can only be "min" or "max" for minimal or maximal short "\
+                                "circuit current'
+        )
 
     if topology not in ["meshed", "radial", "auto"]:
-        raise ValueError(
-            'specify network structure as "meshed", "radial" or "auto"')
+        raise ValueError('specify network structure as "meshed", "radial" or "auto"')
 
     if branch_results:
-        logger.warning("Branch results are in beta mode and might not always be reliable, "
-                       "especially for transformers")
-    
+        logger.warning("Branch results are in beta mode and might not always be reliable, especially for transformers")
+
     init_vm_pu: Literal["results", "flat"]
     init_va_degree: Literal["results", "flat"]
     trafo_model: Literal["t", "pi"]
@@ -143,15 +147,35 @@ def calc_sc(
     kappa = ith or ip
     net["_options"] = {}
     _add_ppc_options(
-        net, calculate_voltage_angles=False, trafo_model=trafo_model, check_connectivity=check_connectivity, mode="sc",
-        switch_rx_ratio=2, init_vm_pu=init_vm_pu, init_va_degree=init_va_degree, enforce_p_lims=False,
-        enforce_q_lims=False, recycle=None
+        net,
+        calculate_voltage_angles=False,
+        trafo_model=trafo_model,
+        check_connectivity=check_connectivity,
+        mode="sc",
+        switch_rx_ratio=2,
+        init_vm_pu=init_vm_pu,
+        init_va_degree=init_va_degree,
+        enforce_p_lims=False,
+        enforce_q_lims=False,
+        recycle=None,
     )
     _add_sc_options(
-        net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s, topology=topology,
-        r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, kappa=kappa, ip=ip, ith=ith, branch_results=branch_results,
-        kappa_method=kappa_method, return_all_currents=return_all_currents, inverse_y=inverse_y,
-        use_pre_fault_voltage=use_pre_fault_voltage
+        net,
+        fault=fault,
+        case=case,
+        lv_tol_percent=lv_tol_percent,
+        tk_s=tk_s,
+        topology=topology,
+        r_fault_ohm=r_fault_ohm,
+        x_fault_ohm=x_fault_ohm,
+        kappa=kappa,
+        ip=ip,
+        ith=ith,
+        branch_results=branch_results,
+        kappa_method=kappa_method,
+        return_all_currents=return_all_currents,
+        inverse_y=inverse_y,
+        use_pre_fault_voltage=use_pre_fault_voltage,
     )
     init_results(net, "sc")
 
@@ -168,8 +192,9 @@ def _calc_current(net, ppci_orig, bus):
     ppci_bus = _get_is_ppci_bus(net, bus)
 
     # update ppci
-    non_ps_gen_ppci_bus, non_ps_gen_ppci, ps_gen_bus_ppci_dict = \
-        _create_k_updated_ppci(net, ppci_orig, ppci_bus=ppci_bus)
+    non_ps_gen_ppci_bus, non_ps_gen_ppci, ps_gen_bus_ppci_dict = _create_k_updated_ppci(
+        net, ppci_orig, ppci_bus=ppci_bus
+    )
 
     # For each ps_gen_bus one unique ppci is required
     ps_gen_ppci_bus = list(ps_gen_bus_ppci_dict.keys())
@@ -235,7 +260,7 @@ def _calc_sc_1ph(net, bus):
     _calc_ybus(ppci)
 
     # zero seq bus impedance
-    ppc_0, ppci_0 = _pd2ppc_zero(net, ppc['branch'][:, K_ST])
+    ppc_0, ppci_0 = _pd2ppc_zero(net, ppc["branch"][:, K_ST])
     _calc_ybus(ppci_0)
 
     if net["_options"]["inverse_y"]:

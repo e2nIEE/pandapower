@@ -60,14 +60,9 @@ class TimeSeriesRunpp:
         Sbus = makeSbus(self.baseMVA, bus, gen)
 
         # run the newton power flow
-        V, success, _, _, _, _, _ = newtonpf(Ybus=self.Ybus,
-                                             Sbus=Sbus,
-                                             V0=self.V,
-                                             ref=self.ref,
-                                             pv=self.pv,
-                                             pq=self.pq,
-                                             ppci=self.ppci,
-                                             options=options)
+        V, success, _, _, _, _, _ = newtonpf(
+            Ybus=self.Ybus, Sbus=Sbus, V0=self.V, ref=self.ref, pv=self.pv, pq=self.pq, ppci=self.ppci, options=options
+        )
 
         if not success:
             logger.warning("Loadflow not converged")
@@ -80,8 +75,23 @@ class TimeSeriesRunpp:
         else:
             pfsoln = pfsoln_full
 
-        bus, gen, branch = pfsoln(self.baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, self.Ybus, self.Yf, self.Yt, V,
-                                  self.ref, self.ref_gens, Ibus=self.Ibus)
+        bus, gen, branch = pfsoln(
+            self.baseMVA,
+            bus,
+            gen,
+            branch,
+            svc,
+            tcsc,
+            ssc,
+            vsc,
+            self.Ybus,
+            self.Yf,
+            self.Yt,
+            V,
+            self.ref,
+            self.ref_gens,
+            Ibus=self.Ibus,
+        )
 
         self.ppci["bus"] = bus
         self.ppci["branch"] = branch
@@ -157,10 +167,12 @@ class TimeSeriesRunpp:
         self.ppc, self.ppci = _pd2ppc(net)
         net["_ppc"] = self.ppc
 
-        self.baseMVA, bus, gen, branch, self.ref, self.pv, self.pq, _, _, self.V, self.ref_gens = \
+        self.baseMVA, bus, gen, branch, self.ref, self.pv, self.pq, _, _, self.V, self.ref_gens = (
             _get_pf_variables_from_ppci(self.ppci)
-        self.ppci, self.Ybus, self.Yf, self.Yt = \
-            _get_Y_bus(self.ppci, options, makeYbus_numba, self.baseMVA, bus, branch)
+        )
+        self.ppci, self.Ybus, self.Yf, self.Yt = _get_Y_bus(
+            self.ppci, options, makeYbus_numba, self.baseMVA, bus, branch
+        )
         self.Ibus = zeros(len(self.V), dtype=complex128)
 
         # self.Cg = _get_Cg(gen, bus)  # assumes that all gens are on!
@@ -241,8 +253,7 @@ class TimeSeriesRunpp:
         # update Ybus based on this
         options = net._options
         baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, _, _, V, _ = _get_pf_variables_from_ppci(ppci)
-        self.ppci, self.Ybus, self.Yf, self.Yt = _get_Y_bus(ppci, options, makeYbus_numba, baseMVA, bus,
-                                                            branch)
+        self.ppci, self.Ybus, self.Yf, self.Yt = _get_Y_bus(ppci, options, makeYbus_numba, baseMVA, bus, branch)
 
     def get_update_ctrl(self):
         controllers = self.net.controller["object"]

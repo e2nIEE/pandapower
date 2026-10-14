@@ -50,7 +50,7 @@ def _calc_ybus(ppci):
 def _calc_zbus(net, ppci):
     try:
         Ybus = ppci["internal"]["Ybus"]
-        sparsity = Ybus.nnz / Ybus.shape[0]**2
+        sparsity = Ybus.nnz / Ybus.shape[0] ** 2
         if sparsity < 0.002:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")

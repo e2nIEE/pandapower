@@ -4,7 +4,13 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_impedance, create_buses, create_tcsc, create_bus, create_line_from_parameters, create_load, create_ext_grid
+    create_impedance,
+    create_buses,
+    create_tcsc,
+    create_bus,
+    create_line_from_parameters,
+    create_load,
+    create_ext_grid,
 )
 from pandapower.network import pandapowerNet
 from pandapower.run import runpp
@@ -93,7 +99,7 @@ def test_tcsc_simple3():
     baseMVA = 100  # MVA
     baseV = 110  # kV
     baseI = baseMVA / (baseV * np.sqrt(3))
-    baseZ = baseV ** 2 / baseMVA
+    baseZ = baseV**2 / baseMVA
     xl = 0.2
     xc = -20
     # plot_z(baseZ, xl, xc)
@@ -127,7 +133,7 @@ def test_tcsc_simple3_slack():
     baseMVA = 100  # MVA
     baseV = 110  # kV
     baseI = baseMVA / (baseV * np.sqrt(3))
-    baseZ = baseV ** 2 / baseMVA
+    baseZ = baseV**2 / baseMVA
     xl = 0.2
     xc = -20
     # plot_z(baseZ, xl, xc)
@@ -163,7 +169,7 @@ def test_compare_to_impedance():
     baseMVA = 100  # MVA
     baseV = 110  # kV
     baseI = baseMVA / (baseV * np.sqrt(3))
-    baseZ = baseV ** 2 / baseMVA
+    baseZ = baseV**2 / baseMVA
     xl = 0.2
     xc = -20
     # plot_z(baseZ, xl, xc)
@@ -192,10 +198,12 @@ def test_compare_to_impedance():
 
     # compare when controllable
     compare_tcsc_impedance(net, net_ref, 0, 0)
-    assert np.allclose(net._ppc["internal"]["J"].toarray()[:-1, :-1], net_ref._ppc["internal"]["J"].toarray(), rtol=0,
-                       atol=5e-5)
-    assert np.allclose(net._ppc["internal"]["Ybus"].toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0,
-                       atol=1e-6)
+    assert np.allclose(
+        net._ppc["internal"]["J"].toarray()[:-1, :-1], net_ref._ppc["internal"]["J"].toarray(), rtol=0, atol=5e-5
+    )
+    assert np.allclose(
+        net._ppc["internal"]["Ybus"].toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0, atol=1e-6
+    )
 
     # compare when not controllable
     net.tcsc.thyristor_firing_angle_degree = net.res_tcsc.thyristor_firing_angle_degree
@@ -204,15 +212,16 @@ def test_compare_to_impedance():
 
     compare_tcsc_impedance(net, net_ref, 0, 0)
     assert np.allclose(net._ppc["internal"]["J"].toarray(), net_ref._ppc["internal"]["J"].toarray(), rtol=0, atol=5e-5)
-    assert np.allclose(net._ppc["internal"]["Ybus"].toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0,
-                       atol=1e-6)
+    assert np.allclose(
+        net._ppc["internal"]["Ybus"].toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0, atol=1e-6
+    )
 
 
 def test_tcsc_case_study():
     net = facts_case_study_grid()
     baseMVA = net.sn_mva
     baseV = 230
-    baseZ = baseV ** 2 / baseMVA
+    baseZ = baseV**2 / baseMVA
     xl = 0.2
     xc = -20
     # plot_z(baseZ, xl, xc)
@@ -231,8 +240,9 @@ def test_tcsc_case_study():
     runpp(net_ref)
 
     compare_tcsc_impedance(net, net_ref, 0, 0)
-    assert np.allclose(net._ppc["internal"]["Ybus"].toarray(),
-                       net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0, atol=1e-6)
+    assert np.allclose(
+        net._ppc["internal"]["Ybus"].toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0, atol=1e-6
+    )
 
 
 def test_tcsc_simple5():
