@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright 1996-2015 PSERC. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
@@ -37,6 +35,7 @@ columns 0-12 must be included in the input matrix (BI_VSC in ppc dict)
     15. C{BI_VSC_P_DC}                     DC bus resultant active power (MW)
 
 """
+
 # define AC modes
 BI_VSC_MODE_AC_V = 0
 BI_VSC_MODE_AC_Q = 1

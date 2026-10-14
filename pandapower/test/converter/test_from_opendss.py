@@ -15,6 +15,7 @@ import promises for symmetric feeders.
 import faulthandler
 
 import numpy as np
+import pandas as pd
 import pytest
 
 import pandapower as pp
@@ -226,11 +227,11 @@ def reactor_net(tmp_path):
 
 
 def test_element_counts(net):
-    assert len(net.bus) == 4          # sourcebus, b1, b2, b3
-    assert len(net.line) == 2         # l1, l2
-    assert len(net.trafo) == 1        # t1
-    assert len(net.load) == 1         # load1
-    assert len(net.ext_grid) == 1     # Vsource
+    assert len(net.bus) == 4  # sourcebus, b1, b2, b3
+    assert len(net.line) == 2  # l1, l2
+    assert len(net.trafo) == 1  # t1
+    assert len(net.load) == 1  # load1
+    assert len(net.ext_grid) == 1  # Vsource
     assert net["opendss_import"]["warnings"] == []
 
 
@@ -247,7 +248,7 @@ def test_linecode_captured_as_std_type(net):
     # l2 sets R1/X1 inline (no LineCode) -> std_type stays unset.
     std = dict(zip(net.line["name"], net.line["std_type"]))
     assert std["l1"] == "lc1"
-    assert std["l2"] is None
+    assert pd.isna(std["l2"])
 
 
 def test_total_series_resistance_matches_opendss(net):
@@ -261,7 +262,7 @@ def test_transformer_impedance(net):
     assert t["vn_hv_kv"] == pytest.approx(12.47)
     assert t["vn_lv_kv"] == pytest.approx(0.48)
     assert t["sn_mva"] == pytest.approx(0.5)
-    assert t["vkr_percent"] == pytest.approx(1.0, rel=1e-6)        # 0.5 + 0.5
+    assert t["vkr_percent"] == pytest.approx(1.0, rel=1e-6)  # 0.5 + 0.5
     assert t["vk_percent"] == pytest.approx(np.hypot(1.0, 5.0), rel=1e-6)
 
 
@@ -372,6 +373,7 @@ def test_shunt_reactor_is_skipped_not_misread_as_a_branch(reactor_net):
 
 def test_reactor_feeder_reaches_every_bus(reactor_net):
     import pandapower.topology as top
+
     assert top.unsupplied_buses(reactor_net) == set()
 
 

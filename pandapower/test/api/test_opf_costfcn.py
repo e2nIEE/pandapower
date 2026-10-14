@@ -11,9 +11,11 @@ class SimpleOPFCostModel:
         self.ppc = {
             "baseMVA": 100.0,
             "gen": array([[0.0]]),
-            "gencost": array([
-                [POLYNOMIAL, 0.0, 0.0, 3.0, 0.1, 1.0, 0.0],
-            ]),
+            "gencost": array(
+                [
+                    [POLYNOMIAL, 0.0, 0.0, 3.0, 0.1, 1.0, 0.0],
+                ]
+            ),
         }
         self.cost_params = {
             "N": csr_matrix([[1.0, 2.0]]),
@@ -54,10 +56,12 @@ def test_opf_costfcn_generalized_cost_hessian():
     assert_allclose(df, array([2111.0, 22.0]))
     assert_allclose(
         d2f.toarray(),
-        array([
-            [2004.0, 8.0],
-            [8.0, 16.0],
-        ])
+        array(
+            [
+                [2004.0, 8.0],
+                [8.0, 16.0],
+            ]
+        ),
     )
 
 
@@ -73,8 +77,10 @@ def test_opf_costfcn_generalized_cost_hessian_with_none_H():
     assert_allclose(df, array([2103.0, 6.0]))
     assert_allclose(
         d2f.toarray(),
-        array([
-            [2000.0, 0.0],
-            [0.0, 0.0],
-        ])
+        array(
+            [
+                [2000.0, 0.0],
+                [0.0, 0.0],
+            ]
+        ),
     )

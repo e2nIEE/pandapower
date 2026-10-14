@@ -1,3 +1,0 @@
-**Parameter**;**Datatype**;**Explanation**
-p_mw;float;resulting active power after scaling [MW]
-q_mvar;float;resulting reactive power after scaling [MVar]

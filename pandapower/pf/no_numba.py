@@ -1,9 +1,7 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from typing import Any, Callable, ParamSpec, TypeVar, overload, Union
+from typing import Any, Callable, ParamSpec, TypeVar, Union
 
 
 P = ParamSpec("P")
@@ -14,8 +12,7 @@ def jit(*args: Any, **kwargs: Any) -> Union[Callable[[Callable[P, R]], Callable[
     def wrapper(f: Callable[P, R]) -> Callable[P, R]:
         return f
 
-    if len(args) > 0 and (args[0] is marker or not callable(args[0])) \
-            or len(kwargs) > 0:
+    if len(args) > 0 and (args[0] is marker or not callable(args[0])) or len(kwargs) > 0:
         # @jit(int32(int32, int32)), @jit(signature="void(int32)")
         return wrapper
     elif len(args) == 0:

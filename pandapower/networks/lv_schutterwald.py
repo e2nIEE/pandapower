@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -64,13 +62,14 @@ def lv_schutterwald(separation_by_sub=False, include_heat_pumps=False, **kwargs)
         # clustering connected buses
         zones = [list(area) for area in connected_components(mg)]
         for i, zone in enumerate(zones):
-            net1 = select_subnet(net, buses=zone, include_switch_buses=False,
-                                 include_results=True, keep_everything_else=True)
+            net1 = select_subnet(
+                net, buses=zone, include_switch_buses=False, include_results=True, keep_everything_else=True
+            )
             runpp(net1)
-            net1.name = f'LV Schutterwald {i}'
+            net1.name = f"LV Schutterwald {i}"
             subnets.append(net1)
         return subnets
 
     runpp(net)
-    net.name = 'LV Schutterwald'
+    net.name = "LV Schutterwald"
     return net

@@ -44,7 +44,7 @@ def from_pypowsybl(
         >>> from pandapower.converter.pypowsybl.from_pypowsybl import from_pypowsybl
         >>> net = from_pypowsybl("network.xiidm")
     """
-    
+
     time_start_converting = time.time()
 
     pypowsybl_converter = PyPowSyBlConverter()

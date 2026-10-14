@@ -1,13 +1,20 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
 from time import perf_counter
 
-from numpy import flatnonzero as find, r_, zeros, argmax, setdiff1d, union1d, any, int32, \
-    sum as np_sum, abs as np_abs, int64
+from numpy import (
+    flatnonzero as find,
+    r_,
+    zeros,
+    argmax,
+    setdiff1d,
+    union1d,
+    any,
+    int32,
+    int64,
+)
 
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 from pandapower.pf.run_dc_pf import _run_dc_pf
@@ -24,7 +31,8 @@ from pandapower.auxiliary import version_check
 try:
     from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
     from pandapower.pf.pfsoln_numba import pfsoln as pfsoln_numba, pf_solution_single_slack
-    version_check('numba')
+
+    version_check("numba")
     numba_installed = True
 except ImportError:
     numba_installed = False
@@ -47,12 +55,12 @@ def _run_newton_raphson_pf(ppci, options):
     t0 = perf_counter()
     # we cannot run DC pf before running newton with distributed slack because the slacks come pre-solved after the DC pf
     if isinstance(options["init_va_degree"], str) and options["init_va_degree"] == "dc":
-        if options['distributed_slack']:
-            pg_copy = ppci['gen'][:, PG].copy()
-            pd_copy = ppci['bus'][:, PD].copy()
+        if options["distributed_slack"]:
+            pg_copy = ppci["gen"][:, PG].copy()
+            pd_copy = ppci["bus"][:, PD].copy()
             ppci = _run_dc_pf(ppci, options["recycle"])
-            ppci['gen'][:, PG] = pg_copy
-            ppci['bus'][:, PD] = pd_copy
+            ppci["gen"][:, PG] = pg_copy
+            ppci["bus"][:, PD] = pd_copy
         else:
             ppci = _run_dc_pf(ppci, options["recycle"])
     if options["enforce_q_lims"]:
@@ -74,7 +82,7 @@ def ppci_to_pfsoln(ppci, options, limited_gens=None):
         return internal["bus"], internal["gen"], internal["branch"]
     else:
         # reads values from internal ppci storage to bus, gen, branch and returns it
-        if options['distributed_slack']:
+        if options["distributed_slack"]:
             # consider buses with non-zero slack weights as if they were slack buses,
             # and gens with non-zero slack weights as if they were reference machines
             # this way, the function pfsoln will extract results for distributed slack gens, too
@@ -94,13 +102,28 @@ def ppci_to_pfsoln(ppci, options, limited_gens=None):
         # todo: this can be dropped if Ybus is returned from Newton and has the latest Ybus status:
         if options["tdpf"]:
             # needs to be updated to match the new R because of the temperature
-            internal["Ybus"], internal["Yf"], internal["Yt"] = makeYbus(internal["baseMVA"], internal["bus"], internal["branch"])
+            internal["Ybus"], internal["Yf"], internal["Yt"] = makeYbus(
+                internal["baseMVA"], internal["bus"], internal["branch"]
+            )
 
         # todo: here Ybus_svc, Ybus_tcsc must be used (Ybus = Ybus + Ybus_svc + Ybus_tcsc)
-        result_pfsoln = pfsoln(internal["baseMVA"], internal["bus"], internal["gen"], internal["branch"],
-                               internal["svc"], internal["tcsc"], internal["ssc"], internal["vsc"],
-                               internal["Ybus"], internal["Yf"], internal["Yt"], internal["V"],
-                               ref, ref_gens, limited_gens=limited_gens)
+        result_pfsoln = pfsoln(
+            internal["baseMVA"],
+            internal["bus"],
+            internal["gen"],
+            internal["branch"],
+            internal["svc"],
+            internal["tcsc"],
+            internal["ssc"],
+            internal["vsc"],
+            internal["Ybus"],
+            internal["Yf"],
+            internal["Yt"],
+            internal["V"],
+            ref,
+            ref_gens,
+            limited_gens=limited_gens,
+        )
         return result_pfsoln
 
 
@@ -108,7 +131,7 @@ def _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch):
     recycle = options["recycle"]
 
     if isinstance(recycle, dict) and not recycle["trafo"] and ppci["internal"]["Ybus"].size:
-        Ybus, Yf, Yt = ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt']
+        Ybus, Yf, Yt = ppci["internal"]["Ybus"], ppci["internal"]["Yf"], ppci["internal"]["Yt"]
     else:
         # build admittance matrices
         Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
@@ -124,11 +147,14 @@ def _get_numba_functions(ppci, options):
         makeYbus = makeYbus_numba
         shunt_in_net = any(ppci["bus"][:, BS]) or any(ppci["bus"][:, GS])
         # faster pfsoln function if only one slack is in the grid and no gens
-        pfsoln = pf_solution_single_slack if ppci["gen"].shape[0] == 1 \
-                                             and not options["voltage_depend_loads"] \
-                                             and not options['distributed_slack'] \
-                                             and not shunt_in_net \
+        pfsoln = (
+            pf_solution_single_slack
+            if ppci["gen"].shape[0] == 1
+            and not options["voltage_depend_loads"]
+            and not options["distributed_slack"]
+            and not shunt_in_net
             else pfsoln_numba
+        )
     else:
         makeYbus = makeYbus_pypower
         pfsoln = pfsoln_pypower
@@ -147,13 +173,14 @@ def _get_Sbus(ppci, recycle=None):
 def _run_ac_pf_without_qlims_enforced(ppci, options):
     makeYbus, _ = _get_numba_functions(ppci, options)
 
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, *_, V0, ref_gens = _get_pf_variables_from_ppci(ppci, True)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, *_, V0, ref_gens = _get_pf_variables_from_ppci(
+        ppci, True
+    )
 
     ppci, Ybus, Yf, Yt = _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch)
 
     # compute complex bus power injections [generation - load]
     Sbus = _get_Sbus(ppci, options["recycle"])
-
 
     # run the newton power flow
     if options["lightsim2grid"]:
@@ -161,19 +188,45 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
         T = None
         r_theta_kelvin_per_mw = None
     else:
-        V, success, iterations, J, Vm_it, Va_it, r_theta_kelvin_per_mw, T = newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus)
+        V, success, iterations, J, Vm_it, Va_it, r_theta_kelvin_per_mw, T = newtonpf(
+            Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus
+        )
         # due to TPDF, SVC, TCSC, the Ybus matrices can be updated in the newtonpf and stored in ppci["internal"],
         # so we extract them here for later use:
-        Ybus = ppci["internal"]["Ybus"] + ppci["internal"]["Ybus_svc"] + ppci["internal"]["Ybus_tcsc"] + \
-               ppci["internal"]["Ybus_ssc"] + ppci["internal"]["Ybus_vsc"]
+        Ybus = (
+            ppci["internal"]["Ybus"]
+            + ppci["internal"]["Ybus_svc"]
+            + ppci["internal"]["Ybus_tcsc"]
+            + ppci["internal"]["Ybus_ssc"]
+            + ppci["internal"]["Ybus_vsc"]
+        )
 
     # keep "internal" variables in  memory / net["_ppc"]["internal"] -> needed for recycle.
-    ppci['internal'].update(
-        {"J": J, "Vm_it": Vm_it, "Va_it": Va_it, "bus": bus, "gen": gen, "branch": branch,
-         "svc": svc, "tcsc": tcsc, "ssc": ssc, "vsc": vsc, "baseMVA": baseMVA, "V": V,
-         "pv": pv, "pq": pq, "ref": ref,
-         "Sbus": Sbus, "ref_gens": ref_gens, "Ybus": Ybus, "Yf": Yf, "Yt": Yt,
-         "r_theta_kelvin_per_mw": r_theta_kelvin_per_mw, "T": T}
+    ppci["internal"].update(
+        {
+            "J": J,
+            "Vm_it": Vm_it,
+            "Va_it": Va_it,
+            "bus": bus,
+            "gen": gen,
+            "branch": branch,
+            "svc": svc,
+            "tcsc": tcsc,
+            "ssc": ssc,
+            "vsc": vsc,
+            "baseMVA": baseMVA,
+            "V": V,
+            "pv": pv,
+            "pq": pq,
+            "ref": ref,
+            "Sbus": Sbus,
+            "ref_gens": ref_gens,
+            "Ybus": Ybus,
+            "Yf": Yf,
+            "Yt": Yt,
+            "r_theta_kelvin_per_mw": r_theta_kelvin_per_mw,
+            "T": T,
+        }
     )
 
     return ppci, success, iterations
@@ -205,8 +258,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, options):
         if len(mx) > 0 or len(mn) > 0:  # we have some Q limit violations
             # one at a time?
             if qlim == 2:  # fix largest violation, ignore the rest
-                k = argmax(r_[gen[mx, QG] - gen[mx, QMAX],
-                              gen[mn, QMIN] - gen[mn, QG]])
+                k = argmax(r_[gen[mx, QG] - gen[mx, QMAX], gen[mn, QMIN] - gen[mn, QG]])
                 if k > len(mx):
                     mn = mn[k - len(mx)]
                     mx = []
@@ -237,7 +289,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, options):
             for i in range(len(limited)):  # [one at a time, since they may be at same bus]
                 gen[limited[i], GEN_STATUS] = 0  # temporarily turn off gen,
                 bi = gen[limited[i], GEN_BUS].astype(int64)  # adjust load accordingly,
-                bus[bi, [PD, QD]] = (bus[bi, [PD, QD]] - gen[limited[i], [PG, QG]])
+                bus[bi, [PD, QD]] = bus[bi, [PD, QD]] - gen[limited[i], [PG, QG]]
         else:
             break  # no more generator Q limits violated
 

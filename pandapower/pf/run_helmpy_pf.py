@@ -29,12 +29,12 @@ def _build_helm_case(ppci):
     """
     from helmpy.core.classes import CaseData, process_branches  # type: ignore[import-not-found, import-untyped]
 
-    buses = ppci['bus'].copy()
-    generators = ppci['gen'].copy()
-    branches = ppci['branch'].copy()
+    buses = ppci["bus"].copy()
+    generators = ppci["gen"].copy()
+    branches = ppci["branch"].copy()
 
     # pandapower does not always set MBASE on the internal gen matrix
-    generators[:, MBASE] = 100.
+    generators[:, MBASE] = 100.0
 
     # HELMpy follows MATPOWER's 1-based bus numbering and internally subtracts 1
     # (e.g. process_branches does ``int(branch[F_BUS]) - 1``). pandapower's internal
@@ -48,7 +48,7 @@ def _build_helm_case(ppci):
     N = len(buses)
     N_generators = len(generators)
     N_branches = len(branches)
-    case = CaseData(name='pandapower', N=N, N_generators=N_generators)
+    case = CaseData(name="pandapower", N=N, N_generators=N_generators)
 
     case.N_branches = N_branches
     case.Pd[:] = buses[:, PD] / 100
@@ -72,19 +72,19 @@ def _build_helm_case(ppci):
         if bus_i != case.slack:
             case.list_gen[pos] = bus_i
             pos += 1
-        case.Buses_type[bus_i] = 'PVLIM'
+        case.Buses_type[bus_i] = "PVLIM"
         case.V[bus_i] = generators[i][VG]
         case.Pg[bus_i] = generators[i][PG] / 100
         case.Qgmax[bus_i] = generators[i][QMAX] / 100
         case.Qgmin[bus_i] = generators[i][QMIN] / 100
 
-    case.Buses_type[case.slack] = 'Slack'
+    case.Buses_type[case.slack] = "Slack"
     case.Pg[case.slack] = 0
 
     process_branches(pd.DataFrame(branches), N_branches, case)
 
     for i in range(N):
-        case.branches_buses[i].sort()    # Variable that saves the branches
+        case.branches_buses[i].sort()  # Variable that saves the branches
 
     case.Y[:] = np.copy(case.Ytrans)
     for i in range(N):
@@ -156,16 +156,18 @@ def _runpf_helmpy_pf(ppci, options, **kwargs):
     try:
         from helmpy import helm  # type: ignore[import-not-found, import-untyped]
     except ImportError:
-        raise ImportError("The HELM algorithm requires the optional 'helmpy' package. "
-                          "Install it (pip install helmpy) to use algorithm='helm'.")
+        raise ImportError(
+            "The HELM algorithm requires the optional 'helmpy' package. "
+            "Install it (pip install helmpy) to use algorithm='helm'."
+        )
 
     t0 = perf_counter()
 
-    max_coefficients = options['max_iteration']
+    max_coefficients = options["max_iteration"]
     enforce_Q_limits = bool(options["enforce_q_lims"])
-    DSB_model = bool(options['distributed_slack'])
+    DSB_model = bool(options["distributed_slack"])
     # HELMpy PV-bus embedding model (1 or 2). Both give the same solution; see module docstring.
-    pv_bus_model = options.get('pv_bus_model', 2)
+    pv_bus_model = options.get("pv_bus_model", 2)
 
     # ---------------------------------------------------- run HELM ----------------------------------------------------
     case = _build_helm_case(ppci)
@@ -176,10 +178,18 @@ def _runpf_helmpy_pf(ppci, options, **kwargs):
     K_factors = _get_slack_weights(ppci) if DSB_model else None
 
     run, series_large, flag_divergence = helm(
-        case, detailed_run_print=False, mismatch=1e-8, scale=1,
-        max_coefficients=max_coefficients, enforce_Q_limits=enforce_Q_limits,
-        results_file_name=None, save_results=False, pv_bus_model=pv_bus_model,
-        DSB_model=DSB_model, DSB_model_method=None, K_factors=K_factors,
+        case,
+        detailed_run_print=False,
+        mismatch=1e-8,
+        scale=1,
+        max_coefficients=max_coefficients,
+        enforce_Q_limits=enforce_Q_limits,
+        results_file_name=None,
+        save_results=False,
+        pv_bus_model=pv_bus_model,
+        DSB_model=DSB_model,
+        DSB_model_method=None,
+        K_factors=K_factors,
     )
 
     success = not flag_divergence
@@ -195,8 +205,7 @@ def _runpf_helmpy_pf(ppci, options, **kwargs):
     # ------------------------------------------- result extraction via pfsoln -----------------------------------------
     # Store the converged voltage and admittance matrices in ppci["internal"] so that the
     # standard pfsoln-based extraction (shared with Newton-Raphson) computes all results.
-    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, *_, ref_gens = \
-        _get_pf_variables_from_ppci(ppci)
+    baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, *_, ref_gens = _get_pf_variables_from_ppci(ppci)
 
     makeYbus, _ = _get_numba_functions(ppci, options)
     ppci, Ybus, Yf, Yt = _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch)
@@ -206,9 +215,26 @@ def _runpf_helmpy_pf(ppci, options, **kwargs):
     bus[:, VA] = np.angle(V, deg=True)
 
     internal = ppci["internal"]
-    internal.update({"bus": bus, "gen": gen, "branch": branch, "svc": svc, "tcsc": tcsc,
-                     "ssc": ssc, "vsc": vsc, "baseMVA": baseMVA, "V": V, "pv": pv, "pq": pq,
-                     "ref": ref, "ref_gens": ref_gens, "Ybus": Ybus, "Yf": Yf, "Yt": Yt})
+    internal.update(
+        {
+            "bus": bus,
+            "gen": gen,
+            "branch": branch,
+            "svc": svc,
+            "tcsc": tcsc,
+            "ssc": ssc,
+            "vsc": vsc,
+            "baseMVA": baseMVA,
+            "V": V,
+            "pv": pv,
+            "pq": pq,
+            "ref": ref,
+            "ref_gens": ref_gens,
+            "Ybus": Ybus,
+            "Yf": Yf,
+            "Yt": Yt,
+        }
+    )
 
     if success:
         bus, gen, branch = ppci_to_pfsoln(ppci, options)

@@ -1,3 +1,0 @@
-**Parameter**;**Datatype**;**Explanation**
-p_mw;float;resulting active power demand after scaling and after considering voltage dependence [MW]
-

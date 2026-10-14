@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -11,13 +9,12 @@ logger = logging.getLogger(__name__)
 
 
 class MyTestControl(ConstController):
-
     def __new__(cls):
         obj = super().__new__(cls)
         return obj
 
-class ConstControl(ConstController):
 
+class ConstControl(ConstController):
     def is_converged(self, net):
-        self.check_word = 'banana'
+        self.check_word = "banana"
         return super().is_converged(net)

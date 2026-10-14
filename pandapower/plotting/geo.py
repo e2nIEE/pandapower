@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -12,14 +10,17 @@ import math
 import pandas as pd
 from numpy import array
 
-from pandapower.auxiliary import soft_dependency_error, pandapowerNet, ADict
+from pandapower.auxiliary import soft_dependency_error
+from pandapower.network import ADict, pandapowerNet
+
 # ADict is used as a type to ensure compatibility with pandapipes
+from pandapower.plotting.plotting_toolbox import safe_geojson_loads
 
 
 logger = logging.getLogger(__name__)
 
 try:
-    from shapely.geometry import Point, LineString
+    from shapely.geometry import LineString, Point
 
     shapely_INSTALLED = True
 except ImportError:
@@ -176,15 +177,12 @@ def abstract_convert_crs(
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "pyproj")
     transformer = Transformer.from_crs(epsg_in, epsg_out, always_xy=True)
 
-    if (
-            ("geo" in net[component_name])
-            and (not (net[component_name].empty or all(net[component_name].geo.isna())))
-    ):
+    if ("geo" in net[component_name]) and (not (net[component_name].empty or all(net[component_name].geo.isna()))):
         if epsg_out != 4326:
             logger.warning("Converting geojson to crs other than WGS84 is highly discouraged.")
 
         def _geojson_transformer(geojson_str):
-            geometry = geojson.loads(geojson_str)
+            geometry = safe_geojson_loads(geojson_str)
 
             if geometry["type"] == "Point":
                 x, y = geometry["coordinates"]
@@ -300,7 +298,7 @@ def dump_to_geojson_node_branch(
                     missing_geom[name] += 1
                     continue
                 uid = f"{name}-{ind}"
-                features.append(geojson.Feature(geometry=geojson.loads(geom), id=uid, properties=props[uid]))
+                features.append(geojson.Feature(geometry=safe_geojson_loads(geom), id=uid, properties=props[uid]))
     return features, missing_geom[node_name], missing_geom[branch_name]
 
 
@@ -350,7 +348,7 @@ def dump_to_geojson(
         logger.warning(e)
         return geojson.FeatureCollection([])
 
-    missing_geom: dict[str, int] = {"bus": 0, "line": 0, "switch": 0, "trafo": 0, "trafo3w": 0}
+    missing_geom: dict[str, int] = {}
     features, missing_geom["bus"], missing_geom["line"] = dump_to_geojson_node_branch(
         net, "bus", "line", buses, lines, include_type_id=include_type_id
     )
@@ -384,8 +382,7 @@ def dump_to_geojson(
                 _get_props(row, cols, prop)
 
                 # getting geodata for switches
-                geo = net.bus.geo.at[row.bus]
-                geom = None if pd.isna(geo) else geojson.loads(geo)
+                geom = safe_geojson_loads(net.bus.geo.at[row.bus])
                 if isinstance(geom, geojson.LineString):
                     logger.warning(f"LineString geometry not supported for type 'switch'. Skipping switch {ind}")
                     geom = None
@@ -411,19 +408,17 @@ def dump_to_geojson(
                 _get_props(row, cols, prop)
 
                 # getting geodata for trafos
-                geo = net.bus.geo.at[row.lv_bus]
-                geom = None if pd.isna(geo) else geojson.loads(geo)
+                geom = safe_geojson_loads(net.bus.geo.at[row.lv_bus])
                 if isinstance(geom, geojson.LineString):
                     logger.warning(f"LineString geometry not supported for type '{t_type}'. Skipping trafo {ind}")
-                    geom = None
                 if geom is None:
                     missing_geom[t_type] += 1
                     continue
                 features.append(geojson.Feature(geometry=geom, id=uid, properties=prop))
 
-    if any(missing_geom.values()):
+    if any(missing_geom):
         missing_str = []
-        for name, count in missing_geom.items():
+        for count, name in missing_geom.items():
             if count:
                 missing_str.append(f"{count} {name} geometries")
         logger.warning(f"{', '.join(missing_str)} could not be converted to geojson. Please update network's geodata!")

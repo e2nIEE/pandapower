@@ -1,33 +1,34 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from __future__ import annotations
-
 import logging
-from typing import Iterable
+from collections.abc import Iterable
 
-from numpy import nan
+import numpy as np
 import numpy.typing as npt
+import pandas as pd
+from numpy import nan
+from typing_extensions import deprecated
 
-from pandapower.auxiliary import pandapowerNet
-from pandapower.plotting.geo import _is_valid_number
-from pandapower.pp_types import BusType, Int
+from pandapower.auxiliary import ensure_iterability
 from pandapower.create._utils import (
     _add_to_entries_if_not_nan,
-    _get_index_with_check,
     _get_multiple_index_with_check,
-    _set_entries,
     _set_multiple_entries,
-    _set_value_if_not_nan,
 )
+from pandapower.network import pandapowerNet
+from pandapower.network_structure import get_default_value
+from pandapower.plotting.geo import _is_valid_number
+from pandapower.pp_types import BusType, Int
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_BUS_TYPE: BusType = get_default_value("bus", "type")
+DEFAULT_BUS_DC_TYPE: BusType = get_default_value("bus_dc", "type")
+
 
 def _geodata_to_geo_series(
-        data: Iterable[tuple[float, float]] | None,
-        coords: Iterable[list[list[float]]] | None,
-        nr_buses: int
+    data: Iterable[tuple[float, float]] | None, coords: Iterable[list[list[float]]] | None, nr_buses: int
 ) -> list[str] | str | None:
     if data is None and coords is None:
         return None
@@ -47,7 +48,7 @@ def _geodata_to_geo_series(
                     x, y = g
                     geo.append(f'{{"coordinates": [{x}, {y}], "type": "Point"}}')
             else:
-                raise ValueError("geodata must be iterable of tuples of (x, y) coordinates")
+                raise TypeError("geodata must be iterable of tuples of (x, y) coordinates")
         if len(geo) == 1:
             geo = [geo[0]] * nr_buses
         if len(geo) != nr_buses:
@@ -60,19 +61,20 @@ def _geodata_to_geo_series(
             " Use at your own risk."
         )
         logger.warning("coords will not be verified.")
-        geo = [f'{{"coordinates":{str(c)}, "type":"LineString"}}' for c in coords]
+        geo = [f'{{"coordinates":{c}, "type":"LineString"}}' for c in coords]
     return geo if nr_buses > 1 else geo[0]
 
 
+@deprecated("Use create_buses with nr_buses=1 instead.")  # since v4.0.0
 def create_bus(
     net: pandapowerNet,
     vn_kv: float,
     name: str | None = None,
     index: Int | None = None,
     geodata: tuple[float, float] | None = None,
-    type: BusType = "b",
+    type: BusType = DEFAULT_BUS_TYPE,
     zone: str | None = None,
-    in_service: bool = True,
+    in_service: bool = get_default_value("bus", "in_service"),
     max_vm_pu: float = nan,
     min_vm_pu: float = nan,
     coords: list[list[float]] | None = None,
@@ -104,29 +106,33 @@ def create_bus(
     Example:
         >>> create_bus(net, 20., name="bus1")
     """
-    index = _get_index_with_check(net, "bus", index)
+    return create_buses(
+        net,
+        1,
+        vn_kv,
+        [index] if index is not None else None,
+        [name] if name is not None else None,
+        type,
+        geodata,
+        zone,
+        in_service,
+        max_vm_pu,
+        min_vm_pu,
+        [coords] if coords is not None else None,
+        **kwargs,
+    )[0]
 
-    geo = _geodata_to_geo_series([geodata] if geodata else None, [coords] if coords else None, 1)
 
-    entries = {"name": name, "vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "geo": geo, **kwargs}
-    _set_entries(net, "bus", index, True, entries=entries)
-
-    # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
-    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus", default_val=0.0)
-    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "bus", default_val=2.0)
-
-    return index
-
-
+@deprecated("Use create_buses_dc with nr_buses=1 instead.")  # since v4.0.0
 def create_bus_dc(
     net: pandapowerNet,
     vn_kv: float,
     name: str | None = None,
     index: Int | None = None,
     geodata: tuple[float, float] | None = None,
-    type: BusType = "b",
+    type: BusType = DEFAULT_BUS_DC_TYPE,
     zone: str | None = None,
-    in_service: bool = True,
+    in_service: bool = get_default_value("bus_dc", "in_service"),
     max_vm_pu: float = nan,
     min_vm_pu: float = nan,
     coords: list[list[float]] | None = None,
@@ -159,18 +165,21 @@ def create_bus_dc(
     Example:
         >>> create_bus_dc(net, 20., name="bus1")
     """
-    index = _get_index_with_check(net, "bus_dc", index)
-
-    geo = _geodata_to_geo_series([geodata] if geodata else None, [coords] if coords else None, 1)
-
-    entries = {"name": name, "vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "geo": geo, **kwargs}
-    _set_entries(net, "bus_dc", index, True, entries=entries)
-
-    # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
-    _set_value_if_not_nan(net, index, min_vm_pu, "min_vm_pu", "bus_dc", default_val=0.0)
-    _set_value_if_not_nan(net, index, max_vm_pu, "max_vm_pu", "bus_dc", default_val=2.0)
-
-    return index
+    return create_buses_dc(
+        net,
+        1,
+        vn_kv,
+        index,
+        name,
+        type,
+        geodata,
+        zone,
+        in_service,
+        max_vm_pu,
+        min_vm_pu,
+        [coords] if coords is not None else None,
+        **kwargs,
+    )[0]
 
 
 def create_buses(
@@ -179,15 +188,16 @@ def create_buses(
     vn_kv: float | Iterable[float],
     index: Int | Iterable[Int] | None = None,
     name: Iterable[str] | None = None,
-    type: BusType | Iterable[BusType] = "b",
+    type: BusType | Iterable[BusType] = DEFAULT_BUS_TYPE,
     geodata: tuple[float, float] | Iterable[tuple[float, float]] | None = None,
     zone: str | Iterable[str] | None = None,
-    in_service: bool | Iterable[bool] = True,
+    in_service: bool | Iterable[bool] = get_default_value("bus", "in_service"),
     max_vm_pu: float | Iterable[float] = nan,
     min_vm_pu: float | Iterable[float] = nan,
     coords: list[list[list[float]]] | None = None,
+    skip_validation: bool = False,
     **kwargs,
-) -> npt.NDArray[Int]:
+) -> list[Int]:
     """
     Adds several buses in table net["bus"] at once.
 
@@ -196,7 +206,7 @@ def create_buses(
     Parameters:
         net: The pandapower network in which the element is created
         nr_buses: The number of buses that is created
-        vn_kv: The grid voltage level.
+        vn_kv: Reference voltage level for the bus.
         name: the name for this bus
         index: Force specified IDs if available. If None, the indices higher than the highest already existing index are
             selected.
@@ -210,28 +220,60 @@ def create_buses(
         coords: busbar coordinates to plot the bus with multiple points. coords is typically a list of tuples
             (start and endpoint of the busbar) - Example for 3 buses:
             [[(x11, y11), (x12, y12)], [(x21, y21), (x22, y22)], [(x31, y31), (x32, y32)]]
+        skip_validation: if set to true validate_network will not be run after creating.
+            (Only use this if performance is critical)
 
 
     Returns:
         The IDs of the created elements
     """
     index = _get_multiple_index_with_check(net, "bus", index, nr_buses)
+    if np.isscalar(index):
+        index = [index]
+    if not isinstance(index, list):
+        index = index.tolist()
 
-    if geodata:
-        if isinstance(geodata, tuple) and (isinstance(geodata[0], int) or isinstance(geodata[0], float)):
-            geo = _geodata_to_geo_series([geodata], coords, nr_buses)
-        else:
-            assert hasattr(geodata, "__iter__"), "geodata must be an iterable"
-            geo = _geodata_to_geo_series(geodata, coords, nr_buses)  # type: ignore
+    if geodata is not None and isinstance(geodata, tuple) and isinstance(geodata[0], (int, float)):
+        geo = _geodata_to_geo_series([geodata], coords, nr_buses)
     else:
-        geo = _geodata_to_geo_series(geodata, coords, nr_buses)
+        geo = _geodata_to_geo_series(geodata, coords, nr_buses)  # type: ignore[arg-type]
 
     entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo, **kwargs}
-    _add_to_entries_if_not_nan(net, "bus", entries, index, "min_vm_pu", min_vm_pu)
-    _add_to_entries_if_not_nan(net, "bus", entries, index, "max_vm_pu", max_vm_pu)
+
+    min_vm_pu_exists: bool = pd.notna(min_vm_pu) if pd.api.types.is_scalar(min_vm_pu) else pd.notna(min_vm_pu).any()  # type: ignore[attr-defined,arg-type]
+    max_vm_pu_exists: bool = pd.notna(max_vm_pu) if pd.api.types.is_scalar(max_vm_pu) else pd.notna(max_vm_pu).any()  # type: ignore[attr-defined,arg-type]
+
+    # column needed by OPF. 0. and 2. are the default maximum / minimum voltages
+    if min_vm_pu_exists or max_vm_pu_exists or "min_vm_pu" in net.bus.columns or "max_vm_pu" in net.bus.columns:
+        if "min_vm_pu" not in net.bus.columns:
+            net.bus["min_vm_pu"] = get_default_value("bus", "min_vm_pu")
+        if "max_vm_pu" not in net.bus.columns:
+            net.bus["max_vm_pu"] = get_default_value("bus", "max_vm_pu")
+
+        _add_to_entries_if_not_nan(
+            net,
+            "bus",
+            entries,
+            index,
+            "min_vm_pu",
+            min_vm_pu,
+            default_val=get_default_value("bus", "min_vm_pu"),
+        )
+        _add_to_entries_if_not_nan(
+            net,
+            "bus",
+            entries,
+            index,
+            "max_vm_pu",
+            max_vm_pu,
+            default_val=get_default_value("bus", "max_vm_pu"),
+        )
     _set_multiple_entries(net, "bus", index, entries=entries)
-    if "geo" in net.bus.columns:
-        net.bus.loc[net.bus.geo == "", "geo"] = None  # overwrite
+
+    # FIXME: fix test failing validation
+    # if not skip_validation:
+    #     validate_network(net)
+
     return index
 
 
@@ -241,13 +283,14 @@ def create_buses_dc(
     vn_kv: float | Iterable[float],
     index: Int | Iterable[Int] | None = None,
     name: Iterable[str] | None = None,
-    type: BusType | Iterable[BusType] = "b",
-    geodata: Iterable[tuple[float, float]] | None = None,
+    type: BusType | Iterable[BusType] = DEFAULT_BUS_DC_TYPE,
+    geodata: Iterable[tuple[float, float]] | tuple[float, float] | None = None,
     zone: str | None = None,
-    in_service: bool | Iterable[bool] = True,
+    in_service: bool | Iterable[bool] = get_default_value("bus_dc", "in_service"),
     max_vm_pu: float | Iterable[float] = nan,
     min_vm_pu: float | Iterable[float] = nan,
     coords: list[list[list[float]]] | None = None,
+    skip_validation: bool = False,
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
@@ -258,7 +301,7 @@ def create_buses_dc(
     Parameters:
         net: The pandapower network in which the element is created
         nr_buses_dc: The number of dc buses that is created
-        vn_kv: The grid voltage level.
+        vn_kv: Reference voltage level for the bus.
         index: Force specified IDs if available. If None, the indices \
             higher than the highest already existing index are selected.
         name: the name for this dc bus
@@ -271,6 +314,8 @@ def create_buses_dc(
         coords: busbar coordinates to plot the dc bus with multiple points. coords is typically a list of tuples
             (start and endpoint of the busbar) - Example for 3 dc buses:
             [[(x11, y11), (x12, y12)], [(x21, y21), (x22, y22)], [(x31, y31), (x32, y32)]]
+        skip_validation: if set to true validate_network will not be run after creating.
+            (Only use this if performance is critical)
 
 
     Returns:
@@ -280,9 +325,10 @@ def create_buses_dc(
         >>> create_buses_dc(net, 2, [20., 20.], name=["bus1","bus2"])
     """
     index = _get_multiple_index_with_check(net, "bus_dc", index, nr_buses_dc)
+    index = ensure_iterability(index)
 
     if geodata:
-        if isinstance(geodata, tuple) and (isinstance(geodata[0], int) or isinstance(geodata[0], float)):
+        if isinstance(geodata, tuple) and isinstance(geodata[0], (int, float)):
             geo = _geodata_to_geo_series([geodata], coords, nr_buses_dc)
         else:
             assert hasattr(geodata, "__iter__"), "geodata must be an iterable"
@@ -291,8 +337,32 @@ def create_buses_dc(
         geo = _geodata_to_geo_series(geodata, coords, nr_buses_dc)
 
     entries = {"vn_kv": vn_kv, "type": type, "zone": zone, "in_service": in_service, "name": name, "geo": geo, **kwargs}
-    _add_to_entries_if_not_nan(net, "bus_dc", entries, index, "min_vm_pu", min_vm_pu)
-    _add_to_entries_if_not_nan(net, "bus_dc", entries, index, "max_vm_pu", max_vm_pu)
+
+    min_vm_pu_exists: bool = pd.notna(min_vm_pu) if pd.api.types.is_scalar(min_vm_pu) else pd.notna(min_vm_pu).any()  # type: ignore[attr-defined,arg-type]
+    max_vm_pu_exists: bool = pd.notna(max_vm_pu) if pd.api.types.is_scalar(max_vm_pu) else pd.notna(max_vm_pu).any()  # type: ignore[attr-defined,arg-type]
+    if min_vm_pu_exists or max_vm_pu_exists or "min_vm_pu" in net.bus.columns:
+        _add_to_entries_if_not_nan(
+            net,
+            "bus_dc",
+            entries,
+            index,
+            "min_vm_pu",
+            min_vm_pu,
+            default_val=get_default_value("bus_dc", "min_vm_pu"),
+        )
+        _add_to_entries_if_not_nan(
+            net,
+            "bus_dc",
+            entries,
+            index,
+            "max_vm_pu",
+            max_vm_pu,
+            default_val=get_default_value("bus_dc", "max_vm_pu"),
+        )
     _set_multiple_entries(net, "bus_dc", index, entries=entries)
+
+    # FIXME: fix test failing validation
+    # if not skip_validation:
+    #     validate_network(net)
 
     return index

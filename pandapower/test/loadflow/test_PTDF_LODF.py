@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -21,18 +19,15 @@ def test_PTDF():
     rundcpp(net)
     _, ppci = _pd2ppc(net)
 
-    ptdf = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"],
-                    using_sparse_solver=False)
-    _ = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"],
-                 result_side=1, using_sparse_solver=False)
-    ptdf_sparse = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"],
-                           using_sparse_solver=True)
-    ptdf_reduced = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"],
-                            using_sparse_solver=False,
-                            branch_id=list(range(15)), reduced=True)
-    ptdf_reduced_sparse = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"],
-                                   using_sparse_solver=True,
-                                   branch_id=list(range(15)), reduced=True)
+    ptdf = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"], using_sparse_solver=False)
+    _ = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"], result_side=1, using_sparse_solver=False)
+    ptdf_sparse = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"], using_sparse_solver=True)
+    ptdf_reduced = makePTDF(
+        ppci["baseMVA"], ppci["bus"], ppci["branch"], using_sparse_solver=False, branch_id=list(range(15)), reduced=True
+    )
+    ptdf_reduced_sparse = makePTDF(
+        ppci["baseMVA"], ppci["bus"], ppci["branch"], using_sparse_solver=True, branch_id=list(range(15)), reduced=True
+    )
 
     if not np.allclose(ptdf, ptdf_sparse):
         raise AssertionError("Sparse PTDF has differenct result against dense PTDF")
@@ -51,8 +46,7 @@ def test_PTDF_large():
     rundcpp(net)
     _, ppci = _pd2ppc(net)
 
-    ptdf_sparse = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"],
-                           using_sparse_solver=True)
+    ptdf_sparse = makePTDF(ppci["baseMVA"], ppci["bus"], ppci["branch"], using_sparse_solver=True)
     if ptdf_sparse.shape != (ppci["branch"].shape[0], ppci["bus"].shape[0]):
         raise AssertionError("PTDF has wrong dimension")
 
@@ -89,7 +83,7 @@ def test_OTDF():
     # Test selected outages
     n_lines = len(net.line)
     for outage, line in enumerate(outage_lines):
-        otdf_outage_result = (OTDF[outage * n_lines:outage * n_lines + n_lines, :] @ Pbus)
+        otdf_outage_result = OTDF[outage * n_lines : outage * n_lines + n_lines, :] @ Pbus
 
         # Run power flow for the outage scenario
         net.line.at[line, "in_service"] = False

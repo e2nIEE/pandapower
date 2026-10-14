@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -7,31 +5,48 @@
 import numpy as np
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_gen, create_ext_grid, create_load, \
-    create_line_from_parameters, create_pwl_cost, create_sgen
+from pandapower.create import (
+    create_bus,
+    create_gen,
+    create_ext_grid,
+    create_load,
+    create_line_from_parameters,
+    create_pwl_cost,
+    create_sgen,
+)
+from pandapower.network import pandapowerNet
+from pandapower.create._utils import add_column_to_df
 from pandapower.run import runopp
 
 import logging
 
 
 def test_cost_piecewise_linear_gen():
-    """ Testing a very simple network for the resulting cost value
-    constraints with OPF """
+    """Testing a very simple network for the resulting cost value
+    constraints with OPF"""
     # boundaries:
     vm_max = 1.05
     vm_min = 0.95
 
     # create net
-    net = create_empty_network()
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.05, max_p_mw=0.15, max_q_mvar=0.05,
-               min_q_mvar=-0.05)
+    net = pandapowerNet(name="test_cost_piecewise_linear_gen")
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.0)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
+    create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.05, max_p_mw=0.15, max_q_mvar=0.05, min_q_mvar=-0.05)
     create_ext_grid(net, 0)
     create_load(net, 1, p_mw=0.02, controllable=False)
-    create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                max_loading_percent=100 * 690)
+    create_line_from_parameters(
+        net,
+        0,
+        1,
+        50,
+        name="line2",
+        r_ohm_per_km=0.876,
+        c_nf_per_km=260.0,
+        max_i_ka=0.123,
+        x_ohm_per_km=0.1159876,
+        max_loading_percent=100 * 690,
+    )
 
     create_pwl_cost(net, 0, "gen", [[0, 75, 1.5], [75, 150, 1.5]])
 
@@ -42,24 +57,35 @@ def test_cost_piecewise_linear_gen():
 
 
 def test_cost_piecewise_linear_eg():
-    """ Testing a very simple network for the resulting cost value
-    constraints with OPF """
+    """Testing a very simple network for the resulting cost value
+    constraints with OPF"""
 
     # boundaries:
     vm_max = 1.05
     vm_min = 0.95
 
     # create net
-    net = create_empty_network()
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
+    net = pandapowerNet(name="test_cost_piecewise_linear_eg")
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.0)
     create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10)
     create_ext_grid(net, 0, min_p_mw=0, max_p_mw=0.050)
     create_gen(net, 1, p_mw=0.01, min_p_mw=0, max_p_mw=0.050, controllable=True)
+    add_column_to_df(net, "gen", "min_q_mvar")
+    add_column_to_df(net, "gen", "max_q_mvar")
     # create_ext_grid(net, 0)
     create_load(net, 1, p_mw=0.02, controllable=False)
-    create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                max_loading_percent=100 * 690)
+    create_line_from_parameters(
+        net,
+        0,
+        1,
+        50,
+        name="line2",
+        r_ohm_per_km=0.876,
+        c_nf_per_km=260.0,
+        max_i_ka=0.123,
+        x_ohm_per_km=0.1159876,
+        max_loading_percent=100 * 690,
+    )
 
     create_pwl_cost(net, 0, "ext_grid", [[0, 50, -10]])
     # run OPF
@@ -70,24 +96,32 @@ def test_cost_piecewise_linear_eg():
 
 
 def test_get_costs():
-    """ Testing a very simple network for the resulting cost value
-    constraints with OPF """
+    """Testing a very simple network for the resulting cost value
+    constraints with OPF"""
 
     # boundaries:
     vm_max = 1.05
     vm_min = 0.95
 
     # create net
-    net = create_empty_network()
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.05, max_p_mw=0.15, max_q_mvar=0.05,
-               min_q_mvar=-0.05)
+    net = pandapowerNet(name="test_get_costs")
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.0)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
+    create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.05, max_p_mw=0.15, max_q_mvar=0.05, min_q_mvar=-0.05)
     create_ext_grid(net, 0)
     create_load(net, 1, p_mw=0.02, controllable=False)
-    create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                max_loading_percent=100 * 690)
+    create_line_from_parameters(
+        net,
+        0,
+        1,
+        50,
+        name="line2",
+        r_ohm_per_km=0.876,
+        c_nf_per_km=260.0,
+        max_i_ka=0.123,
+        x_ohm_per_km=0.1159876,
+        max_loading_percent=100 * 690,
+    )
 
     create_pwl_cost(net, 0, "gen", [[0, 150, 2]])
     # run OPF
@@ -100,24 +134,32 @@ def test_get_costs():
 
 
 def test_cost_piecewise_linear_sgen():
-    """ Testing a very simple network for the resulting cost value
-    constraints with OPF """
+    """Testing a very simple network for the resulting cost value
+    constraints with OPF"""
 
     # boundaries:
     vm_max = 1.05
     vm_min = 0.95
 
     # create net
-    net = create_empty_network()
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    create_sgen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.05, max_p_mw=0.15, max_q_mvar=0.05,
-                min_q_mvar=-0.05)
+    net = pandapowerNet(name="test_cost_piecewise_linear_sgen")
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.0)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
+    create_sgen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.05, max_p_mw=0.15, max_q_mvar=0.05, min_q_mvar=-0.05)
     create_ext_grid(net, 0)
     create_load(net, 1, p_mw=0.02, controllable=False)
-    create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                max_loading_percent=100 * 690)
+    create_line_from_parameters(
+        net,
+        0,
+        1,
+        50,
+        name="line2",
+        r_ohm_per_km=0.876,
+        c_nf_per_km=260.0,
+        max_i_ka=0.123,
+        x_ohm_per_km=0.1159876,
+        max_loading_percent=100 * 690,
+    )
 
     create_pwl_cost(net, 0, "sgen", [[0, 150, 2]])
     # run OPF
@@ -129,23 +171,31 @@ def test_cost_piecewise_linear_sgen():
 
 
 def test_cost_piecewise_linear_load():
-    """ Testing a very simple network for the resulting cost value
-    constraints with OPF """
+    """Testing a very simple network for the resulting cost value
+    constraints with OPF"""
 
     # boundaries:
     vm_max = 1.05
     vm_min = 0.95
 
     # create net
-    net = create_empty_network()
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    create_load(net, 1, p_mw=0.1, controllable=True, max_p_mw=0.15, min_p_mw=0.050, max_q_mvar=0,
-                min_q_mvar=0)
+    net = pandapowerNet(name="test_cost_piecewise_linear_load")
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.0)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
+    create_load(net, 1, p_mw=0.1, controllable=True, max_p_mw=0.15, min_p_mw=0.050, max_q_mvar=0, min_q_mvar=0)
     create_ext_grid(net, 0)
-    create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                max_loading_percent=100 * 690)
+    create_line_from_parameters(
+        net,
+        0,
+        1,
+        50,
+        name="line2",
+        r_ohm_per_km=0.876,
+        c_nf_per_km=260.0,
+        max_i_ka=0.123,
+        x_ohm_per_km=0.1159876,
+        max_loading_percent=100 * 690,
+    )
 
     create_pwl_cost(net, 0, "load", [[0, 75, 1.5], [75, 150, 1.5]])
 
@@ -156,24 +206,32 @@ def test_cost_piecewise_linear_load():
 
 
 def test_cost_piecewise_linear_sgen_uneven_slopes():
-    """ Testing a very simple network for the resulting cost value
-    constraints with OPF """
+    """Testing a very simple network for the resulting cost value
+    constraints with OPF"""
 
     # boundaries:
     vm_max = 1.05
     vm_min = 0.95
 
     # create net
-    net = create_empty_network()
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    create_sgen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.05, max_p_mw=0.15, max_q_mvar=0.05,
-                min_q_mvar=-0.05)
+    net = pandapowerNet(name="test_cost_piecewise_linear_sgen_uneven_slopes")
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.0)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
+    create_sgen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.05, max_p_mw=0.15, max_q_mvar=0.05, min_q_mvar=-0.05)
     create_ext_grid(net, 0)
     create_load(net, 1, p_mw=0.02, controllable=False)
-    create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                max_loading_percent=100 * 690)
+    create_line_from_parameters(
+        net,
+        0,
+        1,
+        50,
+        name="line2",
+        r_ohm_per_km=0.876,
+        c_nf_per_km=260.0,
+        max_i_ka=0.123,
+        x_ohm_per_km=0.1159876,
+        max_loading_percent=100 * 690,
+    )
 
     create_pwl_cost(net, 0, "sgen", [[0, 75, 1.5], [75, 150, 1.5]])
     # run OPF
@@ -184,22 +242,31 @@ def test_cost_piecewise_linear_sgen_uneven_slopes():
 
 
 def test_cost_piecewise_linear_load_uneven_slopes():
-    """ Testing a very simple network for the resulting cost value
-    constraints with OPF """
+    """Testing a very simple network for the resulting cost value
+    constraints with OPF"""
 
     # boundaries:
     vm_max = 1.05
     vm_min = 0.95
 
     # create net
-    net = create_empty_network()
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
+    net = pandapowerNet(name="test_cost_piecewise_linear_load_uneven_slopes")
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.0)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
     create_load(net, 1, p_mw=0.050)
     create_ext_grid(net, 0)
-    create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                max_loading_percent=100 * 690)
+    create_line_from_parameters(
+        net,
+        0,
+        1,
+        50,
+        name="line2",
+        r_ohm_per_km=0.876,
+        c_nf_per_km=260.0,
+        max_i_ka=0.123,
+        x_ohm_per_km=0.1159876,
+        max_loading_percent=100 * 690,
+    )
 
     create_pwl_cost(net, 0, "ext_grid", [(0, 0.075, 1), (0.075, 150, 2)])
 
@@ -213,31 +280,39 @@ def test_cost_piecewise_linear_load_uneven_slopes():
 
 
 def test_cost_piecewise_linear_sgen_very_unsteady_slopes():
-    """ Testing a very simple network for the resulting cost value
-    constraints with OPF """
+    """Testing a very simple network for the resulting cost value
+    constraints with OPF"""
 
     # boundaries:
     vm_max = 1.5
     vm_min = 0.5
 
     # create net
-    net = create_empty_network()
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=.4)
-    create_sgen(net, 1, p_mw=0.10, controllable=True, min_p_mw=0, max_p_mw=1.50,
-                max_q_mvar=0.05, min_q_mvar=-0.05)
+    net = pandapowerNet(name="test_cost_piecewise_linear_sgen_very_unsteady_slopes")
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.0)
+    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
+    create_sgen(net, 1, p_mw=0.10, controllable=True, min_p_mw=0, max_p_mw=1.50, max_q_mvar=0.05, min_q_mvar=-0.05)
     create_ext_grid(net, 0)
     create_load(net, 1, p_mw=0.02, controllable=False)
-    create_line_from_parameters(net, 0, 1, 50, name="line2", r_ohm_per_km=0.876,
-                                c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876,
-                                max_loading_percent=100 * 690)
+    create_line_from_parameters(
+        net,
+        0,
+        1,
+        50,
+        name="line2",
+        r_ohm_per_km=0.876,
+        c_nf_per_km=260.0,
+        max_i_ka=0.123,
+        x_ohm_per_km=0.1159876,
+        max_loading_percent=100 * 690,
+    )
 
     create_pwl_cost(net, 0, "sgen", [[0, 0.75, -1], [0.75, 1500, 2]])
     # run OPF
     runopp(net)
 
     assert net["OPF_converged"]
-    assert np.isclose(net.res_sgen.p_mw.values[0], .75, rtol=1e-2)
+    assert np.isclose(net.res_sgen.p_mw.values[0], 0.75, rtol=1e-2)
     assert np.isclose(net.res_sgen.p_mw.values[0], -net.res_cost, rtol=1e-2)
 
 

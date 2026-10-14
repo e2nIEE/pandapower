@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -8,7 +6,8 @@ import math
 import numpy as np
 import pandas as pd
 from copy import deepcopy
-from pandapower.auxiliary import _clean_up, pandapowerNet
+from pandapower.auxiliary import _clean_up
+from pandapower import pandapowerNet
 from pandapower.pypower.idx_brch import PF, PT, QF, QT, BR_STATUS
 from pandapower.pypower.idx_bus import VA, VM
 from pandapower.pypower.idx_gen import PG, QG
@@ -16,7 +15,7 @@ from pandapower.results import _extract_results, _copy_results_ppci_to_ppc
 from pandapower.optimal_powerflow import OPFNotConverged
 from logging import getLogger
 
-logger = getLogger('converter.pandamodels.from_pm')
+logger = getLogger("converter.pandamodels.from_pm")
 
 
 def read_pm_results_to_net(net: pandapowerNet, ppc, ppci, result_pm):
@@ -41,7 +40,7 @@ def read_pm_results_to_net(net: pandapowerNet, ppc, ppci, result_pm):
             for tp, ri in result.items():
                 add_time_series_data_to_net(neti, net.controller, tp)
                 _extract_results(neti, ri)
-                add_storage_results(neti, result_pm["solution"]["nw"][str(int(tp)+1)])
+                add_storage_results(neti, result_pm["solution"]["nw"][str(int(tp) + 1)])
                 result[tp] = deepcopy(neti)
             net["res_ts_opt"] = result
         _clean_up(net)
@@ -65,13 +64,14 @@ def add_storage_results(net: pandapowerNet, result_pmi):
 
 def add_time_series_data_to_net(net: pandapowerNet, controller, tp):
     from pandapower.control import ConstControl
+
     for idx, content in controller.iterrows():
         if type(content["object"]) == ConstControl:
             element = content["object"].__dict__["matching_params"]["element"]
             variable = content["object"].__dict__["matching_params"]["variable"]
             elm_idxs = content["object"].__dict__["matching_params"]["element_index"]
             df = content["object"].data_source.df
-            net[element].loc[elm_idxs,variable] = df.loc[int(tp)].values
+            net[element].loc[elm_idxs, variable] = df.loc[int(tp)].astype(net[element][variable].dtype)
 
 
 def pm_results_to_ppc_results(net: pandapowerNet, ppc, ppci, result_pm):
@@ -94,10 +94,10 @@ def pm_results_to_ppc_results(net: pandapowerNet, ppc, ppci, result_pm):
         result = {}
         for tp, soli in sol["nw"].items():
             pm_results_to_ppc_results_one_time_step(ppci, soli)
-            result[str(int(tp)-1)] = deepcopy(_copy_results_ppci_to_ppc(ppci, ppc, options["mode"]))
+            result[str(int(tp) - 1)] = deepcopy(_copy_results_ppci_to_ppc(ppci, ppc, options["mode"]))
     else:
         if "bus" not in sol:
-            ppci["success"] = False # PowerModels failed
+            ppci["success"] = False  # PowerModels failed
         else:
             pm_results_to_ppc_results_one_time_step(ppci, sol)
             result = _copy_results_ppci_to_ppc(ppci, ppc, options["mode"])
@@ -151,8 +151,7 @@ def read_ots_results(net: pandapowerNet):
         res = "res_" + element
         if "in_service" not in net[res]:
             # copy in service state from inputs
-            net[res].loc[:, "in_service"] = None
-            net[res].loc[:, "in_service"] = net[res].loc[:, "in_service"].values
+            net[res]["in_service"] = None
         branch_status = ppc["branch"][f:t, BR_STATUS].real  # type: ignore[index]
 
         net[res].loc[:, "in_service"] = branch_status
@@ -165,4 +164,4 @@ def read_tnep_results(net: pandapowerNet):
         # get pandapower index from power models index
         pp_idx = line_idx[int(pm_branch_idx) - 1]
         # built is a float, which is not exactly 1.0 or 0. sometimes
-        net["res_ne_line"].loc[pp_idx, "built"] = branch_data["built"] > 0.5
+        net["res_ne_line"].loc[pp_idx, "built"] = int(branch_data["built"] > 0.5)

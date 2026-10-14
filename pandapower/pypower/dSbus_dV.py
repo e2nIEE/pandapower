@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright 1996-2015 PSERC. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
@@ -8,17 +6,14 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-
-"""Computes partial derivatives of power injection w.r.t. voltage.
-"""
+"""Computes partial derivatives of power injection w.r.t. voltage."""
 
 from numpy import conj, diag, asarray
 from scipy.sparse import issparse, csr_matrix as sparse
 
 
 def dSbus_dV(Ybus, V):
-    """Computes partial derivatives of power injection w.r.t. voltage.
-    """
+    """Computes partial derivatives of power injection w.r.t. voltage."""
 
     if issparse(Ybus):
         return dSbus_dV_sparse(Ybus, V)

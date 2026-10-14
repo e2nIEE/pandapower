@@ -1,22 +1,22 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
 import pytest
 
-from pandapower.run import runpp
-from pandapower.networks.power_system_test_cases import case14
-from pandapower.create import create_empty_network, create_bus, create_ext_grid, create_sgen, create_load, \
-    create_line, create_transformer3w
+from pandapower.create import create_bus, create_ext_grid, create_sgen, create_load, create_line, create_transformer3w
 from pandapower.estimation import estimate
 from pandapower.estimation.util import add_virtual_pmu_meas_from_loadflow
+from pandapower.network import pandapowerNet
+from pandapower.networks.power_system_test_cases import case14
+from pandapower.run import runpp
+
 
 def run_se_verify(net):
     estimate(net, algorithm="wls")
-    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or\
-       not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=1e-1):
+    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or not np.allclose(
+        net.res_bus.va_degree, net.res_bus_est.va_degree, atol=1e-1
+    ):
         raise AssertionError("Estimation failed!")
 
 
@@ -30,7 +30,7 @@ def test_pmu_case14():
 
 
 def test_pmu_with_trafo3w():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_pmu_with_trafo3w")
 
     bus_slack = create_bus(net, vn_kv=110)
     create_ext_grid(net, bus=bus_slack)
@@ -53,5 +53,5 @@ def test_pmu_with_trafo3w():
     run_se_verify(net)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

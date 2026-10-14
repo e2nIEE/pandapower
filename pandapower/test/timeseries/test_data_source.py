@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -29,11 +27,9 @@ def test_data_source():
 
     assert np.isclose(my_data_source.get_time_step_value(time_step=0, profile_name="my_profilename"), 0.0)
     assert np.isclose(my_data_source.get_time_step_value(time_step=3, profile_name="my_profilename"), 0.0)
-    assert abs(my_data_source.get_time_step_value(time_step=4, profile_name="my_profilename")
-               - -3.97E-1) < epsilon
-    assert abs(my_data_source.get_time_step_value(time_step=8, profile_name="constload3")
-               - -5.37E-3) < epsilon
+    assert abs(my_data_source.get_time_step_value(time_step=4, profile_name="my_profilename") - -3.97e-1) < epsilon
+    assert abs(my_data_source.get_time_step_value(time_step=8, profile_name="constload3") - -5.37e-3) < epsilon
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

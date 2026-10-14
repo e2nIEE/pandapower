@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -25,6 +23,7 @@ def _make_hashable(obj):
     if isinstance(obj, np.ndarray):
         return tuple(_make_hashable(v) for v in obj.tolist())
     return obj
+
 
 class Characteristic(JSONSerializableClass):
     """
@@ -111,7 +110,7 @@ class Characteristic(JSONSerializableClass):
         Parameters:
             x: The x-value at which the current y-value is measured
             actual: The actual y-value being measured.
-            
+
         Returns:
              The difference between actual and expected value.
         """
@@ -157,6 +156,7 @@ class SplineCharacteristic(Characteristic):
     Characteristic can be followed by providing a tuple for the fill value for x outside the specified range,
     refer to the documentation of interp1d for more details. We set the parameter bounds_error to False.
     """
+
     json_excludes = ["self", "__class__", "_interpolator"]
 
     def __init__(self, net, x_values, y_values, interpolator_kind="interp1d", table="characteristic", **kwargs):
@@ -164,7 +164,6 @@ class SplineCharacteristic(Characteristic):
         self.kwargs = kwargs
         self.interpolator_kind = interpolator_kind
         self._interpolator = None
-
 
     @property
     def interpolator(self):
@@ -208,7 +207,6 @@ class SplineCharacteristic(Characteristic):
             and np.array_equal(self.y_vals, other.y_vals)
         )
 
-
     def __repr__(self):
         return self.__class__.__name__ + f"({self.interpolator_kind}, {self.kwargs})"
 
@@ -228,7 +226,6 @@ class SplineCharacteristic(Characteristic):
 
 
 class LogSplineCharacteristic(SplineCharacteristic):
-
     def __init__(self, net, x_values, y_values, **kwargs):
         super().__init__(net, x_values, y_values, **kwargs)
 
@@ -238,7 +235,7 @@ class LogSplineCharacteristic(SplineCharacteristic):
 
     @x_vals.setter
     def x_vals(self, x_values):
-        if np.any(x_values == 0):
+        if np.any([True if x <= 0 else False for x in x_values]):
             logger.warning("zero-values not supported in x_values")
         self._x_vals = np.log10(x_values)
 
@@ -248,7 +245,7 @@ class LogSplineCharacteristic(SplineCharacteristic):
 
     @y_vals.setter
     def y_vals(self, y_values):
-        if np.any(y_values == 0):
+        if np.any([True if y <= 0 else False for y in y_values]):
             logger.warning("zero-values not supported in y_values")
         self._y_vals = np.log10(y_values)
 

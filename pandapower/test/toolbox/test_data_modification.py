@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -9,18 +7,32 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower.create import create_measurement, create_empty_network, create_bus, create_load, create_sgen, \
-    create_shunt, create_ward, create_ssc
+from pandapower.create import (
+    create_buses,
+    create_loads,
+    create_measurement,
+    create_sgens,
+    create_shunts,
+    create_ssc,
+    create_wards,
+)
+from pandapower.estimation.util import add_virtual_meas_from_loadflow
+from pandapower.network import pandapowerNet
 from pandapower.networks.cigre_networks import create_cigre_network_mv
-from pandapower.networks.create_examples import example_simple, example_multivoltage
+from pandapower.networks.create_examples import example_multivoltage, example_simple
 from pandapower.run import runpp
 from pandapower.test.helper_functions import assert_net_equal
 from pandapower.toolbox.comparison import compare_arrays
-from pandapower.toolbox.data_modification import reindex_elements, reindex_buses, add_column_from_node_to_elements, \
-    add_column_from_element_to_elements, create_continuous_bus_index, create_continuous_elements_index, \
-    set_scaling_by_type
+from pandapower.toolbox.data_modification import (
+    add_column_from_element_to_elements,
+    add_column_from_node_to_elements,
+    create_continuous_bus_index,
+    create_continuous_elements_index,
+    reindex_buses,
+    reindex_elements,
+    set_scaling_by_type,
+)
 from pandapower.toolbox.element_selection import pp_elements
-from pandapower.estimation.util import add_virtual_meas_from_loadflow
 
 
 def test_add_column_from_node_to_elements():
@@ -36,14 +48,25 @@ def test_add_column_from_node_to_elements():
     def check_subnet_correctness(ntw, elements, branch_bus_el):
         for elm in elements:
             if "bus" in ntw[elm].columns:
-                assert all(compare_arrays(ntw[elm]["subnet"].values,
-                                          np.array([f"subnet_{bus}" for bus in ntw[elm].bus]).astype(object)))
+                assert all(
+                    compare_arrays(
+                        ntw[elm]["subnet"].values, np.array([f"subnet_{bus}" for bus in ntw[elm].bus]).astype(object)
+                    )
+                )
             elif branch_bus_el[0] in ntw[elm].columns:
-                assert all(compare_arrays(ntw[elm]["subnet"].values, np.array([
-                    f"subnet_{bus}" for bus in ntw[elm][branch_bus_el[0]]]).astype(object)))
+                assert all(
+                    compare_arrays(
+                        ntw[elm]["subnet"].values,
+                        np.array([f"subnet_{bus}" for bus in ntw[elm][branch_bus_el[0]]]).astype(object),
+                    )
+                )
             elif branch_bus_el[1] in ntw[elm].columns:
-                assert all(compare_arrays(ntw[elm]["subnet"].values, np.array([
-                    f"subnet_{bus}" for bus in ntw[elm][branch_bus_el[1]]]).astype(object)))
+                assert all(
+                    compare_arrays(
+                        ntw[elm]["subnet"].values,
+                        np.array([f"subnet_{bus}" for bus in ntw[elm][branch_bus_el[1]]]).astype(object),
+                    )
+                )
 
     check_subnet_correctness(net, pp_elements(bus=False) - {"sgen"}, branch_bus)
 
@@ -59,11 +82,11 @@ def test_add_column_from_element_to_elements():
     assert net.measurement.name.isnull().all()
     assert ~net.switch.name.isnull().all()
     orig_switch_names = copy.deepcopy(net.switch.name.values)
-    expected_measurement_names = np.array([
-        net.trafo.name.loc[0], net.line.name.loc[0], net.bus.name.loc[2]])
+    expected_measurement_names = np.array([net.trafo.name.loc[0], net.line.name.loc[0], net.bus.name.loc[2]])
     expected_switch_names = np.append(
         net.line.name.loc[net.switch.element.loc[net.switch.et == "l"]].values,
-        net.trafo.name.loc[net.switch.element.loc[net.switch.et == "t"]].values)
+        net.trafo.name.loc[net.switch.element.loc[net.switch.et == "t"]].values,
+    )
 
     add_column_from_element_to_elements(net, "name", False)
     assert all(compare_arrays(net.measurement.name.values, expected_measurement_names))
@@ -85,7 +108,7 @@ def test_reindex_buses():
     # a more complexe bus_lookup of course should also work, but this one is easy to check
     reindex_buses(net, bus_lookup)
 
-    for elm in net.keys():
+    for elm in net:
         if isinstance(net[elm], pd.DataFrame) and net[elm].shape[0]:
             cols = pd.Series(net[elm].columns)
             bus_cols = cols.loc[cols.str.contains("bus")]
@@ -93,53 +116,34 @@ def test_reindex_buses():
                 for bus_col in bus_cols:
                     assert all(net[elm][bus_col] == net_orig[elm][bus_col] + to_add)
             if elm == "bus":
-                assert all(np.array(list(net[elm].index)) == np.array(list(
-                    net_orig[elm].index)) + to_add)
+                assert all(np.array(list(net[elm].index)) == np.array(list(net_orig[elm].index)) + to_add)
+
 
 def test_reindex_buses__create_duplicate_index():
     net = example_simple()
-    bus_lookup = dict(zip(range(2,7), range(0,5)))
+    bus_lookup = dict(zip(range(2, 7), range(0, 5)))
 
     with pytest.raises(
         ValueError,
-        match="These bus indices are already used and not being updated." +
-        " Thus they cannot be used as new index: {0, 1}"
+        match="These bus indices are already used and not being updated."
+        + " Thus they cannot be used as new index: {0, 1}",
     ):
         reindex_buses(net, bus_lookup)
 
     bus_lookup = dict(zip(range(7), [0, 1, 2, 3, 0, 1, 2]))
-    with pytest.raises(
-        ValueError,
-        match=r"Duplicate values for new indices not allowed: \[0, 1, 2\]"
-    ):
+    with pytest.raises(ValueError, match=r"Duplicate values for new indices not allowed: \[0, 1, 2\]"):
         reindex_buses(net, bus_lookup)
 
+
 def test_continuos_bus_numbering():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_continuos_bus_numbering")
 
-    bus0 = create_bus(net, 0.4, index=12)
-    create_load(net, bus0, p_mw=0.)
-    create_load(net, bus0, p_mw=0.)
-    create_load(net, bus0, p_mw=0.)
-    create_load(net, bus0, p_mw=0.)
-
-    bus0 = create_bus(net, 0.4, index=42)
-    create_sgen(net, bus0, p_mw=0.)
-    create_sgen(net, bus0, p_mw=0.)
-    create_sgen(net, bus0, p_mw=0.)
-
-    bus0 = create_bus(net, 0.4, index=543)
-    create_shunt(net, bus0, 2, 1)
-    create_shunt(net, bus0, 2, 1)
-    create_shunt(net, bus0, 2, 1)
-
-    bus0 = create_bus(net, 0.4, index=5675)
-    create_ward(net, bus0, 2, 1, 1, 2)
-    create_ward(net, bus0, 2, 1, 1, 2)
-    create_ward(net, bus0, 2, 1, 1, 2)
-
-    bus0 = create_bus(net, 0.4, index=9821)
-    create_ssc(net, bus0, r_ohm=1., x_ohm=1.)
+    bus0, bus1, bus2, bus3, bus4 = create_buses(net, 5, 0.4, index=[12, 42, 543, 5675, 9821])
+    create_loads(net, [bus0] * 4, p_mw=0.0)
+    create_sgens(net, [bus1] * 3, p_mw=0.0)
+    create_shunts(net, [bus2] * 3, 2, 1)
+    create_wards(net, [bus3] * 3, 2, 1, 1, 2)
+    create_ssc(net, bus4, r_ohm=1.0, x_ohm=1.0)
 
     create_continuous_bus_index(net)
 
@@ -149,7 +153,7 @@ def test_continuos_bus_numbering():
     assert buses[0] == 0  # starts at zero
 
     used_buses = []
-    for element in net.keys():
+    for element in net:
         try:
             used_buses.extend(net[element].bus.values)
         except AttributeError:
@@ -222,13 +226,13 @@ def test_continuous_element_numbering():
 
 
 def test_scaling_by_type():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_scaling_by_type")
 
-    bus0 = create_bus(net, 0.4)
-    create_load(net, bus0, p_mw=0., type="Household")
-    create_sgen(net, bus0, p_mw=0., type="PV")
+    (bus0,) = create_buses(net, 1, 0.4)
+    create_loads(net, [bus0], p_mw=0.0, type="Household")
+    create_sgens(net, [bus0], p_mw=0.0, type="PV")
 
-    set_scaling_by_type(net, {"Household": 42., "PV": 12})
+    set_scaling_by_type(net, {"Household": 42.0, "PV": 12})
 
     assert net.load.at[0, "scaling"] == 42
     assert net.sgen.at[0, "scaling"] == 12
@@ -239,5 +243,5 @@ def test_scaling_by_type():
     assert net.sgen.at[0, "scaling"] == 0
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

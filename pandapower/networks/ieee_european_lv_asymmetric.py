@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -39,14 +37,11 @@ def ieee_european_lv_asymmetric(scenario="on_peak_566", **kwargs):
         >>> net = ieee_european_lv_asymmetric("off_peak_1")
     """
     if scenario == "off_peak_1":
-        net = from_json(os.path.join(pp_dir, "networks", "IEEE_European_LV_Off_Peak_1.json"),
-                        **kwargs)
+        net = from_json(os.path.join(pp_dir, "networks", "IEEE_European_LV_Off_Peak_1.json"), **kwargs)
     elif scenario == "on_peak_566":
-        net = from_json(os.path.join(pp_dir, "networks", "IEEE_European_LV_On_Peak_566.json"),
-                        **kwargs)
+        net = from_json(os.path.join(pp_dir, "networks", "IEEE_European_LV_On_Peak_566.json"), **kwargs)
     elif scenario == "off_peak_1440":
-        net = from_json(os.path.join(pp_dir, "networks", "IEEE_European_LV_Off_Peak_1440.json"),
-                        **kwargs)
+        net = from_json(os.path.join(pp_dir, "networks", "IEEE_European_LV_Off_Peak_1440.json"), **kwargs)
     else:
         raise ValueError(f"Unknown scenario {scenario} - chose 'on_peak_566', 'off_peak_1' or 'off_peak_1440'")
     return net

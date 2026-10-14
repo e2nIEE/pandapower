@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -9,9 +7,10 @@ import pandas as pd
 import pytest
 
 from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
-from pandapower.create import create_bus
+from pandapower.create import create_buses
 from pandapower.networks.cigre_networks import create_cigre_network_lv
-from pandapower.toolbox.comparison import nets_equal, logger as tbc_logger
+from pandapower.toolbox.comparison import logger as tbc_logger
+from pandapower.toolbox.comparison import nets_equal
 
 
 def test_nets_equal():
@@ -24,7 +23,7 @@ def test_nets_equal():
     assert nets_equal(net, original)
 
     # detecting additional element
-    create_bus(net, vn_kv=.4)
+    create_buses(net, 1, vn_kv=0.4)
     assert not nets_equal(original, net)
     assert not nets_equal(net, original)
     net = copy.deepcopy(original)
@@ -53,7 +52,10 @@ def test_nets_equal():
     assert nets_equal(net, original, atol=0.1)
 
     # check controllers
-    original.trafo.tap_side = original.trafo.tap_side.fillna("hv")
+    if "tap_side" in original.trafo:
+        original.trafo.tap_side = original.trafo.tap_side.fillna("hv")
+    else:
+        original.trafo["tap_side"] = pd.Series(["hv"] * len(original.trafo), dtype=pd.StringDtype())
     net1 = copy.deepcopy(original)
     net2 = copy.deepcopy(original)
     ContinuousTapControl(net1, 0, 1.0)
@@ -73,10 +75,8 @@ def test_nets_equal():
     net2 = copy.deepcopy(original)
     net1.bus["geo"] = pd.Series(index=net1.bus.index, data=[100] * len(net1.bus.index))
     net2.bus["geo"] = pd.Series(index=net2.bus.index, data=[100] * len(net2.bus.index))
-    assert nets_equal(
-        net1, net2, assume_geojson_strings=False, exclude_elms=set(net.keys()) - {"bus"}
-    )
+    assert nets_equal(net1, net2, assume_geojson_strings=False, exclude_elms=set(net.keys()) - {"bus"})
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

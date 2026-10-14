@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -27,7 +25,6 @@ columns 0-10 must be included in the input matrix (in case file)
     10. C{SVC_X_PU}                         reactance in per unit (p.u.)
 
 """
-
 
 # define the indices
 SVC_BUS = 0  # f, from bus number

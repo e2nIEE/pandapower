@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -17,23 +15,32 @@ from packaging.version import Version
 
 try:
     import xlsxwriter
+
     xlsxwriter_INSTALLED = True
 except ImportError:
     xlsxwriter_INSTALLED = False
 try:
     import openpyxl
+
     openpyxl_INSTALLED = True
 except ImportError:
     openpyxl_INSTALLED = False
 
 from pandapower.auxiliary import soft_dependency_error
-from pandapower.auxiliary import pandapowerNet
+from pandapower import pandapowerNet
 from pandapower.std_types import basic_std_types
-from pandapower.create import create_empty_network
 from pandapower.convert_format import convert_format
-from pandapower.io_utils import to_dict_with_coord_transform, to_dict_of_dfs, PPJSONEncoder, encrypt_string, \
-    get_raw_data_from_pickle, transform_net_with_df_and_geo, from_dict_of_dfs, decrypt_string, \
-    PPJSONDecoder
+from pandapower.io_utils import (
+    to_dict_with_coord_transform,
+    to_dict_of_dfs,
+    PPJSONEncoder,
+    encrypt_string,
+    get_raw_data_from_pickle,
+    transform_net_with_df_and_geo,
+    from_dict_of_dfs,
+    decrypt_string,
+    PPJSONDecoder,
+)
 
 import logging
 
@@ -52,7 +59,7 @@ def to_pickle(net, filename) -> None:
         >>> to_pickle(net, os.path.join("C:", "example_folder", "example1.p"))  # absolute path
         >>> to_pickle(net, "example2.p")  # relative path
     """
-    if hasattr(filename, 'write'):
+    if hasattr(filename, "write"):
         pickle.dump(dict(net), filename, protocol=2)
         return
     if not filename.endswith(".p"):
@@ -79,52 +86,58 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     """
     if not xlsxwriter_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "xlsxwriter")
-    dict_net = to_dict_of_dfs(
-        net,
-        include_results=include_results,
-        include_empty_tables=include_empty_tables
-    )
-    with pd.ExcelWriter(filename, engine='xlsxwriter') as writer:
+    dict_net = to_dict_of_dfs(net, include_results=include_results, include_empty_tables=include_empty_tables)
+    with pd.ExcelWriter(filename, engine="xlsxwriter") as writer:
         for item, table in dict_net.items():
             table.to_excel(writer, sheet_name=item)
 
 
 @function_overload
-def to_json(net: pandapowerNet, filename: None = ..., encryption_key: Union[str, None] = ...,
-            indent: Union[int, str, None] = ..., sort_keys: bool = ...) -> str: ...
+def to_json(
+    net: pandapowerNet,
+    filename: None = ...,
+    encryption_key: Union[str, None] = ...,
+    indent: Union[int, str, None] = ...,
+    sort_keys: bool = ...,
+) -> str: ...
 
 
 @function_overload
-def to_json(net: pandapowerNet, filename: Union[str, TextIO], encryption_key: Union[str, None] = ...,
-            indent: Union[int, str, None] = ..., sort_keys: bool = ...) -> None: ...
+def to_json(
+    net: pandapowerNet,
+    filename: Union[str, TextIO],
+    encryption_key: Union[str, None] = ...,
+    indent: Union[int, str, None] = ...,
+    sort_keys: bool = ...,
+) -> None: ...
 
 
 def to_json(
-        net: pandapowerNet,
-        filename: Union[str, TextIO, None] = None,
-        encryption_key: Union[str, None] = None,
-        indent: Union[int, str, None] = 2,
-        sort_keys: bool = False,
+    net: pandapowerNet,
+    filename: Union[str, TextIO, None] = None,
+    encryption_key: Union[str, None] = None,
+    indent: Union[int, str, None] = 2,
+    sort_keys: bool = False,
 ) -> Union[str, None]:
     """
-        Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
-        be saved in ascending order. net elements which name begins with "_" (internal elements)
-        will not be saved. Std types will also not be saved.
+    Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
+    be saved in ascending order. net elements which name begins with "_" (internal elements)
+    will not be saved. Std types will also not be saved.
 
-        :param pandapowerNet net: The pandapower format network
-        :param filename: The absolute or relative path to the output file or a file-like object,
-            if 'None' the function returns a json string, default None
-        :type filename: str or file
-        :param encryption_key: If given, the pandapower network is stored as an encrypted json string, default None
-        :type encryption_key: str or None
-        :param indent: indentation to use for the json. String or amount of spaces to use, defaut 2
-        :type indent: int or str or None
-        :param sort_keys: sort dictionaries by key, default False
-        :type sort_keys: bool
+    :param pandapowerNet net: The pandapower format network
+    :param filename: The absolute or relative path to the output file or a file-like object,
+        if 'None' the function returns a json string, default None
+    :type filename: str or file
+    :param encryption_key: If given, the pandapower network is stored as an encrypted json string, default None
+    :type encryption_key: str or None
+    :param indent: indentation to use for the json. String or amount of spaces to use, defaut 2
+    :type indent: int or str or None
+    :param sort_keys: sort dictionaries by key, default False
+    :type sort_keys: bool
 
-        :example:
-             >>> from pandapower.file_io import to_json
-             >>> to_json(net, "example.json")
+    :example:
+         >>> from pandapower.file_io import to_json
+         >>> to_json(net, "example.json")
     """
 
     json_string = json.dumps(net, cls=PPJSONEncoder, indent=indent, sort_keys=sort_keys)
@@ -134,7 +147,7 @@ def to_json(
     if filename is None:
         return json_string
 
-    if hasattr(filename, 'write'):
+    if hasattr(filename, "write"):
         filename.write(json_string)
     else:
         with open(filename, "w") as fp:
@@ -142,11 +155,7 @@ def to_json(
     return None
 
 
-def from_pickle(filename,
-                convert=True,
-                drop_invalid_geodata=False,
-                ignore_version_conflicts=False
-):
+def from_pickle(filename, convert=True, drop_invalid_geodata=False, ignore_version_conflicts=False):
     """
     Load a pandapower format Network from pickle file
 
@@ -169,20 +178,16 @@ def from_pickle(filename,
         >>> net2 = from_pickle("example2.p") #relative path
     """
 
-    net = pandapowerNet(get_raw_data_from_pickle(filename))
+    net = pandapowerNet(net=get_raw_data_from_pickle(filename))
     transform_net_with_df_and_geo(net, ["bus_geodata"], ["line_geodata"])
 
     if convert:
-        convert_format(net, drop_invalid_geodata=drop_invalid_geodata,
-                       donot_open_newer=not ignore_version_conflicts)
+        convert_format(net, drop_invalid_geodata=drop_invalid_geodata, donot_open_newer=not ignore_version_conflicts)
     return net
 
 
-def from_excel(filename,
-               convert=True,
-               add_basic_std_types=True,
-               drop_invalid_geodata=False,
-               ignore_version_conflicts=False
+def from_excel(
+    filename, convert=True, add_basic_std_types=True, drop_invalid_geodata=False, ignore_version_conflicts=False
 ):
     """
     Load a pandapower network from an Excel file
@@ -219,15 +224,14 @@ def from_excel(filename,
     except:
         net = _from_excel_old(xls, add_basic_std_types=add_basic_std_types)
     if convert:
-        convert_format(net, drop_invalid_geodata=drop_invalid_geodata,
-                       donot_open_newer=not ignore_version_conflicts)
+        convert_format(net, drop_invalid_geodata=drop_invalid_geodata, donot_open_newer=not ignore_version_conflicts)
     return net
 
 
 def _from_excel_old(xls, add_basic_std_types=True):
     par = xls["parameters"]["parameter"]
     name = None if pd.isnull(par.at["name"]) else par.at["name"]
-    net = create_empty_network(name=name, f_hz=par.at["f_hz"], add_stdtypes=add_basic_std_types)
+    net = pandapowerNet(name=name, f_hz=par.at["f_hz"], add_stdtypes=add_basic_std_types)
     net.update(par)
     for item, table in xls.items():
         if item == "parameters":
@@ -239,8 +243,9 @@ def _from_excel_old(xls, add_basic_std_types=True):
         elif item == "line_geodata":
             points = int(len(table.columns) / 2)
             for i, coords in table.iterrows():
-                coord = [(coords["x%u" % nr], coords["y%u" % nr]) for nr in range(points)
-                         if pd.notnull(coords["x%u" % nr])]
+                coord = [
+                    (coords["x%u" % nr], coords["y%u" % nr]) for nr in range(points) if pd.notnull(coords["x%u" % nr])
+                ]
                 net.line_geodata.loc[i, "coords"] = coord
         else:
             net[item] = table
@@ -248,20 +253,20 @@ def _from_excel_old(xls, add_basic_std_types=True):
 
 
 def from_json(
-        filename_or_str,
-        convert=True,
-        encryption_key=None,
-        elements_to_deserialize=None,
-        keep_serialized_elements=True,
-        add_basic_std_types=False,
-        replace_elements=None,
-        empty_dict_like_object=None,
-        ignore_unknown_objects=False,
-        drop_invalid_geodata=False,
-        omit_tables=None,
-        omit_modules=None,
-        ignore_version_conflicts=False,
-        skip_checks=False
+    filename_or_str,
+    convert=True,
+    encryption_key=None,
+    elements_to_deserialize=None,
+    keep_serialized_elements=True,
+    add_basic_std_types=False,
+    replace_elements=None,
+    empty_dict_like_object=None,
+    ignore_unknown_objects=False,
+    drop_invalid_geodata=False,
+    omit_tables=None,
+    omit_modules=None,
+    ignore_version_conflicts=False,
+    skip_checks=False,
 ):
     """
     Load a pandapower network from a JSON file.
@@ -283,7 +288,7 @@ def from_json(
     :param replace_elements: Keys are replaced by values found in json string. Both key and value are supposed to be
         strings, default None
     :type replace_elements: dict or None
-    :param empty_dict_like_object: If None, the output of pandapower.create_empty_network() is used as an empty element
+    :param empty_dict_like_object: If None, the output of pandapowerNet() is used as an empty element
         to be filled by the data of the json string. Give another dict-like object to start filling that alternative
         object with the json data, default None
     :type empty_dict_like_object: dict or pandapowerNet or None
@@ -308,7 +313,7 @@ def from_json(
         >>> from pandapower.file_io import from_json
         >>> net = from_json("example.json")
     """
-    if hasattr(filename_or_str, 'read'):
+    if hasattr(filename_or_str, "read"):
         json_string = filename_or_str.read()
     elif os.path.isfile(filename_or_str):
         with open(filename_or_str, "r") as fp:
@@ -330,27 +335,27 @@ def from_json(
             omit_tables=omit_tables,
             omit_modules=omit_modules,
             ignore_version_conflicts=ignore_version_conflicts,
-            skip_checks=skip_checks
+            skip_checks=skip_checks,
         )
     except ValueError as e:
         raise UserWarning(f"Failed to load as json or file: {e}")
 
 
 def from_json_string(
-        json_string,
-        convert=False,
-        encryption_key=None,
-        elements_to_deserialize=None,
-        keep_serialized_elements=True,
-        add_basic_std_types=False,
-        replace_elements=None,
-        empty_dict_like_object=None,
-        ignore_unknown_objects=False,
-        drop_invalid_geodata=False,
-        omit_tables=None,
-        omit_modules=None,
-        ignore_version_conflicts=False,
-        skip_checks=False
+    json_string,
+    convert=False,
+    encryption_key=None,
+    elements_to_deserialize=None,
+    keep_serialized_elements=True,
+    add_basic_std_types=False,
+    replace_elements=None,
+    empty_dict_like_object=None,
+    ignore_unknown_objects=False,
+    drop_invalid_geodata=False,
+    omit_tables=None,
+    omit_modules=None,
+    ignore_version_conflicts=False,
+    skip_checks=False,
 ):
     """
     Load a pandapower network from a JSON string.
@@ -389,10 +394,10 @@ def from_json_string(
     :param bool skip_checks: If set to True, skips all checks
         .. warning:: Only perform on trusted data sources / networks!
 
-    :return: The pandapower network
-    :rtype: pandapowerNet
+    Returns:
+        The pandapower network
 
-    :example:
+    Example:
         >>> from pandapower import from_json_string
         >>> net = from_json_string("{…}")
     """
@@ -422,44 +427,49 @@ def from_json_string(
             ignore_unknown_objects=ignore_unknown_objects,
             omit_tables=omit_tables,
             omit_modules=omit_modules,
-            skip_checks=skip_checks
+            skip_checks=skip_checks,
         )
-        net_dummy = create_empty_network()
-        if ('version' not in net.keys()) | (Version(net.version) < Version('2.1.0')):
-            raise UserWarning('table selection is only possible for nets above version 2.0.1. '
-                              'Convert and save your net first.')
+        net_dummy = pandapowerNet(name="from_json_string dummy network")
+        if ("version" not in net) | (Version(net.version) < Version("2.1.0")):
+            raise UserWarning(
+                "table selection is only possible for nets above version 2.0.1. Convert and save your net first."
+            )
         if keep_serialized_elements:
             for key in elements_to_deserialize:
                 net[key] = json.loads(net[key], cls=PPJSONDecoder, skip_checks=skip_checks)
         else:
-            if (('version' not in net.keys()) or (net['version'] != net_dummy.version)) and \
-                    not convert:
+            if (("version" not in net.keys()) or (net["version"] != net_dummy.version)) and not convert:
                 raise UserWarning(
-                    'The version of your net %s you are trying to load differs from the actual '
-                    'pandapower version %s. Before you can load only distinct tables, convert '
-                    'and save your net first or set convert to True!'
-                    % (net['version'], net_dummy.version))
-            for key in net.keys():
+                    f"The version of the pandapower net you are trying to load differs from the actual "
+                    f"pandapower version {net_dummy.version}. Before you can load only distinct tables, convert and "
+                    f"save your net first or set convert to True!"
+                )
+            for key in net:
                 if key in elements_to_deserialize:
-                    net[key] = json.loads(net[key], cls=PPJSONDecoder, skip_checks=skip_checks)
-                elif not isinstance(net[key], str):
+                    net[key] = json.loads(net[key], cls=PPJSONDecoder)
+                elif not isinstance(net[key], str) or "res_" in key:
                     continue
-                elif 'pandas' in net[key]:
+                elif "pandas" in net[key] and key in net_dummy:
                     net[key] = net_dummy[key]
     # this can be removed in the future
     # now net is saved with "_module", "_class", "_object"..., so json.load already returns
     # pandapowerNet. Older files don't have it yet, and are loaded as dict.
     # After some time, this part can be removed.
     if isinstance(net, dict) and "bus" in net and not isinstance(net, pandapowerNet):
-        warn("This net is saved in older format, which will not be supported in future.\r\n"
-             "Please resave your grid using the current pandapower version.",
-             DeprecationWarning)
+        warn(
+            "This net is saved in older format, which will not be supported in future.\r\n"
+            "Please resave your grid using the current pandapower version.",
+            DeprecationWarning,
+        )
         net = from_json_dict(net)
 
     if convert:
-        convert_format(net, elements_to_deserialize=elements_to_deserialize,
-                       drop_invalid_geodata=drop_invalid_geodata,
-                       donot_open_newer=not ignore_version_conflicts)
+        convert_format(
+            net,
+            elements_to_deserialize=elements_to_deserialize,
+            drop_invalid_geodata=drop_invalid_geodata,
+            donot_open_newer=not ignore_version_conflicts,
+        )
     if add_basic_std_types:
         # get std-types and add only new keys ones
         for key, std_types in basic_std_types().items():
@@ -484,17 +494,26 @@ def from_json_dict(json_dict):
         >>> net = from_json_dict(json.loads(json_str))
     """
     name = json_dict["name"] if "name" in json_dict else None
-    f_hz = json_dict["f_hz"] if "f_hz" in json_dict else 50
-    net = create_empty_network(name=name, f_hz=f_hz)
+    f_hz = json_dict["f_hz"] if "f_hz" in json_dict else 50.0
+    if name is None:
+        logger.warning("pandapowerNet.name not present or empty. Please set a name and resave the network")
+        name = ""
+    net = pandapowerNet(name=name, f_hz=f_hz)
     if "parameters" in json_dict:
         for par, value in json_dict["parameters"]["parameter"].items():
             net[par] = value
 
-    for key in sorted(json_dict.keys()):
-        if key == 'dtypes':
+    for key in sorted(json_dict):
+        if key == "dtypes":
             continue
-        if key in net and isinstance(net[key], pd.DataFrame) and isinstance(json_dict[key], dict) \
-                or key == "piecewise_linear_cost" or key == "polynomial_cost":
+        if (
+            key in net
+            and isinstance(net[key], pd.DataFrame)
+            and isinstance(json_dict[key], dict)
+            or key == "piecewise_linear_cost"
+            or key == "polynomial_cost"
+            or (key.startswith("res_") and key[4:] in net and isinstance(net[key[4:]], pd.DataFrame))
+        ):
             net[key] = pd.DataFrame.from_dict(json_dict[key], orient="columns")
             net[key].set_index(net[key].index.astype(numpy.int64), inplace=True)
         else:

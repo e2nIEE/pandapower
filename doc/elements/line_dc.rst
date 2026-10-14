@@ -23,16 +23,15 @@ DC lines can be either created from the standard type library (create_line_dc) o
 
 .. autofunction:: pandapower.create_line_dc_from_parameters
 
-Input Parameters
+Table Structure
 =============================
 
 *net.line_dc*
 
-.. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-   :file: line_dc_par.csv
-   :delim: ;
-   :widths: 15, 10, 25, 40
+.. csv-table::
+    :file: table_structures/line_dc.csv
+    :header-rows: 1
+    :delim: ,
   
 \*necessary for executing a balanced power flow calculation
 
@@ -40,14 +39,6 @@ Input Parameters
 
     Defining a dc line with length zero leads to a division by zero in the power flow and is therefore not allowed. DC lines with a very low impedance might lead to convergence problems in the power flow
     for the same reason. If you want to directly connect two dc buses, please use the switch_dc element instead of a dc line with a small impedance!
-
-*net.line_dc_geodata*
-
-.. tabularcolumns:: |l|l|l|
-.. csv-table:: 
-   :file: line_dc_geo.csv
-   :delim: ;
-   :widths: 10, 10, 55
 
    
 Electric Model
@@ -87,23 +78,22 @@ Where the reference voltage :math:`V_{N}` is the nominal voltage at the from bus
     pandapower assumes that nominal voltage of from bus and to bus are equal, which means pandapower does not support lines that connect different voltage levels.
     If you want to connect different voltage levels, either use a transformer or an impedance element.
     
-Result Parameters
+Result Table
 ==========================
    
 *net.res_line_dc*
 
-.. tabularcolumns:: |p{0.15\linewidth}|p{0.10\linewidth}|p{0.55\linewidth}|
-.. csv-table:: 
-   :file: line_dc_res.csv
-   :delim: ;
-   :widths: 15, 10, 55
+.. csv-table::
+    :file: table_structures/res_line_dc.csv
+    :header-rows: 1
+    :delim: ,
    
 The power flow results in the net.res_line_dc table are defined as:
 
 .. math::
-   :nowrap:
+    :nowrap:
    
-   \begin{align*}
+    \begin{align*}
     p\_from\_mw &= v_{from} \cdot i_{from} \\
     p\_to\_mw &= v_{to} \cdot i_{to} \\
     pl\_mw &= p\_from\_mw + p\_to\_mw \\

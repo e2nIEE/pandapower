@@ -13,22 +13,15 @@ Create Function
 .. autofunction:: pandapower.create.create_bus
 .. autofunction:: pandapower.create.create_buses
 
-Input Parameters
+Table Structure
 =========================
 
 *net.bus*
 
-.. tabularcolumns:: |p{0.12\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.30\linewidth}|
-.. csv-table:: 
-   :file: bus_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
-
-.. |br| raw:: html
-
-   <br />
-   
-\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter
+.. csv-table::
+    :file: table_structures/bus.csv
+    :header-rows: 1
+    :delim: ,
 
 .. note:: Bus voltage limits can not be set for slack buses and will be ignored by the optimal power flow.
  
@@ -42,16 +35,15 @@ Electric Model
     :align: center
     
 
-Result Parameters
+Result Tables
 =========================
 
 *net.res_bus*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-   :file: bus_res.csv
-   :delim: ;
-   :widths: 10, 10, 40
+.. csv-table::
+    :file: table_structures/res_bus.csv
+    :header-rows: 1
+    :delim: ,
     
 The power flow bus results are defined as:
 
@@ -67,33 +59,31 @@ The power flow bus results are defined as:
 
 *net.res_bus_3ph*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-   :file: bus_res_3ph.csv
-   :delim: ;
-   :widths: 10, 10, 40
+.. csv-table::
+    :file: table_structures/res_bus_3ph.csv
+    :header-rows: 1
+    :delim: ,
     
 The power flow bus results are defined as:
 
 .. math::
-   :nowrap:
+    :nowrap:
    
-	\begin{align*}
+    \begin{align*}
     vm\_pu_{phase} &= \lvert \underline{V_{phase}}_{bus} \rvert \\
     va\_degree_{phase} &= \angle \underline{V_{phase}}_{bus} \\
     p\_mw_{phase} &= Re(\sum_{n=1}^N  \underline{S_{phase}}_{bus, n}) \\
     q\_mvar_{phase} &= Im(\sum_{n=1}^N  \underline{S_{phase}}_{bus, n}) 
-   \end{align*}
+    \end{align*}
 
 *net.res_bus_est*
 
 The state estimation results are put into *net.res_bus_est* with the same definition as in *net.res_bus*.
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-   :file: bus_res.csv
-   :delim: ;
-   :widths: 10, 10, 40
+.. csv-table::
+    :file: table_structures/res_bus.csv
+    :header-rows: 1
+    :delim: ,
     
 
 .. note::
@@ -104,8 +94,7 @@ The state estimation results are put into *net.res_bus_est* with the same defini
 
 The short-circuit (SC) results are put into *net.res_bus_sc* with following definitions:
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-   :file: bus_res_sc.csv
-   :delim: ;
-   :widths: 10, 10, 40
+.. csv-table::
+    :file: table_structures/res_bus_sc.csv
+    :header-rows: 1
+    :delim: ,

@@ -1,5 +1,6 @@
 import pandas as pd
 
+
 def calculate_protection_times(net, scenario="sc"):
     """
     Calculate protection times for short-circuit and power-flow scenarios
