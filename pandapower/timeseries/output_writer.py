@@ -14,8 +14,13 @@ from pandapower.io_utils import mkdirs_if_not_existent
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pypower.idx_bus import VM, VA, NONE, BUS_TYPE
 from pandapower.run import _init_runpp_options
-from pandapower.timeseries.read_batch_results import v_to_i_s, get_batch_line_results, get_batch_trafo3w_results, \
-    get_batch_trafo_results, get_batch_bus_results
+from pandapower.timeseries.read_batch_results import (
+    v_to_i_s,
+    get_batch_line_results,
+    get_batch_trafo3w_results,
+    get_batch_trafo_results,
+    get_batch_bus_results,
+)
 
 try:
     import pandaplan.core.pplog as pplog
@@ -51,11 +56,11 @@ class OutputWriter(JSONSerializableClass):
         output_path (string, None): Path to a folder where the output is written to.
         output_file_type (string, ".p"): output filetype to use. Allowed file extensions: [.xls, .xlsx, .csv, .csv.*,
             .p, .json]
-            
+
             .. note::
-            
+
                 XLS has a maximum number of 256 rows.
-                
+
                 CSV files can be saved in a compressed format like `.csv.zip`.
 
         csv_separator (string, ";"): The separator used when writing to a csv file
@@ -77,8 +82,16 @@ class OutputWriter(JSONSerializableClass):
         >>> ow.log_variable("pwl_cost", "points", eval_function=cost_logging)
     """
 
-    def __init__(self, net, time_steps=None, output_path=None, output_file_type=".p", write_time=None,
-                 log_variables=None, csv_separator=";"):
+    def __init__(
+        self,
+        net,
+        time_steps=None,
+        output_path=None,
+        output_file_type=".p",
+        write_time=None,
+        log_variables=None,
+        csv_separator=";",
+    ):
         super().__init__()
         self.output_path = output_path
         self.output_file_type = output_file_type
@@ -130,6 +143,7 @@ class OutputWriter(JSONSerializableClass):
 
     def _monkey_patch(self, method, new):
         from types import MethodType
+
         setattr(self, method, MethodType(new, self))
 
     def _add_log_defaults(self):
@@ -169,11 +183,14 @@ class OutputWriter(JSONSerializableClass):
     def _init_output(self):
         self.output = {}
         # init parameters
-        self.output["Parameters"] = pd.DataFrame(data={
-            "time_step": self.time_steps,
-            "controller_unstable": np.full(len(self.time_steps), fill_value=False, dtype=bool),
-            "powerflow_failed": np.full(len(self.time_steps), fill_value=False, dtype=bool)
-        }, index=self.time_steps)
+        self.output["Parameters"] = pd.DataFrame(
+            data={
+                "time_step": self.time_steps,
+                "controller_unstable": np.full(len(self.time_steps), fill_value=False, dtype=bool),
+                "powerflow_failed": np.full(len(self.time_steps), fill_value=False, dtype=bool),
+            },
+            index=self.time_steps,
+        )
 
     def _init_np_results(self):
         # inits numpy array (contains results)
@@ -182,7 +199,6 @@ class OutputWriter(JSONSerializableClass):
             self._init_np_array(partial_func)
 
     def _save_separate(self, append, net=None):
-
         for partial in self.output_list:
             if isinstance(partial, tuple):
                 # if batch output is used
@@ -210,9 +226,11 @@ class OutputWriter(JSONSerializableClass):
                         data.to_excel(file_path)
                     except ValueError as e:
                         if data.shape[1] > 255:
-                            raise ValueError("pandas.to_excel() is not capable to handle large data" +
-                                             "with more than 255 columns. Please use other " +
-                                             "file_extensions instead, e.g. 'json'.")
+                            raise ValueError(
+                                "pandas.to_excel() is not capable to handle large data"
+                                + "with more than 255 columns. Please use other "
+                                + "file_extensions instead, e.g. 'json'."
+                            )
                         else:
                             raise ValueError(e)
                 elif "csv" in self.output_file_type.split("."):
@@ -227,7 +245,9 @@ class OutputWriter(JSONSerializableClass):
            append (bool, False): Option for appending instead of overwriting the file
         """
         save_single = False
-        has_batch_output = bool(self.output_list) and all(isinstance(partial_func, tuple) for partial_func in self.output_list)
+        has_batch_output = bool(self.output_list) and all(
+            isinstance(partial_func, tuple) for partial_func in self.output_list
+        )
         if not has_batch_output:
             self._np_to_pd()
         if recycle_options not in [None, False] and recycle_options["batch_read"]:
@@ -285,9 +305,11 @@ class OutputWriter(JSONSerializableClass):
                 of()
             except:
                 import traceback
+
                 traceback.print_exc()
-                logger.error("Error in output function! Stored NaN for '%s' in time-step %i"
-                             % (of.__name__, self.time_step))
+                logger.error(
+                    "Error in output function! Stored NaN for '%s' in time-step %i" % (of.__name__, self.time_step)
+                )
                 self.save_nans_to_parameters()
 
     def save_nans_to_parameters(self):
@@ -318,7 +340,7 @@ class OutputWriter(JSONSerializableClass):
     def log_variable(self, table, variable, index=None, eval_function=None, eval_name=None):
         """
         Adds a variable to log during simulation and appends it to output_list.
-        
+
         Parameters:
             table (str): The DataFrame table where the variable is located as a string (e.g. "res_bus")
             variable (str): variable that should be logged as string (e.g. "p_mw")
@@ -397,14 +419,24 @@ class OutputWriter(JSONSerializableClass):
         ppc = net["_ppc"]
         if ppc is None:
             # if no ppc is in net-> create one
-            options = {'algorithm': 'nr', 'calculate_voltage_angles': True, 'init': "auto", 'max_iteration': "auto",
-                       'tolerance_mva': 1e-8, 'trafo_model': "t", 'trafo_loading': "current", 'enforce_p_lims': False,
-                       'enforce_q_lims': False, 'check_connectivity': True, 'voltage_depend_loads': True,
-                       'consider_line_temperature': False}
+            options = {
+                "algorithm": "nr",
+                "calculate_voltage_angles": True,
+                "init": "auto",
+                "max_iteration": "auto",
+                "tolerance_mva": 1e-8,
+                "trafo_model": "t",
+                "trafo_loading": "current",
+                "enforce_p_lims": False,
+                "enforce_q_lims": False,
+                "check_connectivity": True,
+                "voltage_depend_loads": True,
+                "consider_line_temperature": False,
+            }
             _init_runpp_options(net, **options)
             ppc, _ = _pd2ppc(net)
             net["_ppc"] = ppc
-        index = list(range(sum(ppc['bus'][:, BUS_TYPE] != NONE)))
+        index = list(range(sum(ppc["bus"][:, BUS_TYPE] != NONE)))
         self._append_output_list(table, variable, net, index, eval_function, eval_name, var_name, func=self._log_ppc)
         return index
 
@@ -415,36 +447,39 @@ class OutputWriter(JSONSerializableClass):
         if np.any(pd.isnull(index)):
             # check how many elements there are in net
             index = net[table.split("res_")[-1].replace("_3ph", "")].index
-        if not hasattr(index, '__iter__'):
+        if not hasattr(index, "__iter__"):
             index = [index]
         if isinstance(index, (np.ndarray, pd.Index, pd.Series)):
             index = index.tolist()
         if eval_function is not None and eval_name is None:
             eval_name = "%s.%s.%s.%s" % (table, variable, str(index), eval_function.__name__)
         if eval_function is None and eval_name is not None:
-            logger.info("'eval_name' is to give a name in case of evaluation functions. Since " +
-                        "no function is given for eval_name '%s', " % eval_name +
-                        "eval_name is neglected.")
+            logger.info(
+                "'eval_name' is to give a name in case of evaluation functions. Since "
+                + "no function is given for eval_name '%s', " % eval_name
+                + "eval_name is neglected."
+            )
             eval_name = None
         if eval_name is not None and eval_function is not None:
             if isinstance(eval_function, FunctionType):
                 if "n_columns" in eval_function.__code__.co_varnames:
-                    logger.info("'eval_name' is to give a name in case of single value evaluation functions. Since " +
-                                "n_columns is given as a parameter of the evaluation function, the given for eval_name "
-                                "'%s', " % eval_name + "eval_name is neglected.")
+                    logger.info(
+                        "'eval_name' is to give a name in case of single value evaluation functions. Since "
+                        + "n_columns is given as a parameter of the evaluation function, the given for eval_name "
+                        "'%s', " % eval_name + "eval_name is neglected."
+                    )
                     eval_name = None
 
         var_name = self._get_output_name(table, variable)
-        idx = self._get_same_log_variable_partial_func_idx(table, variable, eval_function,
-                                                           eval_name)
+        idx = self._get_same_log_variable_partial_func_idx(table, variable, eval_function, eval_name)
         if idx is not None:
             self._append_existing_log_variable_partial_func(idx, index)
         else:
             self._append_output_list(table, variable, net, index, eval_function, eval_name, var_name)
 
     def _get_same_log_variable_partial_func_idx(self, table, variable, eval_function, eval_name):
-        """ Returns the position index in self.output_list of partial_func which has the same table
-        and variable and no evaluation function. """
+        """Returns the position index in self.output_list of partial_func which has the same table
+        and variable and no evaluation function."""
         if eval_function is None and eval_name is None:
             for i, partial_func in enumerate(self.output_list):
                 partial_args = partial_func.args
@@ -454,13 +489,13 @@ class OutputWriter(JSONSerializableClass):
                     return i
 
     def _append_existing_log_variable_partial_func(self, idx, index):
-        """ Appends the index of existing, same partial_func in output_list. """
+        """Appends the index of existing, same partial_func in output_list."""
         for i in index:
             if i not in self.output_list[idx].args[3]:
                 self.output_list[idx].args[3].append(i)
 
     def _append_output_list(self, table, variable, net, index, eval_function, eval_name, var_name, func=None):
-        """ Appends the output_list by an additional partial_func. """
+        """Appends the output_list by an additional partial_func."""
         func = self._log if func is None else func
         partial_func = functools.partial(func, table, variable, net, index, eval_function, eval_name)
         partial_func.__name__ = var_name
@@ -526,8 +561,7 @@ class OutputWriter(JSONSerializableClass):
             res_df = pd.DataFrame(self.np_results[np_name], index=self.time_steps, columns=columns)
             if res_name in self.output and eval_name is not None:
                 try:
-                    self.output[res_name] = pd.concat([self.output[res_name], res_df], axis=1,
-                                                      sort=False)
+                    self.output[res_name] = pd.concat([self.output[res_name], res_df], axis=1, sort=False)
                 except TypeError:
                     # pandas legacy < 0.21
                     self.output[res_name] = pd.concat([self.output[res_name], res_df], axis=1)
@@ -578,18 +612,26 @@ class OutputWriter(JSONSerializableClass):
             for table, variable in recycle_options["batch_read"]:
                 if table == "res_line" and "res_line" not in results:
                     i_ka, i_from_ka, i_to_ka, loading_percent = get_batch_line_results(net, i_abs)
-                    results["res_line"] = {'i_ka': i_ka, 'i_from_ka': i_from_ka, 'i_to_ka': i_to_ka,
-                                           'loading_percent': loading_percent}
+                    results["res_line"] = {
+                        "i_ka": i_ka,
+                        "i_from_ka": i_from_ka,
+                        "i_to_ka": i_to_ka,
+                        "loading_percent": loading_percent,
+                    }
                 elif table == "res_trafo" and "res_trafo" not in results:
                     i_ka, i_hv_ka, i_lv_ka, _, loading_percent = get_batch_trafo_results(net, i_abs, s_abs)
-                    results["res_trafo"] = {'i_ka': i_ka, 'i_hv_ka': i_hv_ka, 'i_lv_ka': i_lv_ka,
-                                            'loading_percent': loading_percent}
+                    results["res_trafo"] = {
+                        "i_ka": i_ka,
+                        "i_hv_ka": i_hv_ka,
+                        "i_lv_ka": i_lv_ka,
+                        "loading_percent": loading_percent,
+                    }
                 elif table == "res_trafo3w":
                     i_h, i_m, i_l, loading_percent = get_batch_trafo3w_results(net, i_abs, s_abs)
-                    results["res_trafo3w"] = {'i_h': i_h, 'i_m': i_m, 'i_l': i_l, 'loading_percent': loading_percent}
+                    results["res_trafo3w"] = {"i_h": i_h, "i_m": i_m, "i_l": i_l, "loading_percent": loading_percent}
                 elif table == "res_bus" and "res_bus" not in results:
                     vm_full, va_full = get_batch_bus_results(net, vm, va)
-                    results["res_bus"] = {'vm_pu': vm_full, 'va_degree': va_full}
+                    results["res_bus"] = {"vm_pu": vm_full, "va_degree": va_full}
                 else:
                     raise ValueError("Something went wrong")
                 output_name = "%s.%s" % (table, variable)

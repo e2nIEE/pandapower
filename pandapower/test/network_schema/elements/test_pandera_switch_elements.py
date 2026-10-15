@@ -20,7 +20,6 @@ from pandapower.test.network_schema.elements.helper import (
     not_ints_list,
     not_strings_list,
     positiv_floats,
-    positiv_floats_plus_zero,
     positiv_ints_plus_zero,
     strings,
 )

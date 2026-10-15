@@ -11,7 +11,7 @@ from numpy import flatnonzero as find, pi, exp, int64, hstack, zeros, float64
 def _get_pf_variables_from_ppci(ppci, vsc_ref=False):
     ## default arguments
     if ppci is None:
-        raise ValueError('ppci is empty')
+        raise ValueError("ppci is empty")
 
     # get data for calc
     bus, gen, vsc = ppci["bus"], ppci["gen"], ppci["vsc"]
@@ -32,12 +32,27 @@ def _get_pf_variables_from_ppci(ppci, vsc_ref=False):
 
     ## initial state
     # V0    = ones(bus.shape[0])            ## flat start
-    V0 = bus[:, VM] * exp(1j * pi / 180. * bus[:, VA])
+    V0 = bus[:, VM] * exp(1j * pi / 180.0 * bus[:, VA])
     V0[gbus] = gen[on, VG] / abs(V0[gbus]) * V0[gbus]
 
     ref_gens = ppci["internal"]["ref_gens"]
-    return ppci["baseMVA"], bus, gen, branch, ppci["svc"], ppci["tcsc"], ppci["ssc"], ppci["vsc"], \
-        ref, pv, pq, on, gbus, V0, ref_gens
+    return (
+        ppci["baseMVA"],
+        bus,
+        gen,
+        branch,
+        ppci["svc"],
+        ppci["tcsc"],
+        ppci["ssc"],
+        ppci["vsc"],
+        ref,
+        pv,
+        pq,
+        on,
+        gbus,
+        V0,
+        ref_gens,
+    )
 
 
 def _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, iterations, et):

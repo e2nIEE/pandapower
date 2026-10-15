@@ -15,10 +15,8 @@ from pandapower.test.network_schema.elements.helper import (
     not_strings_list,
     not_floats_list,
     not_boolean_list,
-    negativ_floats,
     positiv_floats,
     not_allowed_floats,
-    zero_float,
 )
 
 

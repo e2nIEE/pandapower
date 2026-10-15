@@ -14,25 +14,51 @@ from pandas import DataFrame, Series, concat, isna
 
 from pandapower.auxiliary import get_free_id
 from pandapower.control import (
-    ContinuousTapControl, DiscreteTapControl, BinarySearchControl, DroopControl, VDroopControl_local
+    ContinuousTapControl,
+    DiscreteTapControl,
+    BinarySearchControl,
+    DroopControl,
+    VDroopControl_local,
 )
 from pandapower.create import (
-    create_bus, create_bus_dc, create_load, create_switch, create_shunt, create_line,
-    create_line_from_parameters, create_line_dc, create_sgen, create_gen, create_ext_grid, create_asymmetric_sgen,
-    create_line_dc_from_parameters, create_asymmetric_load, create_transformer, create_transformer_from_parameters,
-    create_transformer3w_from_parameters, create_impedance, create_xward, create_ward,
-    create_series_reactor_as_impedance, create_vsc as _create_vsc
+    create_bus,
+    create_bus_dc,
+    create_load,
+    create_switch,
+    create_shunt,
+    create_line,
+    create_line_from_parameters,
+    create_line_dc,
+    create_sgen,
+    create_gen,
+    create_ext_grid,
+    create_asymmetric_sgen,
+    create_line_dc_from_parameters,
+    create_asymmetric_load,
+    create_transformer,
+    create_transformer_from_parameters,
+    create_transformer3w_from_parameters,
+    create_impedance,
+    create_xward,
+    create_ward,
+    create_series_reactor_as_impedance,
+    create_vsc as _create_vsc,
 )
 from pandapower.network import ADict, pandapowerNet
 from pandapower.results import reset_results
 from pandapower.run import set_user_pf_options
 from pandapower.std_types import (
-    add_zero_impedance_parameters, std_type_exists, create_std_type, available_std_types, load_std_type
+    add_zero_impedance_parameters,
+    std_type_exists,
+    create_std_type,
+    available_std_types,
+    load_std_type,
 )
 from pandapower.toolbox.grid_modification import set_isolated_areas_out_of_service, drop_inactive_elements, drop_buses
 from pandapower.topology import create_nxgraph
 from pandapower.control.util.auxiliary import (
-    create_q_capability_characteristics_object, get_min_max_q_mvar_from_characteristics_object
+    create_q_capability_characteristics_object,
+    get_min_max_q_mvar_from_characteristics_object,
 )
 from pandapower.control.util.characteristic import SplineCharacteristic
 
@@ -52,18 +78,18 @@ def ga(element, attr):
 
 
 def from_pf(
-        dict_net,
-        pv_as_slack=True,
-        pf_variable_p_loads='plini',
-        pf_variable_p_gen='pgini',
-        flag_graphics: Literal["GPS", "no geodata"] = 'GPS',
-        tap_opt="nntap",
-        export_controller=True,
-        handle_us: Literal["Deactivate", "Drop", "Nothing"] = "Deactivate",
-        max_iter=None,
-        is_unbalanced=False,
-        create_sections=True,
-        export_pf_ZoneArea=False
+    dict_net,
+    pv_as_slack=True,
+    pf_variable_p_loads="plini",
+    pf_variable_p_gen="pgini",
+    flag_graphics: Literal["GPS", "no geodata"] = "GPS",
+    tap_opt="nntap",
+    export_controller=True,
+    handle_us: Literal["Deactivate", "Drop", "Nothing"] = "Deactivate",
+    max_iter=None,
+    is_unbalanced=False,
+    create_sections=True,
+    export_pf_ZoneArea=False,
 ):
     global line_dict, trafo_dict, trafo3w_dict, impedance_dict, switch_dict, bus_dict, grf_map
     line_dict = {}
@@ -72,283 +98,384 @@ def from_pf(
     impedance_dict = {}  # type: ignore[name-defined]
     switch_dict = {}
     logger.debug("__name__: %s" % __name__)
-    logger.debug('started from_pf')
+    logger.debug("started from_pf")
     logger.info(logger.__dict__)
     # TODO: add proper errors and warnings: suggestion: everything that causes mismatch -> error, others: warnings
-    flag_graphics = flag_graphics if flag_graphics in ['GPS', 'no geodata'] else 'graphic objects'
+    flag_graphics = flag_graphics if flag_graphics in ["GPS", "no geodata"] else "graphic objects"
 
-    logger.debug('collecting grid')
-    grid_name = dict_net['ElmNet'].loc_name
-    base_sn_mva = dict_net['global_parameters']['base_sn_mva']
+    logger.debug("collecting grid")
+    grid_name = dict_net["ElmNet"].loc_name
+    base_sn_mva = dict_net["global_parameters"]["base_sn_mva"]
     net = pandapowerNet(name=grid_name, sn_mva=base_sn_mva)
 
     reset_results(net, mode="pf_3ph")
     if max_iter is not None:
         set_user_pf_options(net, max_iteration=max_iter)
-    logger.info('creating grid %s' % grid_name)
-    if 'res_switch' not in net.keys():
-        net['res_switch'] = DataFrame(columns=['pf_closed', 'pf_in_service'], dtype='bool')
+    logger.info("creating grid %s" % grid_name)
+    if "res_switch" not in net.keys():
+        net["res_switch"] = DataFrame(columns=["pf_closed", "pf_in_service"], dtype="bool")
 
-    logger.debug('creating buses')
+    logger.debug("creating buses")
     # create buses:
     bus_dict = {}
-    grf_map = dict_net.get('graphics', {})
-    logger.debug('the graphic mapping is: %s' % grf_map)
+    grf_map = dict_net.get("graphics", {})
+    logger.debug("the graphic mapping is: %s" % grf_map)
 
     # ist leider notwendig
     n = 0
-    for n, bus in enumerate(dict_net['ElmTerm'], 1):
-        create_pp_bus(net=net, item=bus, flag_graphics=flag_graphics, is_unbalanced=is_unbalanced, export_pf_ZoneArea=export_pf_ZoneArea)
-    if n > 0: logger.info('imported %d buses' % n)
+    for n, bus in enumerate(dict_net["ElmTerm"], 1):
+        create_pp_bus(
+            net=net,
+            item=bus,
+            flag_graphics=flag_graphics,
+            is_unbalanced=is_unbalanced,
+            export_pf_ZoneArea=export_pf_ZoneArea,
+        )
+    if n > 0:
+        logger.info("imported %d buses" % n)
 
-    logger.debug('creating external grids')
+    logger.debug("creating external grids")
     # create external networks:
     n = 0
-    for n, ext_net in enumerate(dict_net['ElmXnet'], 1):
+    for n, ext_net in enumerate(dict_net["ElmXnet"], 1):
         multiplier = get_power_multiplier(ext_net, pf_variable_p_gen)
-        is_definite_ext_grid=False
-        create_ext_net(net=net, item=ext_net, pv_as_slack=pv_as_slack, is_unbalanced=is_unbalanced,
-                       multiplier=multiplier, is_definite_ext_grid=is_definite_ext_grid)
-    if n > 0: logger.info('imported %d external grids' % n)
+        is_definite_ext_grid = False
+        create_ext_net(
+            net=net,
+            item=ext_net,
+            pv_as_slack=pv_as_slack,
+            is_unbalanced=is_unbalanced,
+            multiplier=multiplier,
+            is_definite_ext_grid=is_definite_ext_grid,
+        )
+    if n > 0:
+        logger.info("imported %d external grids" % n)
 
-    logger.debug('creating loads')
+    logger.debug("creating loads")
     # create loads:
     n = 0
-    for n, load in enumerate(dict_net['ElmLod'], 1):
+    for n, load in enumerate(dict_net["ElmLod"], 1):
         try:
-            create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
-                           dict_net=dict_net, is_unbalanced=is_unbalanced)
+            create_pp_load(
+                net=net,
+                item=load,
+                pf_variable_p_loads=pf_variable_p_loads,
+                dict_net=dict_net,
+                is_unbalanced=is_unbalanced,
+            )
         except RuntimeError as err:
-            logger.debug(f'load failed at import and was not imported: {err}')
-    if n > 0: logger.info(f'imported {n} loads')
+            logger.debug(f"load failed at import and was not imported: {err}")
+    if n > 0:
+        logger.info(f"imported {n} loads")
 
-    logger.debug('creating lv loads')
+    logger.debug("creating lv loads")
     # create loads:
     n = 0
-    for n, load in enumerate(dict_net['ElmLodlv'], 1):
+    for n, load in enumerate(dict_net["ElmLodlv"], 1):
         try:
-            create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
-                           dict_net=dict_net, is_unbalanced=is_unbalanced)
+            create_pp_load(
+                net=net,
+                item=load,
+                pf_variable_p_loads=pf_variable_p_loads,
+                dict_net=dict_net,
+                is_unbalanced=is_unbalanced,
+            )
         except RuntimeError as err:
-            logger.warning(f'load failed at import and was not imported: {err}')
-    if n > 0: logger.info(f'imported {n} lv loads')
+            logger.warning(f"load failed at import and was not imported: {err}")
+    if n > 0:
+        logger.info(f"imported {n} lv loads")
 
-    logger.debug('creating mv loads')
+    logger.debug("creating mv loads")
     # create loads:
     n = 0
-    for n, load in enumerate(dict_net['ElmLodmv'], 1):
+    for n, load in enumerate(dict_net["ElmLodmv"], 1):
         try:
-            create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
-                           dict_net=dict_net, is_unbalanced=is_unbalanced)
+            create_pp_load(
+                net=net,
+                item=load,
+                pf_variable_p_loads=pf_variable_p_loads,
+                dict_net=dict_net,
+                is_unbalanced=is_unbalanced,
+            )
         except RuntimeError as err:
-            logger.error(f'load failed at import and was not imported: {err}')
-    if n > 0: logger.info(f'imported {n} mv loads')
+            logger.error(f"load failed at import and was not imported: {err}")
+    if n > 0:
+        logger.info(f"imported {n} mv loads")
 
     #    logger.debug('sum loads: %.3f' % sum(net.load.loc[net.load.in_service, 'p_mw']))
 
-    logger.debug('creating static generators')
+    logger.debug("creating static generators")
     # create static generators:
     n = 0
-    for n, gen in enumerate(dict_net['ElmGenstat'], 1):
+    for n, gen in enumerate(dict_net["ElmGenstat"], 1):
         try:
-            create_sgen_genstat(net=net, item=gen, pv_as_slack=pv_as_slack,
-                                pf_variable_p_gen=pf_variable_p_gen, dict_net=dict_net, is_unbalanced=is_unbalanced,
-                                export_ctrl=export_controller)
+            create_sgen_genstat(
+                net=net,
+                item=gen,
+                pv_as_slack=pv_as_slack,
+                pf_variable_p_gen=pf_variable_p_gen,
+                dict_net=dict_net,
+                is_unbalanced=is_unbalanced,
+                export_ctrl=export_controller,
+            )
         except RuntimeError as err:
-            logger.debug('sgen failed at import and was not imported: %s' % err)
-    if n > 0: logger.info('imported %d static generators' % n)
+            logger.debug("sgen failed at import and was not imported: %s" % err)
+    if n > 0:
+        logger.info("imported %d static generators" % n)
 
-    logger.debug('creating pv generators as static generators')
+    logger.debug("creating pv generators as static generators")
 
     # create pv generators:
     n = 0
-    for n, pv in enumerate(dict_net['ElmPvsys'], 1):
-        create_sgen_genstat(net=net, item=pv, pv_as_slack=pv_as_slack,
-                            pf_variable_p_gen=pf_variable_p_gen, dict_net=dict_net, is_unbalanced=is_unbalanced,
-                            export_ctrl=export_controller)
-    if n > 0: logger.info('imported %d pv generators' % n)
+    for n, pv in enumerate(dict_net["ElmPvsys"], 1):
+        create_sgen_genstat(
+            net=net,
+            item=pv,
+            pv_as_slack=pv_as_slack,
+            pf_variable_p_gen=pf_variable_p_gen,
+            dict_net=dict_net,
+            is_unbalanced=is_unbalanced,
+            export_ctrl=export_controller,
+        )
+    if n > 0:
+        logger.info("imported %d pv generators" % n)
 
-    logger.debug('creating asynchronous machines')
+    logger.debug("creating asynchronous machines")
     # create asynchronous machines:
     n = 0
-    for n, asm in enumerate(dict_net['ElmAsm'], n):
-        create_sgen_asm(net=net, item=asm, pf_variable_p_gen=pf_variable_p_gen, dict_net=dict_net, export_ctrl=export_controller)
-    if n > 0: logger.info('imported %d asynchronous machines' % n)
+    for n, asm in enumerate(dict_net["ElmAsm"], n):
+        create_sgen_asm(
+            net=net, item=asm, pf_variable_p_gen=pf_variable_p_gen, dict_net=dict_net, export_ctrl=export_controller
+        )
+    if n > 0:
+        logger.info("imported %d asynchronous machines" % n)
 
-    logger.debug('creating synchronous machines')
+    logger.debug("creating synchronous machines")
     # create synchronous machines:
     n = 0
-    for n, gen in enumerate(dict_net['ElmSym'], n):
-        create_sgen_sym(net=net, item=gen, pv_as_slack=pv_as_slack,
-                        pf_variable_p_gen=pf_variable_p_gen, dict_net=dict_net,
-                        export_ctrl=export_controller)
-    if n > 0: logger.info('imported %d synchronous machines' % n)
+    for n, gen in enumerate(dict_net["ElmSym"], n):
+        create_sgen_sym(
+            net=net,
+            item=gen,
+            pv_as_slack=pv_as_slack,
+            pf_variable_p_gen=pf_variable_p_gen,
+            dict_net=dict_net,
+            export_ctrl=export_controller,
+        )
+    if n > 0:
+        logger.info("imported %d synchronous machines" % n)
 
-    logger.debug('creating transformers')
+    logger.debug("creating transformers")
 
     # create trafos:
     n = 0
-    for n, trafo in enumerate(dict_net['ElmTr2'], 1):
-        create_trafo(net=net, item=trafo, export_controller=export_controller, tap_opt=tap_opt,
-                     is_unbalanced=is_unbalanced, hunting_limit=dict_net["lvp_params"]["hunting_limit"])
-    if n > 0: logger.info('imported %d trafos' % n)
+    for n, trafo in enumerate(dict_net["ElmTr2"], 1):
+        create_trafo(
+            net=net,
+            item=trafo,
+            export_controller=export_controller,
+            tap_opt=tap_opt,
+            is_unbalanced=is_unbalanced,
+            hunting_limit=dict_net["lvp_params"]["hunting_limit"],
+        )
+    if n > 0:
+        logger.info("imported %d trafos" % n)
 
-    logger.debug('creating 3W-transformers')
+    logger.debug("creating 3W-transformers")
     # create 3w-trafos:
     n = 0
-    for n, trafo in enumerate(dict_net['ElmTr3'], 1):
+    for n, trafo in enumerate(dict_net["ElmTr3"], 1):
         create_trafo3w(net=net, item=trafo, tap_opt=tap_opt)
     if n > 0:
-        logger.info('imported %d 3w-trafos' % n)
-        set_user_pf_options(net, trafo3w_losses='star')
+        logger.info("imported %d 3w-trafos" % n)
+        set_user_pf_options(net, trafo3w_losses="star")
 
-    logger.debug('creating switches (couplings)')
+    logger.debug("creating switches (couplings)")
     # create switches (ElmCoup):
     n = 0
-    for n, coup in enumerate(dict_net['ElmCoup'], 1):
+    for n, coup in enumerate(dict_net["ElmCoup"], 1):
         create_coup(net=net, item=coup)
-    if n > 0: logger.info('imported %d coups' % n)
+    if n > 0:
+        logger.info("imported %d coups" % n)
 
-    logger.debug('creating fuses (as couplings)')
+    logger.debug("creating fuses (as couplings)")
     # create fuses (RelFuse):
     n = 0
-    for n, fuse in enumerate(dict_net['RelFuse'], 1):
+    for n, fuse in enumerate(dict_net["RelFuse"], 1):
         create_coup(net=net, item=fuse, is_fuse=True)
-    if n > 0: logger.info('imported %d fuses' % n)
+    if n > 0:
+        logger.info("imported %d fuses" % n)
 
-    logger.debug('creating shunts')
+    logger.debug("creating shunts")
     # create shunts (ElmShnt):
     n = 0
-    for n, shunt in enumerate(dict_net['ElmShnt'], 1):
+    for n, shunt in enumerate(dict_net["ElmShnt"], 1):
         create_pp_shunt(net=net, item=shunt)
-    if n > 0: logger.info('imported %d shunts' % n)
+    if n > 0:
+        logger.info("imported %d shunts" % n)
 
-    logger.debug('creating impedances')
+    logger.debug("creating impedances")
     # create zpu (ElmZpu):
     n = 0
-    for n, zpu in enumerate(dict_net['ElmZpu'], 1):
+    for n, zpu in enumerate(dict_net["ElmZpu"], 1):
         create_zpu(net=net, item=zpu)
-    if n > 0: logger.info('imported %d impedances' % n)
+    if n > 0:
+        logger.info("imported %d impedances" % n)
 
-    logger.debug('creating series inductivity as impedance')
+    logger.debug("creating series inductivity as impedance")
     # create series inductivity as impedance (ElmSind):
     n = 0
-    for n, sind in enumerate(dict_net['ElmSind'], 1):
+    for n, sind in enumerate(dict_net["ElmSind"], 1):
         create_sind(net=net, item=sind)
-    if n > 0: logger.info('imported %d SIND' % n)
+    if n > 0:
+        logger.info("imported %d SIND" % n)
 
-    logger.debug('creating series capacity as impedance')
+    logger.debug("creating series capacity as impedance")
     # create series capacity as impedance (ElmScap):
     n = 0
-    for n, scap in enumerate(dict_net['ElmScap'], 1):
+    for n, scap in enumerate(dict_net["ElmScap"], 1):
         create_scap(net=net, item=scap)
-    if n > 0: logger.info('imported %d SCAP' % n)
+    if n > 0:
+        logger.info("imported %d SCAP" % n)
 
-    logger.debug('creating static var compensator')
+    logger.debug("creating static var compensator")
     # create static var compensator (SVC) with control same as voltage controlled synchron machine (ElmSvs):
     n = 0
-    for n, svc in enumerate(dict_net['ElmSvs'], 1):
-          create_svc(net=net, item=svc, pv_as_slack=pv_as_slack,
-                   pf_variable_p_gen=pf_variable_p_gen, dict_net=dict_net)
-    if n > 0: logger.info('imported %d SVC' % n)
+    for n, svc in enumerate(dict_net["ElmSvs"], 1):
+        create_svc(net=net, item=svc, pv_as_slack=pv_as_slack, pf_variable_p_gen=pf_variable_p_gen, dict_net=dict_net)
+    if n > 0:
+        logger.info("imported %d SVC" % n)
 
     # create vac (ElmVac):
     n = 0
-    for n, vac in enumerate(dict_net['ElmVac'], 1):
+    for n, vac in enumerate(dict_net["ElmVac"], 1):
         create_vac(net=net, item=vac)
-    if n > 0: logger.info('imported %d VAC' % n)
+    if n > 0:
+        logger.info("imported %d VAC" % n)
 
     # create vac (ElmVsc):
     n = 0
-    for n, vscmono in enumerate(dict_net['ElmVscmono'], 1):
+    for n, vscmono in enumerate(dict_net["ElmVscmono"], 1):
         create_vscmono(net=net, item=vscmono)
-    if n > 0: logger.info('imported %d VSC (mono)' % n)
+    if n > 0:
+        logger.info("imported %d VSC (mono)" % n)
 
     # create vac (ElmVsc):
     n = 0
-    for n, vsc in enumerate(dict_net['ElmVsc'], 1):
+    for n, vsc in enumerate(dict_net["ElmVsc"], 1):
         create_pp_vsc(net=net, item=vsc)
-    if n > 0: logger.info('imported %d VSC' % n)
+    if n > 0:
+        logger.info("imported %d VSC" % n)
 
     for idx, row in net.trafo.iterrows():
         propagate_bus_coords(net, row.lv_bus, row.hv_bus)
 
-    for idx, row in net.switch[net.switch.et == 'b'].iterrows():
+    for idx, row in net.switch[net.switch.et == "b"].iterrows():
         propagate_bus_coords(net, row.bus, row.element)
 
     # we do lines last because of propagation of coordinates
-    logger.debug('creating lines')
+    logger.debug("creating lines")
     # create lines:
     n = 0
-    for n, line in enumerate(dict_net['ElmLne'], 0):
-        create_pp_line(net=net, item=line, flag_graphics=flag_graphics, create_sections=create_sections,
-                       is_unbalanced=is_unbalanced)
-    logger.info('imported %d lines' % (len(net.line.line_idx.unique())) if len(net.line) else 0)
-    net.line['section_idx'] = 0
-    if dict_net['global_parameters']["iopt_tem"] == 1:
+    for n, line in enumerate(dict_net["ElmLne"], 0):
+        create_pp_line(
+            net=net,
+            item=line,
+            flag_graphics=flag_graphics,
+            create_sections=create_sections,
+            is_unbalanced=is_unbalanced,
+        )
+    logger.info("imported %d lines" % (len(net.line.line_idx.unique())) if len(net.line) else 0)
+    net.line["section_idx"] = 0
+    if dict_net["global_parameters"]["iopt_tem"] == 1:
         set_user_pf_options(net, consider_line_temperature=True)
-    if dict_net['global_parameters']["global_load_voltage_dependency"] == 1:
+    if dict_net["global_parameters"]["global_load_voltage_dependency"] == 1:
         set_user_pf_options(net, voltage_depend_loads=True)
     else:
         set_user_pf_options(net, voltage_depend_loads=False)
-        
-    if len(dict_net['ElmLodlvp']) > 0:
-        
+
+    if len(dict_net["ElmLodlvp"]) > 0:
         # ElmLodlvp within line
-        # here we split lines and import the partial LV loads that are part of lines 
+        # here we split lines and import the partial LV loads that are part of lines
         lvp_lne_dict = get_lvp_for_lines(dict_net)
         logger.debug(lvp_lne_dict)
         split_all_lines(net, lvp_lne_dict)
-        if len(lvp_lne_dict) > 0: logger.info('imported %d partial loads on line, seperated line' % len(lvp_lne_dict))
-        
+        if len(lvp_lne_dict) > 0:
+            logger.info("imported %d partial loads on line, seperated line" % len(lvp_lne_dict))
+
         # ElmLodLvp within load (ElmLodlv)
-        lvp_lod_items = [lvp for lvp in dict_net['ElmLodlvp'] if lvp.fold_id.GetClassName() == 'ElmLodlv']
-        logger.debug('creating lv partial loads')
+        lvp_lod_items = [lvp for lvp in dict_net["ElmLodlvp"] if lvp.fold_id.GetClassName() == "ElmLodlv"]
+        logger.debug("creating lv partial loads")
         # create loads:
         n = 0
         for n, load in enumerate(lvp_lod_items, 1):
             try:
-                create_pp_load(net=net, item=load, pf_variable_p_loads=pf_variable_p_loads,
-                               dict_net=dict_net, is_unbalanced=is_unbalanced)
+                create_pp_load(
+                    net=net,
+                    item=load,
+                    pf_variable_p_loads=pf_variable_p_loads,
+                    dict_net=dict_net,
+                    is_unbalanced=is_unbalanced,
+                )
             except RuntimeError as err:
-                logger.warning(f'load failed at import and was not imported: {err}')
-        if n > 0: logger.info(f'imported {n} lv loads')
-        
-        
+                logger.warning(f"load failed at import and was not imported: {err}")
+        if n > 0:
+            logger.info(f"imported {n} lv loads")
+
     # create station controllers (ElmStactrl):
     if export_controller:
         n = 0
         # Create nx graph for further usage
         # top is needed to check connectivity between inpout and output elements, therefore respect switches
         # top_all is the full topology to identify the sign of measurements, that is why respect_switches = False
-        top = create_nxgraph(net, respect_switches=True, include_lines=True, include_trafos=True,
-                            include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
-                            calc_branch_impedances=False, branch_impedance_unit='ohm', include_out_of_service=True)
-        top_all = create_nxgraph(net, respect_switches=False, include_lines=True, include_trafos=True,
-                                include_impedances=True, nogobuses=None, notravbuses=None, multi=True,
-                                calc_branch_impedances=False, branch_impedance_unit='ohm', include_out_of_service=True)
-        for n, stactrl in enumerate(dict_net['ElmStactrl'], 1):
+        top = create_nxgraph(
+            net,
+            respect_switches=True,
+            include_lines=True,
+            include_trafos=True,
+            include_impedances=True,
+            nogobuses=None,
+            notravbuses=None,
+            multi=True,
+            calc_branch_impedances=False,
+            branch_impedance_unit="ohm",
+            include_out_of_service=True,
+        )
+        top_all = create_nxgraph(
+            net,
+            respect_switches=False,
+            include_lines=True,
+            include_trafos=True,
+            include_impedances=True,
+            nogobuses=None,
+            notravbuses=None,
+            multi=True,
+            calc_branch_impedances=False,
+            branch_impedance_unit="ohm",
+            include_out_of_service=True,
+        )
+        for n, stactrl in enumerate(dict_net["ElmStactrl"], 1):
             create_stactrl(net=net, item=stactrl, top=top, top_all=top_all)
-        if n > 0: logger.info('imported %d station controllers' % n)
+        if n > 0:
+            logger.info("imported %d station controllers" % n)
 
     remove_folder_of_std_types(net)
 
     if handle_us == "Deactivate":
-        logger.info('deactivating unsupplied elements')
+        logger.info("deactivating unsupplied elements")
         set_isolated_areas_out_of_service(net)
     elif handle_us == "Drop":
-        logger.info('dropping inactive elements')
+        logger.info("dropping inactive elements")
         drop_inactive_elements(net)
     elif handle_us != "Nothing":
-        raise ValueError("handle_us should be 'Deactivate', 'Drop' or 'Nothing', "
-                         "received: %s" % handle_us)
+        raise ValueError("handle_us should be 'Deactivate', 'Drop' or 'Nothing', received: %s" % handle_us)
 
     if is_unbalanced:
         add_zero_impedance_parameters(net)
 
     # --------- create reactive power capability characteristics ---------
-    if 'q_capability_curve_table' in net and not net['q_capability_curve_table'].empty:
-        logger.debug('Create q_capability_characteristics_object')
+    if "q_capability_curve_table" in net and not net["q_capability_curve_table"].empty:
+        logger.debug("Create q_capability_characteristics_object")
         create_q_capability_characteristics_object(net)
 
         for element in ("sgen", "gen", "ext_grid"):
@@ -357,8 +484,8 @@ def from_pf(
             mask = net[element]["reactive_capability_curve"].fillna(False).astype(bool)
             for eid in net[element].index[mask]:
                 min_q_mvar, max_q_mvar = get_min_max_q_mvar_from_characteristics_object(net, element, eid)
-                net[element].loc[eid, 'min_q_mvar'] = min_q_mvar
-                net[element].loc[eid, 'max_q_mvar'] = max_q_mvar
+                net[element].loc[eid, "min_q_mvar"] = min_q_mvar
+                net[element].loc[eid, "max_q_mvar"] = max_q_mvar
 
     if export_pf_ZoneArea:
         if "pf_zone" not in net.bus.columns:
@@ -368,7 +495,7 @@ def from_pf(
         cols = ["pf_area", "pf_zone"]
         net.bus[cols] = net.bus[cols].where(net.bus[cols].notna(), None)  # type: ignore[index,call-overload]
 
-    logger.info('imported net')
+    logger.info("imported net")
     return net
 
 
@@ -376,7 +503,7 @@ def get_graphic_object(item):
     try:
         graphic_object = grf_map[item]
     except KeyError as err:
-        logger.warning('graphic object missing for element %s: %s' % (item, err))
+        logger.warning("graphic object missing for element %s: %s" % (item, err))
         return None
     else:
         return graphic_object
@@ -405,11 +532,11 @@ def add_additional_attributes(item, net, element, element_id, attr_list=None, at
                 attr_dict[attr_l] = attr_l
 
     for attr in attr_dict.keys():
-        if '.' in attr:
+        if "." in attr:
             # go in the object chain of a.b.c.d until finally get the chr_name
             obj = item
-            for a in attr.split('.'):
-                if hasattr(obj, 'HasAttribute') and obj.HasAttribute(a):
+            for a in attr.split("."):
+                if hasattr(obj, "HasAttribute") and obj.HasAttribute(a):
                     obj = obj.GetAttribute(a)
             if obj is not None and isinstance(obj, str):
                 net[element].loc[element_id, attr_dict[attr]] = obj
@@ -421,7 +548,9 @@ def add_additional_attributes(item, net, element, element_id, attr_list=None, at
                     net[element].loc[element_id, attr_dict[attr]] = chr_name
                 elif isinstance(chr_name, list):
                     if len(chr_name) > 1:
-                        logger.warning(f"element type {element}: {item.loc_name} - attribute {attr} is a list with more than 1 items - taking only the first element of the list.")
+                        logger.warning(
+                            f"element type {element}: {item.loc_name} - attribute {attr} is a list with more than 1 items - taking only the first element of the list."
+                        )
                     elif len(chr_name) == 0:
                         continue
                     net[element].loc[element_id, attr_dict[attr]] = chr_name[0]
@@ -429,14 +558,14 @@ def add_additional_attributes(item, net, element, element_id, attr_list=None, at
 
 def create_pp_bus(net, item, flag_graphics, is_unbalanced, export_pf_ZoneArea):
     # add geo data
-    if flag_graphics == 'GPS':
-        x = item.GetAttribute('e:GPSlon')
-        y = item.GetAttribute('e:GPSlat')
-    elif flag_graphics == 'graphic objects':
+    if flag_graphics == "GPS":
+        x = item.GetAttribute("e:GPSlon")
+        y = item.GetAttribute("e:GPSlat")
+    elif flag_graphics == "graphic objects":
         graphic_object = get_graphic_object(item)
         if graphic_object:
-            x = graphic_object.GetAttribute('rCenterX')
-            y = graphic_object.GetAttribute('rCenterY')
+            x = graphic_object.GetAttribute("rCenterX")
+            y = graphic_object.GetAttribute("rCenterY")
             # add gr coord data
         else:
             x, y = 0, 0
@@ -452,19 +581,19 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced, export_pf_ZoneArea):
 
     usage = ["b", "m", "n"]
     params = {
-        'name': item.loc_name,
-        'vn_kv': item.uknom,
-        'in_service': not bool(item.outserv),
-        'type': usage[item.iUsage],
-        'geodata': (x, y),
+        "name": item.loc_name,
+        "vn_kv": item.uknom,
+        "in_service": not bool(item.outserv),
+        "type": usage[item.iUsage],
+        "geodata": (x, y),
     }
 
     system_type = {0: "ac", 1: "dc", 2: "ac/bi"}[item.systype]
 
     try:
-        params['zone'] = item.Grid.loc_name.split('.ElmNet')[0]
+        params["zone"] = item.Grid.loc_name.split(".ElmNet")[0]
     except AttributeError:
-        params['zone'] = item.cpGrid.loc_name.split('.ElmNet')[0]
+        params["zone"] = item.cpGrid.loc_name.split(".ElmNet")[0]
 
     logger.debug(f">> creating {system_type} bus <{params['name']}>")
 
@@ -475,8 +604,9 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced, export_pf_ZoneArea):
         bid = create_bus_dc(net, **params)
         table = "bus_dc"
     else:
-        raise NotImplementedError(f"Only buses with system type AC or DC are supported, "
-                                  f"but f{item.loc_name} has system type {system_type}")
+        raise NotImplementedError(
+            f"Only buses with system type AC or DC are supported, but f{item.loc_name} has system type {system_type}"
+        )
     # add the bus to the bus dictionary
     bus_dict[item] = bid
 
@@ -496,30 +626,26 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced, export_pf_ZoneArea):
 
     get_pf_bus_results(net, item, bid, is_unbalanced, system_type)
 
-    substat_descr = ''
-    if item.HasAttribute('cpSubstat'):
+    substat_descr = ""
+    if item.HasAttribute("cpSubstat"):
         substat = item.cpSubstat
         if substat is not None:
-            logger.debug('adding substat %s to descr of bus %s (#%d)' %
-                         (substat, params['name'], bid))
+            logger.debug("adding substat %s to descr of bus %s (#%d)" % (substat, params["name"], bid))
             substat_descr = substat.loc_name
 
             # get geo-coordinates from stations
-            if json.loads(net[table].at[bid, 'geo'])['coordinates'] == [0, 0]:
-
-                if flag_graphics == 'GPS':
-                    x = substat.GetAttribute('e:GPSlon')
-                    y = substat.GetAttribute('e:GPSlat')
-                    logger.warning(
-                        'bus %s has no geodata, geodata of substation %s is used.' % (item,
-                                                                                      substat))
+            if json.loads(net[table].at[bid, "geo"])["coordinates"] == [0, 0]:
+                if flag_graphics == "GPS":
+                    x = substat.GetAttribute("e:GPSlon")
+                    y = substat.GetAttribute("e:GPSlat")
+                    logger.warning("bus %s has no geodata, geodata of substation %s is used." % (item, substat))
                     if x == 0 and y == 0:
                         pass
-                elif flag_graphics == 'graphic objects':
+                elif flag_graphics == "graphic objects":
                     graphic_object = get_graphic_object(substat)
                     if graphic_object:
-                        x = graphic_object.GetAttribute('rCenterX')
-                        y = graphic_object.GetAttribute('rCenterY')
+                        x = graphic_object.GetAttribute("rCenterX")
+                        y = graphic_object.GetAttribute("rCenterY")
                         # add gr coord data
                     else:
                         x, y = 0, 0
@@ -527,30 +653,27 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced, export_pf_ZoneArea):
                     x, y = 0, 0
 
                 geodata = (x, y)
-                net[table].at[
-                    bid, "geo"] = f'{{"coordinates":[{geodata[0]},{geodata[1]}], "type":"Point"}}'
+                net[table].at[bid, "geo"] = f'{{"coordinates":[{geodata[0]},{geodata[1]}], "type":"Point"}}'
         else:
             logger.debug("bus has no substat description")
     else:
-        logger.debug('bus %s is not part of any substation' %
-                     params['name'])
+        logger.debug("bus %s is not part of any substation" % params["name"])
 
     if len(item.desc) > 0:
-        descr = ' \n '.join(item.desc)
+        descr = " \n ".join(item.desc)
     elif item.fold_id:
         descr = item.fold_id.loc_name
     else:
-        descr = ''
+        descr = ""
 
-    logger.debug('adding descr <%s> to bus' % descr)
+    logger.debug("adding descr <%s> to bus" % descr)
 
     net[table].at[bid, "description"] = descr
     net[table].at[bid, "substat"] = substat_descr
     net[table].at[bid, "folder_id"] = item.fold_id.loc_name
 
     attr_dict = {"for_name": "equipment", "cimRdfId": "origin_id", "cpSite.loc_name": "site"}
-    add_additional_attributes(item, net, table, bid, attr_dict=attr_dict,
-                              attr_list=["sernum", "chr_name"])
+    add_additional_attributes(item, net, table, bid, attr_dict=attr_dict, attr_list=["sernum", "chr_name"])
 
 
 def get_pf_bus_results(net, item, bid, is_unbalanced, system_type):
@@ -566,10 +689,7 @@ def get_pf_bus_results(net, item, bid, is_unbalanced, system_type):
         }
     elif system_type == "ac":
         bus_type = "res_bus"
-        result_variables = {
-            "pf_vm_pu": "m:u",
-            "pf_va_degree": "m:phiu"
-        }
+        result_variables = {"pf_vm_pu": "m:u", "pf_va_degree": "m:phiu"}
     else:
         bus_type = "res_bus_dc"
         result_variables = {"pf_vm_pu": "m:u"}
@@ -638,7 +758,7 @@ def get_connection_nodes(net, item, num_nodes):
         try:
             pf_bus = item.GetNode(i)
         except Exception as err:
-            logger.error('GetNode failed for %s' % item)
+            logger.error("GetNode failed for %s" % item)
             logger.error(err)
             pf_bus = None
         if pf_bus is None:
@@ -656,11 +776,10 @@ def get_connection_nodes(net, item, num_nodes):
             buses.append(pp_bus)
 
     if all([b is None for b in buses]):
-        logger.error("Element %s is Disconnected: buses are %s" %
-                     (item.loc_name, buses))
+        logger.error("Element %s is Disconnected: buses are %s" % (item.loc_name, buses))
         raise IndexError
     elif None in buses:
-        logger.debug('exising buses: %s' % buses)
+        logger.debug("exising buses: %s" % buses)
         existing_bus = (set(buses) - {None}).pop()
         name = net[table].at[existing_bus, "name"] + "_aux"
         new_buses = []
@@ -668,17 +787,18 @@ def get_connection_nodes(net, item, num_nodes):
         # check if trafo
         v = []
         pf_class = item.GetClassName()
-        logger.warning("object %s of class %s is not properly connected - creating auxiliary buses."
-                       " check if the auxiliary buses have been created with correct voltages" % (
-                           item, pf_class))
+        logger.warning(
+            "object %s of class %s is not properly connected - creating auxiliary buses."
+            " check if the auxiliary buses have been created with correct voltages" % (item, pf_class)
+        )
 
         if pf_class == "ElmTr2":
-            v.append(item.GetAttribute('t:utrn_h'))
-            v.append(item.GetAttribute('t:utrn_l'))
+            v.append(item.GetAttribute("t:utrn_h"))
+            v.append(item.GetAttribute("t:utrn_l"))
         elif pf_class == "ElmTr3":
-            v.append(item.GetAttribute('t:utrn3_h'))
-            v.append(item.GetAttribute('t:utrn3_m'))
-            v.append(item.GetAttribute('t:utrn3_l'))
+            v.append(item.GetAttribute("t:utrn3_h"))
+            v.append(item.GetAttribute("t:utrn3_m"))
+            v.append(item.GetAttribute("t:utrn3_l"))
         else:
             v = [net[table].vn_kv.at[existing_bus] for _ in buses]
 
@@ -701,22 +821,22 @@ def get_connection_nodes(net, item, num_nodes):
 
 
 def import_switch(item, idx_cubicle):
-    logger.debug('importing switch for %s (%d)' % (item.loc_name, idx_cubicle))
+    logger.debug("importing switch for %s (%d)" % (item.loc_name, idx_cubicle))
     switch_types = {"cbk": "CB", "sdc": "LBS", "swt": "LS", "dct": "DS"}
     cub = item.GetCubicle(idx_cubicle)
     if cub is None:
         return None, None, None
-    switches = cub.GetContents('*.StaSwitch')
+    switches = cub.GetContents("*.StaSwitch")
     if len(switches) > 1:
-        logger.error('more then 1 switch found for %s: %s' % (item, switches))
+        logger.error("more then 1 switch found for %s: %s" % (item, switches))
     if len(switches) != 0:
         switch = switches[0]
-        switch_in_service = not bool(switch.outserv) if switch.HasAttribute('outserv') else True
+        switch_in_service = not bool(switch.outserv) if switch.HasAttribute("outserv") else True
         switch_name = switch.cDisplayName
-        if not switch.HasAttribute('isclosed'):
-            logger.warning('switch %s does not have the attribute isclosed!!!' % switch)
+        if not switch.HasAttribute("isclosed"):
+            logger.warning("switch %s does not have the attribute isclosed!!!" % switch)
         switch_is_closed = bool(switch.on_off) and bool(switch.isclosed) and switch_in_service
-        switch_usage = switch_types.get(switch.aUsage, 'unknown')
+        switch_usage = switch_types.get(switch.aUsage, "unknown")
         return switch_is_closed, switch_usage, switch_name
     else:
         return None, None, None
@@ -724,16 +844,23 @@ def import_switch(item, idx_cubicle):
 
 def create_connection_switches(net, item, number_switches, et, buses, elements):
     # False if open, True if closed, None if no switch
-    logger.debug('creating connection switches')
+    logger.debug("creating connection switches")
     new_switch_idx = []
     new_switch_closed = []
     for i in range(number_switches):
         switch_is_closed, switch_usage, switch_name = import_switch(item, i)
-        logger.debug('switch closed: %s, switch_usage: %s' % (switch_is_closed, switch_usage))
+        logger.debug("switch closed: %s, switch_usage: %s" % (switch_is_closed, switch_usage))
         if switch_is_closed is not None:
-            cd = create_switch(net, bus=buses[i], element=elements[i], et=et,
-                               closed=switch_is_closed, type=switch_usage, name=switch_name)
-            net.res_switch.loc[cd, ['pf_closed', 'pf_in_service']] = switch_is_closed, True
+            cd = create_switch(
+                net,
+                bus=buses[i],
+                element=elements[i],
+                et=et,
+                closed=switch_is_closed,
+                type=switch_usage,
+                name=switch_name,
+            )
+            net.res_switch.loc[cd, ["pf_closed", "pf_in_service"]] = switch_is_closed, True
             new_switch_idx.append(cd)
             new_switch_closed.append(switch_is_closed)
     return new_switch_idx, new_switch_closed
@@ -744,17 +871,17 @@ def get_coords_from_buses(net, from_bus, to_bus, **kwargs):
     from_geo: Optional[str] = None
     to_geo: Optional[str] = None
     if from_bus in net.bus.index:
-        from_geo: str = net.bus.loc[from_bus, 'geo']
+        from_geo: str = net.bus.loc[from_bus, "geo"]
 
     if to_bus in net.bus.index:
-        to_geo: str = net.bus.loc[to_bus, 'geo']
+        to_geo: str = net.bus.loc[to_bus, "geo"]
 
     if from_geo and to_geo:
         coords = [geojson.utils.coords(geojson.loads(from_geo)), geojson.utils.coords(geojson.loads(to_geo))]
         coords = [[x, y] for item in coords for x, y in item]
-        logger.debug('got coords from buses: %s' % coords)
+        logger.debug("got coords from buses: %s" % coords)
     else:
-        logger.debug('no coords for line between buses %d and %d' % (from_bus, to_bus))
+        logger.debug("no coords for line between buses %d and %d" % (from_bus, to_bus))
     return coords
 
 
@@ -773,7 +900,7 @@ def get_coords_from_item(item):
 
 
 def get_coords_from_grf_object(item):
-    logger.debug('getting coords from gr_obj')
+    logger.debug("getting coords from gr_obj")
     # center_x = ga(grf_map[item], 'rCenterX')
     # center_y = ga(grf_map[item], 'rCenterY')
     # coords = [[center_x, center_y]]
@@ -781,7 +908,7 @@ def get_coords_from_grf_object(item):
     graphic_object = get_graphic_object(item)
     if graphic_object:
         coords = []
-        cons = graphic_object.GetContents('*.IntGrfcon')
+        cons = graphic_object.GetContents("*.IntGrfcon")
         cons.sort(key=lambda x: x.iDatConNr)
         for c in cons:
             con_nr = c.iDatConNr
@@ -793,7 +920,7 @@ def get_coords_from_grf_object(item):
             coords.extend(coords_list)
         if len(coords) == 0:
             coords = [[graphic_object.rCenterX, graphic_object.rCenterY]] * 2
-        logger.debug('extracted line coords from graphic object: %s' % coords)
+        logger.debug("extracted line coords from graphic object: %s" % coords)
     else:
         coords = []
 
@@ -801,70 +928,64 @@ def get_coords_from_grf_object(item):
 
 
 def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
-    params = {'parallel': item.nlnum, 'name': item.loc_name}
-    logger.debug('>> creating line <%s>' % params['name'])
-    logger.debug('line <%s> has <%d> parallel lines' % (params['name'], params['parallel']))
+    params = {"parallel": item.nlnum, "name": item.loc_name}
+    logger.debug(">> creating line <%s>" % params["name"])
+    logger.debug("line <%s> has <%d> parallel lines" % (params["name"], params["parallel"]))
 
-    logger.debug('asked for buses')
+    logger.debug("asked for buses")
     # here: implement situation if line not connected
 
     try:
-        (params['bus1'], params['bus2']), bus_table = get_connection_nodes(net, item, 2)
+        (params["bus1"], params["bus2"]), bus_table = get_connection_nodes(net, item, 2)
     except IndexError:
-        logger.debug("Cannot add Line '%s': not connected" % params['name'])
+        logger.debug("Cannot add Line '%s': not connected" % params["name"])
         return
     except Exception as e:
-        logger.error("Error %s while exporting Line '%s'", e, params['name'])
+        logger.error("Error %s while exporting Line '%s'", e, params["name"])
         return
 
     ac = bus_table == "bus"
     line_table = "line" if ac else "line_dc"
 
     corridor = get_free_id(net[line_table])
-    line_sections = item.GetContents('*.ElmLnesec')
+    line_sections = item.GetContents("*.ElmLnesec")
     # geodata
-    if flag_graphics == 'no geodata':
+    if flag_graphics == "no geodata":
         coords = []
-    elif flag_graphics == 'GPS':
+    elif flag_graphics == "GPS":
         if len(item.GPScoords) > 0:
             coords = get_coords_from_item(item)
         else:
-            coords = get_coords_from_buses(net, params['bus1'], params['bus2'])  # todo
+            coords = get_coords_from_buses(net, params["bus1"], params["bus2"])  # todo
     else:
         coords = get_coords_from_grf_object(item)
 
     if len(line_sections) == 0:
         if coords:
             params["geodata"] = coords
-        logger.debug('line <%s> has no sections' % params['name'])
+        logger.debug("line <%s> has no sections" % params["name"])
         # get in_service from overlaying line | line sections can't be in or out of service
         in_service = not bool(item.outserv)
-        lid = create_line_normal(net=net,
-                                 item=item,
-                                 is_unbalanced=is_unbalanced,
-                                 in_service=in_service,
-                                 ac=ac, **params)
+        lid = create_line_normal(
+            net=net, item=item, is_unbalanced=is_unbalanced, in_service=in_service, ac=ac, **params
+        )
         sid_list = [lid]
-        logger.debug('created line <%s> with index <%d>' % (params['name'], lid))
+        logger.debug("created line <%s> with index <%d>" % (params["name"], lid))
 
     else:
-        logger.debug('line <%s> has sections' % params['name'])
+        logger.debug("line <%s> has sections" % params["name"])
         if create_sections:
             if not ac:
                 raise NotImplementedError(f"Export of lines with line sections only implemented for AC lines ({item})")
-            sid_list = create_line_sections(net=net, item_list=line_sections, line=item,
-                                            coords=coords, is_unbalanced=is_unbalanced, **params)
+            sid_list = create_line_sections(
+                net=net, item_list=line_sections, line=item, coords=coords, is_unbalanced=is_unbalanced, **params
+            )
         else:
-            lidx = create_line_no_sections(net,
-                                           item,
-                                           line_sections,
-                                           params["bus1"],
-                                           params["bus2"],
-                                           coords,
-                                           is_unbalanced,
-                                           ac)
+            lidx = create_line_no_sections(
+                net, item, line_sections, params["bus1"], params["bus2"], coords, is_unbalanced, ac
+            )
             sid_list = [lidx]
-        logger.debug('created <%d> line sections for line <%s>' % (len(sid_list), params['name']))
+        logger.debug("created <%d> line sections for line <%s>" % (len(sid_list), params["name"]))
 
     line_dict[item] = sid_list
     net[line_table].loc[sid_list, "line_idx"] = corridor
@@ -873,22 +994,19 @@ def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
 
     if ac:
         new_elements = (sid_list[0], sid_list[-1])
-        new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 'l',
-                                                                       (params['bus1'], params['bus2']),
-                                                                       new_elements)
+        new_switch_idx, new_switch_closed = create_connection_switches(
+            net, item, 2, "l", (params["bus1"], params["bus2"]), new_elements
+        )
         # correct in_service of lines if station switch is open
         # update_in_service_depending_station_switch(net, element_type="line",
         #                                            new_elements=new_elements,
         #                                            new_switch_idx=new_switch_idx,
         #                                            new_switch_closed=new_switch_closed)
 
-    logger.debug('line <%s> created' % params['name'])
+    logger.debug("line <%s> created" % params["name"])
 
 
-def point_len(
-        p1: list[Union[float, int]],
-        p2: list[Union[float, int]]
-) -> float:
+def point_len(p1: list[Union[float, int]], p2: list[Union[float, int]]) -> float:
     """
     Calculate distance between p1 and p2
     """
@@ -911,67 +1029,70 @@ def cut_coords_segment(p1, p2, split_len):
     # finds the point where the line segment is cut in two
     # use scale_factor before calling this
     if split_len == 0:
-        logger.debug('split_len=0: return %s' % p1)
+        logger.debug("split_len=0: return %s" % p1)
         return p1
     tot_len = point_len(p1, p2)
     if split_len == tot_len:
-        logger.debug('split_len=tot_len (%.3f): return %s' % (tot_len, p2))
+        logger.debug("split_len=tot_len (%.3f): return %s" % (tot_len, p2))
         return p2
     x1, y1 = p1
     x2, y2 = p2
     x_k = x2 * split_len / tot_len + x1 * (tot_len - split_len) / tot_len
     y_k = y2 * split_len / tot_len + y1 * (tot_len - split_len) / tot_len
-    logger.debug('cut coords segment: p1=%s, p2=%s, split_len=%.3f, x_k = %.3f, y_k = %.3f' %
-                 (p1, p2, split_len, x_k, y_k))
+    logger.debug(
+        "cut coords segment: p1=%s, p2=%s, split_len=%.3f, x_k = %.3f, y_k = %.3f" % (p1, p2, split_len, x_k, y_k)
+    )
     return x_k, y_k
 
 
 def get_section_coords(coords, sec_len, start_len, scale_factor):
     tol = 1e-6
     # get the starting point of section
-    logger.debug('calculating section coords: sec_len=%.3f, start_len=%.3f, scale_factor=%.3f' %
-                 (sec_len, start_len, scale_factor))
+    logger.debug(
+        "calculating section coords: sec_len=%.3f, start_len=%.3f, scale_factor=%.3f"
+        % (sec_len, start_len, scale_factor)
+    )
     if abs(sec_len) < tol and scale_factor == 0:
-        logger.debug('cannot do anything: sec_len and scale factor are 0')
+        logger.debug("cannot do anything: sec_len and scale factor are 0")
         sec_coords = [coords[0], coords[1]]
         return sec_coords
     elif scale_factor == 0:
-        logger.error('scale factor==0')
+        logger.error("scale factor==0")
         sec_coords = [coords[0], coords[1]]
         return sec_coords
     elif abs(sec_len) < tol:
-        logger.debug('section length is 0')
+        logger.debug("section length is 0")
 
     len_i = 0
     i = 0
     sec_coords = []
-    logger.debug('len coords: %d, coords: %s' % (len(coords), coords))
+    logger.debug("len coords: %d, coords: %s" % (len(coords), coords))
     # find starting point
     for i in range(len(coords) - 1):
         len_i += point_len(coords[i], coords[i + 1])
-        logger.debug('i: %d, len_i: %.3f' % (i, len_i * scale_factor))
+        logger.debug("i: %d, len_i: %.3f" % (i, len_i * scale_factor))
         # catch if line has identical coords
         if not len_i:
             sec_coords = coords
             return sec_coords
 
         if len_i * scale_factor > start_len or abs(len_i * scale_factor - start_len) <= tol:
-            logger.debug('len_i>start_len: cut coords segment')
-            logger.debug('coords[i]: %s, coods[i+1]: %s' % (coords[i], coords[i + 1]))
+            logger.debug("len_i>start_len: cut coords segment")
+            logger.debug("coords[i]: %s, coods[i+1]: %s" % (coords[i], coords[i + 1]))
             if start_len == 0:
                 sec_coords = [[coords[i][0], coords[i][1]]]
             else:
-                x_k, y_k = cut_coords_segment(coords[i], coords[i + 1],
-                                              start_len / scale_factor +
-                                              point_len(coords[i], coords[i + 1]) - len_i)
+                x_k, y_k = cut_coords_segment(
+                    coords[i], coords[i + 1], start_len / scale_factor + point_len(coords[i], coords[i + 1]) - len_i
+                )
                 sec_coords = [[x_k, y_k]]
-            logger.debug('found start of the section: %s' % sec_coords)
+            logger.debug("found start of the section: %s" % sec_coords)
             break
     else:
         logger.error(
-            'could not find start of section: len_i = %.7f, start_len = %.7f' % (
-                len_i * scale_factor, start_len))
-        logger.debug('delta: %f' % (len_i * scale_factor - start_len))
+            "could not find start of section: len_i = %.7f, start_len = %.7f" % (len_i * scale_factor, start_len)
+        )
+        logger.debug("delta: %f" % (len_i * scale_factor - start_len))
 
     # keep adding points until encounter the end of line
     len_j = 0
@@ -986,12 +1107,12 @@ def get_section_coords(coords, sec_len, start_len, scale_factor):
             k += 1
         else:
             # cut line between coords[i] and coords[i+1]
-            x_k, y_k = cut_coords_segment(sec_coords[k], coords[j],
-                                          sec_len / scale_factor +
-                                          point_len(sec_coords[k], coords[j]) - len_j)
+            x_k, y_k = cut_coords_segment(
+                sec_coords[k], coords[j], sec_len / scale_factor + point_len(sec_coords[k], coords[j]) - len_j
+            )
             sec_coords.append([x_k, y_k])
             break
-    logger.debug('calculated sec_coords: %s' % sec_coords)
+    logger.debug("calculated sec_coords: %s" % sec_coords)
     return sec_coords
 
 
@@ -1019,7 +1140,7 @@ def segment_buses(net, bus1, bus2, num_sections, line_name):  # , sec_len, start
         bus_name = f"{line_name} (Muff {m})"
         vn_kv = net.bus.at[bus1, "vn_kv"]
         zone = net.bus.at[bus1, "zone"]
-        bus = create_bus(net, name=bus_name, type='ls', vn_kv=vn_kv, zone=zone)
+        bus = create_bus(net, name=bus_name, type="ls", vn_kv=vn_kv, zone=zone)
 
         # TODO: implement coords for segmentation buses.
         #  Handle coords if line has multiple coords.
@@ -1046,15 +1167,14 @@ def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_
     item_list.sort(key=lambda x: x.index)  # to ensure they are in correct order
 
     if line.HasResults(-1):  # -1 for 'c' results (whatever that is...)
-        line_loading = line.GetAttribute('c:loading')
+        line_loading = line.GetAttribute("c:loading")
     else:
         line_loading = np.nan
 
     sec_len = [sec.dline for sec in item_list]
     # start_len = [sec.rellen for sec in item_list]
 
-    buses_gen = segment_buses(net, bus1=bus1, bus2=bus2, num_sections=len(item_list),
-                              line_name=line_name)
+    buses_gen = segment_buses(net, bus1=bus1, bus2=bus2, num_sections=len(item_list), line_name=line_name)
     # line = main_item | item | line_sections doesn't contain outserv!
     in_service = not bool(line.outserv)
     for item in item_list:
@@ -1062,8 +1182,17 @@ def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_
         section_name = item.loc_name
         bus1 = next(buses_gen)
         bus2 = next(buses_gen)
-        sid = create_line_normal(net=net, item=item, bus1=bus1, bus2=bus2, name=name, parallel=parallel,
-                                 is_unbalanced=is_unbalanced, ac=True, in_service=in_service)
+        sid = create_line_normal(
+            net=net,
+            item=item,
+            bus1=bus1,
+            bus2=bus2,
+            name=name,
+            parallel=parallel,
+            is_unbalanced=is_unbalanced,
+            ac=True,
+            in_service=in_service,
+        )
         sid_list.append(sid)
         net.line.at[sid, "section"] = section_name
         net.res_line.at[sid, "pf_loading"] = line_loading
@@ -1071,12 +1200,13 @@ def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_
         if coords:
             try:
                 scaling_factor = sum(sec_len) / calc_len_coords(coords)
-                sec_coords = get_section_coords(coords, sec_len=item.dline, start_len=item.rellen,
-                                                scale_factor=scaling_factor)
-                net.line.loc[sid, 'geo'] = geojson.dumps(geojson.LineString(sec_coords))
+                sec_coords = get_section_coords(
+                    coords, sec_len=item.dline, start_len=item.rellen, scale_factor=scaling_factor
+                )
+                net.line.loc[sid, "geo"] = geojson.dumps(geojson.LineString(sec_coords))
                 # p1 = sec_coords[0]
                 # p2 = sec_coords[-1]
-                net.bus.loc[bus2, ['geo']] = geojson.dumps(geojson.Point(sec_coords[-1]))
+                net.bus.loc[bus2, ["geo"]] = geojson.dumps(geojson.Point(sec_coords[-1]))
             except ZeroDivisionError:
                 logger.warning("Could not generate geodata for line sections!")
 
@@ -1093,18 +1223,18 @@ def create_line_no_sections(net, main_item, item_list, bus1, bus2, coords, is_un
     total_len = sum(sec_len)
     weights = [l / total_len for l in sec_len]
 
-    #df = [item.fline for item in item_list]
+    # df = [item.fline for item in item_list]
     # adapt line values if there is a characteristic given
     df = list()
     for item in item_list:
-        charefs = item.GetContents('*.ChaRef')
+        charefs = item.GetContents("*.ChaRef")
         if len(charefs):
             for char in charefs:
-                #print(char)
-                if char.loc_name=='fline' or char.loc_name=='fline(1)':
+                # print(char)
+                if char.loc_name == "fline" or char.loc_name == "fline(1)":
                     df.append(char.typ_id.curval)
                 else:
-                    raise UserWarning(f'Characteristic for name {char.loc_name} not implemented.')
+                    raise UserWarning(f"Characteristic for name {char.loc_name} not implemented.")
         else:
             df.append(item.fline)
 
@@ -1128,8 +1258,8 @@ def create_line_no_sections(net, main_item, item_list, bus1, bus2, coords, is_un
     # g0_us_per_km = sum([item.gline0 / p * w for item, p, w in zip(item_list, parallel, weights)])
     # type_list = [item.cohl_ for item in item_list]
 
-    g_us_per_km = 0.
-    g0_us_per_km = 0.
+    g_us_per_km = 0.0
+    g0_us_per_km = 0.0
     endtemp_degree = None
 
     # endtemp_degree = max([item.rtemp for item in item_list])
@@ -1140,34 +1270,35 @@ def create_line_no_sections(net, main_item, item_list, bus1, bus2, coords, is_un
     temperature_degree_celsius = max([item.Top for item in item_list])
     in_service = not bool(main_item.outserv)
 
-    lid = create_line_from_parameters(net=net,
-                                      from_bus=bus1,
-                                      to_bus=bus2,
-                                      length_km=total_len,
-                                      r_ohm_per_km=r_ohm_per_km,
-                                      x_ohm_per_km=x_ohm_per_km,
-                                      c_nf_per_km=c_nf_per_km,
-                                      max_i_ka=max_i_ka,
-                                      name=line_name,
-                                      type=None,
-                                      geodata=coords,
-                                      in_service=in_service,
-                                      g_us_per_km=g_us_per_km,
-                                      alpha=alpha,
-                                      parallel=main_item.nlnum,
-                                      temperature_degree_celsius=temperature_degree_celsius,
-                                      r0_ohm_per_km=r0_ohm_per_km,
-                                      x0_ohm_per_km=x0_ohm_per_km,
-                                      c0_nf_per_km=c0_nf_per_km,
-                                      g0_us_per_km=g0_us_per_km,
-                                      endtemp_degree=endtemp_degree
-                                      )
+    lid = create_line_from_parameters(
+        net=net,
+        from_bus=bus1,
+        to_bus=bus2,
+        length_km=total_len,
+        r_ohm_per_km=r_ohm_per_km,
+        x_ohm_per_km=x_ohm_per_km,
+        c_nf_per_km=c_nf_per_km,
+        max_i_ka=max_i_ka,
+        name=line_name,
+        type=None,
+        geodata=coords,
+        in_service=in_service,
+        g_us_per_km=g_us_per_km,
+        alpha=alpha,
+        parallel=main_item.nlnum,
+        temperature_degree_celsius=temperature_degree_celsius,
+        r0_ohm_per_km=r0_ohm_per_km,
+        x0_ohm_per_km=x0_ohm_per_km,
+        c0_nf_per_km=c0_nf_per_km,
+        g0_us_per_km=g0_us_per_km,
+        endtemp_degree=endtemp_degree,
+    )
 
-    net.line.loc[lid, 'description'] = ' \n '.join(main_item.desc) if len(main_item.desc) > 0 else ''
+    net.line.loc[lid, "description"] = " \n ".join(main_item.desc) if len(main_item.desc) > 0 else ""
     if hasattr(main_item, "cimRdfId"):
         chr_name = main_item.cimRdfId
         if chr_name is not None and len(chr_name) > 0:
-            net["line"].loc[lid, 'origin_id'] = chr_name[0]
+            net["line"].loc[lid, "origin_id"] = chr_name[0]
 
     get_pf_line_results(net, main_item, lid, is_unbalanced, ac)
 
@@ -1176,88 +1307,92 @@ def create_line_no_sections(net, main_item, item_list, bus1, bus2, coords, is_un
 
 def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac, in_service, geodata=None):
     pf_type = item.typ_id
-    std_type, type_created = create_line_type(net=net, item=pf_type,
-                                              cable_in_air=item.inAir if item.HasAttribute(
-                                                  'inAir') else False)
+    std_type, type_created = create_line_type(
+        net=net, item=pf_type, cable_in_air=item.inAir if item.HasAttribute("inAir") else False
+    )
     params = {
-        'name': name,
-        'in_service': in_service,
-        'length_km': item.dline,
-        'df': item.fline,
-        'parallel': parallel,
-        'alpha': pf_type.alpha if pf_type is not None else None,
-        'temperature_degree_celsius': item.Top,
-        'geodata': geodata
+        "name": name,
+        "in_service": in_service,
+        "length_km": item.dline,
+        "df": item.fline,
+        "parallel": parallel,
+        "alpha": pf_type.alpha if pf_type is not None else None,
+        "temperature_degree_celsius": item.Top,
+        "geodata": geodata,
     }
 
     if std_type is not None:  # and not is_unbalanced:delete later
         params["std_type"] = std_type
-        logger.debug('creating normal line with type <%s>' % std_type)
+        logger.debug("creating normal line with type <%s>" % std_type)
         if ac:
             lid = create_line(net, from_bus=bus1, to_bus=bus2, **params)
         else:
             lid = create_line_dc(net, from_bus_dc=bus1, to_bus_dc=bus2, **params)
     else:
-        logger.debug('creating normal line <%s> from parameters' % name)
+        logger.debug("creating normal line <%s> from parameters" % name)
         r_ohm = item.R1
 
-        params.update({
-            'r_ohm_per_km': r_ohm / params['length_km'],
-            'max_i_ka': item.Inom if item.Inom != 0 else 1e-3,
-            'alpha': pf_type.alpha if pf_type is not None else None
-        })
+        params.update(
+            {
+                "r_ohm_per_km": r_ohm / params["length_km"],
+                "max_i_ka": item.Inom if item.Inom != 0 else 1e-3,
+                "alpha": pf_type.alpha if pf_type is not None else None,
+            }
+        )
         if ac:
             x_ohm, c_nf = item.X1, item.C1
             r0_ohm, x0_ohm, c0_nf = item.R0, item.X0, item.C0
 
             if r_ohm == 0 and x_ohm == 0 and c_nf == 0:
-                logger.error('Incomplete data for line "%s": missing type and '
-                             'missing parameters R, X, C' % name)
+                logger.error('Incomplete data for line "%s": missing type and missing parameters R, X, C' % name)
             if r0_ohm == 0 and x0_ohm == 0 and c0_nf == 0:
-                logger.error('Incomplete data for line "%s": missing type and '
-                             'missing parameters R0, X0, C0' % name)
+                logger.error('Incomplete data for line "%s": missing type and missing parameters R0, X0, C0' % name)
 
-            params.update({
-                'x_ohm_per_km': x_ohm / params['length_km'],
-                'c_nf_per_km': c_nf / params['length_km'] * 1e3,  # internal unit for C in PF is uF
-                'r0_ohm_per_km': r0_ohm / params['length_km'],
-                'x0_ohm_per_km': x0_ohm / params['length_km'],
-                'c0_nf_per_km': c0_nf / params['length_km'] * 1e3  # internal unit for C in PF is uF,
-            })
+            params.update(
+                {
+                    "x_ohm_per_km": x_ohm / params["length_km"],
+                    "c_nf_per_km": c_nf / params["length_km"] * 1e3,  # internal unit for C in PF is uF
+                    "r0_ohm_per_km": r0_ohm / params["length_km"],
+                    "x0_ohm_per_km": x0_ohm / params["length_km"],
+                    "c0_nf_per_km": c0_nf / params["length_km"] * 1e3,  # internal unit for C in PF is uF,
+                }
+            )
 
             coupling = item.c_ptow
             if coupling is not None:
                 coupling_type = coupling.GetClassName()
-                if coupling_type == 'TypCabsys':
+                if coupling_type == "TypCabsys":
                     # line is part of "Cable System"
-                    params['type'] = 'cs'
-                elif coupling_type == 'ElmTow':
-                    params['type'] = 'ol'
+                    params["type"] = "cs"
+                elif coupling_type == "ElmTow":
+                    params["type"] = "ol"
                 else:
-                    params['type'] = None
+                    params["type"] = None
             else:
-                params['type'] = None
+                params["type"] = None
 
             lid = create_line_from_parameters(net=net, from_bus=bus1, to_bus=bus2, **params)
         else:
             lid = create_line_dc_from_parameters(net, from_bus_dc=bus1, to_bus_dc=bus2, **params)
 
-    net["line" if ac else "line_dc"].loc[lid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
+    net["line" if ac else "line_dc"].loc[lid, "description"] = " \n ".join(item.desc) if len(item.desc) > 0 else ""
     if hasattr(item, "cimRdfId"):
         chr_name = item.cimRdfId
         if chr_name is not None and len(chr_name) > 0:
-            net["line" if ac else "line_dc"].loc[lid, 'origin_id'] = chr_name[0]
+            net["line" if ac else "line_dc"].loc[lid, "origin_id"] = chr_name[0]
 
     # adapt line values if there is a characteristic given
-    charefs = item.GetContents('*.ChaRef')
+    charefs = item.GetContents("*.ChaRef")
     if len(charefs):
         for char in charefs:
-            #print(char)
-            if char.loc_name.startswith('fline'):
-                net.line.loc[lid, 'df'] = char.typ_id.curval # TODO: if typ_id == None, then just consider the df that is always there
+            # print(char)
+            if char.loc_name.startswith("fline"):
+                net.line.loc[lid, "df"] = (
+                    char.typ_id.curval
+                )  # TODO: if typ_id == None, then just consider the df that is always there
 
             else:
-                raise UserWarning(f'Characteristic for name {char.loc_name} not implemented.')
+                raise UserWarning(f"Characteristic for name {char.loc_name} not implemented.")
 
     get_pf_line_results(net, item, lid, is_unbalanced, ac)
 
@@ -1297,21 +1432,22 @@ def create_line_type(net, item, cable_in_air=False):
     # return True if a new line type has been created
 
     if item is None:
-        logger.warning('create_line_type: no item given! Be sure you can deal with None!')
+        logger.warning("create_line_type: no item given! Be sure you can deal with None!")
         return None, False
 
     ac = item.systp == 0
     # pf_folder = item.fold_id.split('IntPrjfolder')[-1]
     pf_folder = item.fold_id.loc_name
-    name = "%s\\%s" % (pf_folder, item.loc_name) if not cable_in_air else "%s\\%s_%s" % (
-        pf_folder, item.loc_name, 'air')
+    name = (
+        "%s\\%s" % (pf_folder, item.loc_name) if not cable_in_air else "%s\\%s_%s" % (pf_folder, item.loc_name, "air")
+    )
     if std_type_exists(net, name, "line" if ac else "line_dc"):
-        logger.debug('type <%s> exists already' % name)
+        logger.debug("type <%s> exists already" % name)
         return name, False
 
-    line_or_cable = 'cs' if item.cohl_ == 0 else 'ol'
+    line_or_cable = "cs" if item.cohl_ == 0 else "ol"
 
-    if cable_in_air and item.cohl_==0:
+    if cable_in_air and item.cohl_ == 0:
         # type is cable, but cable is installed in air
         max_i_ka = item.InomAir
     else:
@@ -1330,20 +1466,20 @@ def create_line_type(net, item, cable_in_air=False):
             "r0_ohm_per_km": item.rline0,
             "x0_ohm_per_km": item.xline0,
             "c0_nf_per_km": item.cline0 * item.frnom / 50 * 1e3,  # internal unit for C in PF is uF
-            "alpha": item.alpha
+            "alpha": item.alpha,
         }
         create_std_type(net, type_data, name, "line")
-        logger.debug('>> created line type <%s>' % name)
+        logger.debug(">> created line type <%s>" % name)
     else:
         type_data = {
             "r_ohm_per_km": item.rline,
             "q_mm2": item.qurs,
             "max_i_ka": max_i_ka if max_i_ka != 0 else 1e-3,
             "type": line_or_cable,
-            "alpha": item.alpha
+            "alpha": item.alpha,
         }
         create_std_type(net, type_data, name, "line_dc")
-        logger.debug('>> created line_dc type <%s>' % name)
+        logger.debug(">> created line_dc type <%s>" % name)
 
     return name, True
 
@@ -1354,8 +1490,7 @@ def monopolar_in_service(item):
     # False if open, True if closed, None if no switch
     switch_is_closed, _, _ = import_switch(item, 0)
     if switch_is_closed is not None:
-        logger.debug('element in service: <%s>, switch is closed: <%s>' %
-                     (in_service, switch_is_closed))
+        logger.debug("element in service: <%s>, switch is closed: <%s>" % (in_service, switch_is_closed))
         # if switch is open, in_sevice becomes False
         in_service = in_service and switch_is_closed
     return in_service
@@ -1363,7 +1498,7 @@ def monopolar_in_service(item):
 
 def create_ext_net(net, item, pv_as_slack, is_unbalanced, multiplier, is_definite_ext_grid):
     name = item.loc_name
-    logger.debug('>> creating ext_grid <%s>' % name)
+    logger.debug(">> creating ext_grid <%s>" % name)
 
     try:
         bus1, _ = get_connection_nodes(net, item, 1)
@@ -1371,57 +1506,60 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced, multiplier, is_definit
         logger.error("Cannot add Xnet '%s': not connected" % name)
         return None, None
 
-    logger.debug('found bus <%d> in net' % bus1)
+    logger.debug("found bus <%d> in net" % bus1)
 
     in_service = monopolar_in_service(item)
 
     # implement kW!..
     p_mw = item.pgini
     q_mvar = item.qgini
-    logger.debug('p_mw = %.3f, q_mvar = %.3f' % (p_mw, q_mvar))
+    logger.debug("p_mw = %.3f, q_mvar = %.3f" % (p_mw, q_mvar))
 
     # implementation for other elements that should be created as xnet
-    s_max = item.snss if item.HasAttribute('snss') else item.Pmax_uc \
-        if item.HasAttribute('Pmax_uc') else np.nan
+    s_max = item.snss if item.HasAttribute("snss") else item.Pmax_uc if item.HasAttribute("Pmax_uc") else np.nan
     # needed change in create.py: line 570 - added sk_min_mva in list of params
-    s_min = item.snssmin if item.HasAttribute('snssmin') else item.Pmin_uc \
-        if item.HasAttribute('Pmin_uc') else np.nan
+    s_min = item.snssmin if item.HasAttribute("snssmin") else item.Pmin_uc if item.HasAttribute("Pmin_uc") else np.nan
 
-    rx_max = item.rntxn if item.HasAttribute('rntxn') else np.nan
-    rx_min = item.rntxnmin if item.HasAttribute('rntxnmin') else np.nan
+    rx_max = item.rntxn if item.HasAttribute("rntxn") else np.nan
+    rx_min = item.rntxnmin if item.HasAttribute("rntxnmin") else np.nan
 
     vm_set_pu = item.usetp
     phi = item.phiini
 
-    if item.HasAttribute('bustp') and (is_definite_ext_grid==False):
+    if item.HasAttribute("bustp") and (is_definite_ext_grid == False):
         node_type = item.bustp
-    elif item.HasAttribute('bustp') and is_definite_ext_grid:
+    elif item.HasAttribute("bustp") and is_definite_ext_grid:
         node_type = np.nan
     else:
         node_type = np.nan
 
-    #node_type = item.bustp if item.HasAttribute('bustp') else np.nan
+    # node_type = item.bustp if item.HasAttribute('bustp') else np.nan
 
     # create...
-    if node_type == 'PQ':
+    if node_type == "PQ":
         logger.debug('node type is "PQ", creating sgen')
-        xid = create_sgen(net, bus1, p_mw=p_mw, q_mvar=q_mvar, name=name,
-                          in_service=in_service)
-        elm = 'sgen'
-    elif node_type == 'PV' and not pv_as_slack:
+        xid = create_sgen(net, bus1, p_mw=p_mw, q_mvar=q_mvar, name=name, in_service=in_service)
+        elm = "sgen"
+    elif node_type == "PV" and not pv_as_slack:
         logger.debug('node type is "PV" and pv_as_slack is False, creating gen')
-        xid = create_gen(net, bus1, p_mw=p_mw, vm_pu=vm_set_pu, name=name,
-                         in_service=in_service)
-        elm = 'gen'
+        xid = create_gen(net, bus1, p_mw=p_mw, vm_pu=vm_set_pu, name=name, in_service=in_service)
+        elm = "gen"
     else:
-        logger.debug('node type is <%s>, pv_as_slack=%s, creating ext_grid' % (node_type,
-                                                                               pv_as_slack))
-        xid = create_ext_grid(net, bus=bus1, name=name, vm_pu=vm_set_pu,
-                              va_degree=phi, s_sc_max_mva=s_max,
-                              s_sc_min_mva=s_min, rx_max=rx_max, rx_min=rx_min,
-                              in_service=in_service)
-        net.ext_grid.loc[xid, 'p_disp_mw'] = -item.pgini * multiplier
-        net.ext_grid.loc[xid, 'q_disp_mvar'] = -item.qgini * multiplier
+        logger.debug("node type is <%s>, pv_as_slack=%s, creating ext_grid" % (node_type, pv_as_slack))
+        xid = create_ext_grid(
+            net,
+            bus=bus1,
+            name=name,
+            vm_pu=vm_set_pu,
+            va_degree=phi,
+            s_sc_max_mva=s_max,
+            s_sc_min_mva=s_min,
+            rx_max=rx_max,
+            rx_min=rx_min,
+            in_service=in_service,
+        )
+        net.ext_grid.loc[xid, "p_disp_mw"] = -item.pgini * multiplier
+        net.ext_grid.loc[xid, "q_disp_mvar"] = -item.qgini * multiplier
         try:
             net.ext_grid.loc[xid, "r0x0_max"] = item.r0tx0
             net.ext_grid.loc[xid, "x0x_max"] = item.x0tx1
@@ -1429,7 +1567,7 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced, multiplier, is_definit
             net.ext_grid.loc[xid, "x0x_min"] = item.x0tx1min
         except AttributeError:
             pass
-        elm = 'ext_grid'
+        elm = "ext_grid"
 
     get_pf_ext_grid_results(net, item, xid, is_unbalanced)
 
@@ -1445,16 +1583,21 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced, multiplier, is_definit
     # logger.debug('added pf_p and pf_q to {} {}: {}'.format(elm, xid, net['res_' + elm].loc[
     #     xid, ["pf_p", 'pf_q']].values))
 
-    net[elm].loc[xid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
+    net[elm].loc[xid, "description"] = " \n ".join(item.desc) if len(item.desc) > 0 else ""
 
-    add_additional_attributes(item, net, element=elm, element_id=xid,
-                              attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", "cpSite.loc_name": "site"})
+    add_additional_attributes(
+        item,
+        net,
+        element=elm,
+        element_id=xid,
+        attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", "cpSite.loc_name": "site"},
+    )
 
     if item.pQlimType:
         id = create_q_capability_curve(net, item.pQlimType)
-        net[elm].loc[xid, 'id_q_capability_characteristic'] = id
-        net[elm].loc[xid, 'reactive_capability_curve'] = True
-        net[elm].loc[xid, 'curve_style'] = 'straightLineYValues'
+        net[elm].loc[xid, "id_q_capability_characteristic"] = id
+        net[elm].loc[xid, "reactive_capability_curve"] = True
+        net[elm].loc[xid, "curve_style"] = "straightLineYValues"
 
     return xid, elm
 
@@ -1474,10 +1617,7 @@ def get_pf_ext_grid_results(net, item, xid, is_unbalanced):
         }
     else:
         ext_grid_type = "res_ext_grid"
-        result_variables = {
-            "pf_p": "m:P:bus1",
-            "pf_q": "m:Q:bus1"
-        }
+        result_variables = {"pf_p": "m:P:bus1", "pf_q": "m:Q:bus1"}
 
     for res_var_pp, res_var_pf in result_variables.items():
         res = np.nan
@@ -1498,60 +1638,34 @@ def map_power_var(pf_var, map_var):
     """
 
     vars = {
-        'q': {
-            'plini': 'qlini',
-            'plini_a': 'qlini_a',
-            'm:P:bus1': 'm:Q:bus1',
-            'pgini': 'qgini',
-            'pgini_a': 'qgini_a'
-        },
-        's': {
-            'plini': 'slini',
-            'plini_a': 'slini_a',
-            'm:P:bus1': 'm:S:bus1',
-            'pgini': 'sgini',
-            'pgini_a': 'sgini_a'
-        },
-        'sn': {
-            'plini': 'sgn',
-            'plini_a': 'sgn',
-            'm:P:bus1': 'sgn',
-            'pgini': 'sgn',
-            'pgini_a': 'sgn'
-        }
+        "q": {"plini": "qlini", "plini_a": "qlini_a", "m:P:bus1": "m:Q:bus1", "pgini": "qgini", "pgini_a": "qgini_a"},
+        "s": {"plini": "slini", "plini_a": "slini_a", "m:P:bus1": "m:S:bus1", "pgini": "sgini", "pgini_a": "sgini_a"},
+        "sn": {"plini": "sgn", "plini_a": "sgn", "m:P:bus1": "sgn", "pgini": "sgn", "pgini_a": "sgn"},
     }
 
     return vars[map_var][pf_var]
 
 
 def map_type_var(pf_load_type):
-    load_type = {
-        "3PH PH-E": "wye",
-        "3PH-'YN'": "wye",
-        "3PH-'D'": "delta"
-    }
+    load_type = {"3PH PH-E": "wye", "3PH-'YN'": "wye", "3PH-'D'": "delta"}
     return load_type[pf_load_type]
 
 
 def map_sgen_type_var(pf_sgen_type):
-    sgen_type = {
-        0: "wye",
-        1: "wye",
-        2: "wye"
-    }
+    sgen_type = {0: "wye", 1: "wye", 2: "wye"}
     return sgen_type[pf_sgen_type]
 
 
 def get_power_multiplier(item, var):
     if item.outserv:
-        return 1.
+        return 1.0
     if var == "m:P:bus1" and not item.HasResults():
-        return 1.
+        return 1.0
         # raise UserWarning(f"{item} does not have results - cannot get power multiplier")
     exponent = item.GetAttributeUnit(var)
-    if exponent.startswith('k'):
+    if exponent.startswith("k"):
         multiplier = 1e-3
-    elif exponent.startswith('M'):
+    elif exponent.startswith("M"):
         multiplier = 1
     else:
         raise UserWarning("unknown exponent %s" % exponent)
@@ -1562,33 +1676,30 @@ def get_power_multiplier(item, var):
 def ask_load_params(item, pf_variable_p_loads, dict_net, variables):
     multiplier = get_power_multiplier(item, pf_variable_p_loads)
     params = ADict()
-    if pf_variable_p_loads == 'm:P:bus1' and not item.HasResults(0):
-        raise RuntimeError('load %s does not have results and is ignored' % item.loc_name)
-    if 'p_mw' in variables:
+    if pf_variable_p_loads == "m:P:bus1" and not item.HasResults(0):
+        raise RuntimeError("load %s does not have results and is ignored" % item.loc_name)
+    if "p_mw" in variables:
         params.p_mw = item.GetAttribute(pf_variable_p_loads) * multiplier
-    if 'q_mvar' in variables:
-        params.q_mvar = item.GetAttribute(map_power_var(pf_variable_p_loads, 'q')) * multiplier
-    if 'sn_mva' in variables:
-        params.sn_mva = item.GetAttribute(map_power_var(pf_variable_p_loads, 's')) * multiplier
+    if "q_mvar" in variables:
+        params.q_mvar = item.GetAttribute(map_power_var(pf_variable_p_loads, "q")) * multiplier
+    if "sn_mva" in variables:
+        params.sn_mva = item.GetAttribute(map_power_var(pf_variable_p_loads, "s")) * multiplier
 
         kap = -1 if item.pf_recap == 1 else 1
         try:
-            params.q_mvar = kap * np.sqrt(params.sn_mva ** 2 - params.p_mw ** 2)
+            params.q_mvar = kap * np.sqrt(params.sn_mva**2 - params.p_mw**2)
         except Exception as err:
-            logger.error(
-                'While creating load, error occurred for calculation of q_mvar: %s, %s' %
-                (params, err))
+            logger.error("While creating load, error occurred for calculation of q_mvar: %s, %s" % (params, err))
             raise err
-        logger.debug('load parameters: %s' % params)
+        logger.debug("load parameters: %s" % params)
 
-    global_scaling = dict_net['global_parameters']['global_load_scaling']
-    if item.GetClassName()== "ElmLodlvp":
-        scale = 1 # Elmlodlvp no scale0, scaling set on 1
+    global_scaling = dict_net["global_parameters"]["global_load_scaling"]
+    if item.GetClassName() == "ElmLodlvp":
+        scale = 1  # Elmlodlvp no scale0, scaling set on 1
     else:
         scale = item.scale0
-    params.scaling = global_scaling * scale \
-        if pf_variable_p_loads == 'plini' else 1
-    if item.HasAttribute('zonefact'):
+    params.scaling = global_scaling * scale if pf_variable_p_loads == "plini" else 1
+    if item.HasAttribute("zonefact"):
         params.scaling *= item.zonefact
 
     # p_mw = p_mw, q_mvar = q_mvar, scaling = scaling
@@ -1598,35 +1709,32 @@ def ask_load_params(item, pf_variable_p_loads, dict_net, variables):
 
 def ask_unbalanced_load_params(item, pf_variable_p_loads, dict_net, variables):
     params = ADict()
-    if pf_variable_p_loads == 'm:P:bus1' and not item.HasResults(0):
-        raise RuntimeError('load %s does not have results and is ignored' % item.loc_name)
-    if 'p_mw' in variables:
+    if pf_variable_p_loads == "m:P:bus1" and not item.HasResults(0):
+        raise RuntimeError("load %s does not have results and is ignored" % item.loc_name)
+    if "p_mw" in variables:
         params.p_a_mw = item.GetAttribute(pf_variable_p_loads + "r")
         params.p_b_mw = item.GetAttribute(pf_variable_p_loads + "s")
         params.p_c_mw = item.GetAttribute(pf_variable_p_loads + "t")
-    if 'q_mvar' in variables:
-        params.q_a_mvar = item.GetAttribute(map_power_var(pf_variable_p_loads, 'q') + "r")
-        params.q_b_mvar = item.GetAttribute(map_power_var(pf_variable_p_loads, 'q') + "s")
-        params.q_c_mvar = item.GetAttribute(map_power_var(pf_variable_p_loads, 'q') + "t")
-    if 'sn_mva' in variables:
-        params.sn_a_mva = item.GetAttribute(map_power_var(pf_variable_p_loads, 's') + "r")
-        params.sn_b_mva = item.GetAttribute(map_power_var(pf_variable_p_loads, 's') + "s")
-        params.sn_c_mva = item.GetAttribute(map_power_var(pf_variable_p_loads, 's') + "t")
+    if "q_mvar" in variables:
+        params.q_a_mvar = item.GetAttribute(map_power_var(pf_variable_p_loads, "q") + "r")
+        params.q_b_mvar = item.GetAttribute(map_power_var(pf_variable_p_loads, "q") + "s")
+        params.q_c_mvar = item.GetAttribute(map_power_var(pf_variable_p_loads, "q") + "t")
+    if "sn_mva" in variables:
+        params.sn_a_mva = item.GetAttribute(map_power_var(pf_variable_p_loads, "s") + "r")
+        params.sn_b_mva = item.GetAttribute(map_power_var(pf_variable_p_loads, "s") + "s")
+        params.sn_c_mva = item.GetAttribute(map_power_var(pf_variable_p_loads, "s") + "t")
 
         kap = -1 if item.pf_recap == 1 else 1
         try:
-            params.q_mvar = kap * np.sqrt(params.sn_mva ** 2 - params.p_mw ** 2)
+            params.q_mvar = kap * np.sqrt(params.sn_mva**2 - params.p_mw**2)
         except Exception as err:
-            logger.error(
-                'While creating load, error occurred for calculation of q_mvar: %s, %s' %
-                (params, err))
+            logger.error("While creating load, error occurred for calculation of q_mvar: %s, %s" % (params, err))
             raise err
-        logger.debug('load parameters: %s' % params)
+        logger.debug("load parameters: %s" % params)
 
-    global_scaling = dict_net['global_parameters']['global_load_scaling']
-    params.scaling = global_scaling * item.scale0 \
-        if pf_variable_p_loads == 'plini' else 1
-    if item.HasAttribute('zonefact'):
+    global_scaling = dict_net["global_parameters"]["global_load_scaling"]
+    params.scaling = global_scaling * item.scale0 if pf_variable_p_loads == "plini" else 1
+    if item.HasAttribute("zonefact"):
         params.scaling *= item.zonefact
 
     return params
@@ -1639,14 +1747,14 @@ def find_section(load, sections):
         if tot_len >= load.lneposkm:
             break
     else:
-        raise RuntimeError('could not find section for load %s' % load)
+        raise RuntimeError("could not find section for load %s" % load)
     return s
 
 
 def make_split_dict(line):
     # für jede einzelne line
-    sections = line.GetContents('*.ElmLnesec')
-    loads = line.GetContents('*.ElmLodlvp')
+    sections = line.GetContents("*.ElmLnesec")
+    loads = line.GetContents("*.ElmLodlvp")
     if len(loads) > 0:
         loads.sort(key=lambda x: x.lneposkm)
     else:
@@ -1672,7 +1780,7 @@ def split_line_add_bus(net, split_dict):
             continue
         loads = loads.sort(key=lambda x: x.lneposkm)
         lix = line_dict[line]
-        coords = net.line.at[lix, 'coords']
+        coords = net.line.at[lix, "coords"]
         tot_len = calc_len_coords(coords)
         scale_factor = line.dline / tot_len
 
@@ -1700,23 +1808,23 @@ def split_line_add_bus(net, split_dict):
 
         # it's time to collect the stones
         # get bus voltage
-        vn_kv = net.bus.at[net.line.at[lix, 'from_bus'], 'vn_kv']
+        vn_kv = net.bus.at[net.line.at[lix, "from_bus"], "vn_kv"]
 
         for i in range(len(len_sections)):
             # create bus
-            name = 'Muff Partial Load'
+            name = "Muff Partial Load"
             bus = create_bus(net, name=name, vn_kv=vn_kv, geodata=list_bus_coords[i])
             # create new line
-            from_bus = net.line.at[lix, 'from_bus']
-            to_bus = net.line.at[lix, 'to_bus']
-            std_type = net.line.at[lix, 'std_type']
-            name = net.line.at[lix, 'name']
-            new_lix = create_line(net, from_bus=from_bus, to_bus=to_bus,
-                                     length_km=len_sections[i],
-                                     std_type=std_type, name=name)
+            from_bus = net.line.at[lix, "from_bus"]
+            to_bus = net.line.at[lix, "to_bus"]
+            std_type = net.line.at[lix, "std_type"]
+            name = net.line.at[lix, "name"]
+            new_lix = create_line(
+                net, from_bus=from_bus, to_bus=to_bus, length_km=len_sections[i], std_type=std_type, name=name
+            )
             # change old line
-            net.line.at[lix, 'to_bus'] = bus
-            net.line.at[lix, 'length_km'] = net.line.at[lix, 'length_km'] - len_sections[i]
+            net.line.at[lix, "to_bus"] = bus
+            net.line.at[lix, "length_km"] = net.line.at[lix, "length_km"] - len_sections[i]
             pass
 
 
@@ -1724,22 +1832,21 @@ def split_line_add_bus_old(net, item, parent):
     # get position at line
     # find line section
     previous_sec_len = 0
-    sections = parent.GetContents('*.ElmLnesec')
+    sections = parent.GetContents("*.ElmLnesec")
     sections.sort(key=lambda x: x.index)  # to ensure they are in correct order
     if len(sections) == 0:
         # cool! no sections - split the line
         sec = parent
         has_sections = False
-        logger.debug('line has no sections')
+        logger.debug("line has no sections")
     else:
         has_sections = True
-        logger.debug('line has %d sections' % len(sections))
+        logger.debug("line has %d sections" % len(sections))
         for s in sections:
-            logger.debug('section start: %s, load pos: %s, section end: %s' % (
-                s.rellen, item.lneposkm, s.dline))
+            logger.debug("section start: %s, load pos: %s, section end: %s" % (s.rellen, item.lneposkm, s.dline))
             if s.rellen <= item.lneposkm <= s.rellen + s.dline:
                 sec = s
-                logger.debug('found section: %s' % sec)
+                logger.debug("found section: %s" % sec)
                 break
             else:
                 previous_sec_len += s.dline
@@ -1750,106 +1857,106 @@ def split_line_add_bus_old(net, item, parent):
     # at this point the section can be split by other loads and its length can vary
     # now find section in pandapower net
     if has_sections:
-        sid = net.line.loc[
-            (net.line.name == parent.loc_name) & (net.line.section == sec.loc_name)].index
-        logger.debug('index of section in net: %s' % sid)
+        sid = net.line.loc[(net.line.name == parent.loc_name) & (net.line.section == sec.loc_name)].index
+        logger.debug("index of section in net: %s" % sid)
     else:
         sid = net.line.loc[(net.line.name == parent.loc_name)].index
-        logger.debug('index of line in net: %s' % sid)
+        logger.debug("index of line in net: %s" % sid)
     # check
     if len(sid) > 1:
         # section_idx is 0, 1, ...
         for m in range(len(sid)):
             # find the correct section for lodlvp
             temp_lines = net.line.loc[sid]
-            logger.debug('temp_lines: %s' % temp_lines)
-            temp_sec_len = float(temp_lines.loc[temp_lines.section_idx == m, 'length_km'])
-            logger.debug('temp_sec_len of sec nr. %d: %.3f' % (m, temp_sec_len))
+            logger.debug("temp_lines: %s" % temp_lines)
+            temp_sec_len = float(temp_lines.loc[temp_lines.section_idx == m, "length_km"])
+            logger.debug("temp_sec_len of sec nr. %d: %.3f" % (m, temp_sec_len))
             if (temp_sec_len + previous_sec_len) >= item.lneposkm:
                 # temp_section = temp_lines.query('section_idx == @m')
                 # sid = temp_lines[temp_lines.section_idx == m].index.values[0]
                 sid = sid[m]
-                logger.debug('found section for creating lodlvp: %d' % sid)
+                logger.debug("found section for creating lodlvp: %d" % sid)
                 break
             else:
                 previous_sec_len += temp_sec_len
         else:
             raise RuntimeError(
                 "could not find line or section where ElmLodlvp %s belongs: multiple indices "
-                "found in net and none of them is good" % item.loc_name)
+                "found in net and none of them is good" % item.loc_name
+            )
     elif len(sid) == 0:
         raise RuntimeError(
-            "could not find line or section where ElmLodlvp %s belongs: no index found in net" %
-            item.loc_name)
+            "could not find line or section where ElmLodlvp %s belongs: no index found in net" % item.loc_name
+        )
     else:
         sid = sid.values[0]
-        logger.debug('index is unique: %d' % sid)
+        logger.debug("index is unique: %d" % sid)
 
     # new line lengths
-    tot_len = net.line.at[sid, 'length_km']
+    tot_len = net.line.at[sid, "length_km"]
     sec_len_a = item.lneposkm - previous_sec_len
     sec_len_b = tot_len - sec_len_a
-    logger.debug('total length: %.3f, a: %.3f, b:%.3f' % (tot_len, sec_len_a, sec_len_b))
+    logger.debug("total length: %.3f, a: %.3f, b:%.3f" % (tot_len, sec_len_a, sec_len_b))
     if sec_len_b < 0:
-        raise RuntimeError('incorrect length for section %s: %.3f' % (sec, sec_len_b))
+        raise RuntimeError("incorrect length for section %s: %.3f" % (sec, sec_len_b))
 
     # get coords
-    if net.line.at[sid, 'geo'].notna():
-        logger.debug('line has coords')
-        coords = geojson.utils.coords(geojson.loads(net.line.at[sid, 'geo']))
-        logger.debug('old geodata of line %d: %s' % (sid, coords))
+    if net.line.at[sid, "geo"].notna():
+        logger.debug("line has coords")
+        coords = geojson.utils.coords(geojson.loads(net.line.at[sid, "geo"]))
+        logger.debug("old geodata of line %d: %s" % (sid, coords))
 
         # get coords for 2 split lines
         coords_len = calc_len_coords(coords)
         scale_factor = parent.dline / coords_len  # scale = real_len / coords_len
         coords_a = get_section_coords(coords, sec_len_a, 0, scale_factor)
         coords_b = get_section_coords(coords, sec_len_b, sec_len_a, scale_factor)
-        logger.debug('new coords: %s; %s' % (coords_a, coords_b))
+        logger.debug("new coords: %s; %s" % (coords_a, coords_b))
 
         # get bus coords
         bus_coords = tuple(coords_b[0])
-        logger.debug('new bus coords: %.3f, %.3f' % bus_coords)
+        logger.debug("new bus coords: %.3f, %.3f" % bus_coords)
     else:
-        logger.debug('line has no coords')
+        logger.debug("line has no coords")
         bus_coords = None
         coords_a = None
         coords_b = None
 
     if sec_len_b > 0:
         # create new bus
-        vn_kv = net.bus.at[net.line.at[sid, 'from_bus'], 'vn_kv']
-        name = 'LodLV-%s' % item.loc_name
-        bus = create_bus(net, vn_kv=vn_kv, name=name, geodata=bus_coords, type='n')
-        net.bus.loc[bus, 'description'] = 'Partial load %s = %.3f kW' % (item.loc_name, item.plini)
-        logger.debug('created new bus in net: %s' % net.bus.loc[bus])
+        vn_kv = net.bus.at[net.line.at[sid, "from_bus"], "vn_kv"]
+        name = "LodLV-%s" % item.loc_name
+        bus = create_bus(net, vn_kv=vn_kv, name=name, geodata=bus_coords, type="n")
+        net.bus.loc[bus, "description"] = "Partial load %s = %.3f kW" % (item.loc_name, item.plini)
+        logger.debug("created new bus in net: %s" % net.bus.loc[bus])
 
         # create new line
         lid = create_line(
             net,
             from_bus=bus,
-            to_bus=net.line.at[sid, 'to_bus'],
+            to_bus=net.line.at[sid, "to_bus"],
             length_km=sec_len_b,
-            std_type=net.line.at[sid, 'std_type'],
-            name=net.line.at[sid, 'name'],
-            df=net.line.at[sid, 'df'],
-            geodata=coords_b
+            std_type=net.line.at[sid, "std_type"],
+            name=net.line.at[sid, "name"],
+            df=net.line.at[sid, "df"],
+            geodata=coords_b,
         )
-        net.line.at[lid, 'section'] = net.line.at[sid, 'section']
-        if not net.line.loc[sid, 'section_idx']:
-            net.line.loc[sid, 'section_idx'] = 0
+        net.line.at[lid, "section"] = net.line.at[sid, "section"]
+        if not net.line.loc[sid, "section_idx"]:
+            net.line.loc[sid, "section_idx"] = 0
 
-        net.line.loc[lid, 'section_idx'] = net.line.at[sid, 'section_idx'] + 1
+        net.line.loc[lid, "section_idx"] = net.line.at[sid, "section_idx"] + 1
 
-        logger.debug('old line: %s' % net.line.loc[sid])
-        logger.debug('new line: %s' % net.line.loc[lid])
+        logger.debug("old line: %s" % net.line.loc[sid])
+        logger.debug("new line: %s" % net.line.loc[lid])
 
-        net.line.at[sid, 'to_bus'] = bus
-        net.line.at[sid, 'length_km'] = sec_len_a
-        net.line.at[sid, 'geo'] = geojson.dumps(geojson.LineString(coords_a))
-        logger.debug('changed: %s' % net.line.loc[sid])
+        net.line.at[sid, "to_bus"] = bus
+        net.line.at[sid, "length_km"] = sec_len_a
+        net.line.at[sid, "geo"] = geojson.dumps(geojson.LineString(coords_a))
+        logger.debug("changed: %s" % net.line.loc[sid])
     else:
         # no new bus/line are created: take the to_bus
-        bus = net.line.at[sid, 'to_bus']
+        bus = net.line.at[sid, "to_bus"]
     return bus
 
 
@@ -1859,43 +1966,45 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
     bus_is_known = False
     params.name = item.loc_name
     load_class = item.GetClassName()
-    logger.debug('>> creating load <%s.%s>' % (params.name, load_class))
+    logger.debug(">> creating load <%s.%s>" % (params.name, load_class))
 
     is_unbalanced = item.i_sym
 
     ask = ask_unbalanced_load_params if is_unbalanced else ask_load_params
 
-    if load_class == 'ElmLodlv':
+    if load_class == "ElmLodlv":
         try:
-            params.update(ask(item, pf_variable_p_loads, dict_net=dict_net,
-                              variables=('p_mw', 'sn_mva'))) # 'chr_name'
-            if bool(item.GetAttribute('e:cHasPartLod')): #item.HasAttribute('e:cHasPartLod'):
-                params['partial_loads_included']=True
-            else: 
-                params['partial_loads_included']=False
-                
+            params.update(ask(item, pf_variable_p_loads, dict_net=dict_net, variables=("p_mw", "sn_mva")))  # 'chr_name'
+            if bool(item.GetAttribute("e:cHasPartLod")):  # item.HasAttribute('e:cHasPartLod'):
+                params["partial_loads_included"] = True
+            else:
+                params["partial_loads_included"] = False
+
         except Exception as err:
             logger.error("m:P:bus1 and m:Q:bus1 should be used with ElmLodlv")
-            logger.error('While creating load %s, error occurred for '
-                         'calculation of q_mvar: %s, %s' % (item, params, err))
+            logger.error(
+                "While creating load %s, error occurred for calculation of q_mvar: %s, %s" % (item, params, err)
+            )
             raise err
 
-    elif load_class == 'ElmLodmv':
-        params.update(ask(item, pf_variable_p_loads=pf_variable_p_loads,
-                          dict_net=dict_net, variables=('p_mw', 'sn_mva')))
+    elif load_class == "ElmLodmv":
+        params.update(
+            ask(item, pf_variable_p_loads=pf_variable_p_loads, dict_net=dict_net, variables=("p_mw", "sn_mva"))
+        )
 
-    elif load_class == 'ElmLod':
-        params.update(ask(item, pf_variable_p_loads=pf_variable_p_loads,
-                          dict_net=dict_net, variables=('p_mw', 'q_mvar')))
+    elif load_class == "ElmLod":
+        params.update(
+            ask(item, pf_variable_p_loads=pf_variable_p_loads, dict_net=dict_net, variables=("p_mw", "q_mvar"))
+        )
         load_type = item.typ_id
         if load_type is None:
             params["const_z_p_percent"] = 100
         else:
             used_e_p = set()
             used_e_q = set()
-            for cc_p, ee_p, cc_q, ee_q in zip(("aP", "bP", "cP"), ("kpu0", "kpu1", "kpu"),
-                                              ("aQ", "bQ", "cQ"), ("kqu0", "kqu1", "kqu")):
-
+            for cc_p, ee_p, cc_q, ee_q in zip(
+                ("aP", "bP", "cP"), ("kpu0", "kpu1", "kpu"), ("aQ", "bQ", "cQ"), ("kqu0", "kqu1", "kqu")
+            ):
                 c_p = load_type.GetAttribute(cc_p)
                 e_p = load_type.GetAttribute(ee_p)
                 c_q = load_type.GetAttribute(cc_q)
@@ -1904,22 +2013,24 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
                 if c_p:  # check whether c_p is 0 or not
                     if e_p not in {0, 1, 2} or e_p in used_e_p:
                         raise UserWarning(
-                            f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
+                            f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration"
+                        )
                     used_e_p.add(e_p)
 
                 if c_q:
                     if e_q not in {0, 1, 2} or e_q in used_e_q:
                         raise UserWarning(
-                            f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration")
+                            f"Load {item.loc_name} ({load_class}) unsupported voltage dependency configuration"
+                        )
                     used_e_q.add(e_q)
 
             i_p = 0
             z_p = 0
             i_q = 0
             z_q = 0
-            for cc_p, ee_p, cc_q, ee_q in zip(("aP", "bP", "cP"), ("kpu0", "kpu1", "kpu"),
-                                              ("aQ", "bQ", "cQ"), ("kqu0", "kqu1", "kqu")):
-
+            for cc_p, ee_p, cc_q, ee_q in zip(
+                ("aP", "bP", "cP"), ("kpu0", "kpu1", "kpu"), ("aQ", "bQ", "cQ"), ("kqu0", "kqu1", "kqu")
+            ):
                 c_p = load_type.GetAttribute(cc_p)
                 e_p = load_type.GetAttribute(ee_p)
                 if e_p == 1:
@@ -1940,30 +2051,30 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
             params["const_z_q_percent"] = z_q
 
     ### added
-    elif load_class == 'ElmLodlvp':
-        params.update(ask(item, pf_variable_p_loads, dict_net=dict_net,
-                                      variables=('p_mw','sn_mva')))
+    elif load_class == "ElmLodlvp":
+        params.update(ask(item, pf_variable_p_loads, dict_net=dict_net, variables=("p_mw", "sn_mva")))
         parent = item.GetParent()
         parent_class = parent.GetClassName()
-        logger.debug('parent class name of ElmLodlvp: %s' % parent_class)
-        if parent_class == 'ElmLodlv':
+        logger.debug("parent class name of ElmLodlvp: %s" % parent_class)
+        if parent_class == "ElmLodlv":
             # set parent load out of service
-            net.load.loc[net.load.name==parent.loc_name, 'in_service'] = False
-            params['parent_load_index'] = net.load.loc[net.load.name == parent.loc_name].index.tolist()[0]
+            net.load.loc[net.load.name == parent.loc_name, "in_service"] = False
+            params["parent_load_index"] = net.load.loc[net.load.name == parent.loc_name].index.tolist()[0]
             bus_is_known = True
-            params['bus'] = net.load.loc[net.load.name==parent.loc_name, 'bus'].values[0]
-        
+            params["bus"] = net.load.loc[net.load.name == parent.loc_name, "bus"].values[0]
+
             # check for night storange heater
-            if item.pnight!=0:
-                if item.plini==0:
+            if item.pnight != 0:
+                if item.plini == 0:
                     # there is a extra Elmlodlvp only containing the night storage heater
-                    scale_p_night = dict_net['lvp_params']['scPnight'] / 100
-                    params['p_mw'] = item.pnight*scale_p_night / 1000 # is given in kW, we need MW
-                else: 
+                    scale_p_night = dict_net["lvp_params"]["scPnight"] / 100
+                    params["p_mw"] = item.pnight * scale_p_night / 1000  # is given in kW, we need MW
+                else:
                     logger.warning(
-                        'item <%s> has a night storange heater integrated and a load '
-                        '- not implemented yet!' % (item.loc_name))
-                              
+                        "item <%s> has a night storange heater integrated and a load "
+                        "- not implemented yet!" % (item.loc_name)
+                    )
+
         # elif parent_class == 'ElmLne':
         #     logger.debug('creating load that is part of line %s' % parent)
         #     params.update(ask(item, pf_variable_p_loads=pf_variable_p_loads,
@@ -1975,12 +2086,11 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
         #     bus_is_known = True
         #     logger.debug('created bus <%d> in net and changed lines' % params.bus)
         else:
-            raise NotImplementedError('ElmLodlvp as part of %s not implemented' % parent)
+            raise NotImplementedError("ElmLodlvp as part of %s not implemented" % parent)
 
     else:
-        logger.warning(
-            'item <%s> not imported - <%s> not implemented yet!' % (item.loc_name, load_class))
-        raise RuntimeError('Load <%s> of type <%s> not implemented!' % (item.loc_name, load_class))
+        logger.warning("item <%s> not imported - <%s> not implemented yet!" % (item.loc_name, load_class))
+        raise RuntimeError("Load <%s> of type <%s> not implemented!" % (item.loc_name, load_class))
 
     # implement negative load as sgen:
     # if p_mw < 0:
@@ -1990,17 +2100,17 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
     if not bus_is_known:
         try:
             params.bus, _ = get_connection_nodes(net, item, 1)
-            logger.debug('found bus <%d> in net' % params.bus)
+            logger.debug("found bus <%d> in net" % params.bus)
         except IndexError:
             logger.error("Cannot add Load '%s': not connected" % params.name)
             return
 
     params.in_service = not bool(item.outserv)
 
-    if load_class != 'ElmLodlvp':
+    if load_class != "ElmLodlvp":
         params.in_service = monopolar_in_service(item)
 
-    logger.debug('parameters: %s' % params)
+    logger.debug("parameters: %s" % params)
 
     if is_unbalanced:
         pf_load_type = item.phtech
@@ -2013,9 +2123,9 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
             ld = create_asymmetric_load(net, **params)
         else:
             ld = create_load(net, **params)
-        logger.debug('created load with index <%d>' % ld)
+        logger.debug("created load with index <%d>" % ld)
     except Exception as err:
-        logger.error('While creating %s.%s, error occured: %s' % (params.name, load_class, err))
+        logger.error("While creating %s.%s, error occured: %s" % (params.name, load_class, err))
         raise err
 
     load_type = None
@@ -2025,12 +2135,12 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
     else:
         load_type = "load"
 
-    net[load_type].loc[ld, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
+    net[load_type].loc[ld, "description"] = " \n ".join(item.desc) if len(item.desc) > 0 else ""
     attr_list = ["sernum", "chr_name"]
-    attr_dict = {"for_name": "equipment", "cimRdfId": "origin_id", 'cpSite.loc_name': 'site'}
-    if load_class == 'ElmLodlv' or load_class == 'ElmLodlvp':
-        attr_list.extend(['pnight', 'cNrCust', 'cPrCust', 'UtilFactor', 'cSmax', 'cSav', 'ccosphi'])
-        attr_dict['cpGrid.loc_name'] = 'grid'
+    attr_dict = {"for_name": "equipment", "cimRdfId": "origin_id", "cpSite.loc_name": "site"}
+    if load_class == "ElmLodlv" or load_class == "ElmLodlvp":
+        attr_list.extend(["pnight", "cNrCust", "cPrCust", "UtilFactor", "cSmax", "cSav", "ccosphi"])
+        attr_dict["cpGrid.loc_name"] = "grid"
     add_additional_attributes(item, net, load_type, ld, attr_dict=attr_dict, attr_list=attr_list)
 
     get_pf_load_results(net, item, ld, is_unbalanced)
@@ -2043,7 +2153,7 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
     #            net["res_load"].at[ld, "pf_p"] = np.nan
     #            net["res_load"].at[ld, "pf_q"] = np.nan
 
-    logger.debug('created load <%s> at index <%d>' % (params.name, ld))
+    logger.debug("created load <%s> at index <%d>" % (params.name, ld))
 
 
 def get_pf_load_results(net, item, ld, is_unbalanced):
@@ -2061,10 +2171,7 @@ def get_pf_load_results(net, item, ld, is_unbalanced):
         }
     else:
         load_type = "res_load"
-        result_variables = {
-            "pf_p": "m:P:bus1",
-            "pf_q": "m:Q:bus1"
-        }
+        result_variables = {"pf_p": "m:P:bus1", "pf_q": "m:Q:bus1"}
 
     for res_var_pp, res_var_pf in result_variables.items():
         res = np.nan
@@ -2076,16 +2183,16 @@ def get_pf_load_results(net, item, ld, is_unbalanced):
 def ask_gen_params(item, pf_variable_p_gen, *vars):
     multiplier = get_power_multiplier(item, pf_variable_p_gen)
     params = ADict()
-    if pf_variable_p_gen == 'm:P:bus1' and not item.HasResults(0):
-        raise RuntimeError('generator %s does not have results and is ignored' % item.loc_name)
-    if 'p_mw' in vars:
+    if pf_variable_p_gen == "m:P:bus1" and not item.HasResults(0):
+        raise RuntimeError("generator %s does not have results and is ignored" % item.loc_name)
+    if "p_mw" in vars:
         params.p_mw = item.GetAttribute(pf_variable_p_gen) * multiplier
-    if 'q_mvar' in vars:
-        params.q_mvar = item.GetAttribute(map_power_var(pf_variable_p_gen, 'q')) * multiplier
-    if 'sn_mva' in vars:
-        params.sn_mva = item.GetAttribute(map_power_var(pf_variable_p_gen, 'sn')) * multiplier
+    if "q_mvar" in vars:
+        params.q_mvar = item.GetAttribute(map_power_var(pf_variable_p_gen, "q")) * multiplier
+    if "sn_mva" in vars:
+        params.sn_mva = item.GetAttribute(map_power_var(pf_variable_p_gen, "sn")) * multiplier
 
-    params.scaling = item.scale0 if pf_variable_p_gen == 'pgini' else 1
+    params.scaling = item.scale0 if pf_variable_p_gen == "pgini" else 1
     # p_mw = p_mw, q_mvar = q_mvar, scaling = scaling
 
     return params
@@ -2093,33 +2200,33 @@ def ask_gen_params(item, pf_variable_p_gen, *vars):
 
 def ask_unbalanced_sgen_params(item, pf_variable_p_sgen, *vars):
     params = ADict()
-    if pf_variable_p_sgen == 'm:P:bus1' and not item.HasResults(0):
-        raise RuntimeError('sgen %s does not have results and is ignored' % item.loc_name)
+    if pf_variable_p_sgen == "m:P:bus1" and not item.HasResults(0):
+        raise RuntimeError("sgen %s does not have results and is ignored" % item.loc_name)
 
     technology = item.phtech
     if technology in [0, 1]:  # (0-1: 3PH)
-        if 'p_mw' in vars:
+        if "p_mw" in vars:
             params.p_a_mw = item.GetAttribute(pf_variable_p_sgen) / 3
             params.p_b_mw = item.GetAttribute(pf_variable_p_sgen) / 3
             params.p_c_mw = item.GetAttribute(pf_variable_p_sgen) / 3
-        if 'q_mvar' in vars:
-            params.q_a_mvar = item.GetAttribute(map_power_var(pf_variable_p_sgen, 'q')) / 3
-            params.q_b_mvar = item.GetAttribute(map_power_var(pf_variable_p_sgen, 'q')) / 3
-            params.q_c_mvar = item.GetAttribute(map_power_var(pf_variable_p_sgen, 'q')) / 3
+        if "q_mvar" in vars:
+            params.q_a_mvar = item.GetAttribute(map_power_var(pf_variable_p_sgen, "q")) / 3
+            params.q_b_mvar = item.GetAttribute(map_power_var(pf_variable_p_sgen, "q")) / 3
+            params.q_c_mvar = item.GetAttribute(map_power_var(pf_variable_p_sgen, "q")) / 3
     elif technology in [2, 3, 4]:  # (2-4: 1PH)
-        if 'p_mw' in vars:
+        if "p_mw" in vars:
             params.p_a_mw = item.GetAttribute(pf_variable_p_sgen)
             params.p_b_mw = 0
             params.p_c_mw = 0
-        if 'q_mvar' in vars:
-            params.q_a_mvar = item.GetAttribute(map_power_var(pf_variable_p_sgen, 'q'))
+        if "q_mvar" in vars:
+            params.q_a_mvar = item.GetAttribute(map_power_var(pf_variable_p_sgen, "q"))
             params.q_b_mvar = 0
             params.q_c_mvar = 0
 
-    if 'sn_mva' in vars:
-        params.sn_mva = item.GetAttribute(map_power_var(pf_variable_p_sgen, 's'))
+    if "sn_mva" in vars:
+        params.sn_mva = item.GetAttribute(map_power_var(pf_variable_p_sgen, "s"))
 
-    params.scaling = item.scale0 if pf_variable_p_sgen == 'pgini' else 1
+    params.scaling = item.scale0 if pf_variable_p_sgen == "pgini" else 1
     return params
 
 
@@ -2127,7 +2234,7 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
     params = ADict()
     categories = {"wgen": "WKA", "pv": "PV", "reng": "REN", "stg": "SGEN"}
     params.name = item.loc_name
-    logger.debug('>> creating genstat <%s>' % params)
+    logger.debug(">> creating genstat <%s>" % params)
     av_mode = item.av_mode  # Get voltage regulation mode
 
     # If there is no connecting bus, do not create pandapower object
@@ -2138,7 +2245,7 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
         return
 
     # Get information if static generator is labeled as reference machine
-    if (item.HasAttribute('c:iRefElement') and item.GetAttribute('c:iRefElement')):
+    if item.HasAttribute("c:iRefElement") and item.GetAttribute("c:iRefElement"):
         is_reference_machine = True
         # item.SetAttribute('bustp', 'SL')
         is_definite_ext_grid = True
@@ -2150,34 +2257,37 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
     ask = ask_unbalanced_sgen_params if is_unbalanced else ask_gen_params
 
     # Cases: to which pandapower object should static gen be mapped?
-    if is_reference_machine or (av_mode == 'constv' and pv_as_slack):
+    if is_reference_machine or (av_mode == "constv" and pv_as_slack):
         # Case 1: map to pandapower ext grid
-        logger.info('Genstat <%s> is imported as external grid' % params.name)
-        logger.debug('genstat parameters: %s' % params)
+        logger.info("Genstat <%s> is imported as external grid" % params.name)
+        logger.debug("genstat parameters: %s" % params)
         multiplier = get_power_multiplier(item, pf_variable_p_gen)
-        sg, element = create_ext_net(net, item=item, pv_as_slack=pv_as_slack,
-                                     is_unbalanced=is_unbalanced,
-                                     multiplier=multiplier,
-                                     is_definite_ext_grid=is_definite_ext_grid)
+        sg, element = create_ext_net(
+            net,
+            item=item,
+            pv_as_slack=pv_as_slack,
+            is_unbalanced=is_unbalanced,
+            multiplier=multiplier,
+            is_definite_ext_grid=is_definite_ext_grid,
+        )
     else:  # Case 2-4: map to pandapower gen or (asymmetric) sgen
-        params.update(ask(item, pf_variable_p_gen, 'p_mw', 'q_mvar', 'sn_mva'))
+        params.update(ask(item, pf_variable_p_gen, "p_mw", "q_mvar", "sn_mva"))
         params.in_service = monopolar_in_service(item)
-        logger.debug(f'genstat parameters: {params}')
+        logger.debug(f"genstat parameters: {params}")
 
         # Get category
-        if item.GetClassName() == 'ElmPvsys':
-            cat = 'PV'
+        if item.GetClassName() == "ElmPvsys":
+            cat = "PV"
         else:
             try:
                 cat = categories[item.aCategory]
             except KeyError:
                 cat = None
-                logger.debug('sgen <%s> with category <%s> imported as <%s>' %
-                             (params.name, item.aCategory, cat))
+                logger.debug("sgen <%s> with category <%s> imported as <%s>" % (params.name, item.aCategory, cat))
 
         # Get number of parallel units:
         ngnum = item.ngnum
-        logger.debug('%d parallel generators of type %s' % (ngnum, cat))
+        logger.debug("%d parallel generators of type %s" % (ngnum, cat))
         for param in params.keys():
             if any(param.startswith(prefix) for prefix in ["p_", "q_", "sn_"]):
                 params[param] *= ngnum
@@ -2194,24 +2304,24 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
         pstac = item.c_pstac
         if pstac is not None and not pstac.outserv and export_ctrl:
             if pstac.i_ctrl not in [0, 1, 2, 3]:
-                logger.error('Error! av_mode undefined')
+                logger.error("Error! av_mode undefined")
                 return
             av_mode = "constq"
 
-        if av_mode == 'constv' or av_mode == 'vdroop':  # Case 2: map to gen
-            logger.debug('av_mode: %s - creating as gen' % av_mode)
+        if av_mode == "constv" or av_mode == "vdroop":  # Case 2: map to gen
+            logger.debug("av_mode: %s - creating as gen" % av_mode)
             params.vm_pu = item.usetp
             if pstac is not None and not pstac.outserv and export_ctrl:
                 try:
-                    params.vm_pu = item.GetAttribute('m:u:bus1')
+                    params.vm_pu = item.GetAttribute("m:u:bus1")
                 except AttributeError:
                     if not pstac.uset_mode:
                         params.vm_pu = pstac.usetp
                     else:
                         params.vm_pu = pstac.cpCtrlNode.vtarget  # Bus target voltage
-            if av_mode == 'vdroop':
+            if av_mode == "vdroop":
                 try:
-                    params.vm_pu = item.GetAttribute('m:u:bus1')
+                    params.vm_pu = item.GetAttribute("m:u:bus1")
                 except AttributeError:
                     pass
                 controlled_node = item.bus1
@@ -2219,18 +2329,35 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                 next_index = net.gen.index[-1] + 1 if len(net.gen) > 0 else 0
                 ddroop = item.ddroop + 1e-6 if item.ddroop == 0 else item.ddroop
                 if not item.ddroop == 0:
-                    bsc = BinarySearchControl(net, name=item.loc_name + "_ctrl", ctrl_in_service=not item.outserv,
-                                              output_element="gen", output_variable="vm_pu",
-                                              output_element_index=[next_index],
-                                              output_element_in_service=[not item.outserv],
-                                              output_values_distribution=[1],
-                                              input_element="res_gen", input_variable="q_mvar",
-                                              input_inverted=[False], input_element_index=[next_index],
-                                              set_point=item.usetp, control_modus = "V_ctrl_Q_droop_local", bus_idx=bus, tol=1e-5)
-                    VDroopControl_local(net, name=item.loc_name + "_ctrl", q_droop_mvar=item.sgn * 100 / ddroop,
-                                        q_set_mvar=item.qgini, vm_set_pu_bsc=item.usetp, control_modus = "V_ctrl_Q_droop_local", bus_idx=bus,
-                                        controller_idx=bsc.index)
-            del params['q_mvar']
+                    bsc = BinarySearchControl(
+                        net,
+                        name=item.loc_name + "_ctrl",
+                        ctrl_in_service=not item.outserv,
+                        output_element="gen",
+                        output_variable="vm_pu",
+                        output_element_index=[next_index],
+                        output_element_in_service=[not item.outserv],
+                        output_values_distribution=[1],
+                        input_element="res_gen",
+                        input_variable="q_mvar",
+                        input_inverted=[False],
+                        input_element_index=[next_index],
+                        set_point=item.usetp,
+                        control_modus="V_ctrl_Q_droop_local",
+                        bus_idx=bus,
+                        tol=1e-5,
+                    )
+                    VDroopControl_local(
+                        net,
+                        name=item.loc_name + "_ctrl",
+                        q_droop_mvar=item.sgn * 100 / ddroop,
+                        q_set_mvar=item.qgini,
+                        vm_set_pu_bsc=item.usetp,
+                        control_modus="V_ctrl_Q_droop_local",
+                        bus_idx=bus,
+                        controller_idx=bsc.index,
+                    )
+            del params["q_mvar"]
 
             # add reactive and active power limits
             params.min_q_mvar = item.cQ_min
@@ -2239,17 +2366,17 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
             params.max_p_mw = item.Pmax_uc
 
             sg = create_gen(net, **params)
-            element = 'gen'
-            logger.debug('created gen at index <%d>' % sg)
+            element = "gen"
+            logger.debug("created gen at index <%d>" % sg)
         else:
             if is_unbalanced:  # Case 3: map to asymmetric sgen
                 sg = create_asymmetric_sgen(net, **params)
                 element = "asymmetric_sgen"
-                logger.debug('created asymmetric sgen at index <%d>' % sg)
+                logger.debug("created asymmetric sgen at index <%d>" % sg)
             else:  # Case 4: map to symmetric sgen
                 if pstac is not None and not pstac.outserv and export_ctrl:
                     try:
-                        params['q_mvar'] = item.GetAttribute('m:Q:bus1')
+                        params["q_mvar"] = item.GetAttribute("m:Q:bus1")
                     except AttributeError:
                         pass
 
@@ -2260,32 +2387,35 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
                 params.max_p_mw = item.Pmax_uc
 
                 sg = create_sgen(net, **params)
-                element = 'sgen'
+                element = "sgen"
     if sg is not None:
-        logger.debug('created sgen at index <%d>' % sg)
+        logger.debug("created sgen at index <%d>" % sg)
     else:
         return
 
     # Add description and additional attributes
-    net[element].at[sg, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sg,
-                              attr_dict={"for_name": "equipment",
-                                         "cpSite.loc_name": "site",
-                                         "c_pstac.loc_name": "sta_ctrl"},
-                              attr_list=["sernum", "chr_name"])
+    net[element].at[sg, "description"] = " \n ".join(item.desc) if len(item.desc) > 0 else ""
+    add_additional_attributes(
+        item,
+        net,
+        element,
+        sg,
+        attr_dict={"for_name": "equipment", "cpSite.loc_name": "site", "c_pstac.loc_name": "sta_ctrl"},
+        attr_list=["sernum", "chr_name"],
+    )
 
     # Add scaling
-    net[element].at[sg, 'scaling'] = dict_net['global_parameters']['global_generation_scaling'] * item.scale0
+    net[element].at[sg, "scaling"] = dict_net["global_parameters"]["global_generation_scaling"] * item.scale0
     get_pf_sgen_results(net, item, sg, is_unbalanced, element=element)
 
     # Create capability curve in case of sgen or gen
-    if item.pQlimType and element != 'ext_grid':
+    if item.pQlimType and element != "ext_grid":
         id = create_q_capability_curve(net, item.pQlimType)
-        net[element].loc[sg, 'id_q_capability_characteristic'] = id
-        net[element].loc[sg, 'reactive_capability_curve'] = True
-        net[element].loc[sg, 'curve_style'] = 'straightLineYValues'
+        net[element].loc[sg, "id_q_capability_characteristic"] = id
+        net[element].loc[sg, "reactive_capability_curve"] = True
+        net[element].loc[sg, "curve_style"] = "straightLineYValues"
 
-    logger.debug('created genstat <%s> as element <%s> at index <%d>' % (params.name, element, sg))
+    logger.debug("created genstat <%s> as element <%s> at index <%d>" % (params.name, element, sg))
 
     ###########################
 
@@ -2325,7 +2455,8 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
 #
 #    logger.debug('created sgen <%s> at index <%d>' % (params.name, sg))
 
-def get_pf_sgen_results(net, item, sg, is_unbalanced, element='sgen'):
+
+def get_pf_sgen_results(net, item, sg, is_unbalanced, element="sgen"):
     result_variables = None
 
     if is_unbalanced:
@@ -2352,10 +2483,7 @@ def get_pf_sgen_results(net, item, sg, is_unbalanced, element='sgen'):
             }
     else:
         sgen_type = "res_%s" % element
-        result_variables = {
-            "pf_p": "m:P:bus1",
-            "pf_q": "m:Q:bus1"
-        }
+        result_variables = {"pf_p": "m:P:bus1", "pf_q": "m:Q:bus1"}
 
     for res_var_pp, res_var_pf in result_variables.items():
         res = np.nan
@@ -2368,45 +2496,56 @@ def get_pf_sgen_results(net, item, sg, is_unbalanced, element='sgen'):
 
 
 def create_sgen_neg_load(net, item, pf_variable_p_loads, dict_net):
-    raise UserWarning('not used')
+    raise UserWarning("not used")
     params = ADict()
     #    categories = {"wgen": "WKA", "pv": "PV", "reng": "REN", "stg": "SGEN"}
     # let the category be PV:
     params.type = None
     params.name = item.loc_name
-    logger.debug('>> implementing negative load <%s> as sgen' % params.name)
+    logger.debug(">> implementing negative load <%s> as sgen" % params.name)
     try:
         params.bus, _ = get_connection_nodes(net, item, 1)
     except IndexError:
         logger.error("Cannot add Sgen '%s': not connected" % params.name)
         return
 
-    params.update(ask_load_params(item, pf_variable_p_loads=pf_variable_p_loads,
-                                  dict_net=dict_net, variables=('p_mw', 'q_mvar')))
+    params.update(
+        ask_load_params(item, pf_variable_p_loads=pf_variable_p_loads, dict_net=dict_net, variables=("p_mw", "q_mvar"))
+    )
     # rated S:
-    params.sn_mva = math.sqrt(params.p_mw ** 2 + params.q_mvar ** 2)
+    params.sn_mva = math.sqrt(params.p_mw**2 + params.q_mvar**2)
 
-    logger.debug('negative load parameters: %s' % params)
+    logger.debug("negative load parameters: %s" % params)
 
     params.in_service = monopolar_in_service(item)
 
     # create...
     sg = create_sgen(net, **params)
 
-    net.sgen.loc[sg, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, "sgen", sg, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id",
-                                                                "cpSite.loc_name": "site", "c_pstac.loc_name": "sta_ctrl"},
-                                                              attr_list=["sernum", "chr_name"])
+    net.sgen.loc[sg, "description"] = " \n ".join(item.desc) if len(item.desc) > 0 else ""
+    add_additional_attributes(
+        item,
+        net,
+        "sgen",
+        sg,
+        attr_dict={
+            "for_name": "equipment",
+            "cimRdfId": "origin_id",
+            "cpSite.loc_name": "site",
+            "c_pstac.loc_name": "sta_ctrl",
+        },
+        attr_list=["sernum", "chr_name"],
+    )
 
     if item.HasResults(0):  # 'm' results...
-        logger.debug('<%s> has results' % params.name)
-        net.res_sgen.at[sg, "pf_p"] = -item.GetAttribute('m:P:bus1')
-        net.res_sgen.at[sg, "pf_q"] = -item.GetAttribute('m:Q:bus1')
+        logger.debug("<%s> has results" % params.name)
+        net.res_sgen.at[sg, "pf_p"] = -item.GetAttribute("m:P:bus1")
+        net.res_sgen.at[sg, "pf_q"] = -item.GetAttribute("m:Q:bus1")
     else:
         net.res_sgen.at[sg, "pf_p"] = np.nan
         net.res_sgen.at[sg, "pf_q"] = np.nan
 
-    logger.debug('created load <%s> as sgen at index <%d>' % (params.name, sg))
+    logger.debug("created load <%s> as sgen at index <%d>" % (params.name, sg))
 
 
 def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_ctrl):
@@ -2414,36 +2553,44 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
     name = item.loc_name
     sid = None
     element = None
-    logger.debug('>> creating synchronous machine <%s>' % name)
+    logger.debug(">> creating synchronous machine <%s>" % name)
     av_mode = item.av_mode
 
-    if item.ip_ctrl: # or (item.HasAttribute('c:iRefElement') and item.GetAttribute('c:iRefElement')):
+    if item.ip_ctrl:  # or (item.HasAttribute('c:iRefElement') and item.GetAttribute('c:iRefElement')):
         is_reference_machine = True
     else:
         is_reference_machine = False
 
     is_definite_ext_grid = False
-    if (item.HasAttribute('c:iRefElement') and item.GetAttribute('c:iRefElement')):
+    if item.HasAttribute("c:iRefElement") and item.GetAttribute("c:iRefElement"):
         is_reference_machine = True
         is_definite_ext_grid = True
-        #item.bustp = "SL"
-        #item.SetAttribute('bustp', 'SL')
+        # item.bustp = "SL"
+        # item.SetAttribute('bustp', 'SL')
 
     is_motor = bool(item.i_mot)
-    global_scaling = dict_net['global_parameters']['global_motor_scaling'] if is_motor else \
-        dict_net['global_parameters']['global_generation_scaling']
+    global_scaling = (
+        dict_net["global_parameters"]["global_motor_scaling"]
+        if is_motor
+        else dict_net["global_parameters"]["global_generation_scaling"]
+    )
     multiplier = get_power_multiplier(item, pf_variable_p_gen)
 
-    if is_reference_machine or (av_mode == 'constv' and pv_as_slack):
-        logger.info('synchronous machine <%s> to be imported as external grid' % name)
-        logger.debug('ref. machine: %d, av_mode: %s, pv as slack: %s' %
-                     (is_reference_machine, av_mode, pv_as_slack))
-        sid, element = create_ext_net(net, item=item, pv_as_slack=pv_as_slack, is_unbalanced=False,
-                                      multiplier=multiplier, is_definite_ext_grid=is_definite_ext_grid)
+    if is_reference_machine or (av_mode == "constv" and pv_as_slack):
+        logger.info("synchronous machine <%s> to be imported as external grid" % name)
+        logger.debug("ref. machine: %d, av_mode: %s, pv as slack: %s" % (is_reference_machine, av_mode, pv_as_slack))
+        sid, element = create_ext_net(
+            net,
+            item=item,
+            pv_as_slack=pv_as_slack,
+            is_unbalanced=False,
+            multiplier=multiplier,
+            is_definite_ext_grid=is_definite_ext_grid,
+        )
         # net.ext_grid.loc[sid, 'p_disp_mw'] = -item.pgini * multiplier
         # net.ext_grid.loc[sid, 'q_disp_mvar'] = -item.qgini * multiplier
-        logger.debug('created ext net with sid <%d>', sid)
-        #element = 'ext_grid'
+        logger.debug("created ext net with sid <%d>", sid)
+        # element = 'ext_grid'
     else:
         try:
             bus1, _ = get_connection_nodes(net, item, 1)
@@ -2451,7 +2598,7 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
             logger.error("Cannot add Sgen '%s': not connected" % name)
             return
 
-        logger.debug('sgen <%s> is a %s' % (name, {True: 'motor', False: 'generator'}[is_motor]))
+        logger.debug("sgen <%s> is a %s" % (name, {True: "motor", False: "generator"}[is_motor]))
 
         in_service = monopolar_in_service(item)
 
@@ -2459,13 +2606,12 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         try:
             cat = categories[item.aCategory]
         except KeyError:
-            cat = 'SGEN'
-            logger.debug('sgen <%s> with category <%s> imported as <%s>' %
-                         (name, item.aCategory, cat))
+            cat = "SGEN"
+            logger.debug("sgen <%s> with category <%s> imported as <%s>" % (name, item.aCategory, cat))
 
         # parallel units:
         ngnum = item.ngnum
-        logger.debug('%d parallel generators' % ngnum)
+        logger.debug("%d parallel generators" % ngnum)
 
         p_mw = ngnum * item.pgini * multiplier
 
@@ -2473,25 +2619,25 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
         # None if station controller is not available
         if pstac is not None and not pstac.outserv and export_ctrl:
             if pstac.i_droop:
-                av_mode = 'constq'
+                av_mode = "constq"
             else:
                 i_ctrl = pstac.i_ctrl
                 if i_ctrl == 0:
-                    av_mode = 'constq'
+                    av_mode = "constq"
                 elif i_ctrl == 1:
-                    av_mode = 'constq'
+                    av_mode = "constq"
                 elif i_ctrl == 2:
-                    av_mode='constq'
+                    av_mode = "constq"
                 elif i_ctrl == 3:
-                    av_mode= 'constq'
+                    av_mode = "constq"
 
-        logger.debug('av_mode: %s' % av_mode)
-        if av_mode == 'constv':
-            logger.debug('creating sym %s as gen' % name)
+        logger.debug("av_mode: %s" % av_mode)
+        if av_mode == "constv":
+            logger.debug("creating sym %s as gen" % name)
             vm_pu = item.usetp
             if pstac is not None and not pstac.outserv and export_ctrl:
                 try:
-                    vm_pu = item.GetAttribute('m:u:bus1')
+                    vm_pu = item.GetAttribute("m:u:bus1")
                 except AttributeError:
                     if not pstac.uset_mode:
                         vm_pu = pstac.usetp
@@ -2499,81 +2645,136 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
                         vm_pu = pstac.cpCtrlNode.vtarget  # Bus target voltage
             if item.iqtype == 1:
                 type = item.typ_id
-                sid = create_gen(net, bus=bus1, p_mw=p_mw, vm_pu=vm_pu,
-                                 min_q_mvar=type.Q_min, max_q_mvar=type.Q_max,
-                                 min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
-                                 name=name, type=cat, in_service=in_service, scaling=global_scaling)
+                sid = create_gen(
+                    net,
+                    bus=bus1,
+                    p_mw=p_mw,
+                    vm_pu=vm_pu,
+                    min_q_mvar=type.Q_min,
+                    max_q_mvar=type.Q_max,
+                    min_p_mw=item.Pmin_uc,
+                    max_p_mw=item.Pmax_uc,
+                    name=name,
+                    type=cat,
+                    in_service=in_service,
+                    scaling=global_scaling,
+                )
             else:
-                sid = create_gen(net, bus=bus1, p_mw=p_mw, vm_pu=vm_pu,
-                                 min_q_mvar=item.cQ_min, max_q_mvar=item.cQ_max,
-                                 min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
-                                 name=name, type=cat, in_service=in_service, scaling=global_scaling)
-            element = 'gen'
-        elif av_mode == 'constq':
+                sid = create_gen(
+                    net,
+                    bus=bus1,
+                    p_mw=p_mw,
+                    vm_pu=vm_pu,
+                    min_q_mvar=item.cQ_min,
+                    max_q_mvar=item.cQ_max,
+                    min_p_mw=item.Pmin_uc,
+                    max_p_mw=item.Pmax_uc,
+                    name=name,
+                    type=cat,
+                    in_service=in_service,
+                    scaling=global_scaling,
+                )
+            element = "gen"
+        elif av_mode == "constq":
             try:
-                q_mvar = item.GetAttribute('m:Q:bus1') * multiplier
+                q_mvar = item.GetAttribute("m:Q:bus1") * multiplier
             except AttributeError:
                 q_mvar = item.ngnum * item.qgini * multiplier
             if item.iqtype == 1:
                 type = item.typ_id
-                sid = create_sgen(net, bus=bus1, p_mw=p_mw, q_mvar=q_mvar,
-                                  min_q_mvar=type.Q_min, max_q_mvar=type.Q_max,
-                                  min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
-                                  name=name, type=cat, in_service=in_service, scaling=global_scaling)
+                sid = create_sgen(
+                    net,
+                    bus=bus1,
+                    p_mw=p_mw,
+                    q_mvar=q_mvar,
+                    min_q_mvar=type.Q_min,
+                    max_q_mvar=type.Q_max,
+                    min_p_mw=item.Pmin_uc,
+                    max_p_mw=item.Pmax_uc,
+                    name=name,
+                    type=cat,
+                    in_service=in_service,
+                    scaling=global_scaling,
+                )
             else:
-                sid = create_sgen(net, bus=bus1, p_mw=p_mw, q_mvar=q_mvar,
-                                  min_q_mvar=item.cQ_min, max_q_mvar=item.cQ_max,
-                                  min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
-                                  name=name, type=cat, in_service=in_service, scaling=global_scaling)
-            element = 'sgen'
+                sid = create_sgen(
+                    net,
+                    bus=bus1,
+                    p_mw=p_mw,
+                    q_mvar=q_mvar,
+                    min_q_mvar=item.cQ_min,
+                    max_q_mvar=item.cQ_max,
+                    min_p_mw=item.Pmin_uc,
+                    max_p_mw=item.Pmax_uc,
+                    name=name,
+                    type=cat,
+                    in_service=in_service,
+                    scaling=global_scaling,
+                )
+            element = "sgen"
 
         if sid is None or element is None:
-            logger.error('Error! Sgen not created')
-        logger.debug('sym <%s>: p_mw = %.3f' % (name, p_mw))
-        logger.debug('created sgen at index <%s>' % sid)
+            logger.error("Error! Sgen not created")
+        logger.debug("sym <%s>: p_mw = %.3f" % (name, p_mw))
+        logger.debug("created sgen at index <%s>" % sid)
 
-    net[element].loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-    add_additional_attributes(item, net, element, sid, attr_dict={"for_name": "equipment", "cimRdfId": "origin_id",
-                                                                  "cpSite.loc_name": "site", "c_pstac.loc_name": "sta_ctrl"},
-                                                      attr_list=["sernum", "chr_name"])
-    if item.pQlimType and element != 'ext_grid':
+    net[element].loc[sid, "description"] = " \n ".join(item.desc) if len(item.desc) > 0 else ""
+    add_additional_attributes(
+        item,
+        net,
+        element,
+        sid,
+        attr_dict={
+            "for_name": "equipment",
+            "cimRdfId": "origin_id",
+            "cpSite.loc_name": "site",
+            "c_pstac.loc_name": "sta_ctrl",
+        },
+        attr_list=["sernum", "chr_name"],
+    )
+    if item.pQlimType and element != "ext_grid":
         id = create_q_capability_curve(net, item.pQlimType)
-        net[element].loc[sid, 'id_q_capability_characteristic'] = id
-        net[element].loc[sid, 'reactive_capability_curve'] = True
-        net[element].loc[sid, 'curve_style'] = 'straightLineYValues'
+        net[element].loc[sid, "id_q_capability_characteristic"] = id
+        net[element].loc[sid, "reactive_capability_curve"] = True
+        net[element].loc[sid, "curve_style"] = "straightLineYValues"
 
     if item.HasResults(0):  # 'm' results...
-        logger.debug('<%s> has results' % name)
-        net['res_' + element].at[sid, "pf_p"] = item.GetAttribute('m:P:bus1') * multiplier
-        net['res_' + element].at[sid, "pf_q"] = item.GetAttribute('m:Q:bus1') * multiplier
+        logger.debug("<%s> has results" % name)
+        net["res_" + element].at[sid, "pf_p"] = item.GetAttribute("m:P:bus1") * multiplier
+        net["res_" + element].at[sid, "pf_q"] = item.GetAttribute("m:Q:bus1") * multiplier
     else:
-        net['res_' + element].at[sid, "pf_p"] = np.nan
-        net['res_' + element].at[sid, "pf_q"] = np.nan
+        net["res_" + element].at[sid, "pf_p"] = np.nan
+        net["res_" + element].at[sid, "pf_q"] = np.nan
 
-    logger.debug('created genstat <%s> at index <%d>' % (name, sid))
+    logger.debug("created genstat <%s> at index <%d>" % (name, sid))
 
 
 def create_sgen_asm(net, item, pf_variable_p_gen, dict_net, export_ctrl):
     is_motor = bool(item.i_mot)
-    global_scaling = dict_net['global_parameters']['global_motor_scaling'] if is_motor else \
-        dict_net['global_parameters']['global_generation_scaling']
+    global_scaling = (
+        dict_net["global_parameters"]["global_motor_scaling"]
+        if is_motor
+        else dict_net["global_parameters"]["global_generation_scaling"]
+    )
 
     av_mode = item.av_mode
 
     multiplier = get_power_multiplier(item, pf_variable_p_gen)
-    p_res = item.GetAttribute('pgini') * multiplier
-    q_res = item.GetAttribute('qgini') * multiplier
+    p_res = item.GetAttribute("pgini") * multiplier
+    q_res = item.GetAttribute("qgini") * multiplier
     if item.HasResults(0):
-        q_res = item.GetAttribute('m:Q:bus1') / global_scaling * multiplier
+        q_res = item.GetAttribute("m:Q:bus1") / global_scaling * multiplier
     else:
-        logger.warning('reactive power for asynchronous generator is not exported properly '
-                       '(advanced modelling of asynchronous generators not implemented)')
+        logger.warning(
+            "reactive power for asynchronous generator is not exported properly "
+            "(advanced modelling of asynchronous generators not implemented)"
+        )
 
-    logger.debug('p_res: %.3f, q_res: %.3f' % (p_res, q_res))
+    logger.debug("p_res: %.3f, q_res: %.3f" % (p_res, q_res))
 
     in_service = monopolar_in_service(item)
 
-    logger.debug('in_service: %s' % in_service)
+    logger.debug("in_service: %s" % in_service)
 
     try:
         bus, _ = get_connection_nodes(net, item, 1)
@@ -2582,12 +2783,12 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net, export_ctrl):
         return
 
     params = {
-        'name': item.loc_name,
-        'bus': bus,
-        'p_mw': item.pgini * multiplier,
-        'q_mvar': item.qgini * multiplier if item.bustp == 'PQ' else q_res,
-        'in_service': in_service,
-        'scaling': global_scaling
+        "name": item.loc_name,
+        "bus": bus,
+        "p_mw": item.pgini * multiplier,
+        "q_mvar": item.qgini * multiplier if item.bustp == "PQ" else q_res,
+        "in_service": in_service,
+        "scaling": global_scaling,
     }
 
     categories = {"wgen": "WKA", "pv": "PV", "reng": "REN", "stg": "SGEN"}
@@ -2595,97 +2796,122 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net, export_ctrl):
     try:
         cat = categories[item.aCategory]
     except KeyError:
-        cat = 'SGEN'
-        logger.debug('sgen <%s> with category <%s> imported as <%s>' %
-                     (item.loc_name, item.aCategory, cat))
+        cat = "SGEN"
+        logger.debug("sgen <%s> with category <%s> imported as <%s>" % (item.loc_name, item.aCategory, cat))
 
     pstac = item.c_pstac
     # None if station controller is not available
     if pstac is not None and not pstac.outserv and export_ctrl:
         if pstac.i_droop:
-            av_mode = 'constq'
+            av_mode = "constq"
         else:
             i_ctrl = pstac.i_ctrl
             if i_ctrl == 0:
-                av_mode = 'constq'
+                av_mode = "constq"
             elif i_ctrl == 1:
-                av_mode = 'constq'
+                av_mode = "constq"
             elif i_ctrl == 2:
-                av_mode = 'constq' #cosphi
+                av_mode = "constq"  # cosphi
             elif i_ctrl == 3:
-                av_mode = 'constq' #tanphi
+                av_mode = "constq"  # tanphi
 
-
-    logger.debug('av_mode: %s' % av_mode)
-    if av_mode == 'constv':
-        logger.debug('creating asym %s as gen' % item.loc_name)
+    logger.debug("av_mode: %s" % av_mode)
+    if av_mode == "constv":
+        logger.debug("creating asym %s as gen" % item.loc_name)
         vm_pu = item.usetp
         if pstac is not None and not pstac.outserv and export_ctrl:
             try:
-                vm_pu = item.GetAttribute('m:u:bus1')
+                vm_pu = item.GetAttribute("m:u:bus1")
             except AttributeError:
                 if not pstac.uset_mode:
                     vm_pu = pstac.usetp
                 else:
                     vm_pu = pstac.cpCtrlNode.vtarget  # Bus target voltage
         type = item.typ_id
-        sid = create_gen(net, bus=bus, p_mw=item.pgini * multiplier, vm_pu=vm_pu,
-                         min_q_mvar=item.cQ_min, max_q_mvar=item.cQ_max,
-                         min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
-                         name=item.loc_name, type=cat, in_service=in_service, scaling=global_scaling)
-        element = 'gen'
-    elif av_mode == 'constq':
+        sid = create_gen(
+            net,
+            bus=bus,
+            p_mw=item.pgini * multiplier,
+            vm_pu=vm_pu,
+            min_q_mvar=item.cQ_min,
+            max_q_mvar=item.cQ_max,
+            min_p_mw=item.Pmin_uc,
+            max_p_mw=item.Pmax_uc,
+            name=item.loc_name,
+            type=cat,
+            in_service=in_service,
+            scaling=global_scaling,
+        )
+        element = "gen"
+    elif av_mode == "constq":
         try:
-            q_mvar = item.GetAttribute('m:Q:bus1') * multiplier
+            q_mvar = item.GetAttribute("m:Q:bus1") * multiplier
         except AttributeError:
-            q_mvar = item.ng_num * item.qgini * multiplier if item.bustp == 'PQ' else q_res
+            q_mvar = item.ng_num * item.qgini * multiplier if item.bustp == "PQ" else q_res
         type = item.typ_id
-        sid = create_sgen(net, bus=bus, p_mw=item.pgini * multiplier, q_mvar=q_mvar,
-                          min_q_mvar=item.cQ_min, max_q_mvar=item.cQ_max,
-                          min_p_mw=item.Pmin_uc, max_p_mw=item.Pmax_uc,
-                          name=item.loc_name, type=cat, in_service=in_service, scaling=global_scaling)
-        element = 'sgen'
+        sid = create_sgen(
+            net,
+            bus=bus,
+            p_mw=item.pgini * multiplier,
+            q_mvar=q_mvar,
+            min_q_mvar=item.cQ_min,
+            max_q_mvar=item.cQ_max,
+            min_p_mw=item.Pmin_uc,
+            max_p_mw=item.Pmax_uc,
+            name=item.loc_name,
+            type=cat,
+            in_service=in_service,
+            scaling=global_scaling,
+        )
+        element = "sgen"
 
     if element == "gen":
-        net.gen.loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-        attr_dict = {"for_name": "equipment", "cimRdfId": "origin_id", "cpSite.loc_name": "site",
-                     "c_pstac.loc_name": "sta_ctrl"}
-        add_additional_attributes(item, net, "gen", sid, attr_dict=attr_dict,
-                                  attr_list=["sernum", "chr_name"])
+        net.gen.loc[sid, "description"] = " \n ".join(item.desc) if len(item.desc) > 0 else ""
+        attr_dict = {
+            "for_name": "equipment",
+            "cimRdfId": "origin_id",
+            "cpSite.loc_name": "site",
+            "c_pstac.loc_name": "sta_ctrl",
+        }
+        add_additional_attributes(item, net, "gen", sid, attr_dict=attr_dict, attr_list=["sernum", "chr_name"])
 
         if item.HasResults(0):
-            net.res_gen.at[sid, 'pf_p'] = item.GetAttribute('m:P:bus1') * multiplier
-            net.res_gen.at[sid, 'pf_q'] = item.GetAttribute('m:Q:bus1') * multiplier
+            net.res_gen.at[sid, "pf_p"] = item.GetAttribute("m:P:bus1") * multiplier
+            net.res_gen.at[sid, "pf_q"] = item.GetAttribute("m:Q:bus1") * multiplier
         else:
-            net.res_gen.at[sid, 'pf_p'] = np.nan
-            net.res_gen.at[sid, 'pf_q'] = np.nan
+            net.res_gen.at[sid, "pf_p"] = np.nan
+            net.res_gen.at[sid, "pf_q"] = np.nan
     elif element == "sgen":
-        net.sgen.loc[sid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-        attr_dict={"for_name": "equipment", "cimRdfId": "origin_id",  "cpSite.loc_name": "site", "c_pstac.loc_name": "sta_ctrl"}
-        add_additional_attributes(item, net, "sgen", sid, attr_dict=attr_dict,
-                                  attr_list=["sernum", "chr_name"])
+        net.sgen.loc[sid, "description"] = " \n ".join(item.desc) if len(item.desc) > 0 else ""
+        attr_dict = {
+            "for_name": "equipment",
+            "cimRdfId": "origin_id",
+            "cpSite.loc_name": "site",
+            "c_pstac.loc_name": "sta_ctrl",
+        }
+        add_additional_attributes(item, net, "sgen", sid, attr_dict=attr_dict, attr_list=["sernum", "chr_name"])
 
         if item.HasResults(0):
-            net.res_sgen.at[sid, 'pf_p'] = item.GetAttribute('m:P:bus1') * multiplier
-            net.res_sgen.at[sid, 'pf_q'] = item.GetAttribute('m:Q:bus1') * multiplier
+            net.res_sgen.at[sid, "pf_p"] = item.GetAttribute("m:P:bus1") * multiplier
+            net.res_sgen.at[sid, "pf_q"] = item.GetAttribute("m:Q:bus1") * multiplier
         else:
-            net.res_sgen.at[sid, 'pf_p'] = np.nan
-            net.res_sgen.at[sid, 'pf_q'] = np.nan
+            net.res_sgen.at[sid, "pf_p"] = np.nan
+            net.res_sgen.at[sid, "pf_q"] = np.nan
 
 
 def create_trafo_type(net, item):
     # return False if no line type has been created
     # return True if a new line type has been created
 
-    logger.debug('>> creating trafo type')
+    logger.debug(">> creating trafo type")
     if item is None:
-        logger.error('no item given!')
+        logger.error("no item given!")
         return None, False
 
     pf_folder = item.fold_id.loc_name
     name = "%s\\%s" % (pf_folder, item.loc_name)
     if std_type_exists(net, name):
-        logger.debug('trafo type <%s> already exists' % name)
+        logger.debug("trafo type <%s> already exists" % name)
         return name, False
 
     type_data = {
@@ -2703,14 +2929,14 @@ def create_trafo_type(net, item):
         "mag0_percent": item.zx0hl_n * 1e-2,
         "mag0_rx": item.rtox0_n,
         "si0_hv_partial": item.zx0hl_h,
-        "tap_side": ['hv', 'lv', 'ext'][item.tap_side],  # 'ext' not implemented
+        "tap_side": ["hv", "lv", "ext"][item.tap_side],  # 'ext' not implemented
     }
 
     type_data.update({"tap_changer_type": None})
     type_data.update({"tap2_changer_type": None})
 
     if item.itapch:
-        logger.debug('trafo <%s> has tap changer' % name)
+        logger.debug("trafo <%s> has tap changer" % name)
 
         if item.tapchtype == 0:
             tap_changer_type = "Ratio"
@@ -2719,24 +2945,28 @@ def create_trafo_type(net, item):
         elif item.tapchtype == 2:
             tap_changer_type = "Symmetrical"
 
-        type_data.update({
-            # see if it is an ideal phase shifter or a complex phase shifter
-            # checking tap_step_percent because a nonzero value for ideal phase shifter can be stored in the object
-            "tap_step_percent": item.dutap if item.tapchtype != 1 else 0,
-            "tap_step_degree": item.dphitap if item.tapchtype == 1 else item.phitr,
-            "tap_changer_type": tap_changer_type,
-            "tap_max": item.ntpmx,
-            "tap_min": item.ntpmn,
-            "tap_neutral": item.nntap0
-        })
+        type_data.update(
+            {
+                # see if it is an ideal phase shifter or a complex phase shifter
+                # checking tap_step_percent because a nonzero value for ideal phase shifter can be stored in the object
+                "tap_step_percent": item.dutap if item.tapchtype != 1 else 0,
+                "tap_step_degree": item.dphitap if item.tapchtype == 1 else item.phitr,
+                "tap_changer_type": tap_changer_type,
+                "tap_max": item.ntpmx,
+                "tap_min": item.ntpmn,
+                "tap_neutral": item.nntap0,
+            }
+        )
         if item.tapchtype == 2:
-            logger.warning("trafo %s has symmetrical tap changer (tap changer at both hv and "
-                           "lv side) - not implemented, importing as asymmetrical tap changer at "
-                           "side %s. Results will differ." % (item.loc_name, type_data['tap_side']))
+            logger.warning(
+                "trafo %s has symmetrical tap changer (tap changer at both hv and "
+                "lv side) - not implemented, importing as asymmetrical tap changer at "
+                "side %s. Results will differ." % (item.loc_name, type_data["tap_side"])
+            )
 
     # In PowerFactory, if the first tap changer is absent, the second is also, even if the check was there
     if item.itapch and item.itapch2:
-        logger.debug('trafo <%s> has tap2 changer' % name)
+        logger.debug("trafo <%s> has tap2 changer" % name)
 
         if item.tapchtype2 == 0:
             tap2_changer_type = "Ratio"
@@ -2745,32 +2975,36 @@ def create_trafo_type(net, item):
         elif item.tapchtype2 == 2:
             tap2_changer_type = "Symmetrical"
 
-        type_data.update({
-            "tap2_side": ['hv', 'lv', 'ext'][item.tap_side2],  # 'ext' not implemented
-            # see if it is an ideal phase shifter or a complex phase shifter
-            # checking tap_step_percent because a nonzero value for ideal phase shifter can be stored in the object
-            "tap2_step_percent": item.dutap2 if item.tapchtype2 != 1 else 0,
-            "tap2_step_degree": item.dphitap2 if item.tapchtype2 == 1 else item.phitr2,
-            "tap2_changer_type": tap2_changer_type,
-            "tap2_max": item.ntpmx2,
-            "tap2_min": item.ntpmn2,
-            "tap2_neutral": item.nntap02
-        })
+        type_data.update(
+            {
+                "tap2_side": ["hv", "lv", "ext"][item.tap_side2],  # 'ext' not implemented
+                # see if it is an ideal phase shifter or a complex phase shifter
+                # checking tap_step_percent because a nonzero value for ideal phase shifter can be stored in the object
+                "tap2_step_percent": item.dutap2 if item.tapchtype2 != 1 else 0,
+                "tap2_step_degree": item.dphitap2 if item.tapchtype2 == 1 else item.phitr2,
+                "tap2_changer_type": tap2_changer_type,
+                "tap2_max": item.ntpmx2,
+                "tap2_min": item.ntpmn2,
+                "tap2_neutral": item.nntap02,
+            }
+        )
         if item.tapchtype2 == 2:
-            logger.warning("trafo %s has symmetrical tap2 changer (tap2 changer at both hv and "
-                           "lv side) - not implemented, importing as asymmetrical tap2 changer at "
-                           "side %s. Results will differ." % (item.loc_name, type_data['tap2_side']))
+            logger.warning(
+                "trafo %s has symmetrical tap2 changer (tap2 changer at both hv and "
+                "lv side) - not implemented, importing as asymmetrical tap2 changer at "
+                "side %s. Results will differ." % (item.loc_name, type_data["tap2_side"])
+            )
 
-    if 'tap_side' in type_data.keys() and (type_data.get('tap_side') == 'ext' or type_data.get('tap_side') == 'ext'):
+    if "tap_side" in type_data.keys() and (type_data.get("tap_side") == "ext" or type_data.get("tap_side") == "ext"):
         logger.warning('controlled node of trafo "EXT" not implemented (type <%s>)' % name)
     create_std_type(net, type_data, name, "trafo")
-    logger.debug('created trafo type <%s> with params: %s' % (name, type_data))
+    logger.debug("created trafo type <%s> with params: %s" % (name, type_data))
     return name, True
 
 
 def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanced=False, hunting_limit=None):
     name = item.loc_name  # type: str
-    logger.debug('>> creating trafo <%s>' % name)
+    logger.debug(">> creating trafo <%s>" % name)
     in_service = not bool(item.outserv)  # type: bool
 
     # figure out the connection terminals
@@ -2783,13 +3017,13 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
     propagate_bus_coords(net, bus1, bus2)
 
     if not net.bus.vn_kv[bus1] >= net.bus.vn_kv[bus2]:
-        logger.error('trafo <%s>: violated condition of HV >= LV!' % name)
+        logger.error("trafo <%s>: violated condition of HV >= LV!" % name)
     # assert net.bus.vn_kv[bus1] >= net.bus.vn_kv[bus2]
 
     # figure out trafo type
     pf_type = item.typ_id
     if pf_type is None:
-        logger.error('cannot create transformer <%s>: missing type' % name)
+        logger.error("cannot create transformer <%s>: missing type" % name)
         return
     std_type, type_created = create_trafo_type(net=net, item=pf_type)
 
@@ -2804,7 +3038,7 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             tap_pos = item.GetAttribute("c:nntap")
             logger.debug("got tap %f from c:nntap" % tap_pos)
         else:
-            raise ValueError('could not read current tap position: tap_opt = %s' % tap_opt)
+            raise ValueError("could not read current tap position: tap_opt = %s" % tap_opt)
 
     tap_pos2 = np.nan
     # In PowerFactory, if the first tap changer is absent, the second is also, even if the check was there
@@ -2819,14 +3053,27 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
     # Creating trafo characteristics table for tap dependence impedance
     if "trafo_characteristic_table" not in net:
         net["trafo_characteristic_table"] = DataFrame(
-            columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
-                     'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent',
-                     'vkr_lv_percent'])
+            columns=[
+                "id_characteristic",
+                "step",
+                "voltage_ratio",
+                "angle_deg",
+                "vk_percent",
+                "vkr_percent",
+                "vk_hv_percent",
+                "vkr_hv_percent",
+                "vk_mv_percent",
+                "vkr_mv_percent",
+                "vk_lv_percent",
+                "vkr_lv_percent",
+            ]
+        )
 
     if std_type is not None:
         if use_tap_table == 1:
-            id_characteristic_table, tap_changer_type, tap_dependency_table, tap_side = \
-                (create_trafo_characteristics_from_measurement_protocol(item, net, pf_type))
+            id_characteristic_table, tap_changer_type, tap_dependency_table, tap_side = (
+                create_trafo_characteristics_from_measurement_protocol(item, net, pf_type)
+            )
         else:
             id_characteristic_table = None
             tap_dependency_table = False
@@ -2837,21 +3084,31 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
         itrdr = np.clip(pf_type.itrdr, epsilon, 1 - epsilon)
         itrdl = np.clip(pf_type.itrdl, epsilon, 1 - epsilon)
 
-        tid = create_transformer(net, hv_bus=bus1, lv_bus=bus2, name=name,
-                                 std_type=std_type, tap_pos=tap_pos,
-                                 tap_dependency_table=tap_dependency_table,
-                                 tap_changer_type=tap_changer_type,
-                                 id_characteristic_table=id_characteristic_table,
-                                 in_service=in_service, parallel=item.ntnum, df=item.ratfac, tap2_pos=tap_pos2,
-                                 leakage_resistance_ratio_hv=itrdr, leakage_reactance_ratio_hv=itrdl)
+        tid = create_transformer(
+            net,
+            hv_bus=bus1,
+            lv_bus=bus2,
+            name=name,
+            std_type=std_type,
+            tap_pos=tap_pos,
+            tap_dependency_table=tap_dependency_table,
+            tap_changer_type=tap_changer_type,
+            id_characteristic_table=id_characteristic_table,
+            in_service=in_service,
+            parallel=item.ntnum,
+            df=item.ratfac,
+            tap2_pos=tap_pos2,
+            leakage_resistance_ratio_hv=itrdr,
+            leakage_reactance_ratio_hv=itrdl,
+        )
         trafo_dict[item] = tid
-        logger.debug('created trafo at index <%d>' % tid)
+        logger.debug("created trafo at index <%d>" % tid)
     else:
         logger.info("Create Trafo 3ph")
         if use_tap_table == 1:
-
-            id_characteristic_table, tap_changer_type, tap_dependency_table, tap_side = \
-                (create_trafo_characteristics_from_measurement_protocol(item, net, pf_type))
+            id_characteristic_table, tap_changer_type, tap_dependency_table, tap_side = (
+                create_trafo_characteristics_from_measurement_protocol(item, net, pf_type)
+            )
         else:
             id_characteristic_table = None
             tap_dependency_table = False
@@ -2884,24 +3141,23 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
             mag0_rx=pf_type.rtox0_n,
             si0_hv_partial=pf_type.zx0hl_h,
             shift_degree=pf_type.nt2ag * 30,
-            tap2_pos=tap_pos2
+            tap2_pos=tap_pos2,
         )
         trafo_dict[item] = tid
 
     # add value for voltage setpoint
-    net.trafo.loc[tid, 'tap_set_vm_pu'] = item.usetp
+    net.trafo.loc[tid, "tap_set_vm_pu"] = item.usetp
 
-    net.trafo.loc[tid, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
+    net.trafo.loc[tid, "description"] = " \n ".join(item.desc) if len(item.desc) > 0 else ""
 
     get_pf_trafo_results(net, item, tid, is_unbalanced)
 
     # adding switches
     # False if open, True if closed, None if no switch
-    #create_connection_switches(net, item, 2, 't', (bus1, bus2), (tid, tid))
+    # create_connection_switches(net, item, 2, 't', (bus1, bus2), (tid, tid))
 
     new_elements = (tid, tid)
-    new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 't', (bus1, bus2),
-                                                                   new_elements)
+    new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, "t", (bus1, bus2), new_elements)
     # correct in_service of trafo if station switch is open
     # update_in_service_depending_station_switch(net, element_type="trafo",
     #                                            new_elements=new_elements,
@@ -2909,43 +3165,57 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
     #                                            new_switch_closed=new_switch_closed)
 
     # adding tap changer
-    if (export_controller and pf_type.itapch and item.HasAttribute('ntrcn') and
-            item.HasAttribute('i_cont') and item.ntrcn == 1):
+    if (
+        export_controller
+        and pf_type.itapch
+        and item.HasAttribute("ntrcn")
+        and item.HasAttribute("i_cont")
+        and item.ntrcn == 1
+    ):
         if item.t2ldc == 0:
-            logger.debug('tap controller of trafo <%s> at hv' % name)
-            side = 'hv'
+            logger.debug("tap controller of trafo <%s> at hv" % name)
+            side = "hv"
         else:
-            logger.debug('tap controller of trafo <%s> at lv' % name)
-            side = 'lv'
+            logger.debug("tap controller of trafo <%s> at lv" % name)
+            side = "lv"
         if item.i_cont == 1:
             vm_set_pu = item.usetp
-            logger.debug('trafo <%s> has continuous tap controller with vm_set_pu = %.3f, side = %s' %
-                         (name, vm_set_pu, side))
+            logger.debug(
+                "trafo <%s> has continuous tap controller with vm_set_pu = %.3f, side = %s" % (name, vm_set_pu, side)
+            )
             try:
                 ContinuousTapControl(net, tid, side=side, vm_set_pu=vm_set_pu)
             except BaseException as err:
-                logger.error('error while creating continuous tap controller at trafo <%s>' % name)
-                logger.error('Error: %s' % err)
+                logger.error("error while creating continuous tap controller at trafo <%s>" % name)
+                logger.error("Error: %s" % err)
             else:
-                logger.debug('created discrete tap controller at trafo <%s>' % name)
+                logger.debug("created discrete tap controller at trafo <%s>" % name)
         else:
             vm_lower_pu = item.usp_low
             vm_upper_pu = item.usp_up
-            logger.debug('trafo <%s> has discrete tap controller with '
-                         'u_low = %.3f, u_up = %.3f, side = %s' % (name, vm_lower_pu, vm_upper_pu, side))
+            logger.debug(
+                "trafo <%s> has discrete tap controller with "
+                "u_low = %.3f, u_up = %.3f, side = %s" % (name, vm_lower_pu, vm_upper_pu, side)
+            )
             try:
-                DiscreteTapControl(net, tid, side=side, vm_lower_pu=vm_lower_pu, vm_upper_pu=vm_upper_pu,
-                                   hunting_limit=hunting_limit)
+                DiscreteTapControl(
+                    net, tid, side=side, vm_lower_pu=vm_lower_pu, vm_upper_pu=vm_upper_pu, hunting_limit=hunting_limit
+                )
             except BaseException as err:
-                logger.error('error while creating discrete tap controller at trafo <%s>' % name)
-                logger.error('Error: %s' % err)
+                logger.error("error while creating discrete tap controller at trafo <%s>" % name)
+                logger.error("Error: %s" % err)
             else:
-                logger.debug('created discrete tap controller at trafo <%s>' % name)
+                logger.debug("created discrete tap controller at trafo <%s>" % name)
     else:
-        logger.debug('trafo <%s> has no tap controller' % name)
+        logger.debug("trafo <%s> has no tap controller" % name)
 
-    add_additional_attributes(item, net, element='trafo', element_id=tid,
-                              attr_dict={'e:cpSite.loc_name': 'site', 'for_name': 'equipment', "cimRdfId": "origin_id"})
+    add_additional_attributes(
+        item,
+        net,
+        element="trafo",
+        element_id=tid,
+        attr_dict={"e:cpSite.loc_name": "site", "for_name": "equipment", "cimRdfId": "origin_id"},
+    )
 
     if pf_type.itapch and pf_type.itapzdep and not use_tap_table:
         add_tap_dependent_impedance_for_trafo(item, net, pf_type, tid)
@@ -2980,10 +3250,11 @@ def add_tap_dependent_impedance_for_trafo(item, net, pf_type, tid):
     sin = lambda x: np.sin(np.deg2rad(x))
     arctan = lambda x: np.rad2deg(np.arctan(x))
     direction = -1 if pf_type.tap_side else 1
-    tap_step_percent = pf_type.dutap if pf_type.tapchtype != 1 else 0,
+    tap_step_percent = (pf_type.dutap if pf_type.tapchtype != 1 else 0,)
     tap_step_degree = pf_type.dphitap if pf_type.tapchtype == 1 else pf_type.phitr
-    index = int(net.trafo_characteristic_table.iat[-1, 0] + 1) if not net['trafo_characteristic_table'].empty else int(
-        0)
+    index = (
+        int(net.trafo_characteristic_table.iat[-1, 0] + 1) if not net["trafo_characteristic_table"].empty else int(0)
+    )
 
     if pf_type.tapchtype == 1:  # if tapchanger is Ideal
         angle_deg = tap_diff * tap_step_degree * direction
@@ -2993,43 +3264,55 @@ def add_tap_dependent_impedance_for_trafo(item, net, pf_type, tid):
         u1 = pf_type.utrn_l if pf_type.tap_side else pf_type.utrn_h
         du = u1 * tap_steps
         voltage_ratio = np.sqrt((u1 + du * cos(tap_step_degree)) ** 2 + (du * sin(tap_step_degree)) ** 2) / u1
-        angle_deg = (arctan(direction * du * sin(tap_step_degree) / (u1 + du * cos(tap_step_degree))))
+        angle_deg = arctan(direction * du * sin(tap_step_degree) / (u1 + du * cos(tap_step_degree)))
     angle_deg[angle_deg == -0] = 0.0
 
     # Add data to trafo characteristics table
-    new_tap_table = DataFrame({
-        'id_characteristic': index,
-        'step': steps,
-        'voltage_ratio': voltage_ratio,
-        'angle_deg': angle_deg,
-        'vk_percent': vk_points,
-        'vkr_percent': vkr_points, 'vk_hv_percent': np.nan, 'vkr_hv_percent': np.nan, 'vk_mv_percent': np.nan,
-        'vkr_mv_percent': np.nan, 'vk_lv_percent': np.nan, 'vkr_lv_percent': np.nan
-    })
+    new_tap_table = DataFrame(
+        {
+            "id_characteristic": index,
+            "step": steps,
+            "voltage_ratio": voltage_ratio,
+            "angle_deg": angle_deg,
+            "vk_percent": vk_points,
+            "vkr_percent": vkr_points,
+            "vk_hv_percent": np.nan,
+            "vkr_hv_percent": np.nan,
+            "vk_mv_percent": np.nan,
+            "vkr_mv_percent": np.nan,
+            "vk_lv_percent": np.nan,
+            "vkr_lv_percent": np.nan,
+        }
+    )
 
     # Append new tap characteristics to the network table
-    net["trafo_characteristic_table"] = concat([net["trafo_characteristic_table"], new_tap_table],
-                                                  ignore_index=True)
+    net["trafo_characteristic_table"] = concat([net["trafo_characteristic_table"], new_tap_table], ignore_index=True)
 
     # Update transformer attributes
-    net.trafo.loc[tid, ['tap_dependency_table', 'id_characteristic_table', 'tap_changer_type']] = [True, index,
-                                                                                                   'Tabular']
-    del net['temporary_characteristics']
+    net.trafo.loc[tid, ["tap_dependency_table", "id_characteristic_table", "tap_changer_type"]] = [
+        True,
+        index,
+        "Tabular",
+    ]
+    del net["temporary_characteristics"]
 
 
 def create_trafo_characteristics_from_measurement_protocol(item, net, pf_type):
-    last_index = net["trafo_characteristic_table"]['id_characteristic'].max() if not net[
-        "trafo_characteristic_table"].empty else -1
+    last_index = (
+        net["trafo_characteristic_table"]["id_characteristic"].max()
+        if not net["trafo_characteristic_table"].empty
+        else -1
+    )
     new_id_characteristic_table = last_index + 1
     tap_min = pf_type.ntpmn
     tap_max = pf_type.ntpmx
     tap_side = pf_type.tap_side
     meas_side = item.GetAttribute("iMeasLoc")  # 0: meas-side == tap_side
     steps = list(range(tap_min, tap_max + 1))
-    new_tap_table = DataFrame(item.GetAttribute("mTaps"),
-                                 columns=['voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
-                                          'ignore'])
-    new_tap_table = new_tap_table.drop(columns='ignore')
+    new_tap_table = DataFrame(
+        item.GetAttribute("mTaps"), columns=["voltage_ratio", "angle_deg", "vk_percent", "vkr_percent", "ignore"]
+    )
+    new_tap_table = new_tap_table.drop(columns="ignore")
     if meas_side == 0:
         if tap_side == 0:
             new_tap_table["voltage_ratio"] = new_tap_table["voltage_ratio"] / pf_type.utrn_h
@@ -3046,15 +3329,14 @@ def create_trafo_characteristics_from_measurement_protocol(item, net, pf_type):
     new_tap_table["vkr_percent"] = new_tap_table["vkr_percent"] / pf_type.strn / 1000 * 100
     # * 1000 / 100 for conversion from MVA to kVA and from decimal to %
     if len(new_tap_table) == len(steps):
-        new_tap_table['step'] = steps[:len(new_tap_table)]
+        new_tap_table["step"] = steps[: len(new_tap_table)]
     else:
         raise ValueError("The number of steps differs from the number of rows in new_tap_table.")
-    new_tap_table['id_characteristic'] = new_id_characteristic_table
+    new_tap_table["id_characteristic"] = new_id_characteristic_table
     missing_columns = set(net["trafo_characteristic_table"].columns) - set(new_tap_table.columns)
     for col in missing_columns:
         new_tap_table[col] = np.nan
-    net["trafo_characteristic_table"] = concat([net["trafo_characteristic_table"], new_tap_table],
-                                                  ignore_index=True)
+    net["trafo_characteristic_table"] = concat([net["trafo_characteristic_table"], new_tap_table], ignore_index=True)
     if pf_type.tapchtype == 0:
         tap_changer_type = "Ratio"
     elif pf_type.tapchtype == 1:
@@ -3086,9 +3368,7 @@ def get_pf_trafo_results(net, item, tid, is_unbalanced):
         }
     else:
         trafo_type = "res_trafo"
-        result_variables = {
-            "pf_loading": "c:loading"
-        }
+        result_variables = {"pf_loading": "c:loading"}
 
     for res_var_pp, res_var_pf in result_variables.items():
         res = np.nan
@@ -3097,9 +3377,9 @@ def get_pf_trafo_results(net, item, tid, is_unbalanced):
         net[trafo_type].at[tid, res_var_pp] = res
 
 
-def create_trafo3w(net, item, tap_opt='nntap'):
+def create_trafo3w(net, item, tap_opt="nntap"):
     # not tested properly yet...
-    logger.debug('importing 3W-trafo <%s>' % item.loc_name)
+    logger.debug("importing 3W-trafo <%s>" % item.loc_name)
     pf_type = item.typ_id
 
     try:
@@ -3108,90 +3388,127 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         logger.error("Cannot add Trafo3W '%s': not connected" % item.loc_name)
         return
 
-    logger.debug('%s; %s; %s' % (bus1, bus2, bus3))
+    logger.debug("%s; %s; %s" % (bus1, bus2, bus3))
     if not (net.bus.vn_kv.at[bus1] >= net.bus.vn_kv.at[bus2] >= net.bus.vn_kv.at[bus3]):
-        logger.error('trafo <%s>: violated condition of HV > LV!' % item.loc_name)
+        logger.error("trafo <%s>: violated condition of HV > LV!" % item.loc_name)
     # assert net.bus.vn_kv[bus1] > net.bus.vn_kv[bus2] >= net.bus.vn_kv[bus3]
     else:
-        logger.debug('bus voltages OK')
+        logger.debug("bus voltages OK")
     params = {
-        'name': item.loc_name,
-        'hv_bus': bus1,
-        'mv_bus': bus2,
-        'lv_bus': bus3,
-        'sn_hv_mva': pf_type.strn3_h,
-        'sn_mv_mva': pf_type.strn3_m,
-        'sn_lv_mva': pf_type.strn3_l,
-        'vn_hv_kv': pf_type.utrn3_h,
-        'vn_mv_kv': pf_type.utrn3_m,
-        'vn_lv_kv': pf_type.utrn3_l,
-        'vk_hv_percent': pf_type.uktr3_h,
-        'vk_mv_percent': pf_type.uktr3_m,
-        'vk_lv_percent': pf_type.uktr3_l,
-        'vkr_hv_percent': pf_type.uktrr3_h,
-        'vkr_mv_percent': pf_type.uktrr3_m,
-        'vkr_lv_percent': pf_type.uktrr3_l,
-
-        'vk0_hv_percent': pf_type.uk0hm,
-        'vk0_mv_percent': pf_type.uk0ml,
-        'vk0_lv_percent': pf_type.uk0hl,
-        'vkr0_hv_percent': pf_type.ur0hm,
-        'vkr0_mv_percent': pf_type.ur0ml,
-        'vkr0_lv_percent': pf_type.ur0hl,
-        'vector_group': re.sub(r"\d+", '', pf_type.vecgrp),
-
-        'pfe_kw': pf_type.pfe,
-        'i0_percent': pf_type.curm3,
-        'shift_mv_degree': -(pf_type.nt3ag_h - pf_type.nt3ag_m) * 30,
-        'shift_lv_degree': -(pf_type.nt3ag_h - pf_type.nt3ag_l) * 30,
-        'tap_at_star_point': pf_type.itapos == 0,
-        'in_service': not bool(item.outserv),
-        'parallel': item.nt3nm,
+        "name": item.loc_name,
+        "hv_bus": bus1,
+        "mv_bus": bus2,
+        "lv_bus": bus3,
+        "sn_hv_mva": pf_type.strn3_h,
+        "sn_mv_mva": pf_type.strn3_m,
+        "sn_lv_mva": pf_type.strn3_l,
+        "vn_hv_kv": pf_type.utrn3_h,
+        "vn_mv_kv": pf_type.utrn3_m,
+        "vn_lv_kv": pf_type.utrn3_l,
+        "vk_hv_percent": pf_type.uktr3_h,
+        "vk_mv_percent": pf_type.uktr3_m,
+        "vk_lv_percent": pf_type.uktr3_l,
+        "vkr_hv_percent": pf_type.uktrr3_h,
+        "vkr_mv_percent": pf_type.uktrr3_m,
+        "vkr_lv_percent": pf_type.uktrr3_l,
+        "vk0_hv_percent": pf_type.uk0hm,
+        "vk0_mv_percent": pf_type.uk0ml,
+        "vk0_lv_percent": pf_type.uk0hl,
+        "vkr0_hv_percent": pf_type.ur0hm,
+        "vkr0_mv_percent": pf_type.ur0ml,
+        "vkr0_lv_percent": pf_type.ur0hl,
+        "vector_group": re.sub(r"\d+", "", pf_type.vecgrp),
+        "pfe_kw": pf_type.pfe,
+        "i0_percent": pf_type.curm3,
+        "shift_mv_degree": -(pf_type.nt3ag_h - pf_type.nt3ag_m) * 30,
+        "shift_lv_degree": -(pf_type.nt3ag_h - pf_type.nt3ag_l) * 30,
+        "tap_at_star_point": pf_type.itapos == 0,
+        "in_service": not bool(item.outserv),
+        "parallel": item.nt3nm,
     }
 
     # consider rating factors due to thermal rating
     if item.ratfac_h > 5 or item.ratfac_m > 5 or item.ratfac_l > 5:
-        logger.warning(f"Trafo3w {item.loc_name}: rating factors are not plausible." 
-                       "Please note that the load flow may not converge due to these considered settings.")
-    if item.ratfac_h!=1:
-        params['sn_hv_mva']*=item.ratfac_h
-    if item.ratfac_m!=1:
-        params['sn_mv_mva']*=item.ratfac_m
-    if item.ratfac_l!=1:
-        params['sn_lv_mva']*=item.ratfac_l
+        logger.warning(
+            f"Trafo3w {item.loc_name}: rating factors are not plausible."
+            "Please note that the load flow may not converge due to these considered settings."
+        )
+    if item.ratfac_h != 1:
+        params["sn_hv_mva"] *= item.ratfac_h
+    if item.ratfac_m != 1:
+        params["sn_mv_mva"] *= item.ratfac_m
+    if item.ratfac_l != 1:
+        params["sn_lv_mva"] *= item.ratfac_l
 
     if item.nt3nm != 1:
-        logger.warning("trafo3w %s has parallel=%d, this is not implemented. "
-                       "Calculation results will be incorrect." % (item.loc_name, item.nt3nm))
+        logger.warning(
+            "trafo3w %s has parallel=%d, this is not implemented. "
+            "Calculation results will be incorrect." % (item.loc_name, item.nt3nm)
+        )
 
     # Creating trafo characteristics table for tap dependence impedance
     if "trafo_characteristic_table" not in net:
         net["trafo_characteristic_table"] = DataFrame(
-            columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
-                     'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent',
-                     'vkr_lv_percent'])
+            columns=[
+                "id_characteristic",
+                "step",
+                "voltage_ratio",
+                "angle_deg",
+                "vk_percent",
+                "vkr_percent",
+                "vk_hv_percent",
+                "vkr_hv_percent",
+                "vk_mv_percent",
+                "vkr_mv_percent",
+                "vk_lv_percent",
+                "vkr_lv_percent",
+            ]
+        )
 
     use_tap_table = item.GetAttribute("iTaps")
     if use_tap_table == 1:
         if "trafo_characteristic_table" not in net:
             net["trafo_characteristic_table"] = DataFrame(
-                columns=['id_characteristic', 'step', 'voltage_ratio', 'angle_deg', 'vk_percent', 'vkr_percent',
-                         'vk_hv_percent', 'vkr_hv_percent', 'vk_mv_percent', 'vkr_mv_percent', 'vk_lv_percent',
-                         'vkr_lv_percent'])
+                columns=[
+                    "id_characteristic",
+                    "step",
+                    "voltage_ratio",
+                    "angle_deg",
+                    "vk_percent",
+                    "vkr_percent",
+                    "vk_hv_percent",
+                    "vkr_hv_percent",
+                    "vk_mv_percent",
+                    "vkr_mv_percent",
+                    "vk_lv_percent",
+                    "vkr_lv_percent",
+                ]
+            )
 
-        last_index = net["trafo_characteristic_table"]['id_characteristic'].max() if not net[
-            "trafo_characteristic_table"].empty else -1
+        last_index = (
+            net["trafo_characteristic_table"]["id_characteristic"].max()
+            if not net["trafo_characteristic_table"].empty
+            else -1
+        )
         new_id_characteristic_table = last_index + 1
 
         measurement_report = item.GetAttribute("mTaps")
-        columns = ['voltage_ratio', 'angle_deg', 'vk_hv_percent', 'vk_mv_percent',
-                   'vk_lv_percent', 'vkr_hv_percent', 'vkr_mv_percent', 'vkr_lv_percent']
+        columns = [
+            "voltage_ratio",
+            "angle_deg",
+            "vk_hv_percent",
+            "vk_mv_percent",
+            "vk_lv_percent",
+            "vkr_hv_percent",
+            "vkr_mv_percent",
+            "vkr_lv_percent",
+        ]
         if len(measurement_report[0]) == len(columns):
             new_tap_table = DataFrame(measurement_report, columns=columns)
         else:
             # for now, ignore "Zusätzliche Bemessungsleistung Faktor" and zero sequence components
             new_tap_table = DataFrame(measurement_report)
-            new_tap_table = new_tap_table.iloc[:, :len(columns)]
+            new_tap_table = new_tap_table.iloc[:, : len(columns)]
             new_tap_table.columns = columns
 
         if pf_type.itapzdep:
@@ -3231,97 +3548,105 @@ def create_trafo3w(net, item, tap_opt='nntap'):
         strn3_h = pf_type.strn3_h
         strn3_m = pf_type.strn3_m
         strn3_l = pf_type.strn3_l
-        new_tap_table["vkr_hv_percent"] = new_tap_table["vkr_hv_percent"] / (
-                np.min([float(strn3_h), float(strn3_m)]) * 1000) * 100
-        new_tap_table["vkr_mv_percent"] = new_tap_table["vkr_mv_percent"] / (
-                np.min([float(strn3_m), float(strn3_l)]) * 1000) * 100
-        new_tap_table["vkr_lv_percent"] = new_tap_table["vkr_lv_percent"] / (
-                np.min([float(strn3_h), float(strn3_l)]) * 1000) * 100
+        new_tap_table["vkr_hv_percent"] = (
+            new_tap_table["vkr_hv_percent"] / (np.min([float(strn3_h), float(strn3_m)]) * 1000) * 100
+        )
+        new_tap_table["vkr_mv_percent"] = (
+            new_tap_table["vkr_mv_percent"] / (np.min([float(strn3_m), float(strn3_l)]) * 1000) * 100
+        )
+        new_tap_table["vkr_lv_percent"] = (
+            new_tap_table["vkr_lv_percent"] / (np.min([float(strn3_h), float(strn3_l)]) * 1000) * 100
+        )
 
         steps = list(range(tap_min, tap_max + 1))
 
         if len(new_tap_table) == len(steps):
-            new_tap_table['step'] = steps[:len(new_tap_table)]
+            new_tap_table["step"] = steps[: len(new_tap_table)]
         else:
             raise ValueError("The number of steps differs from the number of rows in new_tap_table.")
-        new_tap_table['id_characteristic'] = new_id_characteristic_table
+        new_tap_table["id_characteristic"] = new_id_characteristic_table
 
         missing_columns = set(net["trafo_characteristic_table"].columns) - set(new_tap_table.columns)
         for col in missing_columns:
             new_tap_table[col] = np.nan
 
-        net["trafo_characteristic_table"] = concat([net["trafo_characteristic_table"], new_tap_table],
-                                                      ignore_index=True)
+        net["trafo_characteristic_table"] = concat(
+            [net["trafo_characteristic_table"], new_tap_table], ignore_index=True
+        )
 
-        params['tap_dependency_table'] = True
-        params['id_characteristic_table'] = new_id_characteristic_table
+        params["tap_dependency_table"] = True
+        params["id_characteristic_table"] = new_id_characteristic_table
     else:
-        params['tap_dependency_table'] = False
+        params["tap_dependency_table"] = False
 
-    if item.HasAttribute('t:du3tp_h'):
+    if item.HasAttribute("t:du3tp_h"):
         steps = [pf_type.du3tp_h, pf_type.du3tp_m, pf_type.du3tp_l]
-        if (use_tap_table):
+        if use_tap_table:
             side = np.array([table_side])
         else:
             side = np.nonzero(steps)[0]
 
         if len(side) > 1:
-            logger.warning("pandapower currently doesn't support 3w transformer with"
-                           "multiple tap changers")
+            logger.warning("pandapower currently doesn't support 3w transformer withmultiple tap changers")
         elif len(side) == 1:
             ts = ["h", "m", "l"][side[0]]
             # figure out current tap position
             if tap_opt == "nntap":
-                tap_pos = item.GetAttribute('n3tap_' + ts)
+                tap_pos = item.GetAttribute("n3tap_" + ts)
                 logger.debug("got tap %f from n3tap" % tap_pos)
 
             elif tap_opt == "c:nntap":
                 tap_pos = item.GetAttribute("c:n3tap_" + ts)
                 logger.debug("got tap %f from c:n3tap" % tap_pos)
             else:
-                raise ValueError('could not read current tap position: tap_opt = %s' % tap_opt)
+                raise ValueError("could not read current tap position: tap_opt = %s" % tap_opt)
 
-            tap_step_percent = item.GetAttribute('t:du3tp_' + ts)
-            tap_step_degree = item.GetAttribute('t:ph3tr_' + ts)
+            tap_step_percent = item.GetAttribute("t:du3tp_" + ts)
+            tap_step_degree = item.GetAttribute("t:ph3tr_" + ts)
 
             if (tap_step_degree is None or tap_step_degree == 0) and (
-                    tap_step_percent is None or tap_step_percent == 0):
+                tap_step_percent is None or tap_step_percent == 0
+            ):
                 if not params["tap_dependency_table"]:
                     tap_changer_type = None
                 else:
                     tap_changer_type = "Tabular"
             # ratio/asymmetrical phase shifters
-            elif (tap_step_degree != 90 and tap_step_percent is not None and tap_step_percent != 0):
+            elif tap_step_degree != 90 and tap_step_percent is not None and tap_step_percent != 0:
                 tap_changer_type = "Ratio"
             # symmetrical phase shifters
-            elif (tap_step_degree == 90 and tap_step_percent is not None and tap_step_percent != 0):
+            elif tap_step_degree == 90 and tap_step_percent is not None and tap_step_percent != 0:
                 tap_changer_type = "Symmetrical"
             # ideal phase shifters
-            elif (tap_step_degree is not None and tap_step_degree != 0 and (
-                    tap_step_percent is None or tap_step_percent == 0)):
+            elif (
+                tap_step_degree is not None
+                and tap_step_degree != 0
+                and (tap_step_percent is None or tap_step_percent == 0)
+            ):
                 tap_changer_type = "Ideal"
 
-            params.update({
-                'tap_side': ts + 'v',  # hv, mv, lv
-                'tap_changer_type': tap_changer_type,
-                'tap_step_percent': item.GetAttribute('t:du3tp_' + ts),
-                'tap_step_degree': item.GetAttribute('t:ph3tr_' + ts),
-                'tap_min': item.GetAttribute('t:n3tmn_' + ts),
-                'tap_max': item.GetAttribute('t:n3tmx_' + ts),
-                'tap_neutral': item.GetAttribute('t:n3tp0_' + ts),
-                'tap_pos': tap_pos
-            })
+            params.update(
+                {
+                    "tap_side": ts + "v",  # hv, mv, lv
+                    "tap_changer_type": tap_changer_type,
+                    "tap_step_percent": item.GetAttribute("t:du3tp_" + ts),
+                    "tap_step_degree": item.GetAttribute("t:ph3tr_" + ts),
+                    "tap_min": item.GetAttribute("t:n3tmn_" + ts),
+                    "tap_max": item.GetAttribute("t:n3tmx_" + ts),
+                    "tap_neutral": item.GetAttribute("t:n3tp0_" + ts),
+                    "tap_pos": tap_pos,
+                }
+            )
 
-    logger.debug('collected params: %s' % params)
-    logger.debug('creating trafo3w from parameters')
+    logger.debug("collected params: %s" % params)
+    logger.debug("creating trafo3w from parameters")
     tid = create_transformer3w_from_parameters(net, **params)  # type:int
     trafo3w_dict[item] = tid
 
     # adding switches
     # False if open, True if closed, None if no switch
     new_elements = (tid, tid, tid)
-    new_switch_idx, new_switch_closed = create_connection_switches(net, item, 3, 't3',
-                                                                   (bus1, bus2, bus3), new_elements)
+    new_switch_idx, new_switch_closed = create_connection_switches(net, item, 3, "t3", (bus1, bus2, bus3), new_elements)
 
     # correct in_service of trafo3w if station switch is open
     # update_in_service_depending_station_switch(net, element_type="trafo3w",
@@ -3329,7 +3654,7 @@ def create_trafo3w(net, item, tap_opt='nntap'):
     #                                            new_switch_idx=new_switch_idx,
     #                                            new_switch_closed=new_switch_closed)
 
-    logger.debug('successfully created trafo3w from parameters: %d' % tid)
+    logger.debug("successfully created trafo3w from parameters: %d" % tid)
     # testen
     # net.trafo3w.loc[tid, 'tap_step_degree'] = item.GetAttribute('t:ph3tr_h')
 
@@ -3338,15 +3663,24 @@ def create_trafo3w(net, item, tap_opt='nntap'):
     # Switches for Trafos-3W are not implemented in the load flow!
     # create_connection_switches(net, item, 3, 't3', (bus1, bus2, bus3), (tid, tid, tid))
     # logger.debug('created connection switches for trafo 3w successfully')
-    add_additional_attributes(item, net, element='trafo3w', element_id=tid,
-                              attr_dict={'cpSite.loc_name': 'site', 'for_name': 'equipment',
-                                         'typ_id.loc_name': 'std_type', 'usetp': 'vm_set_pu',
-                                         "cimRdfId": "origin_id"})
+    add_additional_attributes(
+        item,
+        net,
+        element="trafo3w",
+        element_id=tid,
+        attr_dict={
+            "cpSite.loc_name": "site",
+            "for_name": "equipment",
+            "typ_id.loc_name": "std_type",
+            "usetp": "vm_set_pu",
+            "cimRdfId": "origin_id",
+        },
+    )
 
     # assign loading from power factory results
     if item.HasResults(-1):  # -1 for 'c' results (whatever that is...)
-        logger.debug('trafo3w <%s> has results' % item.loc_name)
-        loading = item.GetAttribute('c:loading')
+        logger.debug("trafo3w <%s> has results" % item.loc_name)
+        loading = item.GetAttribute("c:loading")
         net.res_trafo3w.at[tid, "pf_loading"] = loading
     else:
         net.res_trafo3w.at[tid, "pf_loading"] = np.nan
@@ -3370,17 +3704,18 @@ def add_tap_dependant_impedance_for_trafo3W(net, pf_type, tid):
     tp_map = {
         0: ("h", pf_type.utrn3_h, pf_type.du3tp_h, pf_type.ph3tr_h, pf_type.n3tp0_h, pf_type.n3tmn_h, pf_type.n3tmx_h),
         1: ("m", pf_type.utrn3_m, pf_type.du3tp_m, pf_type.ph3tr_m, pf_type.n3tp0_m, pf_type.n3tmn_m, pf_type.n3tmx_m),
-        2: ("l", pf_type.utrn3_l, pf_type.du3tp_l, pf_type.ph3tr_l, pf_type.n3tp0_l, pf_type.n3tmn_l, pf_type.n3tmx_l)
+        2: ("l", pf_type.utrn3_l, pf_type.du3tp_l, pf_type.ph3tr_l, pf_type.n3tp0_l, pf_type.n3tmn_l, pf_type.n3tmx_l),
     }
     # Extract values based on tp_side
-    side, vn, tap_step_percent, tap_step_degree, tap_neutral, tap_min, tap_max = tp_map.get(pf_type.itapzside,
-                                                                                            tp_map[2])
+    side, vn, tap_step_percent, tap_step_degree, tap_neutral, tap_min, tap_max = tp_map.get(
+        pf_type.itapzside, tp_map[2]
+    )
     x_points = (tap_min, tap_neutral, tap_max)
 
     steps = np.arange(tap_min, tap_max + 1, 1).astype(int)
     tap_diff = steps - tap_neutral
 
-    index = int(net.trafo_characteristic_table.iat[-1, 0] + 1) if not net['trafo_characteristic_table'].empty else 0
+    index = int(net.trafo_characteristic_table.iat[-1, 0] + 1) if not net["trafo_characteristic_table"].empty else 0
 
     cos = lambda x: np.cos(np.deg2rad(x))
     sin = lambda x: np.sin(np.deg2rad(x))
@@ -3391,46 +3726,60 @@ def add_tap_dependant_impedance_for_trafo3W(net, pf_type, tid):
     tap_steps = tap_step_percent * tap_diff / 100
     du = vn * tap_steps
     voltage_ratio = np.sqrt((vn + du * cos(tap_step_degree)) ** 2 + (du * sin(tap_step_degree)) ** 2) / vn
-    angle_deg = (arctan(direction * du * sin(tap_step_degree) / (vn + du * cos(tap_step_degree))))
+    angle_deg = arctan(direction * du * sin(tap_step_degree) / (vn + du * cos(tap_step_degree)))
     angle_deg[angle_deg == -0] = 0.0
 
     # Compute vk and vkr points for each side efficiently
     vk_vkr_data = {}
 
     for side in ("h", "m", "l"):
-        vk_points = SplineCharacteristic(net, x_points, [
-            pf_type.GetAttribute(f"uktr3mn_{side}"),
-            pf_type.GetAttribute(f"uktr3_{side}"),
-            pf_type.GetAttribute(f"uktr3mx_{side}")
-        ], table="temporary_characteristics")(steps)
+        vk_points = SplineCharacteristic(
+            net,
+            x_points,
+            [
+                pf_type.GetAttribute(f"uktr3mn_{side}"),
+                pf_type.GetAttribute(f"uktr3_{side}"),
+                pf_type.GetAttribute(f"uktr3mx_{side}"),
+            ],
+            table="temporary_characteristics",
+        )(steps)
 
-        vkr_points = SplineCharacteristic(net, x_points, [
-            pf_type.GetAttribute(f"uktrr3mn_{side}"),
-            pf_type.GetAttribute(f"uktrr3_{side}"),
-            pf_type.GetAttribute(f"uktrr3mx_{side}")
-        ], table="temporary_characteristics")(steps)
+        vkr_points = SplineCharacteristic(
+            net,
+            x_points,
+            [
+                pf_type.GetAttribute(f"uktrr3mn_{side}"),
+                pf_type.GetAttribute(f"uktrr3_{side}"),
+                pf_type.GetAttribute(f"uktrr3mx_{side}"),
+            ],
+            table="temporary_characteristics",
+        )(steps)
 
         vk_vkr_data[f"vk_{side}v_percent"] = vk_points
         vk_vkr_data[f"vkr_{side}v_percent"] = vkr_points
 
     # Create DataFrame in one efficient step
-    new_tap_table = DataFrame({
-        'id_characteristic': index,
-        'step': steps,
-        'voltage_ratio': voltage_ratio,
-        'angle_deg': angle_deg,
-        'vk_percent': np.nan,
-        'vkr_percent': np.nan,
-        **vk_vkr_data
-    })
+    new_tap_table = DataFrame(
+        {
+            "id_characteristic": index,
+            "step": steps,
+            "voltage_ratio": voltage_ratio,
+            "angle_deg": angle_deg,
+            "vk_percent": np.nan,
+            "vkr_percent": np.nan,
+            **vk_vkr_data,
+        }
+    )
 
-    net["trafo_characteristic_table"] = concat([net["trafo_characteristic_table"], new_tap_table],
-                                                  ignore_index=True)
+    net["trafo_characteristic_table"] = concat([net["trafo_characteristic_table"], new_tap_table], ignore_index=True)
 
     # Update transformer attributes efficiently
-    net.trafo3w.loc[tid, ["tap_dependency_table", "id_characteristic_table", "tap_changer_type"]] = [True, index,
-                                                                                                     "Tabular"]
-    del net['temporary_characteristics']
+    net.trafo3w.loc[tid, ["tap_dependency_table", "id_characteristic_table", "tap_changer_type"]] = [
+        True,
+        index,
+        "Tabular",
+    ]
+    del net["temporary_characteristics"]
 
 
 def propagate_bus_coords(net, bus1, bus2):
@@ -3444,7 +3793,7 @@ def propagate_bus_coords(net, bus1, bus2):
 def create_coup(net, item, is_fuse=False):
     switch_types = {"cbk": "CB", "sdc": "LBS", "swt": "LS", "dct": "DS"}
     name = item.loc_name
-    logger.debug('>> creating coup <%s>' % name)
+    logger.debug(">> creating coup <%s>" % name)
 
     try:
         (bus1, bus2), _ = get_connection_nodes(net, item, 2)
@@ -3453,27 +3802,30 @@ def create_coup(net, item, is_fuse=False):
         return
 
     propagate_bus_coords(net, bus1, bus2)
-    if not item.HasAttribute('isclosed') and not is_fuse:
-        logger.error('switch %s does not have the attribute isclosed!' % item)
-    switch_is_closed = bool(item.on_off) \
-                       and (bool(item.isclosed) if item.HasAttribute('isclosed') else True)
-    in_service = not bool(item.outserv) if item.HasAttribute('outserv') else True
+    if not item.HasAttribute("isclosed") and not is_fuse:
+        logger.error("switch %s does not have the attribute isclosed!" % item)
+    switch_is_closed = bool(item.on_off) and (bool(item.isclosed) if item.HasAttribute("isclosed") else True)
+    in_service = not bool(item.outserv) if item.HasAttribute("outserv") else True
     switch_is_closed = switch_is_closed and in_service
-    switch_usage = switch_types.get(item.aUsage, 'unknown')
+    switch_usage = switch_types.get(item.aUsage, "unknown")
 
-    cd = create_switch(net, name=name, bus=bus1, element=bus2, et='b',
-                       closed=switch_is_closed,
-                       type=switch_usage)
+    cd = create_switch(net, name=name, bus=bus1, element=bus2, et="b", closed=switch_is_closed, type=switch_usage)
     switch_dict[item] = cd
 
-    add_additional_attributes(item, net, element='switch', element_id=cd,
-                              attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", "cpSite.loc_name": "site"})
+    add_additional_attributes(
+        item,
+        net,
+        element="switch",
+        element_id=cd,
+        attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", "cpSite.loc_name": "site"},
+    )
 
-    logger.debug('created switch at index <%d>, closed = %s, usage = %s' %
-                 (cd, switch_is_closed, switch_usage))
+    logger.debug("created switch at index <%d>, closed = %s, usage = %s" % (cd, switch_is_closed, switch_usage))
 
-    net.res_switch.loc[cd, ['pf_closed', 'pf_in_service']] = bool(item.on_off) and (
-        bool(item.isclosed) if item.HasAttribute('isclosed') else True), in_service
+    net.res_switch.loc[cd, ["pf_closed", "pf_in_service"]] = (
+        bool(item.on_off) and (bool(item.isclosed) if item.HasAttribute("isclosed") else True),
+        in_service,
+    )
 
 
 def create_pp_shunt(net, item):
@@ -3486,28 +3838,31 @@ def create_pp_shunt(net, item):
     use_tap_table = item.GetAttribute("iTaps")
     if use_tap_table == 1:
         if "shunt_characteristic_table" not in net:
-            net["shunt_characteristic_table"] = DataFrame(
-                columns=['id_characteristic', 'step', 'q_mvar', 'p_mw'])
+            net["shunt_characteristic_table"] = DataFrame(columns=["id_characteristic", "step", "q_mvar", "p_mw"])
 
-        last_index = net["shunt_characteristic_table"]['id_characteristic'].max() if not net[
-            "shunt_characteristic_table"].empty else -1
+        last_index = (
+            net["shunt_characteristic_table"]["id_characteristic"].max()
+            if not net["shunt_characteristic_table"].empty
+            else -1
+        )
 
         id_characteristic_table = last_index + 1
 
-        new_tap_table = DataFrame(item.GetAttribute("mTaps"), columns=['q_mvar', 'p_mw'])
+        new_tap_table = DataFrame(item.GetAttribute("mTaps"), columns=["q_mvar", "p_mw"])
 
         steps = list(range(0, item.GetAttribute("ncapx") + 1))
         if len(new_tap_table) == len(steps):
-            new_tap_table['step'] = steps[:len(new_tap_table)]
+            new_tap_table["step"] = steps[: len(new_tap_table)]
         else:
             raise ValueError("The number of steps differs from the number of rows in new_tap_table.")
 
         # pf table for p_mw contains quality factor only, p_mw must be calculated by dividing q_mvar by quality factor
         new_tap_table["p_mw"] = np.where(new_tap_table["p_mw"] == 0, 0, new_tap_table["q_mvar"] / new_tap_table["p_mw"])
-        new_tap_table['id_characteristic'] = id_characteristic_table
+        new_tap_table["id_characteristic"] = id_characteristic_table
 
-        net["shunt_characteristic_table"] = concat([net["shunt_characteristic_table"], new_tap_table],
-                                                      ignore_index=True)
+        net["shunt_characteristic_table"] = concat(
+            [net["shunt_characteristic_table"], new_tap_table], ignore_index=True
+        )
     else:
         use_tap_table = 0
         id_characteristic_table = None
@@ -3515,23 +3870,23 @@ def create_pp_shunt(net, item):
     def calc_p_mw_and_q_mvar(r: float, x: float) -> tuple[float, float]:
         if r == 0 and x == 0:
             return 0, 0
-        divisor: float = (r ** 2 + x ** 2)
-        return (item.ushnm ** 2 * r) / divisor * multiplier, (item.ushnm ** 2 * x) / divisor * multiplier
+        divisor: float = r**2 + x**2
+        return (item.ushnm**2 * r) / divisor * multiplier, (item.ushnm**2 * x) / divisor * multiplier
 
-    multiplier = get_power_multiplier(item, 'Qact')
+    multiplier = get_power_multiplier(item, "Qact")
     bus, _ = get_connection_nodes(net, item, 1)
     params = {
-        'name': item.loc_name,
-        'bus': bus,
-        'in_service': monopolar_in_service(item),
-        'vn_kv': item.ushnm,
-        'q_mvar': item.Qact * multiplier,
-        'step': item.ncapa,
-        'max_step': item.ncapx,
-        'step_dependency_table': use_tap_table == 1,
-        'id_characteristic_table': id_characteristic_table
+        "name": item.loc_name,
+        "bus": bus,
+        "in_service": monopolar_in_service(item),
+        "vn_kv": item.ushnm,
+        "q_mvar": item.Qact * multiplier,
+        "step": item.ncapa,
+        "max_step": item.ncapx,
+        "step_dependency_table": use_tap_table == 1,
+        "id_characteristic_table": id_characteristic_table,
     }
-    #print(item.loc_name)
+    # print(item.loc_name)
     if item.shtype == 0:
         # Shunt is a R-L-C element
         r_val = item.rrea
@@ -3545,8 +3900,8 @@ def create_pp_shunt(net, item):
         b = item.bcap * 1e-6
         g = item.gparac * 1e-6
 
-        r_val = g / (g ** 2 + b ** 2)
-        x_val = -b / (g ** 2 + b ** 2)
+        r_val = g / (g**2 + b**2)
+        x_val = -b / (g**2 + b**2)
     elif item.shtype == 3:
         # Shunt is a R-L-C, Rp element
         rp = item.rpara
@@ -3554,8 +3909,8 @@ def create_pp_shunt(net, item):
         xl = item.xrea
         bc = -item.bcap * 1e-6
 
-        r_val = rp * (rp * rs + rs ** 2 + xl ** 2) / ((rp + rs) ** 2 + xl ** 2)
-        x_val = 1 / bc + (xl * rp ** 2) / ((rp + rs) ** 2 + xl ** 2)
+        r_val = rp * (rp * rs + rs**2 + xl**2) / ((rp + rs) ** 2 + xl**2)
+        x_val = 1 / bc + (xl * rp**2) / ((rp + rs) ** 2 + xl**2)
     elif item.shtype == 4:
         # Shunt is a R-L-C1-C2, Rp element
         rp = item.rpara
@@ -3570,28 +3925,28 @@ def create_pp_shunt(net, item):
 
     if 0 <= item.shtype <= 4:
         if not use_tap_table:
-            p_mw, params['q_mvar'] = calc_p_mw_and_q_mvar(r_val, x_val)
+            p_mw, params["q_mvar"] = calc_p_mw_and_q_mvar(r_val, x_val)
         else:
-            p_mw = new_tap_table.loc[new_tap_table['step'] == item.ncapa, "p_mw"].values[0] / item.ncapa
-            params["q_mvar"] = new_tap_table.loc[new_tap_table['step'] == item.ncapa, "q_mvar"].values[0] / item.ncapa
+            p_mw = new_tap_table.loc[new_tap_table["step"] == item.ncapa, "p_mw"].values[0] / item.ncapa
+            params["q_mvar"] = new_tap_table.loc[new_tap_table["step"] == item.ncapa, "q_mvar"].values[0] / item.ncapa
         sid = create_shunt(net, p_mw=p_mw, **params)
 
         add_additional_attributes(
             item,
             net,
-            element='shunt',
+            element="shunt",
             element_id=sid,
-            attr_dict={'for_name': 'equipment', "cimRdfId": "origin_id", "cpSite.loc_name": "site"}
+            attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", "cpSite.loc_name": "site"},
         )
     else:
         raise AttributeError(f"Shunt type {item.shtype} not valid: {item}")
 
     if item.HasResults(0):
-        net.res_shunt.loc[sid, 'pf_p'] = item.GetAttribute('m:P:bus1') * multiplier
-        net.res_shunt.loc[sid, 'pf_q'] = item.GetAttribute('m:Q:bus1') * multiplier
+        net.res_shunt.loc[sid, "pf_p"] = item.GetAttribute("m:P:bus1") * multiplier
+        net.res_shunt.loc[sid, "pf_q"] = item.GetAttribute("m:Q:bus1") * multiplier
     else:
-        net.res_shunt.loc[sid, 'pf_p'] = np.nan
-        net.res_shunt.loc[sid, 'pf_q'] = np.nan
+        net.res_shunt.loc[sid, "pf_p"] = np.nan
+        net.res_shunt.loc[sid, "pf_q"] = np.nan
 
 
 def _add_shunt_to_impedance_bus(net, item, bus):
@@ -3604,68 +3959,84 @@ def create_zpu(net, item):
     except IndexError:
         logger.error("Cannot add ZPU '%s': not connected" % item.loc_name)
         return
-    logger.debug('bus1 = %d, bus2 = %d' % (bus1, bus2))
+    logger.debug("bus1 = %d, bus2 = %d" % (bus1, bus2))
 
     # net, from_bus, to_bus, r_pu, x_pu, sn_Mva, name=None, in_service=True, index=None
     params = {
-        'name': item.loc_name,
+        "name": item.loc_name,
         # 'from_bus': bus1,
         # 'to_bus': bus2,
-        'rft_pu': item.r_pu,
-        'xft_pu': item.x_pu,
-        'rtf_pu': item.r_pu_ji,
-        'xtf_pu': item.x_pu_ji,
-        'rft0_pu': item.r0_pu,
-        'xft0_pu': item.x0_pu,
-        'rtf0_pu': item.r0_pu_ji,
-        'xtf0_pu': item.x0_pu_ji,
-        'gf_pu': item.gi_pu,
-        'bf_pu': item.bi_pu,
-        'gt_pu': item.gj_pu,
-        'bt_pu': item.bj_pu,
-        'gf0_pu': item.gi0_pu,
-        'bf0_pu': item.bi0_pu,
-        'gt0_pu': item.gj0_pu,
-        'bt0_pu': item.bj0_pu,
-        'sn_mva': item.Sn,
-        'in_service': not bool(item.outserv)
+        "rft_pu": item.r_pu,
+        "xft_pu": item.x_pu,
+        "rtf_pu": item.r_pu_ji,
+        "xtf_pu": item.x_pu_ji,
+        "rft0_pu": item.r0_pu,
+        "xft0_pu": item.x0_pu,
+        "rtf0_pu": item.r0_pu_ji,
+        "xtf0_pu": item.x0_pu_ji,
+        "gf_pu": item.gi_pu,
+        "bf_pu": item.bi_pu,
+        "gt_pu": item.gj_pu,
+        "bt_pu": item.bj_pu,
+        "gf0_pu": item.gi0_pu,
+        "bf0_pu": item.bi0_pu,
+        "gt0_pu": item.gj0_pu,
+        "bt0_pu": item.bj0_pu,
+        "sn_mva": item.Sn,
+        "in_service": not bool(item.outserv),
     }
 
-    logger.debug('params = %s' % params)
+    logger.debug("params = %s" % params)
 
     # create auxilary buses
-    aux_bus1 = create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1] + '_aux',
-                          type="b", zone=net.bus.zone.at[bus1], in_service=True)
-    net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
-    params['from_bus'] = aux_bus1
-    aux_bus2 = create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2] + '_aux',
-                          type="b", zone=net.bus.zone.at[bus2], in_service=True)
-    net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
-    params['to_bus'] = aux_bus2
+    aux_bus1 = create_bus(
+        net,
+        vn_kv=net.bus.vn_kv.at[bus1],
+        name=net.bus.name.at[bus1] + "_aux",
+        type="b",
+        zone=net.bus.zone.at[bus1],
+        in_service=True,
+    )
+    net.bus.loc[aux_bus1, "geo"] = net.bus.geo.at[bus1]
+    params["from_bus"] = aux_bus1
+    aux_bus2 = create_bus(
+        net,
+        vn_kv=net.bus.vn_kv.at[bus2],
+        name=net.bus.name.at[bus2] + "_aux",
+        type="b",
+        zone=net.bus.zone.at[bus2],
+        in_service=True,
+    )
+    net.bus.loc[aux_bus2, "geo"] = net.bus.geo.at[bus2]
+    params["to_bus"] = aux_bus2
 
     xid = create_impedance(net, **params)
-    add_additional_attributes(item, net, element='impedance', element_id=xid,
-                              attr_dict={'for_name': 'equipment', "cimRdfId": "origin_id", "cpSite.loc_name": "site"})
+    add_additional_attributes(
+        item,
+        net,
+        element="impedance",
+        element_id=xid,
+        attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", "cpSite.loc_name": "site"},
+    )
 
     impedance_dict[item] = xid
     # consider and create station switches
     new_elements = (aux_bus1, aux_bus2)
-    new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 'b', (bus1, bus2),
-                                                                   new_elements)
+    new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, "b", (bus1, bus2), new_elements)
 
     if len(new_switch_idx) == 0:
-        net.impedance.loc[xid, 'from_bus'] = bus1
-        net.impedance.loc[xid, 'to_bus'] = bus2
+        net.impedance.loc[xid, "from_bus"] = bus1
+        net.impedance.loc[xid, "to_bus"] = bus2
         # drop auxilary buses, not needed
         drop_buses(net, buses=[aux_bus1, aux_bus2])
     elif len(new_switch_idx) == 1:
-        sw_bus = net.switch.loc[new_switch_idx[0], 'bus']
+        sw_bus = net.switch.loc[new_switch_idx[0], "bus"]
         if sw_bus == bus1:
-            net.impedance.loc[xid, 'to_bus'] = bus2
+            net.impedance.loc[xid, "to_bus"] = bus2
             # drop one auxilary bus, where no switch exists, not needed
             drop_buses(net, buses=[aux_bus2])
         elif sw_bus == bus2:
-            net.impedance.loc[xid, 'from_bus'] = bus1
+            net.impedance.loc[xid, "from_bus"] = bus1
             # drop one auxilary bus, where no switch exists, not needed
             drop_buses(net, buses=[aux_bus1])
 
@@ -3675,7 +4046,7 @@ def create_zpu(net, item):
     #                                            new_switch_idx=new_switch_idx,
     #                                            new_switch_closed=new_switch_closed)
 
-    logger.debug('created ZPU %s as impedance at index %d' % (net.impedance.at[xid, 'name'], xid))
+    logger.debug("created ZPU %s as impedance at index %d" % (net.impedance.at[xid, "name"], xid))
 
 
 def create_vac(net, item):
@@ -3691,76 +4062,86 @@ def create_vac(net, item):
 
     in_service = monopolar_in_service(item)
     params = {
-        'name': item.loc_name,
-        'bus': bus,
-        'ps_mw': item.Pload - item.Pgen,
-        'qs_mvar': item.Qload - item.Qgen,
-        'pz_mw': item.Pzload,
-        'qz_mvar': item.Qzload,
-        'in_service': in_service
+        "name": item.loc_name,
+        "bus": bus,
+        "ps_mw": item.Pload - item.Pgen,
+        "qs_mvar": item.Qload - item.Qgen,
+        "pz_mw": item.Pzload,
+        "qz_mvar": item.Qzload,
+        "in_service": in_service,
     }
 
     if item.itype == 3:
         # extended ward
-        params.update({
-            'r_ohm': item.Rext,
-            'x_ohm': item.Xext,
-            'vm_pu': item.usetp
-        })
+        params.update({"r_ohm": item.Rext, "x_ohm": item.Xext, "vm_pu": item.usetp})
 
-        if params['x_ohm'] == 0:
-            params['x_ohm'] = 1e-6
-            logger.warning("Element %s has x_ohm == 0, setting to 1e-6. Check impedance of the "
-                           "created xward" % item.loc_name)
+        if params["x_ohm"] == 0:
+            params["x_ohm"] = 1e-6
+            logger.warning(
+                "Element %s has x_ohm == 0, setting to 1e-6. Check impedance of the created xward" % item.loc_name
+            )
 
         xid = create_xward(net, **params)
-        elm = 'xward'
+        elm = "xward"
 
     elif item.itype == 2:
         # ward
         xid = create_ward(net, **params)
-        elm = 'ward'
+        elm = "ward"
 
     elif item.itype == 0:
         # voltage source
-        params.update({
-            'vm_pu': item.usetp,
-            'va_degree': item.phisetp,
-        })
+        params.update(
+            {
+                "vm_pu": item.usetp,
+                "va_degree": item.phisetp,
+            }
+        )
         xid = create_ext_grid(net, **params)
-        elm = 'ext_grid'
+        elm = "ext_grid"
     else:
         raise NotImplementedError(
-            'Could not import %s: element type <%d> for AC Voltage Source not implemented' % (
-                params['name'], item.itype))
+            "Could not import %s: element type <%d> for AC Voltage Source not implemented"
+            % (params["name"], item.itype)
+        )
 
     if item.HasResults(0):  # -1 for 'c' results (whatever that is...)
-        net['res_%s' % elm].at[xid, "pf_p"] = -item.GetAttribute('m:P:bus1')
-        net['res_%s' % elm].at[xid, "pf_q"] = -item.GetAttribute('m:Q:bus1')
+        net["res_%s" % elm].at[xid, "pf_p"] = -item.GetAttribute("m:P:bus1")
+        net["res_%s" % elm].at[xid, "pf_q"] = -item.GetAttribute("m:Q:bus1")
     else:
-        net['res_%s' % elm].at[xid, "pf_p"] = np.nan
-        net['res_%s' % elm].at[xid, "pf_q"] = np.nan
+        net["res_%s" % elm].at[xid, "pf_p"] = np.nan
+        net["res_%s" % elm].at[xid, "pf_q"] = np.nan
 
-    add_additional_attributes(item, net, element=elm, element_id=xid,
-                              attr_dict={'for_name': 'equipment', "cimRdfId": "origin_id", "cpSite.loc_name": "site"})
+    add_additional_attributes(
+        item,
+        net,
+        element=elm,
+        element_id=xid,
+        attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", "cpSite.loc_name": "site"},
+    )
 
-    logger.debug('added pf_p and pf_q to {} {}: {}'.format(elm, xid, net['res_' + elm].loc[
-        xid, ["pf_p", 'pf_q']].values))
+    logger.debug(
+        "added pf_p and pf_q to {} {}: {}".format(elm, xid, net["res_" + elm].loc[xid, ["pf_p", "pf_q"]].values)
+    )
+
 
 def update_in_service_depending_station_switch(net, element_type, new_elements, new_switch_idx, new_switch_closed):
     ### fcn is not used!
-    if len(new_switch_idx)!= 0:
+    if len(new_switch_idx) != 0:
         for i in range(len(new_switch_idx)):
             if new_switch_closed[i] == 0:
-                if net[element_type].loc[new_elements[i], 'in_service']==False:
+                if net[element_type].loc[new_elements[i], "in_service"] == False:
                     continue
                 else:
-                    net[element_type].loc[new_elements[i], 'in_service'] = False
-                    logger.debug('element of element_type %s with index %d is set\
-                                 out of service because station switch is open ' %
-                                 (net[element_type].at[new_elements[i], 'name'], new_elements[i]))
+                    net[element_type].loc[new_elements[i], "in_service"] = False
+                    logger.debug(
+                        "element of element_type %s with index %d is set\
+                                 out of service because station switch is open "
+                        % (net[element_type].at[new_elements[i], "name"], new_elements[i])
+                    )
     else:
         pass
+
 
 def create_sind(net, item):
     # series reactor is modelled as per-unit impedance, values in Ohm are calculated into values in
@@ -3772,36 +4153,53 @@ def create_sind(net, item):
         return
 
     # create auxilary buses
-    aux_bus1 = create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1] + '_aux',
-                          type="b", zone=net.bus.zone.at[bus1], in_service=True)
-    net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
-    aux_bus2 = create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2] + '_aux',
-                          type="b", zone=net.bus.zone.at[bus2], in_service=True)
-    net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
+    aux_bus1 = create_bus(
+        net,
+        vn_kv=net.bus.vn_kv.at[bus1],
+        name=net.bus.name.at[bus1] + "_aux",
+        type="b",
+        zone=net.bus.zone.at[bus1],
+        in_service=True,
+    )
+    net.bus.loc[aux_bus1, "geo"] = net.bus.geo.at[bus1]
+    aux_bus2 = create_bus(
+        net,
+        vn_kv=net.bus.vn_kv.at[bus2],
+        name=net.bus.name.at[bus2] + "_aux",
+        type="b",
+        zone=net.bus.zone.at[bus2],
+        in_service=True,
+    )
+    net.bus.loc[aux_bus2, "geo"] = net.bus.geo.at[bus2]
 
-    sind = create_series_reactor_as_impedance(net, from_bus=aux_bus1, to_bus=aux_bus2,
-                                              r_ohm=item.rrea, x_ohm=item.xrea, sn_mva=item.Sn,
-                                              name=item.loc_name,
-                                              in_service=not bool(item.outserv))
+    sind = create_series_reactor_as_impedance(
+        net,
+        from_bus=aux_bus1,
+        to_bus=aux_bus2,
+        r_ohm=item.rrea,
+        x_ohm=item.xrea,
+        sn_mva=item.Sn,
+        name=item.loc_name,
+        in_service=not bool(item.outserv),
+    )
 
     # consider and create station switches
     new_elements = (aux_bus1, aux_bus2)
-    new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 'b', (bus1, bus2),
-                                                                   new_elements)
+    new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, "b", (bus1, bus2), new_elements)
 
     if len(new_switch_idx) == 0:
-        net.impedance.loc[sind, 'from_bus'] = bus1
-        net.impedance.loc[sind, 'to_bus'] = bus2
+        net.impedance.loc[sind, "from_bus"] = bus1
+        net.impedance.loc[sind, "to_bus"] = bus2
         # drop auxilary buses, not needed
         drop_buses(net, buses=[aux_bus1, aux_bus2])
     elif len(new_switch_idx) == 1:
-        sw_bus = net.switch.loc[new_switch_idx[0], 'bus']
+        sw_bus = net.switch.loc[new_switch_idx[0], "bus"]
         if sw_bus == bus1:
-            net.impedance.loc[sind, 'to_bus'] = bus2
+            net.impedance.loc[sind, "to_bus"] = bus2
             # drop one auxilary bus, where no switch exists, not needed
             drop_buses(net, buses=[aux_bus2])
         elif sw_bus == bus2:
-            net.impedance.loc[sind, 'from_bus'] = bus1
+            net.impedance.loc[sind, "from_bus"] = bus1
             # drop one auxilary bus, where no switch exists, not needed
             drop_buses(net, buses=[aux_bus1])
 
@@ -3811,8 +4209,7 @@ def create_sind(net, item):
     #                                            new_switch_idx=new_switch_idx,
     #                                            new_switch_closed=new_switch_closed)
 
-    logger.debug('created series reactor %s as per unit impedance at index %d' %
-                 (net.impedance.at[sind, 'name'], sind))
+    logger.debug("created series reactor %s as per unit impedance at index %d" % (net.impedance.at[sind, "name"], sind))
 
 
 def create_scap(net, item):
@@ -3825,42 +4222,59 @@ def create_scap(net, item):
         return
 
     if (item.gcap == 0) and (item.bcap == 0):
-        logger.info('not creating series capacitor for %s' % item.loc_name)
+        logger.info("not creating series capacitor for %s" % item.loc_name)
     else:
-        r_ohm = item.gcap / (item.gcap ** 2 + item.bcap ** 2)
-        x_ohm = -item.bcap / (item.gcap ** 2 + item.bcap ** 2)
+        r_ohm = item.gcap / (item.gcap**2 + item.bcap**2)
+        x_ohm = -item.bcap / (item.gcap**2 + item.bcap**2)
 
         # create auxilary buses
-        aux_bus1 = create_bus(net, vn_kv=net.bus.vn_kv.at[bus1], name=net.bus.name.at[bus1] + '_aux',
-                              type="b", zone=net.bus.zone.at[bus1], in_service=True)
-        net.bus.loc[aux_bus1, 'geo'] = net.bus.geo.at[bus1]
-        aux_bus2 = create_bus(net, vn_kv=net.bus.vn_kv.at[bus2], name=net.bus.name.at[bus2] + '_aux',
-                              type="b", zone=net.bus.zone.at[bus2], in_service=True)
-        net.bus.loc[aux_bus2, 'geo'] = net.bus.geo.at[bus2]
+        aux_bus1 = create_bus(
+            net,
+            vn_kv=net.bus.vn_kv.at[bus1],
+            name=net.bus.name.at[bus1] + "_aux",
+            type="b",
+            zone=net.bus.zone.at[bus1],
+            in_service=True,
+        )
+        net.bus.loc[aux_bus1, "geo"] = net.bus.geo.at[bus1]
+        aux_bus2 = create_bus(
+            net,
+            vn_kv=net.bus.vn_kv.at[bus2],
+            name=net.bus.name.at[bus2] + "_aux",
+            type="b",
+            zone=net.bus.zone.at[bus2],
+            in_service=True,
+        )
+        net.bus.loc[aux_bus2, "geo"] = net.bus.geo.at[bus2]
 
-        scap = create_series_reactor_as_impedance(net, from_bus=aux_bus1, to_bus=aux_bus2, r_ohm=r_ohm,
-                                                  x_ohm=x_ohm, sn_mva=item.Sn,
-                                                  name=item.loc_name,
-                                                  in_service=not bool(item.outserv))
+        scap = create_series_reactor_as_impedance(
+            net,
+            from_bus=aux_bus1,
+            to_bus=aux_bus2,
+            r_ohm=r_ohm,
+            x_ohm=x_ohm,
+            sn_mva=item.Sn,
+            name=item.loc_name,
+            in_service=not bool(item.outserv),
+        )
 
         # consider and create station switches
         new_elements = (aux_bus1, aux_bus2)
-        new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, 'b', (bus1, bus2),
-                                                                       new_elements)
+        new_switch_idx, new_switch_closed = create_connection_switches(net, item, 2, "b", (bus1, bus2), new_elements)
 
         if len(new_switch_idx) == 0:
-            net.impedance.loc[scap, 'from_bus'] = bus1
-            net.impedance.loc[scap, 'to_bus'] = bus2
+            net.impedance.loc[scap, "from_bus"] = bus1
+            net.impedance.loc[scap, "to_bus"] = bus2
             # drop auxilary buses, not needed
             drop_buses(net, buses=[aux_bus1, aux_bus2])
         elif len(new_switch_idx) == 1:
-            sw_bus = net.switch.loc[new_switch_idx[0], 'bus']
+            sw_bus = net.switch.loc[new_switch_idx[0], "bus"]
             if sw_bus == bus1:
-                net.impedance.loc[scap, 'to_bus'] = bus2
+                net.impedance.loc[scap, "to_bus"] = bus2
                 # drop one auxilary bus, where no switch exists, not needed
                 drop_buses(net, buses=[aux_bus2])
             elif sw_bus == bus2:
-                net.impedance.loc[scap, 'from_bus'] = bus1
+                net.impedance.loc[scap, "from_bus"] = bus1
                 # drop one auxilary bus, where no switch exists, not needed
                 drop_buses(net, buses=[aux_bus1])
 
@@ -3870,8 +4284,10 @@ def create_scap(net, item):
         #                                            new_switch_idx=new_switch_idx,
         #                                            new_switch_closed=new_switch_closed)
 
-        logger.debug('created series capacitor %s as per unit impedance at index %d' %
-                     (net.impedance.at[scap, 'name'], scap))
+        logger.debug(
+            "created series capacitor %s as per unit impedance at index %d" % (net.impedance.at[scap, "name"], scap)
+        )
+
 
 def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
     # SVC is voltage controlled and therefore modelled the same way as a voltage controlled synchron machine (gen)
@@ -3881,7 +4297,7 @@ def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
     name = item.loc_name
     sid = None
     element = None
-    logger.debug('>> creating synchronous machine <%s>' % name)
+    logger.debug(">> creating synchronous machine <%s>" % name)
 
     try:
         bus1, _ = get_connection_nodes(net, item, 1)
@@ -3890,32 +4306,35 @@ def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
         return
 
     if item.i_ctrl == 1:  # 0: no control, 1: voltage control, 2: reactive power control
-        logger.debug('creating SVC %s as gen' % name)
+        logger.debug("creating SVC %s as gen" % name)
         vm_pu = item.usetp
         in_service = monopolar_in_service(item)
-        svc = create_gen(net, bus=bus1, p_mw=0, vm_pu=vm_pu,
-                         name=name, type="SVC", in_service=in_service)
-        element = 'gen'
+        svc = create_gen(net, bus=bus1, p_mw=0, vm_pu=vm_pu, name=name, type="SVC", in_service=in_service)
+        element = "gen"
 
         if svc is None or element is None:
-            logger.error('Error! SVC not created')
-        logger.debug('created svc at index <%s>' % svc)
+            logger.error("Error! SVC not created")
+        logger.debug("created svc at index <%s>" % svc)
 
-        net[element].loc[svc, 'description'] = ' \n '.join(item.desc) if len(item.desc) > 0 else ''
-        add_additional_attributes(item, net, element, svc, attr_dict={"for_name": "equipment",
-                                                                      "cimRdfId": "origin_id",
-                                                                      "cpSite.loc_name": "site"},
-                                  attr_list=["sernum", "chr_name"])
+        net[element].loc[svc, "description"] = " \n ".join(item.desc) if len(item.desc) > 0 else ""
+        add_additional_attributes(
+            item,
+            net,
+            element,
+            svc,
+            attr_dict={"for_name": "equipment", "cimRdfId": "origin_id", "cpSite.loc_name": "site"},
+            attr_list=["sernum", "chr_name"],
+        )
 
         if item.HasResults(0):  # 'm' results...
-            logger.debug('<%s> has results' % name)
-            net['res_' + element].at[svc, "pf_p"] = item.GetAttribute('m:P:bus1')  # * multiplier
-            net['res_' + element].at[svc, "pf_q"] = item.GetAttribute('m:Q:bus1')  # * multiplier
+            logger.debug("<%s> has results" % name)
+            net["res_" + element].at[svc, "pf_p"] = item.GetAttribute("m:P:bus1")  # * multiplier
+            net["res_" + element].at[svc, "pf_q"] = item.GetAttribute("m:Q:bus1")  # * multiplier
         else:
-            net['res_' + element].at[svc, "pf_p"] = np.nan
-            net['res_' + element].at[svc, "pf_q"] = np.nan
+            net["res_" + element].at[svc, "pf_p"] = np.nan
+            net["res_" + element].at[svc, "pf_q"] = np.nan
     else:
-        logger.info('not creating SVC for %s' % item.loc_name)
+        logger.info("not creating SVC for %s" % item.loc_name)
 
 
 def _get_vsc_control_modes(item, mono=True):
@@ -3929,8 +4348,7 @@ def _get_vsc_control_modes(item, mono=True):
     c_m = item.i_acdc
 
     if c_m not in [0, 3, 4, 5, 6]:
-        raise NotImplementedError(f"control mode for vscmono"
-                                  f" {item.loc_name} not implemented: {c_m}")
+        raise NotImplementedError(f"control mode for vscmono {item.loc_name} not implemented: {c_m}")
 
     if item.HasResults(0):
         p_set_dc = -item.GetAttribute(f"m:P:{dc_bus_str}")
@@ -3940,7 +4358,7 @@ def _get_vsc_control_modes(item, mono=True):
         q_set_ac = -item.qsetp * scaling
 
     control_mode_ac, control_mode_dc, control_value_ac, control_value_dc = {
-        0: ("slack", "p_mw", item.usetp, 0.),  # Vac-phi
+        0: ("slack", "p_mw", item.usetp, 0.0),  # Vac-phi
         1: ("", "vm_pu", None, None),  # Vdc-phi
         2: ("", "", None, None),  # PWM-phi
         3: ("q_mvar", "vm_pu", q_set_ac, item.usetpdc),  # Vdc-Q
@@ -3948,7 +4366,7 @@ def _get_vsc_control_modes(item, mono=True):
         5: ("q_mvar", "p_mw", q_set_ac, p_set_dc),  # P-Q
         6: ("vm_pu", "vm_pu", item.usetp, item.usetpdc),  # Vdc-Vac
         7: ("", "", None, None),  # P-cos(phi)
-        8: (""        "", None, None)  # Vdc-cos(phi)
+        8: ("", None, None),  # Vdc-cos(phi)
     }[c_m]
     return control_mode_ac, control_mode_dc, control_value_ac, control_value_dc
 
@@ -3984,7 +4402,7 @@ def create_vscmono(net, item):
         "control_mode_ac": control_mode_ac,
         "control_mode_dc": control_mode_dc,
         "control_value_ac": control_value_ac,
-        "control_value_dc": control_value_dc
+        "control_value_dc": control_value_dc,
     }
 
     if params["r_dc_ohm"] == 0:
@@ -3993,11 +4411,9 @@ def create_vscmono(net, item):
         )
 
     vid = _create_vsc(net, **params)
-    logger.debug(f'created VSC {vid} for vscmono {item.loc_name}')
+    logger.debug(f"created VSC {vid} for vscmono {item.loc_name}")
 
-    result_variables = {"pf_p_mw": "m:P:busac",
-                        "pf_q_mvar": "m:Q:busac",
-                        "pf_p_dc_mw": "m:P:busdc"}
+    result_variables = {"pf_p_mw": "m:P:busac", "pf_q_mvar": "m:Q:busac", "pf_p_dc_mw": "m:P:busdc"}
 
     for res_var_pp, res_var_pf in result_variables.items():
         res = np.nan
@@ -4035,7 +4451,7 @@ def create_pp_vsc(net, item):
         "control_mode_ac": control_mode_ac,
         "control_mode_dc": control_mode_dc,
         "control_value_ac": control_value_ac,
-        "control_value_dc": control_value_dc
+        "control_value_dc": control_value_dc,
     }
 
     if params["r_dc_ohm"] == 0:
@@ -4043,10 +4459,9 @@ def create_pp_vsc(net, item):
 
     vid_1 = _create_vsc(net, bus=bus, bus_dc=bus_dc_n, **params)
     vid_2 = _create_vsc(net, bus=bus, bus_dc=bus_dc_p, **params)
-    logger.debug(f'created two vsc mono {vid_1}, {vid_2} for vsc {item.loc_name}')
+    logger.debug(f"created two vsc mono {vid_1}, {vid_2} for vsc {item.loc_name}")
 
-    result_variables = {"pf_p_mw": "m:P:busac",
-                        "pf_q_mvar": "m:Q:busac"}
+    result_variables = {"pf_p_mw": "m:P:busac", "pf_q_mvar": "m:Q:busac"}
 
     if item.HasResults(0):
         for res_var_pp, res_var_pf in result_variables.items():
@@ -4081,8 +4496,8 @@ def create_stactrl(net, item, top, top_all, **kwargs):
 
     gen_types = []
     for s in machines:
-        if s.GetClassName() =='ElmAsm':
-            if not hasattr(s, 'av_mode'):
+        if s.GetClassName() == "ElmAsm":
+            if not hasattr(s, "av_mode"):
                 gt = "other"
             elif s.av_mode == "constq":
                 gt = "sgen"
@@ -4093,7 +4508,7 @@ def create_stactrl(net, item, top, top_all, **kwargs):
         else:
             if s.ip_ctrl == 1:
                 gt = "other"
-            elif not hasattr(s, 'av_mode'):
+            elif not hasattr(s, "av_mode"):
                 gt = "other"
             elif s.av_mode == "constq":
                 gt = "sgen"
@@ -4104,7 +4519,7 @@ def create_stactrl(net, item, top, top_all, **kwargs):
         gen_types.append(gt)
 
     for s in machines:
-        if (s.HasAttribute('c:iRefElement') and s.GetAttribute('c:iRefElement')):
+        if s.HasAttribute("c:iRefElement") and s.GetAttribute("c:iRefElement"):
             logger.error(f"Generator {s.loc_name} is set as slack, Station Controller {item.loc_name} is skipped")
             return
 
@@ -4117,16 +4532,16 @@ def create_stactrl(net, item, top, top_all, **kwargs):
             for i in range(len(gen_types)):
                 gen_types[i] = "sgen"
         else:
-            if control_mode == 0: #V_ctrl
+            if control_mode == 0:  # V_ctrl
                 for i in range(len(gen_types)):
                     gen_types[i] = "sgen"
-            elif control_mode == 1: #Q_ctrl
+            elif control_mode == 1:  # Q_ctrl
                 for i in range(len(gen_types)):
                     gen_types[i] = "sgen"
-            elif control_mode == 2: #PF
+            elif control_mode == 2:  # PF
                 for i in range(len(gen_types)):
                     gen_types[i] = "sgen"
-            elif control_mode == 3: #tan(phi)
+            elif control_mode == 3:  # tan(phi)
                 for i in range(len(gen_types)):
                     gen_types[i] = "sgen"
             else:
@@ -4148,18 +4563,24 @@ def create_stactrl(net, item, top, top_all, **kwargs):
             if len(gen_element_index_try) == 1:
                 gen_element_index.append(gen_element_index_try[0])
             else:
-                gen_element_index_try_again = net[gen_element].loc[(net[gen_element].name == s.loc_name) & (
-                        net[gen_element].sta_ctrl == s.c_pstac.loc_name)].index.values
+                gen_element_index_try_again = (
+                    net[gen_element]
+                    .loc[(net[gen_element].name == s.loc_name) & (net[gen_element].sta_ctrl == s.c_pstac.loc_name)]
+                    .index.values
+                )
                 if len(gen_element_index_try_again) > 1:
                     raise UserWarning(
-                        "error while creating station controller: sgen and controller names must be unique")
+                        "error while creating station controller: sgen and controller names must be unique"
+                    )
                 else:
                     gen_element_index.append(gen_element_index_try_again[0])
 
     if len(gen_element_index) != len(machines):
         raise UserWarning("station controller: could not properly identify the machines")
 
-    gen_element_in_service = [net[gen_element].loc[net[gen_element].name == s.loc_name, "in_service"].values[0] for s in machines]
+    gen_element_in_service = [
+        net[gen_element].loc[net[gen_element].name == s.loc_name, "in_service"].values[0] for s in machines
+    ]
 
     if item.imode > 2:
         logger.warning(f"{item}: reactive power distribution {item.imode=} not implemented, using flat distribution")
@@ -4176,7 +4597,8 @@ def create_stactrl(net, item, top, top_all, **kwargs):
             i = i + 1
     if sum(distribution) != 1:
         logger.info(
-            f'{item}: sum of reactive power distribution is unequal to 1 but will be normalized in binary search control.')
+            f"{item}: sum of reactive power distribution is unequal to 1 but will be normalized in binary search control."
+        )
 
     phase = item.i_phase
     if phase != 0:
@@ -4189,9 +4611,9 @@ def create_stactrl(net, item, top, top_all, **kwargs):
     variable = None
     res_element_table = None
     res_element_index = None
-    if control_mode >= 1 or item.i_droop: #droop control
-        #q_control_cubicle = item.p_cub if control_mode == 1 else item.pQmeas #Feld #pqmeas if V_ctrl and droop
-        q_control_cubicle = item.p_cub if control_mode != 0 else item.pQmeas  #item.p_cub if other mode and droop?
+    if control_mode >= 1 or item.i_droop:  # droop control
+        # q_control_cubicle = item.p_cub if control_mode == 1 else item.pQmeas #Feld #pqmeas if V_ctrl and droop
+        q_control_cubicle = item.p_cub if control_mode != 0 else item.pQmeas  # item.p_cub if other mode and droop?
         if q_control_cubicle is None:
             logger.info(f"Input Element of Controller {item.loc_name} is missing, skipping")
             return
@@ -4255,16 +4677,15 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                 res_element_index.append(impedance_dict[element])
                 variable.append("q_from_mvar" if q_control_side[i] == 0 else "q_to_mvar")
 
-
         elif element_class[0] == "ElmCoup":
             for element in q_control_element:
                 res = GetBranchElementFromSwitch(net, q_control_element, top)
-                if not res[switch_dict[element]] is None:
+                if res[switch_dict[element]] is not None:
                     element_type, element_index, connection_side, direction = (
                         res[switch_dict[element]].get("element_type"),
                         res[switch_dict[element]].get("element_index"),
                         res[switch_dict[element]].get("connection_side"),
-                        res[switch_dict[element]].get("direction")
+                        res[switch_dict[element]].get("direction"),
                     )
                 else:
                     element_type, element_index, direction, connection_side = None, None, None, None
@@ -4275,10 +4696,7 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                     # q_control_side: 0 = terminal side, 1 = element side (measurment side)
                     # direction: 0 = dir1 (direction is terminal side of switch), 1 = dir2 (direction is element side of switch)
                     input_inverted.append(direction == q_control_side[0])
-                    variable.append({
-                                        "hv_bus": "q_hv_mvar",
-                                        "lv_bus": "q_lv_mvar"
-                                    }[connection_side])
+                    variable.append({"hv_bus": "q_hv_mvar", "lv_bus": "q_lv_mvar"}[connection_side])
                 elif element_type == "trafo3w":
                     res_element_table = "res_trafo3w"
                     res_element_index.append(element_index)
@@ -4286,11 +4704,9 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                     # q_control_side: 0 = terminal side, 1 = element side
                     # direction: 0 = dir1 (terminal side of switch), 1 = dir2 (element side of switch)
                     input_inverted.append(direction == q_control_side[0])
-                    variable.append({
-                                        "hv_bus": "q_hv_mvar",
-                                        "mv_bus": "q_mv_mvar",
-                                        "lv_bus": "q_lv_mvar"
-                                    }[connection_side])
+                    variable.append(
+                        {"hv_bus": "q_hv_mvar", "mv_bus": "q_mv_mvar", "lv_bus": "q_lv_mvar"}[connection_side]
+                    )
                 elif element_type == "line":
                     res_element_table = "res_line"
                     res_element_index.append(element_index)
@@ -4310,7 +4726,8 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                 else:
                     logger.info(
                         f"{item}: Station Controller with switch measurement that cannot be relocated, adding switch with "
-                        f"small impedance")
+                        f"small impedance"
+                    )
 
                     res_element_index.append(switch_dict[element])
                     net.switch.at[res_element_index[-1], "z_ohm"] = 1e-3
@@ -4318,7 +4735,8 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                     res_element_table = "res_switch"
         else:
             logger.error(
-                f"{item}: only line, impedance, trafo 2W/3W element and switch flows can be controlled, {element_class[0]=}")
+                f"{item}: only line, impedance, trafo 2W/3W element and switch flows can be controlled, {element_class[0]=}"
+            )
             return
     else:
         res_element_table = "res_bus"
@@ -4326,35 +4744,38 @@ def create_stactrl(net, item, top, top_all, **kwargs):
     output_busses = []
     if res_element_table == "res_line":
         for index in res_element_index:
-            input_busses.append(net.line.at[index, 'to_bus'])
+            input_busses.append(net.line.at[index, "to_bus"])
     elif res_element_table == "res_trafo":
         for index in res_element_index:
-            input_busses.append(net.trafo.at[index, 'hv_bus'])
+            input_busses.append(net.trafo.at[index, "hv_bus"])
     elif res_element_table == "res_trafo3w":
         for index in res_element_index:
-            input_busses.append(net.trafo3w.at[index, 'hv_bus'])
+            input_busses.append(net.trafo3w.at[index, "hv_bus"])
     elif res_element_table == "res_impedance":
         for index in res_element_index:
-            input_busses.append(net.impedance.at[index, 'to_bus'])
+            input_busses.append(net.impedance.at[index, "to_bus"])
     elif res_element_table == "res_switch":
         for index in res_element_index:
-            input_busses.append(net.switch.at[index, 'bus'])
+            input_busses.append(net.switch.at[index, "bus"])
     if gen_element == "gen":
         for index in gen_element_index:
-            output_busses.append(net.gen.at[index, 'bus'])
+            output_busses.append(net.gen.at[index, "bus"])
     elif gen_element == "sgen":
         for index in gen_element_index:
-            output_busses.append(net.sgen.at[index, 'bus'])
+            output_busses.append(net.sgen.at[index, "bus"])
 
     has_path = False
     for n in range(len(input_busses)):
         for m in range(len(output_busses)):
             has_path = has_path or nx.has_path(top, input_busses[n], output_busses[m])
     if not has_path and control_mode != 0 and not item.i_droop:
-        if control_mode ==1: control_modus = "Q"
-        elif control_mode == 2: control_modus = 'Power_factor'
-        else: control_modus = 'tangens'
-        logger.error(f'no path found, skipping {control_modus} controller')
+        if control_mode == 1:
+            control_modus = "Q"
+        elif control_mode == 2:
+            control_modus = "Power_factor"
+        else:
+            control_modus = "tangens"
+        logger.error(f"no path found, skipping {control_modus} controller")
         return
 
     if control_mode == 0:  # VOLTAGE CONTROL
@@ -4370,48 +4791,59 @@ def create_stactrl(net, item, top, top_all, **kwargs):
             raise NotImplementedError(f"{item}: controlled node selection {item.selBus} not implemented")
 
         if item.i_droop:  # Enable Droop
-            bsc = BinarySearchControl(net,
-                                      name=item.loc_name,
-                                      ctrl_in_service=stactrl_in_service,
-                                      output_element=gen_element,
-                                      output_variable="q_mvar",
-                                      output_element_index=gen_element_index,
-                                      output_element_in_service=gen_element_in_service,
-                                      output_values_distribution=distribution,
-                                      input_element=res_element_table,
-                                      input_variable=variable,
-                                      input_inverted=input_inverted,
-                                      input_element_index=res_element_index,
-                                      set_point=v_setpoint_pu,
-                                      control_modus='V_ctrl_Q_droop',
-                                      bus_idx=bus,
-                                      tol=1e-6,
-                                      machines=[machine_obj.loc_name for machine_obj in item.psym])
-            net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
-            DroopControl(net, name=item.loc_name, q_droop_mvar=item.Srated * 100 / item.ddroop, bus_idx=bus,
-                         vm_set_pu_bsc=v_setpoint_pu, controller_idx=bsc.index, control_modus="V_ctrl_Q_droop")
-            net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
+            bsc = BinarySearchControl(
+                net,
+                name=item.loc_name,
+                ctrl_in_service=stactrl_in_service,
+                output_element=gen_element,
+                output_variable="q_mvar",
+                output_element_index=gen_element_index,
+                output_element_in_service=gen_element_in_service,
+                output_values_distribution=distribution,
+                input_element=res_element_table,
+                input_variable=variable,
+                input_inverted=input_inverted,
+                input_element_index=res_element_index,
+                set_point=v_setpoint_pu,
+                control_modus="V_ctrl_Q_droop",
+                bus_idx=bus,
+                tol=1e-6,
+                machines=[machine_obj.loc_name for machine_obj in item.psym],
+            )
+            net.controller.loc[max(net.controller.index), "name"] = item.loc_name
+            DroopControl(
+                net,
+                name=item.loc_name,
+                q_droop_mvar=item.Srated * 100 / item.ddroop,
+                bus_idx=bus,
+                vm_set_pu_bsc=v_setpoint_pu,
+                controller_idx=bsc.index,
+                control_modus="V_ctrl_Q_droop",
+            )
+            net.controller.loc[max(net.controller.index), "name"] = item.loc_name
         else:
-            BinarySearchControl(net,
-                               name=item.loc_name,
-                               ctrl_in_service=stactrl_in_service,
-                               output_element=gen_element,
-                               output_variable="q_mvar",
-                               output_element_index=gen_element_index,
-                               output_element_in_service=gen_element_in_service,
-                               output_values_distribution=distribution,
-                               input_element="res_bus",
-                               input_variable="vm_pu",
-                               input_inverted=input_inverted,
-                               input_element_index=bus,
-                               set_point=v_setpoint_pu,
-                               control_modus='V_ctrl',
-                               damping_factor=0.9,
-                               tol=1e-6,
-                               machines=[machine_obj.loc_name for machine_obj in item.psym])
-            net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
+            BinarySearchControl(
+                net,
+                name=item.loc_name,
+                ctrl_in_service=stactrl_in_service,
+                output_element=gen_element,
+                output_variable="q_mvar",
+                output_element_index=gen_element_index,
+                output_element_in_service=gen_element_in_service,
+                output_values_distribution=distribution,
+                input_element="res_bus",
+                input_variable="vm_pu",
+                input_inverted=input_inverted,
+                input_element_index=bus,
+                set_point=v_setpoint_pu,
+                control_modus="V_ctrl",
+                damping_factor=0.9,
+                tol=1e-6,
+                machines=[machine_obj.loc_name for machine_obj in item.psym],
+            )
+            net.controller.loc[max(net.controller.index), "name"] = item.loc_name
     elif control_mode == 1:  # Q Control mode
-        #if item.iQorient != 0:
+        # if item.iQorient != 0:
         #    if not stactrl_in_service:
         #        return
         #    raise NotImplementedError(f"{item}: Q orientation '-' not supported")
@@ -4432,10 +4864,11 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                 input_inverted=input_inverted,
                 input_element_index=res_element_index,
                 set_point=item.qsetp,
-                control_modus= 'Q_ctrl',
+                control_modus="Q_ctrl",
                 damping_factor=0.9,
                 tol=1e-6,
-                machines=[machine_obj.loc_name for machine_obj in item.psym])
+                machines=[machine_obj.loc_name for machine_obj in item.psym],
+            )
         elif item.qu_char == 1:
             controlled_node = item.refbar
             bus = bus_dict[controlled_node]  # controlled node
@@ -4453,13 +4886,13 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                 input_inverted=input_inverted,
                 input_element_index=res_element_index,
                 set_point=item.qsetp,
-                control_modus='Q_ctrl_V_droop',
+                control_modus="Q_ctrl_V_droop",
                 bus_idx=bus,
                 damping_factor=0.9,
                 tol=1e-6,
-                machines=[machine_obj.loc_name for machine_obj in item.psym]
+                machines=[machine_obj.loc_name for machine_obj in item.psym],
             )
-            net.controller.loc[max(net.controller.index), 'name'] = item.loc_name
+            net.controller.loc[max(net.controller.index), "name"] = item.loc_name
             DroopControl(
                 net,
                 name=item.loc_name,
@@ -4470,23 +4903,26 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                 vm_set_lb=item.udeadblow,
                 q_set_mvar_bsc=item.qsetp,
                 controller_idx=bsc.index,
-                control_modus="Q_ctrl_V_droop", machines=[machine_obj.loc_name for machine_obj in item.psym])
+                control_modus="Q_ctrl_V_droop",
+                machines=[machine_obj.loc_name for machine_obj in item.psym],
+            )
         else:
             raise NotImplementedError
-    elif control_mode==2:#PF_Control
+    elif control_mode == 2:  # PF_Control
         if item.iQorient != 0:
             if not stactrl_in_service:
                 return
             raise NotImplementedError(f"{item}: Q orientation '-' not supported")
         if item.cosphi_char == 0:
-            if item.pf_recap == 0: #0 -> inductive, 1 -> capacitive
-                control_modus = 'PF_ctrl_ind'
+            if item.pf_recap == 0:  # 0 -> inductive, 1 -> capacitive
+                control_modus = "PF_ctrl_ind"
             else:
                 if item.pf_recap != 1:
-                    logger.error('Powerfactor without specified reactance\nassuming capacitive system\n')
-                control_modus = 'PF_ctrl_cap'
+                    logger.error("Powerfactor without specified reactance\nassuming capacitive system\n")
+                control_modus = "PF_ctrl_cap"
             BinarySearchControl(
-                net, ctrl_in_service=stactrl_in_service,
+                net,
+                ctrl_in_service=stactrl_in_service,
                 output_element=gen_element,
                 output_variable="q_mvar",
                 output_element_index=gen_element_index,
@@ -4497,16 +4933,19 @@ def create_stactrl(net, item, top, top_all, **kwargs):
                 input_variable=variable,
                 input_element_index=res_element_index,
                 set_point=item.pfsetp,
-                control_modus=control_modus, tol=1e-6,
-                name = item.loc_name
+                control_modus=control_modus,
+                tol=1e-6,
+                name=item.loc_name,
             )
-    elif control_mode== 3:  #tan(phi)_control
+    elif control_mode == 3:  # tan(phi)_control
         if item.iQorient != 0:
             if not stactrl_in_service:
                 return
             raise NotImplementedError(f"{item}: Q orientation '-' not supported")
         BinarySearchControl(
-            net, name=item.loc_name, ctrl_in_service=stactrl_in_service,
+            net,
+            name=item.loc_name,
+            ctrl_in_service=stactrl_in_service,
             output_element=gen_element,
             output_variable="q_mvar",
             output_element_index=gen_element_index,
@@ -4518,7 +4957,8 @@ def create_stactrl(net, item, top, top_all, **kwargs):
             input_element_index=res_element_index,
             set_point=item.tansetp,
             input_inverted=input_inverted,
-            control_modus='tan_phi_ctrl', tol=1e-6
+            control_modus="tan_phi_ctrl",
+            tol=1e-6,
         )
     else:
         raise NotImplementedError(f"{item}: control mode {item.i_ctrl=} not implemented")
@@ -4550,11 +4990,11 @@ def GetBranchElementFromSwitch(net, q_control_element, graph):
             neighbors = [n for n in graph.neighbors(current) if n != blocked_bus and n not in visited]
 
             # Stop if more than one neighbor and not a three winding transformer
-            if 'trafo3w' in net and not net.trafo3w.empty:
+            if "trafo3w" in net and not net.trafo3w.empty:
                 is_current_in_trafo = (
-                        (net.trafo3w["hv_bus"] == current) |
-                        (net.trafo3w["mv_bus"] == current) |
-                        (net.trafo3w["lv_bus"] == current)
+                    (net.trafo3w["hv_bus"] == current)
+                    | (net.trafo3w["mv_bus"] == current)
+                    | (net.trafo3w["lv_bus"] == current)
                 )
 
                 t3w_match = net.trafo3w[is_current_in_trafo]
@@ -4581,21 +5021,21 @@ def GetBranchElementFromSwitch(net, q_control_element, graph):
 
                 # parallel lines
                 par_lines = net.line[
-                    ((net.line.from_bus == current) & (net.line.to_bus == nb)) |
-                    ((net.line.from_bus == nb) & (net.line.to_bus == current))
-                    ]
+                    ((net.line.from_bus == current) & (net.line.to_bus == nb))
+                    | ((net.line.from_bus == nb) & (net.line.to_bus == current))
+                ]
 
                 # parallel impedances
                 par_imp = net.impedance[
-                    ((net.impedance.from_bus == current) & (net.impedance.to_bus == nb)) |
-                    ((net.impedance.from_bus == nb) & (net.impedance.to_bus == current))
-                    ]
+                    ((net.impedance.from_bus == current) & (net.impedance.to_bus == nb))
+                    | ((net.impedance.from_bus == nb) & (net.impedance.to_bus == current))
+                ]
 
                 # parallel trafo2w current
                 par_trafos = net.trafo[
-                    ((net.trafo.hv_bus == current) & (net.trafo.lv_bus == nb)) |
-                    ((net.trafo.hv_bus == nb) & (net.trafo.lv_bus == current))
-                    ]
+                    ((net.trafo.hv_bus == current) & (net.trafo.lv_bus == nb))
+                    | ((net.trafo.hv_bus == nb) & (net.trafo.lv_bus == current))
+                ]
 
                 parallel_count = len(par_lines) + len(par_imp) + len(par_trafos)
 
@@ -4649,16 +5089,18 @@ def GetBranchElementFromSwitch(net, q_control_element, graph):
 
                 # Other elements, stop for now
                 elements_at_bus = []
-                for elm in ['load', 'sgen', 'gen', 'shunt', 'ext_grid']:
+                for elm in ["load", "sgen", "gen", "shunt", "ext_grid"]:
                     if elm in net:
                         df = net[elm]
                         if isinstance(df, DataFrame):
-                            if 'bus' in df.columns and current in df.bus.values:
+                            if "bus" in df.columns and current in df.bus.values:
                                 elements_at_bus.append(elm)
                                 break
-                            elif 'from_bus' in df.columns or 'to_bus' in df.columns:
-                                if current in df.get('from_bus', Series()).values or \
-                                        current in df.get('to_bus', Series()).values:
+                            elif "from_bus" in df.columns or "to_bus" in df.columns:
+                                if (
+                                    current in df.get("from_bus", Series()).values
+                                    or current in df.get("to_bus", Series()).values
+                                ):
                                     elements_at_bus.append(elm)
                                     break
                 if elements_at_bus:
@@ -4676,8 +5118,8 @@ def GetBranchElementFromSwitch(net, q_control_element, graph):
             result[sw_idx] = None
             continue
 
-        bus = net.switch.at[sw_idx, 'bus']
-        equipment = net.switch.at[sw_idx, 'element']
+        bus = net.switch.at[sw_idx, "bus"]
+        equipment = net.switch.at[sw_idx, "element"]
 
         dir1 = find_branch(graph, bus, equipment)
         dir2 = find_branch(graph, equipment, bus)
@@ -4696,31 +5138,31 @@ def GetBranchElementFromSwitch(net, q_control_element, graph):
             "element_type": element_type,
             "element_index": idx,
             "connection_side": conn,
-            "direction": direction
+            "direction": direction,
         }
 
     return result
 
 
 def split_line_at_length(net, line, length_pos):
-    bus1, bus2 = net.line.loc[line, ['from_bus', 'to_bus']]
-    if length_pos == net.line.at[line, 'length_km']:
+    bus1, bus2 = net.line.loc[line, ["from_bus", "to_bus"]]
+    if length_pos == net.line.at[line, "length_km"]:
         bus = bus2
     elif length_pos == 0:
         bus = bus1
     else:
-        bus_name = "%s (Muff %u)" % (net.line.at[line, 'name'], length_pos)
+        bus_name = "%s (Muff %u)" % (net.line.at[line, "name"], length_pos)
         vn_kv = net.bus.at[bus1, "vn_kv"]
         zone = net.bus.at[bus1, "zone"]
 
-        bus = create_bus(net, name=bus_name, type='ls', vn_kv=vn_kv, zone=zone)
+        bus = create_bus(net, name=bus_name, type="ls", vn_kv=vn_kv, zone=zone)
 
-        net.line.at[line, 'to_bus'] = bus
-        old_length = net.line.at[line, 'length_km']
+        net.line.at[line, "to_bus"] = bus
+        old_length = net.line.at[line, "length_km"]
         new_length = old_length - length_pos
-        net.line.at[line, 'length_km'] = length_pos
-        std_type = net.line.at[line, 'std_type']
-        name = net.line.at[line, 'name']
+        net.line.at[line, "length_km"] = length_pos
+        std_type = net.line.at[line, "std_type"]
+        name = net.line.at[line, "name"]
 
         new_line = create_line(
             net,
@@ -4729,40 +5171,40 @@ def split_line_at_length(net, line, length_pos):
             length_km=new_length,
             std_type=std_type,
             name=name,
-            df=net.line.at[line, 'df'],
-            parallel=net.line.at[line, 'parallel'],
-            in_service=net.line.at[line, 'in_service']
+            df=net.line.at[line, "df"],
+            parallel=net.line.at[line, "parallel"],
+            in_service=net.line.at[line, "in_service"],
         )
 
-        if 'max_loading_percent' in net.line.columns:
-            net.line.loc[new_line, 'max_loading_percent'] = net.line.at[line, 'max_loading_percent']
+        if "max_loading_percent" in net.line.columns:
+            net.line.loc[new_line, "max_loading_percent"] = net.line.at[line, "max_loading_percent"]
 
-        if net.line.loc[line, 'geo'].notna():
-            coords = geojson.utils.coords(geojson.loads(net.line.loc[line, 'geo']))
+        if net.line.loc[line, "geo"].notna():
+            coords = geojson.utils.coords(geojson.loads(net.line.loc[line, "geo"]))
 
             scaling_factor = old_length / calc_len_coords(coords)
-            sec_coords_a = get_section_coords(coords, sec_len=length_pos, start_len=0., scale_factor=scaling_factor)
+            sec_coords_a = get_section_coords(coords, sec_len=length_pos, start_len=0.0, scale_factor=scaling_factor)
             sec_coords_b = get_section_coords(
                 coords, sec_len=new_length, start_len=length_pos, scale_factor=scaling_factor
             )
 
-            net.line.loc[line, 'geo'] = geojson.dumps(geojson.LineString(sec_coords_a))
-            net.line.loc[new_line, 'geo'] = geojson.dumps(geojson.LineString(sec_coords_b))
+            net.line.loc[line, "geo"] = geojson.dumps(geojson.LineString(sec_coords_a))
+            net.line.loc[new_line, "geo"] = geojson.dumps(geojson.LineString(sec_coords_b))
 
-            net.bus.loc[bus, ['geo']] = geojson.Point(sec_coords_b[0])
+            net.bus.loc[bus, ["geo"]] = geojson.Point(sec_coords_b[0])
 
     return bus
 
 
 def get_lodlvp_length_pos(line_item, lod_item):
-    sections = line_item.GetContents('*.ElmLnesec')
+    sections = line_item.GetContents("*.ElmLnesec")
     if len(sections) > 0:
         sections.sort(lambda x: x.index)
         sections_end = [s.rellen + s.dline for s in sections]
     else:
         sections_end = [line_item.dline]
 
-    loads = line_item.GetContents('*.ElmLodlvp')
+    loads = line_item.GetContents("*.ElmLodlvp")
     if len(loads) > 0:
         loads.sort(lambda x: x.rellen)
         loads_start = [load.rellen for load in loads]
@@ -4778,8 +5220,8 @@ def get_lodlvp_length_pos(line_item, lod_item):
 
 
 def get_next_line(net, line):
-    name = net.line.at[line, 'name']
-    to_bus = net.line.at[line, 'to_bus']
+    name = net.line.at[line, "name"]
+    to_bus = net.line.at[line, "to_bus"]
     next_line = net.line.loc[(net.line.name == name) & (net.line.from_bus == to_bus)].index
 
     return next_line
@@ -4796,61 +5238,64 @@ def get_next_line(net, line):
 # for ElmLodlvp - splits line at the partial load, creates new bus, sets up coordinates
 def split_line(net, line_idx, pos_at_line, line_item):
     tol = 1e-6
-    line_length = net.line.at[line_idx, 'length_km']
+    line_length = net.line.at[line_idx, "length_km"]
     logger.debug("line length: %.3f" % line_length)
     if pos_at_line < tol:
-        bus_i = net.line.at[line_idx, 'from_bus']
-        logger.debug('bus_i: %s' % bus_i)
-        net.bus.at[bus_i, 'type'] = 'n'
+        bus_i = net.line.at[line_idx, "from_bus"]
+        logger.debug("bus_i: %s" % bus_i)
+        net.bus.at[bus_i, "type"] = "n"
         return bus_i
     elif abs(pos_at_line - line_length) < tol:
-        bus_j = net.line.at[line_idx, 'to_bus']
-        logger.debug('bus_j: %s' % bus_j)
-        net.bus.at[bus_j, 'type'] = 'n'
+        bus_j = net.line.at[line_idx, "to_bus"]
+        logger.debug("bus_j: %s" % bus_j)
+        net.bus.at[bus_j, "type"] = "n"
         return bus_j
     elif (pos_at_line - line_length) > tol:
         raise ValueError(
-            'Position at line is higher than the line length itself!\
-             Line length: %.7f, position at line: %.7f (line: \n%s)' % (
+            "Position at line is higher than the line length itself!\
+             Line length: %.7f, position at line: %.7f (line: \n%s)"
+            % (
                 # line_length, pos_at_line, line_item.loc_name))
-                line_length, pos_at_line, net.line.loc[line_dict[line_item]]))
+                line_length,
+                pos_at_line,
+                net.line.loc[line_dict[line_item]],
+            )
+        )
     else:
-        logger.debug('getting split position')
-        name = net.line.at[line_idx, 'name']
-        bus_i = net.line.at[line_idx, 'from_bus']
-        bus_j = net.line.at[line_idx, 'to_bus']
-        u = net.bus.at[bus_i, 'vn_kv']
+        logger.debug("getting split position")
+        name = net.line.at[line_idx, "name"]
+        bus_i = net.line.at[line_idx, "from_bus"]
+        bus_j = net.line.at[line_idx, "to_bus"]
+        u = net.bus.at[bus_i, "vn_kv"]
 
-        new_bus = create_bus(net, name="Partial Load", vn_kv=u, type='n')
+        new_bus = create_bus(net, name="Partial Load", vn_kv=u, type="n")
         logger.debug("created new split bus %s" % new_bus)
 
-        line_type = net.line.at[line_idx, 'std_type']
+        line_type = net.line.at[line_idx, "std_type"]
         len_a = pos_at_line
         len_b = line_length - pos_at_line
 
-        net.line.at[line_idx, 'length_km'] = len_a
+        net.line.at[line_idx, "length_km"] = len_a
 
         # connect the existing line to the new bus
-        net.line.at[line_idx, 'to_bus'] = new_bus
+        net.line.at[line_idx, "to_bus"] = new_bus
 
         new_line = create_line(net, new_bus, bus_j, len_b, line_type, name=name)
         # change the connection of the bus-line switch to the new line
         sw = net.switch.query("et=='l' & bus==@bus_j & element==@line_idx").index
         if len(sw) > 0:
             if len(sw) > 1:
-                raise RuntimeError(
-                    'found too many switches to fix for line %s: \n%s' % (
-                        line_item, net.switch.loc[sw]))
-            net.switch.loc[sw, 'element'] = new_line
+                raise RuntimeError("found too many switches to fix for line %s: \n%s" % (line_item, net.switch.loc[sw]))
+            net.switch.loc[sw, "element"] = new_line
 
         line_dict[line_item].append(new_line)
 
-        net.line.at[new_line, 'section'] = "%s_1" % net.line.at[line_idx, 'section']
-        net.line.at[new_line, 'order'] = net.line.at[line_idx, 'order'] + 1
-        net.res_line.at[new_line, 'pf_loading'] = net.res_line.at[line_idx, 'pf_loading']
+        net.line.at[new_line, "section"] = "%s_1" % net.line.at[line_idx, "section"]
+        net.line.at[new_line, "order"] = net.line.at[line_idx, "order"] + 1
+        net.res_line.at[new_line, "pf_loading"] = net.res_line.at[line_idx, "pf_loading"]
 
         if line_idx in net.line.index:
-            logger.debug('setting new coords')
+            logger.debug("setting new coords")
             set_new_coords(net, new_bus, line_idx, new_line, line_length, pos_at_line)
 
         return new_bus
@@ -4859,7 +5304,7 @@ def split_line(net, line_idx, pos_at_line, line_item):
 def calc_segment_length(x1, y1, x2, y2):
     delta_x = float(x2) - float(x1)
     delta_y = float(y2) - float(y1)
-    return (delta_x ** 2 + delta_y ** 2) ** 0.5
+    return (delta_x**2 + delta_y**2) ** 0.5
 
 
 def get_scale_factor(length_line, coords):
@@ -4891,7 +5336,6 @@ def break_coords_sections(coords, section_length, scale_factor_length):
         if np.any(np.isnan(coords)):
             return [[np.nan, np.nan]], [[np.nan, np.nan]]
 
-
     num_coords = len(coords)
     if num_coords < 2:
         return [[np.nan, np.nan]], [[np.nan, np.nan]]
@@ -4916,35 +5360,34 @@ def break_coords_sections(coords, section_length, scale_factor_length):
     x0 = a * x2 / delta_len + b * x1 / delta_len
     y0 = a * y2 / delta_len + b * y1 / delta_len
 
-    section_coords = coords[0:i + 1] + [[x0, y0]]
-    new_coords = [[x0, y0]] + coords[(i + 1)::]
+    section_coords = coords[0 : i + 1] + [[x0, y0]]
+    new_coords = [[x0, y0]] + coords[(i + 1) : :]
     return section_coords, new_coords
 
 
 # set up new coordinates for line sections that are split by the new bus of the ElmLodlvp
 def set_new_coords(net, bus_id, line_idx, new_line_idx, line_length, pos_at_line):
-    line_coords = net.line.at[line_idx, 'geo']
-    logger.debug('got coords for line %s' % line_idx)
+    line_coords = net.line.at[line_idx, "geo"]
+    logger.debug("got coords for line %s" % line_idx)
 
     scale_factor_length = get_scale_factor(line_length, line_coords)
-    
+
     if isna(scale_factor_length):
         logger.warning("Could not generate geodata for line sections (partial loads on line)!")
     else:
-        section_coords, new_coords = break_coords_sections(line_coords, pos_at_line,
-                                                           scale_factor_length)
-    
-        logger.debug('calculated new coords: %s, %s ' % (section_coords, new_coords))
-    
-        net.line.at[line_idx, 'geo'] = geojson.dumps(geojson.LineString(section_coords))
-        net.line.at[new_line_idx, 'geo'] = geojson.dumps(geojson.LineString(new_coords))
-        
-        net.bus.at[bus_id, 'geo'] = geojson.dumps(geojson.Point(new_coords[0]))
+        section_coords, new_coords = break_coords_sections(line_coords, pos_at_line, scale_factor_length)
+
+        logger.debug("calculated new coords: %s, %s " % (section_coords, new_coords))
+
+        net.line.at[line_idx, "geo"] = geojson.dumps(geojson.LineString(section_coords))
+        net.line.at[new_line_idx, "geo"] = geojson.dumps(geojson.LineString(new_coords))
+
+        net.bus.at[bus_id, "geo"] = geojson.dumps(geojson.Point(new_coords[0]))
 
 
 # gather info about ElmLodlvp in a dict
 def get_lvp_for_lines(dict_net):
-    logger.debug(dict_net['lvp_params'])
+    logger.debug(dict_net["lvp_params"])
 
     def calc_p_q(lvp, lvp_params):
         lvp_type = lvp.typ_id
@@ -4972,8 +5415,8 @@ def get_lvp_for_lines(dict_net):
             s_fix_global = 0
             cos_fix_global = lvp.coslini_a
         else:
-            s_fix_global = lvp_params['Sfix'] * lvp.NrCust
-            cos_fix_global = lvp_params['cosfix']
+            s_fix_global = lvp_params["Sfix"] * lvp.NrCust
+            cos_fix_global = lvp_params["cosfix"]
 
         s_fix_local = lvp.slini_a
         cos_fix_local = lvp.coslini_a
@@ -4982,13 +5425,12 @@ def get_lvp_for_lines(dict_net):
         cos_var_local = lvp.ccosphi
 
         p_fix = s_fix_local * cos_fix_local + s_fix_global * cos_fix_global
-        q_fix = s_fix_local * np.sin(np.arccos(cos_fix_local)) + s_fix_global * np.sin(
-            np.arccos(cos_fix_global))
+        q_fix = s_fix_local * np.sin(np.arccos(cos_fix_local)) + s_fix_global * np.sin(np.arccos(cos_fix_global))
 
         p_var = s_var_local * cos_var_local
         q_var = s_var_local * np.sin(np.arccos(cos_var_local))
 
-        scale_p_night = lvp_params['scPnight'] / 100
+        scale_p_night = lvp_params["scPnight"] / 100
         p_night = lvp.pnight_a * scale_p_night
 
         # logger.debug(
@@ -5000,22 +5442,21 @@ def get_lvp_for_lines(dict_net):
 
         return p, q
 
-    line_items = dict_net['ElmLne']
+    line_items = dict_net["ElmLne"]
     # choose ElmLodlvp that are part of lines
-    lvp_items = [lvp for lvp in dict_net['ElmLodlvp'] if lvp.fold_id.GetClassName() == 'ElmLne']
+    lvp_items = [lvp for lvp in dict_net["ElmLodlvp"] if lvp.fold_id.GetClassName() == "ElmLne"]
     logger.debug(lvp_items)
 
     lvp_dict = {}
     for line in line_items:
         temp_loads = [lvp for lvp in lvp_items if lvp.fold_id == line]
-        logger.debug('line: %s , loads: %s' % (line, temp_loads))
+        logger.debug("line: %s , loads: %s" % (line, temp_loads))
 
         if len(temp_loads) == 0:
             continue
 
         # {'line': [(load.ElmLodlvp, position_at_line, (p_mw, q_mvar))]}
-        lvp_dict[line] = [(lvp, lvp.lneposkm, calc_p_q(lvp, dict_net['lvp_params']))
-                          for lvp in temp_loads]
+        lvp_dict[line] = [(lvp, lvp.lneposkm, calc_p_q(lvp, dict_net["lvp_params"])) for lvp in temp_loads]
 
         lvp_dict[line].sort(key=lambda tup: tup[1])
     return lvp_dict
@@ -5032,24 +5473,24 @@ def get_pos_at_sec(net, lvp_dict, line_item, load_item):
             break
 
     # line_sections = net.line[net.line.name == line_item.loc_name].sort_values(by='order')
-    line_sections = net.line.loc[line_dict[line_item]].sort_values(by='order')
-    logger.debug('line sections:\n%s' % line_sections)
+    line_sections = net.line.loc[line_dict[line_item]].sort_values(by="order")
+    logger.debug("line sections:\n%s" % line_sections)
 
     tot_length = 0
     sec_length = 0
     section = 1
 
     for section in line_sections.index:
-        sec_length = line_sections.at[section, 'length_km']
+        sec_length = line_sections.at[section, "length_km"]
         tot_length += sec_length
-        logger.debug(
-            "section: %s, sec_length: %s, tot_length: %s" % (section, sec_length, tot_length))
+        logger.debug("section: %s, sec_length: %s, tot_length: %s" % (section, sec_length, tot_length))
         if tot_length >= pos_at_line:
             break
     else:
         logger.warning(
-            'possibly wrong section found: %s of %s for %s (tot_length=%s, pas_at_line=%s)' % (
-                section, line_item, load_item, tot_length, pos_at_line))
+            "possibly wrong section found: %s of %s for %s (tot_length=%s, pas_at_line=%s)"
+            % (section, line_item, load_item, tot_length, pos_at_line)
+        )
 
     # section_name = line_sections[(line_sections.index == section)]['Name'].values[0]
     pos_at_sec = sec_length + pos_at_line - tot_length
@@ -5059,13 +5500,13 @@ def get_pos_at_sec(net, lvp_dict, line_item, load_item):
 
 # write order of sections
 def write_line_order(net):
-    net.line['order'] = ''
+    net.line["order"] = ""
     line_names = net.line.name.unique()
 
     for n in line_names:
         k = 1000
         for i, row in net.line[net.line.name == n].iterrows():
-            net.line.at[i, 'order'] = k
+            net.line.at[i, "order"] = k
             k += 1000
 
 
@@ -5088,26 +5529,27 @@ def split_all_lines(net, lvp_dict):
             # pos_at_sec = pas[load_idx]['pos']
             section, pos_at_sec = get_pos_at_sec(net, lvp_dict, line_item, load_item)
             logger.debug("section: %s, pos_at_sec: %s" % (section, pos_at_sec))
-            logger.debug("%s" % net.line.at[section, 'in_service'])
-            if not net.line.at[section, 'in_service']:
-                print('line %s skipped because it is not in service' % net.line.at[section, 'name'])
+            logger.debug("%s" % net.line.at[section, "in_service"])
+            if not net.line.at[section, "in_service"]:
+                print("line %s skipped because it is not in service" % net.line.at[section, "name"])
                 continue
             new_bus = split_line(net, section, pos_at_sec, line_item=line_item)
             logger.debug("new_bus: %s" % new_bus)
-            net.bus.at[new_bus, 'description'] = 'Partial Line LV-Load %.2f kW' % p
+            net.bus.at[new_bus, "description"] = "Partial Line LV-Load %.2f kW" % p
 
             if p >= 0 or True:
-                new_load = create_load(net, new_bus, name=load_item.loc_name, p_mw=p, q_mvar=q,
-                                          const_i_p_percent=0, const_i_q_percent=0)
-                logger.debug('created load %s' % new_load)
-                net.res_load.at[new_load, 'pf_p'] = p
-                net.res_load.at[new_load, 'pf_q'] = q
+                new_load = create_load(
+                    net, new_bus, name=load_item.loc_name, p_mw=p, q_mvar=q, const_i_p_percent=0, const_i_q_percent=0
+                )
+                logger.debug("created load %s" % new_load)
+                net.res_load.at[new_load, "pf_p"] = p
+                net.res_load.at[new_load, "pf_q"] = q
             else:
                 # const I is not implemented for sgen
                 new_load = create_sgen(net, new_bus, name=load_item.loc_name, p_mw=p, q_mvar=q)
-                logger.debug('created sgen %s' % new_load)
-                net.res_sgen.at[new_load, 'pf_p'] = p
-                net.res_sgen.at[new_load, 'pf_q'] = q
+                logger.debug("created sgen %s" % new_load)
+                net.res_sgen.at[new_load, "pf_p"] = p
+                net.res_sgen.at[new_load, "pf_q"] = q
 
 
 def remove_folder_of_std_types(net):
@@ -5119,11 +5561,12 @@ def remove_folder_of_std_types(net):
         std_types = available_std_types(net, element=element).index
         reduced_std_types = {name.split("\\")[-1] for name in std_types}
         for std_type in reduced_std_types:
-            all_types = [st for st in std_types if st.split('\\')[-1] == std_type]
+            all_types = [st for st in std_types if st.split("\\")[-1] == std_type]
             if len(all_types) > 1:
                 types_equal = [
                     load_std_type(net, type1, element) == load_std_type(net, type2, element)
-                    for type1, type2 in combinations(all_types, 2)]
+                    for type1, type2 in combinations(all_types, 2)
+                ]
                 if not all(types_equal):
                     continue
             for st in all_types:
@@ -5134,19 +5577,17 @@ def remove_folder_of_std_types(net):
 def create_q_capability_curve(net, item):
     name = item.loc_name
     # create q capability curve
-    if 'q_capability_curve_table' not in net:
-        net['q_capability_curve_table'] = DataFrame(
-            columns=['id_q_capability_curve', 'p_mw', 'q_min_mvar', 'q_max_mvar'])
+    if "q_capability_curve_table" not in net:
+        net["q_capability_curve_table"] = DataFrame(
+            columns=["id_q_capability_curve", "p_mw", "q_min_mvar", "q_max_mvar"]
+        )
 
-    logger.debug('>> creating  reactive power capabiltiy curve<%s>' % name)
-    index = net.q_capability_curve_table.iat[-1, 0] + 1 if not net['q_capability_curve_table'].empty else 0
-    new_data = DataFrame({
-        'id_q_capability_curve': index,
-        'p_mw': item.cap_P,
-        'q_min_mvar': item.cap_Qmn,
-        'q_max_mvar': item.cap_Qmx
-    })
-    net['q_capability_curve_table'] = concat([net['q_capability_curve_table'], new_data], ignore_index=True)
+    logger.debug(">> creating  reactive power capabiltiy curve<%s>" % name)
+    index = net.q_capability_curve_table.iat[-1, 0] + 1 if not net["q_capability_curve_table"].empty else 0
+    new_data = DataFrame(
+        {"id_q_capability_curve": index, "p_mw": item.cap_P, "q_min_mvar": item.cap_Qmn, "q_max_mvar": item.cap_Qmx}
+    )
+    net["q_capability_curve_table"] = concat([net["q_capability_curve_table"], new_data], ignore_index=True)
     return index
 
 

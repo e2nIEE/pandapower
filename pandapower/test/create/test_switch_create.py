@@ -7,8 +7,12 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_bus, create_line, create_transformer, create_transformer3w_from_parameters,
-    create_switch, create_switches,
+    create_bus,
+    create_line,
+    create_transformer,
+    create_transformer3w_from_parameters,
+    create_switch,
+    create_switches,
 )
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
@@ -143,9 +147,7 @@ def test_create_switches_raise_errorexcept(_create_test_net):
     net = copy.deepcopy(net)
 
     sw = create_switch(net, bus=b1, element=l1, et="l", z_ohm=0.0)
-    with pytest.raises(
-            UserWarning, match=r"Switches with indexes \[0\] already exist."
-    ):
+    with pytest.raises(UserWarning, match=r"Switches with indexes \[0\] already exist."):
         create_switches(
             net,
             buses=[b1, b2, b3],
@@ -154,16 +156,10 @@ def test_create_switches_raise_errorexcept(_create_test_net):
             z_ohm=0.0,
             index=[sw, 1, 2],
         )
-    with pytest.raises(
-            UserWarning, match=r"Cannot attach to buses \{6\}, they do not exist"
-    ):
-        create_switches(
-            net, buses=[6, b2, b3], elements=[l1, t1, b4], et=["l", "t", "b"], z_ohm=0.0
-        )
+    with pytest.raises(UserWarning, match=r"Cannot attach to buses \{6\}, they do not exist"):
+        create_switches(net, buses=[6, b2, b3], elements=[l1, t1, b4], et=["l", "t", "b"], z_ohm=0.0)
     with pytest.raises(UserWarning, match=r"Cannot attach to lines {(:?np\.int64\(1\)|1)}, they do not exist"):
-        create_switches(
-            net, buses=[b1, b2, b3], elements=[1, t1, b4], et=["l", "t", "b"], z_ohm=0.0
-        )
+        create_switches(net, buses=[b1, b2, b3], elements=[1, t1, b4], et=["l", "t", "b"], z_ohm=0.0)
     with pytest.raises(UserWarning, match=rf"Line not connected \(line element, bus\): \[\({l1}, {b3}\)\]"):
         create_switches(
             net,
@@ -173,12 +169,8 @@ def test_create_switches_raise_errorexcept(_create_test_net):
             z_ohm=0.0,
         )
     with pytest.raises(UserWarning, match=r"Cannot attach to trafos {(:?np\.int64\(1\)|1)}, they do not exist"):
-        create_switches(
-            net, buses=[b1, b2, b3], elements=[l1, 1, b4], et=["l", "t", "b"], z_ohm=0.0
-        )
-    with pytest.raises(
-            UserWarning, match=rf"Trafo not connected \(trafo element, bus\): \[\({b1}, {t1}\)\]"
-    ):
+        create_switches(net, buses=[b1, b2, b3], elements=[l1, 1, b4], et=["l", "t", "b"], z_ohm=0.0)
+    with pytest.raises(UserWarning, match=rf"Trafo not connected \(trafo element, bus\): \[\({b1}, {t1}\)\]"):
         create_switches(
             net,
             buses=[b1, b1, b3],
@@ -186,12 +178,8 @@ def test_create_switches_raise_errorexcept(_create_test_net):
             et=["l", "t", "b"],
             z_ohm=0.0,
         )
-    with pytest.raises(
-            UserWarning, match=r"Cannot attach to buses {(:?np\.int64\(6\)|6)}, they do not exist"
-    ):
-        create_switches(
-            net, buses=[b1, b2, b3], elements=[l1, t1, 6], et=["l", "t", "b"], z_ohm=0.0
-        )
+    with pytest.raises(UserWarning, match=r"Cannot attach to buses {(:?np\.int64\(6\)|6)}, they do not exist"):
+        create_switches(net, buses=[b1, b2, b3], elements=[l1, t1, 6], et=["l", "t", "b"], z_ohm=0.0)
     with pytest.raises(UserWarning, match=r"Cannot attach to trafo3ws {(:?np\.int64\(1\)|1)}, they do not exist"):
         create_switches(
             net,
@@ -200,9 +188,7 @@ def test_create_switches_raise_errorexcept(_create_test_net):
             et=["l", "t", "t3"],
             z_ohm=0.0,
         )
-    with pytest.raises(
-            UserWarning, match=rf"Trafo3w not connected \(trafo3w element, bus\): \[\({t3w1}, {b3}\)\]"
-    ):
+    with pytest.raises(UserWarning, match=rf"Trafo3w not connected \(trafo3w element, bus\): \[\({t3w1}, {b3}\)\]"):
         create_switches(
             net,
             buses=[b1, b2, b3],
@@ -210,9 +196,7 @@ def test_create_switches_raise_errorexcept(_create_test_net):
             et=["l", "t", "t3"],
             z_ohm=0.0,
         )
-    with pytest.raises(
-        UserWarning, match=r"Cannot attach to buses {(:?np\.int64\(12398\)|12398)}, they do not exist"
-    ):
+    with pytest.raises(UserWarning, match=r"Cannot attach to buses {(:?np\.int64\(12398\)|12398)}, they do not exist"):
         create_switches(
             net,
             buses=[b1, b2],
@@ -220,9 +204,7 @@ def test_create_switches_raise_errorexcept(_create_test_net):
             et=["b", "b"],
             z_ohm=0.0,
         )
-    with pytest.raises(
-            UserWarning, match=r"Cannot attach to buses \{13098\}, they do not exist"
-    ):
+    with pytest.raises(UserWarning, match=r"Cannot attach to buses \{13098\}, they do not exist"):
         create_switches(
             net,
             buses=[b1, 13098],

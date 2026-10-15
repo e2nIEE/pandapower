@@ -9,10 +9,12 @@ from pandapower.converter.ucte.ucte_parser import UCTEParser
 from pandapower.network import pandapowerNet
 from pandapower.toolbox import get_connected_buses
 
-logger = logging.getLogger('ucte.from_ucte')
+logger = logging.getLogger("ucte.from_ucte")
 
 
-def from_ucte_dict(ucte_parser: UCTEParser, slack_as_gen: bool = True, clip_small_x_values: bool = True) -> pandapowerNet:
+def from_ucte_dict(
+    ucte_parser: UCTEParser, slack_as_gen: bool = True, clip_small_x_values: bool = True
+) -> pandapowerNet:
     """
     Creates a pandapower net from an UCTE data structure.
 
@@ -31,7 +33,12 @@ def from_ucte_dict(ucte_parser: UCTEParser, slack_as_gen: bool = True, clip_smal
     return net
 
 
-def from_ucte(ucte_file: str, slack_as_gen: bool = True, clip_small_x_values: bool = False, harmonize_voltage_setpoints: bool = False) -> pandapowerNet:
+def from_ucte(
+    ucte_file: str,
+    slack_as_gen: bool = True,
+    clip_small_x_values: bool = False,
+    harmonize_voltage_setpoints: bool = False,
+) -> pandapowerNet:
     """
     Converts net data stored as an UCTE file to a pandapower net.
 
@@ -74,6 +81,7 @@ def from_ucte(ucte_file: str, slack_as_gen: bool = True, clip_small_x_values: bo
     logger.info("Total Time (from_ucte()): %s" % (time_end_converting - time_start_parsing))
 
     return pp_net
+
 
 def average_voltage_setpoints(net: pandapowerNet) -> None:
     """
@@ -126,27 +134,23 @@ def average_voltage_setpoints(net: pandapowerNet) -> None:
         replaced by their common average.
     """
     net.gen["prefix"] = net.gen["name"].str[:7]
-    name_sets = (
-        net.gen
-        .groupby("prefix")["name"]
-        .apply(lambda x: set(x) if len(x) > 1 else None)
-        .dropna()
-        .tolist()
-    )
+    name_sets = net.gen.groupby("prefix")["name"].apply(lambda x: set(x) if len(x) > 1 else None).dropna().tolist()
     for name_set in name_sets:
         list_names = list(name_set)
-        connected_buses = list(net.gen.loc[net.gen.name.isin(list_names), 'bus'].values)
+        connected_buses = list(net.gen.loc[net.gen.name.isin(list_names), "bus"].values)
         aux_buses = connected_buses[0:1]
         len_aux_buses = len(aux_buses)
         len_changed = True
         while len_changed:
-            aux_buses += get_connected_buses(net, aux_buses, consider=('s'), respect_switches=False)
+            aux_buses += get_connected_buses(net, aux_buses, consider=("s"), respect_switches=False)
             if len(aux_buses) > len_aux_buses:
                 len_aux_buses = len(aux_buses)
             else:
                 len_changed = False
         matches = list(set(aux_buses) & set(connected_buses[1:]))
         if len(matches):
-            critical_buses = matches+connected_buses[0:1]
-            net.gen.loc[net.gen.bus.isin(critical_buses), 'vm_pu'] = net.gen.loc[net.gen.bus.isin(critical_buses), 'vm_pu'].mean()
+            critical_buses = matches + connected_buses[0:1]
+            net.gen.loc[net.gen.bus.isin(critical_buses), "vm_pu"] = net.gen.loc[
+                net.gen.bus.isin(critical_buses), "vm_pu"
+            ].mean()
     net.gen = net.gen.drop(columns="prefix")

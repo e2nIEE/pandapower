@@ -48,9 +48,11 @@ def _preserve_dtypes(df, dtypes):
     for item, dtype in list(dtypes.items()):
         if df.dtypes.at[item] != dtype:
             if (dtype == bool or dtype == np.bool_) and np.any(df[item].isnull()):
-                raise UserWarning(f"Encountered NaN value(s) in a boolean column {item}! "
-                                  f"NaN are casted to True by default, which can lead to errors. "
-                                  f"Replace NaN values with True or False first.")
+                raise UserWarning(
+                    f"Encountered NaN value(s) in a boolean column {item}! "
+                    f"NaN are casted to True by default, which can lead to errors. "
+                    f"Replace NaN values with True or False first."
+                )
             try:
                 df[item] = df[item].astype(dtype)
             except ValueError:
@@ -63,7 +65,7 @@ class ADict(dict, MutableMapping):
 
         # to prevent overwrite of internal attributes by new keys
         # see _valid_name()
-        self._setattr('_allow_invalid_attributes', False)
+        self._setattr("_allow_invalid_attributes", False)
 
     def _build(self, obj, **kwargs):
         """
@@ -82,7 +84,7 @@ class ADict(dict, MutableMapping):
     def __setstate__(self, state):
         mapping, allow_invalid_attributes = state
         self.update(mapping)
-        self._setattr('_allow_invalid_attributes', allow_invalid_attributes)
+        self._setattr("_allow_invalid_attributes", allow_invalid_attributes)
 
     @classmethod
     def _constructor(cls, mapping):
@@ -106,14 +108,10 @@ class ADict(dict, MutableMapping):
         """
         if self._valid_name(key):
             self[key] = value
-        elif getattr(self, '_allow_invalid_attributes', True):
+        elif getattr(self, "_allow_invalid_attributes", True):
             super(MutableMapping, self).__setattr__(key, value)
         else:
-            raise TypeError(
-                "'{cls}' does not allow attribute creation.".format(
-                    cls=self.__class__.__name__
-                )
-            )
+            raise TypeError("'{cls}' does not allow attribute creation.".format(cls=self.__class__.__name__))
 
     def _delattr(self, key):
         """
@@ -130,14 +128,10 @@ class ADict(dict, MutableMapping):
         """
         if self._valid_name(key):
             del self[key]
-        elif getattr(self, '_allow_invalid_attributes', True):
+        elif getattr(self, "_allow_invalid_attributes", True):
             super(MutableMapping, self).__delattr__(key)
         else:
-            raise TypeError(
-                "'{cls}' does not allow attribute deletion.".format(
-                    cls=self.__class__.__name__
-                )
-            )
+            raise TypeError("'{cls}' does not allow attribute deletion.".format(cls=self.__class__.__name__))
 
     def __call__(self, key):
         """
@@ -150,9 +144,7 @@ class ADict(dict, MutableMapping):
         """
         if key not in self:
             raise AttributeError(
-                "'{cls} instance has no attribute '{name}'".format(
-                    cls=self.__class__.__name__, name=key
-                )
+                "'{cls} instance has no attribute '{name}'".format(cls=self.__class__.__name__, name=key)
             )
 
         return self._build(self[key])
@@ -163,9 +155,7 @@ class ADict(dict, MutableMapping):
         """
         if key not in self or not self._valid_name(key):
             raise AttributeError(
-                "'{cls}' instance has no attribute '{name}'".format(
-                    cls=self.__class__.__name__, name=key
-                )
+                "'{cls}' instance has no attribute '{name}'".format(cls=self.__class__.__name__, name=key)
             )
 
         return self._build(self[key])
@@ -181,7 +171,7 @@ class ADict(dict, MutableMapping):
         This fix was introduced in pandapower 2.2.1
 
         """
-        deep_columns = {'object', 'coords', 'geometry'}
+        deep_columns = {"object", "coords", "geometry"}
         cls = self.__class__
         result = cls.__new__(cls)
         memo[id(self)] = result
@@ -198,7 +188,7 @@ class ADict(dict, MutableMapping):
             else:
                 setattr(result, k, copy.deepcopy(v, memo))
 
-        result._setattr('_allow_invalid_attributes', self._allow_invalid_attributes)
+        result._setattr("_allow_invalid_attributes", self._allow_invalid_attributes)
         return result
 
     @classmethod
@@ -212,16 +202,13 @@ class ADict(dict, MutableMapping):
             those would be 'get', 'items', 'keys', 'values', 'mro', and
             'register').
         """
-        return (
-                isinstance(key, str) and
-                not hasattr(cls, key)
-        )
+        return isinstance(key, str) and not hasattr(cls, key)
 
 
 class pandapowerNet(ADict):
     """
     pandapowerNet constructor
-    
+
     Parameters:
         name: Network name
         f_hz: power system frequency in hertz, default: 50.
@@ -232,51 +219,52 @@ class pandapowerNet(ADict):
     Example:
         net = pandapowerNet(name="My Network")
     """
+
     @overload
     def __init__(
-            self,
-            name: str,
-            f_hz: float = 50.,
-            sn_mva: float = 1.,
-            add_stdtypes: bool = True,
-            metadata: list[str] | None = None,
-            custom_data: dict | None = None
+        self,
+        name: str,
+        f_hz: float = 50.0,
+        sn_mva: float = 1.0,
+        add_stdtypes: bool = True,
+        metadata: list[str] | None = None,
+        custom_data: dict | None = None,
     ) -> None: ...
-    
+
     @overload
     @deprecated("Calling pandapowerNet to copy a network is no longer supported. Use copy.deepcopy(net) instead.")
     def __init__(self, *, net: "pandapowerNet | dict") -> None: ...
-    
-    
+
     def __init__(
-            self,
-            name: str | None = None,
-            f_hz: float = 50.,
-            sn_mva: float = 1.,
-            add_stdtypes: bool = True,
-            metadata: list[str] | None = None,
-            custom_data: dict | None = None,
-            *,
-            net: "pandapowerNet | dict | None" = None,
-            **kwargs
+        self,
+        name: str | None = None,
+        f_hz: float = 50.0,
+        sn_mva: float = 1.0,
+        add_stdtypes: bool = True,
+        metadata: list[str] | None = None,
+        custom_data: dict | None = None,
+        *,
+        net: "pandapowerNet | dict | None" = None,
+        **kwargs,
     ) -> None:
         # TODO: remove once deprecations are removed
         if net is not None:
-            if (name is not None
-                or not np.isclose(f_hz, 50., rtol=1e-12, atol=1e-12)
-                or not np.isclose(sn_mva, 1., rtol=1e-12, atol=1e-12)
+            if (
+                name is not None
+                or not np.isclose(f_hz, 50.0, rtol=1e-12, atol=1e-12)
+                or not np.isclose(sn_mva, 1.0, rtol=1e-12, atol=1e-12)
                 or not add_stdtypes
                 or metadata is not None
                 or custom_data is not None
             ):
                 raise AttributeError(
-                    'Passing net and other attributes is not supported. Do not pass a net to pandapowerNet()'
+                    "Passing net and other attributes is not supported. Do not pass a net to pandapowerNet()"
                 )
             super().__init__(net, **kwargs)
             if isinstance(net, self.__class__):
                 self.clear()
                 self.update(**copy.deepcopy(net))
-    
+
             for key in self:
                 if isinstance(self[key], list) and len(self[key]) == 1:
                     self[key] = self[key][0]
@@ -290,7 +278,7 @@ class pandapowerNet(ADict):
             network_structure_dict["name"] = name
             network_structure_dict["f_hz"] = f_hz
             network_structure_dict["sn_mva"] = sn_mva
-            
+
             # create dataframes from network_structure_dict
             data = pandapowerNet.create_dataframes(network_structure_dict)
             # set data on self
@@ -300,18 +288,17 @@ class pandapowerNet(ADict):
                 #  unpacked here
                 if isinstance(value, list) and len(value) == 1:
                     self[key] = value[0]
-            
+
             # add custom data
             if custom_data is not None:
                 for key, value in custom_data.items():
                     self[key] = value
-        
+
             if add_stdtypes:
                 add_basic_std_types(self)  # TODO: Test this
             else:
                 self.std_types: StandardTypesDict = {"line": {}, "line_dc": {}, "trafo": {}, "trafo3w": {}, "fuse": {}}
             self.user_pf_options: dict = {}
-            
 
     @staticmethod
     def create_dataframes(data):
@@ -331,15 +318,14 @@ class pandapowerNet(ADict):
         for et in list(self.keys()):
             if not et.startswith("_") and isinstance(self[et], pd.DataFrame) and len(self[et]) > 0:
                 n_rows = self[et].shape[0]
-                if 'res_' in et:
+                if "res_" in et:
                     res.append(f"   - {et} ({n_rows} element{plural_s(n_rows)})")
-                elif et == 'group':
+                elif et == "group":
                     n_groups = len(set(self[et].index))
                     par.append(f"   - {et} ({n_groups} group{plural_s(n_groups)}, {n_rows} row{plural_s(n_rows)})")
                 else:
                     par.append(f"   - {et} ({n_rows} element{plural_s(n_rows)})")
-        res_cost = [" and the following result values:",
-                    "   - %s" % "res_cost"] if "res_cost" in self.keys() else []
+        res_cost = [" and the following result values:", "   - %s" % "res_cost"] if "res_cost" in self.keys() else []
         if not len(par) + len(res):
             return "This pandapower network is empty"
         if len(res):

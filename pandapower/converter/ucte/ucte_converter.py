@@ -38,9 +38,7 @@ class UCTE2pandapower:
             if ucte_element == "R":
                 continue
             self.u_d[ucte_element] = self.u_d[ucte_element].reset_index(level=0)
-            self.u_d[ucte_element] = self.u_d[ucte_element].rename(
-                columns={"index": "id"}
-            )
+            self.u_d[ucte_element] = self.u_d[ucte_element].rename(columns={"index": "id"})
         # now replace the node1 and node2 columns with the node index at lines, transformers, ...
         merge_nodes = self.u_d["N"][["id", "node"]]
         self.u_d["L"] = pd.merge(
@@ -83,31 +81,20 @@ class UCTE2pandapower:
         # currently, net.bus.name contains the UCTE node name ("Node"), while
         # net.bus.node_name contains the original node name "Node Name". This is changed now:
         cols_in_order = list(pd.Series(self.net.bus.columns).replace("node_name", "ucte_name"))
-        self.net.bus = self.net.bus.rename(columns={"name": "ucte_name", "node_name": "name"})[
-            cols_in_order]
+        self.net.bus = self.net.bus.rename(columns={"name": "ucte_name", "node_name": "name"})[cols_in_order]
 
-        self.logger.info(
-            "Finished converting the input data to pandapower in %ss."
-            % (time.time() - time_start)
-        )
+        self.logger.info("Finished converting the input data to pandapower in %ss." % (time.time() - time_start))
         return self.net
 
     def _copy_to_pp(self, pp_type: str, input_df: pd.DataFrame):
-        self.logger.debug(
-            "Copy %s datasets to pandapower network with type %s"
-            % (input_df.index.size, pp_type)
-        )
+        self.logger.debug("Copy %s datasets to pandapower network with type %s" % (input_df.index.size, pp_type))
         if pp_type not in self.net.keys():
-            self.logger.warning(
-                "Missing pandapower type %s in the pandapower network!" % pp_type
-            )
+            self.logger.warning("Missing pandapower type %s in the pandapower network!" % pp_type)
             return
         self.net[pp_type] = pd.concat(
             [
                 self.net[pp_type],
-                input_df[
-                    list(set(self.net[pp_type].columns).intersection(input_df.columns))
-                ],
+                input_df[list(set(self.net[pp_type].columns).intersection(input_df.columns))],
             ],
             ignore_index=True,
             sort=False,
@@ -115,9 +102,7 @@ class UCTE2pandapower:
 
     def _convert_nodes(self):
         self.logger.info("Converting the nodes.")
-        nodes = self.u_d[
-            "N"
-        ]  # Note: Do not use a copy, the columns 'volt_str' and 'node_name' are needed later
+        nodes = self.u_d["N"]  # Note: Do not use a copy, the columns 'volt_str' and 'node_name' are needed later
         nodes["volt_str"] = nodes["node"].str[6:7]
         volt_map = {
             "0": 750,
@@ -161,9 +146,7 @@ class UCTE2pandapower:
         nodes["node2"] = nodes["node"].str[:6]
         nodes["grid_area_id"] = nodes["node"].str[:2]
         # drop all voltages at non pu nodes
-        nodes.loc[
-            (nodes["node_type"] != 2) & (nodes["node_type"] != 3), "voltage"
-        ] = np.nan
+        nodes.loc[(nodes["node_type"] != 2) & (nodes["node_type"] != 3), "voltage"] = np.nan
         nodes = nodes.rename(columns={"node": "name"})
         nodes["in_service"] = True
         self._copy_to_pp("bus", nodes)
@@ -178,9 +161,7 @@ class UCTE2pandapower:
         if not len(loads):
             self.logger.info("Finished converting the loads (no loads existing).")
             return  # Acceleration
-        loads = loads.rename(
-            columns={"id": "bus", "node": "name", "p_load": "p_mw", "q_load": "q_mvar"}
-        )
+        loads = loads.rename(columns={"id": "bus", "node": "name", "p_load": "p_mw", "q_load": "q_mvar"})
         # get a new index
         loads = loads.reset_index(level=0, drop=True)
         loads["scaling"] = 1
@@ -197,9 +178,7 @@ class UCTE2pandapower:
         # select the gens from the nodes and drop not given values
         gens = self.u_d["N"].dropna(subset=["p_gen", "q_gen"])
         # select all with p != 0 or q != 0 or voltage != 0
-        gens = gens.loc[
-            (gens["p_gen"] != 0) | (gens["q_gen"] != 0) | (gens["voltage"] > 0)
-        ]
+        gens = gens.loc[(gens["p_gen"] != 0) | (gens["q_gen"] != 0) | (gens["voltage"] > 0)]
         # change the signing
         gens["p_gen"] = gens["p_gen"] * -1
         gens["q_gen"] = gens["q_gen"] * -1
@@ -208,9 +187,7 @@ class UCTE2pandapower:
         gens["min_q_gen"] = gens["min_q_gen"] * -1
         gens["max_q_gen"] = gens["max_q_gen"] * -1
         # drop all voltages at non pu nodes
-        gens.loc[
-            (gens["node_type"] != 2) & (gens["node_type"] != 3), "voltage"
-        ] = np.nan
+        gens.loc[(gens["node_type"] != 2) & (gens["node_type"] != 3), "voltage"] = np.nan
         gens["vm_pu"] = gens["voltage"] / gens["vn_kv"]
         gens = gens.rename(
             columns={
@@ -232,14 +209,11 @@ class UCTE2pandapower:
         gens["slack"] = False
         gens["current_source"] = True
         gens["in_service"] = True
-        self._copy_to_pp("ext_grid" if not self.slack_as_gen else "gen",
-                         gens.loc[gens["node_type"] == 3])
+        self._copy_to_pp("ext_grid" if not self.slack_as_gen else "gen", gens.loc[gens["node_type"] == 3])
         if self.slack_as_gen:
             self.net.gen["slack"] = True
         self._copy_to_pp("gen", gens.loc[gens["node_type"] == 2])
-        self._copy_to_pp(
-            "sgen", gens.loc[(gens["node_type"] == 0) | (gens["node_type"] == 1)]
-        )
+        self._copy_to_pp("sgen", gens.loc[(gens["node_type"] == 0) | (gens["node_type"] == 1)])
         self.logger.info("Finished converting the generators.")
 
     def _convert_lines(self):
@@ -249,9 +223,7 @@ class UCTE2pandapower:
         # status 7 & 2 stands for busbar coupler that can be interpreted as switches
         lines = self.u_d["L"].loc[self.u_d["L"].status.isin([9, 1, 7, 2]) == False, :]
         # definition of busbar coupler is if r, x, b are all zero, but some statuses are wrong, check for those
-        lines = lines.drop(
-            lines.loc[(lines.r == 0) & (lines.x == 0) & (lines.b == 0)].index
-        )
+        lines = lines.drop(lines.loc[(lines.r == 0) & (lines.x == 0) & (lines.b == 0)].index)
         # also drop lines with x < 0 as they will be modeled as impedances
         lines = lines.drop(lines.loc[lines.x < 0].index)
         if not len(lines):
@@ -281,9 +253,7 @@ class UCTE2pandapower:
             lines.loc[lines.x == 0, "x"] = 1e-3
 
         # rename the columns to the pandapower schema
-        lines = lines.rename(
-            columns={"r": "r_ohm_per_km", "x": "x_ohm_per_km", "name": "name"}
-        )
+        lines = lines.rename(columns={"r": "r_ohm_per_km", "x": "x_ohm_per_km", "name": "name"})
         self._copy_to_pp("line", lines)
         self.logger.info("Finished converting the lines.")
 
@@ -309,8 +279,8 @@ class UCTE2pandapower:
 
         if self.clip_small_x_values:
             # apply rule of min. X of 0.05 Ohm from UCTE-DEF
-            impedances.loc[(impedances.x >= 0.0) & (impedances.x < 0.05) , "x"] = +0.05
-            impedances.loc[(impedances.x > -0.05) & (impedances.x < 0.0) , "x"] = -0.05
+            impedances.loc[(impedances.x >= 0.0) & (impedances.x < 0.05), "x"] = +0.05
+            impedances.loc[(impedances.x > -0.05) & (impedances.x < 0.0), "x"] = -0.05
         else:
             # being close to the PF approach
             impedances.loc[impedances.x == 0, "x"] = 1e-3
@@ -329,7 +299,7 @@ class UCTE2pandapower:
         impedances["gt_pu"] = impedances["g"] / impedances["z_ohm"]
         impedances["bf_pu"] = impedances["b"] / impedances["z_ohm"]
         impedances["bt_pu"] = impedances["b"] / impedances["z_ohm"]
-        impedances.fillna({'gf_pu': 0.0, 'gt_pu': 0.0, 'bf_pu': 0.0, 'bt_pu': 0.0}, inplace=True)
+        impedances.fillna({"gf_pu": 0.0, "gt_pu": 0.0, "bf_pu": 0.0, "bt_pu": 0.0}, inplace=True)
         self._fill_empty_names(impedances)
         self._copy_to_pp("impedance", impedances)
         self.logger.info("Finished converting the impedances.")
@@ -345,19 +315,12 @@ class UCTE2pandapower:
 
         # check for trafos connecting same voltage levels
         trafos_to_impedances = trafos.loc[
-            trafos.loc[:, "0_x"].map(lambda s: s[6])
-            == trafos.loc[:, "0_x"].map(lambda s: s[15])
+            trafos.loc[:, "0_x"].map(lambda s: s[6]) == trafos.loc[:, "0_x"].map(lambda s: s[15])
         ]
 
-        trafos_to_impedances = trafos_to_impedances.loc[
-            trafos_to_impedances.phase_reg_delta_u.isnull()
-        ]
-        trafos_to_impedances = trafos_to_impedances.loc[
-            trafos_to_impedances.angle_reg_theta.isnull()
-        ]
-        trafos_to_impedances = trafos_to_impedances.loc[
-            (trafos_to_impedances.g == 0) & (trafos_to_impedances.b == 0)
-        ]
+        trafos_to_impedances = trafos_to_impedances.loc[trafos_to_impedances.phase_reg_delta_u.isnull()]
+        trafos_to_impedances = trafos_to_impedances.loc[trafos_to_impedances.angle_reg_theta.isnull()]
+        trafos_to_impedances = trafos_to_impedances.loc[(trafos_to_impedances.g == 0) & (trafos_to_impedances.b == 0)]
         # rename the columns to the pandapower schema, as voltages are the same we can take voltage1 as vn_kv
         trafos_to_impedances = trafos_to_impedances.rename(
             columns={
@@ -375,9 +338,7 @@ class UCTE2pandapower:
         # status 7 & 2 stands for busbar coupler that can be interpreted as switch
         switches_by_status = self.u_d["L"].status.isin([7, 2])
         # switches are defined by r, x and b equal 0, but some still have the wrong status (or r, x and b not zero)
-        lines_rxb_zero = (
-            (self.u_d["L"].r == 0) & (self.u_d["L"].x == 0) & (self.u_d["L"].b == 0)
-        )
+        lines_rxb_zero = (self.u_d["L"].r == 0) & (self.u_d["L"].x == 0) & (self.u_d["L"].b == 0)
         switches = self.u_d["L"].loc[lines_rxb_zero | switches_by_status, :].copy()
 
         # create the in_service column from the UCTE status
@@ -421,10 +382,7 @@ class UCTE2pandapower:
         trafos["df"] = trafos["voltage1"] * (trafos["i"] / 1e3) * 3**0.5 / trafos["s"]
         # calculate the relative short-circuit voltage
         trafos["vk_percent"] = (
-            np.sign(trafos.x)
-            * (trafos.r ** 2 + trafos.x ** 2) ** 0.5
-            * (trafos.s * 1e3)
-            / (10.0 * trafos.voltage1**2)
+            np.sign(trafos.x) * (trafos.r**2 + trafos.x**2) ** 0.5 * (trafos.s * 1e3) / (10.0 * trafos.voltage1**2)
         )
         # calculate vkr_percent
         trafos["vkr_percent"] = trafos.r * trafos.s * 100 / trafos.voltage1**2
@@ -432,18 +390,12 @@ class UCTE2pandapower:
         trafos["pfe_kw"] = trafos.g * trafos.voltage1**2 / 1e3
         # calculate open loop losses in percent of rated current
         trafos["i0_percent"] = (
-            (
-                (
-                    (trafos.b * 1e-6 * trafos.voltage1**2) ** 2
-                    + (trafos.g * 1e-6 * trafos.voltage1**2) ** 2
-                )
-                ** 0.5
-            )
+            (((trafos.b * 1e-6 * trafos.voltage1**2) ** 2 + (trafos.g * 1e-6 * trafos.voltage1**2) ** 2) ** 0.5)
             * 100
             / trafos.s
         )
 
-        trafos = trafos.fillna({'i0_percent': 0.0, 'pfe_kw': 0.0})
+        trafos = trafos.fillna({"i0_percent": 0.0, "pfe_kw": 0.0})
 
         # phase data in UCTE represent an effect to vm only
         # angle data in UCTE represent an effect to va (and maybe vm too)
@@ -451,9 +403,7 @@ class UCTE2pandapower:
         # phase and angle regulation have to be split up into several cases
 
         has_missing_phase_values = (
-            trafos.phase_reg_delta_u.isnull()
-            | trafos.phase_reg_n.isnull()
-            | trafos.phase_reg_n2.isnull()
+            trafos.phase_reg_delta_u.isnull() | trafos.phase_reg_n.isnull() | trafos.phase_reg_n2.isnull()
         )
         has_missing_angle_values = (
             trafos.angle_reg_delta_u.isnull()
@@ -465,10 +415,10 @@ class UCTE2pandapower:
         has_angle_values = ~has_missing_angle_values
         has_2nd_tap_changer = has_phase_values & has_angle_values
 
-        symm = trafos.angle_reg_type == "SYMM" # data for symm transformers is included in the angle values
-        asym = trafos.angle_reg_type == "ASYM" # data for asym transformers is included in the angle values
+        symm = trafos.angle_reg_type == "SYMM"  # data for symm transformers is included in the angle values
+        asym = trafos.angle_reg_type == "ASYM"  # data for asym transformers is included in the angle values
         # but there might be a second tap changer
-        generic = ~(symm | asym) | has_2nd_tap_changer # data for generic transformers is included in the phase values
+        generic = ~(symm | asym) | has_2nd_tap_changer  # data for generic transformers is included in the phase values
 
         trafos["tap_changer_type"] = "Ratio"
 
@@ -498,7 +448,7 @@ class UCTE2pandapower:
         trafos.loc[idx, "tap_max"] = trafos.loc[idx, "angle_reg_n"]
         trafos.loc[idx, "tap_pos"] = trafos.loc[idx, "angle_reg_n2"]
         trafos.loc[idx, "tap_step_percent"] = trafos.loc[idx, "angle_reg_delta_u"]
-        trafos.loc[idx, "tap_step_degree"] = trafos.loc[idx, "angle_reg_theta"] # has to be 90.0°
+        trafos.loc[idx, "tap_step_degree"] = trafos.loc[idx, "angle_reg_theta"]  # has to be 90.0°
 
         idx = trafos.loc[symm & has_2nd_tap_changer].index
         # ToDo: in PF, a 2nd tap changer cannot be symmetrical; thus, it is inspected as asymetrical
@@ -508,7 +458,7 @@ class UCTE2pandapower:
         trafos.loc[idx, "tap2_max"] = trafos.loc[idx, "angle_reg_n"]
         trafos.loc[idx, "tap2_pos"] = trafos.loc[idx, "angle_reg_n2"]
         trafos.loc[idx, "tap2_step_percent"] = trafos.loc[idx, "angle_reg_delta_u"]
-        trafos.loc[idx, "tap2_step_degree"] = trafos.loc[idx, "angle_reg_theta"] # has to be 90.0°
+        trafos.loc[idx, "tap2_step_degree"] = trafos.loc[idx, "angle_reg_theta"]  # has to be 90.0°
 
         # set the hv and lv voltage sides to voltage1 and voltage2 (The non-regulated transformer side is currently
         # voltage1, not the hv side!)
@@ -518,7 +468,7 @@ class UCTE2pandapower:
         # swap the 'hv_node' and 'lv_node' if need
         trafos["swap"] = trafos["vn_hv_kv"] != trafos["voltage1"]
         # to be consistent with PF
-        trafos["swap"] = trafos["swap"] | (trafos["vn_hv_kv"]==trafos["vn_lv_kv"])
+        trafos["swap"] = trafos["swap"] | (trafos["vn_hv_kv"] == trafos["vn_lv_kv"])
 
         # copy the 'fid_node_start' and 'fid_node_end'
         trafos["hv_bus2"] = trafos["hv_bus"].copy()
@@ -555,34 +505,17 @@ class UCTE2pandapower:
         self._copy_to_pp("trafo", trafos)
         self.logger.info("Finished converting the transformers.")
 
-    def _calculate_tap_step_degree_symmetrical(
-        self, input_df: pd.DataFrame
-    ) -> pd.Series:
+    def _calculate_tap_step_degree_symmetrical(self, input_df: pd.DataFrame) -> pd.Series:
         return input_df["angle_reg_delta_u"].apply(lambda du: 2 * math.atan2(du, 2))
 
-    def _calculate_tap_step_degree_asymmetrical(
-        self, input_df: pd.DataFrame
-    ) -> pd.Series:
-        numerator = input_df["angle_reg_delta_u"] * input_df["angle_reg_theta"].apply(
-            lambda t: math.sin(t)
-        )
-        denominator = 1 + (
-            input_df["angle_reg_delta_u"]
-            * input_df["angle_reg_theta"].apply(lambda t: math.cos(t))
-        )
+    def _calculate_tap_step_degree_asymmetrical(self, input_df: pd.DataFrame) -> pd.Series:
+        numerator = input_df["angle_reg_delta_u"] * input_df["angle_reg_theta"].apply(lambda t: math.sin(t))
+        denominator = 1 + (input_df["angle_reg_delta_u"] * input_df["angle_reg_theta"].apply(lambda t: math.cos(t)))
         return (numerator / denominator).apply(lambda t: math.atan2(t, 1))
 
-    def _calculate_tap_step_percent_asymmetrical(
-        self, input_df: pd.DataFrame
-    ) -> pd.Series:
-        sine_sq = (
-            input_df["angle_reg_delta_u"]
-            * input_df["angle_reg_theta"].apply(lambda t: math.sin(t))
-        ) ** 2
-        cosine_sq = (
-            input_df["angle_reg_delta_u"]
-            * input_df["angle_reg_theta"].apply(lambda t: math.cos(t))
-        ) ** 2
+    def _calculate_tap_step_percent_asymmetrical(self, input_df: pd.DataFrame) -> pd.Series:
+        sine_sq = (input_df["angle_reg_delta_u"] * input_df["angle_reg_theta"].apply(lambda t: math.sin(t))) ** 2
+        cosine_sq = (input_df["angle_reg_delta_u"] * input_df["angle_reg_theta"].apply(lambda t: math.cos(t))) ** 2
         tab_step_percent = (sine_sq + cosine_sq).apply(lambda x: np.sqrt(x)) - 1
         return tab_step_percent
 
@@ -590,9 +523,7 @@ class UCTE2pandapower:
         try:
             input_df[column] = input_df[column].astype(data_type)
         except Exception as e:
-            self.logger.error(
-                "Couldn't set data type %s for column %s!" % (data_type, column)
-            )
+            self.logger.error("Couldn't set data type %s for column %s!" % (data_type, column))
             self.logger.exception(e)
 
     def _fill_empty_names(self, input_df: pd.DataFrame, input_column: Union[str, int] = 0):
@@ -606,9 +537,7 @@ class UCTE2pandapower:
         )
         input_df.loc[input_df["name"] == "", "name"] = new_names
 
-    def _fill_amica_names(
-        self, input_df: pd.DataFrame, suffix: str, input_column: Union[str, int] = 0
-    ) -> None:
+    def _fill_amica_names(self, input_df: pd.DataFrame, suffix: str, input_column: Union[str, int] = 0) -> None:
         def get_name_from_ucte_string(ucte_string: str) -> str:
             node1 = ucte_string[:7].replace(" ", "_")
             node2 = ucte_string[9:16].replace(" ", "_")

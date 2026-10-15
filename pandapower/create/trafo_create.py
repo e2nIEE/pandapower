@@ -6,7 +6,6 @@ from __future__ import annotations
 import logging
 import warnings
 from typing import Iterable, Sequence
-from functools import partial
 
 import pandas as pd
 from pandas.api.typing import NAType
@@ -273,7 +272,7 @@ def create_transformers(
         "tap_step_degree",
         "tap_step_percent",
         "trafo_characteristic_table",
-        *required_params
+        *required_params,
     )
 
     params = {param: std_params[param] for param in params_from_std_type if param in std_params}

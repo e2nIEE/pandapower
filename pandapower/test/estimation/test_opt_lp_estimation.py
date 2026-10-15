@@ -36,10 +36,10 @@ def test_case9_compare_classical_wls_opt_wls():
     net_wls = copy.deepcopy(net)
     estimate(net_wls)
 
-    if not (np.allclose(net_wls.res_bus_est.vm_pu.copy(), net.res_bus_est.vm_pu.copy(),
-                        atol=1e-2) and
-            np.allclose(net_wls.res_bus_est.va_degree.copy(), net.res_bus_est.va_degree.copy(),
-                        atol=1e-2)):
+    if not (
+        np.allclose(net_wls.res_bus_est.vm_pu.copy(), net.res_bus_est.vm_pu.copy(), atol=1e-2)
+        and np.allclose(net_wls.res_bus_est.va_degree.copy(), net.res_bus_est.va_degree.copy(), atol=1e-2)
+    ):
         raise AssertionError("Estimation failed!")
 
 
@@ -61,8 +61,9 @@ def test_lp_scipy_lav():
 
     net = eppci2pp(net, ppc, eppci)
 
-    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or \
-            not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2):
+    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or not np.allclose(
+        net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2
+    ):
         raise AssertionError("Estimation failed!")
 
 
@@ -83,8 +84,9 @@ def test_lp_ortools_lav():
 
     net = eppci2pp(net, ppc, eppci)
 
-    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or \
-            not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2):
+    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or not np.allclose(
+        net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2
+    ):
         raise AssertionError("Estimation failed!")
 
 
@@ -99,8 +101,9 @@ def test_lp_lav():
 
     estimate(net, algorithm="lp")
 
-    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or \
-            not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2):
+    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or not np.allclose(
+        net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2
+    ):
         raise AssertionError("Estimation failed!")
 
 
@@ -118,17 +121,19 @@ def test_opt_lav():
 
     net = eppci2pp(net, ppc, eppci)
 
-    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or \
-            not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2):
+    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or not np.allclose(
+        net.res_bus.va_degree, net.res_bus_est.va_degree, atol=5e-2
+    ):
         raise AssertionError("Estimation failed!")
 
 
-@pytest.mark.skipif((sys.version_info[0] == 3) & (sys.version_info[1] <= 7),
-                    reason="This test can fail under Python 3.7 depending"
-                           "on the processing power of the hardware used.")
+@pytest.mark.skipif(
+    (sys.version_info[0] == 3) & (sys.version_info[1] <= 7),
+    reason="This test can fail under Python 3.7 dependingon the processing power of the hardware used.",
+)
 def test_ql_qc():
     net = case9()
-    net.sn_mva = 1.
+    net.sn_mva = 1.0
     runpp(net)
     add_virtual_meas_from_loadflow(net, p_std_dev=0.01, q_std_dev=0.01)
     pf_vm_pu, pf_va_degree = net.res_bus.vm_pu, net.res_bus.va_degree
@@ -149,8 +154,9 @@ def test_ql_qc():
 
     net = eppci2pp(net, ppc, eppci)
 
-    if not np.allclose(pf_vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or \
-            not np.allclose(pf_va_degree, net.res_bus_est.va_degree, atol=5e-2):
+    if not np.allclose(pf_vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or not np.allclose(
+        pf_va_degree, net.res_bus_est.va_degree, atol=5e-2
+    ):
         raise AssertionError("Estimation failed!")
 
     # give it a warm start
@@ -164,10 +170,11 @@ def test_ql_qc():
         eppci = estimation_opt.estimate(eppci, estimator="qc", a=3, opt_method="Newton-CG", verbose=False)
     net = eppci2pp(net, ppc, eppci)
 
-    if not np.allclose(pf_vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or \
-            not np.allclose(pf_va_degree, net.res_bus_est.va_degree, atol=5e-2):
+    if not np.allclose(pf_vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or not np.allclose(
+        pf_va_degree, net.res_bus_est.va_degree, atol=5e-2
+    ):
         raise AssertionError("Estimation failed!")
 
 
-if __name__ == '__main__':
-    pytest.main([__file__, "-xs"]) 
+if __name__ == "__main__":
+    pytest.main([__file__, "-xs"])

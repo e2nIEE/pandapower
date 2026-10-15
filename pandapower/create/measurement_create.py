@@ -15,6 +15,7 @@ logger = logging.getLogger(__name__)
 
 _element_type_side_map = {"line": ["from", "to"], "trafo": ["hv", "lv"], "trafo3w": ["hv", "mv", "lv"]}
 
+
 def create_measurement(
     net: pandapowerNet,
     meas_type: MeasurementType,

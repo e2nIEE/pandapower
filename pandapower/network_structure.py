@@ -92,6 +92,7 @@ def get_column_info(table: str, column: str) -> dict[str, str | bool | dict] | N
         return column
     return column.__dict__
 
+
 def get_default_value(table: str, column: str) -> Any:
     column_info: dict[str, Any] | None = get_column_info(table, column)
     if (
@@ -105,13 +106,16 @@ def get_default_value(table: str, column: str) -> Any:
         return float("nan")
     return pd.NA
 
+
 def get_structure_dict(required_only: bool = True, metadata: list | None = None) -> dict:
     """
     This function returns the structure dict of the network
     """
     if metadata is None:
         metadata = []
-    dtypes_dict: dict[str, Any] = {key: get_dtypes(val, required_only, metadata) for key, val in get_table_schema().items()}
+    dtypes_dict: dict[str, Any] = {
+        key: get_dtypes(val, required_only, metadata) for key, val in get_table_schema().items()
+    }
     # TODO: convert to pandera
     additional_schema = {
         "pwl_cost": {
@@ -145,7 +149,7 @@ def get_structure_dict(required_only: bool = True, metadata: list | None = None)
             "element_type": dtype(object),
             "element_index": dtype(object),
             "reference_column": pd.StringDtype(),
-        }
+        },
     }
     internal_values = {
         # internal

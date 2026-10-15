@@ -4,19 +4,19 @@
 import numpy as np
 import pytest
 
-from pandapower.create import (
-    create_bus, create_ext_grid, create_sgen, create_load, create_line, create_transformer3w
-)
+from pandapower.create import create_bus, create_ext_grid, create_sgen, create_load, create_line, create_transformer3w
 from pandapower.estimation import estimate
 from pandapower.estimation.util import add_virtual_pmu_meas_from_loadflow
 from pandapower.network import pandapowerNet
 from pandapower.networks.power_system_test_cases import case14
 from pandapower.run import runpp
 
+
 def run_se_verify(net):
     estimate(net, algorithm="wls")
-    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or\
-       not np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=1e-1):
+    if not np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-2) or not np.allclose(
+        net.res_bus.va_degree, net.res_bus_est.va_degree, atol=1e-1
+    ):
         raise AssertionError("Estimation failed!")
 
 
@@ -53,5 +53,5 @@ def test_pmu_with_trafo3w():
     run_se_verify(net)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

@@ -2,8 +2,8 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""Computes total cost for generators at given output level.
-"""
+"""Computes total cost for generators at given output level."""
+
 from numpy import zeros, arange, int64, flatnonzero as find
 
 from pandapower.pypower.polycost import polycost
@@ -29,14 +29,14 @@ def totcost(gencost, Pg):
         ipwl = find(gencost[:, MODEL] == PW_LINEAR)
         ipol = find(gencost[:, MODEL] == POLYNOMIAL)
         if len(ipwl) > 0:
-            p = gencost[:, COST:(m-1):2]
-            c = gencost[:, (COST+1):m:2]
+            p = gencost[:, COST : (m - 1) : 2]
+            c = gencost[:, (COST + 1) : m : 2]
 
             for i in ipwl:
                 ncost = gencost[i, NCOST]
                 for k in arange(ncost - 1, dtype=int64):
-                    p1, p2 = p[i, k], p[i, k+1]
-                    c1, c2 = c[i, k], c[i, k+1]
+                    p1, p2 = p[i, k], p[i, k + 1]
+                    c1, c2 = c[i, k], c[i, k + 1]
                     m = (c2 - c1) / (p2 - p1)
                     b = c1 - m * p1
                     Pgen = Pg[i]

@@ -184,13 +184,13 @@ def test_create_ext_grid_controllable():
 
     # Create first ext_grid without controllable
     idx1 = create_ext_grid(net, bus=b1)
-    assert 'controllable' in net.ext_grid.columns
+    assert "controllable" in net.ext_grid.columns
 
     # Create second ext_grid with controllable=True
     idx2 = create_ext_grid(net, bus=b1, controllable=True)
 
-    assert not net.ext_grid.at[idx1, 'controllable']
-    assert net.ext_grid.at[idx2, 'controllable']
+    assert not net.ext_grid.at[idx1, "controllable"]
+    assert net.ext_grid.at[idx2, "controllable"]
 
     validate_network(net)
 
@@ -222,7 +222,14 @@ def test_create_ext_grid_default_values():
 
     # Check that optional columns are not created
     assert (
-        "max_p_mw", "min_p_mw", "max_q_mvar", "min_q_mvar", "s_sc_max_mva", "s_sc_min_mva", "rx_max", "rx_min"
+        "max_p_mw",
+        "min_p_mw",
+        "max_q_mvar",
+        "min_q_mvar",
+        "s_sc_max_mva",
+        "s_sc_min_mva",
+        "rx_max",
+        "rx_min",
     ) not in net.ext_grid.columns
 
     validate_network(net)

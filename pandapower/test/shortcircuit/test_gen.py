@@ -54,7 +54,7 @@ def gen_three_bus_example():
             "endtemp_degree": 165,
         },
     )
-    create_ext_grid(net, b1, s_sc_max_mva=10., s_sc_min_mva=8., rx_min=0.4, rx_max=0.4)
+    create_ext_grid(net, b1, s_sc_max_mva=10.0, s_sc_min_mva=8.0, rx_min=0.4, rx_max=0.4)
     return net
 
 
@@ -108,9 +108,13 @@ def test_gen_ext_grid_same_bus():
     calc_sc(net3)
 
     # no idea why it is not close to 1e-6
-    assert np.isclose(net3.res_bus_sc.at[0, "ikss_ka"],
-                      net1.res_bus_sc.at[0, "ikss_ka"] + net2.res_bus_sc.at[0, "ikss_ka"], rtol=0, atol=2e-4)
+    assert np.isclose(
+        net3.res_bus_sc.at[0, "ikss_ka"],
+        net1.res_bus_sc.at[0, "ikss_ka"] + net2.res_bus_sc.at[0, "ikss_ka"],
+        rtol=0,
+        atol=2e-4,
+    )
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

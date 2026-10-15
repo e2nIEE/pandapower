@@ -1,5 +1,4 @@
 import pytest
-from copy import deepcopy
 import logging
 from itertools import product
 
@@ -23,22 +22,19 @@ test_data = {
     "c9-0": (case9, [3], [0], True, {}),
     "c9-1": (case9, [4, 8], [0], True, {}),
     "c9-2": (case9, [4, 8], [0], True, {"buses_out_of_service": [6]}),
-    "c9-3": (case9, [3, 4], [0], True, {"switch_changes": [['l', 5, 4]]}),
+    "c9-3": (case9, [3, 4], [0], True, {"switch_changes": [["l", 5, 4]]}),
     "c9-4": (case9, [3, 8], [], False, {}),
     "c9-5": (case9, [4, 6], [0], True, {"switch_changes": [["b", 4, 8]]}),
     "c9-6": (case9, [3, 4, 6], [1], False, {}),
     "c9-7": (case9, [3, 5], [2, 4, 0], True, {}),
-
     "c30-0": (case30, [8], [0], True, {"buses_out_of_service": [9]}),
     "c30-1": (case30, [1, 2], [0], True, {}),
-    "c30-2": (case30, [3, 9, 22], [0], True, {"switch_changes": [['b', 11, 19]]}),
-    "c30-3": (case30, [21, 22, 26], [0, 20], True, {"switch_changes": [['b', 22, 18], ['l', 21, 30]]}),
+    "c30-2": (case30, [3, 9, 22], [0], True, {"switch_changes": [["b", 11, 19]]}),
+    "c30-3": (case30, [21, 22, 26], [0, 20], True, {"switch_changes": [["b", 22, 18], ["l", 21, 30]]}),
     "c30-4": (case30, [3, 16, 19, 22], [0, 20], True, {}),
     "c30-5": (case30, [5, 16, 18, 23, 27], [0, 24], True, {"buses_out_of_service": [9, 28]}),
-
-    "c39-0": (case39, [1, 7], [0], False, {"buses_out_of_service": [4, 8], "switch_changes": [['b', 2, 25]]}),
-    "c39-1": (case39, [15, 25], [30], True, {"switch_changes": [['t', 11, 4], ['t', 11, 3]]}),
-
+    "c39-0": (case39, [1, 7], [0], False, {"buses_out_of_service": [4, 8], "switch_changes": [["b", 2, 25]]}),
+    "c39-1": (case39, [15, 25], [30], True, {"switch_changes": [["t", 11, 4], ["t", 11, 3]]}),
     # FIXME: Some set from case118 crash the pipeline (c118-5)
     "c118-0": (case118, [7], [0], True, {}),
     "c118-1": (case118, [4, 14, 15], [0], True, {}),
@@ -46,7 +42,7 @@ test_data = {
     "c118-3": (case118, [18, 22, 37, 64], [68], True, {"buses_out_of_service": [32]}),
     "c118-4": (case118, [18, 20, 25, 26, 29, 31], [68], True, {}),
     "c118-5": (case118, [70, 69, 67, 48, 44], [68], True, {}),
-    "c118-6": (case118, [39, 42, 48, 65, 69, 70], [68], True, {})
+    "c118-6": (case118, [39, 42, 48, 65, 69, 70], [68], True, {}),
 }
 
 
@@ -55,7 +51,7 @@ test_data = {
     "net_func, boundary_buses, internal_buses, return_internal, kwargs", test_data.values(), ids=test_data.keys()
 )
 def test_networks(eq_type, sn_mva, net_func, boundary_buses, internal_buses, return_internal, kwargs):
-    logging.debug(f'test with {net_func.__name__}:')
+    logging.debug(f"test with {net_func.__name__}:")
     net = net_func()
     net.sn_mva = sn_mva
 
@@ -67,8 +63,16 @@ def test_networks(eq_type, sn_mva, net_func, boundary_buses, internal_buses, ret
     assert max_error < epsilon
 
 
-def get_max_error(net, eq_type, boundary_buses, internal_buses, return_internal,
-                  buses_out_of_service=None, switch_changes=(), **kwargs):
+def get_max_error(
+    net,
+    eq_type,
+    boundary_buses,
+    internal_buses,
+    return_internal,
+    buses_out_of_service=None,
+    switch_changes=(),
+    **kwargs,
+):
     # --- topology adaption
     if switch_changes:
         for i in range(len(switch_changes)):

@@ -99,7 +99,7 @@ class OutputStreamer(OutputWriter):
             data.rename(columns=mapping, inplace=True)
 
     def save_results(
-        self, net: pandapowerNet, time_step: int, pf_converged: bool, ctrl_converged: bool, recycle_options = None
+        self, net: pandapowerNet, time_step: int, pf_converged: bool, ctrl_converged: bool, recycle_options=None
     ):
         """
         Saves the results of the current time step to a matrix
@@ -191,7 +191,9 @@ class OutputStreamer(OutputWriter):
             else:
                 raise ValueError(e)
 
-    def _save_csv(self, net: pandapowerNet, file_path: str, data: pd.DataFrame, table: str, append: bool = False) -> None:
+    def _save_csv(
+        self, net: pandapowerNet, file_path: str, data: pd.DataFrame, table: str, append: bool = False
+    ) -> None:
         """
         Saves the new simulation data to a csv file.
 
@@ -213,7 +215,6 @@ class OutputStreamer(OutputWriter):
             data.to_csv(file_path, sep=self.csv_separator, mode="w", header=True)
 
     def _save_separate(self, append, net=None):
-
         for partial in self.output_list:
             table, variable = self._get_table_and_variable(partial)
             if table != "Parameters":

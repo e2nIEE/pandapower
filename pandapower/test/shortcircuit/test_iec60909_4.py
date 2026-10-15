@@ -32,19 +32,74 @@ def iec_60909_4():
     #     pfe_kw=0, i0_percent=0,
     #     vn_hv_kv=115., vn_lv_kv=21, vk_percent=16, vkr_percent=0.5,
     #     pt_percent=12, oltc=True)
-    t1 = create_transformer_from_parameters(net, b4, HG1, sn_mva=150, pfe_kw=0, i0_percent=0, vn_hv_kv=115.,
-                                            vn_lv_kv=21, vk_percent=16, vkr_percent=0.5, pt_percent=12, oltc=True,
-                                            vk0_percent=15.2, vkr0_percent=0.5, xn_ohm=22, vector_group="YNd",
-                                            mag0_percent=10000, mag0_rx=0, si0_hv_partial=0.5, power_station_unit=True)
-    create_gen(net, HG1, p_mw=0.85 * 150, vn_kv=21, xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, sn_mva=150,
-               pg_percent=0, power_station_trafo=t1)
+    t1 = create_transformer_from_parameters(
+        net,
+        b4,
+        HG1,
+        sn_mva=150,
+        pfe_kw=0,
+        i0_percent=0,
+        vn_hv_kv=115.0,
+        vn_lv_kv=21,
+        vk_percent=16,
+        vkr_percent=0.5,
+        pt_percent=12,
+        oltc=True,
+        vk0_percent=15.2,
+        vkr0_percent=0.5,
+        xn_ohm=22,
+        vector_group="YNd",
+        mag0_percent=10000,
+        mag0_rx=0,
+        si0_hv_partial=0.5,
+        power_station_unit=True,
+    )
+    create_gen(
+        net,
+        HG1,
+        p_mw=0.85 * 150,
+        vn_kv=21,
+        xdss_pu=0.14,
+        rdss_ohm=0.002,
+        cos_phi=0.85,
+        sn_mva=150,
+        pg_percent=0,
+        power_station_trafo=t1,
+    )
 
-    t2 = create_transformer_from_parameters(net, b3, HG2, sn_mva=100, pfe_kw=0, i0_percent=0, vn_hv_kv=120.,
-                                            vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5, oltc=False, vk0_percent=12,
-                                            vkr0_percent=0.5, vector_group="Yd", mag0_percent=10000, mag0_rx=0,
-                                            si0_hv_partial=0.5, power_station_unit=True)
-    create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5, xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100,
-               pg_percent=7.5, slack=True, power_station_trafo=t2)
+    t2 = create_transformer_from_parameters(
+        net,
+        b3,
+        HG2,
+        sn_mva=100,
+        pfe_kw=0,
+        i0_percent=0,
+        vn_hv_kv=120.0,
+        vn_lv_kv=10.5,
+        vk_percent=12,
+        vkr_percent=0.5,
+        oltc=False,
+        vk0_percent=12,
+        vkr0_percent=0.5,
+        vector_group="Yd",
+        mag0_percent=10000,
+        mag0_rx=0,
+        si0_hv_partial=0.5,
+        power_station_unit=True,
+    )
+    create_gen(
+        net,
+        HG2,
+        p_mw=0.9 * 100,
+        vn_kv=10.5,
+        xdss_pu=0.16,
+        rdss_ohm=0.005,
+        cos_phi=0.9,
+        sn_mva=100,
+        pg_percent=7.5,
+        slack=True,
+        power_station_trafo=t2,
+    )
 
     # # Add gen 3
     # create_gen(net, b6, p_mw=0.9 * 100, vn_kv=10.5,
@@ -52,45 +107,161 @@ def iec_60909_4():
     # Add gen 3
     create_gen(net, b6, p_mw=0, vn_kv=10.5, xdss_pu=0.1, rdss_ohm=0.018, cos_phi=0.8, sn_mva=10, pg_percent=0)
 
-    create_transformer3w_from_parameters(net, hv_bus=b1, mv_bus=b2, lv_bus=H, vn_hv_kv=400, vn_mv_kv=120, vn_lv_kv=30,
-                                         sn_hv_mva=350, sn_mv_mva=350, sn_lv_mva=50, pfe_kw=0, i0_percent=0,
-                                         vk_hv_percent=21, vkr_hv_percent=.26, vk_mv_percent=7, vkr_mv_percent=.16,
-                                         vk_lv_percent=10., vkr_lv_percent=.16, vk0_hv_percent=44.1,
-                                         vkr0_hv_percent=0.26, vk0_mv_percent=6.299627, vkr0_mv_percent=0.03714286,
-                                         vk0_lv_percent=6.299627, vkr0_lv_percent=0.03714286, vector_group="YNyd",
-                                         tap_changer_type="Ratio", tap_max=10, tap_min=-10, tap_pos=0, tap_neutral=0,
-                                         tap_side="hv", tap_step_percent=0.1)
+    create_transformer3w_from_parameters(
+        net,
+        hv_bus=b1,
+        mv_bus=b2,
+        lv_bus=H,
+        vn_hv_kv=400,
+        vn_mv_kv=120,
+        vn_lv_kv=30,
+        sn_hv_mva=350,
+        sn_mv_mva=350,
+        sn_lv_mva=50,
+        pfe_kw=0,
+        i0_percent=0,
+        vk_hv_percent=21,
+        vkr_hv_percent=0.26,
+        vk_mv_percent=7,
+        vkr_mv_percent=0.16,
+        vk_lv_percent=10.0,
+        vkr_lv_percent=0.16,
+        vk0_hv_percent=44.1,
+        vkr0_hv_percent=0.26,
+        vk0_mv_percent=6.299627,
+        vkr0_mv_percent=0.03714286,
+        vk0_lv_percent=6.299627,
+        vkr0_lv_percent=0.03714286,
+        vector_group="YNyd",
+        tap_changer_type="Ratio",
+        tap_max=10,
+        tap_min=-10,
+        tap_pos=0,
+        tap_neutral=0,
+        tap_side="hv",
+        tap_step_percent=0.1,
+    )
     # vk0 = sqrt(vkr0^2 + vki0^2) = sqrt(vkr^2 + (2.1 * vki)^2) = sqrt(vkr^2 + (2.1)^2 * (vk^2 - vkr^2))
-    create_transformer3w_from_parameters(net, hv_bus=b1, mv_bus=b2, lv_bus=b8, vn_hv_kv=400, vn_mv_kv=120, vn_lv_kv=30,
-                                         sn_hv_mva=350, sn_mv_mva=350, sn_lv_mva=50, pfe_kw=0, i0_percent=0,
-                                         vk_hv_percent=21, vkr_hv_percent=.26, vk_mv_percent=7, vkr_mv_percent=.16,
-                                         vk_lv_percent=10., vkr_lv_percent=.16, vk0_hv_percent=44.1,
-                                         vkr0_hv_percent=0.26, vk0_mv_percent=6.299627, vkr0_mv_percent=0.03714286,
-                                         vk0_lv_percent=6.299627, vkr0_lv_percent=0.03714286, vector_group="Yynd",
-                                         tap_changer_type="Ratio", tap_max=10, tap_min=-10, tap_pos=0, tap_neutral=0,
-                                         tap_side="hv", tap_step_percent=0.1)
+    create_transformer3w_from_parameters(
+        net,
+        hv_bus=b1,
+        mv_bus=b2,
+        lv_bus=b8,
+        vn_hv_kv=400,
+        vn_mv_kv=120,
+        vn_lv_kv=30,
+        sn_hv_mva=350,
+        sn_mv_mva=350,
+        sn_lv_mva=50,
+        pfe_kw=0,
+        i0_percent=0,
+        vk_hv_percent=21,
+        vkr_hv_percent=0.26,
+        vk_mv_percent=7,
+        vkr_mv_percent=0.16,
+        vk_lv_percent=10.0,
+        vkr_lv_percent=0.16,
+        vk0_hv_percent=44.1,
+        vkr0_hv_percent=0.26,
+        vk0_mv_percent=6.299627,
+        vkr0_mv_percent=0.03714286,
+        vk0_lv_percent=6.299627,
+        vkr0_lv_percent=0.03714286,
+        vector_group="Yynd",
+        tap_changer_type="Ratio",
+        tap_max=10,
+        tap_min=-10,
+        tap_pos=0,
+        tap_neutral=0,
+        tap_side="hv",
+        tap_step_percent=0.1,
+    )
 
-    create_transformer3w_from_parameters(net, hv_bus=b5, mv_bus=b6, lv_bus=T_T5, vn_hv_kv=115., vn_mv_kv=10.5,
-                                         vn_lv_kv=10.5, sn_hv_mva=31.5, sn_mv_mva=31.5, sn_lv_mva=31.5, pfe_kw=0,
-                                         i0_percent=0, vk_hv_percent=12, vkr_hv_percent=.5, vk_mv_percent=12,
-                                         vkr_mv_percent=.5, vk_lv_percent=12, vkr_lv_percent=.5, vk0_hv_percent=12,
-                                         vkr0_hv_percent=0.5, vk0_mv_percent=12, vkr0_mv_percent=0.5, vk0_lv_percent=12,
-                                         vkr0_lv_percent=0.5, vector_group="Yyd",  tap_changer_type="Ratio", tap_max=10,
-                                         tap_min=-10, tap_pos=0, tap_neutral=0, tap_side="hv", tap_step_percent=0.1)
-    create_transformer3w_from_parameters(net, hv_bus=b5, mv_bus=b6, lv_bus=T_T6, vn_hv_kv=115., vn_mv_kv=10.5,
-                                         vn_lv_kv=10.5, sn_hv_mva=31.5, sn_mv_mva=31.5, sn_lv_mva=31.5, pfe_kw=0,
-                                         i0_percent=0, vk_hv_percent=12, vkr_hv_percent=.5, vk_mv_percent=12,
-                                         vkr_mv_percent=.5, vk_lv_percent=12, vkr_lv_percent=.5, vk0_hv_percent=12,
-                                         vkr0_hv_percent=0.5, vk0_mv_percent=12, vkr0_mv_percent=0.5, vk0_lv_percent=12,
-                                         vkr0_lv_percent=0.5, vector_group="Yynd", tap_changer_type="Ratio", tap_max=10,
-                                         tap_min=-10, tap_pos=0, tap_neutral=0, tap_side="hv", tap_step_percent=0.1)
-                                         # reactor is 100 Ohm
+    create_transformer3w_from_parameters(
+        net,
+        hv_bus=b5,
+        mv_bus=b6,
+        lv_bus=T_T5,
+        vn_hv_kv=115.0,
+        vn_mv_kv=10.5,
+        vn_lv_kv=10.5,
+        sn_hv_mva=31.5,
+        sn_mv_mva=31.5,
+        sn_lv_mva=31.5,
+        pfe_kw=0,
+        i0_percent=0,
+        vk_hv_percent=12,
+        vkr_hv_percent=0.5,
+        vk_mv_percent=12,
+        vkr_mv_percent=0.5,
+        vk_lv_percent=12,
+        vkr_lv_percent=0.5,
+        vk0_hv_percent=12,
+        vkr0_hv_percent=0.5,
+        vk0_mv_percent=12,
+        vkr0_mv_percent=0.5,
+        vk0_lv_percent=12,
+        vkr0_lv_percent=0.5,
+        vector_group="Yyd",
+        tap_changer_type="Ratio",
+        tap_max=10,
+        tap_min=-10,
+        tap_pos=0,
+        tap_neutral=0,
+        tap_side="hv",
+        tap_step_percent=0.1,
+    )
+    create_transformer3w_from_parameters(
+        net,
+        hv_bus=b5,
+        mv_bus=b6,
+        lv_bus=T_T6,
+        vn_hv_kv=115.0,
+        vn_mv_kv=10.5,
+        vn_lv_kv=10.5,
+        sn_hv_mva=31.5,
+        sn_mv_mva=31.5,
+        sn_lv_mva=31.5,
+        pfe_kw=0,
+        i0_percent=0,
+        vk_hv_percent=12,
+        vkr_hv_percent=0.5,
+        vk_mv_percent=12,
+        vkr_mv_percent=0.5,
+        vk_lv_percent=12,
+        vkr_lv_percent=0.5,
+        vk0_hv_percent=12,
+        vkr0_hv_percent=0.5,
+        vk0_mv_percent=12,
+        vkr0_mv_percent=0.5,
+        vk0_lv_percent=12,
+        vkr0_lv_percent=0.5,
+        vector_group="Yynd",
+        tap_changer_type="Ratio",
+        tap_max=10,
+        tap_min=-10,
+        tap_pos=0,
+        tap_neutral=0,
+        tap_side="hv",
+        tap_step_percent=0.1,
+    )
+    # reactor is 100 Ohm
 
-    create_motor(net, b7, pn_mech_mw=5.0, cos_phi=0.88, cos_phi_n=0.88, efficiency_n_percent=97.5, vn_kv=10, rx=0.1,
-                 lrc_pu=5)
+    create_motor(
+        net, b7, pn_mech_mw=5.0, cos_phi=0.88, cos_phi_n=0.88, efficiency_n_percent=97.5, vn_kv=10, rx=0.1, lrc_pu=5
+    )
     for _ in range(2):
-        create_motor(net, b7, pn_mech_mw=2.0, cos_phi=0.89, cos_phi_n=0.89, efficiency_n_percent=96.8, vn_kv=10, rx=0.1,
-                     lrc_pu=5.2)
+        create_motor(
+            net,
+            b7,
+            pn_mech_mw=2.0,
+            cos_phi=0.89,
+            cos_phi_n=0.89,
+            efficiency_n_percent=96.8,
+            vn_kv=10,
+            rx=0.1,
+            lrc_pu=5.2,
+        )
 
     create_lines(
         net,
@@ -189,22 +360,81 @@ def iec_60909_4_small(with_xward=False):
     create_ext_grid(net, b1, s_sc_max_mva=38 * 380 * np.sqrt(3), rx_max=0.1, x0x_max=3, r0x0_max=0.15)
     create_ext_grid(net, b5, s_sc_max_mva=16 * 110 * np.sqrt(3), rx_max=0.1, x0x_max=3.3, r0x0_max=0.2)
 
-    t1 = create_transformer_from_parameters(net, b3, HG2, sn_mva=100, pfe_kw=0, i0_percent=0, vn_hv_kv=120.,
-                                            vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5, vk0_percent=12,
-                                            vkr0_percent=0.5, mag0_percent=10000, mag0_rx=0, si0_hv_partial=0.5,
-                                            shift_degree=5, vector_group="Yd", power_station_unit=True)
-    create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5, xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100,
-               pg_percent=7.5, slack=True, power_station_trafo=t1)
+    t1 = create_transformer_from_parameters(
+        net,
+        b3,
+        HG2,
+        sn_mva=100,
+        pfe_kw=0,
+        i0_percent=0,
+        vn_hv_kv=120.0,
+        vn_lv_kv=10.5,
+        vk_percent=12,
+        vkr_percent=0.5,
+        vk0_percent=12,
+        vkr0_percent=0.5,
+        mag0_percent=10000,
+        mag0_rx=0,
+        si0_hv_partial=0.5,
+        shift_degree=5,
+        vector_group="Yd",
+        power_station_unit=True,
+    )
+    create_gen(
+        net,
+        HG2,
+        p_mw=0.9 * 100,
+        vn_kv=10.5,
+        xdss_pu=0.16,
+        rdss_ohm=0.005,
+        cos_phi=0.9,
+        sn_mva=100,
+        pg_percent=7.5,
+        slack=True,
+        power_station_trafo=t1,
+    )
 
-    create_transformer3w_from_parameters(net, hv_bus=b1, mv_bus=b2, lv_bus=H, vn_hv_kv=400, vn_mv_kv=120, vn_lv_kv=30,
-                                         sn_hv_mva=350, sn_mv_mva=350, sn_lv_mva=50, pfe_kw=0, i0_percent=0,
-                                         # FIXME: Optional for SC
-                                         vk_hv_percent=21, vkr_hv_percent=.26, vk_mv_percent=7, vkr_mv_percent=.16,
-                                         vk_lv_percent=10., vkr_lv_percent=.16)
-    create_transformer3w_from_parameters(net, hv_bus=b1, mv_bus=b2, lv_bus=b8, vn_hv_kv=400, vn_mv_kv=120, vn_lv_kv=30,
-                                         sn_hv_mva=350, sn_mv_mva=350, sn_lv_mva=50, pfe_kw=0, i0_percent=0,
-                                         vk_hv_percent=21, vkr_hv_percent=.26, vk_mv_percent=7, vkr_mv_percent=.16,
-                                         vk_lv_percent=10., vkr_lv_percent=.16)
+    create_transformer3w_from_parameters(
+        net,
+        hv_bus=b1,
+        mv_bus=b2,
+        lv_bus=H,
+        vn_hv_kv=400,
+        vn_mv_kv=120,
+        vn_lv_kv=30,
+        sn_hv_mva=350,
+        sn_mv_mva=350,
+        sn_lv_mva=50,
+        pfe_kw=0,
+        i0_percent=0,
+        # FIXME: Optional for SC
+        vk_hv_percent=21,
+        vkr_hv_percent=0.26,
+        vk_mv_percent=7,
+        vkr_mv_percent=0.16,
+        vk_lv_percent=10.0,
+        vkr_lv_percent=0.16,
+    )
+    create_transformer3w_from_parameters(
+        net,
+        hv_bus=b1,
+        mv_bus=b2,
+        lv_bus=b8,
+        vn_hv_kv=400,
+        vn_mv_kv=120,
+        vn_lv_kv=30,
+        sn_hv_mva=350,
+        sn_mv_mva=350,
+        sn_lv_mva=50,
+        pfe_kw=0,
+        i0_percent=0,
+        vk_hv_percent=21,
+        vkr_hv_percent=0.26,
+        vk_mv_percent=7,
+        vkr_mv_percent=0.16,
+        vk_lv_percent=10.0,
+        vkr_lv_percent=0.16,
+    )
 
     create_lines(
         net,
@@ -278,12 +508,38 @@ def iec_60909_4_small_gen_only():
 
     b3, HG2 = create_buses(net, 2, vn_kv=[110.0, 10.0])
 
-    t1 = create_transformer_from_parameters(net, b3, HG2, sn_mva=100, pfe_kw=0, i0_percent=0, vn_hv_kv=120.,
-                                            vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5, vk0_percent=12,
-                                            vkr0_percent=0.5, mag0_percent=10000, mag0_rx=0, si0_hv_partial=0.5,
-                                            vector_group="Yd", power_station_unit=True)
-    create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5, xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100,
-               pg_percent=7.5, slack=True, power_station_trafo=t1)
+    t1 = create_transformer_from_parameters(
+        net,
+        b3,
+        HG2,
+        sn_mva=100,
+        pfe_kw=0,
+        i0_percent=0,
+        vn_hv_kv=120.0,
+        vn_lv_kv=10.5,
+        vk_percent=12,
+        vkr_percent=0.5,
+        vk0_percent=12,
+        vkr0_percent=0.5,
+        mag0_percent=10000,
+        mag0_rx=0,
+        si0_hv_partial=0.5,
+        vector_group="Yd",
+        power_station_unit=True,
+    )
+    create_gen(
+        net,
+        HG2,
+        p_mw=0.9 * 100,
+        vn_kv=10.5,
+        xdss_pu=0.16,
+        rdss_ohm=0.005,
+        cos_phi=0.9,
+        sn_mva=100,
+        pg_percent=7.5,
+        slack=True,
+        power_station_trafo=t1,
+    )
 
     return net
 
@@ -293,17 +549,61 @@ def iec_60909_4_2gen():
 
     b3, b4, HG1, HG2 = create_buses(net, 4, vn_kv=[110.0, 110.0, 20.0, 10.0])
 
-    t1 = create_transformer_from_parameters(net, b4, HG1, sn_mva=150, pfe_kw=0, i0_percent=0, vn_hv_kv=115.,
-                                            vn_lv_kv=21, vk_percent=16, vkr_percent=0.5, pt_percent=12, oltc=True,
-                                            power_station_unit=True)
-    create_gen(net, HG1, p_mw=0.85 * 150, vn_kv=21, xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, sn_mva=150,
-               pg_percent=0, power_station_trafo=t1)
+    t1 = create_transformer_from_parameters(
+        net,
+        b4,
+        HG1,
+        sn_mva=150,
+        pfe_kw=0,
+        i0_percent=0,
+        vn_hv_kv=115.0,
+        vn_lv_kv=21,
+        vk_percent=16,
+        vkr_percent=0.5,
+        pt_percent=12,
+        oltc=True,
+        power_station_unit=True,
+    )
+    create_gen(
+        net,
+        HG1,
+        p_mw=0.85 * 150,
+        vn_kv=21,
+        xdss_pu=0.14,
+        rdss_ohm=0.002,
+        cos_phi=0.85,
+        sn_mva=150,
+        pg_percent=0,
+        power_station_trafo=t1,
+    )
 
-    t2 = create_transformer_from_parameters(net, b3, HG2, sn_mva=100, pfe_kw=0, i0_percent=0, vn_hv_kv=120.,
-                                            vn_lv_kv=10.5, vk_percent=12, vkr_percent=0.5, oltc=False,
-                                            power_station_unit=True)
-    create_gen(net, HG2, p_mw=0.9 * 100, vn_kv=10.5, xdss_pu=0.16, rdss_ohm=0.005, cos_phi=0.9, sn_mva=100,
-               pg_percent=7.5, slack=True, power_station_trafo=t2)
+    t2 = create_transformer_from_parameters(
+        net,
+        b3,
+        HG2,
+        sn_mva=100,
+        pfe_kw=0,
+        i0_percent=0,
+        vn_hv_kv=120.0,
+        vn_lv_kv=10.5,
+        vk_percent=12,
+        vkr_percent=0.5,
+        oltc=False,
+        power_station_unit=True,
+    )
+    create_gen(
+        net,
+        HG2,
+        p_mw=0.9 * 100,
+        vn_kv=10.5,
+        xdss_pu=0.16,
+        rdss_ohm=0.005,
+        cos_phi=0.9,
+        sn_mva=100,
+        pg_percent=7.5,
+        slack=True,
+        power_station_trafo=t2,
+    )
 
     create_lines(
         net,
@@ -328,12 +628,32 @@ def vde_232():
     create_buses(net, 2, [110.0, 21.0])
 
     create_ext_grid(net, 0, s_sc_max_mva=13.61213 * 110 * np.sqrt(3), rx_max=0.20328, x0x_max=3.47927, r0x0_max=3.03361)
-    create_transformer_from_parameters(net, 0, 1, 150, 115, 21, 0.5, 16, pfe_kw=0, i0_percent=0, tap_step_percent=1,
-                                       tap_changer_type="Ratio", tap_max=12, tap_min=-12, tap_neutral=0, tap_side='hv',
-                                       vector_group="YNd",
-                                       vk0_percent=np.sqrt(np.square(0.95 * 15.99219) + np.square(0.5)),
-                                       vkr0_percent=0.5, mag0_percent=10000, mag0_rx=0, si0_hv_partial=0.9, pt_percent=12,
-                                       oltc=True)
+    create_transformer_from_parameters(
+        net,
+        0,
+        1,
+        150,
+        115,
+        21,
+        0.5,
+        16,
+        pfe_kw=0,
+        i0_percent=0,
+        tap_step_percent=1,
+        tap_changer_type="Ratio",
+        tap_max=12,
+        tap_min=-12,
+        tap_neutral=0,
+        tap_side="hv",
+        vector_group="YNd",
+        vk0_percent=np.sqrt(np.square(0.95 * 15.99219) + np.square(0.5)),
+        vkr0_percent=0.5,
+        mag0_percent=10000,
+        mag0_rx=0,
+        si0_hv_partial=0.9,
+        pt_percent=12,
+        oltc=True,
+    )
     # todo: implement Zn (reactance grounding) -> Z_(0)S = Z_(0)THV*K_S + 3*Z_N
     create_gen(net, 1, 150, 1, 150, vn_kv=21, xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, power_station_trafo=0)
     return net
@@ -448,9 +768,8 @@ def test_iec_60909_4_3ph_min():
     net.ext_grid["rx_min"] = net.ext_grid["rx_max"]
     calc_sc(net, fault="3ph", case="min", ip=True, tk_s=0.1, kappa_method="C")
 
-    ikss_min = [5.0257, 12.0645, 10.2108, 9.3820, 11.6761,
-                27.7655, 18.3930, 10.9024, 44.4310, 67.8216]
-   
+    ikss_min = [5.0257, 12.0645, 10.2108, 9.3820, 11.6761, 27.7655, 18.3930, 10.9024, 44.4310, 67.8216]
+
     # ikss_min = [5.0501, 12.2915, 10.3292, 9.4708, 11.8604, 28.3052, 18.6148, 10.9005, 44.5098, 67.9578]
 
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10], np.array(ikss_min), atol=1e-3)
@@ -494,13 +813,14 @@ def test_iec_60909_4_1ph():
     ip = [60.9982, 40.5086, 24.2424, 20.5464, 42.8337, 0.1656, 0.1279, 0.0, 0.00025, 0.00033]
     # No ib for 1ph sc calculation
 
-    assert np.allclose(net.res_bus_sc.ikss_ka.values[:10], np.array(ikss),
-                       atol=1e-4)  # assert np.allclose(net.res_bus_sc.ip.values[:8], np.array(ip), rtol=1e-4)
+    assert np.allclose(
+        net.res_bus_sc.ikss_ka.values[:10], np.array(ikss), atol=1e-4
+    )  # assert np.allclose(net.res_bus_sc.ip.values[:8], np.array(ip), rtol=1e-4)
 
 
 def test_detect_power_station_units():
     net = iec_60909_4()
-    net.gen.loc[:, 'power_station_trafo'] = None
+    net.gen.loc[:, "power_station_trafo"] = None
 
     detect_power_station_unit(net)
     assert np.all(net.gen.power_station_trafo.values[[0, 1]] == np.array([0, 1]))
@@ -521,5 +841,5 @@ def test_vde_232():
     calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

@@ -12,6 +12,7 @@ from numpy import array
 
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.network import ADict, pandapowerNet
+
 # ADict is used as a type to ensure compatibility with pandapipes
 from pandapower.plotting.plotting_toolbox import safe_geojson_loads
 
@@ -176,10 +177,7 @@ def abstract_convert_crs(
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "pyproj")
     transformer = Transformer.from_crs(epsg_in, epsg_out, always_xy=True)
 
-    if (
-            ("geo" in net[component_name])
-            and (not (net[component_name].empty or all(net[component_name].geo.isna())))
-    ):
+    if ("geo" in net[component_name]) and (not (net[component_name].empty or all(net[component_name].geo.isna()))):
         if epsg_out != 4326:
             logger.warning("Converting geojson to crs other than WGS84 is highly discouraged.")
 

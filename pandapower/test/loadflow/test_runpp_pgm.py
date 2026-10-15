@@ -38,8 +38,8 @@ def test_minimal_net_pgm(consistency_fn):
 def test_runpp_pgm__invalid_algorithm():
     net = pandapowerNet(name="test_runpp_pgm__invalid_algorithm")
     with pytest.raises(
-            KeyError,
-            match="Invalid algorithm 'foo'",
+        KeyError,
+        match="Invalid algorithm 'foo'",
     ):
         runpp_pgm(net, algorithm="foo")
 

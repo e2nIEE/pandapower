@@ -4,8 +4,13 @@
 import pytest
 
 from pandapower.create import (
-    create_buses, create_ext_grid, create_gen,
-    create_load, create_line, create_group, create_group_from_dict
+    create_buses,
+    create_ext_grid,
+    create_gen,
+    create_load,
+    create_line,
+    create_group,
+    create_group_from_dict,
 )
 from pandapower.network import pandapowerNet
 
@@ -25,10 +30,7 @@ def test_create_group():
 
     # Test basic group creation
     idx = create_group(
-        net,
-        element_types=["bus", "gen"],
-        element_indices=[[buses[0], buses[1]], [0, 1]],
-        name="test_group"
+        net, element_types=["bus", "gen"], element_indices=[[buses[0], buses[1]], [0, 1]], name="test_group"
     )
 
     # Verify the group was created correctly
@@ -53,9 +55,7 @@ def test_create_group_with_custom_index():
     assert idx1 == 0
 
     # Create second group with custom index
-    idx2 = create_group(
-        net, "gen", [[1]], name="gen_group_2", index=5
-    )
+    idx2 = create_group(net, "gen", [[1]], name="gen_group_2", index=5)
     assert idx2 == 5
     assert len(net.group) == 2
 
@@ -75,7 +75,7 @@ def test_create_group_with_reference_column():
         element_types=["gen"],
         element_indices=[["wind_gen", "solar_gen"]],
         name="renewable_gens",
-        reference_columns="name"
+        reference_columns="name",
     )
 
     assert net.group.at[idx, "reference_column"] == "name"
@@ -97,7 +97,7 @@ def test_create_group_nonexistent_element_raises():
             net,
             element_types=["gen", "sgen"],
             element_indices=[[0], [0, 99]],  # sgen index 99 doesn't exist
-            name="invalid_group"
+            name="invalid_group",
         )
 
 
@@ -112,16 +112,9 @@ def test_create_group_from_dict():
     create_load(net, bus=buses[3], p_mw=5, q_mvar=2)
 
     # Create group from dictionary
-    elements_dict = {
-        "bus": [buses[0], buses[1], buses[2]],
-        "gen": [0, 1]
-    }
+    elements_dict = {"bus": [buses[0], buses[1], buses[2]], "gen": [0, 1]}
 
-    idx = create_group_from_dict(
-        net,
-        elements_dict=elements_dict,
-        name="dict_group"
-    )
+    idx = create_group_from_dict(net, elements_dict=elements_dict, name="dict_group")
 
     # Verify the group was created
     assert all(net.group.at[idx, "name"] == "dict_group")
@@ -138,16 +131,9 @@ def test_create_group_from_dict_with_reference_column():
     create_gen(net, bus=buses[2], p_mw=30, name="gen_c")
 
     # Create group from dict using names
-    elements_dict = {
-        "gen": ["gen_a", "gen_b"]
-    }
+    elements_dict = {"gen": ["gen_a", "gen_b"]}
 
-    idx = create_group_from_dict(
-        net,
-        elements_dict=elements_dict,
-        name="gens_by_name",
-        reference_column="name"
-    )
+    idx = create_group_from_dict(net, elements_dict=elements_dict, name="gens_by_name", reference_column="name")
 
     assert net.group.at[idx, "reference_column"] == "name"
     assert "gen_a" in net.group.at[idx, "element_index"][0]
@@ -168,7 +154,7 @@ def test_create_group_multiple_element_types():
         net,
         element_types=["bus", "gen", "load", "line"],
         element_indices=[[buses[0], buses[1], buses[2]], [0], [0], [0]],
-        name="mixed_elements"
+        name="mixed_elements",
     )
 
     assert len(net.group.at[idx, "element_type"]) == 4
