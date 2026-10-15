@@ -7,7 +7,6 @@ import pytest
 from pandapower.create import (
     create_buses,
     create_ext_grid,
-    create_gen,
     create_gens,
     create_impedance,
     create_lines,
@@ -16,10 +15,10 @@ from pandapower.create import (
     create_ssc,
     create_svc,
     create_tcsc,
-    create_transformer_from_parameters,
 )
 from pandapower.create._utils import add_column_to_df
 from pandapower.network import pandapowerNet
+from pandapower.networks.tutorial_networks import facts_case_study_grid as facts_case_study_grid
 from pandapower.run import runpp
 from test.consistency_checks import runpp_with_consistency_checks
 
@@ -311,88 +310,6 @@ def test_svc_tcsc_case_study():
     net_ref = copy_with_impedance(net)
     runpp(net_ref, distributed_slack=True)
     compare_tcsc_impedance(net, net_ref, net.tcsc.index, net_ref.impedance.index)
-
-
-def facts_case_study_grid():
-    net = pandapowerNet(name="facts_case_study_grid")
-
-    b1, b2, b3, b4, b5, b6, b7, b8 = create_buses(
-        net, 8, name=["B1", "B2", "B3", "B4", "B5", "B6", "B7", "B8"], vn_kv=[18, 16.5, 230, 230, 230, 230, 230, 230]
-    )
-
-    create_ext_grid(net, bus=b1, vm_pu=1, va_degree=0)
-
-    create_lines(
-        net,
-        name=["L1", "L2"],
-        from_buses=[b3, b3],
-        to_buses=[b4, b4],
-        length_km=30,
-        line_params={
-            "r_ohm_per_km": 0.049,
-            "x_ohm_per_km": 0.136,
-            "g_us_per_km": 0,
-            "c_nf_per_km": 142,
-            "max_i_ka": 1.5,
-        },
-    )
-
-    create_lines(
-        net,
-        name=["L3", "L4", "L5", "L6", "L7", "L8"],
-        from_buses=[b4, b4, b5, b6, b5, b7],
-        to_buses=[b5, b6, b7, b8, b6, b8],
-        length_km=[100, 100, 220, 140, 180, 180],
-        line_params={
-            "r_ohm_per_km": 0.081,
-            "x_ohm_per_km": 0.312,
-            "g_us_per_km": 0,
-            "c_nf_per_km": 11,
-            "max_i_ka": 1.5,
-        },
-    )
-
-    # create_line_from_parameters(net,name="L9",from_bus=3,to_bus=4,length_km=100, r_ohm_per_km=0.312,
-    # x_ohm_per_km=0.312,g_us_per_km=0,c_nf_per_km=11)
-
-    create_transformer_from_parameters(
-        net,
-        name="trafo1",
-        hv_bus=b8,
-        lv_bus=b1,
-        sn_mva=192,
-        vn_hv_kv=230,
-        vn_lv_kv=18,
-        vkr_percent=0,
-        vector_group="Yy0",
-        pfe_kw=0,
-        vk_percent=12,
-        i0_percent=0,
-    )
-    create_transformer_from_parameters(
-        net,
-        name="trafo2",
-        hv_bus=b3,
-        lv_bus=b2,
-        sn_mva=500,
-        vn_hv_kv=230,
-        vn_lv_kv=16.5,
-        vkr_percent=0,
-        vector_group="Yy0",
-        pfe_kw=0,
-        vk_percent=16,
-        i0_percent=0,
-    )
-
-    create_gen(net, bus=b2, p_mw=500, vm_pu=1)
-    # create_sgen(net,bus = 2, p_mw=500,name="WT")
-    #
-    create_load(net, bus=b4, p_mw=130, q_mvar=50)
-    create_load(net, bus=b5, p_mw=120, q_mvar=50)
-    create_load(net, bus=b6, p_mw=80, q_mvar=25)
-    create_load(net, bus=b7, p_mw=50, q_mvar=25)
-
-    return net
 
 
 if __name__ == "__main__":
