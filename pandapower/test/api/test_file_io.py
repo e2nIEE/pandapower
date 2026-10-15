@@ -4,6 +4,8 @@
 import copy
 import json
 import os
+import sqlite3
+from contextlib import closing
 
 import geojson
 import numpy as np
@@ -11,7 +13,7 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal, assert_series_equal
 
-from pandapower import pp_dir, pandapowerNet
+from pandapower import pp_dir, pandapowerNet, sql_io
 from pandapower.control import (
     DiscreteTapControl,
     ConstControl,
@@ -237,6 +239,154 @@ def test_sqlite_workaround(net_in, tmp_path):
     to_sqlite(net_in, filename)
     net_out = from_sqlite(filename)
     assert_net_equal(net_in, net_out, exclude_elms=["std_types"])
+
+
+class _RecordingSQLiteConnection(sqlite3.Connection):
+    def __exit__(self, *args):
+        result = super().__exit__(*args)
+        self.events.append("exit")
+        return result
+
+    def close(self):
+        self.events.append("close")
+        return super().close()
+
+
+def _recording_sqlite_connect(original_connect, events, connections=None):
+    def connect(*args, **kwargs):
+        connection = original_connect(*args, factory=_RecordingSQLiteConnection, **kwargs)
+        connection.events = events
+        if connections is not None:
+            connections.append(connection)
+        return connection
+
+    return connect
+
+
+@pytest.mark.parametrize("public_function", ["writer", "reader"])
+def test_sqlite_public_functions_close_connections(net_in, tmp_path, monkeypatch, public_function):
+    original_connect = sqlite3.connect
+    events = []
+    connections = []
+    filename = tmp_path / "testfile.db"
+
+    if public_function == "writer":
+        monkeypatch.setattr(sql_io.sqlite3, "connect", _recording_sqlite_connect(original_connect, events, connections))
+        to_sqlite(net_in, filename)
+        assert len(connections) == 1
+        assert events == ["exit", "close"]
+        with pytest.raises(sqlite3.ProgrammingError):
+            connections[0].execute("SELECT 1")
+        with closing(original_connect(filename)) as connection:
+            assert connection.execute("SELECT COUNT(*) FROM bus").fetchone()[0] == len(net_in.bus)
+    else:
+        with closing(original_connect(filename)) as connection, connection:
+            for name, table in sql_io.io_utils.to_dict_of_dfs(net_in, include_results=False).items():
+                table.to_sql(name, connection)
+        monkeypatch.setattr(sql_io.sqlite3, "connect", _recording_sqlite_connect(original_connect, events, connections))
+        net_out = from_sqlite(filename)
+        assert len(connections) == 1
+        assert_net_equal(net_in, net_out, exclude_elms=["std_types"])
+        assert events == ["exit", "close"]
+        with pytest.raises(sqlite3.ProgrammingError):
+            connections[0].execute("SELECT 1")
+
+
+@pytest.mark.parametrize("failure", ["writer_conversion", "reader_conversion"])
+def test_sqlite_public_functions_close_after_error(net_in, tmp_path, monkeypatch, failure):
+    original_connect = sqlite3.connect
+    events = []
+    connections = []
+    connect = _recording_sqlite_connect(original_connect, events, connections)
+    monkeypatch.setattr(sql_io.sqlite3, "connect", connect)
+    filename = tmp_path / "testfile.db"
+
+    if failure == "writer_conversion":
+        injected = RuntimeError("injected serialization failure")
+        monkeypatch.setattr(sql_io.io_utils, "to_dict_of_dfs", lambda *args, **kwargs: (_ for _ in ()).throw(injected))
+        with pytest.raises(RuntimeError) as exc_info:
+            to_sqlite(net_in, filename)
+    else:
+        injected = ValueError("injected reader failure")
+        monkeypatch.setattr(sql_io.io_utils, "from_dict_of_dfs", lambda *args, **kwargs: (_ for _ in ()).throw(injected))
+        with closing(original_connect(filename)) as connection, connection:
+            connection.execute('CREATE TABLE marker ("index" INTEGER)')
+        with pytest.raises(ValueError) as exc_info:
+            from_sqlite(filename)
+
+    assert exc_info.value is injected
+    assert events == ["exit", "close"]
+    with pytest.raises(sqlite3.ProgrammingError):
+        connections[0].execute("SELECT 1")
+
+
+def test_sqlite_transaction_completes_before_close(net_in, tmp_path, monkeypatch):
+    original_connect = sqlite3.connect
+    events = []
+    connections = []
+    monkeypatch.setattr(sql_io.sqlite3, "connect", _recording_sqlite_connect(original_connect, events, connections))
+    filename = tmp_path / "testfile.db"
+    with closing(original_connect(filename)) as connection, connection:
+        connection.execute("CREATE TABLE sentinel (value TEXT)")
+        connection.execute("INSERT INTO sentinel VALUES ('committed')")
+
+    injected = RuntimeError("injected pending write failure")
+
+    class PendingWrite:
+        def to_sql(self, name, connection):
+            connection.execute("INSERT INTO sentinel VALUES ('pending')")
+            raise injected
+
+    monkeypatch.setattr(sql_io.io_utils, "to_dict_of_dfs", lambda *args, **kwargs: {"pending": PendingWrite()})
+    with pytest.raises(RuntimeError) as exc_info:
+        to_sqlite(net_in, filename)
+    assert exc_info.value is injected
+    assert events == ["exit", "close"]
+
+    with pytest.raises(sqlite3.ProgrammingError):
+        connections[0].execute("SELECT 1")
+    with closing(original_connect(filename)) as connection:
+        assert connection.execute("SELECT value FROM sentinel").fetchall() == [("committed",)]
+
+
+def test_sqlite_transaction_commits_successful_pending_write(net_in, tmp_path, monkeypatch):
+    original_connect = sqlite3.connect
+    events = []
+    connections = []
+    monkeypatch.setattr(sql_io.sqlite3, "connect", _recording_sqlite_connect(original_connect, events, connections))
+    filename = tmp_path / "testfile.db"
+    with closing(original_connect(filename)) as connection, connection:
+        connection.execute("CREATE TABLE sentinel (value TEXT)")
+        connection.execute("INSERT INTO sentinel VALUES ('committed')")
+
+    class SuccessfulPendingWrite:
+        def to_sql(self, name, connection):
+            connection.execute("INSERT INTO sentinel VALUES ('pending')")
+
+    monkeypatch.setattr(sql_io.io_utils, "to_dict_of_dfs", lambda *args, **kwargs: {"pending": SuccessfulPendingWrite()})
+    to_sqlite(net_in, filename)
+    assert events == ["exit", "close"]
+    with pytest.raises(sqlite3.ProgrammingError):
+        connections[0].execute("SELECT 1")
+    with closing(original_connect(filename)) as connection:
+        assert connection.execute("SELECT value FROM sentinel").fetchall() == [("committed",), ("pending",)]
+
+
+@pytest.mark.parametrize("public_function", ["writer", "reader"])
+def test_sqlite_connection_open_failure_propagates(net_in, tmp_path, monkeypatch, public_function):
+    connection_error = OSError("injected connection failure")
+
+    def fail_connect(*args, **kwargs):
+        raise connection_error
+
+    monkeypatch.setattr(sql_io.sqlite3, "connect", fail_connect)
+    filename = tmp_path / "testfile.db"
+    with pytest.raises(OSError) as exc_info:
+        if public_function == "writer":
+            to_sqlite(net_in, filename)
+        else:
+            from_sqlite(filename)
+    assert exc_info.value is connection_error
 
 
 def test_convert_format():  # TODO what is this thing testing ?

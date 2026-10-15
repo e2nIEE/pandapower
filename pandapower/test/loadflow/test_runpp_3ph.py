@@ -793,6 +793,48 @@ def test_trafo_asym():
         check_results(net, trafo_vector_group, get_PF_Results(trafo_vector_group))
 
 
+@pytest.mark.parametrize("trafo_vector_group", ["yy", "yd", "dy", "dd"])
+def test_trafo_asym_unsupported_vector_groups(trafo_vector_group):
+    net = pandapowerNet(name=f"test_trafo_asym_unsupported_{trafo_vector_group}")
+    make_nw(net, 10, 0, "bal_wye", trafo_vector_group)
+
+    with pytest.raises(NotImplementedError, match="Calculation of 3-phase power flow"):
+        runpp_3ph(net)
+
+
+@pytest.mark.parametrize("trafo_vector_group", ["yy", "yd", "dy", "dd"])
+def test_trafo_asym_unsupported_vector_groups_mixed(trafo_vector_group):
+    net = pandapowerNet(name=f"test_trafo_asym_unsupported_mixed_{trafo_vector_group}")
+    make_nw(net, 10, 0, "bal_wye", "Dyn")
+    make_nw(net, 10, 0, "bal_wye", trafo_vector_group)
+
+    with pytest.raises(NotImplementedError, match="Calculation of 3-phase power flow"):
+        runpp_3ph(net)
+
+
+@pytest.mark.parametrize("trafo_vector_group", ["yy", "yd", "dy", "dd"])
+def test_trafo_asym_unsupported_vector_groups_out_of_service(trafo_vector_group):
+    net = pandapowerNet(name=f"test_trafo_asym_unsupported_oos_{trafo_vector_group}")
+    make_nw(net, 10, 0, "bal_wye", "Dyn")
+    make_nw(net, 10, 0, "bal_wye", trafo_vector_group)
+    target_index = net.trafo.index[-1]
+    net.trafo.loc[target_index, "in_service"] = False
+
+    with pytest.raises(NotImplementedError, match="Calculation of 3-phase power flow"):
+        runpp_3ph(net)
+
+
+def test_trafo_asym_supported_vector_group_out_of_service():
+    net = pandapowerNet(name="test_trafo_asym_supported_oos")
+    make_nw(net, 10, 0, "bal_wye", "Dyn")
+    make_nw(net, 10, 0, "bal_wye", "Dyn")
+    target_index = net.trafo.index[-1]
+    net.trafo.loc[target_index, "in_service"] = False
+
+    runpp_3ph(net)
+    assert net.converged
+
+
 def _test_trafo_shifts(net, rtol):
     # Dyn
     for clock in [-30, 30, 150, 210, -150]:

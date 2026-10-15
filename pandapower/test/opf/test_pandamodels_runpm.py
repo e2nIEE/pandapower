@@ -4,6 +4,7 @@
 import copy
 import os
 from copy import deepcopy
+from types import SimpleNamespace
 
 import numpy as np
 import pandas as pd
@@ -12,6 +13,7 @@ import pytest
 from pandapower import pp_dir
 from pandapower.control import ConstControl
 from pandapower.converter.pandamodels import convert_pp_to_pm
+from pandapower.converter.pandamodels.from_pm import add_storage_results
 from pandapower.converter.pandamodels.to_pm import init_ne_line
 from pandapower.create import (
     create_bus,
@@ -743,6 +745,128 @@ def test_storage_opt():
     storage_results_100 = read_pm_storage_results(net2)
 
     assert abs(storage_results_100[0].values - storage_results_1[0].values).max() < 1e-6
+
+
+def _storage_result_net():
+    net = simple_four_bus_system()
+    create_storage(
+        net,
+        bus=0,
+        p_mw=-1.0,
+        q_mvar=0.1,
+        max_e_mwh=5.0,
+        min_e_mwh=1.0,
+        soc_percent=25.0,
+        controllable=True,
+        index=7,
+    )
+    create_storage(
+        net,
+        bus=1,
+        p_mw=2.0,
+        q_mvar=0.2,
+        max_e_mwh=8.0,
+        min_e_mwh=2.0,
+        soc_percent=60.0,
+        controllable=True,
+        index=23,
+    )
+    net.res_storage = pd.DataFrame(index=[7, 23])
+    return net
+
+
+def _storage_power_models_result(ps, qs, se):
+    return {
+        "storage": {
+            "8": {"ps": ps[0], "qs": qs[0], "se": se[0], "qsc": 0.01, "sc": 1.0, "sc_on": 1.0, "sd": 2.0, "sd_on": 0.0},
+            "24": {"ps": ps[1], "qs": qs[1], "se": se[1], "qsc": 0.02, "sc": 3.0, "sc_on": 0.0, "sd": 4.0, "sd_on": 1.0},
+        }
+    }
+
+
+def test_add_storage_results_initializes_multiple_storage_rows():
+    net = _storage_result_net()
+    add_storage_results(net, _storage_power_models_result([-1.0, 2.0], [0.1, 0.2], [0.25, 0.6]))
+
+    assert list(net.res_storage.index) == [7, 23]
+    assert list(net.res_storage.columns) == ["ps", "qs", "se", "qsc", "sc", "sc_on", "sd", "sd_on"]
+    assert net.res_storage.loc[7].tolist() == [-1.0, 0.1, 0.25, 0.01, 1.0, 1.0, 2.0, 0.0]
+    assert net.res_storage.loc[23].tolist() == [2.0, 0.2, 0.6, 0.02, 3.0, 0.0, 4.0, 1.0]
+
+
+def test_read_pm_storage_results_maps_each_storage_and_timestep():
+    net = _storage_result_net()
+    frame_0 = pd.DataFrame(
+        {"ps": [-1.0, 2.0], "qs": [0.1, 0.2], "se": [0.25, 0.6]},
+        index=[7, 23],
+    )
+    frame_1 = pd.DataFrame(
+        {"ps": [4.0, 3.0], "qs": [0.5, -0.3], "se": [0.75, 0.5]},
+        index=[23, 7],
+    )
+    frame_0_before = frame_0.copy(deep=True)
+    frame_1_before = frame_1.copy(deep=True)
+    net.res_ts_opt = {
+        "0": SimpleNamespace(res_storage=frame_0),
+        "1": SimpleNamespace(res_storage=frame_1),
+    }
+
+    storage_results = read_pm_storage_results(net)
+
+    assert list(storage_results) == [7, 23]
+    pd.testing.assert_frame_equal(
+        storage_results[7],
+        pd.DataFrame(
+            {"p_mw": [-1.0, 3.0], "q_mvar": [0.1, -0.3], "soc_mwh": [1.0, 2.0], "soc_percent": [25.0, 50.0]},
+            index=["0", "1"],
+        ),
+    )
+    pd.testing.assert_frame_equal(
+        storage_results[23],
+        pd.DataFrame(
+            {"p_mw": [2.0, 4.0], "q_mvar": [0.2, 0.5], "soc_mwh": [3.6, 4.5], "soc_percent": [60.0, 75.0]},
+            index=["0", "1"],
+        ),
+    )
+    pd.testing.assert_frame_equal(frame_0, frame_0_before)
+    pd.testing.assert_frame_equal(frame_1, frame_1_before)
+
+
+def test_storage_result_labels_reach_timeseries_reader():
+    net_0 = _storage_result_net()
+    net_1 = deepcopy(net_0)
+    pm_result_0 = _storage_power_models_result([-1.0, 2.0], [0.1, 0.2], [0.25, 0.6])
+    pm_result_1 = _storage_power_models_result([3.0, 4.0], [-0.3, 0.5], [0.5, 0.75])
+    pm_result_0_before = deepcopy(pm_result_0)
+    pm_result_1_before = deepcopy(pm_result_1)
+    add_storage_results(net_0, pm_result_0)
+    add_storage_results(net_1, pm_result_1)
+    assert pm_result_0 == pm_result_0_before
+    assert pm_result_1 == pm_result_1_before
+    net_0.res_ts_opt = {
+        "0": SimpleNamespace(res_storage=net_0.res_storage),
+        "1": SimpleNamespace(res_storage=net_1.res_storage),
+    }
+
+    storage_results = read_pm_storage_results(net_0)
+
+    assert list(storage_results) == [7, 23]
+    assert list(storage_results[7].index) == ["0", "1"]
+    assert list(storage_results[23].index) == ["0", "1"]
+    pd.testing.assert_frame_equal(
+        storage_results[7],
+        pd.DataFrame(
+            {"p_mw": [-1.0, 3.0], "q_mvar": [0.1, -0.3], "soc_mwh": [1.0, 2.0], "soc_percent": [25.0, 50.0]},
+            index=["0", "1"],
+        ),
+    )
+    pd.testing.assert_frame_equal(
+        storage_results[23],
+        pd.DataFrame(
+            {"p_mw": [2.0, 4.0], "q_mvar": [0.2, 0.5], "soc_mwh": [3.6, 4.5], "soc_percent": [60.0, 75.0]},
+            index=["0", "1"],
+        ),
+    )
 
 
 @pytest.mark.slow

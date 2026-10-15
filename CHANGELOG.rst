@@ -8,6 +8,11 @@ Change Log
 - [ADDED] create function for trafo characteristic entries
 - [ADDED] converter for trafo characteristics
 - [FIXED] create_gen and create_gens now use connected bus voltage limits as generator voltage-limit defaults.
+- [FIXED] three-phase power flow now rejects unsupported two-winding transformer vector groups consistently.
+- [FIXED] SQLite network I/O now closes connections after transaction completion.
+- [FIXED] PowerModels storage results now preserve each storage label across time steps.
+- [FIXED] PowerModels TNEP built-line results now use Boolean masks.
+- [FIXED] LogSpline characteristics now restore serialized logarithmic values without reapplying the logarithm.
 
 [upcoming release] - 2026-..-..
 -------------------------------
