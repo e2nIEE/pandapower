@@ -150,7 +150,7 @@ class TestInvalidValues:
                 (0, "vn_hv_kv", -1.5, ">0"),
                 (0, "vn_lv_kv", False, ">0"),
                 (0, "vk_percent", 0.0, ">0"),
-                (0, 'vkr_percent', 0.06, 'vkr_percent_larger')
+                (0, "vkr_percent", 0.06, "vkr_percent_larger"),
             ],
             "trafo3w": [
                 (0, "sn_mv_mva", "a", ">0"),
@@ -164,7 +164,9 @@ class TestInvalidValues:
             ],
         }
 
-        check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))
+        check_report_function(
+            diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None)
+        )
 
     def test_greater_equal_zero(self, test_net, diag_params, diag_errors):
         net = copy.deepcopy(test_net)
@@ -205,7 +207,7 @@ class TestInvalidValues:
             "trafo": [
                 (0, "vkr_percent", "-1", ">=0"),
                 (0, "vkr_percent", "-1", "<15"),
-                (0, 'vkr_percent', '-1', 'vkr_percent_larger'),
+                (0, "vkr_percent", "-1", "vkr_percent_larger"),
                 (0, "pfe_kw", -1.5, ">=0"),
                 (0, "i0_percent", -0.001, ">=0"),
             ],
@@ -218,7 +220,9 @@ class TestInvalidValues:
             ],
         }
 
-        check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))
+        check_report_function(
+            diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None)
+        )
 
     def test_boolean(self, test_net, diag_params, diag_errors):
         net = copy.deepcopy(test_net)
@@ -263,7 +267,9 @@ class TestInvalidValues:
             "trafo3w": [(0, "in_service", "nan", "boolean")],
         }
 
-        check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))
+        check_report_function(
+            diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None)
+        )
 
     def test_pos_int(self, test_net, diag_params, diag_errors):
         net = copy.deepcopy(test_net)
@@ -300,7 +306,9 @@ class TestInvalidValues:
             "trafo3w": [(0, "hv_bus", False, "positive_integer"), (0, "mv_bus", 0.5, "positive_integer")],
         }
 
-        check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))
+        check_report_function(
+            diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None)
+        )
 
     def test_number(self, test_net, diag_params, diag_errors):
         net = copy.deepcopy(test_net)
@@ -325,7 +333,9 @@ class TestInvalidValues:
             "sgen": [(1, "q_mvar", "nan", "number")],
         }
 
-        check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))
+        check_report_function(
+            diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None)
+        )
 
     def test_between_zero_and_one(self, test_net, diag_params, diag_errors):
         net = copy.deepcopy(test_net)
@@ -341,7 +351,9 @@ class TestInvalidValues:
             diag_results = {}
         assert diag_results[check_function] == {"line": [(0, "df", 1.5, "0<x<=1")]}
 
-        check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))
+        check_report_function(
+            diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None)
+        )
 
     def test_switch_type(self, test_net, diag_params, diag_errors):
         net = copy.deepcopy(test_net)
@@ -368,7 +380,9 @@ class TestInvalidValues:
             ]
         }
 
-        check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))
+        check_report_function(
+            diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None)
+        )
 
 
 class TestInvalidValuesPandas3:
@@ -739,7 +753,9 @@ def test_impedance_values_close_to_zero(test_net, diag_params, diag_errors):
             diag_results = {}
         assert check_function not in diag_results
 
-        check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))
+        check_report_function(
+            diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None)
+        )
 
     check_implausible_impedance_values(check_function, diag_errors, diag_params, net)
 

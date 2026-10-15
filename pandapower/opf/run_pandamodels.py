@@ -5,6 +5,7 @@ from pandapower.optimal_powerflow import OPFNotConverged
 from pandapower.auxiliary import pandapowerNet
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
@@ -13,7 +14,7 @@ def _runpm(
     delete_buffer_file: bool = True,
     pm_file_path: str | None = None,
     pdm_dev_mode: bool = False,
-    **kwargs
+    **kwargs,
 ):
     """
     Converts the pandapower net to a pm json file, saves it to disk, runs a PandaModels.jl, and reads
@@ -39,8 +40,12 @@ def _runpm(
     # run power models optimization in julia
     result_pm = _call_pandamodels(buffer_file, net._options["julia_file"], pdm_dev_mode)
 
-    logger.info("Optimization ('"+net._options["julia_file"]+"') " +
-                "is finished in %s seconds:" % round(result_pm["solve_time"], 2))
+    logger.info(
+        "Optimization ('"
+        + net._options["julia_file"]
+        + "') "
+        + "is finished in %s seconds:" % round(result_pm["solve_time"], 2)
+    )
     # read results and write back to net
     try:
         read_pm_results_to_net(net, ppc, ppci, result_pm)
@@ -63,12 +68,11 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
     except ImportError:
         try:
             from juliacall import Main, Base  # type: ignore
+
             Main.seval("using Pkg")
             Pkg = Main.Pkg
         except ImportError:
-            raise ImportError(
-                "Please install juliacall properly to run pandapower with PandaModels.jl."
-            )
+            raise ImportError("Please install juliacall properly to run pandapower with PandaModels.jl.")
 
     if not Base.find_package("PandaModels"):
         logger.info("PandaModels.jl is missing, adding.")
@@ -92,11 +96,10 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
         Pkg.resolve()
         Pkg.activate("PandaModels")
 
-
     Main.seval("global buffer_file")
     Main.buffer_file = buffer_file
 
-    seval_str = f'using PandaModels; PandaModels.{julia_file}(buffer_file)'
+    seval_str = f"using PandaModels; PandaModels.{julia_file}(buffer_file)"
     result_pm = Main.seval(seval_str)
 
     # if dev_mode:

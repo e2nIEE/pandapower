@@ -22,7 +22,6 @@ from pandapower.create._utils import (
     _set_entries,
     _set_multiple_entries,
 )
-from pandapower.network_schema.tools.validation.network_validation import validate_network
 from pandapower.network_structure import get_default_value
 from pandapower.pp_types import Int, LineType
 from pandapower.std_types import load_std_type

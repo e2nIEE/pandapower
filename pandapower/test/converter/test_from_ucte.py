@@ -16,13 +16,14 @@ logger = logging.getLogger(__name__)
 
 
 def _testfiles_folder():
-    return os.path.join(pp_dir, 'test', 'converter', "testfiles")
+    return os.path.join(pp_dir, "test", "converter", "testfiles")
 
 
 def _results_from_powerfactory():
-    pf_res = {f"res_{et}": pd.read_csv(
-        os.path.join(_testfiles_folder(), f"test_ucte_res_{et}.csv"),
-        sep=";", index_col=0) for et in ["bus", "line", "trafo"]}
+    pf_res = {
+        f"res_{et}": pd.read_csv(os.path.join(_testfiles_folder(), f"test_ucte_res_{et}.csv"), sep=";", index_col=0)
+        for et in ["bus", "line", "trafo"]
+    }
     return pf_res
 
 
@@ -46,19 +47,22 @@ def _country_code_mapping(test_case=None):
         return mapping[test_case]
 
 
-@pytest.mark.parametrize("test_case", [
-    "test_ucte_impedance",
-    "test_ucte_line_trafo_load",
-    "test_ucte_line",
-    "test_ucte_bus_switch",
-    "test_ucte_shunt",
-    "test_ucte_ward",
-    "test_ucte_load_sgen",
-    "test_ucte_gen",
-    "test_ucte_xward",
-    "test_ucte_trafo",
-    "test_ucte_trafo3w"
-])
+@pytest.mark.parametrize(
+    "test_case",
+    [
+        "test_ucte_impedance",
+        "test_ucte_line_trafo_load",
+        "test_ucte_line",
+        "test_ucte_bus_switch",
+        "test_ucte_shunt",
+        "test_ucte_ward",
+        "test_ucte_load_sgen",
+        "test_ucte_gen",
+        "test_ucte_xward",
+        "test_ucte_trafo",
+        "test_ucte_trafo3w",
+    ],
+)
 def test_from_ucte(test_case):
     """Tets the UCTE converter by
 
@@ -91,8 +95,9 @@ def test_from_ucte(test_case):
     assert net.converged
 
     # --- check expected element counts -------------------------------------------------------
-    exp_elm_count_df = pd.read_csv(os.path.join(
-        _testfiles_folder(), "ucte_expected_element_counts.csv"), sep=";", index_col=0)
+    exp_elm_count_df = pd.read_csv(
+        os.path.join(_testfiles_folder(), "ucte_expected_element_counts.csv"), sep=";", index_col=0
+    )
     exp_elm_count = exp_elm_count_df.loc[country_code]
     exp_elm_count = exp_elm_count.loc[exp_elm_count > 0]
     assert dict(count_elements(net)) == dict(exp_elm_count)
@@ -115,36 +120,44 @@ def test_from_ucte(test_case):
         et = res_et[4:]
         if net[et].empty:
             continue
-        name_col = "name" # if et != "bus" else "add_name"
+        name_col = "name"  # if et != "bus" else "add_name"
         missing_names = pd.Index(net[et][name_col]).difference(df_target.index)
         if len(missing_names):
-            logger.error(f"{res_et=} comparison fails since same element names of the PowerFactory "
-                         f"results are missing in the pandapower net: {missing_names}")
-        df_after_conversion = net[res_et][df_target.columns].set_axis(
-            pd.Index(net[et][name_col], name="name"))
+            logger.error(
+                f"{res_et=} comparison fails since same element names of the PowerFactory "
+                f"results are missing in the pandapower net: {missing_names}"
+            )
+        df_after_conversion = net[res_et][df_target.columns].set_axis(pd.Index(net[et][name_col], name="name"))
 
         # --- prepare comparison
         if test_case == "test_ucte_trafo3w" and et == "bus":
             df_after_conversion = df_after_conversion.drop("tr3_star_FR")
         if test_case == "test_ucte_trafo3w" and et == "trafo":
             df_after_conversion = df_after_conversion.loc[
-                (df_after_conversion.index.values != "trafo3w_FR") |
-                ~df_after_conversion.index.duplicated()]
+                (df_after_conversion.index.values != "trafo3w_FR") | ~df_after_conversion.index.duplicated()
+            ]
         if et == "line" and "Allgemeine I" in df_after_conversion.index:
             df_after_conversion = df_after_conversion.drop("Allgemeine I")
 
         # --- compare the shape of the results to be compared
         same_shape = df_after_conversion.shape == df_target.loc[df_after_conversion.index].shape
-        df_str = (f"df_after_conversion:\n{df_after_conversion}\n\ndf_target:\n"
-                  f"{df_target.loc[df_after_conversion.index]}")
+        df_str = (
+            f"df_after_conversion:\n{df_after_conversion}\n\ndf_target:\n{df_target.loc[df_after_conversion.index]}"
+        )
         if not same_shape:
             logger.error(f"{res_et=} comparison fails due to different shape.\n{df_str}")
 
         # --- compare the results itself
-        all_close = all([np.allclose(
-            df_after_conversion[col].to_numpy(),
-            df_target.loc[df_after_conversion.index, col].to_numpy(), atol=atol) for col, atol in
-            atol_dict[res_et].items()])
+        all_close = all(
+            [
+                np.allclose(
+                    df_after_conversion[col].to_numpy(),
+                    df_target.loc[df_after_conversion.index, col].to_numpy(),
+                    atol=atol,
+                )
+                for col, atol in atol_dict[res_et].items()
+            ]
+        )
         if not all_close:
             logger.error(f"{res_et=} comparison fails due to different values.\n{df_str}")
             failed.append(res_et)
@@ -155,5 +168,5 @@ def test_from_ucte(test_case):
     assert not test_is_failed
 
 
-if __name__ == '__main__':
-        pytest.main([__file__, "-s"])
+if __name__ == "__main__":
+    pytest.main([__file__, "-s"])

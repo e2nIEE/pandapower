@@ -77,7 +77,7 @@ def meshed_network():
 @pytest.fixture
 def mixed_network():
     net = pandapowerNet(name="mixed_network")
-    create_buses(net, nr_buses=5, vn_kv=20.)
+    create_buses(net, nr_buses=5, vn_kv=20.0)
     create_lines(net, [0, 1, 2, 2], [1, 2, 3, 4], length_km=1, std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
     for b in [1, 4, 3]:
         create_ext_grid(net, b)
@@ -144,10 +144,10 @@ def test_unsupplied_buses_with_in_service():
     create_ext_grid(net, slack_bus)
 
     (bus0,) = create_buses(net, 1, 0.4, in_service=False)
-    create_switch(net, slack_bus, bus0, 'b', False)
+    create_switch(net, slack_bus, bus0, "b", False)
 
     (bus1,) = create_buses(net, 1, 0.4, in_service=True)
-    create_switch(net, bus0, bus1, 'b', False)
+    create_switch(net, bus0, bus1, "b", False)
 
     ub = unsupplied_buses(net)
     assert ub == {2}
@@ -159,7 +159,7 @@ def test_unsupplied_buses_with_in_service():
     create_ext_grid(net, bus_sl, in_service=False)
 
     (bus0,) = create_buses(net, 1, 0.4, in_service=True)
-    create_switch(net, bus_sl, bus0, 'b', True)
+    create_switch(net, bus_sl, bus0, "b", True)
 
     ub = unsupplied_buses(net)
     assert ub == {0, 1}
@@ -215,15 +215,26 @@ def test_graph_characteristics(feeder_network):
     # adapt network
     net = feeder_network
     bus0, bus1, bus2, bus3, bus4, bus5, bus6, bus7, bus8, bus9 = create_buses(net, 10, vn_kv=20.0)
-    new_connections = [(3, bus0), (bus0, bus1), (bus0, bus2), (1, bus3), (2, bus4), (bus3, bus4),
-                       (bus4, bus5), (bus4, bus6), (bus5, bus6), (2, bus7), (bus7, bus8),
-                       (bus8, bus9), (bus9, bus7)]
+    new_connections = [
+        (3, bus0),
+        (bus0, bus1),
+        (bus0, bus2),
+        (1, bus3),
+        (2, bus4),
+        (bus3, bus4),
+        (bus4, bus5),
+        (bus4, bus6),
+        (bus5, bus6),
+        (2, bus7),
+        (bus7, bus8),
+        (bus8, bus9),
+        (bus9, bus7),
+    ]
     create_lines(net, *zip(*new_connections), length_km=1.0, std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
 
     # get characteristics
     mg = create_nxgraph(net, respect_switches=False)
-    characteristics = ["bridges", "articulation_points", "connected", "stub_buses",
-                       "required_bridges", "notn1_areas"]
+    characteristics = ["bridges", "articulation_points", "connected", "stub_buses", "required_bridges", "notn1_areas"]
     char_dict = find_graph_characteristics(mg, net.ext_grid.bus, characteristics)
     bridges = char_dict["bridges"]
     articulation_points = char_dict["articulation_points"]
@@ -235,8 +246,14 @@ def test_graph_characteristics(feeder_network):
     assert articulation_points == {8, 3, 4, 2, 11}
     assert connected == {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13}
     assert stub_buses == {4, 5, 6, 11, 12, 13}
-    assert required_bridges == {4: [(3, 4)], 5: [(3, 4), (4, 5)], 6: [(3, 4), (4, 6)], 11: [(2, 11)],
-                                12: [(2, 11)], 13: [(2, 11)]}
+    assert required_bridges == {
+        4: [(3, 4)],
+        5: [(3, 4), (4, 5)],
+        6: [(3, 4), (4, 6)],
+        11: [(2, 11)],
+        12: [(2, 11)],
+        13: [(2, 11)],
+    }
     assert notn1_areas == {8: {9, 10}, 3: {4, 5, 6}, 2: {11, 12, 13}}
 
 
@@ -289,5 +306,5 @@ def test_end_points_of_continuously_connected_lines():
     assert str(exception_info.value) == "Lines have branching points"
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

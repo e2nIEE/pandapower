@@ -2,22 +2,33 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-import pandas as pd
-
 from pandapower.plotting.generic_geodata import create_generic_coordinates
-from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
-    create_trafo_trace, draw_traces
+from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, create_trafo_trace, draw_traces
 from pandapower.plotting.plotly.get_colors import get_plotly_color_palette
 from pandapower.plotting.geo import convert_crs
 from pandapower.topology import create_nxgraph, connected_components
 
 import logging
+
 logger = logging.getLogger(__name__)
 
 
-def vlevel_plotly(net, respect_switches=True, use_line_geo=None, colors_dict=None, on_map=False,
-                  projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=2,
-                  bus_size=10, filename="temp-plot.html", auto_open=True, zoomlevel=11):
+def vlevel_plotly(
+    net,
+    respect_switches=True,
+    use_line_geo=None,
+    colors_dict=None,
+    on_map=False,
+    projection=None,
+    map_style="basic",
+    figsize=1,
+    aspectratio="auto",
+    line_width=2,
+    bus_size=10,
+    filename="temp-plot.html",
+    auto_open=True,
+    zoomlevel=11,
+):
     """
     Plots a pandapower network in plotly using lines/buses colors according to the voltage level they belong to. If no
     geodata is available, artificial geodata is generated. For advanced plotting see the tutorial
@@ -45,7 +56,7 @@ def vlevel_plotly(net, respect_switches=True, use_line_geo=None, colors_dict=Non
             - 'dark'
             - 'light'
             - 'open-street-map'
-            - 'outdoors'           
+            - 'outdoors'
             - 'satellite''
             - 'satellite-streets'
             - 'streets'
@@ -68,9 +79,9 @@ def vlevel_plotly(net, respect_switches=True, use_line_geo=None, colors_dict=Non
     # getting unique sets of buses for each voltage level
     vlev_bus_dict = {}
     for vl_buses in vlev_buses:
-        if net.bus.loc[list(vl_buses), 'vn_kv'].unique().shape[0] > 1:
-            logger.warning('buses from the same voltage level does not have the same vn_kv !?')
-        vn_kv = net.bus.loc[list(vl_buses), 'vn_kv'].unique()[0]
+        if net.bus.loc[list(vl_buses), "vn_kv"].unique().shape[0] > 1:
+            logger.warning("buses from the same voltage level does not have the same vn_kv !?")
+        vn_kv = net.bus.loc[list(vl_buses), "vn_kv"].unique()[0]
         if vlev_bus_dict.get(vn_kv):
             vlev_bus_dict[vn_kv].update(vl_buses)
         else:
@@ -83,16 +94,39 @@ def vlevel_plotly(net, respect_switches=True, use_line_geo=None, colors_dict=Non
     bus_groups = [(buses, colors_dict[vlev], f"{vlev} kV") for vlev, buses in vlev_bus_dict.items()]
 
     return _draw_colored_bus_groups_plotly(
-        net, bus_groups, respect_switches=respect_switches,
-        use_line_geo=use_line_geo, on_map=on_map, projection=projection,
-        map_style=map_style, figsize=figsize, aspectratio=aspectratio, line_width=line_width,
-        bus_size=bus_size, filename=filename, auto_open=auto_open,zoomlevel=zoomlevel)
+        net,
+        bus_groups,
+        respect_switches=respect_switches,
+        use_line_geo=use_line_geo,
+        on_map=on_map,
+        projection=projection,
+        map_style=map_style,
+        figsize=figsize,
+        aspectratio=aspectratio,
+        line_width=line_width,
+        bus_size=bus_size,
+        filename=filename,
+        auto_open=auto_open,
+        zoomlevel=zoomlevel,
+    )
 
 
 def _draw_colored_bus_groups_plotly(
-    net, bus_groups, respect_switches=True, use_line_geo=None,
-    on_map=False, projection=None, map_style='basic', figsize=1, aspectratio='auto', line_width=2,
-    bus_size=10, filename="temp-plot.html", auto_open=True,zoomlevel=11):
+    net,
+    bus_groups,
+    respect_switches=True,
+    use_line_geo=None,
+    on_map=False,
+    projection=None,
+    map_style="basic",
+    figsize=1,
+    aspectratio="auto",
+    line_width=2,
+    bus_size=10,
+    filename="temp-plot.html",
+    auto_open=True,
+    zoomlevel=11,
+):
     """
     Internal function of vlevel_plotly()
 
@@ -100,12 +134,12 @@ def _draw_colored_bus_groups_plotly(
     """
     # create geocoord if none are available
     if any(net.line.geo.isna()) and any(net.bus.geo.isna()):
-        logger.warning("No or insufficient geodata available --> Creating artificial coordinates." +
-                       " This may take some time")
+        logger.warning(
+            "No or insufficient geodata available --> Creating artificial coordinates." + " This may take some time"
+        )
         create_generic_coordinates(net, respect_switches=respect_switches)
         if on_map:
-            logger.warning(
-                "Map plots not available with artificial coordinates and will be disabled!")
+            logger.warning("Map plots not available with artificial coordinates and will be disabled!")
             on_map = False
 
     # check if geodata are real geographycal lat/lon coordinates using geopy
@@ -116,8 +150,7 @@ def _draw_colored_bus_groups_plotly(
     if use_line_geo is None:
         use_line_geo = False if any(net.line.geo.isna()) else True
     elif use_line_geo and any(net.line.geo.isna()):
-        logger.warning(
-            "No or insufficient line geodata available --> only bus geodata will be used.")
+        logger.warning("No or insufficient line geodata available --> only bus geodata will be used.")
         use_line_geo = False
 
     # creating traces for buses and lines for each voltage level
@@ -128,40 +161,62 @@ def _draw_colored_bus_groups_plotly(
         buses_vl, vlev_color, legend_group = bus_group_legend
 
         bus_trace_vlev = create_bus_trace(
-            net, buses=buses_vl, size=bus_size, legendgroup=legend_group, color=vlev_color,
-            trace_name=f'buses {legend_group}')
+            net,
+            buses=buses_vl,
+            size=bus_size,
+            legendgroup=legend_group,
+            color=vlev_color,
+            trace_name=f"buses {legend_group}",
+        )
         if bus_trace_vlev is not None:
             bus_traces += bus_trace_vlev
 
-        vlev_lines = net.line[net.line.from_bus.isin(buses_vl) &
-                              net.line.to_bus.isin(buses_vl)].index.tolist()
+        vlev_lines = net.line[net.line.from_bus.isin(buses_vl) & net.line.to_bus.isin(buses_vl)].index.tolist()
         traced_lines |= set(vlev_lines)
         line_trace_vlev = create_line_trace(
-            net, lines=vlev_lines, use_line_geo=use_line_geo,
-            respect_switches=respect_switches, legendgroup=legend_group, color=vlev_color,
-            width=line_width, trace_name=f'lines {legend_group}')
+            net,
+            lines=vlev_lines,
+            use_line_geo=use_line_geo,
+            respect_switches=respect_switches,
+            legendgroup=legend_group,
+            color=vlev_color,
+            width=line_width,
+            trace_name=f"lines {legend_group}",
+        )
         if line_trace_vlev is not None:
             line_traces += line_trace_vlev
 
     # creating traces for other lines
     line_trace_other = create_line_trace(
-        net, lines=net.line.index.difference(traced_lines).tolist(),
-        use_line_geo=use_line_geo, respect_switches=respect_switches,
-        color="grey", width=line_width)
+        net,
+        lines=net.line.index.difference(traced_lines).tolist(),
+        use_line_geo=use_line_geo,
+        respect_switches=respect_switches,
+        color="grey",
+        width=line_width,
+    )
     if line_trace_vlev is not None:
         line_traces += line_trace_other
 
-    trafo_traces = create_trafo_trace(net, color='gray', width=line_width * 2)
+    trafo_traces = create_trafo_trace(net, color="gray", width=line_width * 2)
 
-    return draw_traces(line_traces + trafo_traces + bus_traces, showlegend=True,
-                       aspectratio=aspectratio, on_map=on_map, map_style=map_style, figsize=figsize,
-                       filename=filename, auto_open=auto_open,zoomlevel=zoomlevel)
+    return draw_traces(
+        line_traces + trafo_traces + bus_traces,
+        showlegend=True,
+        aspectratio=aspectratio,
+        on_map=on_map,
+        map_style=map_style,
+        figsize=figsize,
+        filename=filename,
+        auto_open=auto_open,
+        zoomlevel=zoomlevel,
+    )
 
 
-if __name__ == '__main__':
-    from pandapower.plotting.plotly import simple_plotly  # type: ignore[no-redef]
+if __name__ == "__main__":
     from pandapower.networks import mv_oberrhein  # type: ignore[no-redef]
     from pandapower import runpp
+
     net = mv_oberrhein()  # type: ignore[operator]
     vlevel_plotly(net)
     runpp(net)
@@ -175,9 +230,9 @@ if __name__ == '__main__':
     # getting unique sets of buses for each voltage level
     vlev_bus_dict: dict = {}
     for vl_buses in vlev_buses:
-        if net.bus.loc[vl_buses, 'vn_kv'].unique().shape[0] > 1:
-            logger.warning('buses from the same voltage level does not have the same vn_kv !?')
-        vn_kv = net.bus.loc[vl_buses, 'vn_kv'].unique()[0]
+        if net.bus.loc[vl_buses, "vn_kv"].unique().shape[0] > 1:
+            logger.warning("buses from the same voltage level does not have the same vn_kv !?")
+        vn_kv = net.bus.loc[vl_buses, "vn_kv"].unique()[0]
         if vlev_bus_dict.get(vn_kv):
             vlev_bus_dict[vn_kv].update(vl_buses)
         else:
@@ -192,20 +247,29 @@ if __name__ == '__main__':
     bus_traces = []
     line_traces = []
     for vn_kv, buses_vl in vlev_bus_dict.items():
-
         vlev_color = colors_dict[vn_kv]
         bus_trace_vlev = create_bus_trace(
-            net, buses=buses_vl, size=bus_size, legendgroup=str(vn_kv),
-            color=vlev_color, trace_name='buses {0} kV'.format(vn_kv))
+            net,
+            buses=buses_vl,
+            size=bus_size,
+            legendgroup=str(vn_kv),
+            color=vlev_color,
+            trace_name="buses {0} kV".format(vn_kv),
+        )
         if bus_trace_vlev is not None:
             bus_traces += bus_trace_vlev
 
-        vlev_lines = net.line[net.line.from_bus.isin(buses_vl) &
-                              net.line.to_bus.isin(buses_vl)].index.tolist()
+        vlev_lines = net.line[net.line.from_bus.isin(buses_vl) & net.line.to_bus.isin(buses_vl)].index.tolist()
         print(vlev_lines)
         line_trace_vlev = create_line_trace(
-            net, lines=vlev_lines, use_line_geo=use_line_geodata,
-            respect_switches=respect_switches, legendgroup=str(vn_kv), color="r",
-            width=line_width, trace_name='lines {0} kV'.format(vn_kv))
+            net,
+            lines=vlev_lines,
+            use_line_geo=use_line_geodata,
+            respect_switches=respect_switches,
+            legendgroup=str(vn_kv),
+            color="r",
+            width=line_width,
+            trace_name="lines {0} kV".format(vn_kv),
+        )
         if line_trace_vlev is not None:
             line_traces += line_trace_vlev

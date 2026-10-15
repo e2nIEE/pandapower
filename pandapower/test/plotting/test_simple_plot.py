@@ -18,21 +18,15 @@ def test_calculate_unique_angles():
     create_sgen(net, b, 5)
     one = calculate_unique_angles(net)
 
-    assert one == {
-        0: {"sgen": {"none": 0.0}}
-    }
+    assert one == {0: {"sgen": {"none": 0.0}}}
 
     create_sgen(net, b, 5)
     two = calculate_unique_angles(net)
-    assert two == {
-        0: {"sgen": {"none": 0.0}}
-    }
+    assert two == {0: {"sgen": {"none": 0.0}}}
 
     create_sgen(net, b, 5, type="PV")
     three = calculate_unique_angles(net)
-    assert three == {
-        0: {"sgen": {"PV": 0.0, "none": pi}}
-    }
+    assert three == {0: {"sgen": {"PV": 0.0, "none": pi}}}
 
     create_load(net, b1, 5)
     create_sgen(net, b1, 5, type="custom")
@@ -41,7 +35,7 @@ def test_calculate_unique_angles():
     four = calculate_unique_angles(net)
     assert four == {
         0: {"sgen": {"PV": 0.0, "none": pi}},
-        1: {"sgen": {"PV": 0.0, "WP": pi / 2, "custom": pi}, "load": pi / 2 * 3}
+        1: {"sgen": {"PV": 0.0, "WP": pi / 2, "custom": pi}, "load": pi / 2 * 3},
     }
 
 

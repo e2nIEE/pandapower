@@ -21,14 +21,14 @@ def mv_oberrhein(
     Loads the Oberrhein network, a generic 20 kV network serviced by two 25 MVA HV/MV transformer stations. The network
     supplies 141 MV/LV substations and 6 MV loads through four MV feeders. The network layout is meshed, but the network
     is operated as a radial network with 6 open sectioning points.
-    
+
     The network can be loaded with two different worst case scenarios for load and generation, which are defined by
     scaling factors for loads / generators as well as tap positions of the HV/MV transformers. These worst case
     scenarios are a good starting point for working with this network, but you are of course free to parametrize the
     network for your use case.
-    
+
     The network also includes geographical information of lines and buses for plotting.
-    
+
     Parameters:
         scenario (str, "load"): defines the scaling for load and generation
 
@@ -41,10 +41,10 @@ def mv_oberrhein(
             loads representing the LV networks are connected directly to the MV node
         separation_by_sub (bool, False): if True, the network gets separated into two sections, referring to both
             substations
-    
+
     Returns:
          A single pandapower network or two pandapower network
-    
+
     Example:
         >>> from pandapower.networks.mv_oberrhein import mv_oberrhein
         >>> net = mv_oberrhein("generation")
@@ -78,17 +78,19 @@ def mv_oberrhein(
         mg = create_nxgraph(net)
         # clustering connected buses
         zones = [list(area) for area in connected_components(mg)]
-        net1 = select_subnet(net, buses=zones[0], include_switch_buses=False,
-                             include_results=True, keep_everything_else=True)
-        net0 = select_subnet(net, buses=zones[1], include_switch_buses=False,
-                             include_results=True, keep_everything_else=True)
+        net1 = select_subnet(
+            net, buses=zones[0], include_switch_buses=False, include_results=True, keep_everything_else=True
+        )
+        net0 = select_subnet(
+            net, buses=zones[1], include_switch_buses=False, include_results=True, keep_everything_else=True
+        )
 
         runpp(net0)
         runpp(net1)
-        net0.name = 'MV Oberrhein 0'
-        net1.name = 'MV Oberrhein 1'
+        net0.name = "MV Oberrhein 0"
+        net1.name = "MV Oberrhein 1"
         return net0, net1
 
     runpp(net)
-    net.name = 'MV Oberrhein'
+    net.name = "MV Oberrhein"
     return net

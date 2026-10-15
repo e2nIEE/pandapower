@@ -14,7 +14,7 @@ def simple_grid():
     net = pandapowerNet(name="simple_grid", sn_mva=4)
     b1, b2, b3 = create_buses(net, 3, 110)
 
-    create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.4, rx_max=0.4)
+    create_ext_grid(net, b1, s_sc_max_mva=100.0, s_sc_min_mva=80.0, rx_min=0.4, rx_max=0.4)
     create_lines(
         net,
         [b1, b2],
@@ -29,7 +29,7 @@ def simple_grid():
 
 def test_voltage_sgen():
     net = simple_grid()
-    create_sgen(net, 1, sn_mva=200., p_mw=0, k=1.3)
+    create_sgen(net, 1, sn_mva=200.0, p_mw=0, k=1.3)
     # net.sn_mva = 110 * np.sqrt(3)
     calc_sc(net, case="max", ip=True, branch_results=True, bus=2)
 
@@ -63,8 +63,17 @@ def test_voltage_sgen():
 def test_voltage_gen():
     net = simple_grid()
     z_base_ohm = np.square(110) / 100
-    create_gen(net, 1, p_mw=0, sn_mva=100, vn_kv=110,
-               xdss_pu=0.14, rdss_ohm=0.00001653 * z_base_ohm, cos_phi=0.85, pg_percent=0)
+    create_gen(
+        net,
+        1,
+        p_mw=0,
+        sn_mva=100,
+        vn_kv=110,
+        xdss_pu=0.14,
+        rdss_ohm=0.00001653 * z_base_ohm,
+        cos_phi=0.85,
+        pg_percent=0,
+    )
     calc_sc(net, case="max", ip=True, branch_results=True, bus=2)
 
     assert np.isclose(net.res_bus_sc.at[2, "ikss_ka"], 3.87955, atol=1e-6, rtol=0)
@@ -128,8 +137,8 @@ def test_voltage_simple():
 def test_voltage_very_simple():
     net = pandapowerNet(name="test_voltage_very_simple", sn_mva=12)
     b1, b2 = create_buses(net, 2, 110)
-    create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.4, rx_max=0.4)
-    create_lines(net, b1, b2, std_type="305-AL1/39-ST1A 110.0", length_km=20.)
+    create_ext_grid(net, b1, s_sc_max_mva=100.0, s_sc_min_mva=80.0, rx_min=0.4, rx_max=0.4)
+    create_lines(net, b1, b2, std_type="305-AL1/39-ST1A 110.0", length_km=20.0)
     calc_sc(net, case="max", ip=True, ith=True, branch_results=True, bus=1)
 
     assert np.isclose(net.res_bus_sc.at[1, "ikss_ka"], 0.49593, atol=1e-6, rtol=0)

@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import copy
 import logging
 import os
@@ -17,7 +16,12 @@ from pandapower.file_io import from_excel, to_excel
 from pandapower.networks import simple_four_bus_system
 from pandapower.networks.power_system_test_cases import case5
 from pandapower.run import runpp
-from pandapower.test.timeseries.test_timeseries import create_data_source, simple_test_net
+from pandapower.test.timeseries.test_timeseries import create_data_source
+
+# reexported with "as" to prevent ruff removing it as unused
+from pandapower.test.timeseries.test_timeseries import (
+    simple_test_net as simple_test_net,
+)
 from pandapower.timeseries.data_sources.frame_data import DFData
 from pandapower.timeseries.output_streamer import OutputStreamer
 from pandapower.timeseries.run_time_series import run_timeseries
@@ -316,7 +320,9 @@ def test_ppc_log(simple_test_net):
     output_streamer.log_variable("ppc_bus", "vm")
     output_streamer.log_variable("ppc_bus", "va")
     runpp(net, only_v_results=True, recycle={"bus_pq": True, "gen": False, "trafo": False})
-    run_timeseries(net, time_steps, recycle={"bus_pq": True, "gen": False, "trafo": False}, only_v_results=True, verbose=False)
+    run_timeseries(
+        net, time_steps, recycle={"bus_pq": True, "gen": False, "trafo": False}, only_v_results=True, verbose=False
+    )
     assert len(output_streamer.output["ppc_bus.vm"]) == n_timesteps
     assert len(output_streamer.output["ppc_bus.va"]) == n_timesteps
 

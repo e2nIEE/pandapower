@@ -8,11 +8,45 @@ import pandas as pd
 from pandapower.auxiliary import _sum_by_group
 from pandapower.pypower.idx_bus import BASE_KV, VM, VA
 from pandapower.pypower.idx_brch import TAP
-from pandapower.pypower.idx_brch_sc import IKSS_F, IKSS_T, IP_F, IP_T, ITH_F, ITH_T, \
-    PKSS_F, QKSS_F, PKSS_T, QKSS_T, VKSS_MAGN_F, VKSS_MAGN_T, VKSS_ANGLE_F, VKSS_ANGLE_T, IKSS_ANGLE_F, IKSS_ANGLE_T
-from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX, KAPPA, R_EQUIV, IKSS1, IP, ITH, \
-    X_EQUIV, IKSS2, IKCV, M, R_EQUIV_OHM, X_EQUIV_OHM, V_G, K_SG, SKSS, \
-    PHI_IKSS1_DEGREE, PHI_IKSS2_DEGREE, PHI_IKCV_DEGREE
+from pandapower.pypower.idx_brch_sc import (
+    IKSS_F,
+    IKSS_T,
+    IP_F,
+    IP_T,
+    ITH_F,
+    ITH_T,
+    PKSS_F,
+    QKSS_F,
+    PKSS_T,
+    QKSS_T,
+    VKSS_MAGN_F,
+    VKSS_MAGN_T,
+    VKSS_ANGLE_F,
+    VKSS_ANGLE_T,
+    IKSS_ANGLE_F,
+    IKSS_ANGLE_T,
+)
+from pandapower.pypower.idx_bus_sc import (
+    C_MIN,
+    C_MAX,
+    KAPPA,
+    R_EQUIV,
+    IKSS1,
+    IP,
+    ITH,
+    X_EQUIV,
+    IKSS2,
+    IKCV,
+    M,
+    R_EQUIV_OHM,
+    X_EQUIV_OHM,
+    V_G,
+    K_SG,
+    SKSS,
+    PHI_IKSS1_DEGREE,
+    PHI_IKSS2_DEGREE,
+    PHI_IKCV_DEGREE,
+)
 from pandapower.shortcircuit.impedance import _calc_zbus_diag
 
 import logging
@@ -43,9 +77,11 @@ def _calc_ikss(net, ppci, bus_idx):
         V0 = np.full((n_bus, n_sc_bus), ppci["bus"][bus_idx, C_MAX if case == "max" else C_MIN], dtype=np.complex128)
 
         if np.any(ppci["branch"][:, TAP] != 1):
-            msg = "Calculation does not support calculation of voltages and branch powers for grids that have" \
-                  " transformers with rated voltages unequal to bus voltages. Change the transformer data or" \
-                  "try using the superposition method by passing 'use_pre_fault_voltage=True'"
+            msg = (
+                "Calculation does not support calculation of voltages and branch powers for grids that have"
+                " transformers with rated voltages unequal to bus voltages. Change the transformer data or"
+                "try using the superposition method by passing 'use_pre_fault_voltage=True'"
+            )
             # raise NotImplementedError(msg)
             warnings.warn(msg)
             valid_V = False
@@ -92,10 +128,8 @@ def _calc_ikss(net, ppci, bus_idx):
     # Correct voltage of generator bus inside power station
     if np.any(~np.isnan(ppci["bus"][:, K_SG])):
         gen_bus_idx = bus_idx[~np.isnan(ppci["bus"][bus_idx, K_SG])]
-        ppci["bus"][gen_bus_idx, IKSS1] *=\
-            (ppci["bus"][gen_bus_idx, V_G] / ppci["bus"][gen_bus_idx, BASE_KV])
-        ppci["bus"][gen_bus_idx, SKSS] *=\
-            (ppci["bus"][gen_bus_idx, V_G] / ppci["bus"][gen_bus_idx, BASE_KV])
+        ppci["bus"][gen_bus_idx, IKSS1] *= ppci["bus"][gen_bus_idx, V_G] / ppci["bus"][gen_bus_idx, BASE_KV]
+        ppci["bus"][gen_bus_idx, SKSS] *= ppci["bus"][gen_bus_idx, V_G] / ppci["bus"][gen_bus_idx, BASE_KV]
 
 
 def _calc_ikss_1ph(net, ppci, ppci_0, bus_idx):
@@ -104,15 +138,17 @@ def _calc_ikss_1ph(net, ppci, ppci_0, bus_idx):
     ppci["internal"]["baseI"] = ppci["bus"][:, BASE_KV] * np.sqrt(3) / ppci["baseMVA"]
     ppci_0["internal"]["baseI"] = ppci_0["bus"][:, BASE_KV] * np.sqrt(3) / ppci_0["baseMVA"]
 
-    z_equiv = abs((ppci["bus"][bus_idx, R_EQUIV] + ppci["bus"][bus_idx, X_EQUIV] * 1j) * 2 +
-                  (ppci_0["bus"][bus_idx, R_EQUIV] + ppci_0["bus"][bus_idx, X_EQUIV] * 1j))
+    z_equiv = abs(
+        (ppci["bus"][bus_idx, R_EQUIV] + ppci["bus"][bus_idx, X_EQUIV] * 1j) * 2
+        + (ppci_0["bus"][bus_idx, R_EQUIV] + ppci_0["bus"][bus_idx, X_EQUIV] * 1j)
+    )
 
     # Only for test, should correspondant to PF result
     baseZ = ppci["bus"][bus_idx, BASE_KV] ** 2 / ppci["baseMVA"]
-    ppci["bus"][bus_idx, R_EQUIV_OHM] = baseZ * ppci['bus'][bus_idx, R_EQUIV]
-    ppci["bus"][bus_idx, X_EQUIV_OHM] = baseZ * ppci['bus'][bus_idx, X_EQUIV]
-    ppci_0["bus"][bus_idx, R_EQUIV_OHM] = baseZ * ppci_0['bus'][bus_idx, R_EQUIV]
-    ppci_0["bus"][bus_idx, X_EQUIV_OHM] = baseZ * ppci_0['bus'][bus_idx, X_EQUIV]
+    ppci["bus"][bus_idx, R_EQUIV_OHM] = baseZ * ppci["bus"][bus_idx, R_EQUIV]
+    ppci["bus"][bus_idx, X_EQUIV_OHM] = baseZ * ppci["bus"][bus_idx, X_EQUIV]
+    ppci_0["bus"][bus_idx, R_EQUIV_OHM] = baseZ * ppci_0["bus"][bus_idx, R_EQUIV]
+    ppci_0["bus"][bus_idx, X_EQUIV_OHM] = baseZ * ppci_0["bus"][bus_idx, X_EQUIV]
 
     # # ppci["bus"][bus_idx, IKSS1] = abs(c * ppci["internal"]["baseI"][bus_idx] * ppci["baseMVA"] / (z_equiv * baseZ))
     # # ppci_0["bus"][bus_idx, IKSS1] = abs(c * ppci_0["internal"]["baseI"][bus_idx] * ppci["baseMVA"] / (z_equiv * baseZ))
@@ -139,7 +175,7 @@ def _current_source_current(net, ppci, bus_idx):
 
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     fault = net._options["fault"]
-    # _is_elements_final exists for some reason, and weirdly it can be different than _is_elements. 
+    # _is_elements_final exists for some reason, and weirdly it can be different than _is_elements.
     # it is not documented anywhere why it exists and I don't have any time to find out, but this here fixes the problem.
 
     if "current_source" not in net.sgen.columns or np.all(net.sgen.current_source.values):
@@ -162,23 +198,27 @@ def _current_source_current(net, ppci, bus_idx):
     if "k" not in sgen:
         raise ValueError("Nominal to short-circuit current has to specified in net.sgen.k")
     if type_c and "kappa" not in sgen:
-        raise ValueError("Max. short-circuit current in p.u. must be specified in net.sgen.kappa for the "
-                         "short-circuit calculation with superposition method")
+        raise ValueError(
+            "Max. short-circuit current in p.u. must be specified in net.sgen.kappa for the "
+            "short-circuit calculation with superposition method"
+        )
 
     if type_c:
         # voltage difference between pre-fault condition and the voltage from the calculation with
         # rotating machines only is used to determine the current injection. The parameter kappa here
         # is used to denote the maximal current contribution of the sgen in the short-circuit case "Type C"
         V_ikss = ppci["internal"]["V_ikss"]
-        i_sgen_n_pu = (sgen.sn_mva.values.reshape(-1, 1) / net.sn_mva)
+        i_sgen_n_pu = sgen.sn_mva.values.reshape(-1, 1) / net.sn_mva
         delta_V = ppci["bus"][sgen_buses_ppc][:, [VM]] - np.abs(V_ikss[sgen_buses_ppc])
-        i_sgen_pu = np.where(sgen.k.values.reshape(-1, 1) * delta_V < sgen.kappa.values.reshape(-1, 1),
-                             sgen.k.values.reshape(-1, 1) * i_sgen_n_pu * delta_V,
-                             i_sgen_n_pu * sgen.kappa.values.reshape(-1, 1))
+        i_sgen_pu = np.where(
+            sgen.k.values.reshape(-1, 1) * delta_V < sgen.kappa.values.reshape(-1, 1),
+            sgen.k.values.reshape(-1, 1) * i_sgen_n_pu * delta_V,
+            i_sgen_n_pu * sgen.kappa.values.reshape(-1, 1),
+        )
         i_sgen_pu = np.abs(i_sgen_pu)
         extra_angle = ppci["bus"][sgen_buses_ppc, VA]
     else:
-        i_sgen_pu = (sgen.sn_mva.values / net.sn_mva * sgen.k.values)
+        i_sgen_pu = sgen.sn_mva.values / net.sn_mva * sgen.k.values
         extra_angle = 0
 
     if sgen_angle is not None and fault == "3ph":
@@ -198,7 +238,9 @@ def _current_source_current(net, ppci, bus_idx):
         if sgen_angle is None and fault == "3ph":
             ppci["bus"][buses, PHI_IKCV_DEGREE] = -np.angle(diagZ[buses], deg=True) + extra_angle
         diagZ[bus_idx] += fault_impedance
-        i_kss_2 = 1 / diagZ * np.dot(Zbus, ppci["bus"][:, IKCV] * np.exp(np.deg2rad(ppci["bus"][:, PHI_IKCV_DEGREE]) * 1j))
+        i_kss_2 = (
+            1 / diagZ * np.dot(Zbus, ppci["bus"][:, IKCV] * np.exp(np.deg2rad(ppci["bus"][:, PHI_IKCV_DEGREE]) * 1j))
+        )
     else:
         ybus_fact = ppci["internal"]["ybus_fact"]
         diagZ = _calc_zbus_diag(net, ppci)
@@ -327,8 +369,8 @@ def _calc_branch_currents(net, ppci, bus_idx):
 
     ikss1_all_f = np.conj(Yf.dot(V_ikss))
     ikss1_all_t = np.conj(Yt.dot(V_ikss))
-    ikss1_all_f[abs(ikss1_all_f) < 1e-10] = 0.
-    ikss1_all_t[abs(ikss1_all_t) < 1e-10] = 0.
+    ikss1_all_f[abs(ikss1_all_f) < 1e-10] = 0.0
+    ikss1_all_t[abs(ikss1_all_t) < 1e-10] = 0.0
 
     # add current source branch current if there is one
     current_sources = any(~np.isnan(ppci["bus"][:, IKCV])) and np.any(ppci["bus"][:, IKCV] != 0)
@@ -413,7 +455,7 @@ def nan_minmax(a, rows, argminmax):
 
 
 def _calc_branch_currents_complex(net, ppci, bus_idx):
-    net["ppci"] = ppci  #todo remove this
+    net["ppci"] = ppci  # todo remove this
     n_sc_bus = np.shape(bus_idx)[0]
 
     case = net._options["case"]
@@ -509,8 +551,8 @@ def _calc_branch_currents_complex(net, ppci, bus_idx):
 
     ikss1_all_f = Yf.dot(V_ikss)
     ikss1_all_t = Yt.dot(V_ikss)
-    ikss1_all_f[np.abs(ikss1_all_f) < 1e-10] = 0.
-    ikss1_all_t[np.abs(ikss1_all_t) < 1e-10] = 0.
+    ikss1_all_f[np.abs(ikss1_all_f) < 1e-10] = 0.0
+    ikss1_all_t[np.abs(ikss1_all_t) < 1e-10] = 0.0
 
     # add current source branch current if there is one
     current_sources = any(~np.isnan(ppci["bus"][:, IKCV])) and np.any(ppci["bus"][:, IKCV] != 0)
@@ -540,8 +582,8 @@ def _calc_branch_currents_complex(net, ppci, bus_idx):
 
         ikss2_all_f = Yf.dot(V)
         ikss2_all_t = Yt.dot(V)
-        ikss2_all_f[np.abs(ikss2_all_f) < 1e-10] = 0.
-        ikss2_all_t[np.abs(ikss2_all_t) < 1e-10] = 0.
+        ikss2_all_f[np.abs(ikss2_all_f) < 1e-10] = 0.0
+        ikss2_all_t[np.abs(ikss2_all_t) < 1e-10] = 0.0
 
         V_ikss += V  # superposition
 
@@ -551,7 +593,6 @@ def _calc_branch_currents_complex(net, ppci, bus_idx):
         ikss_all_t = ikss1_all_t + ikss2_all_t
 
     else:
-
         ikss_all_f = ikss1_all_f
         ikss_all_t = ikss1_all_t
 

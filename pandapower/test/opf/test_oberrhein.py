@@ -1,19 +1,19 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
+
 import pytest
 
 from pandapower.networks import mv_oberrhein
 from pandapower.run import runopp
 
-import logging
-
 logger = logging.getLogger(__name__)
 
 
 def test_opf_oberrhein():
-    """ Testing a  simple network with transformer for loading
-    constraints with OPF using a generator """
+    """Testing a  simple network with transformer for loading
+    constraints with OPF using a generator"""
     # create net
     net = mv_oberrhein()
 

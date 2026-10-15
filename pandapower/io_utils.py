@@ -17,9 +17,7 @@ from warnings import warn
 import numpy as np
 import pandas.errors
 from deepdiff.diff import DeepDiff
-from packaging.version import Version
 
-from pandapower._version import __version__
 import networkx
 import numpy
 import geojson
@@ -33,7 +31,7 @@ try:
 except ImportError:
     from pandas.util.testing import assert_series_equal, assert_frame_equal  # type: ignore[no-redef,import-not-found]
 try:
-    from cryptography.fernet import Fernet # type: ignore
+    from cryptography.fernet import Fernet  # type: ignore
 
     cryptography_INSTALLED = True
 except ImportError:
@@ -92,10 +90,10 @@ def coords_to_df(value, geotype="line"):
         v.fill(numpy.nan)
         for i, idx in enumerate(value.index):
             # get coords and convert them to x1, y1, x2, y2...
-            coords = value.at[idx, 'coords']
+            coords = value.at[idx, "coords"]
             if coords is None:
                 continue
-            v[i, :len(coords) * 2] = numpy.array(coords).flatten()
+            v[i, : len(coords) * 2] = numpy.array(coords).flatten()
         geo = pd.DataFrame(v, index=value.index)
         geo.columns = ["%s%i" % (w, i) for i in range(k) for w in "xy"]
     if geotype == "bus":
@@ -104,8 +102,9 @@ def coords_to_df(value, geotype="line"):
     return geo
 
 
-def to_dict_of_dfs(net, include_results=False, include_std_types=True, include_parameters=True,
-                   include_empty_tables=True):
+def to_dict_of_dfs(
+    net, include_results=False, include_std_types=True, include_parameters=True, include_empty_tables=True
+):
     dodfs = {}
     dtypes = []
     parameters = {}  # pd.DataFrame(columns=["parameter"])
@@ -195,8 +194,11 @@ def to_dict_of_dfs(net, include_results=False, include_std_types=True, include_p
 
 
 def dicts_to_pandas(json_dict):
-    warn("This function is deprecated and will be removed in a future release.\r\n"
-         "Please resave your grid using the current pandapower version.", DeprecationWarning)
+    warn(
+        "This function is deprecated and will be removed in a future release.\r\n"
+        "Please resave your grid using the current pandapower version.",
+        DeprecationWarning,
+    )
     pd_dict = {}
     for k in sorted(json_dict):
         if isinstance(json_dict[k], dict):
@@ -206,8 +208,7 @@ def dicts_to_pandas(json_dict):
             if pd_dict[k].index[0].isdigit():
                 pd_dict[k].set_index(pd_dict[k].index.astype(numpy.int64), inplace=True)
         else:
-            raise UserWarning("The network is an old version or corrupt. "
-                              "Try to use the old load function")
+            raise UserWarning("The network is an old version or corrupt. Try to use the old load function")
     return pd_dict
 
 
@@ -217,20 +218,19 @@ def df_to_coords(net, item, table):
     net[item] = pd.DataFrame(index=table.index, columns=net[item].columns)
     if item == "bus_geodata":
         num_points -= 1
-        net[item].loc[:, ['x', 'y']] = table.loc[:, ['x', 'y']]
+        net[item].loc[:, ["x", "y"]] = table.loc[:, ["x", "y"]]
 
     for i in table.index:
         coords = table.loc[i]
         # for i, coords in table.iterrows():
-        coord = [(coords["x%u" % nr], coords["y%u" % nr]) for nr in range(num_points)
-                 if pd.notnull(coords["x%u" % nr])]
+        coord = [(coords["x%u" % nr], coords["y%u" % nr]) for nr in range(num_points) if pd.notnull(coords["x%u" % nr])]
         if len(coord):
             net[item].loc[i, "coords"] = coord
 
 
 def from_dict_of_dfs(dodfs, net=None, add_basic_std_types=True):
     if net is None:
-        net = pandapowerNet(name='', add_stdtypes=add_basic_std_types)
+        net = pandapowerNet(name="", add_stdtypes=add_basic_std_types)
     for item, table in dodfs.items():
         if item == "dtypes":
             continue
@@ -241,7 +241,7 @@ def from_dict_of_dfs(dodfs, net=None, add_basic_std_types=True):
                     val = bool(val)
                 net[c] = val
                 if c == "name" and pd.isnull(net[c]):
-                    net[c] = ''
+                    net[c] = ""
             continue
         elif item in ["line_geodata", "bus_geodata"]:
             pass
@@ -254,9 +254,13 @@ def from_dict_of_dfs(dodfs, net=None, add_basic_std_types=True):
             if item_name not in net:
                 for c in table.columns:
                     table[c] = table[c].apply(
-                        lambda x: json.loads(x) if isinstance(x, str) and x.startswith("[") else x)
+                        lambda x: json.loads(x) if isinstance(x, str) and x.startswith("[") else x
+                    )
             # remove nan from std_types dicts
-            net["std_types"][item_name] = {name: {k: v for k, v in tab.items() if not isinstance(v, float) or pd.notnull(v)} for name, tab in table.T.to_dict().items()}
+            net["std_types"][item_name] = {
+                name: {k: v for k, v in tab.items() if not isinstance(v, float) or pd.notnull(v)}
+                for name, tab in table.T.to_dict().items()
+            }
             continue  # don't go into try…except
         elif item.endswith("_profiles"):
             if "profiles" not in net:
@@ -265,13 +269,12 @@ def from_dict_of_dfs(dodfs, net=None, add_basic_std_types=True):
             net["profiles"][item[:-9]] = table
             continue  # don't go into try…except
         elif item == "user_pf_options":
-            net['user_pf_options'] = dict(zip(table.columns, table.values[0]))
+            net["user_pf_options"] = dict(zip(table.columns, table.values[0]))
             continue  # don't go into try…except
         else:
             for json_column in ("object", "recycle", "q_max_characteristic", "q_min_characteristic"):
                 if json_column in table.columns:
-                    table[json_column] = table[json_column].apply(
-                        lambda x: json.loads(x, cls=PPJSONDecoder))
+                    table[json_column] = table[json_column].apply(lambda x: json.loads(x, cls=PPJSONDecoder))
             if not isinstance(table.index, pd.MultiIndex):
                 name = net[item].index.name if item in net else None
                 table = table.rename_axis(name)
@@ -280,9 +283,7 @@ def from_dict_of_dfs(dodfs, net=None, add_basic_std_types=True):
             if item in ["bus", "line"]:
                 if "geo" in table.columns:
                     table.geo = table.geo.mask(table.geo == '"<NA>"', pd.NA)
-                    table.geo = table.geo.apply(
-                        lambda x: geojson.loads(x, cls=PPJSONDecoder) if pd.notna(x) else x
-                    )
+                    table.geo = table.geo.apply(lambda x: geojson.loads(x, cls=PPJSONDecoder) if pd.notna(x) else x)
         # set the index to be Int
         try:
             net[item] = net[item].set_index(net[item].index.astype(np.int64))
@@ -320,14 +321,16 @@ def to_dict_with_coord_transform(net, point_geo_columns, line_geo_columns):
             elif key in line_geo_columns and not isinstance(item.geometry.values[0], list):
                 item["geometry"] = item.geometry.apply(lambda x: list(x.coords))
 
-        save_net[key] = {"DF": item.to_dict("split"),
-                         "dtypes": dict(zip(item.columns, item.dtypes))} \
-            if isinstance(item, pd.DataFrame) else item
+        save_net[key] = (
+            {"DF": item.to_dict("split"), "dtypes": dict(zip(item.columns, item.dtypes))}
+            if isinstance(item, pd.DataFrame)
+            else item
+        )
     return save_net
 
 
 def get_raw_data_from_pickle(filename):
-    if hasattr(filename, 'read'):
+    if hasattr(filename, "read"):
         net = pd.read_pickle(filename)
     elif not os.path.isfile(filename):
         raise UserWarning("File %s does not exist!!" % filename)
@@ -349,26 +352,21 @@ def transform_net_with_df_and_geo(net, point_geo_columns, line_geo_columns):
             if "columns" in df_dict:
                 # make sure the index is Int
                 try:
-                    df_index = pd.Index(df_dict['index'], dtype=numpy.int64)
+                    df_index = pd.Index(df_dict["index"], dtype=numpy.int64)
                 except TypeError:
-                    df_index = df_dict['index']
-                if GEOPANDAS_INSTALLED and "geometry" in df_dict["columns"] \
-                        and epsg is not None:
+                    df_index = df_dict["index"]
+                if GEOPANDAS_INSTALLED and "geometry" in df_dict["columns"] and epsg is not None:
                     # convert primitive data-types to shapely-objects
                     if key in point_geo_columns:
-                        data = {"x": [row[0] for row in df_dict["data"]],
-                                "y": [row[1] for row in df_dict["data"]]}
-                        geo = [shapely.geometry.Point(row[2][0], row[2][1])
-                               for row in df_dict["data"]]
+                        data = {"x": [row[0] for row in df_dict["data"]], "y": [row[1] for row in df_dict["data"]]}
+                        geo = [shapely.geometry.Point(row[2][0], row[2][1]) for row in df_dict["data"]]
                     elif key in line_geo_columns:
                         data = {"coords": [row[0] for row in df_dict["data"]]}
                         geo = [shapely.geometry.LineString(row[1]) for row in df_dict["data"]]
 
-                    net[key] = geopandas.GeoDataFrame(data, crs=f"epsg:{epsg}", geometry=geo,
-                                                      index=df_index)
+                    net[key] = geopandas.GeoDataFrame(data, crs=f"epsg:{epsg}", geometry=geo, index=df_index)
                 else:
-                    net[key] = pd.DataFrame(columns=df_dict["columns"], index=df_index,
-                                            data=df_dict["data"])
+                    net[key] = pd.DataFrame(columns=df_dict["columns"], index=df_index, data=df_dict["data"])
             else:
                 net[key] = pd.DataFrame.from_dict(df_dict)
                 if "columns" in item:
@@ -450,36 +448,49 @@ class PPJSONEncoder(json.JSONEncoder):
         else:
             _encoder = json.encoder.encode_basestring
 
-        def floatstr(o, allow_nan=self.allow_nan, _repr=float.__repr__, _inf=json.encoder.INFINITY,
-                     _neginf=-json.encoder.INFINITY):
+        def floatstr(
+            o,
+            allow_nan=self.allow_nan,
+            _repr=float.__repr__,
+            _inf=json.encoder.INFINITY,
+            _neginf=-json.encoder.INFINITY,
+        ):
             # Check for specials.  Note that this type of test is processor
             # and/or platform-specific, so do tests which don't depend on the
             # internals.
 
             if pd.isna(o):
-                text = 'NaN'
+                text = "NaN"
             elif o == _inf:
-                text = 'Infinity'
+                text = "Infinity"
             elif o == _neginf:
-                text = '-Infinity'
+                text = "-Infinity"
             else:
                 return _repr(o)
 
             if not allow_nan:
-                raise ValueError(
-                    "Out of range float values are not JSON compliant: " + repr(o))
+                raise ValueError("Out of range float values are not JSON compliant: " + repr(o))
 
             return text
 
         if self.indent is None or isinstance(self.indent, str):
             indent = self.indent
         else:
-            indent = ' ' * self.indent
+            indent = " " * self.indent
 
         _iterencode = json.encoder._make_iterencode(
-            markers, self.default, _encoder, indent, floatstr,
-            self.key_separator, self.item_separator, self.sort_keys,
-            self.skipkeys, _one_shot, isinstance=self.isinstance_func)
+            markers,
+            self.default,
+            _encoder,
+            indent,
+            floatstr,
+            self.key_separator,
+            self.item_separator,
+            self.sort_keys,
+            self.skipkeys,
+            _one_shot,
+            isinstance=self.isinstance_func,
+        )
         return _iterencode(o, 0)
 
     def default(self, o):
@@ -495,8 +506,8 @@ class PPJSONEncoder(json.JSONEncoder):
 
 class FromSerializable:
     def __init__(self):
-        self.class_name = 'class_name'
-        self.module_name = 'module_name'
+        self.class_name = "class_name"
+        self.module_name = "module_name"
         self.registry = {}
 
     def __get__(self, instance, owner):
@@ -504,8 +515,8 @@ class FromSerializable:
             return self
         class_module = getattr(instance, self.class_name), getattr(instance, self.module_name)
         if class_module not in self.registry:
-            _class = (class_module[0], '')
-            _module = ('', class_module[1])
+            _class = (class_module[0], "")
+            _module = ("", class_module[1])
             if (_class in self.registry) and (_module in self.registry):
                 logger.error(
                     f"the saved object {class_module} is ambiguous. There are at least two possibilites to decode the "
@@ -516,11 +527,11 @@ class FromSerializable:
             elif _module in self.registry:
                 class_module = _module
             else:
-                class_module = ('', '')
+                class_module = ("", "")
         method = self.registry[class_module]
         return method.__get__(instance, owner)
 
-    def register(self, class_name='', module_name=''):
+    def register(self, class_name="", module_name=""):
         def decorator(method):
             self.registry[(class_name, module_name)] = method
             return method
@@ -528,11 +539,11 @@ class FromSerializable:
         return decorator
 
 
-class FromSerializableRegistry():
+class FromSerializableRegistry:
     from_serializable = FromSerializable()
-    class_name = ''
-    module_name = ''
-    omit_modules = ''
+    class_name = ""
+    module_name = ""
+    omit_modules = ""
 
     def __init__(self, obj, d, pp_hook_funct, ignore_unknown_objects=False, omit_modules=None, skip_checks=False):
         self.obj = obj
@@ -542,12 +553,12 @@ class FromSerializableRegistry():
         self.omit_modules = omit_modules
         self.skip_checks = skip_checks
 
-    @from_serializable.register(class_name='Series', module_name='pandas.core.series')
-    @from_serializable.register(class_name='Series', module_name='pandas')
+    @from_serializable.register(class_name="Series", module_name="pandas.core.series")
+    @from_serializable.register(class_name="Series", module_name="pandas")
     def Series(self):
-        is_multiindex = self.d.pop('is_multiindex', False)
-        index_name = self.d.pop('index_name', None)
-        index_names = self.d.pop('index_names', None)
+        is_multiindex = self.d.pop("is_multiindex", False)
+        index_name = self.d.pop("index_name", None)
+        index_names = self.d.pop("index_names", None)
         ser = pd.read_json(io.StringIO(self.obj), precise_float=True, **self.d)
 
         # restore index name and Multiindex
@@ -567,18 +578,18 @@ class FromSerializableRegistry():
 
         return ser
 
-    @from_serializable.register(class_name='DataFrame', module_name='pandas.core.frame')
-    @from_serializable.register(class_name='DataFrame', module_name='pandas')
+    @from_serializable.register(class_name="DataFrame", module_name="pandas.core.frame")
+    @from_serializable.register(class_name="DataFrame", module_name="pandas")
     def DataFrame(self):
-        is_multiindex = self.d.pop('is_multiindex', False)
-        is_multicolumn = self.d.pop('is_multicolumn', False)
-        index_name = self.d.pop('index_name', None)
-        index_names = self.d.pop('index_names', None)
-        column_name = self.d.pop('column_name', None)
-        column_names = self.d.pop('column_names', None)
+        is_multiindex = self.d.pop("is_multiindex", False)
+        is_multicolumn = self.d.pop("is_multicolumn", False)
+        index_name = self.d.pop("index_name", None)
+        index_names = self.d.pop("index_names", None)
+        column_name = self.d.pop("column_name", None)
+        column_names = self.d.pop("column_names", None)
 
         obj = self.obj
-        if isinstance(obj, str) and (not os.path.isabs(obj) or not obj.endswith('.json')):
+        if isinstance(obj, str) and (not os.path.isabs(obj) or not obj.endswith(".json")):
             obj = io.StringIO(obj)
 
         df = pd.read_json(obj, precise_float=True, convert_axes=False, **self.d)
@@ -624,10 +635,10 @@ class FromSerializableRegistry():
                 if column_names is not None:
                     df.columns.names = column_names
 
-        if 'geo' in df.columns:
-            df['geo'] = df['geo'].dropna().apply(json.dumps).apply(geojson.loads)
+        if "geo" in df.columns:
+            df["geo"] = df["geo"].dropna().apply(json.dumps).apply(geojson.loads)
 
-        df_obj = df.select_dtypes(include=['object'])
+        df_obj = df.select_dtypes(include=["object"])
         for col in df_obj:
             df[col] = df[col].apply(
                 partial(
@@ -637,20 +648,21 @@ class FromSerializableRegistry():
                     skip_checks=self.skip_checks,
                 )
             )
-            df[col] = df[col].astype(dtype='object')
+            df[col] = df[col].astype(dtype="object")
             df.loc[pd.isnull(df[col]), col] = None
         return df
 
     # removing the pandapower.auxiliary registration is not possible otherwise old networks cannot be loaded anymore
-    @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.network')
-    @from_serializable.register(class_name='pandapowerNet', module_name='pandapower.auxiliary')
+    @from_serializable.register(class_name="pandapowerNet", module_name="pandapower.network")
+    @from_serializable.register(class_name="pandapowerNet", module_name="pandapower.auxiliary")
     def to_pandapower_net(self):
         if isinstance(self.obj, str):  # backwards compatibility
             from pandapower import from_json_string
+
             return from_json_string(self.obj)
         else:
             if self.empty_dict_like_object is None:
-                net = pandapowerNet(name='from_serializable')
+                net = pandapowerNet(name="from_serializable")
                 del net["format_version"]  # remove default format version to avoid issue when loading older networks
             else:
                 net = self.empty_dict_like_object
@@ -659,11 +671,10 @@ class FromSerializableRegistry():
 
     @from_serializable.register(class_name="MultiGraph", module_name="networkx")
     def networkx(self):
-        mg = json_graph.adjacency_graph(self.obj, attrs={'id': 'json_id', 'key': 'json_key'})
+        mg = json_graph.adjacency_graph(self.obj, attrs={"id": "json_id", "key": "json_key"})
         edges = []
-        for (n1, n2, e) in mg.edges:
-            attr = {k: v for k, v in mg.get_edge_data(n1, n2, key=e).items() if
-                    k not in ("json_id", "json_key")}
+        for n1, n2, e in mg.edges:
+            attr = {k: v for k, v in mg.get_edge_data(n1, n2, key=e).items() if k not in ("json_id", "json_key")}
             attr["key"] = e
             edges.append((n1, n2, attr))
         mg.clear_edges()
@@ -751,10 +762,10 @@ class FromSerializableRegistry():
 
     @from_serializable.register(class_name="method")
     def method(self):
-        logger.warning('deserializing of method not implemented')
+        logger.warning("deserializing of method not implemented")
         return self.obj
 
-    @from_serializable.register(class_name='function')
+    @from_serializable.register(class_name="function")
     def function(self):
         if not self.skip_checks:
             module = importlib.import_module(self.module_name)
@@ -771,8 +782,7 @@ class FromSerializableRegistry():
             )
             return self.obj
 
-    
-    @from_serializable.register(class_name='bool', module_name='numpy')
+    @from_serializable.register(class_name="bool", module_name="numpy")
     def bool_handling(self):
         return bool(self.obj)
 
@@ -786,7 +796,6 @@ class FromSerializableRegistry():
         )
 
         return np.array([my_hook(x) for x in self.obj])
-
 
     @from_serializable.register()
     def rest(self):
@@ -856,13 +865,13 @@ class FromSerializableRegistry():
             for i, feat in enumerate(features_lst):
                 fs["features"][i]["properties"]["id"] = feat["id"]
 
-            df = geopandas.GeoDataFrame.from_features(fs, crs=self.d['crs'])
+            df = geopandas.GeoDataFrame.from_features(fs, crs=self.d["crs"])
             if "id" in df:
-                df.set_index(df['id'].values.astype(numpy.int64), inplace=True)
+                df.set_index(df["id"].values.astype(numpy.int64), inplace=True)
                 df.drop(columns=["id"], inplace=True)
             else:
                 df.set_index(df.index.values.astype(numpy.int64), inplace=True)
-            df = df.reindex(columns=self.d['columns'])
+            df = df.reindex(columns=self.d["columns"])
 
             # df.astype changes geodataframe to dataframe -> _preserve_dtypes fixes it
             _preserve_dtypes(df, dtypes=self.d["dtype"])
@@ -881,12 +890,12 @@ class FromSerializableRegistry():
 class PPJSONDecoder(json.JSONDecoder):
     def __init__(self, **kwargs):
         # net = pandapowerNet(name="")
-        deserialize_pandas = kwargs.pop('deserialize_pandas', True)
-        empty_dict_like_object = kwargs.pop('empty_dict_like_object', None)
+        deserialize_pandas = kwargs.pop("deserialize_pandas", True)
+        empty_dict_like_object = kwargs.pop("empty_dict_like_object", None)
         registry_class = kwargs.pop("registry_class", FromSerializableRegistry)
         ignore_unknown_objects = kwargs.pop("ignore_unknown_objects", False)
-        omit_tables = kwargs.pop('omit_tables', None)
-        omit_modules =kwargs.pop('omit_modules', None)
+        omit_tables = kwargs.pop("omit_tables", None)
+        omit_modules = kwargs.pop("omit_modules", None)
         super_kwargs = {
             "object_hook": partial(
                 pp_hook,
@@ -918,40 +927,41 @@ def pp_hook(
             for ot in omit_tables:
                 if ot in d:
                     d[ot].drop(d[ot].index, inplace=True)
-        if '_module' in d and '_class' in d:
+        if "_module" in d and "_class" in d:
             if omit_modules is not None:
                 for om in omit_modules:
-                    if om in d['_module']:
+                    if om in d["_module"]:
                         return None
-            if 'pandas' in d['_module'] and not deserialize_pandas:
+            if "pandas" in d["_module"] and not deserialize_pandas:
                 return json.dumps(d)
             elif "_object" in d:
-                obj = d.pop('_object')
+                obj = d.pop("_object")
             elif "_state" in d:
-                obj = d['_state']
-                if '_init' in obj:
-                    del obj['_init']
+                obj = d["_state"]
+                if "_init" in obj:
+                    del obj["_init"]
                 return obj  # backwards compatibility
             else:
-                obj = {key: val for key, val in d.items() if key not in ['_module', '_class']}
+                obj = {key: val for key, val in d.items() if key not in ["_module", "_class"]}
             fs = registry_class(
                 obj, d, pp_hook, ignore_unknown_objects, omit_modules=omit_modules, skip_checks=skip_checks
             )
 
-            fs.class_name = d.pop('_class', '')
-            fs.module_name = d.pop('_module', '')
+            fs.class_name = d.pop("_class", "")
+            fs.module_name = d.pop("_module", "")
             fs.empty_dict_like_object = empty_dict_like_object
             return fs.from_serializable()
         else:
             return d
     except TypeError:
-        logger.debug('Loading your grid raised a TypeError. %s raised this exception' % d)
+        logger.debug("Loading your grid raised a TypeError. %s raised this exception" % d)
         return d
 
 
 def encrypt_string(s, key, compress=True):
-    missing_packages = numpy.array(["cryptography", "hashlib", "base64"])[~numpy.array([
-        cryptography_INSTALLED, hashlib_INSTALLED, base64_INSTALLED])]
+    missing_packages = numpy.array(["cryptography", "hashlib", "base64"])[
+        ~numpy.array([cryptography_INSTALLED, hashlib_INSTALLED, base64_INSTALLED])
+    ]
     if len(missing_packages):
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", missing_packages)
     key_base = hashlib.sha256(key.encode())
@@ -961,6 +971,7 @@ def encrypt_string(s, key, compress=True):
     s = s.encode()
     if compress:
         import zlib
+
         s = zlib.compress(s)
     s = cipher_suite.encrypt(s)
     s = s.decode()
@@ -968,8 +979,9 @@ def encrypt_string(s, key, compress=True):
 
 
 def decrypt_string(s, key):
-    missing_packages = numpy.array(["cryptography", "hashlib", "base64"])[~numpy.array([
-        cryptography_INSTALLED, hashlib_INSTALLED, base64_INSTALLED])]
+    missing_packages = numpy.array(["cryptography", "hashlib", "base64"])[
+        ~numpy.array([cryptography_INSTALLED, hashlib_INSTALLED, base64_INSTALLED])
+    ]
     if len(missing_packages):
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", missing_packages)
     key_base = hashlib.sha256(key.encode())
@@ -1006,12 +1018,12 @@ class JSONSerializableClass(object):
                 return with_signature(value, value.__name__)
             return value
 
-        d = {key: consider_callable(val) for key, val in self.__dict__.items()
-             if key not in self.json_excludes}
+        d = {key: consider_callable(val) for key, val in self.__dict__.items() if key not in self.json_excludes}
         return d
 
-    def add_to_net(self, net, element, index=None, column="object", overwrite=False,
-                   preserve_dtypes=False, fill_dict=None):
+    def add_to_net(
+        self, net, element, index=None, column="object", overwrite=False, preserve_dtypes=False, fill_dict=None
+    ):
         if net is None:
             return None
         if element not in net:
@@ -1041,15 +1053,20 @@ class JSONSerializableClass(object):
 
     def equals(self, other):
         # todo: can this method be removed?
-        warn("JSONSerializableClass: the attribute 'equals' is deprecated "
-             "and will be removed in the future. Use the '__eq__' method instead, "
-             "by directly comparing the objects 'a == b'. "
-             "To check if two variables point to the same object, use 'a is b'", DeprecationWarning)
+        warn(
+            "JSONSerializableClass: the attribute 'equals' is deprecated "
+            "and will be removed in the future. Use the '__eq__' method instead, "
+            "by directly comparing the objects 'a == b'. "
+            "To check if two variables point to the same object, use 'a is b'",
+            DeprecationWarning,
+        )
 
-        logger.warning("JSONSerializableClass: the attribute 'equals' is deprecated "
-                       "and will be removed in the future. Use the '__eq__' method instead, "
-                       "by directly comparing the objects 'a == b'. "
-                       "To check if two variables point to the same object, use 'a is b'")
+        logger.warning(
+            "JSONSerializableClass: the attribute 'equals' is deprecated "
+            "and will be removed in the future. Use the '__eq__' method instead, "
+            "by directly comparing the objects 'a == b'. "
+            "To check if two variables point to the same object, use 'a is b'"
+        )
 
         class UnequalityFound(Exception):
             pass
@@ -1139,8 +1156,14 @@ class JSONSerializableClass(object):
         if self.__class__.__name__ != other.__class__.__name__:
             return False
         else:
-            d = DeepDiff(self.__dict__, other.__dict__, ignore_nan_inequality=True,
-                         significant_digits=6, math_epsilon=1e-6, ignore_private_variables=False)
+            d = DeepDiff(
+                self.__dict__,
+                other.__dict__,
+                ignore_nan_inequality=True,
+                significant_digits=6,
+                math_epsilon=1e-6,
+                ignore_private_variables=False,
+            )
             return len(d) == 0
 
     def __hash__(self):
@@ -1154,24 +1177,24 @@ def with_signature(obj, val, obj_module=None, obj_class=None):
         obj_module = obj.__module__.__str__()
     if obj_class is None:
         obj_class = obj.__class__.__name__
-    d = {'_module': obj_module, '_class': obj_class, '_object': val}
-    if hasattr(obj, 'dtype'):
-        d.update({'dtype': str(obj.dtype)})
+    d = {"_module": obj_module, "_class": obj_class, "_object": val}
+    if hasattr(obj, "dtype"):
+        d.update({"dtype": str(obj.dtype)})
     return d
 
 
 @singledispatch
 def to_serializable(obj):
-    logger.debug('standard case')
+    logger.debug("standard case")
     return str(obj)
 
 
 @to_serializable.register(pandapowerNet)
 def json_pandapowernet(obj):
-    logger.debug('pandapowerNet')
+    logger.debug("pandapowerNet")
     net_dict = {k: item for k, item in obj.items() if not k.startswith("_")}
     for k, item in net_dict.items():
-        if isinstance(item, str) and '_module' in item:
+        if isinstance(item, str) and "_module" in item:
             net_dict[k] = json.loads(item)
     d = with_signature(obj, net_dict)
     return d
@@ -1179,31 +1202,35 @@ def json_pandapowernet(obj):
 
 @to_serializable.register(pd.DataFrame)
 def json_dataframe(obj):
-    logger.debug('DataFrame')
-    orient = "split" if not isinstance(obj.index, pd.MultiIndex) and not isinstance(
-        obj.columns, pd.MultiIndex) else "columns"
+    logger.debug("DataFrame")
+    orient = (
+        "split"
+        if not isinstance(obj.index, pd.MultiIndex) and not isinstance(obj.columns, pd.MultiIndex)
+        else "columns"
+    )
     json_string = obj.to_json(orient=orient, default_handler=to_serializable, double_precision=15)
     d = with_signature(obj, json_string)
-    d['orient'] = orient
+    d["orient"] = orient
     if len(obj.columns) > 0 and isinstance(obj.columns[0], str):
-        d['dtype'] = obj.dtypes.astype('str').to_dict()
+        d["dtype"] = obj.dtypes.astype("str").to_dict()
 
     # store index name (to covert by pandas with orient "split" or "columns" (and totally not with
     # Multiindex))
     if obj.index.name is not None:
-        d['index_name'] = obj.index.name
+        d["index_name"] = obj.index.name
     if obj.columns.name is not None:
-        d['column_name'] = obj.columns.name
+        d["column_name"] = obj.columns.name
     if isinstance(obj.index, pd.MultiIndex) and set(obj.index.names) != {None}:
-        d['index_names'] = obj.index.names
+        d["index_names"] = obj.index.names
     if isinstance(obj.columns, pd.MultiIndex) and set(obj.columns.names) != {None}:
-        d['column_names'] = obj.columns.names
+        d["column_names"] = obj.columns.names
 
     # store info that index is of type Multiindex originally
-    d['is_multiindex'] = isinstance(obj.index, pd.MultiIndex)
-    d['is_multicolumn'] = isinstance(obj.columns, pd.MultiIndex)
+    d["is_multiindex"] = isinstance(obj.index, pd.MultiIndex)
+    d["is_multicolumn"] = isinstance(obj.columns, pd.MultiIndex)
 
     return d
+
 
 @to_serializable.register(Enum)
 def json_enum(obj):
@@ -1214,33 +1241,33 @@ def json_enum(obj):
         obj_class=obj.__class__.__name__,
     )
 
+
 if GEOPANDAS_INSTALLED:
+
     @to_serializable.register(geopandas.GeoDataFrame)
     def json_geodataframe(obj):
-        logger.debug('GeoDataFrame')
+        logger.debug("GeoDataFrame")
         d = with_signature(obj, obj.to_json())
-        d.update({'dtype': obj.dtypes.astype('str').to_dict(),
-                  'crs': obj.crs, 'columns': obj.columns})
+        d.update({"dtype": obj.dtypes.astype("str").to_dict(), "crs": obj.crs, "columns": obj.columns})
         return d
 
 
 @to_serializable.register(pd.Series)
 def json_series(obj):
-    logger.debug('Series')
+    logger.debug("Series")
     orient = "split" if not isinstance(obj.index, pd.MultiIndex) else "index"
-    d = with_signature(obj, obj.to_json(orient=orient, default_handler=to_serializable,
-                                        double_precision=15))
-    d.update({'dtype': str(obj.dtypes), 'orient': orient, 'typ': 'series'})
+    d = with_signature(obj, obj.to_json(orient=orient, default_handler=to_serializable, double_precision=15))
+    d.update({"dtype": str(obj.dtypes), "orient": orient, "typ": "series"})
 
     # store index name (to covert by pandas with orient "split" or "columns" (and totally not with
     # Multiindex))
     if obj.index.name is not None:
-        d['index_name'] = obj.index.name
+        d["index_name"] = obj.index.name
     if isinstance(obj.index, pd.MultiIndex) and set(obj.index.names) != {None}:
-        d['index_names'] = obj.index.names
+        d["index_names"] = obj.index.names
 
     # store info that index is of type Multiindex originally
-    d['is_multiindex'] = isinstance(obj.index, pd.MultiIndex)
+    d["is_multiindex"] = isinstance(obj.index, pd.MultiIndex)
 
     return d
 
@@ -1248,7 +1275,7 @@ def json_series(obj):
 @to_serializable.register(numpy.ndarray)
 def json_array(obj):
     logger.debug("ndarray")
-    d = with_signature(obj, list(obj), obj_module='numpy', obj_class='array')
+    d = with_signature(obj, list(obj), obj_module="numpy", obj_class="array")
     return d
 
 
@@ -1256,7 +1283,7 @@ def json_array(obj):
 def json_npint(obj):
     logger.debug("integer")
     d = with_signature(obj, int(obj), obj_module="numpy")
-    d.pop('dtype')
+    d.pop("dtype")
     return d
 
 
@@ -1267,7 +1294,7 @@ def json_npfloat(obj):
         d = with_signature(obj, str(obj), obj_module="numpy")
     else:
         d = with_signature(obj, float(obj), obj_module="numpy")
-    d.pop('dtype')
+    d.pop("dtype")
     return d
 
 
@@ -1275,7 +1302,7 @@ def json_npfloat(obj):
 def json_npbool(obj):
     logger.debug("boolean")
     d = with_signature(obj, "true" if obj else "false", obj_module="numpy")
-    d.pop('dtype')
+    d.pop("dtype")
     return d
 
 
@@ -1288,15 +1315,15 @@ def json_num(obj):
 @to_serializable.register(complex)
 def json_complex(obj):
     logger.debug("complex")
-    d = with_signature(obj, str(obj), obj_module='builtins', obj_class='complex')
-    d.pop('dtype')
+    d = with_signature(obj, str(obj), obj_module="builtins", obj_class="complex")
+    d.pop("dtype")
     return d
 
 
 @to_serializable.register(pd.Index)
 def json_pdindex(obj):
     logger.debug("pd.Index")
-    return with_signature(obj, list(obj), obj_module='pandas')
+    return with_signature(obj, list(obj), obj_module="pandas")
 
 
 @to_serializable.register(bool)
@@ -1308,35 +1335,35 @@ def json_bool(obj):
 @to_serializable.register(tuple)
 def json_tuple(obj):
     logger.debug("tuple")
-    d = with_signature(obj, list(obj), obj_module='builtins', obj_class='tuple')
+    d = with_signature(obj, list(obj), obj_module="builtins", obj_class="tuple")
     return d
 
 
 @to_serializable.register(set)
 def json_set(obj):
     logger.debug("set")
-    d = with_signature(obj, list(obj), obj_module='builtins', obj_class='set')
+    d = with_signature(obj, list(obj), obj_module="builtins", obj_class="set")
     return d
 
 
 @to_serializable.register(frozenset)
 def json_frozenset(obj):
     logger.debug("frozenset")
-    d = with_signature(obj, list(obj), obj_module='builtins', obj_class='frozenset')
+    d = with_signature(obj, list(obj), obj_module="builtins", obj_class="frozenset")
     return d
 
 
 @to_serializable.register(networkx.Graph)
 def json_networkx(obj):
     logger.debug("nx graph")
-    json_string = json_graph.adjacency_data(obj, attrs={'id': 'json_id', 'key': 'json_key'})
+    json_string = json_graph.adjacency_data(obj, attrs={"id": "json_id", "key": "json_key"})
     d = with_signature(obj, json_string, obj_module="networkx")
     return d
 
 
 @to_serializable.register(JSONSerializableClass)
 def controller_to_serializable(obj):
-    logger.debug('JSONSerializableClass')
+    logger.debug("JSONSerializableClass")
     d = with_signature(obj, obj.to_json())
     return d
 
@@ -1348,6 +1375,7 @@ def mkdirs_if_not_existent(dir_to_create):
 
 
 if SHAPELY_INSTALLED:
+
     @to_serializable.register(shapely.geometry.LineString)
     def json_linestring(obj):
         logger.debug("shapely linestring")
@@ -1355,14 +1383,12 @@ if SHAPELY_INSTALLED:
         d = with_signature(obj, json_string, obj_module="shapely")
         return d
 
-
     @to_serializable.register(shapely.geometry.Point)
     def json_point(obj):
         logger.debug("shapely Point")
         json_string = shapely.geometry.mapping(obj)
         d = with_signature(obj, json_string, obj_module="shapely")
         return d
-
 
     @to_serializable.register(shapely.geometry.Polygon)
     def json_polygon(obj):

@@ -6,8 +6,10 @@ import pandera.pandas as pa
 
 _side_allowed = {"line": ["from", "to"], "trafo": ["hv", "lv"], "trafo3w": ["hv", "mv", "lv"]}
 
+
 def _check_elment_type_side_combination(row: pd.Series) -> bool:
     return row.element_type not in _side_allowed or row.side in _side_allowed[row.element_type]
+
 
 # TODO: add cross reference (foreign_key) check for element column
 
@@ -79,10 +81,7 @@ measurement_schema = pa.DataFrameSchema(
             metadata={"cim": True, "doc": False},
         ),
     },
-    pa.Check(
-        _check_elment_type_side_combination,
-        element_wise=True
-    ),
+    pa.Check(_check_elment_type_side_combination, element_wise=True),
     name="measurement",
     strict=False,
 )

@@ -2,8 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""Builds the FDPF matrices, B prime and B double prime.
-"""
+"""Builds the FDPF matrices, B prime and B double prime."""
 
 from numpy import ones, zeros, copy
 
@@ -24,24 +23,24 @@ def makeB(baseMVA, bus, branch, alg):
     @author: Ray Zimmerman (PSERC Cornell)
     """
     ## constants
-    nb = bus.shape[0]          ## number of buses
-    nl = branch.shape[0]       ## number of lines
+    nb = bus.shape[0]  ## number of buses
+    nl = branch.shape[0]  ## number of lines
 
     ##-----  form Bp (B prime)  -----
-    temp_branch = copy(branch)                 ## modify a copy of branch
-    temp_bus = copy(bus)                       ## modify a copy of bus
-    temp_bus[:, BS] = zeros(nb)                ## zero out shunts at buses
-    temp_branch[:, BR_B] = zeros(nl)           ## zero out line charging shunts
-    temp_branch[:, TAP] = ones(nl)             ## cancel out taps
-    if alg == 2:                               ## if XB method
-        temp_branch[:, BR_R] = zeros(nl)       ## zero out line resistance
+    temp_branch = copy(branch)  ## modify a copy of branch
+    temp_bus = copy(bus)  ## modify a copy of bus
+    temp_bus[:, BS] = zeros(nb)  ## zero out shunts at buses
+    temp_branch[:, BR_B] = zeros(nl)  ## zero out line charging shunts
+    temp_branch[:, TAP] = ones(nl)  ## cancel out taps
+    if alg == 2:  ## if XB method
+        temp_branch[:, BR_R] = zeros(nl)  ## zero out line resistance
     Bp = -1 * makeYbus(baseMVA, temp_bus, temp_branch)[0].imag
 
     ##-----  form Bpp (B double prime)  -----
-    temp_branch = copy(branch)                 ## modify a copy of branch
-    temp_branch[:, SHIFT] = zeros(nl)          ## zero out phase shifters
-    if alg == 3:                               ## if BX method
-        temp_branch[:, BR_R] = zeros(nl)    ## zero out line resistance
+    temp_branch = copy(branch)  ## modify a copy of branch
+    temp_branch[:, SHIFT] = zeros(nl)  ## zero out phase shifters
+    if alg == 3:  ## if BX method
+        temp_branch[:, BR_R] = zeros(nl)  ## zero out line resistance
     Bpp = -1 * makeYbus(baseMVA, bus, temp_branch)[0].imag
 
     return Bp, Bpp

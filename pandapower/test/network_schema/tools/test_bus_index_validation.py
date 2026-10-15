@@ -9,7 +9,6 @@ import pandera as pa
 import pytest
 from pandera.errors import SchemaError
 
-from pandapower import create_std_type
 from pandapower.create import (
     create_buses,
     create_buses_dc,
@@ -41,6 +40,7 @@ class TestCreateMultiColumnReferenceSchema:
     """
     Tests for the :func:`_create_multi_column_reference_schema` function.
     """
+
     def test_schema_validates_correct_columns(self) -> None:
         """
         Test that schema validates the specified columns.
@@ -91,6 +91,7 @@ class TestBusIndexValidation:
     """
     Tests for the :func:`_bus_index_validation` function.
     """
+
     def test_line_with_valid_buses(self) -> None:
         """
         Test that validation passes for line with valid bus references.
@@ -285,7 +286,6 @@ class TestBuildForeignKeyChecks:
         """Test: invalid foreign key references raise ValidationError"""
         net = pandapowerNet(name="test_invalid_fk")
         create_buses(net, 2, 0.4)
-
 
         create_load(net, bus=0, p_mw=1.0, q_mvar=0.0)
         create_load(net, bus=1, p_mw=1.0, q_mvar=0.0)

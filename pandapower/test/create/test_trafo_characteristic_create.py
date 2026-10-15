@@ -18,26 +18,29 @@ def test_create_trafo_characteristic():
     create_trafo_characteristic(net, values)
 
     assert net.trafo_characteristic_table.loc[
-               (0, 1), ["voltage_ratio", "angle_deg", "vk_percent", "vkr_percent"]].to_dict() == {
-               "voltage_ratio": 0.98,
-               "angle_deg": 30.0,
-               "vk_percent": 10.1,
-               "vkr_percent": 2.0,
-           }
+        (0, 1), ["voltage_ratio", "angle_deg", "vk_percent", "vkr_percent"]
+    ].to_dict() == {
+        "voltage_ratio": 0.98,
+        "angle_deg": 30.0,
+        "vk_percent": 10.1,
+        "vkr_percent": 2.0,
+    }
     assert net.trafo_characteristic_table.loc[
-               (0, 2), ["voltage_ratio", "angle_deg", "vk_percent", "vkr_percent"]].to_dict() == {
-               "voltage_ratio": 0.99,
-               "angle_deg": 31.5,
-               "vk_percent": 10.2,
-               "vkr_percent": 2.1,
-           }
+        (0, 2), ["voltage_ratio", "angle_deg", "vk_percent", "vkr_percent"]
+    ].to_dict() == {
+        "voltage_ratio": 0.99,
+        "angle_deg": 31.5,
+        "vk_percent": 10.2,
+        "vkr_percent": 2.1,
+    }
     assert net.trafo_characteristic_table.loc[
-               (0, 3), ["voltage_ratio", "angle_deg", "vk_percent", "vkr_percent"]].to_dict() == {
-               "voltage_ratio": 1.0,
-               "angle_deg": 33.0,
-               "vk_percent": 10.3,
-               "vkr_percent": 2.2,
-           }
+        (0, 3), ["voltage_ratio", "angle_deg", "vk_percent", "vkr_percent"]
+    ].to_dict() == {
+        "voltage_ratio": 1.0,
+        "angle_deg": 33.0,
+        "vk_percent": 10.3,
+        "vkr_percent": 2.2,
+    }
     assert net.trafo_characteristic_table.loc[:, "vk_hv_percent"].isna().all()
     assert net.trafo_characteristic_table.loc[:, "vkr_hv_percent"].isna().all()
     assert net.trafo_characteristic_table.loc[:, "vk_mv_percent"].isna().all()

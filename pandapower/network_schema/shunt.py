@@ -50,7 +50,11 @@ shunt_schema = pa.DataFrameSchema(
             description="references the id_characteristic index from the shunt_characteristic_table",
         ),
         "origin_id": pa.Column(
-            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="element rdfId from CIM",
+            metadata={"cim": True, "doc": False},
         ),
         "origin_class": pa.Column(
             pd.StringDtype,

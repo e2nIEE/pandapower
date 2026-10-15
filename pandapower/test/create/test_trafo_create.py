@@ -6,9 +6,16 @@ import numpy as np
 import pandas as pd
 
 from pandapower.create import (
-    create_bus, create_transformer_from_parameters, create_transformer, create_transformers,
-    create_transformers_from_parameters, create_transformers3w_from_parameters, create_transformers3w, load_std_type,
-    create_transformer3w, create_transformer3w_from_parameters
+    create_bus,
+    create_transformer_from_parameters,
+    create_transformer,
+    create_transformers,
+    create_transformers_from_parameters,
+    create_transformers3w_from_parameters,
+    create_transformers3w,
+    load_std_type,
+    create_transformer3w,
+    create_transformer3w_from_parameters,
 )
 from pandapower.std_types import create_std_type
 from pandapower.toolbox import dataframes_equal
@@ -26,7 +33,7 @@ def test_tap_changer_type_default():
     create_std_type(net, data, "without_tap_shifter_info", "trafo")
     create_transformer_from_parameters(net, 0, 1, 25e3, 110, 20, 0.4, 12, 20, 0.07)
     create_transformer(net, 0, 1, "without_tap_shifter_info")
-    if 'tap_changer_type' in net.trafo.columns:
+    if "tap_changer_type" in net.trafo.columns:
         assert (net.trafo.tap_changer_type.isna()).all()
 
     validate_network(net)
@@ -142,6 +149,7 @@ def test_create_transformer_from_parameters():
 
     validate_network(net)
 
+
 def test_create_transformers_from_parameters():
     # standard
     net = pandapowerNet(name="test_create_transformers_from_parameters0")
@@ -173,7 +181,7 @@ def test_create_transformers_from_parameters():
             pfe_kw=0.2,
             i0_percent=0.3,
             foo=2,
-            index=index
+            index=index,
         )
     assert len(net.trafo) == 2
     assert len(net.trafo.vk_percent) == 2
@@ -321,9 +329,7 @@ def test_create_transformer_raises_errorexcept1():
         i0_percent=0.3,
         foo=2,
     )
-    with pytest.raises(
-            UserWarning, match=r"Transformers trying to attach to non existing buses \{2\}"
-    ):
+    with pytest.raises(UserWarning, match=r"Transformers trying to attach to non existing buses \{2\}"):
         create_transformers_from_parameters(
             net,
             [b1, 2],
@@ -337,9 +343,7 @@ def test_create_transformer_raises_errorexcept1():
             i0_percent=0.3,
             foo=2,
         )
-    with pytest.raises(
-            UserWarning, match=r"Transformers trying to attach to non existing buses \{3\}"
-    ):
+    with pytest.raises(UserWarning, match=r"Transformers trying to attach to non existing buses \{3\}"):
         create_transformers_from_parameters(
             net,
             [b1, b1],
@@ -363,13 +367,15 @@ def test_trafo_2_tap_changers():
     b2 = create_bus(net, 20)
     create_transformer(net, b1, b2, "40 MVA 110/20 kV")
 
-    tap2_data = {"tap2_side": "hv",
-                 "tap2_neutral": 0,
-                 "tap2_max": 10,
-                 "tap2_min": -10,
-                 "tap2_step_percent": 1,
-                 "tap2_step_degree": 0,
-                 "tap2_changer_type": "Ratio"}
+    tap2_data = {
+        "tap2_side": "hv",
+        "tap2_neutral": 0,
+        "tap2_max": 10,
+        "tap2_min": -10,
+        "tap2_step_percent": 1,
+        "tap2_step_degree": 0,
+        "tap2_changer_type": "Ratio",
+    }
 
     for c in tap2_data:
         assert c not in net.trafo.columns
@@ -393,13 +399,15 @@ def test_trafo_2_tap_changers_parameters():
     b2 = create_bus(net, 20)
 
     std_type = load_std_type(net, "40 MVA 110/20 kV", "trafo")
-    tap2_data = {"tap2_side": "hv",
-                 "tap2_neutral": 0,
-                 "tap2_max": 10,
-                 "tap2_min": -10,
-                 "tap2_step_percent": 1,
-                 "tap2_step_degree": 0,
-                 "tap2_changer_type": "Ratio"}
+    tap2_data = {
+        "tap2_side": "hv",
+        "tap2_neutral": 0,
+        "tap2_max": 10,
+        "tap2_min": -10,
+        "tap2_step_percent": 1,
+        "tap2_step_degree": 0,
+        "tap2_changer_type": "Ratio",
+    }
 
     create_transformer_from_parameters(net, b1, b2, **std_type)
 
@@ -421,13 +429,15 @@ def test_trafos_2_tap_changers_parameters():
     b2 = create_bus(net, 20)
 
     std_type = load_std_type(net, "40 MVA 110/20 kV", "trafo")
-    tap2_data = {"tap2_side": "hv",
-                 "tap2_neutral": 0,
-                 "tap2_max": 10,
-                 "tap2_min": -10,
-                 "tap2_step_percent": 1,
-                 "tap2_step_degree": 0,
-                 "tap2_changer_type": "Ratio"}
+    tap2_data = {
+        "tap2_side": "hv",
+        "tap2_neutral": 0,
+        "tap2_max": 10,
+        "tap2_min": -10,
+        "tap2_step_percent": 1,
+        "tap2_step_degree": 0,
+        "tap2_changer_type": "Ratio",
+    }
 
     std_type_p = {k: np.array([v, v]) if not isinstance(v, str) else v for k, v in std_type.items()}
 
@@ -502,18 +512,19 @@ def test_create_transformer():
 
     validate_network(net)
 
+
 def test_create_transformers():
     net = pandapowerNet(name="test_create_transformers")
     b1 = create_bus(net, 10)
-    b2 = create_bus(net, .4)
-    b3 = create_bus(net, .4)
+    b2 = create_bus(net, 0.4)
+    b3 = create_bus(net, 0.4)
     create_transformers(
         net,
         hv_buses=[b1, b1],
         lv_buses=[b2, b3],
         std_type="0.4 MVA 10/0.4 kV",
         name=["trafo1", "trafo2"],
-        test_kwargs="TestKW"
+        test_kwargs="TestKW",
     )
     res_df = pd.DataFrame(
         {
@@ -554,15 +565,9 @@ def test_create_transformers():
 def test_create_transformers_for_single():
     net = pandapowerNet(name="test_create_transformers_for_single")
     b1 = create_bus(net, 10)
-    b2 = create_bus(net, .4)
+    b2 = create_bus(net, 0.4)
     create_transformers(
-        net,
-        hv_buses=[b1],
-        lv_buses=[b2],
-        std_type="0.4 MVA 10/0.4 kV",
-        name="trafo1",
-        test_kwargs="TestKW",
-        sn_mva=.4
+        net, hv_buses=[b1], lv_buses=[b2], std_type="0.4 MVA 10/0.4 kV", name="trafo1", test_kwargs="TestKW", sn_mva=0.4
     )
     res_df = pd.DataFrame(
         {
@@ -709,6 +714,7 @@ def test_create_transformer3w():
 
     validate_network(net)
 
+
 def test_create_transformers3w():
     net = pandapowerNet(name="test_create_transformers3w")
     b1 = create_bus(net, 110)
@@ -726,41 +732,43 @@ def test_create_transformers3w():
         in_service=[True, False],
         index=[5, 6],
     )
-    res_df = pd.DataFrame({
-        'name': pd.Series(['t3w-1', 't3w-2'], dtype=pd.StringDtype()),
-        'std_type': pd.Series(['63/25/38 MVA 110/20/10 kV', '63/25/38 MVA 110/20/10 kV'], dtype=pd.StringDtype()),
-        'hv_bus': pd.Series([0, 0], dtype=np.int64),
-        'mv_bus': pd.Series([1, 2], dtype=np.int64),
-        'lv_bus': pd.Series([3, 4], dtype=np.int64),
-        'sn_hv_mva': pd.Series([63.0, 63.0], dtype=np.float64),
-        'sn_mv_mva': pd.Series([25.0, 25.0], dtype=np.float64),
-        'sn_lv_mva': pd.Series([38.0, 38.0], dtype=np.float64),
-        'vn_hv_kv': pd.Series([110.0, 110.0], dtype=np.float64),
-        'vn_mv_kv': pd.Series([20.0, 20.0], dtype=np.float64),
-        'vn_lv_kv': pd.Series([10.0, 10.0], dtype=np.float64),
-        'vk_hv_percent': pd.Series([10.4, 10.4], dtype=np.float64),
-        'vk_mv_percent': pd.Series([10.4, 10.4], dtype=np.float64),
-        'vk_lv_percent': pd.Series([10.4, 10.4], dtype=np.float64),
-        'vkr_hv_percent': pd.Series([0.28, 0.28], dtype=np.float64),
-        'vkr_mv_percent': pd.Series([0.32, 0.32], dtype=np.float64),
-        'vkr_lv_percent': pd.Series([0.35, 0.35], dtype=np.float64),
-        'pfe_kw': pd.Series([35.0, 35.0], dtype=np.float64),
-        'i0_percent': pd.Series([0.89, 0.89], dtype=np.float64),
-        'shift_mv_degree': pd.Series([0.0, 0.0], dtype=np.float64),
-        'shift_lv_degree': pd.Series([0.0, 0.0], dtype=np.float64),
-        'tap_side': pd.Series(['hv', 'hv'], dtype=pd.StringDtype()),
-        'tap_neutral': pd.Series([0.0, 0.0], dtype=np.float64),
-        'tap_min': pd.Series([-10.0, -10.0], dtype=np.float64),
-        'tap_max': pd.Series([10.0, 10.0], dtype=np.float64),
-        'tap_step_percent': pd.Series([1.2, 1.2], dtype=np.float64),
-        'tap_step_degree': pd.Series([0.0, 0.0], dtype=np.float64),
-        'tap_pos': pd.Series([0.0, 0.0], dtype=np.float64),
-        'tap_at_star_point': pd.Series([False, False], dtype=pd.BooleanDtype()),
-        # 'tap_changer_type': ['Ratio', 'Ratio'],
-        # 'id_characteristic_table': pd.Series([pd.NA, pd.NA], dtype=pd.Int64Dtype),
-        # 'tap_dependency_table': [False, False],
-        'in_service': pd.Series([True, False], dtype=bool)
-    }).set_index(pd.Index([5, 6]))
+    res_df = pd.DataFrame(
+        {
+            "name": pd.Series(["t3w-1", "t3w-2"], dtype=pd.StringDtype()),
+            "std_type": pd.Series(["63/25/38 MVA 110/20/10 kV", "63/25/38 MVA 110/20/10 kV"], dtype=pd.StringDtype()),
+            "hv_bus": pd.Series([0, 0], dtype=np.int64),
+            "mv_bus": pd.Series([1, 2], dtype=np.int64),
+            "lv_bus": pd.Series([3, 4], dtype=np.int64),
+            "sn_hv_mva": pd.Series([63.0, 63.0], dtype=np.float64),
+            "sn_mv_mva": pd.Series([25.0, 25.0], dtype=np.float64),
+            "sn_lv_mva": pd.Series([38.0, 38.0], dtype=np.float64),
+            "vn_hv_kv": pd.Series([110.0, 110.0], dtype=np.float64),
+            "vn_mv_kv": pd.Series([20.0, 20.0], dtype=np.float64),
+            "vn_lv_kv": pd.Series([10.0, 10.0], dtype=np.float64),
+            "vk_hv_percent": pd.Series([10.4, 10.4], dtype=np.float64),
+            "vk_mv_percent": pd.Series([10.4, 10.4], dtype=np.float64),
+            "vk_lv_percent": pd.Series([10.4, 10.4], dtype=np.float64),
+            "vkr_hv_percent": pd.Series([0.28, 0.28], dtype=np.float64),
+            "vkr_mv_percent": pd.Series([0.32, 0.32], dtype=np.float64),
+            "vkr_lv_percent": pd.Series([0.35, 0.35], dtype=np.float64),
+            "pfe_kw": pd.Series([35.0, 35.0], dtype=np.float64),
+            "i0_percent": pd.Series([0.89, 0.89], dtype=np.float64),
+            "shift_mv_degree": pd.Series([0.0, 0.0], dtype=np.float64),
+            "shift_lv_degree": pd.Series([0.0, 0.0], dtype=np.float64),
+            "tap_side": pd.Series(["hv", "hv"], dtype=pd.StringDtype()),
+            "tap_neutral": pd.Series([0.0, 0.0], dtype=np.float64),
+            "tap_min": pd.Series([-10.0, -10.0], dtype=np.float64),
+            "tap_max": pd.Series([10.0, 10.0], dtype=np.float64),
+            "tap_step_percent": pd.Series([1.2, 1.2], dtype=np.float64),
+            "tap_step_degree": pd.Series([0.0, 0.0], dtype=np.float64),
+            "tap_pos": pd.Series([0.0, 0.0], dtype=np.float64),
+            "tap_at_star_point": pd.Series([False, False], dtype=pd.BooleanDtype()),
+            # 'tap_changer_type': ['Ratio', 'Ratio'],
+            # 'id_characteristic_table': pd.Series([pd.NA, pd.NA], dtype=pd.Int64Dtype),
+            # 'tap_dependency_table': [False, False],
+            "in_service": pd.Series([True, False], dtype=bool),
+        }
+    ).set_index(pd.Index([5, 6]))
     for colum in res_df:
         assert net.trafo3w[colum].equals(res_df[colum])
     assert dataframes_equal(net.trafo3w, res_df)
@@ -1016,6 +1024,7 @@ def test_create_transformer3w_from_parameters():
 
     validate_network(net)
 
+
 def test_create_transformers3w_from_parameters():
     # setting params as single value
     net, *_ = net_transformer3w_from_parameters(test_kwargs="dummy_string")
@@ -1096,8 +1105,8 @@ def test_create_transformers3w_raise_errorexcept():
     # standard
     net, b1, b2, b3 = net_transformer3w_from_parameters()
     with pytest.raises(
-            UserWarning,
-            match=r"Three winding transformers with indexes \[1\] already exist.",
+        UserWarning,
+        match=r"Three winding transformers with indexes \[1\] already exist.",
     ):
         create_transformers3w_from_parameters(
             net,
@@ -1127,9 +1136,7 @@ def test_create_transformers3w_raise_errorexcept():
     b1 = create_bus(net, 15)
     b2 = create_bus(net, 0.4)
     b3 = create_bus(net, 0.9)
-    with pytest.raises(
-            UserWarning, match=r"Transformers trying to attach to non existing buses \{6\}"
-    ):
+    with pytest.raises(UserWarning, match=r"Transformers trying to attach to non existing buses \{6\}"):
         create_transformers3w_from_parameters(
             net,
             hv_buses=[6, b1],
@@ -1154,9 +1161,7 @@ def test_create_transformers3w_raise_errorexcept():
             mag0_percent=30,
             index=[0, 1],
         )
-    with pytest.raises(
-            UserWarning, match=r"Transformers trying to attach to non existing buses \{3\}"
-    ):
+    with pytest.raises(UserWarning, match=r"Transformers trying to attach to non existing buses \{3\}"):
         create_transformers3w_from_parameters(
             net,
             hv_buses=[b1, b1],
@@ -1181,8 +1186,8 @@ def test_create_transformers3w_raise_errorexcept():
             mag0_percent=30,
         )
     with pytest.raises(
-            UserWarning,
-            match=r"Transformers trying to attach to non existing buses \{3, 4\}",
+        UserWarning,
+        match=r"Transformers trying to attach to non existing buses \{3, 4\}",
     ):
         create_transformers3w_from_parameters(
             net,

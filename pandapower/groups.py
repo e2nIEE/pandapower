@@ -20,18 +20,20 @@ import pandas as pd
 import pandas.testing as pdt
 
 from pandapower.auxiliary import ensure_iterability, log_to_level
-from pandapower.create import (
-    _group_parameter_list, _set_multiple_entries, _check_elements_existence, create_group
-)
+from pandapower.create import _group_parameter_list, _set_multiple_entries, _check_elements_existence, create_group
 from pandapower.pp_types import Int
 from pandapower.toolbox.power_factor import signing_system_value
 from pandapower.toolbox.element_selection import (
-    branch_element_bus_dict, element_bus_tuples, pp_elements, get_connected_elements_dict
+    branch_element_bus_dict,
+    element_bus_tuples,
+    pp_elements,
+    get_connected_elements_dict,
 )
 from pandapower.toolbox.result_info import res_power_columns
 from pandapower.network import pandapowerNet
 
 logger = logging.getLogger(__name__)
+
 
 def drop_group(net: pandapowerNet, index: int) -> None:
     """
@@ -113,8 +115,7 @@ def attach_to_group(
             an error is raised.
     """
     if index not in net.group.index:
-        raise ValueError(
-            f"{index} is not in net.group.index. Correct index or used create_group() instead.")
+        raise ValueError(f"{index} is not in net.group.index. Correct index or used create_group() instead.")
 
     element_types, element_indices, reference_columns = _group_parameter_list(
         element_types, element_indices, reference_columns
@@ -157,7 +158,7 @@ def attach_to_group(
             prev_elm = np.atleast_1d(prev_elm).tolist()
             net.group.iat[
                 np.arange(len(group_et), dtype=int)[group_et][0],  # type: ignore[index]
-                net.group.columns.get_loc("element_index")
+                net.group.columns.get_loc("element_index"),
             ] = prev_elm + list(pd.Index(elm).difference(pd.Index(prev_elm)))
         else:
             raise ValueError(f"Multiple {et} rows for group {index}")
@@ -165,7 +166,7 @@ def attach_to_group(
     # add new rows to net.group
     if len(complete_new["name"]):
         _check_elements_existence(net, element_types, element_indices, reference_columns)
-        _set_multiple_entries(net, "group", [index]*len(complete_new["name"]), entries=complete_new)
+        _set_multiple_entries(net, "group", [index] * len(complete_new["name"]), entries=complete_new)
         net.group.sort_index(inplace=True)
 
 
@@ -175,7 +176,7 @@ def detach_from_group(net, index, element_type, element_index):
 
 
 def detach_from_groups(
-        net: pandapowerNet, element_type: str, element_index: int | list[int], index: int | None = None
+    net: pandapowerNet, element_type: str, element_index: int | list[int], index: int | None = None
 ) -> None:
     """
     Detaches elements from the group with the given group index 'index'. No errors are raised if elements are passed to
@@ -326,11 +327,11 @@ def group_row(net: pandapowerNet, index: int, element_type: str) -> pd.Series:
 
 
 def isin_group(
-        net: pandapowerNet,
-        element_type: str,
-        element_index: int | list[int],
-        index: int | list[int] | None = None,
-        drop_empty_lines: bool = True
+    net: pandapowerNet,
+    element_type: str,
+    element_index: int | list[int],
+    index: int | list[int] | None = None,
+    drop_empty_lines: bool = True,
 ) -> bool | npt.NDArray[bool]:
     """
     Returns whether elements are in group(s).
@@ -365,11 +366,11 @@ def isin_group(
 
 
 def element_associated_groups(
-        net: pandapowerNet,
-        element_type: str,
-        element_index: Iterable[int] | int,
-        return_empties: bool = True,
-        drop_empty_lines: bool = True
+    net: pandapowerNet,
+    element_type: str,
+    element_index: Iterable[int] | int,
+    return_empties: bool = True,
+    drop_empty_lines: bool = True,
 ) -> dict[int, list[int]]:
     """
     Returns to which groups given elements belong to.
@@ -399,7 +400,6 @@ def element_associated_groups(
     return associated_[index[0]] if single_element else associated_
 
 
-
 def count_group_elements(net: pandapowerNet, index: int) -> pd.Series:
     """
     Returns a Series concluding the number of included elements in self.elements_dict
@@ -414,18 +414,16 @@ def count_group_elements(net: pandapowerNet, index: int) -> pd.Series:
     See Also:
         :func:`count_elements`
     """
-    return pd.Series({
-        et: len(elm) if hasattr(elm, "__iter__") and not isinstance(elm, str) else 1 for
-        et, elm in zip(*_get_lists_from_df(
-            net.group.loc[[index]], ["element_type", "element_index"]))}, dtype=np.int64)
+    return pd.Series(
+        {
+            et: len(elm) if hasattr(elm, "__iter__") and not isinstance(elm, str) else 1
+            for et, elm in zip(*_get_lists_from_df(net.group.loc[[index]], ["element_type", "element_index"]))
+        },
+        dtype=np.int64,
+    )
 
 
-def groups_equal(
-        net: pandapowerNet,
-        index1: int,
-        index2: int,
-        **kwargs
-):
+def groups_equal(net: pandapowerNet, index1: int, index2: int, **kwargs):
     """
     Returns a boolean whether both group are equal.
 
@@ -477,16 +475,16 @@ def compare_group_elements(net: pandapowerNet, index1: int, index2: int) -> bool
             if len(pd.Index(gr1.element_index.at[et]).symmetric_difference(gr2.element_index.at[et])):  # type: ignore[arg-type]
                 return False
         else:
-            if len(group_element_index(net, index1, et).symmetric_difference(group_element_index(
-                    net, index2, et))):
+            if len(group_element_index(net, index1, et).symmetric_difference(group_element_index(net, index2, et))):
                 return False
     return True
 
 
 def check_unique_group_rows(
-        net: pandapowerNet,
-        raise_error: bool = True,
-        log_level: Literal["error", "warning", "info", "debug", "UserWarning"] = "warning"):
+    net: pandapowerNet,
+    raise_error: bool = True,
+    log_level: Literal["error", "warning", "info", "debug", "UserWarning"] = "warning",
+):
     """
     Checks whether all groups have unique names. raise_error decides whether duplicated names lead to error or log
     message.
@@ -540,9 +538,7 @@ def remove_not_existing_group_members(net: pandapowerNet, verbose: bool = True) 
             logger.info(f"net.group row {drop_mask[drop_mask].index} will be dropped.")
 
 
-def ensure_lists_in_group_element_column(
-        net: pandapowerNet,
-        drop_empty_lines: bool = True):
+def ensure_lists_in_group_element_column(net: pandapowerNet, drop_empty_lines: bool = True):
     """
     Ensure that all entries in net.group.element are of type list.
 
@@ -564,11 +560,7 @@ def ensure_lists_in_group_element_column(
         net.group = net.group[net.group.element_index.astype(bool)]
 
 
-def group_entries_exist_in_element_table(
-    net: pandapowerNet,
-    index: int,
-    element_type: str
-) -> npt.NDArray[bool]:
+def group_entries_exist_in_element_table(net: pandapowerNet, index: int, element_type: str) -> npt.NDArray[bool]:
     """
     Returns an array of booleans whether the entries in net.group.element exist in net[element_type], also considering
     reference_column
@@ -586,8 +578,10 @@ def group_entries_exist_in_element_table(
     reference_column = row.at["reference_column"]
 
     if not hasattr(element, "__iter__") or isinstance(element, str):
-        raise ValueError("Entries in net.group.element should be lists. You can try "
-                         "ensure_lists_in_group_element_column() to fix this.")
+        raise ValueError(
+            "Entries in net.group.element should be lists. You can try "
+            "ensure_lists_in_group_element_column() to fix this."
+        )
 
     if reference_column is None or pd.isnull(reference_column):
         return np.isin(np.array(element), net[element_type].index.values)
@@ -618,12 +612,7 @@ def set_group_out_of_service(net: pandapowerNet, index: int):
 
 
 def set_value_to_group(
-        net: pandapowerNet,
-        index: int,
-        value: Any,
-        column: str,
-        replace: bool = True,
-        append_column: bool = True
+    net: pandapowerNet, index: int, value: Any, column: str, replace: bool = True, append_column: bool = True
 ):
     """
     Sets the same value to the column of the element tables of all elements/members of the group.
@@ -654,7 +643,7 @@ def set_value_to_group(
 
 
 def _sum_powers(net, index, formula_character, unit):
-    power = 0.
+    power = 0.0
     missing_res_idx = []
     no_power_column_found = []
     no_res_table_found = []
@@ -682,11 +671,15 @@ def _sum_powers(net, index, formula_character, unit):
     if len(no_res_table_found):
         logger.warning(f"Result tables of this elements does not exist: {no_res_table_found}.")
     if len(missing_res_idx):
-        logger.warning("The resulting power may be wrong since the result tables of these "
-                        f"elements lack of indices: {missing_res_idx}.")
+        logger.warning(
+            "The resulting power may be wrong since the result tables of these "
+            f"elements lack of indices: {missing_res_idx}."
+        )
     if len(no_power_column_found):
-        logger.warning("The resulting power may be wrong since the result tables of these "
-                        f"elements have no requested power column: {no_power_column_found}.")
+        logger.warning(
+            "The resulting power may be wrong since the result tables of these "
+            f"elements have no requested power column: {no_power_column_found}."
+        )
     return power
 
 
@@ -715,7 +708,7 @@ def group_res_power_per_bus(net: pandapowerNet, index: int) -> pd.DataFrame:
         3   -2.875066e+00 -1.318864e+00
         4   -2.000000e-02  0.000000e+00
     """
-    pq_sums = pd.DataFrame({'p_mw': float(), 'q_mvar': float()}, index=[])
+    pq_sums = pd.DataFrame({"p_mw": float(), "q_mvar": float()}, index=[])
     bra_ets = pp_elements(bus=False, bus_elements=False, other_elements=False)
     bra_ebd = branch_element_bus_dict()
     missing_res_idx = []
@@ -728,12 +721,13 @@ def group_res_power_per_bus(net: pandapowerNet, index: int) -> pd.DataFrame:
         sides = sides if et != "trafo3w" else [0, 1, 2]
         for side in sides:
             bus_col = "bus" if et not in bra_ets else bra_ebd[et][side]
-            idx = net[f'res_{et}'].index.intersection(gr_elm_idx)
+            idx = net[f"res_{et}"].index.intersection(gr_elm_idx)
             if len(idx) != len(gr_elm_idx):
                 missing_res_idx.append(et)
             cols = res_power_columns(et, side=side)
-            pq_sum = pd.concat([net[et][bus_col].loc[idx], net[f'res_{et}'][cols].loc[idx]],
-                               axis=1).groupby(bus_col).sum() * signing_system_value(et)
+            pq_sum = pd.concat([net[et][bus_col].loc[idx], net[f"res_{et}"][cols].loc[idx]], axis=1).groupby(
+                bus_col
+            ).sum() * signing_system_value(et)
             pq_sum.index.name = "bus"  # needs to be set for branch elements
             if len(pq_sums.columns.difference(pq_sum.columns)):
                 cols_repl = {old: "p_mw" if "p" in old else "q_mvar" for old in pq_sum.columns}
@@ -741,8 +735,10 @@ def group_res_power_per_bus(net: pandapowerNet, index: int) -> pd.DataFrame:
             pq_sums = pq_sums.add(pq_sum, fill_value=0)
 
     if len(missing_res_idx):
-        logger.warning("The resulting power may be wrong since the result tables of these "
-                        f"elements lack of indices: {missing_res_idx}.")
+        logger.warning(
+            "The resulting power may be wrong since the result tables of these "
+            f"elements lack of indices: {missing_res_idx}."
+        )
     return pq_sums
 
 
@@ -790,12 +786,7 @@ def group_res_q_mvar(net: pandapowerNet, index: int):
     return _sum_powers(net, index, "q", "mvar")
 
 
-def set_group_reference_column(
-        net: pandapowerNet,
-        index: int,
-        reference_column: str,
-        element_type: str | None = None
-):
+def set_group_reference_column(net: pandapowerNet, index: int, reference_column: str, element_type: str | None = None):
     """
     Set a reference_column to the group of given index. The values in net.group.element get updated.
 
@@ -837,8 +828,7 @@ def set_group_reference_column(
         if not len(dupl_elements):
             pos_bool = ((net.group.index == index) & (net.group.element_type == et)).values
             if np.sum(pos_bool) > 1:
-                raise ValueError(
-                    f"Group of index {index} has multiple entries for element type '{et}'.")
+                raise ValueError(f"Group of index {index} has multiple entries for element type '{et}'.")
             pos: int = np.arange(len(pos_bool), dtype=np.int64)[pos_bool][0]
 
             if reference_column is None:
@@ -849,16 +839,12 @@ def set_group_reference_column(
             net.group.iat[pos, net.group.columns.get_loc("element_index")] = element_index  # type: ignore[index]
     if len(dupl_elements):
         if reference_column is None:
-            reference_column = 'index'
+            reference_column = "index"
         raise ValueError(f"In tables {dupl_elements} column {reference_column} has duplicate or nan values.")
 
 
 def return_group_as_net(
-        net: pandapowerNet,
-        index: int,
-        keep_everything_else: bool = False,
-        verbose: bool = True,
-        **kwargs
+    net: pandapowerNet, index: int, keep_everything_else: bool = False, verbose: bool = True, **kwargs
 ) -> pandapowerNet:
     """
     Returns a pandapower net consisting of the members of this group.
@@ -880,13 +866,11 @@ def return_group_as_net(
                 group_net[et].drop(group_net[et].index.difference(keep), inplace=True)
         if len(set(net.group.index)) > 1:
             if verbose:
-                logger.warning("The returned net includes further groups. Not existing members get "
-                               "dropped now.")
+                logger.warning("The returned net includes further groups. Not existing members get dropped now.")
             remove_not_existing_group_members(net, verbose=verbose)
     else:
         group_net = pandapowerNet(
-            name=group_name(net, index), f_hz=net.f_hz, sn_mva=net.sn_mva,
-            add_stdtypes=kwargs.get("add_stdtypes", True)
+            name=group_name(net, index), f_hz=net.f_hz, sn_mva=net.sn_mva, add_stdtypes=kwargs.get("add_stdtypes", True)
         )
         group_net["group"] = net.group.loc[[index]]
         for et in net.group.loc[[index], "element_type"].tolist():
@@ -896,13 +880,13 @@ def return_group_as_net(
 
 
 def elements_connected_to_group(
-        net: pandapowerNet,
-        index: int,
-        element_types: list[str],
-        find_buses_only_from_buses: bool = False,
-        respect_switches: bool = True,
-        respect_in_service: bool = False,
-        include_empty_lists: bool = False
+    net: pandapowerNet,
+    index: int,
+    element_types: list[str],
+    find_buses_only_from_buses: bool = False,
+    respect_switches: bool = True,
+    respect_in_service: bool = False,
+    include_empty_lists: bool = False,
 ) -> dict[str, Collection[int]]:
     """
     Returns a dict of indices of elements that are connected to the group.
@@ -925,6 +909,7 @@ def elements_connected_to_group(
     Returns:
         elements that are connected to the group
     """
+
     def element_type_for_switch_et(element_type):
         return element_type[0] if element_type != "trafo3w" else "t3"
 
@@ -933,8 +918,12 @@ def elements_connected_to_group(
     if respect_in_service:
         group_buses = net.bus.loc[group_buses].index[net.bus.in_service.loc[group_buses]]
     connected: dict[str, Collection[int]] = get_connected_elements_dict(
-        net, group_buses, element_types=element_types, respect_switches=respect_switches,
-        respect_in_service=respect_in_service, include_empty_lists=include_empty_lists
+        net,
+        group_buses,
+        element_types=element_types,
+        respect_switches=respect_switches,
+        respect_in_service=respect_in_service,
+        include_empty_lists=include_empty_lists,
     )
 
     # switch -> branch connections
@@ -944,8 +933,7 @@ def elements_connected_to_group(
     for et in sw_bra_types:
         if et not in element_types:
             continue
-        elms = net.switch.loc[group_sw, "element"].loc[
-            net.switch.loc[group_sw, "et"] == element_type_for_switch_et(et)]
+        elms = net.switch.loc[group_sw, "element"].loc[net.switch.loc[group_sw, "et"] == element_type_for_switch_et(et)]
         if respect_in_service:
             elms = net[et].loc[elms].index[net[et].in_service.loc[elms]]
         connected[et] = set(connected[et]) | set(elms)
@@ -957,11 +945,13 @@ def elements_connected_to_group(
             if net[branch_type].shape[0]:
                 group_branches = group_element_index(net, index, branch_type)
                 if respect_in_service:
-                    group_branches = group_branches.intersection(
-                        net[branch_type].index[net[branch_type].in_service])
-                conn_sw |= set(net.switch.index[
-                    (net.switch.et == element_type_for_switch_et(branch_type)) &
-                    net.switch.element.isin(group_branches)])
+                    group_branches = group_branches.intersection(net[branch_type].index[net[branch_type].in_service])
+                conn_sw |= set(
+                    net.switch.index[
+                        (net.switch.et == element_type_for_switch_et(branch_type))
+                        & net.switch.element.isin(group_branches)
+                    ]
+                )
         connected["switch"] = conn_sw
 
     if not find_buses_only_from_buses:
@@ -978,8 +968,7 @@ def elements_connected_to_group(
                 continue
             for bus_col in bed[et]:
                 if et == "switch" and bus_col == "element":
-                    bed_buses = net[et][bus_col].loc[net.switch.index[
-                        net.switch.et == "b"].intersection(e_id)]
+                    bed_buses = net[et][bus_col].loc[net.switch.index[net.switch.et == "b"].intersection(e_id)]
                 else:
                     bed_buses = net[et][bus_col].loc[e_id]
                 if respect_in_service and "in_service" in net[et].columns:
@@ -990,8 +979,8 @@ def elements_connected_to_group(
                     elif et in branch_types:
                         closed = np.ones(bed_buses.shape[0], dtype=bool)
                         switches: pd.DataFrame = net.switch[["bus", "closed"]].loc[  # type: ignore[assignment]
-                            (net.switch.et == element_type_for_switch_et(et)) &
-                            net.switch.element.isin(e_id)]
+                            (net.switch.et == element_type_for_switch_et(et)) & net.switch.element.isin(e_id)
+                        ]
                         if switches.shape[0]:
                             if switches.bus.duplicated().any():
                                 raise ValueError(

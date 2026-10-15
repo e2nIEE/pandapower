@@ -2,8 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""Computes 2nd derivatives of |complex current|**2 w.r.t. V.
-"""
+"""Computes 2nd derivatives of |complex current|**2 w.r.t. V."""
 
 from scipy.sparse import csr_matrix as sparse
 
@@ -40,9 +39,9 @@ def d2AIbr_dV2(dIbr_dVa, dIbr_dVm, Ibr, Ybr, V, lam):
 
     Iaa, Iav, Iva, Ivv = d2Ibr_dV2(Ybr, V, diagIbr_conj * lam)
 
-    Haa = 2 * ( Iaa + dIbr_dVa.T * diaglam * dIbr_dVa.conj() ).real
-    Hva = 2 * ( Iva + dIbr_dVm.T * diaglam * dIbr_dVa.conj() ).real
-    Hav = 2 * ( Iav + dIbr_dVa.T * diaglam * dIbr_dVm.conj() ).real
-    Hvv = 2 * ( Ivv + dIbr_dVm.T * diaglam * dIbr_dVm.conj() ).real
+    Haa = 2 * (Iaa + dIbr_dVa.T * diaglam * dIbr_dVa.conj()).real
+    Hva = 2 * (Iva + dIbr_dVm.T * diaglam * dIbr_dVa.conj()).real
+    Hav = 2 * (Iav + dIbr_dVa.T * diaglam * dIbr_dVm.conj()).real
+    Hvv = 2 * (Ivv + dIbr_dVm.T * diaglam * dIbr_dVm.conj()).real
 
     return Haa, Hav, Hva, Hvv

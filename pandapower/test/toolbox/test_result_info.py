@@ -42,10 +42,8 @@ def test_opf_task():
     create_load(net, 3, 120, max_p_mw=8)
     create_sgen(net, 1, 8, min_q_mvar=-50, max_q_mvar=-10, controllable=False)
     create_sgen(net, 2, 8)
-    create_storage(net, 3, 2, 100, min_q_mvar=-10, max_q_mvar=-50, min_p_mw=0, max_p_mw=60,
-        controllable=True)
-    create_dcline(net, 4, 5, 0.3, 1e-4, 1e-2, 1.01, 1.02, min_q_from_mvar=-10,
-        min_q_to_mvar=-10)
+    create_storage(net, 3, 2, 100, min_q_mvar=-10, max_q_mvar=-50, min_p_mw=0, max_p_mw=60, controllable=True)
+    create_dcline(net, 4, 5, 0.3, 1e-4, 1e-2, 1.01, 1.02, min_q_from_mvar=-10, min_q_to_mvar=-10)
 
     add_column_to_df(net, "dcline", "max_p_mw")
     add_column_to_df(net, "dcline", "max_q_from_mvar")
@@ -57,8 +55,9 @@ def test_opf_task():
     # --- run and check opf_task()
     out1 = opf_task(net, keep=True)
     assert out1["flexibilities_without_costs"] == "all"
-    assert sorted(out1["flexibilities"].keys()) == [i1 + i2 for i1 in ["P", "Q"] for i2 in [
-        "dcline", "ext_grid", "gen", "storage"]]
+    assert sorted(out1["flexibilities"].keys()) == [
+        i1 + i2 for i1 in ["P", "Q"] for i2 in ["dcline", "ext_grid", "gen", "storage"]
+    ]
     for key, df in out1["flexibilities"].items():
         assert df.shape[0]
         if "gen" in key:
@@ -77,8 +76,7 @@ def test_opf_task():
     assert out2["flexibilities"]["Pgen"].shape[0] == 1
 
     net.gen.loc[0, "min_p_mw"] = net.gen.loc[0, "max_p_mw"] - 1e-1
-    out1["flexibilities"]["Pgen"].loc[0, "min"] = out1["flexibilities"]["Pgen"].loc[
-                                                      0, "max"] - 1e-1
+    out1["flexibilities"]["Pgen"].loc[0, "min"] = out1["flexibilities"]["Pgen"].loc[0, "max"] - 1e-1
     out3 = opf_task(net, delta_pq=1e-3, keep=True)
     for key in out3["flexibilities"]:
         assert dataframes_equal(out3["flexibilities"][key], out1["flexibilities"][key])
@@ -156,13 +154,22 @@ def test_clear_result_tables():
 
 def test_res_power_columns():
     assert res_power_columns("gen") == ["p_mw", "q_mvar"]
-    assert res_power_columns("line") == res_power_columns("line", side="from") == \
-           res_power_columns("line", side=0) == ["p_from_mw", "q_from_mvar"]
-    assert res_power_columns("line", side="all") == [
-        "p_from_mw", "q_from_mvar", "p_to_mw", "q_to_mvar"]
+    assert (
+        res_power_columns("line")
+        == res_power_columns("line", side="from")
+        == res_power_columns("line", side=0)
+        == ["p_from_mw", "q_from_mvar"]
+    )
+    assert res_power_columns("line", side="all") == ["p_from_mw", "q_from_mvar", "p_to_mw", "q_to_mvar"]
     assert res_power_columns("trafo3w", side="all") == [
-        "p_hv_mw", "q_hv_mvar", "p_mv_mw", "q_mv_mvar", "p_lv_mw", "q_lv_mvar"]
+        "p_hv_mw",
+        "q_hv_mvar",
+        "p_mv_mw",
+        "q_mv_mvar",
+        "p_lv_mw",
+        "q_lv_mvar",
+    ]
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

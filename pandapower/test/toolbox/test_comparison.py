@@ -55,7 +55,7 @@ def test_nets_equal():
     if "tap_side" in original.trafo:
         original.trafo.tap_side = original.trafo.tap_side.fillna("hv")
     else:
-        original.trafo["tap_side"] = pd.Series(["hv"]*len(original.trafo), dtype=pd.StringDtype())
+        original.trafo["tap_side"] = pd.Series(["hv"] * len(original.trafo), dtype=pd.StringDtype())
     net1 = copy.deepcopy(original)
     net2 = copy.deepcopy(original)
     ContinuousTapControl(net1, 0, 1.0)
@@ -75,10 +75,8 @@ def test_nets_equal():
     net2 = copy.deepcopy(original)
     net1.bus["geo"] = pd.Series(index=net1.bus.index, data=[100] * len(net1.bus.index))
     net2.bus["geo"] = pd.Series(index=net2.bus.index, data=[100] * len(net2.bus.index))
-    assert nets_equal(
-        net1, net2, assume_geojson_strings=False, exclude_elms=set(net.keys()) - {"bus"}
-    )
+    assert nets_equal(net1, net2, assume_geojson_strings=False, exclude_elms=set(net.keys()) - {"bus"})
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

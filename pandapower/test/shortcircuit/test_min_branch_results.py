@@ -12,7 +12,7 @@ def feeder_network():
     net = pandapowerNet(name="feeder_network", sn_mva=11)
     b1, b2, b3, b4, b5 = create_buses(net, 5, 110)
 
-    create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.4, rx_max=0.4)
+    create_ext_grid(net, b1, s_sc_max_mva=100.0, s_sc_min_mva=80.0, rx_min=0.4, rx_max=0.4)
     create_lines(
         net,
         [b1, b2, b1, b4],
@@ -32,5 +32,5 @@ def feeder_network():
     return net
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

@@ -66,7 +66,9 @@ def test_create_line():
     # Test with all optional parameters
     b3, b4 = create_buses(net, 2, 110)
     line_id2 = create_line(
-        net, b3, b4,
+        net,
+        b3,
+        b4,
         length_km=5.0,
         std_type="48-AL1/8-ST1A 10.0",
         name="test_line",
@@ -74,7 +76,7 @@ def test_create_line():
         df=0.8,
         parallel=2,
         max_loading_percent=100.0,
-        geodata=[(1, 1), (2, 2)]
+        geodata=[(1, 1), (2, 2)],
     )
 
     assert line_id2 == 1
@@ -95,12 +97,7 @@ def test_create_line():
 
     # Test with kwargs
     b7, b8 = create_buses(net, 2, 110)
-    line_id4 = create_line(
-        net, b7, b8,
-        length_km=2.0,
-        std_type="48-AL1/8-ST1A 10.0",
-        test_custom_attr="custom_value"
-    )
+    line_id4 = create_line(net, b7, b8, length_km=2.0, std_type="48-AL1/8-ST1A 10.0", test_custom_attr="custom_value")
 
     assert net.line.at[line_id4, "test_custom_attr"] == "custom_value"
 
@@ -234,13 +231,7 @@ def test_create_line_form_parameters():
 
     # Test basic creation with required parameters
     line_id = create_line_from_parameters(
-        net,
-        b1, b2,
-        length_km=10.0,
-        r_ohm_per_km=0.1,
-        x_ohm_per_km=0.05,
-        c_nf_per_km=10.0,
-        max_i_ka=0.5
+        net, b1, b2, length_km=10.0, r_ohm_per_km=0.1, x_ohm_per_km=0.05, c_nf_per_km=10.0, max_i_ka=0.5
     )
 
     assert line_id == 0
@@ -261,20 +252,22 @@ def test_create_line_form_parameters():
     tdpf_args = {
         "endtemp_degree": 100.0,
         "tdpf": True,
-        "wind_speed_m_per_s": 2.,
-        "wind_angle_degree": 3.,
-        "conductor_outer_diameter_m": 4.,
-        "air_temperature_degree_celsius": 5.,
-        "reference_temperature_degree_celsius": 6.,
-        "solar_radiation_w_per_sq_m": 7.,
-        "solar_absorptivity": 8.,
-        "emissivity": 9.,
-        "r_theta_kelvin_per_mw": 10.,
-        "mc_joule_per_m_k": 11.,
+        "wind_speed_m_per_s": 2.0,
+        "wind_angle_degree": 3.0,
+        "conductor_outer_diameter_m": 4.0,
+        "air_temperature_degree_celsius": 5.0,
+        "reference_temperature_degree_celsius": 6.0,
+        "solar_radiation_w_per_sq_m": 7.0,
+        "solar_absorptivity": 8.0,
+        "emissivity": 9.0,
+        "r_theta_kelvin_per_mw": 10.0,
+        "mc_joule_per_m_k": 11.0,
     }
     b3, b4 = create_buses(net, 2, 110)
     line_id2 = create_line_from_parameters(
-        net, b3, b4,
+        net,
+        b3,
+        b4,
         length_km=5.0,
         r_ohm_per_km=0.2,
         x_ohm_per_km=0.1,
@@ -293,7 +286,7 @@ def test_create_line_form_parameters():
         x0_ohm_per_km=0.08,
         c0_nf_per_km=5.0,
         g0_us_per_km=0.0,
-        **tdpf_args
+        **tdpf_args,
     )
 
     assert line_id2 == 1
@@ -320,13 +313,15 @@ def test_create_line_form_parameters():
     # Test with geodata
     b5, b6 = create_buses(net, 2, 110)
     line_id3 = create_line_from_parameters(
-        net, b5, b6,
+        net,
+        b5,
+        b6,
         length_km=3.0,
         r_ohm_per_km=0.3,
         x_ohm_per_km=0.15,
         c_nf_per_km=5.0,
         max_i_ka=0.2,
-        geodata=[(1, 1), (2, 2), (3, 3)]
+        geodata=[(1, 1), (2, 2), (3, 3)],
     )
 
     assert line_id3 == 2
@@ -335,13 +330,15 @@ def test_create_line_form_parameters():
     # Test with custom kwargs
     b7, b8 = create_buses(net, 2, 110)
     line_id4 = create_line_from_parameters(
-        net, b7, b8,
+        net,
+        b7,
+        b8,
         length_km=2.0,
         r_ohm_per_km=0.4,
         x_ohm_per_km=0.2,
         c_nf_per_km=2.0,
         max_i_ka=0.1,
-        custom_attr="test_value"
+        custom_attr="test_value",
     )
 
     assert net.line.at[line_id4, "custom_attr"] == "test_value"
@@ -407,7 +404,7 @@ def test_create_lines_from_parameters():
         max_i_ka=100,
         df=0.8,
         in_service=False,
-        geodata=[(10., 10.), (20., 20.)],
+        geodata=[(10.0, 10.0), (20.0, 20.0)],
         parallel=1,
         max_loading_percent=90,
         name="test",
@@ -429,8 +426,8 @@ def test_create_lines_from_parameters():
     assert net.line.in_service.dtype == np.dtype(bool)
     assert not net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
     assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10., 10.), (20., 20.)]), sort_keys=True)
-    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(10., 10.), (20., 20.)]), sort_keys=True)
+    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10.0, 10.0), (20.0, 20.0)]), sort_keys=True)
+    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(10.0, 10.0), (20.0, 20.0)]), sort_keys=True)
     assert all(net.line["name"].values == "test")
     assert all(net.line["max_loading_percent"].values == 90)
     assert all(net.line["parallel"].values == 1)
@@ -627,7 +624,9 @@ def test_create_line_dc():
     # Test with all optional parameters
     b3, b4 = create_buses(net, 2, 110, bus_type="dc")
     line_id2 = create_line_dc(
-        net, b3, b4,
+        net,
+        b3,
+        b4,
         length_km=5.0,
         std_type="95-CU",
         name="test_line_dc",
@@ -635,7 +634,7 @@ def test_create_line_dc():
         df=0.8,
         parallel=2,
         max_loading_percent=100.0,
-        geodata=[(1, 1), (2, 2)]
+        geodata=[(1, 1), (2, 2)],
     )
 
     assert line_id2 == 1
@@ -656,13 +655,7 @@ def test_create_lines_dc():
     b1, b2, b3, b4 = create_buses_dc(net, 4, 110)
 
     # Test basic creation
-    line_ids = create_lines_dc(
-        net,
-        from_buses_dc=[b1, b3],
-        to_buses_dc=[b2, b4],
-        length_km=10.0,
-        std_type="95-CU"
-    )
+    line_ids = create_lines_dc(net, from_buses_dc=[b1, b3], to_buses_dc=[b2, b4], length_km=10.0, std_type="95-CU")
 
     assert len(line_ids) == 2
     assert line_ids[0] == 0
@@ -684,7 +677,7 @@ def test_create_lines_dc():
         std_type="95-CU",
         name=["line_dc_1", "line_dc_2"],
         in_service=[True, False],
-        df=0.9
+        df=0.9,
     )
 
     assert np.isclose(net2.line_dc.at[0, "length_km"], 5.0)
@@ -703,13 +696,7 @@ def test_create_line_dc_from_parameters():
     b1, b2 = create_buses_dc(net, 2, 110)
 
     # Test basic creation with required parameters
-    line_id = create_line_dc_from_parameters(
-        net,
-        b1, b2,
-        length_km=10.0,
-        r_ohm_per_km=0.1,
-        max_i_ka=0.5
-    )
+    line_id = create_line_dc_from_parameters(net, b1, b2, length_km=10.0, r_ohm_per_km=0.1, max_i_ka=0.5)
 
     assert line_id == 0
     assert net.line_dc.at[line_id, "from_bus_dc"] == b1
@@ -724,7 +711,9 @@ def test_create_line_dc_from_parameters():
     # Test with all optional parameters
     b3, b4 = create_buses_dc(net, 2, 110)
     line_id2 = create_line_dc_from_parameters(
-        net, b3, b4,
+        net,
+        b3,
+        b4,
         length_km=5.0,
         r_ohm_per_km=0.2,
         max_i_ka=0.3,
@@ -734,7 +723,7 @@ def test_create_line_dc_from_parameters():
         parallel=2,
         type="ol",
         max_loading_percent=100.0,
-        g_us_per_km=0.0
+        g_us_per_km=0.0,
     )
 
     assert line_id2 == 1
@@ -757,12 +746,7 @@ def test_create_lines_dc_from_parameters():
 
     # Test basic creation
     line_ids = create_lines_dc_from_parameters(
-        net,
-        from_buses_dc=[b1, b3],
-        to_buses_dc=[b2, b4],
-        length_km=10.0,
-        r_ohm_per_km=0.1,
-        max_i_ka=0.5
+        net, from_buses_dc=[b1, b3], to_buses_dc=[b2, b4], length_km=10.0, r_ohm_per_km=0.1, max_i_ka=0.5
     )
 
     assert len(line_ids) == 2
@@ -788,7 +772,7 @@ def test_create_lines_dc_from_parameters():
         name=["line_dc_1", "line_dc_2"],
         in_service=[True, False],
         df=[0.9, 0.95],
-        parallel=[1, 2]
+        parallel=[1, 2],
     )
 
     assert np.isclose(net2.line_dc.at[0, "length_km"], 5.0)
@@ -814,14 +798,7 @@ def test_create_dcline():
 
     # Test basic creation with required parameters
     dcline_id = create_dcline(
-        net,
-        from_bus=b1,
-        to_bus=b2,
-        p_mw=1000,
-        loss_percent=2.0,
-        loss_mw=20,
-        vm_from_pu=1.0,
-        vm_to_pu=1.0
+        net, from_bus=b1, to_bus=b2, p_mw=1000, loss_percent=2.0, loss_mw=20, vm_from_pu=1.0, vm_to_pu=1.0
     )
 
     assert dcline_id == 0
@@ -852,7 +829,7 @@ def test_create_dcline():
         min_q_from_mvar=-100,
         max_q_from_mvar=100,
         min_q_to_mvar=-50,
-        max_q_to_mvar=50
+        max_q_to_mvar=50,
     )
 
     assert dcline_id2 == 1

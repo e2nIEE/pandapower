@@ -82,7 +82,9 @@ def test_contingency_parallel(get_net):
 def test_contingency_timeseries(get_net, contingency_function):
     # FIXME: temporary skip for case14 and run_contingency_ls2g because of error in ls2g
     if get_net.name == "case14" and contingency_function == run_contingency_ls2g:
-        pytest.skip("lightsim2grid's init_ls2g has an error when handling pandapower 4 networks. (pd.NA dtype support missing)")
+        pytest.skip(
+            "lightsim2grid's init_ls2g has an error when handling pandapower 4 networks. (pd.NA dtype support missing)"
+        )
     if not lightsim2grid_installed and contingency_function == run_contingency_ls2g:
         pytest.skip("lightsim2grid package is not installed")
 

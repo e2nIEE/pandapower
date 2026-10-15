@@ -23,7 +23,6 @@ from pandapower.test.network_schema.elements.helper import (
     not_strings_list,
     positiv_floats,
     positiv_floats_plus_zero,
-    positiv_ints,
     positiv_ints_plus_zero,
     strings,
 )
@@ -192,6 +191,7 @@ class TestShuntOptionalFields:
         )
 
         from pandapower.create._utils import add_column_to_df
+
         add_column_to_df(net, "shunt", parameter)
 
         if parameter == "max_step":

@@ -25,7 +25,7 @@ class UCTEParser:
         self.ucte_elements = ["##C", "##N", "##L", "##T", "##R", "##TT", "##E"]
         self.data: Dict[str, pd.DataFrame] = {}
         self.date: datetime = datetime.now(timezone.utc)
-        self.bus_ucte_countries : list = []
+        self.bus_ucte_countries: list = []
 
     def parse_file(self, path_ucte_file: str | None = None) -> bool:
         """
@@ -38,9 +38,7 @@ class UCTEParser:
         if path_ucte_file is not None:
             self.path_ucte_file = path_ucte_file
         if self.path_ucte_file is None:
-            self.logger.error(
-                "The variable 'path_ucte_file' is None, set it before parsing it!"
-            )
+            self.logger.error("The variable 'path_ucte_file' is None, set it before parsing it!")
             return False
         self.logger.info("Start parsing the file %s." % self.path_ucte_file)
         # parse the date, if its given by the configuration, parse it from there, otherwise from the file string
@@ -65,8 +63,11 @@ class UCTEParser:
                 row = row.strip()
                 if row.startswith("##N"):
                     is_in_N = True
-                elif any(row.startswith(other_ucte_element) for other_ucte_element in
-                          self.ucte_elements if other_ucte_element != "##N"):
+                elif any(
+                    row.startswith(other_ucte_element)
+                    for other_ucte_element in self.ucte_elements
+                    if other_ucte_element != "##N"
+                ):
                     is_in_N = False
                 if row in self.ucte_elements:
                     # the start of a new UCTE element type in the origin file
@@ -77,24 +78,20 @@ class UCTEParser:
                     raw_input_dict[current_element].append(row)
                 elif row.startswith("##"):
                     self.logger.debug("Skipping row %s" % row)
-                    ucte_country = row[3:] if row[2] == "Z" else row[2:] # usually country zones are marked by ##Z
+                    ucte_country = row[3:] if row[2] == "Z" else row[2:]  # usually country zones are marked by ##Z
                 else:
                     if is_in_N:
                         self.bus_ucte_countries.append(ucte_country)
                     raw_input_dict[current_element].append(row)
         self._create_df_from_raw(raw_input_dict)
-        self.logger.info(
-            "Finished parsing file %s in %ss."
-            % (self.path_ucte_file, time.time() - time_start)
-        )
+        self.logger.info("Finished parsing file %s in %ss." % (self.path_ucte_file, time.time() - time_start))
         return True
 
     def _parse_date_str(self, date_str: str):
         try:
             self.date = datetime.strptime(date_str, "%Y%m%d_%H%M")
         except Exception:
-            self.logger.info(
-                f"The given {date_str=} couldn't be parsed as '%Y%m%d_%H%M'.")
+            self.logger.info(f"The given {date_str=} couldn't be parsed as '%Y%m%d_%H%M'.")
             self.date = datetime.now(timezone.utc)
 
     def _create_df_from_raw(self, raw_input_dict):
@@ -170,17 +167,11 @@ class UCTEParser:
         dtypes["##E"] = {"p": float}
         for ucte_element, one_dtypes in dtypes.items():
             for field, field_type in one_dtypes.items():
-                self.data[ucte_element].loc[
-                    self.data[ucte_element][field] == "", field
-                ] = np.nan
+                self.data[ucte_element].loc[self.data[ucte_element][field] == "", field] = np.nan
                 # for integer: first convert them to float to prevent errors
                 if field_type == i_t:
-                    self.data[ucte_element][field] = self.data[ucte_element][
-                        field
-                    ].astype(float)
-                self.data[ucte_element][field] = self.data[ucte_element][field].astype(
-                    field_type
-                )
+                    self.data[ucte_element][field] = self.data[ucte_element][field].astype(float)
+                self.data[ucte_element][field] = self.data[ucte_element][field].astype(field_type)
 
         # remove '##' at the beginning of each key
         for one_key in list(self.data.keys()):
@@ -217,12 +208,8 @@ class UCTEParser:
 
     def _split_connections_from_raw(self, element_type: str):
         # get the connections to nodes (node1 and node2) from the asset for e.g. ##L or ##T
-        self.data[element_type]["node1"] = (
-            self.data[element_type][0].str[0:8].str.strip()
-        )
-        self.data[element_type]["node2"] = (
-            self.data[element_type][0].str[9:17].str.strip()
-        )
+        self.data[element_type]["node1"] = self.data[element_type][0].str[0:8].str.strip()
+        self.data[element_type]["node2"] = self.data[element_type][0].str[9:17].str.strip()
 
     def _split_lines_from_raw(self):
         element_type = "##L"
@@ -244,9 +231,7 @@ class UCTEParser:
     def _split_trafos_from_raw(self):
         element_type = "##T"
         if element_type not in self.data.keys():
-            self.logger.warning(
-                "No transformers in 'self.data' available! Didn't split them."
-            )
+            self.logger.warning("No transformers in 'self.data' available! Didn't split them.")
             return
         df = self.data[element_type]
         if 0 not in df.columns:
@@ -267,9 +252,7 @@ class UCTEParser:
     def _split_trafos_regulation_from_raw(self):
         element_type = "##R"
         if element_type not in self.data.keys():
-            self.logger.warning(
-                "No tap changers in 'self.data' available! Didn't split them."
-            )
+            self.logger.warning("No tap changers in 'self.data' available! Didn't split them.")
             return
         df = self.data[element_type]
         if 0 not in df.columns:
@@ -290,9 +273,7 @@ class UCTEParser:
     def _split_trafos_specified_parameters_from_raw(self):
         element_type = "##TT"
         if element_type not in self.data.keys():
-            self.logger.warning(
-                "No specified transformer parameters in 'self.data' available! Didn't split them."
-            )
+            self.logger.warning("No specified transformer parameters in 'self.data' available! Didn't split them.")
             return
         df = self.data[element_type]
         if 0 not in df.columns:
@@ -308,9 +289,7 @@ class UCTEParser:
     def _split_exchange_powers_from_raw(self):
         element_type = "##E"
         if element_type not in self.data.keys():
-            self.logger.warning(
-                "No exchange powers in 'self.data' available! Didn't split them."
-            )
+            self.logger.warning("No exchange powers in 'self.data' available! Didn't split them.")
             return
         df = self.data[element_type]
         if 0 not in df.columns:
@@ -357,9 +336,7 @@ class UCTEParser:
         if isinstance(config, dict):
             self.config = config
         else:
-            self.logger.warning(
-                "The configuration is not a dictionary! Default configuration is set."
-            )
+            self.logger.warning("The configuration is not a dictionary! Default configuration is set.")
             self.config = {}
 
     def get_config(self) -> Dict:

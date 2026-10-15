@@ -1,9 +1,9 @@
 """
 Functions for creating and validating bus index cross-references.
 """
+
 import pandas as pd
 import pandera.pandas as pa
-from copy import deepcopy
 from pandapower import pandapowerNet
 
 
@@ -43,6 +43,7 @@ def _create_index_validation_check(reference_df: pd.DataFrame, column_name: str,
         name=f"foreign key for {element_name}.{column_name}",
         determined_by_unique=True,
     )
+
 
 def _create_multi_column_reference_schema(
     reference_df: pd.DataFrame,
@@ -92,20 +93,20 @@ def _create_multi_column_reference_schema(
     return pa.DataFrameSchema(columns=schema_columns, name=element_name, strict=False)
 
 
-def build_foreign_key_index_checks(schema:pa.DataFrameSchema, net:pandapowerNet) -> None:
+def build_foreign_key_index_checks(schema: pa.DataFrameSchema, net: pandapowerNet) -> None:
     """
-        Creates a deepcopy of schema with foreign key validation checks added based on metadata.
+    Creates a deepcopy of schema with foreign key validation checks added based on metadata.
 
-        Parses the 'foreign_key' metadata from columns (format: "table")
-        and adds index validation checks against the corresponding network element.
+    Parses the 'foreign_key' metadata from columns (format: "table")
+    and adds index validation checks against the corresponding network element.
 
-        Parameters:
-            schema: The DataFrameSchema to analyze for foreign key columns
-            net: The pandapower network object containing reference tables
+    Parameters:
+        schema: The DataFrameSchema to analyze for foreign key columns
+        net: The pandapower network object containing reference tables
 
-        Returns:
-            A deepcopy of the schema with foreign key checks added to appropriate columns
-        """
+    Returns:
+        A deepcopy of the schema with foreign key checks added to appropriate columns
+    """
     for col_name, column in schema.columns.items():
         if column.metadata and "foreign_key" in column.metadata:
             ref_table_name = column.metadata["foreign_key"]

@@ -43,7 +43,7 @@ def create_test_network():
     """
     Creates a simple pandapower test network
     """
-    net = pandapowerNet(name='test_network')
+    net = pandapowerNet(name="test_network")
     (b1,) = create_buses(net, 1, name="bus1", vn_kv=10.0)
     create_ext_grid(net, b1)
     (b2,) = create_buses(net, 1, name="bus2", geodata=(1.0, 2.0), vn_kv=0.4)
@@ -106,14 +106,12 @@ def create_test_network():
 
 
 def create_test_network2():
-    """Creates a simple pandapower test network
-    """
+    """Creates a simple pandapower test network"""
     return from_pickle(os.path.join(pp_dir, "test", "loadflow", "testgrid.p"))
 
 
-def add_grid_connection(net, vn_kv=20., zone=None):
-    """Creates a new grid connection for create_result_test_network()
-    """
+def add_grid_connection(net, vn_kv=20.0, zone=None):
+    """Creates a new grid connection for create_result_test_network()"""
     (b1,) = create_buses(net, 1, vn_kv=vn_kv, zone=zone)
     create_ext_grid(net, b1, vm_pu=1.01)
     b2 = get_free_id(net.bus) + 2  # shake up the indices so that non-consecutive indices are tested

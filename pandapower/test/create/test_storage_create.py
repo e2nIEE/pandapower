@@ -38,16 +38,33 @@ def test_create_storage():
     b1, b2, b3 = create_buses(net, 3, 110)
 
     create_storage(
-        net, b1, 0, 3, 0.5, controllable=True, max_p_mw=0.2, min_p_mw=0, max_q_mvar=0.2,
-        min_q_mvar=0, test_kwargs="dummy_string_1"
+        net,
+        b1,
+        0,
+        3,
+        0.5,
+        controllable=True,
+        max_p_mw=0.2,
+        min_p_mw=0,
+        max_q_mvar=0.2,
+        min_q_mvar=0,
+        test_kwargs="dummy_string_1",
     )
     create_storage(
-        net, b2, 0, 5, 0.5, controllable=False, max_p_mw=0.2, min_p_mw=0.1, max_q_mvar=0.2,
-        min_q_mvar=0.1, test_kwargs="dummy_string_2"
+        net,
+        b2,
+        0,
+        5,
+        0.5,
+        controllable=False,
+        max_p_mw=0.2,
+        min_p_mw=0.1,
+        max_q_mvar=0.2,
+        min_q_mvar=0.1,
+        test_kwargs="dummy_string_2",
     )
     create_storage(
-        net, b3, 1, 7, 0.5, max_p_mw=0.2, min_p_mw=0, max_q_mvar=0.2, min_q_mvar=0,
-        test_kwargs="dummy_string_3"
+        net, b3, 1, 7, 0.5, max_p_mw=0.2, min_p_mw=0, max_q_mvar=0.2, min_q_mvar=0, test_kwargs="dummy_string_3"
     )
 
     _check_storage_table(net.storage, (b1, b2, b3))

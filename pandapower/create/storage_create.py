@@ -6,7 +6,7 @@ from __future__ import annotations
 import logging
 from typing import Iterable, Sequence
 
-from numpy import nan, bool_
+from numpy import nan
 import numpy.typing as npt
 
 from pandapower import pandapowerNet

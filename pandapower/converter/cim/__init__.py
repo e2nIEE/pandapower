@@ -3,4 +3,4 @@
 
 from .cim2pp import from_cim
 
-__version__ = '3.6.10'
+__version__ = "3.6.10"
