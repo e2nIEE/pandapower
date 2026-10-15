@@ -6,7 +6,6 @@
 
 from numpy import inf
 
-
 PF_OPTIONS = [
     (
         "pf_alg",

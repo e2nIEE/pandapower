@@ -1,32 +1,30 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
 from numbers import Number
 from typing import Literal
 
 import numpy as np
 from scipy.sparse.linalg import factorized
 
-from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options, _add_auxiliary_elements
+from pandapower.auxiliary import _add_auxiliary_elements, _add_ppc_options, _add_sc_options, _clean_up
 from pandapower.network import pandapowerNet
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.pypower.idx_brch_sc import K_ST
-from pandapower.results import _copy_results_ppci_to_ppc
-from pandapower.results import init_results
+from pandapower.results import _copy_results_ppci_to_ppc, init_results
 from pandapower.shortcircuit.currents import (
+    _calc_branch_currents,
+    _calc_branch_currents_complex,
     _calc_ikss,
     _calc_ikss_1ph,
     _calc_ip,
     _calc_ith,
-    _calc_branch_currents,
-    _calc_branch_currents_complex,
 )
-from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx
+from pandapower.shortcircuit.impedance import _calc_rx, _calc_ybus, _calc_zbus
 from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
-from pandapower.shortcircuit.ppc_conversion import _init_ppc, _create_k_updated_ppci, _get_is_ppci_bus
-from pandapower.shortcircuit.results import _extract_results, _copy_result_to_ppci_orig
-
-import logging
+from pandapower.shortcircuit.ppc_conversion import _create_k_updated_ppci, _get_is_ppci_bus, _init_ppc
+from pandapower.shortcircuit.results import _copy_result_to_ppci_orig, _extract_results
 
 logger = logging.getLogger(__name__)
 

@@ -8,9 +8,9 @@ import pytest
 from pandapower import pp_dir
 from pandapower.converter.matpower import from_mpc
 from pandapower.networks import case24_ieee_rts
+from pandapower.results import reset_results
 from pandapower.run import runpp, set_user_pf_options
 from pandapower.toolbox.comparison import nets_equal
-from pandapower.results import reset_results
 
 try:
     import matpowercaseframes

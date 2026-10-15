@@ -2,29 +2,28 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from __future__ import annotations
 
-import sys
+import logging
 import math
-from collections.abc import Iterable, Callable
+import sys
+from collections.abc import Callable, Iterable
 from typing import Any
 
+import geojson
 import numpy as np
 import pandas as pd
-import geojson
 
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.network import ADict
-from pandapower.plotting.plotly.get_colors import get_plotly_color, get_plotly_cmap
+from pandapower.plotting.plotly.get_colors import get_plotly_cmap, get_plotly_color
 from pandapower.plotting.plotly.mapbox_plot import _on_map_test
-
-import logging
 
 logger = logging.getLogger(__name__)
 
 try:
-    from plotly.graph_objs.scatter.marker import ColorBar
     from plotly.graph_objs import Figure, Layout
     from plotly.graph_objs.layout import XAxis, YAxis
     from plotly.graph_objs.scatter import Line, Marker
+    from plotly.graph_objs.scatter.marker import ColorBar
     from plotly.graph_objs.scattermap import Line as scmLine
     from plotly.graph_objs.scattermap import Marker as scmMarker
 
@@ -634,10 +633,10 @@ def _create_branch_trace(
         else:
             if net["res_" + branch_element].shape[0] == 0:
                 logger.error(
-                    "There are no simulation results for branches which are default for {}"
+                    f"There are no simulation results for branches which are default for {branch_element}"
                     "colormap coloring..."
                     "set cmap_vals input argument if you want colormap according to some specific "
-                    "values...".format(branch_element)
+                    "values..."
                 )
             cmap_vals = net["res_" + branch_element].loc[branches_to_plot.index, cmap_vals_category].values
 
@@ -756,7 +755,7 @@ def _create_branch_trace(
         ):
             infofunc = pd.Series(index=net[branch_element].index, data=infofunc)
         assert isinstance(infofunc, pd.Series), (
-            "infofunc should be a pandas series with the net.{}.index to the infofunc contents".format(branch_element)
+            f"infofunc should be a pandas series with the net.{branch_element}.index to the infofunc contents"
         )
         sorted_idx = branches_to_plot.index.tolist()
         if no_go_branches_to_plot is not None:
@@ -1256,7 +1255,8 @@ def draw_traces(
 
     # check if called from ipynb or not in order to consider appropriate plot function
     if _in_ipynb() and auto_open:
-        from plotly.offline import init_notebook_mode, iplot as plot
+        from plotly.offline import init_notebook_mode
+        from plotly.offline import iplot as plot
 
         init_notebook_mode()
         plot(fig, filename=filename)

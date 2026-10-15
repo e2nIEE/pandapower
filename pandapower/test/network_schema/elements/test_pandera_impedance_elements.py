@@ -419,9 +419,7 @@ class TestImpedanceResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_impedance_power_results(self):
         """Test: Power results are consistent"""
-        pass
 
     @pytest.mark.skip(reason="Not yet implemented")
     def test_impedance_currents_results(self):
         """Test: Currents results are within valid range"""
-        pass

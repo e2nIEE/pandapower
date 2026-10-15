@@ -1,6 +1,7 @@
 # test_pandera_vsc_bipolar_elements.py
 
 import itertools
+
 import pandas as pd
 import pandera as pa
 import pytest
@@ -8,17 +9,16 @@ import pytest
 from pandapower.create import create_bus, create_bus_dc, create_vsc_bipolar
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
-
 from pandapower.test.network_schema.elements.helper import (
-    strings,
-    bools,
-    not_strings_list,
-    not_floats_list,
-    not_boolean_list,
-    positiv_ints_plus_zero,
-    not_ints_list,
-    negativ_ints,
     all_allowed_floats,
+    bools,
+    negativ_ints,
+    not_boolean_list,
+    not_floats_list,
+    not_ints_list,
+    not_strings_list,
+    positiv_ints_plus_zero,
+    strings,
 )
 
 
@@ -264,9 +264,7 @@ class TestVscBipolarResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_vsc_bipolar_result_totals(self):
         """Test: aggregated p_mw / q_mvar / dc results are consistent"""
-        pass
 
     @pytest.mark.skip(reason="Not yet implemented")
     def test_vsc_bipolar_ac_dc_results(self):
         """Test: AC and DC side results contain valid values"""
-        pass

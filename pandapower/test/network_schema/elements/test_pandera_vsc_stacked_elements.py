@@ -1,4 +1,5 @@
 import itertools
+
 import pandas as pd
 import pandera as pa
 import pytest
@@ -6,17 +7,16 @@ import pytest
 from pandapower.create import create_bus, create_bus_dc, create_vsc_stacked
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
-
 from pandapower.test.network_schema.elements.helper import (
-    strings,
-    bools,
-    not_strings_list,
-    not_floats_list,
-    not_boolean_list,
-    positiv_ints_plus_zero,
-    not_ints_list,
-    negativ_ints,
     all_allowed_floats,
+    bools,
+    negativ_ints,
+    not_boolean_list,
+    not_floats_list,
+    not_ints_list,
+    not_strings_list,
+    positiv_ints_plus_zero,
+    strings,
 )
 
 
@@ -289,9 +289,7 @@ class TestVCSSTACKEDResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_vsc_stacked_result_totals(self):
         """Test: aggregated p_mw / q_mvar results are consistent"""
-        pass
 
     @pytest.mark.skip(reason="Not yet implemented")
     def test_vsc_stacked_internal_results(self):
         """Test: internal vm/va and dc quantities are within expected ranges"""
-        pass

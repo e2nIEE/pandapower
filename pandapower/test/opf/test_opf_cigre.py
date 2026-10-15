@@ -1,14 +1,14 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
+
 import numpy as np
 import pytest
 
 from pandapower.create import create_poly_cost
 from pandapower.networks.cigre_networks import create_cigre_network_mv
 from pandapower.run import runopp
-
-import logging
 
 logger = logging.getLogger(__name__)
 

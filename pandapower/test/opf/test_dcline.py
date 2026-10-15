@@ -1,23 +1,23 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
+
 import pytest
-from numpy import array, allclose, isclose
+from numpy import allclose, array, isclose
 
 from pandapower.create import (
     create_bus,
+    create_dcline,
     create_ext_grid,
     create_line,
-    create_dcline,
     create_load,
-    create_pwl_cost,
     create_poly_cost,
+    create_pwl_cost,
 )
 from pandapower.network import pandapowerNet
 from pandapower.run import runopp, runpp
 from pandapower.test.consistency_checks import consistency_checks
-
-import logging
 
 logger = logging.getLogger(__name__)
 

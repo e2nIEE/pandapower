@@ -4,14 +4,14 @@
 import numpy as np
 
 try:
-    import pandaplan.core.pplog as pplog
+    from pandaplan.core import pplog
 except ImportError:
     import logging as pplog
 
-from pandapower.auxiliary import NetCalculationNotConverged, ControllerNotConverged
-from pandapower.powerflow import LoadflowNotConverged
-from pandapower.optimal_powerflow import OPFNotConverged
+from pandapower.auxiliary import ControllerNotConverged, NetCalculationNotConverged
 from pandapower.control.util.auxiliary import asarray
+from pandapower.optimal_powerflow import OPFNotConverged
+from pandapower.powerflow import LoadflowNotConverged
 
 logger = pplog.getLogger(__name__)
 

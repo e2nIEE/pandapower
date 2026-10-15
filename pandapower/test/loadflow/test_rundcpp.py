@@ -10,22 +10,22 @@ import pytest
 from pandapower.auxiliary import LoadflowNotConverged
 from pandapower.create import (
     create_bus,
+    create_bus_dc,
+    create_ext_grid,
+    create_line_dc_from_parameters,
+    create_line_from_parameters,
+    create_load,
+    create_switch,
     create_transformer,
     create_transformer3w,
-    create_load,
-    create_xward,
-    create_switch,
-    create_ext_grid,
-    create_line_from_parameters,
-    create_line_dc_from_parameters,
-    create_bus_dc,
     create_vsc,
+    create_xward,
 )
 from pandapower.network import pandapowerNet
 from pandapower.networks.power_system_test_cases import case4gs, case118
 from pandapower.run import rundcpp, runpp
 from pandapower.test.consistency_checks import rundcpp_with_consistency_checks
-from pandapower.test.helper_functions import add_grid_connection, create_test_line, assert_net_equal
+from pandapower.test.helper_functions import add_grid_connection, assert_net_equal, create_test_line
 from pandapower.test.loadflow.result_test_network_generator import result_test_network_generator_dcpp
 
 

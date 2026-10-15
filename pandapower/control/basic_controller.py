@@ -8,7 +8,7 @@ from pandapower.control.util.auxiliary import drop_same_type_existing_controller
 from pandapower.io_utils import JSONSerializableClass
 
 try:
-    import pandaplan.core.pplog as pplog
+    from pandaplan.core import pplog
 except:
     import logging as pplog
 
@@ -63,7 +63,6 @@ class BasicCtrl(JSONSerializableClass):
 
         .. note:: This method is ONLY being called during time-series simulation!
         """
-        pass
 
     def initialize_control(self, container):
         """
@@ -75,7 +74,6 @@ class BasicCtrl(JSONSerializableClass):
         This method may be interesting if you are aiming for a global
         controller or if it has to be aware of its initial state.
         """
-        pass
 
     def is_converged(self, container):
         """
@@ -93,7 +91,6 @@ class BasicCtrl(JSONSerializableClass):
         method should implement actions that promote convergence e.g. adapting
         actuating variables and writing them back to the data structure.
         """
-        pass
 
     def repair_control(self, container):
         """
@@ -103,7 +100,6 @@ class BasicCtrl(JSONSerializableClass):
         Either implement this in a controller that is likely to cause the error, or define
         a special "load flow police" controller for your use case
         """
-        pass
 
     def restore_init_state(self, container):
         """
@@ -113,7 +109,6 @@ class BasicCtrl(JSONSerializableClass):
         run_control to make sure that the net condition is restored even if load flow calculation
         doesn't converge
         """
-        pass
 
     def finalize_control(self, container):
         """
@@ -123,7 +118,6 @@ class BasicCtrl(JSONSerializableClass):
         finalization does not only restore the init state but also something in addition to that,
         that would require the results in net
         """
-        pass
 
     def finalize_step(self, container, time):
         """
@@ -134,7 +128,6 @@ class BasicCtrl(JSONSerializableClass):
         results of the loadflow. If the ControlHandler.output_writer got an
         instance of this class, it will be called before the finalize step.
         """
-        pass
 
     def set_active(self, container, in_service):
         """
@@ -165,7 +158,7 @@ class Controller(BasicCtrl):
         overwrite=False,
         matching_params=None,
     ):
-        super(Controller, self).__init__(net, index)
+        super().__init__(net, index)
         self.matching_params = {} if matching_params is None else matching_params
         # add oneself to net, creating the ['controller'] DataFrame, if necessary
         # even though this code is repeated in JSONSerializableClass, it is necessary because of how drop_same_existing_controller works
@@ -239,4 +232,3 @@ class Controller(BasicCtrl):
         Beware: Setting recycle wrong can mess up your results. Set it to False in init if in doubt!
         """
         # checks what can be reused from this controller - default is False in base controller
-        pass

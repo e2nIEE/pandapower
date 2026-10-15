@@ -3,12 +3,12 @@
 
 import numpy as np
 from numpy import interp
-from scipy.interpolate import interp1d, PchipInterpolator
+from scipy.interpolate import PchipInterpolator, interp1d
 
 from pandapower.io_utils import JSONSerializableClass
 
 try:
-    import pandaplan.core.pplog as pplog
+    from pandaplan.core import pplog
 except ImportError:
     import logging as pplog
 

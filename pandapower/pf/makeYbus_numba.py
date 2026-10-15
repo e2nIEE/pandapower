@@ -8,10 +8,10 @@
 
 import numpy as np
 from numba import jit
-from scipy.sparse import csr_matrix, coo_matrix
+from scipy.sparse import coo_matrix, csr_matrix
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
-from pandapower.pypower.idx_bus import GS, BS
+from pandapower.pypower.idx_bus import BS, GS
 from pandapower.pypower.makeYbus import branch_vectors
 
 

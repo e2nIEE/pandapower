@@ -2,7 +2,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 try:
-    import pandaplan.core.pplog as pplog
+    from pandaplan.core import pplog
 except:
     import logging as pplog
 

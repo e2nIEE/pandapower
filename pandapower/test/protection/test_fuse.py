@@ -4,20 +4,20 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
+    create_bus,
     create_buses,
     create_ext_grid,
-    create_lines_from_parameters,
-    create_transformer,
-    create_switch,
-    create_switches,
-    create_load,
-    create_bus,
-    create_sgen,
     create_gen,
     create_line,
-    create_shunt,
     create_lines,
+    create_lines_from_parameters,
+    create_load,
     create_loads,
+    create_sgen,
+    create_shunt,
+    create_switch,
+    create_switches,
+    create_transformer,
 )
 from pandapower.file_io import from_json_string, to_json
 from pandapower.network import pandapowerNet

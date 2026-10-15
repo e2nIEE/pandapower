@@ -4,17 +4,17 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_buses,
     create_bus,
+    create_buses,
+    create_ext_grid,
     create_line_from_parameters,
     create_load,
-    create_ext_grid,
     create_ssc,
 )
 from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
-from pandapower.test.loadflow.test_facts import copy_with_impedance, facts_case_study_grid, compare_ssc_impedance_gen
+from pandapower.test.loadflow.test_facts import compare_ssc_impedance_gen, copy_with_impedance, facts_case_study_grid
 
 
 def test_ssc_minimal():

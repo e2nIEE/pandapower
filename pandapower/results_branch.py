@@ -4,21 +4,21 @@
 
 import numpy as np
 
-from pandapower.auxiliary import _sum_by_group, I_from_SV_elementwise, sequence_to_phase, S_from_VI_elementwise
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, PF, QF, PT, QT, BR_R
-from pandapower.pypower.idx_brch_dc import DC_IF, DC_IT, DC_F_BUS, DC_T_BUS, DC_PF, DC_PT, DC_BR_R, DC_TDPF
+from pandapower.auxiliary import I_from_SV_elementwise, S_from_VI_elementwise, _sum_by_group, sequence_to_phase
+from pandapower.pypower.idx_brch import BR_R, F_BUS, PF, PT, QF, QT, T_BUS
+from pandapower.pypower.idx_brch_dc import DC_BR_R, DC_F_BUS, DC_IF, DC_IT, DC_PF, DC_PT, DC_T_BUS, DC_TDPF
 from pandapower.pypower.idx_brch_tdpf import TDPF
-from pandapower.pypower.idx_bus import BASE_KV, VM, VA
+from pandapower.pypower.idx_bus import BASE_KV, VA, VM
 from pandapower.pypower.idx_bus_dc import DC_BASE_KV, DC_VM
 from pandapower.pypower.idx_tcsc import (
-    TCSC_THYRISTOR_FIRING_ANGLE,
-    TCSC_X_PU,
+    TCSC_IF,
+    TCSC_IT,
     TCSC_PF,
     TCSC_PT,
     TCSC_QF,
     TCSC_QT,
-    TCSC_IF,
-    TCSC_IT,
+    TCSC_THYRISTOR_FIRING_ANGLE,
+    TCSC_X_PU,
 )
 
 
@@ -723,12 +723,12 @@ def _copy_switch_results_from_branches(net, suffix=None, current_parameter="i_ka
     if len(switch_trafo) > 0:
         res_trafo_df = "res_trafo" if suffix is None else "res_trafo%s" % suffix
         for side in ["hv", "lv"]:
-            buses = net.trafo["{}_bus".format(side)].loc[switch_trafo.element.values].values
+            buses = net.trafo[f"{side}_bus"].loc[switch_trafo.element.values].values
             side_switch_trafo = switch_trafo[switch_trafo.bus.values == buses]
             switches = side_switch_trafo.index
             trafos = side_switch_trafo.element.values
             current, unit = current_parameter.split("_")
-            side_current = "{}_{}_{}".format(current, side, unit)
+            side_current = f"{current}_{side}_{unit}"
             net[res_switch_df].loc[switches, current_parameter] = net[res_trafo_df].loc[trafos, side_current].values
     open_switches = ~net.switch.closed.values
     if any(open_switches):

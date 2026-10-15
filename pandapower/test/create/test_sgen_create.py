@@ -1,10 +1,10 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pytest
 import numpy as np
+import pytest
 
-from pandapower.create import create_bus, create_sgen, create_sgens, create_asymmetric_sgen, create_sgen_from_cosphi
+from pandapower.create import create_asymmetric_sgen, create_bus, create_sgen, create_sgen_from_cosphi, create_sgens
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 

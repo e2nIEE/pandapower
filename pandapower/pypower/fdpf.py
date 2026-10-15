@@ -6,7 +6,7 @@
 
 import sys
 
-from numpy import array, angle, exp, linalg, conj, r_, inf
+from numpy import angle, array, conj, exp, inf, linalg, r_
 from scipy.sparse.linalg import splu
 
 from pandapower.pypower.ppoption import ppoption

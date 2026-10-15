@@ -1,41 +1,42 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
 from time import perf_counter
+
 import numpy as np
 
 from pandapower.auxiliary import (
-    _sum_by_group,
-    _check_if_numba_is_installed,
-    _check_bus_index_and_print_warning_if_high,
-    _check_gen_index_and_print_warning_if_high,
-    _add_pf_options,
-    _add_ppc_options,
-    _clean_up,
-    sequence_to_phase,
-    phase_to_sequence,
-    X012_to_X0,
-    X012_to_X2,
+    I0_from_V012,
     I1_from_V012,
+    I2_from_V012,
     S_from_VI_elementwise,
     V1_from_ppc,
     V_from_I,
+    X012_to_X0,
+    X012_to_X2,
+    _add_pf_options,
+    _add_ppc_options,
+    _check_bus_index_and_print_warning_if_high,
+    _check_gen_index_and_print_warning_if_high,
+    _check_if_numba_is_installed,
+    _clean_up,
+    _sum_by_group,
     combine_X012,
-    I0_from_V012,
-    I2_from_V012,
+    phase_to_sequence,
+    sequence_to_phase,
 )
-from pandapower.powerflow import LoadflowNotConverged
 from pandapower.build_bus import _add_ext_grid_sc_impedance
-from pandapower.pypower.pfsoln import pfsoln
-from pandapower.pypower.idx_gen import PG, QG, GEN_BUS
-from pandapower.pypower.idx_bus import GS, BS, PD, QD, VM, VA
 from pandapower.pd2ppc import _pd2ppc_recycle
-from pandapower.pypower.makeYbus import makeYbus
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
+from pandapower.powerflow import LoadflowNotConverged
 from pandapower.pypower.bustypes import bustypes
-from pandapower.run import _passed_runpp_parameters
+from pandapower.pypower.idx_bus import BS, GS, PD, QD, VA, VM
+from pandapower.pypower.idx_gen import GEN_BUS, PG, QG
+from pandapower.pypower.makeYbus import makeYbus
+from pandapower.pypower.pfsoln import pfsoln
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_3ph, init_results
-import logging
+from pandapower.run import _passed_runpp_parameters
 
 logger = logging.getLogger(__name__)
 

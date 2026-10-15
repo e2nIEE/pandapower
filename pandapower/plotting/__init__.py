@@ -1,14 +1,14 @@
+import types
+
 from pandapower.plotting.collections import *
 from pandapower.plotting.colormaps import *
 from pandapower.plotting.generic_geodata import *
+from pandapower.plotting.geo import *
+from pandapower.plotting.plotly import *  # type: ignore[assignment]
+from pandapower.plotting.plotting_toolbox import set_line_geodata_from_bus_geodata
 from pandapower.plotting.powerflow_results import *  # type: ignore[no-redef]
 from pandapower.plotting.simple_plot import *
-from pandapower.plotting.plotly import *  # type: ignore[assignment]
-from pandapower.plotting.geo import *
-from pandapower.plotting.plotting_toolbox import set_line_geodata_from_bus_geodata
 from pandapower.plotting.to_html import to_html
-
-import types
 
 try:
     from matplotlib.backend_bases import GraphicsContextBase, RendererBase

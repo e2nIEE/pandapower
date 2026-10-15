@@ -26,8 +26,8 @@ from pandapower.create import (
     create_transformer3w_from_parameters,
     create_transformer_from_parameters,
 )
-from pandapower.network import pandapowerNet
 from pandapower.create._utils import add_column_to_df
+from pandapower.network import pandapowerNet
 from pandapower.networks import simple_four_bus_system
 from pandapower.pypower.opf_model import opf_model
 from pandapower.run import rundcopp, runopp, runpp

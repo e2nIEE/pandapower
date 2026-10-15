@@ -121,7 +121,7 @@ def test_reindex_buses():
 
 def test_reindex_buses__create_duplicate_index():
     net = example_simple()
-    bus_lookup = dict(zip(range(2, 7), range(0, 5)))
+    bus_lookup = dict(zip(range(2, 7), range(5)))
 
     with pytest.raises(
         ValueError,

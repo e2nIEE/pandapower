@@ -10,8 +10,8 @@ from numpy import array
 from pandapower.converter.pypower import from_ppc
 from pandapower.create import create_ext_grid
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.pypower.idx_bus import BUS_I, VMAX, VMIN, BUS_TYPE, REF
-from pandapower.run import runpp, runopp
+from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, REF, VMAX, VMIN
+from pandapower.run import runopp, runpp
 from pandapower.runpm import runpm_ac_opf
 
 try:

@@ -3,14 +3,14 @@
 import sys
 import time
 from typing import overload
-from typing_extensions import deprecated
 
 import numpy as np
 import pandas as pd
 from pandas import Index
+from typing_extensions import deprecated
 
-from pandapower.auxiliary import soft_dependency_error, ensure_iterability
-from pandapower.control.util.characteristic import SplineCharacteristic, Characteristic
+from pandapower.auxiliary import ensure_iterability, soft_dependency_error
+from pandapower.control.util.characteristic import Characteristic, SplineCharacteristic
 from pandapower.create._utils import add_column_to_df
 
 try:
@@ -21,7 +21,7 @@ except ImportError:
     MATPLOTLIB_INSTALLED = False
 
 try:
-    import pandaplan.core.pplog as pplog
+    from pandaplan.core import pplog
 except ImportError:
     import logging as pplog
 

@@ -1,18 +1,16 @@
+import logging
+import os
+
 import numpy as np
 import pandas as pd
-
-import os
 import pytest
 from numpy.ma.testutils import assert_array_equal
-
-from pandapower.converter.powerfactory.validate import validate_pf_conversion
-from pandapower.converter.powerfactory.export_pfd_to_pp import import_project, from_pfd
-from pandapower import pp_dir
-from pandapower.file_io import from_json
-
 from packaging.version import Version
 
-import logging
+from pandapower import pp_dir
+from pandapower.converter.powerfactory.export_pfd_to_pp import from_pfd, import_project
+from pandapower.converter.powerfactory.validate import validate_pf_conversion
+from pandapower.file_io import from_json
 
 logger = logging.getLogger(__name__)
 

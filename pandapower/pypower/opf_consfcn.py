@@ -4,17 +4,17 @@
 
 """Evaluates nonlinear constraints and their Jacobian for OPF."""
 
-from numpy import zeros, ones, conj, exp, r_, inf, arange, int64
-from scipy.sparse import lil_matrix, vstack, hstack, csr_matrix as sparse
+from numpy import arange, conj, exp, inf, int64, ones, r_, zeros
+from scipy.sparse import csr_matrix as sparse
+from scipy.sparse import hstack, lil_matrix, vstack
 
-from pandapower.pypower.idx_gen import GEN_BUS, PG, QG
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, RATE_A
-
-from pandapower.pypower.makeSbus import makeSbus
-from pandapower.pypower.dSbus_dV import dSbus_dV
+from pandapower.pypower.dAbr_dV import dAbr_dV
 from pandapower.pypower.dIbr_dV import dIbr_dV
 from pandapower.pypower.dSbr_dV import dSbr_dV
-from pandapower.pypower.dAbr_dV import dAbr_dV
+from pandapower.pypower.dSbus_dV import dSbus_dV
+from pandapower.pypower.idx_brch import F_BUS, RATE_A, T_BUS
+from pandapower.pypower.idx_gen import GEN_BUS, PG, QG
+from pandapower.pypower.makeSbus import makeSbus
 
 
 def opf_consfcn(x, om, Ybus, Yf, Yt, ppopt, il=None, *args):

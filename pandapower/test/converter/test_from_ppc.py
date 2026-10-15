@@ -3,22 +3,22 @@
 
 import os
 import pickle
-import pytest
+
 import numpy as np
 import pandas as pd
+import pytest
 
 from pandapower import pp_dir, reset_results
-from pandapower.file_io import from_json
-from pandapower.toolbox.data_modification import reindex_buses
-from pandapower.toolbox.comparison import nets_equal
-from pandapower.run import set_user_pf_options, runpp, runopp
-from pandapower.networks.power_system_test_cases import case9, case24_ieee_rts
-
-from pandapower.converter.pypower import from_ppc, validate_from_ppc, to_ppc
+from pandapower.converter.pypower import from_ppc, to_ppc, validate_from_ppc
 from pandapower.converter.pypower.from_ppc import _branch_to_which, _gen_to_which
-from pandapower.pypower.idx_bus import PD, VM, VA
+from pandapower.file_io import from_json
+from pandapower.networks.power_system_test_cases import case9, case24_ieee_rts
+from pandapower.pypower.idx_brch import PF, PT, QF, QT
+from pandapower.pypower.idx_bus import PD, VA, VM
 from pandapower.pypower.idx_gen import PG, QG
-from pandapower.pypower.idx_brch import PF, QF, PT, QT
+from pandapower.run import runopp, runpp, set_user_pf_options
+from pandapower.toolbox.comparison import nets_equal
+from pandapower.toolbox.data_modification import reindex_buses
 
 try:
     import pypower.case24_ieee_rts as c24

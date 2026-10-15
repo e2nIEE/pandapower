@@ -1,6 +1,7 @@
 # test_pandera_xward_elements.py
 
 import itertools
+
 import numpy as np
 import pandas as pd
 import pandera as pa
@@ -9,19 +10,18 @@ import pytest
 from pandapower.create import create_buses, create_xward
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
-
 from pandapower.test.network_schema.elements.helper import (
-    strings,
-    bools,
-    not_strings_list,
-    not_floats_list,
-    not_boolean_list,
-    positiv_ints_plus_zero,
-    negativ_ints,
-    not_ints_list,
-    positiv_floats,
-    negativ_floats_plus_zero,
     all_allowed_floats,
+    bools,
+    negativ_floats_plus_zero,
+    negativ_ints,
+    not_boolean_list,
+    not_floats_list,
+    not_ints_list,
+    not_strings_list,
+    positiv_floats,
+    positiv_ints_plus_zero,
+    strings,
 )
 
 
@@ -268,4 +268,3 @@ class TestXWardResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_xward_result_pq(self):
         """Test: p_mw / q_mvar results are present and numeric"""
-        pass

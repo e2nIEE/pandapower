@@ -1,14 +1,14 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import warnings
-from packaging.version import Version
 import logging
-from typing import Callable
+import warnings
+from collections.abc import Callable
 
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
+from packaging.version import Version
 
 logger = logging.getLogger(__name__)
 try:
@@ -19,13 +19,13 @@ try:
         logger.warning("Only lightsim2grid version 0.9.0 or newer is supported - please update ligtsim2grid")
         raise ImportError
 
-    from lightsim2grid.gridmodel.from_pandapower import init as init_ls2g
     from lightsim2grid.contingencyAnalysis import ContingencyAnalysisCPP
+    from lightsim2grid.gridmodel.from_pandapower import init as init_ls2g
 
     if ls2g_version < Version("0.13.0"):
-        from lightsim2grid_cpp import SolverType, GridModel
+        from lightsim2grid_cpp import GridModel, SolverType
     else:
-        from lightsim2grid.lightsim2grid_cpp import SolverType, GridModel
+        from lightsim2grid.lightsim2grid_cpp import GridModel, SolverType
 
     lightsim2grid_installed = True
 except ImportError:
@@ -44,8 +44,8 @@ try:
 except ImportError:
     KLU_solver_available = False
 
-from pandapower.network import pandapowerNet
 from pandapower.create._utils import add_column_to_df
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 
 
@@ -122,15 +122,15 @@ def run_contingency(
         pf_options_nminus1 = net.user_pf_options.get("pf_options_nminus1", net.user_pf_options)
     if kwargs is not None:
         # avoid duplicate passing keys to contingency_evaluation_function()
-        pf_options = {key: val for key, val in pf_options.items() if key not in kwargs.keys()}
-        pf_options_nminus1 = {key: val for key, val in pf_options_nminus1.items() if key not in kwargs.keys()}
+        pf_options = {key: val for key, val in pf_options.items() if key not in kwargs}
+        pf_options_nminus1 = {key: val for key, val in pf_options_nminus1.items() if key not in kwargs}
 
     contingency_results = {
         element: {"index": net[element].index.values}
         for element in ("bus", "line", "trafo", "trafo3w")
         if len(net[element]) > 0
     }
-    for element in contingency_results.keys():
+    for element in contingency_results:
         if element == "bus":
             continue
         contingency_results[element].update(
@@ -141,7 +141,7 @@ def run_contingency(
             }
         )
     result_variables = {
-        **{"bus": ["vm_pu"]},
+        "bus": ["vm_pu"],
         **{key: ["loading_percent"] for key in ("line", "trafo", "trafo3w") if len(net[key]) > 0},
     }
     if len(net.line) > 0 and (

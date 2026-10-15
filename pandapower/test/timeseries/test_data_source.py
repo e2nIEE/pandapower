@@ -4,8 +4,8 @@
 import copy
 import os
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
 
 from pandapower import pp_dir

@@ -1,6 +1,7 @@
 # test_pandera_trafo_elements.py
 
 import itertools
+
 import pandas as pd
 import pandera as pa
 import pytest
@@ -8,23 +9,22 @@ import pytest
 from pandapower.create import create_buses, create_transformer
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
-
 from pandapower.test.network_schema.elements.helper import (
-    strings,
+    all_allowed_floats,
     bools,
-    not_strings_list,
-    not_floats_list,
-    not_boolean_list,
-    positiv_ints_plus_zero,
-    positiv_ints,
+    negativ_floats,
+    negativ_floats_plus_zero,
     negativ_ints,
     negativ_ints_plus_zero,
+    not_boolean_list,
+    not_floats_list,
     not_ints_list,
+    not_strings_list,
     positiv_floats,
     positiv_floats_plus_zero,
-    negativ_floats_plus_zero,
-    all_allowed_floats,
-    negativ_floats,
+    positiv_ints,
+    positiv_ints_plus_zero,
+    strings,
 )
 
 # Common std_type available in pandapower
@@ -398,4 +398,3 @@ class TestTrafoResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_trafo_result_totals(self):
         """Aggregated p/q and loading results are consistent"""
-        pass

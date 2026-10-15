@@ -1,12 +1,12 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-import logging
-from typing import Dict
 import json
-from . import cim_tools
+import logging
 
-from pandapower.diagnostic import diagnostic
 from pandapower import pandapowerNet
+from pandapower.diagnostic import diagnostic
+
+from . import cim_tools
 
 
 class PandapowerDiagnostic:
@@ -17,7 +17,7 @@ class PandapowerDiagnostic:
     :return: The pandapower diagnostic with CIM IDs.
     """
 
-    def __init__(self, net: pandapowerNet, diagnostic_: Dict | None = None):
+    def __init__(self, net: pandapowerNet, diagnostic_: dict | None = None):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.net = net
         self.diagnostic = diagnostic_
@@ -92,7 +92,7 @@ class PandapowerDiagnostic:
             return_obj = input_obj
         return return_obj
 
-    def replace_pp_diagnostic_with_cim_ids(self) -> Dict:
+    def replace_pp_diagnostic_with_cim_ids(self) -> dict:
         """
         Create a pandapower diagnostic dictionary with CIM IDs instead of pandapower IDs.
         :param net: The pandapower network.
@@ -111,7 +111,7 @@ class PandapowerDiagnostic:
                 result_diagnostic["CGMES_IDs"][one_prf] = list(one_prf_item.keys())
         return result_diagnostic
 
-    def serialize(self, diagnostic: Dict, path_to_store: str):
+    def serialize(self, diagnostic: dict, path_to_store: str):
         """
         Serialize a pandapower diagnostic as json to disk.
         :param diagnostic: The pandapower diagnostic dictionary.

@@ -2,21 +2,22 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
+
 import pytest
 
 try:
-    import pandaplan.core.pplog as pplog
+    from pandaplan.core import pplog
 except:
     import logging as pplog
 
 from pandapower import runpp
+from pandapower.control import ControllerNotConverged
+from pandapower.control.basic_controller import Controller
+from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
+from pandapower.control.controller.trafo_control import TrafoController
+from pandapower.control.run_control import get_controller_order
 from pandapower.create import create_sgen
 from pandapower.networks import create_kerber_vorstadtnetz_kabel_1
-from pandapower.control import ControllerNotConverged
-from pandapower.control.run_control import get_controller_order
-from pandapower.control.basic_controller import Controller
-from pandapower.control.controller.trafo_control import TrafoController
-from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
 from pandapower.timeseries.output_writer import OutputWriter
 from pandapower.timeseries.run_time_series import run_timeseries
 
@@ -98,11 +99,11 @@ def test_ctrl_unconverged(net):
     DivergentController(net)
 
     with pytest.raises(ControllerNotConverged):
-        run_timeseries(net, time_steps=range(0, 3), output_writer=output_writer, max_iter=3, verbose=False)
+        run_timeseries(net, time_steps=range(3), output_writer=output_writer, max_iter=3, verbose=False)
 
     # assert no exceptions but appropriate output in outputwriter
     run_timeseries(
-        net, time_steps=range(0, 3), output_writer=output_writer, max_iter=3, continue_on_divergence=True, verbose=False
+        net, time_steps=range(3), output_writer=output_writer, max_iter=3, continue_on_divergence=True, verbose=False
     )
 
     for i, out in enumerate(output_writer.output["Parameters"].controller_unstable):

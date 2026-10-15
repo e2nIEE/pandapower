@@ -1,3 +1,6 @@
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 """
 Created on Fri Jul  1 13:40:07 2016
 
@@ -7,9 +10,9 @@ Created on Fri Jul  1 13:40:07 2016
 import os
 import shutil
 
-from pandapower.std_types import available_std_types
 from pandapower.network import pandapowerNet
 from pandapower.network_structure import get_structure_dict
+from pandapower.std_types import available_std_types
 
 file_path = os.path.dirname(os.path.realpath(__file__))
 
@@ -24,7 +27,7 @@ def save_std_types(_):
     structure_dict = get_structure_dict(required_only=False)
     net = pandapowerNet(name="save_pp_std_types")
 
-    for type_ in net.std_types.keys():
+    for type_ in net.std_types:
         types = available_std_types(net, type_)
         if type_ in structure_dict:
             columns = [c for c in types.columns if structure_dict[type_]]

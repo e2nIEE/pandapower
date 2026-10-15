@@ -1,9 +1,9 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import numpy as np
 import pandas as pd
 import pytest
-import numpy as np
 
 from pandapower.control import (
     Characteristic,
@@ -11,17 +11,17 @@ from pandapower.control import (
     TapDependentImpedance,
     trafo_characteristic_table_diagnostic,
 )
-from pandapower.create._utils import add_column_to_df
 from pandapower.control.util.diagnostic import shunt_characteristic_table_diagnostic
 from pandapower.create import (
     create_bus,
     create_ext_grid,
-    create_transformer_from_parameters,
-    create_load,
     create_line_from_parameters,
-    create_transformer,
+    create_load,
     create_shunt,
+    create_transformer,
+    create_transformer_from_parameters,
 )
+from pandapower.create._utils import add_column_to_df
 from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 
@@ -197,7 +197,7 @@ def test_trafo_characteristic_table_diagnostic():
     with pytest.warns(UserWarning):
         trafo_characteristic_table_diagnostic(net)
     net.trafo.at[0, "tap_dependency_table"] = True
-    net.trafo.at[0, "id_characteristic_table"] = int(2)
+    net.trafo.at[0, "id_characteristic_table"] = 2
     with pytest.warns(UserWarning):
         trafo_characteristic_table_diagnostic(net)
 
@@ -256,7 +256,7 @@ def test_shunt_characteristic_table_diagnostic():
     with pytest.warns(UserWarning):
         shunt_characteristic_table_diagnostic(net)
     net.shunt.at[0, "step_dependency_table"] = True
-    net.shunt.at[0, "id_characteristic_table"] = int(2)
+    net.shunt.at[0, "id_characteristic_table"] = 2
     with pytest.warns(UserWarning):
         shunt_characteristic_table_diagnostic(net)
 

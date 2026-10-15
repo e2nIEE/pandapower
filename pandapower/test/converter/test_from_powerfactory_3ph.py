@@ -1,11 +1,12 @@
-import os
 import json
-import pytest
+import os
+
 import numpy as np
+import pytest
 
 from pandapower import pp_dir
-from pandapower.pf.runpp_3ph import runpp_3ph
 from pandapower.file_io import from_json
+from pandapower.pf.runpp_3ph import runpp_3ph
 
 try:
     from pandaplan.core import pplog as logging
@@ -24,11 +25,10 @@ except ImportError:
     PF_INSTALLED = False
     logger.info("could not import powerfactory, unbalanced load flow comparsion between pf and pp not possible")
 
-from pandapower.converter.powerfactory.pf_export_functions import run_load_flow as run_powerfactory_load_flow
-from pandapower.converter.powerfactory.validate import _get_pf_results_unbalanced, _set_pf_results_unbalanced
-
 import pandas as pd
 
+from pandapower.converter.powerfactory.pf_export_functions import run_load_flow as run_powerfactory_load_flow
+from pandapower.converter.powerfactory.validate import _get_pf_results_unbalanced, _set_pf_results_unbalanced
 
 # @pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
 # def test_trafo_asym():

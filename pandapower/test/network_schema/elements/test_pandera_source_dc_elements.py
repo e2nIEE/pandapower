@@ -1,6 +1,7 @@
 # test_pandera_source_dc_elements.py
 
 import itertools
+
 import numpy as np
 import pandas as pd
 import pandera as pa
@@ -9,17 +10,16 @@ import pytest
 from pandapower.create import create_bus_dc, create_source_dc
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
-
 from pandapower.test.network_schema.elements.helper import (
-    strings,
-    bools,
-    not_strings_list,
-    not_floats_list,
-    not_boolean_list,
-    positiv_ints_plus_zero,
-    negativ_ints,
-    not_ints_list,
     all_allowed_floats,
+    bools,
+    negativ_ints,
+    not_boolean_list,
+    not_floats_list,
+    not_ints_list,
+    not_strings_list,
+    positiv_ints_plus_zero,
+    strings,
 )
 
 
@@ -166,4 +166,3 @@ class TestSourceDcResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_source_dc_result_totals(self):
         """Aggregated p_dc_mw results are consistent"""
-        pass

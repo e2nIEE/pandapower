@@ -117,7 +117,7 @@ def test_1ph_shortcircuit():
         try:
             calc_sc(net, fault="1ph", case="max")
         except Exception as e:
-            raise UserWarning(f"{str(e)}: Did not converge after adding transformer with vector group {vc}")
+            raise UserWarning(f"{e!s}: Did not converge after adding transformer with vector group {vc}")
         check_results(net, vc, result)
 
 
@@ -190,7 +190,7 @@ def test_1ph_shortcircuit_min():
             try:
                 calc_sc(net, fault="1ph", case="min", inverse_y=inv_y)
             except Exception as e:
-                raise UserWarning(f"{str(e)}: Did not converge after adding transformer with vector group {vc}")
+                raise UserWarning(f"{e!s}: Did not converge after adding transformer with vector group {vc}")
             check_results(net, vc, result)
 
 
@@ -724,7 +724,7 @@ def test_1ph_sn_mva_ext_grid():
         "xk_ohm": 13.243945001694957,
     }
 
-    for var in res.keys():
+    for var in res:
         assert np.allclose(net1.res_bus_sc[var], net2.res_bus_sc[var], atol=1e-6, rtol=0)
         assert np.allclose(net1.res_bus_sc[var], res[var], atol=1e-6, rtol=0)
 
@@ -782,7 +782,7 @@ def test_trafo():
         "YNyn": [5.265737, 14.413729],
     }
 
-    for vc in results.keys():
+    for vc in results:
         net = pandapowerNet(name=f"test_trafo {vc}", sn_mva=1)
         create_buses(net, 2, vn_kv=[110.0, 20.0])
 

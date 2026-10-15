@@ -13,7 +13,7 @@ from pandapower.run import runpp
 from pandapower.timeseries.output_writer import OutputWriter
 
 try:
-    import pandaplan.core.pplog as pplog
+    from pandaplan.core import pplog
 except ImportError:
     import logging as pplog
 
