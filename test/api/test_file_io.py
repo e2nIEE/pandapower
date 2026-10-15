@@ -64,6 +64,7 @@ except ImportError:
 
 from test import test_path
 
+
 @pytest.fixture(params=[1])
 def net_in(request):
     if request.param == 1:
@@ -501,9 +502,7 @@ def test_replace_elements_json_string(net_in):
 
     net_load = from_json_string(
         json_string,
-        replace_elements={
-            r"pandapower.control.controller.const_control": r"test.api.input_files.test_control"
-        },
+        replace_elements={r"pandapower.control.controller.const_control": r"test.api.input_files.test_control"},
     )
     assert net_orig.controller.at[0, "object"] == net_load.controller.at[0, "object"]
     assert nets_equal(net_orig, net_load)

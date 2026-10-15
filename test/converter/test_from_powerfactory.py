@@ -23,6 +23,7 @@ except ImportError:
 
 from test import test_path
 
+
 def get_tol():
     # tolerances for validation
     # the model of trafo3w for tap changer at terminals is not very exact, therefore lower

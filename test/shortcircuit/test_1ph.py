@@ -25,6 +25,7 @@ from pandapower.std_types import add_zero_impedance_parameters, create_std_type
 
 from test import test_path
 
+
 def check_results(net, vc, result):
     res_ika = net.res_bus_sc[(net.bus.zone == vc) & net.bus.in_service].ikss_ka.values
     if not np.allclose(result, res_ika, rtol=0, atol=1e-6):

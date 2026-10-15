@@ -78,6 +78,7 @@ except (ImportError, RuntimeError, UnsupportedPythonError):
 
 from test import test_path
 
+
 def create_cigre_grid_with_time_series(json_path, net=None, add_ts_constaints=False):
     if net is None:
         net = create_cigre_network_mv("pv_wind")

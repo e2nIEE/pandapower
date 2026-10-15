@@ -60,7 +60,7 @@ def copy_with_impedance(net):
     baseMVA = net.sn_mva  # MVA
     baseV = net.bus.vn_kv.values  # kV
     baseI = baseMVA / (baseV * np.sqrt(3))
-    baseZ = baseV ** 2 / baseMVA
+    baseZ = baseV**2 / baseMVA
 
     net_ref = copy.deepcopy(net)
     for i in net.tcsc.index.values:
@@ -89,8 +89,7 @@ def copy_with_impedance(net):
         ssc_bus = net.ssc.bus.values
         aux_bus = create_buses(net_ref, len(net.ssc), net.bus.loc[ssc_bus, "vn_kv"].values)
         for fb, tb, r, x, i in zip(
-                ssc_bus, aux_bus, net.ssc.r_ohm.values / baseZ[ssc_bus], net.ssc.x_ohm.values / baseZ[ssc_bus],
-                in_service
+            ssc_bus, aux_bus, net.ssc.r_ohm.values / baseZ[ssc_bus], net.ssc.x_ohm.values / baseZ[ssc_bus], in_service
         ):
             create_impedance(net_ref, fb, tb, r, x, baseMVA, name="ssc", in_service=i)
         if len(net.res_ssc) > 0:
@@ -106,8 +105,7 @@ def copy_with_impedance(net):
         vsc_bus = net.vsc.bus.values
         aux_bus = create_buses(net_ref, len(net.vsc), net.bus.loc[vsc_bus, "vn_kv"].values)
         for fb, tb, r, x, i in zip(
-                vsc_bus, aux_bus, net.vsc.r_ohm.values / baseZ[vsc_bus], net.vsc.x_ohm.values / baseZ[vsc_bus],
-                in_service
+            vsc_bus, aux_bus, net.vsc.r_ohm.values / baseZ[vsc_bus], net.vsc.x_ohm.values / baseZ[vsc_bus], in_service
         ):
             create_impedance(net_ref, fb, tb, r, x, baseMVA, name="vsc", in_service=i)
         g = create_gens(net_ref, aux_bus, 0, net.res_vsc.vm_internal_pu.fillna(1), in_service=in_service)

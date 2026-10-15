@@ -177,8 +177,8 @@ def test_kwargs_with_user_options():
 
 @pytest.mark.xfail(
     reason="Until now there was no way found to dynamically identify "
-           "the arguments passed to runpp, so if the user options are "
-           "overwritten with the default values, this is not recognized."
+    "the arguments passed to runpp, so if the user options are "
+    "overwritten with the default values, this is not recognized."
 )
 def test_overwrite_default_args_with_user_options():
     net = example_simple()
@@ -973,13 +973,13 @@ def test_zip_loads_mixed_voltage_dependencies():
     res_bus_vm_pu = [0.894107, 0.909405, 0.901441, 0.902798, 0.898117, 0.901571]
 
     for c_i_p, c_i_q, c_z_p, c_z_q, res_load_p, res_load_q, res_bus_v in zip(
-            const_i_p_percent,
-            const_i_q_percent,
-            const_z_p_percent,
-            const_z_q_percent,
-            res_load_p_mw,
-            res_load_q_mvar,
-            res_bus_vm_pu,
+        const_i_p_percent,
+        const_i_q_percent,
+        const_z_p_percent,
+        const_z_q_percent,
+        res_load_p_mw,
+        res_load_q_mvar,
+        res_bus_vm_pu,
     ):
         net.load.at[0, "const_i_p_percent"] = c_i_p
         net.load.at[0, "const_i_q_percent"] = c_i_q

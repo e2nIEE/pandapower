@@ -144,7 +144,7 @@ def test_to_and_from_ppc():
                     pd.Series(net.gen.vm_pu.values, index=net.gen.bus),
                 ]
             )
-            ppc["gen"][-net.sgen.shape[0]:, 5] = vm_setps.loc[net.sgen.bus].values
+            ppc["gen"][-net.sgen.shape[0] :, 5] = vm_setps.loc[net.sgen.bus].values
 
         net2 = from_ppc(ppc, f_hz=net.f_hz, tap_side=net.trafo.tap_side.values)
         # again add max_loading_percent to enable valid comparison
@@ -356,7 +356,7 @@ def overwrite_results_data_of_ppc_pickle(file_name, grid_names):
 
         ppc["gen"][eg_pos, [PG, QG]] = net.res_ext_grid[["p_mw", "q_mvar"]].values
         ppc["gen"][gen_pos, [PG, QG]] = net.res_gen[["p_mw", "q_mvar"]].values
-        ppc["gen"][sgen_pos, [PG, QG]] = net.res_sgen[["p_mw", "q_mvar"]].iloc[sum(ppc["bus"][:, PD] < 0):].values
+        ppc["gen"][sgen_pos, [PG, QG]] = net.res_sgen[["p_mw", "q_mvar"]].iloc[sum(ppc["bus"][:, PD] < 0) :].values
 
         cols = ["p_from_mw", "q_from_mvar", "p_to_mw", "q_to_mvar"]
         ppc["branch"][line_pos, [PF, QF, PT, QT]] = net.res_line[cols].values

@@ -144,7 +144,7 @@ def simple_test_grid(load_scaling=1.0, sgen_scaling=1.0, with_gen=False, distrib
     std_type = "490-AL1/64-ST1A 110.0"
     r = 0.059
     v_base = 132
-    z_base = v_base ** 2 / s_base
+    z_base = v_base**2 / s_base
 
     create_buses(net, 5, v_base, geodata=[(0, 1), (-1, 0.5), (0, 0), (1, 0.5), (0, 0.5)])
 
@@ -225,8 +225,8 @@ def test_tdpf_frank():
     line_mva = np.max(
         np.vstack(
             [
-                np.sqrt(net.res_line.p_from_mw ** 2 + net.res_line.q_from_mvar ** 2).loc[sorted_index].values,
-                np.sqrt(net.res_line.p_to_mw ** 2 + net.res_line.q_to_mvar ** 2).loc[sorted_index].values,
+                np.sqrt(net.res_line.p_from_mw**2 + net.res_line.q_from_mvar**2).loc[sorted_index].values,
+                np.sqrt(net.res_line.p_to_mw**2 + net.res_line.q_to_mvar**2).loc[sorted_index].values,
             ]
         ),
         axis=0,
