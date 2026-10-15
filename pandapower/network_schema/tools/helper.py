@@ -1,13 +1,54 @@
+import importlib.util
+import logging
+import os
+from pathlib import Path
+
 import pandera as pa
 
+logger = logging.getLogger()
 
-def get_dtypes(schema: pa.DataFrameSchema, required_only: bool = True) -> dict:
+
+def get_element_schema(element_name: str) -> pa.DataFrameSchema | None:
+    """
+    get the pandera DataFrameSchema for an element by its name.
+
+    Parameters:
+        element_name: the name of the element
+
+    Returns:
+         the pandera DataFrameSchema for the element or None if it can't be found.
+    """
+
+    def _dynamic_import(element, schema_path):
+        # Dynamic import for schemata from files
+        spec = importlib.util.spec_from_file_location(element, schema_path)
+        if spec is None:
+            logger.warning(f"Schema for {element} not found, no spec")
+            return None
+        schema_module = importlib.util.module_from_spec(spec)
+        loader = spec.loader
+        if loader is None:
+            logger.warning(f"Schema for {element} not found, no loader")
+            return None
+        loader.exec_module(schema_module)
+        return schema_module
+
+    schema_path = Path(Path(__file__).parents[1], f"{element_name}.py")
+    if not os.path.exists(schema_path):
+        return None
+    schema_module = _dynamic_import(element_name, schema_path)
+    if schema_module is None:
+        return None
+    return getattr(schema_module, f"{element_name}_schema", None)
+
+
+def get_dtypes(schema: pa.DataFrameSchema, required_only: bool = True, metadata: list = []) -> dict:
     """
     Extract column data types from a Pandera DataFrame schema.
 
     This function parses a Pandera schema and returns a dictionary mapping
     column names to their corresponding data types. Optionally filters to
-    include only required columns.
+    include only required columns or columns with specific metadata.
 
     Args:
         schema (pa.DataFrameSchema): The Pandera DataFrame schema to extract
@@ -15,6 +56,9 @@ def get_dtypes(schema: pa.DataFrameSchema, required_only: bool = True) -> dict:
         required_only (bool, optional): If True, only includes required columns
             in the result. If False, includes all columns regardless of their
             required status. Defaults to True.
+        metadata (list, optional): List of metadata keys to check. Columns will
+            be included if they have metadata containing any of these keys with
+            truthy values. Defaults to empty list.
 
     Returns:
         dict: A dictionary where keys are column names (str) and values are
@@ -31,11 +75,18 @@ def get_dtypes(schema: pa.DataFrameSchema, required_only: bool = True) -> dict:
         {'name': <class 'str'>, 'age': <class 'int'>}
         >>> get_dtypes(schema, required_only=False)
         {'name': <class 'str'>, 'age': <class 'int'>, 'score': <class 'float'>}
+
+    Note:
+        When metadata parameter is provided, columns with matching metadata keys
+        having truthy values will be included regardless of required_only setting.
     """
     return {
         name: col.dtype.type
         for name, col in schema.columns.items()
-        if not required_only or schema.columns[name].required
+        if not required_only
+        or schema.columns[name].required
+        or schema.columns[name].metadata is not None
+        and any(item in schema.columns[name].metadata for item in metadata)
     }
 
 

@@ -1,19 +1,21 @@
 Change Log
 =============
 
+[upcoming 4.0.0] - 2026-..-..
+-------------------------------
+- [ADDED] pandera network validation
+- [CHANGED] removed deprecated trafo support characteristics table (replaced by trafo_characteristc_table)
+- [ADDED] create function for trafo characteristic entries
+- [ADDED] converter for trafo characteristics
+- [FIXED] create_gen and create_gens now use connected bus voltage limits as generator voltage-limit defaults.
+- [FIXED] three-phase power flow now rejects unsupported two-winding transformer vector groups consistently.
+- [FIXED] SQLite network I/O now closes connections after transaction completion.
+- [FIXED] PowerModels storage results now preserve each storage label across time steps.
+- [FIXED] PowerModels TNEP built-line results now use Boolean masks.
+- [FIXED] LogSpline characteristics now restore serialized logarithmic values without reapplying the logarithm.
+
 [upcoming release] - 2026-..-..
 -------------------------------
-- [FIXED] bundled network and active JSON test fixtures define ``tap_dependency_table`` for transformers, preventing missing-column deprecation warnings
-- [FIXED] LogSplineCharacteristic JSON loading avoids applying logarithms twice to stored values
-- [FIXED] Boolean transformer and TDPF masks avoid deprecated pandas downcasting during calculations
-- [FIXED] short-circuit current reductions preserve all-NaN rows without emitting runtime warnings
-- [FIXED] 3-phase power flow initializes out-of-service line-end buses from supplied terminals and rejects failed or non-finite inner solves
-- [FIXED] CIM conversion preserves transformer-table dtypes during first appends and does not mutate selected SV source data
-- [FIXED] state estimation assigns zero-injection flags and virtual P/Q measurement indexes to the correct buses
-- [FIXED] 3-phase power flow now rejects unsupported transformer vector groups ``yy``, ``yd``, ``dy``, and ``dd`` before zero-sequence setup (#3122)
-- [FIXED] creating a branch element (e.g. ``create_line_from_parameters``) without an ``index`` on a non-existing bus raised ``TypeError`` instead of the intended ``UserWarning``, because the error message formatted the ``None`` index with ``%d`` (#3141)
-- [FIXED] ``PPJSONEncoder`` accepts the legacy ``encoding`` keyword supplied by ``simplejson``.
-- [FIXED] ``wls_with_zero_constraint`` now converges for any ``sn_mva``; the zero-injection constraint was scaled by ``baseMVA`` while its Jacobian was not
 - [FIXED] ``create_load_dc`` now allocates and validates indexes against ``load_dc``, preventing overwrites and false ``source_dc`` conflicts.
 - [FIXED] OPF cleaned up in case of non convergence
 - [FIXED] ``create_continuous_bus_index`` (and other toolbox functions relying on ``element_bus_tuples``) now also update the ``bus`` column of the ``ssc`` element table; it was previously missing from the list of bus-referencing elements

@@ -1,27 +1,38 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-import sys
-import math
-from typing import Type, TYPE_CHECKING
 
+import logging
+import math
+import sys
+from typing import TYPE_CHECKING
+
+import geojson
 import geojson.utils
-from geojson import Point
 import numpy as np
+from geojson import Point
 
 try:
-    from matplotlib.patches import RegularPolygon, Arc, Circle, Rectangle, Ellipse, PathPatch, Polygon, Patch
+    from matplotlib.patches import Arc, Circle, Ellipse, Patch, PathPatch, Polygon, Rectangle, RegularPolygon
+    from matplotlib.path import Path
     from matplotlib.textpath import TextPath
     from matplotlib.transforms import Affine2D
-    from matplotlib.path import Path
 
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
 from pandapower.auxiliary import soft_dependency_error
-from pandapower.plotting.plotting_toolbox import _rotate_dim2, get_color_list, get_angle_list, \
-    get_linewidth_list, get_list
+from pandapower.plotting.plotting_toolbox import (
+    _rotate_dim2,
+    get_angle_list,
+    get_color_list,
+    get_linewidth_list,
+    get_list,
+    safe_geojson_loads,
+)
 
-import logging
+if TYPE_CHECKING:
+    from matplotlib.patches import Patch
+    from matplotlib.path import Path
 
 if TYPE_CHECKING:
     from matplotlib.path import Path
@@ -29,10 +40,10 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-def wye_patch(node_geo, offset, size, r_triangle, angle, facecolor, edgecolor) -> tuple[list[Patch], list]:
+def wye_patch(node_geo, offset, size, r_triangle, angle, facecolor, edgecolor) -> tuple[list["Patch"], list]:
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-    polys: list[Patch] = []
+    polys: list["Patch"] = []
     lines = []
     mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
     circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angle)
@@ -40,27 +51,19 @@ def wye_patch(node_geo, offset, size, r_triangle, angle, facecolor, edgecolor) -
     mid_tri2 = mid_circ + _rotate_dim2(np.array([-r_triangle, r_triangle / 4]), angle)
     # dropped perpendicular foot of triangle1
     perp_foot1 = mid_tri1 + _rotate_dim2(np.array([0, -r_triangle / 2]), angle)
-    line_end1 = perp_foot1 + + _rotate_dim2(np.array([-2.5 * r_triangle, 0]), angle)
+    line_end1 = perp_foot1 + +_rotate_dim2(np.array([-2.5 * r_triangle, 0]), angle)
     perp_foot2 = mid_tri2 + _rotate_dim2(np.array([0, r_triangle / 2]), angle)
-    line_end2 = perp_foot2 + + _rotate_dim2(np.array([2.5 * r_triangle, 0]), angle)
+    line_end2 = perp_foot2 + +_rotate_dim2(np.array([2.5 * r_triangle, 0]), angle)
 
     polys.append(Circle(mid_circ, size, fc=facecolor, ec=edgecolor))
-    polys.append(RegularPolygon(
-        mid_tri1,
-        numVertices=3,
-        radius=r_triangle,
-        orientation=-angle,
-        fc=facecolor,
-        ec=edgecolor
-    ))
-    polys.append(RegularPolygon(
-        mid_tri2,
-        numVertices=3,
-        radius=r_triangle,
-        orientation=math.pi - angle,
-        fc=facecolor,
-        ec=edgecolor
-    ))
+    polys.append(
+        RegularPolygon(mid_tri1, numVertices=3, radius=r_triangle, orientation=-angle, fc=facecolor, ec=edgecolor)
+    )
+    polys.append(
+        RegularPolygon(
+            mid_tri2, numVertices=3, radius=r_triangle, orientation=math.pi - angle, fc=facecolor, ec=edgecolor
+        )
+    )
     lines.append((node_geo, circ_edge))
     lines.append((perp_foot1, line_end1))
     lines.append((perp_foot2, line_end2))
@@ -77,8 +80,8 @@ def wp_patch(
     blade_coord1: float,
     blade_coord2: float,
     hub_size: float,
-    path: "Type[Path]",
-) -> tuple[list[Patch], list]:
+    path: "type[Path]",
+) -> tuple[list["Patch"], list]:
     """
     Generate Patch for wind power plant.
 
@@ -100,20 +103,32 @@ def wp_patch(
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-    polys: list[Patch] = []
+    polys: list["Patch"] = []
     lines = []
     mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
     circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angle)
     circ_topedge = circ_edge + _rotate_dim2(np.array([0, 2 * size]), angle)
     mid_midcirc = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
 
-    codes, verts = zip(*[
-        (path.MOVETO, mid_midcirc),
-        (path.LINETO, circ_topedge,),
-        (path.LINETO, (circ_topedge + _rotate_dim2(np.array([- blade_coord1, - blade_coord1]), angle)),),
-        (path.LINETO, (mid_midcirc + _rotate_dim2(np.array([- blade_coord2, + blade_coord2]), angle)),),
-        # Blade1
-        (path.CLOSEPOLY, mid_midcirc)])
+    codes, verts = zip(
+        *[
+            (path.MOVETO, mid_midcirc),
+            (
+                path.LINETO,
+                circ_topedge,
+            ),
+            (
+                path.LINETO,
+                (circ_topedge + _rotate_dim2(np.array([-blade_coord1, -blade_coord1]), angle)),
+            ),
+            (
+                path.LINETO,
+                (mid_midcirc + _rotate_dim2(np.array([-blade_coord2, +blade_coord2]), angle)),
+            ),
+            # Blade1
+            (path.CLOSEPOLY, mid_midcirc),
+        ]
+    )
     polys.append(PathPatch(path(verts, codes), fc="k", ec="none", lw=200000000))
     polys.append(Circle(mid_circ, size, fc=facecolor, ec=edgecolor))
     lines.append((node_geo, circ_edge))
@@ -163,20 +178,27 @@ def pv_patch(node_geo, offset, size, angle, pv_rect_size, pv_tri_size, facecolor
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-    polys: list[Patch] = []
+    polys: list["Patch"] = []
     lines = []
     mid_rect = node_geo + _rotate_dim2(np.array([0, 2 * size]), angle)
     rect_lbottom = (mid_rect[0] - (pv_rect_size / 4), mid_rect[1])
-    _pv_patch = Rectangle(rect_lbottom, pv_rect_size / 2, pv_rect_size, angle=-angle * (180 / math.pi),
-                          rotation_point=(mid_rect[0], mid_rect[1]), ec=edgecolor, fc=facecolor)
+    _pv_patch = Rectangle(
+        rect_lbottom,
+        pv_rect_size / 2,
+        pv_rect_size,
+        angle=-angle * (180 / math.pi),
+        rotation_point=(mid_rect[0], mid_rect[1]),
+        ec=edgecolor,
+        fc=facecolor,
+    )
     polys.append(_pv_patch)
     lines.append((node_geo, mid_rect))
     triangle_base = pv_tri_size
     triangle_height = pv_tri_size * 0.75
     triangle_points = [
-        (mid_rect + _rotate_dim2(np.array([- triangle_base / 2, + 2 * size]), angle)),
-        (mid_rect + _rotate_dim2(np.array([+ triangle_base / 2, + 2 * size]), angle)),
-        (mid_rect + _rotate_dim2(np.array([0, + 1.5 * triangle_height]), angle)),
+        (mid_rect + _rotate_dim2(np.array([-triangle_base / 2, +2 * size]), angle)),
+        (mid_rect + _rotate_dim2(np.array([+triangle_base / 2, +2 * size]), angle)),
+        (mid_rect + _rotate_dim2(np.array([0, +1.5 * triangle_height]), angle)),
     ]
     triangle_patch = Polygon(triangle_points, ec="k", fc="none")
     polys.append(triangle_patch)
@@ -207,7 +229,7 @@ def node_patches(node_coords, size, patch_type, colors=None, **kwargs):
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-    if patch_type.lower() == 'ellipse' or patch_type.lower() == 'circle':
+    if patch_type.lower() == "ellipse" or patch_type.lower() == "circle":
         # circles are just ellipses
         if patch_type.lower() == "circle" and len(set(kwargs.keys()) & {"width", "height"}) == 1:
             wh = kwargs["width"] if "width" in kwargs else kwargs["height"]
@@ -216,7 +238,7 @@ def node_patches(node_coords, size, patch_type, colors=None, **kwargs):
         else:
             width = kwargs.pop("width", 2 * size)
             height = kwargs.pop("height", 2 * size)
-        angle = kwargs.pop('angle', 0)
+        angle = kwargs.pop("angle", 0)
         return ellipse_patches(node_coords, width, height, angle, color=colors, **kwargs)
     elif patch_type.lower() == "rect" or patch_type.lower() == "rectangle":
         width = kwargs.pop("width", 2 * size)
@@ -284,8 +306,7 @@ def rectangle_patches(node_coords, width, height, color=None, **kwargs):
     if color is not None:
         colors = get_color_list(color, len(node_coords))
         for (x, y), col in zip(node_coords, colors):
-            patches.append(Rectangle((x - width / 2, y - height / 2), width, height, color=color,
-                                     **kwargs))
+            patches.append(Rectangle((x - width / 2, y - height / 2), width, height, color=color, **kwargs))
     else:
         for x, y in node_coords:
             patches.append(Rectangle((x - width / 2, y - height / 2), width, height, **kwargs))
@@ -315,8 +336,7 @@ def polygon_patches(node_coords, radius, num_edges, color=None, **kwargs):
     if color is not None:
         colors = get_color_list(color, len(node_coords))
         for (x, y), col in zip(node_coords, colors):
-            patches.append(RegularPolygon([x, y], numVertices=num_edges, radius=radius, color=col,
-                                          **kwargs))
+            patches.append(RegularPolygon([x, y], numVertices=num_edges, radius=radius, color=col, **kwargs))
     else:
         for x, y in node_coords:
             patches.append(RegularPolygon([x, y], numVertices=num_edges, radius=radius, **kwargs))
@@ -354,8 +374,11 @@ def load_patches(node_coords, size, angles, **kwargs):
     for i, node_geo in enumerate(node_coords):
         p2 = node_geo + _rotate_dim2(np.array([0, offset + size]), all_angles[i])
         p3 = node_geo + _rotate_dim2(np.array([0, offset + size / 2]), all_angles[i])
-        polys.append(RegularPolygon(p2, numVertices=3, radius=size, orientation=-all_angles[i],
-                                    fc=facecolors[i], ec=edgecolors[i]))
+        polys.append(
+            RegularPolygon(
+                p2, numVertices=3, radius=size, orientation=-all_angles[i], fc=facecolors[i], ec=edgecolors[i]
+            )
+        )
         lines.append((node_geo, p3))
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
 
@@ -385,9 +408,9 @@ def gen_patches(node_coords, size, angles, patch_type, draw_by_type: bool = True
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
     polys: list[Polygon | Circle | Arc] = []
     lines: list = []
-    offset = kwargs.get("offset", 2. * size)
+    offset = kwargs.get("offset", 2.0 * size)
     all_angles = get_angle_list(angles, len(node_coords))
-    all_patches = get_list(patch_type, len(node_coords), 'patches', 'patch types')
+    all_patches = get_list(patch_type, len(node_coords), "patches", "patch types")
     edgecolor = kwargs.get("patch_edgecolor", "k")
     facecolor = kwargs.get("patch_facecolor", (1, 0, 0, 0))
     edgecolors = get_color_list(edgecolor, len(node_coords))
@@ -401,11 +424,11 @@ def gen_patches(node_coords, size, angles, patch_type, draw_by_type: bool = True
         circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), _angle)
         polys.append(Circle(p2, size, fc=facecolors[i], ec=edgecolors[i]))
         polys.append(
-            Arc(p2 + np.array([-size / 6.2, -size / 2.6]), size / 2, size, theta1=65, theta2=120,
-                ec=edgecolors[i]))
+            Arc(p2 + np.array([-size / 6.2, -size / 2.6]), size / 2, size, theta1=65, theta2=120, ec=edgecolors[i])
+        )
         polys.append(
-            Arc(p2 + np.array([size / 6.2, size / 2.6]), size / 2, size, theta1=245, theta2=300,
-                ec=edgecolors[i]))
+            Arc(p2 + np.array([size / 6.2, size / 2.6]), size / 2, size, theta1=245, theta2=300, ec=edgecolors[i])
+        )
         lines.append((node_geo, circ_edge))
 
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
@@ -435,7 +458,7 @@ def sgen_patches(node_coords, size, angles, patch_type, draw_by_type: bool = Tru
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
     lines = []
-    polys: list[Patch] = []
+    polys: list["Patch"] = []
     offset = kwargs.get("offset", 2 * size)
     r_triangle = kwargs.get("r_triangles", size * 0.4)
     hub_size = size * 0.15  # Hub size
@@ -444,7 +467,7 @@ def sgen_patches(node_coords, size, angles, patch_type, draw_by_type: bool = Tru
     pv_rect_size = size * 2
     pv_tri_size = size
     all_angles = get_angle_list(angles, len(node_coords))
-    all_patch_types = get_list(patch_type, len(node_coords), 'patches', 'patch types')
+    all_patch_types = get_list(patch_type, len(node_coords), "patches", "patch types")
     edgecolor = kwargs.get("patch_edgecolor", "w")
     facecolor = kwargs.get("patch_facecolor", "w")
     edgecolors = get_color_list(edgecolor, len(node_coords))
@@ -456,21 +479,25 @@ def sgen_patches(node_coords, size, angles, patch_type, draw_by_type: bool = Tru
         if draw_by_type:
             if _patch_type == "WP":
                 _polys, _lines = wp_patch(
-                    node_geo, offset, size, _angle, facecolors[i], edgecolors[i],
-                    blade_coord1, blade_coord2, hub_size, Path
+                    node_geo,
+                    offset,
+                    size,
+                    _angle,
+                    facecolors[i],
+                    edgecolors[i],
+                    blade_coord1,
+                    blade_coord2,
+                    hub_size,
+                    Path,
                 )
             elif _patch_type == "PV":
                 _polys, _lines = pv_patch(
                     node_geo, offset, size, _angle, pv_rect_size, pv_tri_size, facecolors[i], edgecolors[i]
                 )
             else:
-                _polys, _lines = wye_patch(
-                    node_geo, offset, size, r_triangle, _angle, facecolors[i], edgecolors[i]
-                )
+                _polys, _lines = wye_patch(node_geo, offset, size, r_triangle, _angle, facecolors[i], edgecolors[i])
         else:
-            _polys, _lines = wye_patch(
-                node_geo, offset, size, r_triangle, _angle, facecolors[i], edgecolors[i]
-            )
+            _polys, _lines = wye_patch(node_geo, offset, size, r_triangle, _angle, facecolors[i], edgecolors[i])
         polys.extend(_polys)
         lines.extend(_lines)
 
@@ -499,7 +526,7 @@ def storage_patches(node_coords, size, angles, **kwargs):
     offset = kwargs.get("offset", 1 * size)
     r_triangle = kwargs.get("r_triangles", size * 0.4)
     for i, node_geo in enumerate(node_coords):
-        mid_circ = node_geo + _rotate_dim2(np.array([0, offset + r_triangle * 2.]), angles[i])
+        mid_circ = node_geo + _rotate_dim2(np.array([0, offset + r_triangle * 2.0]), angles[i])
         circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angles[i])
         mid_tri1 = mid_circ + _rotate_dim2(np.array([-r_triangle, -r_triangle]), angles[i])
 
@@ -508,7 +535,7 @@ def storage_patches(node_coords, size, angles, **kwargs):
         line_end1 = perp_foot1 + _rotate_dim2(np.array([1 * r_triangle, 0]), angles[i])
 
         perp_foot2 = mid_tri1 + _rotate_dim2(np.array([0, -r_triangle]), angles[i])
-        line_end2 = perp_foot2 + _rotate_dim2(np.array([2. * r_triangle, 0]), angles[i])
+        line_end2 = perp_foot2 + _rotate_dim2(np.array([2.0 * r_triangle, 0]), angles[i])
 
         lines.append((node_geo, circ_edge))
         lines.append((perp_foot1, line_end1))
@@ -546,8 +573,17 @@ def ext_grid_patches(node_coords, size, angles, **kwargs):
     for i, node_geo in enumerate(node_coords):
         p2 = node_geo + _rotate_dim2(np.array([0, offset]), all_angles[i])
         p_ll = p2 + _rotate_dim2(np.array([-size, 0]), all_angles[i])
-        polys.append(Rectangle(p_ll, 2 * size, 2 * size, angle=(-all_angles[i] / math.pi * 180),
-                               fc=facecolors[i], ec=edgecolors[i], hatch="XXX"))
+        polys.append(
+            Rectangle(
+                p_ll,
+                2 * size,
+                2 * size,
+                angle=(-all_angles[i] / math.pi * 180),
+                fc=facecolors[i],
+                ec=edgecolors[i],
+                hatch="XXX",
+            )
+        )
         lines.append((node_geo, p2))
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
 
@@ -575,12 +611,12 @@ def trafo_patches(coords, size, **kwargs):
     facecolor = kwargs.get("patch_facecolor", (1, 0, 0, 0))
     edgecolors = get_color_list(edgecolor, len(coords))
     facecolors = get_color_list(facecolor, len(coords))
-    linewidths = kwargs.get("linewidths", 2.)
+    linewidths = kwargs.get("linewidths", 2.0)
     linewidths = get_linewidth_list(linewidths, len(coords), name_entries="trafos")
     circles, lines = [], []
 
     # load and extract the coords from the geojson object
-    coords = list(map(lambda x: list(geojson.utils.coords(geojson.loads(x))), coords))
+    coords = list(map(lambda x: list(geojson.utils.coords(safe_geojson_loads(x))), coords))
 
     for i, (p1, p2) in enumerate(coords):
         p1 = np.array(p1)
@@ -595,10 +631,8 @@ def trafo_patches(coords, size, **kwargs):
         off = size_this * 0.35
         circ1 = (0.5 - off / d) * (p1 - p2) + p2
         circ2 = (0.5 + off / d) * (p1 - p2) + p2
-        circles.append(Circle(circ1, size_this, fc=facecolors[i], ec=edgecolors[i],
-                              lw=linewidths[i]))
-        circles.append(Circle(circ2, size_this, fc=facecolors[i], ec=edgecolors[i],
-                              lw=linewidths[i]))
+        circles.append(Circle(circ1, size_this, fc=facecolors[i], ec=edgecolors[i], lw=linewidths[i]))
+        circles.append(Circle(circ2, size_this, fc=facecolors[i], ec=edgecolors[i], lw=linewidths[i]))
 
         lp1 = (0.5 - off / d - size_this / d) * (p2 - p1) + p1
         lp2 = (0.5 - off / d - size_this / d) * (p1 - p2) + p2
@@ -637,15 +671,18 @@ def ward_patches(node_coords, size, angles, **kwargs):
     for i, node_geo in enumerate(node_coords):
         p2 = node_geo + _rotate_dim2(np.array([0, offset]), all_angles[i])
         p_ll = p2 + _rotate_dim2(np.array([-size, 0]), all_angles[i])
-        polys.append(Rectangle(p_ll, 2 * size, 2 * size, angle=(-all_angles[i] / math.pi * 180),
-                               fc=facecolors[i], ec=edgecolors[i]))
+        polys.append(
+            Rectangle(
+                p_ll, 2 * size, 2 * size, angle=(-all_angles[i] / math.pi * 180), fc=facecolors[i], ec=edgecolors[i]
+            )
+        )
         lines.append((node_geo, p2))
 
         text_foot = p2 + np.array([-1.425 * size, -0.34 * size]) + _rotate_dim2(np.array([size, size]), all_angles[i])
 
-        text_path = TextPath((0, 0), "W", size=0.9 * size, prop={'weight': 'light'})
+        text_path = TextPath((0, 0), "W", size=0.9 * size, prop={"weight": "light"})
         transform = Affine2D().translate(text_foot[0], text_foot[1]).rotate(all_angles[i])
-        text_patch = PathPatch(transform.transform_path(text_path), edgecolor='black', facecolor='black', lw=0.5)
+        text_patch = PathPatch(transform.transform_path(text_path), edgecolor="black", facecolor="black", lw=0.5)
         polys.append(text_patch)
 
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
@@ -682,15 +719,18 @@ def xward_patches(node_coords, size, angles, **kwargs):
     for i, node_geo in enumerate(node_coords):
         p2 = node_geo + _rotate_dim2(np.array([0, offset]), all_angles[i])
         p_ll = p2 + _rotate_dim2(np.array([-size, 0]), all_angles[i])
-        polys.append(Rectangle(p_ll, 2 * size, 2 * size, angle=(-all_angles[i] / math.pi * 180),
-                               fc=facecolors[i], ec=edgecolors[i]))
+        polys.append(
+            Rectangle(
+                p_ll, 2 * size, 2 * size, angle=(-all_angles[i] / math.pi * 180), fc=facecolors[i], ec=edgecolors[i]
+            )
+        )
         lines.append((node_geo, p2))
 
         text_foot = p2 + np.array([-1.755 * size, -0.34 * size]) + _rotate_dim2(np.array([size, size]), all_angles[i])
 
-        text_path = TextPath((0, 0), "XW", size=0.9 * size, prop={'weight': 'light'})
+        text_path = TextPath((0, 0), "XW", size=0.9 * size, prop={"weight": "light"})
         transform = Affine2D().translate(text_foot[0], text_foot[1]).rotate(all_angles[i])
-        text_patch = PathPatch(transform.transform_path(text_path), edgecolor='black', facecolor='black', lw=0.5)
+        text_patch = PathPatch(transform.transform_path(text_path), edgecolor="black", facecolor="black", lw=0.5)
         polys.append(text_patch)
 
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
@@ -719,12 +759,12 @@ def vsc_patches(coords, size, **kwargs):
     facecolor = kwargs.get("patch_facecolor", "w")
     edgecolors = get_color_list(edgecolor, len(coords))
     facecolors = get_color_list(facecolor, len(coords))
-    linewidths = kwargs.get("linewidths", 2.)
+    linewidths = kwargs.get("linewidths", 2.0)
     linewidths = get_linewidth_list(linewidths, len(coords), name_entries="vscs")
     squares, lines = [], []
 
     # load and extract the coords from the geojson object
-    coords = list(map(lambda x: list(geojson.utils.coords(geojson.loads(x))), coords))
+    coords = list(map(lambda x: list(geojson.utils.coords(safe_geojson_loads(x))), coords))
 
     for i, (p1, p2) in enumerate(coords):
         p1 = np.array(p1)
@@ -738,9 +778,15 @@ def vsc_patches(coords, size, **kwargs):
             size_this = size
         xy1 = p1 - np.array([size_this, size_this])
         xy2 = p2 - np.array([size_this, size_this])
-        squares.append(Rectangle(xy1, size_this * 2, size_this * 2, fc=facecolors[i], ec=edgecolors[i],
-                                 lw=linewidths[i], hatch="+++"))
-        squares.append(Rectangle(xy2, size_this * 2, size_this * 2, fc=facecolors[i], ec=edgecolors[i],
-                                 lw=linewidths[i], hatch="---"))
+        squares.append(
+            Rectangle(
+                xy1, size_this * 2, size_this * 2, fc=facecolors[i], ec=edgecolors[i], lw=linewidths[i], hatch="+++"
+            )
+        )
+        squares.append(
+            Rectangle(
+                xy2, size_this * 2, size_this * 2, fc=facecolors[i], ec=edgecolors[i], lw=linewidths[i], hatch="---"
+            )
+        )
         lines.append([p1, p2])
     return lines, squares, {"patch_edgecolor", "patch_facecolor"}

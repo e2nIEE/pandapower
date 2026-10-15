@@ -17,22 +17,15 @@ Create Function
 .. autofunction:: pandapower.create.create_asymmetric_sgen
 
 
-Input Parameters
+Table Structure
 =====================
 
 *net.asymmetric_sgen*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.40\linewidth}|
-.. csv-table:: 
-   :file: asymmetric_sgen_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
-
-.. |br| raw:: html
-
-   <br />
-   
-\*necessary for executing a power flow calculation |br| \*\*optimal power flow parameter
+.. csv-table::
+    :file: table_structures/asymmetric_sgen.csv
+    :header-rows: 1
+    :delim: ,
 
    
 Electric Model
@@ -41,9 +34,9 @@ Electric Model
 Static Generators are modelled as PQ-buses in the power flow calculation:
 
 .. image:: pq.png
-	:width: 8em
-	:alt: alternate Text
-	:align: center
+    :width: 8em
+    :alt: alternate Text
+    :align: center
     
 The PQ-Values are calculated from the parameter table values as:
 
@@ -60,14 +53,13 @@ The PQ-Values are calculated from the parameter table values as:
     
     The apparent power value sn_mva is provided as additional information for usage in controller or other applications based on pandapower. It is not considered in the power flow!
 
-Result Parameters
+Result Table
 ==========================
 *net.asymmetric_sgen*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.50\linewidth}|
-.. csv-table:: 
-   :file: asymmetric_sgen_res.csv
-   :delim: ;
-   :widths: 10, 10, 50
+.. csv-table::
+    :file: table_structures/res_asymmetric_sgen.csv
+    :header-rows: 1
+    :delim: ,
 
 The power values in the net.res_sgen table are equivalent to :math:`P_{sgen}` and :math:`Q_{sgen}`.

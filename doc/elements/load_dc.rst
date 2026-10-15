@@ -16,17 +16,15 @@ Create Function
 
 .. autofunction:: pandapower.create_load_dc
 
-Input Parameters
+Table Structure
 =====================
 
 *net.load_dc*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.25\linewidth}|p{0.40\linewidth}|
-
 .. csv-table::
-   :file: load_dc_par.csv
-   :delim: ;
-   :widths: 10, 10, 25, 40
+    :file: table_structures/load_dc.csv
+    :header-rows: 1
+    :delim: ,
 
 \*necessary for executing a power flow calculation.
 
@@ -41,9 +39,9 @@ Electric Model
 Loads are modelled as P-buses in the power flow calculation:
 
 .. image:: load.png
-	:width: 8em
-	:alt: alternate Text
-	:align: center
+    :width: 8em
+    :alt: alternate Text
+    :align: center
 
 
 What part of the load is considered constant with constant power:
@@ -57,15 +55,14 @@ The load power values are then defines as:
     \end{align*}
 
 
-Result Parameters
-==========================    
+Result Table
+==========================
+
 *net.res_load_dc*
 
-.. tabularcolumns:: |p{0.10\linewidth}|p{0.10\linewidth}|p{0.45\linewidth}|
-.. csv-table:: 
-   :file: load_dc_res.csv
-   :delim: ;
-   :widths: 10, 10, 45
+.. csv-table::
+    :file: table_structures/res_load_dc.csv
+    :header-rows: 1
+    :delim: ,
    
 The power values in the net.res_load_dc table are equivalent to :math:`P_{load}`.
-

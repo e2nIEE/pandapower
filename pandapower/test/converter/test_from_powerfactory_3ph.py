@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 import os
 import json
 import pytest
@@ -16,7 +14,7 @@ except ImportError:
 
 
 logger = logging.getLogger(__name__)
-testfiles_path = os.path.join(pp_dir, 'test', 'converter', 'testfiles')
+testfiles_path = os.path.join(pp_dir, "test", "converter", "testfiles")
 
 try:
     import powerfactory as pf
@@ -24,7 +22,7 @@ try:
     PF_INSTALLED = True
 except ImportError:
     PF_INSTALLED = False
-    logger.info('could not import powerfactory, unbalanced load flow comparsion between pf and pp not possible')
+    logger.info("could not import powerfactory, unbalanced load flow comparsion between pf and pp not possible")
 
 from pandapower.converter.powerfactory.pf_export_functions import run_load_flow as run_powerfactory_load_flow
 from pandapower.converter.powerfactory.validate import _get_pf_results_unbalanced, _set_pf_results_unbalanced
@@ -82,10 +80,10 @@ def test_trafo_asym():
             net.asymmetric_load.type = loadtype
             net.trafo.vector_group = vector_group
             runpp_3ph(net)
-            read_pf_results_from_file_to_net(os.path.join(testfiles_path, "pf_combinations_results_trafo.json"), net,
-                                             vector_group + "_" + loadtype)
+            read_pf_results_from_file_to_net(
+                os.path.join(testfiles_path, "pf_combinations_results_trafo.json"), net, vector_group + "_" + loadtype
+            )
             compare_3ph_pp_pf_results(net)
-    # return net
 
 
 def test_line_asym():
@@ -93,7 +91,6 @@ def test_line_asym():
     runpp_3ph(net)
     read_pf_results_from_file_to_net(os.path.join(testfiles_path, "pf_results_line.json"), net)
     compare_3ph_pp_pf_results(net)
-    # return net
 
 
 def test_net_asym():
@@ -105,16 +102,17 @@ def test_net_asym():
             net.trafo.vector_group = vector_group
             runpp_3ph(net)
             read_pf_results_from_file_to_net(
-                os.path.join(testfiles_path, "pf_combinations_results_net_bus_trafo_line_load_19.10.20.json"), net,
-                vector_group + "_" + loadtype)
+                os.path.join(testfiles_path, "pf_combinations_results_net_bus_trafo_line_load_19.10.20.json"),
+                net,
+                vector_group + "_" + loadtype,
+            )
             compare_3ph_pp_pf_results(net)
-    # return net
 
 
 def initialize_powerfactory(prj_name):
     app = pf.GetApplication()
     app.ActivateProject(prj_name)
-    com_ldf = app.GetFromStudyCase('ComLdf')
+    com_ldf = app.GetFromStudyCase("ComLdf")
     com_ldf.iopt_net = 1
     com_ldf.i_power = 1
     return app
@@ -171,7 +169,8 @@ def compare_3ph_pp_pf_results(net):
         logger.debug("p_mw difference:\n%s\n" % diff_p_mw)
         assert all(diff_p_mw < p_load_tol)
         diff_q_mvar = abs(
-            net.res_asymmetric_load_3ph["q_%s_mvar" % phase] - net.res_asymmetric_load_3ph["pf_q_%s" % phase])
+            net.res_asymmetric_load_3ph["q_%s_mvar" % phase] - net.res_asymmetric_load_3ph["pf_q_%s" % phase]
+        )
         logger.debug("q_mvar difference:\n%s\n" % diff_q_mvar)
         assert all(diff_q_mvar < q_load_tol)
 
@@ -180,7 +179,8 @@ def compare_3ph_pp_pf_results(net):
         diff_i_from_ka = abs(net.res_line_3ph["i_%s_from_ka" % phase] - net.res_line_3ph["pf_i_%s_from_ka" % phase])
         logger.debug("i_from_ka difference:\n%s\n" % diff_i_from_ka)
         assert all(
-            abs(net.res_line_3ph["i_%s_from_ka" % phase] - net.res_line_3ph["pf_i_%s_from_ka" % phase]) < i_line_tol)
+            abs(net.res_line_3ph["i_%s_from_ka" % phase] - net.res_line_3ph["pf_i_%s_from_ka" % phase]) < i_line_tol
+        )
         diff_i_to_ka = abs(net.res_line_3ph["i_%s_to_ka" % phase] - net.res_line_3ph["pf_i_%s_to_ka" % phase])
         logger.debug("i_to_ka difference:\n%s\n" % diff_i_to_ka)
         assert all(abs(net.res_line_3ph["i_%s_to_ka" % phase] - net.res_line_3ph["pf_i_%s_to_ka" % phase]) < i_line_tol)
@@ -189,8 +189,13 @@ def compare_3ph_pp_pf_results(net):
 def get_pf_results(app, net):
     run_powerfactory_load_flow(app)
 
-    pf_types = {"bus": ".ElmTerm", "ext_grid": ".ElmXnet", "line": ".ElmLne", "trafo": ".ElmTr2",
-                "asymmetric_load": ".ElmLod"}
+    pf_types = {
+        "bus": ".ElmTerm",
+        "ext_grid": ".ElmXnet",
+        "line": ".ElmLne",
+        "trafo": ".ElmTr2",
+        "asymmetric_load": ".ElmLod",
+    }
 
     pf_result_variables = {
         "bus": {
@@ -201,7 +206,6 @@ def get_pf_results(app, net):
             "pf_vm_c_pu": "m:u:C",
             "pf_va_c_degree": "m:phiu:C",
         },
-
         "ext_grid": {
             "pf_p_a": "m:P:bus1:A",
             "pf_p_b": "m:P:bus1:B",
@@ -210,7 +214,6 @@ def get_pf_results(app, net):
             "pf_q_b": "m:Q:bus1:B",
             "pf_q_c": "m:Q:bus1:C",
         },
-
         "line": {
             "pf_i_a_from_ka": "m:I:bus1:A",
             "pf_i_a_to_ka": "m:I:bus2:A",
@@ -238,7 +241,7 @@ def get_pf_results(app, net):
             "pf_q_a": "m:Q:bus1:A",
             "pf_q_b": "m:Q:bus1:B",
             "pf_q_c": "m:Q:bus1:C",
-        }
+        },
     }
 
     for element_type, variables in pf_result_variables.items():
@@ -262,7 +265,7 @@ def write_pf_results_to_file(app, net, filename, combinations):
                 activate_study_case(app, study_case_name)
                 get_pf_results(app, net)
                 pf_res = _get_pf_results_unbalanced(net)
-                pf_results["%s_%s" % (vector_group, loadtype)] = pf_res
+                pf_results[f"{vector_group}_{loadtype}"] = pf_res
 
         for comb_key, comb_item in pf_results.items():
             for key, item in comb_item.items():
@@ -270,10 +273,10 @@ def write_pf_results_to_file(app, net, filename, combinations):
     else:
         get_pf_results(app, net)
         pf_results = _get_pf_results_unbalanced(net)
-        for key, item in pf_results.items():
-            pf_results[key] = item.to_dict()
+        pf_results = {key: item.to_dict() for key, item in pf_results.items()}
 
     import json
+
     with open(filename, "w") as f:
         json.dump(pf_results, f)
 

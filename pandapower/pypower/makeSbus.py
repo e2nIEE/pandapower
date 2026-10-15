@@ -2,8 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""Builds the vector of complex bus power injections.
-"""
+"""Builds the vector of complex bus power injections."""
 
 from numpy import ones, flatnonzero as find
 from pandapower.pypower.idx_bus import PD, QD
@@ -25,15 +24,15 @@ def _get_Sload(bus, vm):
     if vm is not None:
         ci = bus[:, CID_P]
         cz = bus[:, CZD_P]
-        cp = (1 - ci - cz)
-        volt_depend = cp + ci * vm + cz * vm ** 2
+        cp = 1 - ci - cz
+        volt_depend = cp + ci * vm + cz * vm**2
         cz_q = bus[:, CZD_Q]
         ci_q = bus[:, CID_Q]
-        cq = (1 - ci_q - cz_q)
-        volt_depend_q = cq + ci_q * vm + cz_q * vm ** 2
+        cq = 1 - ci_q - cz_q
+        volt_depend_q = cq + ci_q * vm + cz_q * vm**2
         S_load_real = S_load.real * volt_depend
         S_load_imag = S_load.imag * volt_depend_q
-        S_load = S_load_real+S_load_imag*1j
+        S_load = S_load_real + S_load_imag * 1j
     return S_load
 
 

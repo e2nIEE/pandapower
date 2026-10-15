@@ -173,13 +173,9 @@ def case_custom_1(pyp: Any) -> Any:
         x=x,
     )
 
-    net.create_loads(
-        id="load low3", voltage_level_id="0.4 kV", bus_id="low3", p0=0.03, q0=0.01
-    )
+    net.create_loads(id="load low3", voltage_level_id="0.4 kV", bus_id="low3", p0=0.03, q0=0.01)
 
-    net.create_loads(
-        id="load low5", voltage_level_id="0.4 kV", bus_id="low5", p0=0.04, q0=0.015
-    )
+    net.create_loads(id="load low5", voltage_level_id="0.4 kV", bus_id="low5", p0=0.04, q0=0.015)
 
     return net
 
@@ -199,9 +195,7 @@ def case_custom_2(pyp: Any) -> Any:
     net.create_buses(id=["mv_bus1"], voltage_level_id=["10 kV"])
     net.create_buses(id=["mv_bus2"], voltage_level_id=["10 kV"])
 
-    net.create_loads(
-        id=["test_load"], voltage_level_id="10 kV", bus_id="mv_bus2", p0=10, q0=3
-    )
+    net.create_loads(id=["test_load"], voltage_level_id="10 kV", bus_id="mv_bus2", p0=10, q0=3)
 
     net.create_generators(
         id="grid",
@@ -254,9 +248,7 @@ def case_custom_3(pyp: Any) -> Any:
     net.create_buses(id=["mv_bus"], voltage_level_id=["20 kV"])
     net.create_buses(id=["lv_bus"], voltage_level_id=["10 kV"])
 
-    net.create_loads(
-        id=["test_load"], voltage_level_id="20 kV", bus_id="mv_bus", p0=10, q0=3
-    )
+    net.create_loads(id=["test_load"], voltage_level_id="20 kV", bus_id="mv_bus", p0=10, q0=3)
 
     net.create_generators(
         id="grid",
@@ -328,9 +320,7 @@ def case_pp_custom_1(pandapower: Any) -> Any:
         slack_weight=1.0,
     )
 
-    pp.create_transformer(
-        net, hv_bus=mv_busbar, lv_bus=lv_busbar, std_type="0.25 MVA 10/0.4 kV"
-    )
+    pp.create_transformer(net, hv_bus=mv_busbar, lv_bus=lv_busbar, std_type="0.25 MVA 10/0.4 kV")
     net.trafo.shift_degree = 0
 
     pp.create_line(
@@ -489,13 +479,9 @@ def _align_roundtrip_table_by_original_ids(
     )
 
 
-def _assert_roundtrip_line_shunt_sums_match(
-    original_lines: pd.DataFrame, roundtrip_lines: pd.DataFrame
-) -> None:
+def _assert_roundtrip_line_shunt_sums_match(original_lines: pd.DataFrame, roundtrip_lines: pd.DataFrame) -> None:
     """Check that total line shunt conductance and susceptance survive the roundtrip."""
-    original_lines, roundtrip_lines = _align_roundtrip_table_by_original_ids(
-        original_lines, roundtrip_lines, "lines"
-    )
+    original_lines, roundtrip_lines = _align_roundtrip_table_by_original_ids(original_lines, roundtrip_lines, "lines")
 
     shunt_pairs = [("g1", "g2", "g1 + g2"), ("b1", "b2", "b1 + b2")]
 
@@ -532,10 +518,7 @@ def _assert_roundtrip_line_shunt_sums_match(
             original_sum[comparable_mask],
             rtol=1e-6,
             atol=1e-9,
-            err_msg=(
-                f"lines total shunt value {label!r} differs after "
-                f"powsybl -> pandapower -> powsybl roundtrip"
-            ),
+            err_msg=(f"lines total shunt value {label!r} differs after powsybl -> pandapower -> powsybl roundtrip"),
         )
 
 
@@ -544,9 +527,7 @@ def _original_bus_result_frame(network: Any) -> pd.DataFrame:
     buses = network.get_bus_breaker_view_buses(all_attributes=True).copy()
 
     required_columns = ["v_mag", "v_angle"]
-    missing_columns = [
-        column for column in required_columns if column not in buses.columns
-    ]
+    missing_columns = [column for column in required_columns if column not in buses.columns]
 
     if missing_columns:
         pytest.skip(f"pypowsybl bus result columns missing: {missing_columns}")
@@ -558,21 +539,15 @@ def _original_bus_result_frame(network: Any) -> pd.DataFrame:
     return result
 
 
-def _roundtrip_bus_result_frame(
-    roundtrip_network: Any, pandapower_network: Any
-) -> pd.DataFrame:
+def _roundtrip_bus_result_frame(roundtrip_network: Any, pandapower_network: Any) -> pd.DataFrame:
     """Build a roundtrip powsybl bus result table mapped back to pandapower bus names."""
     buses = roundtrip_network.get_bus_breaker_view_buses(all_attributes=True).copy()
 
     required_columns = ["v_mag", "v_angle"]
-    missing_columns = [
-        column for column in required_columns if column not in buses.columns
-    ]
+    missing_columns = [column for column in required_columns if column not in buses.columns]
 
     if missing_columns:
-        pytest.skip(
-            f"pypowsybl roundtrip bus-breaker result columns missing: {missing_columns}"
-        )
+        pytest.skip(f"pypowsybl roundtrip bus-breaker result columns missing: {missing_columns}")
 
     rows = []
 
@@ -598,9 +573,7 @@ def _roundtrip_bus_result_frame(
     result = pd.DataFrame(rows)
 
     if result.empty:
-        pytest.skip(
-            "No roundtrip buses could be mapped back to original pandapower bus names"
-        )
+        pytest.skip("No roundtrip buses could be mapped back to original pandapower bus names")
 
     result = result.replace([np.inf, -np.inf], np.nan).dropna()
     result = result.set_index("bus_name").sort_index()
@@ -671,9 +644,7 @@ def _bus_sort_key(bus_name: str) -> tuple[str, int]:
     return prefix, number
 
 
-def _assert_same_bus_loadflow_results(
-    original_network: Any, roundtrip_network: Any, pandapower_network: Any
-) -> None:
+def _assert_same_bus_loadflow_results(original_network: Any, roundtrip_network: Any, pandapower_network: Any) -> None:
     """Compare original and roundtrip powsybl bus load-flow results."""
     original_buses = _original_bus_result_frame(original_network)
     roundtrip_buses = _roundtrip_bus_result_frame(roundtrip_network, pandapower_network)
@@ -706,12 +677,8 @@ def _assert_same_bus_loadflow_results(
         err_msg="Bus voltage magnitudes differ after roundtrip conversion",
     )
 
-    original_angles = (
-        original_buses["v_angle"].to_numpy() - original_buses["v_angle"].to_numpy()[0]
-    )
-    roundtrip_angles = (
-        roundtrip_buses["v_angle"].to_numpy() - roundtrip_buses["v_angle"].to_numpy()[0]
-    )
+    original_angles = original_buses["v_angle"].to_numpy() - original_buses["v_angle"].to_numpy()[0]
+    roundtrip_angles = roundtrip_buses["v_angle"].to_numpy() - roundtrip_buses["v_angle"].to_numpy()[0]
 
     np.testing.assert_allclose(
         roundtrip_angles,
@@ -722,9 +689,7 @@ def _assert_same_bus_loadflow_results(
     )
 
 
-def _assert_same_pandapower_bus_loadflow_results(
-    original_network: Any, pandapower_network: Any
-) -> None:
+def _assert_same_pandapower_bus_loadflow_results(original_network: Any, pandapower_network: Any) -> None:
     """Compare original powsybl bus results with converted pandapower bus results."""
     original_buses = _original_bus_result_frame(original_network)
     pandapower_buses = _pandapower_bus_result_frame(pandapower_network)
@@ -769,9 +734,7 @@ def _assert_same_pandapower_bus_loadflow_results(
         if not np.isfinite(target_v):
             continue
 
-        matching_pp_generator = pandapower_generators[
-            pandapower_generators["name"].astype(str) == str(generator_id)
-        ]
+        matching_pp_generator = pandapower_generators[pandapower_generators["name"].astype(str) == str(generator_id)]
 
         if matching_pp_generator.empty:
             continue
@@ -787,9 +750,7 @@ def _assert_same_pandapower_bus_loadflow_results(
         if np.isclose(original_v_mag, target_v, rtol=5e-3, atol=1e-2):
             regulated_bus_names.add(bus_name)
 
-    regulated_common_buses = [
-        bus_name for bus_name in bus_order if bus_name in regulated_bus_names
-    ]
+    regulated_common_buses = [bus_name for bus_name in bus_order if bus_name in regulated_bus_names]
 
     if regulated_common_buses:
         np.testing.assert_allclose(
@@ -797,10 +758,7 @@ def _assert_same_pandapower_bus_loadflow_results(
             original_buses.loc[regulated_common_buses, "v_mag"].to_numpy(),
             rtol=5e-3,
             atol=1e-2,
-            err_msg=(
-                "Regulated bus voltage magnitudes differ after "
-                "powsybl -> pandapower conversion"
-            ),
+            err_msg=("Regulated bus voltage magnitudes differ after powsybl -> pandapower conversion"),
         )
 
     np.testing.assert_allclose(
@@ -808,24 +766,14 @@ def _assert_same_pandapower_bus_loadflow_results(
         original_buses["v_mag"].to_numpy(),
         rtol=5e-2,
         atol=1e-1,
-        err_msg=(
-            "Bus voltage magnitudes differ too much after "
-            "powsybl -> pandapower conversion"
-        ),
+        err_msg=("Bus voltage magnitudes differ too much after powsybl -> pandapower conversion"),
     )
 
-    original_angles = (
-        original_buses["v_angle"].to_numpy() - original_buses["v_angle"].to_numpy()[0]
-    )
+    original_angles = original_buses["v_angle"].to_numpy() - original_buses["v_angle"].to_numpy()[0]
 
-    pandapower_angles = (
-        pandapower_buses["v_angle"].to_numpy()
-        - pandapower_buses["v_angle"].to_numpy()[0]
-    )
+    pandapower_angles = pandapower_buses["v_angle"].to_numpy() - pandapower_buses["v_angle"].to_numpy()[0]
 
-    cross_voltage_line_ids = _get_cross_voltage_line_ids_from_pandapower(
-        pandapower_network
-    )
+    cross_voltage_line_ids = _get_cross_voltage_line_ids_from_pandapower(pandapower_network)
 
     angle_atol = 15.0 if cross_voltage_line_ids else 1.0
 
@@ -851,9 +799,7 @@ def _get_cross_voltage_line_ids_from_pandapower(pandapower_network: Any) -> set[
     if "powsybl_element_type" not in pp_impedances.columns:
         return set()
 
-    cross_voltage_impedances = pp_impedances[
-        pp_impedances["powsybl_element_type"].astype(str) == "cross_voltage_line"
-    ]
+    cross_voltage_impedances = pp_impedances[pp_impedances["powsybl_element_type"].astype(str) == "cross_voltage_line"]
 
     if cross_voltage_impedances.empty:
         return set()
@@ -871,9 +817,7 @@ def _assert_basic_network_size_is_preserved(
     original_network: Any, roundtrip_network: Any, pandapower_network: Any
 ) -> None:
     """Check that roundtrip component counts match the expected convertible elements."""
-    cross_voltage_line_ids = _get_cross_voltage_line_ids_from_pandapower(
-        pandapower_network
-    )
+    cross_voltage_line_ids = _get_cross_voltage_line_ids_from_pandapower(pandapower_network)
 
     checks = [
         ("bus-breaker buses", lambda network: network.get_bus_breaker_view_buses(), 0),
@@ -916,9 +860,7 @@ def _assert_basic_network_size_is_preserved(
         )
 
 
-def _get_first_existing_column(
-    frame: pd.DataFrame, candidates: list[str]
-) -> str | None:
+def _get_first_existing_column(frame: pd.DataFrame, candidates: list[str]) -> str | None:
     for column in candidates:
         if column in frame.columns:
             return column
@@ -926,9 +868,7 @@ def _get_first_existing_column(
     return None
 
 
-def _require_first_existing_column(
-    frame: pd.DataFrame, candidates: list[str], component_name: str
-) -> str:
+def _require_first_existing_column(frame: pd.DataFrame, candidates: list[str], component_name: str) -> str:
     column = _get_first_existing_column(frame, candidates)
 
     assert column is not None, (
@@ -939,9 +879,7 @@ def _require_first_existing_column(
     return column
 
 
-def _assert_close_value(
-    actual: Any, expected: Any, label: str, rtol: float = 1e-6, atol: float = 1e-9
-) -> None:
+def _assert_close_value(actual: Any, expected: Any, label: str, rtol: float = 1e-6, atol: float = 1e-9) -> None:
     assert np.isclose(float(actual), float(expected), rtol=rtol, atol=atol), (
         f"{label} mismatch: expected powsybl = {expected}, pandapower = {actual}"
     )
@@ -958,38 +896,27 @@ def _pandapower_bus_name(pandapower_network: Any, bus_index: Any) -> str:
     return str(pandapower_network.bus.loc[int(bus_index), "name"])
 
 
-def _assert_converted_loads_match_powsybl(
-    original_network: Any, pandapower_network: Any
-) -> None:
+def _assert_converted_loads_match_powsybl(original_network: Any, pandapower_network: Any) -> None:
     original_loads = original_network.get_loads(all_attributes=True).copy()
     pp_loads = pandapower_network.load.copy()
 
     assert len(original_loads) == len(pp_loads), (
-        "Number of loads changed during conversion: "
-        f"powsybl = {len(original_loads)}, pandapower = {len(pp_loads)}"
+        f"Number of loads changed during conversion: powsybl = {len(original_loads)}, pandapower = {len(pp_loads)}"
     )
 
     if original_loads.empty:
         return
 
-    p_column = _get_first_existing_column(
-        original_loads, ["p0", "p", "p_mw", "target_p"]
-    )
+    p_column = _get_first_existing_column(original_loads, ["p0", "p", "p_mw", "target_p"])
 
-    q_column = _get_first_existing_column(
-        original_loads, ["q0", "q", "q_mvar", "target_q"]
-    )
+    q_column = _get_first_existing_column(original_loads, ["q0", "q", "q_mvar", "target_q"])
 
     if p_column is None:
-        pytest.skip(
-            f"No active power column found in powsybl loads. "
-            f"Available columns: {list(original_loads.columns)}"
-        )
+        pytest.skip(f"No active power column found in powsybl loads. Available columns: {list(original_loads.columns)}")
 
     if q_column is None:
         pytest.skip(
-            f"No reactive power column found in powsybl loads. "
-            f"Available columns: {list(original_loads.columns)}"
+            f"No reactive power column found in powsybl loads. Available columns: {list(original_loads.columns)}"
         )
 
     for load_id, pyp_load in original_loads.iterrows():
@@ -1005,35 +932,25 @@ def _assert_converted_loads_match_powsybl(
         expected_p_mw = float(pyp_load[p_column])
         expected_q_mvar = float(pyp_load[q_column])
 
-        assert np.isclose(
-            float(pp_load["p_mw"]), expected_p_mw, rtol=1e-6, atol=1e-9
-        ), (
-            f"Load {load_id!r} active power mismatch: "
-            f"powsybl = {expected_p_mw}, pandapower = {pp_load['p_mw']}"
+        assert np.isclose(float(pp_load["p_mw"]), expected_p_mw, rtol=1e-6, atol=1e-9), (
+            f"Load {load_id!r} active power mismatch: powsybl = {expected_p_mw}, pandapower = {pp_load['p_mw']}"
         )
 
-        assert np.isclose(
-            float(pp_load["q_mvar"]), expected_q_mvar, rtol=1e-6, atol=1e-9
-        ), (
-            f"Load {load_id!r} reactive power mismatch: "
-            f"powsybl = {expected_q_mvar}, pandapower = {pp_load['q_mvar']}"
+        assert np.isclose(float(pp_load["q_mvar"]), expected_q_mvar, rtol=1e-6, atol=1e-9), (
+            f"Load {load_id!r} reactive power mismatch: powsybl = {expected_q_mvar}, pandapower = {pp_load['q_mvar']}"
         )
 
         assert int(pp_load["bus"]) in pandapower_network.bus.index, (
-            f"Load {load_id!r} is connected to an invalid pandapower bus: "
-            f"{pp_load['bus']}"
+            f"Load {load_id!r} is connected to an invalid pandapower bus: {pp_load['bus']}"
         )
 
 
-def _assert_converted_generators_match_powsybl(
-    original_network: Any, pandapower_network: Any
-) -> None:
+def _assert_converted_generators_match_powsybl(original_network: Any, pandapower_network: Any) -> None:
     original_generators = original_network.get_generators(all_attributes=True).copy()
     pp_gens = pandapower_network.gen.copy()
 
     assert len(pp_gens) == len(original_generators), (
-        "Wrong number of converted generators. "
-        f"powsybl = {len(original_generators)}, pandapower = {len(pp_gens)}"
+        f"Wrong number of converted generators. powsybl = {len(original_generators)}, pandapower = {len(pp_gens)}"
     )
 
     assert "name" in pp_gens.columns
@@ -1048,9 +965,7 @@ def _assert_converted_generators_match_powsybl(
     )
 
     assert "slack" in pp_gens.columns
-    assert int(pp_gens["slack"].astype(bool).sum()) == 1, (
-        "Exactly one pandapower generator must have slack = True"
-    )
+    assert int(pp_gens["slack"].astype(bool).sum()) == 1, "Exactly one pandapower generator must have slack = True"
 
     for gen_id, pyp_gen in original_generators.iterrows():
         pp_gen = pp_gens[pp_gens["name"].astype(str) == str(gen_id)].iloc[0]
@@ -1059,8 +974,7 @@ def _assert_converted_generators_match_powsybl(
         actual_p = float(pp_gen["p_mw"])
 
         assert np.isclose(actual_p, expected_p, rtol=1e-6, atol=1e-9), (
-            f"Generator {gen_id!r} target_p mismatch: "
-            f"powsybl = {expected_p}, pandapower = {actual_p}"
+            f"Generator {gen_id!r} target_p mismatch: powsybl = {expected_p}, pandapower = {actual_p}"
         )
 
         if "min_p" in original_generators.columns and "min_p_mw" in pp_gens.columns:
@@ -1070,8 +984,7 @@ def _assert_converted_generators_match_powsybl(
                 actual_min_p = float(pp_gen["min_p_mw"])
 
                 assert np.isclose(actual_min_p, expected_min_p, rtol=1e-6, atol=1e-9), (
-                    f"Generator {gen_id!r} min_p mismatch: "
-                    f"powsybl = {expected_min_p}, pandapower = {actual_min_p}"
+                    f"Generator {gen_id!r} min_p mismatch: powsybl = {expected_min_p}, pandapower = {actual_min_p}"
                 )
 
         if "max_p" in original_generators.columns and "max_p_mw" in pp_gens.columns:
@@ -1081,14 +994,11 @@ def _assert_converted_generators_match_powsybl(
                 actual_max_p = float(pp_gen["max_p_mw"])
 
                 assert np.isclose(actual_max_p, expected_max_p, rtol=1e-6, atol=1e-9), (
-                    f"Generator {gen_id!r} max_p mismatch: "
-                    f"powsybl = {expected_max_p}, pandapower = {actual_max_p}"
+                    f"Generator {gen_id!r} max_p mismatch: powsybl = {expected_max_p}, pandapower = {actual_max_p}"
                 )
 
 
-def _assert_converted_lines_match_powsybl(
-    original_network: Any, pandapower_network: Any
-) -> None:
+def _assert_converted_lines_match_powsybl(original_network: Any, pandapower_network: Any) -> None:
     """Check converted pandapower line and impedance elements against powsybl lines."""
     original_lines = _get_table_or_empty(original_network, "get_lines")
 
@@ -1118,26 +1028,18 @@ def _assert_converted_lines_match_powsybl(
     if original_lines.empty:
         return
 
-    r_column = _require_first_existing_column(
-        original_lines, ["r", "r_ohm"], "line resistance"
-    )
+    r_column = _require_first_existing_column(original_lines, ["r", "r_ohm"], "line resistance")
 
-    x_column = _require_first_existing_column(
-        original_lines, ["x", "x_ohm"], "line reactance"
-    )
+    x_column = _require_first_existing_column(original_lines, ["x", "x_ohm"], "line reactance")
 
     g1_column = _get_first_existing_column(original_lines, ["g1", "g1_s"])
     g2_column = _get_first_existing_column(original_lines, ["g2", "g2_s"])
     b1_column = _get_first_existing_column(original_lines, ["b1", "b1_s"])
     b2_column = _get_first_existing_column(original_lines, ["b2", "b2_s"])
 
-    bus1_column = _get_first_existing_column(
-        original_lines, ["bus_breaker_bus1_id", "bus1_bus_id", "bus1_name"]
-    )
+    bus1_column = _get_first_existing_column(original_lines, ["bus_breaker_bus1_id", "bus1_bus_id", "bus1_name"])
 
-    bus2_column = _get_first_existing_column(
-        original_lines, ["bus_breaker_bus2_id", "bus2_bus_id", "bus2_name"]
-    )
+    bus2_column = _get_first_existing_column(original_lines, ["bus_breaker_bus2_id", "bus2_bus_id", "bus2_name"])
 
     frequency_hz = _pandapower_frequency_hz(pandapower_network)
 
@@ -1148,14 +1050,10 @@ def _assert_converted_lines_match_powsybl(
 
         if not pp_line_impedances.empty:
             if "powsybl_id" in pp_line_impedances.columns:
-                matching_pp_impedance = pp_line_impedances[
-                    pp_line_impedances["powsybl_id"].astype(str) == str(line_id)
-                ]
+                matching_pp_impedance = pp_line_impedances[pp_line_impedances["powsybl_id"].astype(str) == str(line_id)]
 
             if matching_pp_impedance.empty and "name" in pp_line_impedances.columns:
-                matching_pp_impedance = pp_line_impedances[
-                    pp_line_impedances["name"].astype(str) == str(line_id)
-                ]
+                matching_pp_impedance = pp_line_impedances[pp_line_impedances["name"].astype(str) == str(line_id)]
 
         assert not matching_pp_line.empty or not matching_pp_impedance.empty, (
             f"Line {line_id!r} exists in powsybl but not in pandapower line or impedance.\n"
@@ -1177,9 +1075,7 @@ def _assert_converted_lines_match_powsybl(
 
             length_km = float(pp_line["length_km"])
 
-            _assert_finite_positive(
-                length_km, f"Line {line_id!r} has invalid length_km: {length_km}"
-            )
+            _assert_finite_positive(length_km, f"Line {line_id!r} has invalid length_km: {length_km}")
 
             parallel = 1.0
 
@@ -1211,11 +1107,7 @@ def _assert_converted_lines_match_powsybl(
                 atol=1e-9,
             )
 
-            if (
-                g1_column is not None
-                and g2_column is not None
-                and "g_us_per_km" in pp_lines.columns
-            ):
+            if g1_column is not None and g2_column is not None and "g_us_per_km" in pp_lines.columns:
                 expected_g_s = float(pyp_line[g1_column]) + float(pyp_line[g2_column])
                 actual_g_s = float(pp_line["g_us_per_km"]) * 1e-6 * length_km * parallel
 
@@ -1227,21 +1119,9 @@ def _assert_converted_lines_match_powsybl(
                     atol=1e-12,
                 )
 
-            if (
-                b1_column is not None
-                and b2_column is not None
-                and "c_nf_per_km" in pp_lines.columns
-            ):
+            if b1_column is not None and b2_column is not None and "c_nf_per_km" in pp_lines.columns:
                 expected_b_s = float(pyp_line[b1_column]) + float(pyp_line[b2_column])
-                actual_b_s = (
-                    2.0
-                    * np.pi
-                    * frequency_hz
-                    * float(pp_line["c_nf_per_km"])
-                    * 1e-9
-                    * length_km
-                    * parallel
-                )
+                actual_b_s = 2.0 * np.pi * frequency_hz * float(pp_line["c_nf_per_km"]) * 1e-9 * length_km * parallel
 
                 _assert_close_value(
                     actual_b_s,
@@ -1263,9 +1143,7 @@ def _assert_converted_lines_match_powsybl(
                 }
 
                 assert actual_buses == expected_buses, (
-                    f"Line {line_id!r} terminal buses changed.\n"
-                    f"powsybl = {expected_buses}\n"
-                    f"pandapower = {actual_buses}"
+                    f"Line {line_id!r} terminal buses changed.\npowsybl = {expected_buses}\npandapower = {actual_buses}"
                 )
         else:
             pp_impedance = matching_pp_impedance.iloc[0]
@@ -1322,11 +1200,7 @@ def _assert_converted_lines_match_powsybl(
                 atol=1e-9,
             )
 
-            if (
-                g1_column is not None
-                and g2_column is not None
-                and "powsybl_g_total_s" in pp_impedance.index
-            ):
+            if g1_column is not None and g2_column is not None and "powsybl_g_total_s" in pp_impedance.index:
                 expected_g_s = float(pyp_line[g1_column]) + float(pyp_line[g2_column])
                 actual_g_s = float(pp_impedance["powsybl_g_total_s"])
 
@@ -1338,11 +1212,7 @@ def _assert_converted_lines_match_powsybl(
                     atol=1e-12,
                 )
 
-            if (
-                b1_column is not None
-                and b2_column is not None
-                and "powsybl_b_total_s" in pp_impedance.index
-            ):
+            if b1_column is not None and b2_column is not None and "powsybl_b_total_s" in pp_impedance.index:
                 expected_b_s = float(pyp_line[b1_column]) + float(pyp_line[b2_column])
                 actual_b_s = float(pp_impedance["powsybl_b_total_s"])
 
@@ -1436,13 +1306,9 @@ def _is_valid_finite_number(value: Any) -> bool:
     return np.isfinite(value)
 
 
-def _assert_converted_2w_transformers_match_powsybl(
-    original_network: Any, pandapower_network: Any
-) -> None:
+def _assert_converted_2w_transformers_match_powsybl(original_network: Any, pandapower_network: Any) -> None:
     """Check converted pandapower two-windings transformers against powsybl data."""
-    original_trafos = _get_table_or_empty(
-        original_network, "get_2_windings_transformers"
-    )
+    original_trafos = _get_table_or_empty(original_network, "get_2_windings_transformers")
 
     pp_trafos = pandapower_network.trafo.copy()
 
@@ -1498,13 +1364,9 @@ def _assert_converted_2w_transformers_match_powsybl(
                 f"2W transformer {trafo_id!r} has invalid {column}:{pp_trafo[column]}"
             )
 
-        rated_u1_column = _get_first_existing_column(
-            original_trafos, ["rated_u1", "ratedU1"]
-        )
+        rated_u1_column = _get_first_existing_column(original_trafos, ["rated_u1", "ratedU1"])
 
-        rated_u2_column = _get_first_existing_column(
-            original_trafos, ["rated_u2", "ratedU2"]
-        )
+        rated_u2_column = _get_first_existing_column(original_trafos, ["rated_u2", "ratedU2"])
 
         if rated_u1_column is not None and rated_u2_column is not None:
             expected_voltages = sorted(
@@ -1522,9 +1384,7 @@ def _assert_converted_2w_transformers_match_powsybl(
                 err_msg=f"2W transformer {trafo_id!r} voltage levels differ",
             )
 
-        rated_s_column = _get_first_existing_column(
-            original_trafos, ["rated_s", "ratedS"]
-        )
+        rated_s_column = _get_first_existing_column(original_trafos, ["rated_s", "ratedS"])
 
         if rated_s_column is not None:
             expected_sn_mva = float(pyp_trafo[rated_s_column])
@@ -1595,10 +1455,7 @@ def _assert_converted_2w_transformers_match_powsybl(
             expected_pfe_kw = rated_u2_kv**2 * float(pyp_trafo[g_column]) * 1000.0
 
             y_base_s = rated_s_mva / rated_u2_kv**2
-            y_no_load_pu = (
-                complex(float(pyp_trafo[g_column]), float(pyp_trafo[b_column]))
-                / y_base_s
-            )
+            y_no_load_pu = complex(float(pyp_trafo[g_column]), float(pyp_trafo[b_column])) / y_base_s
 
             expected_i0_percent = 100.0 * abs(y_no_load_pu)
 
@@ -1619,13 +1476,9 @@ def _assert_converted_2w_transformers_match_powsybl(
             )
 
 
-def _assert_converted_3w_transformers_match_powsybl(
-    original_network: Any, pandapower_network: Any
-) -> None:
+def _assert_converted_3w_transformers_match_powsybl(original_network: Any, pandapower_network: Any) -> None:
     """Check converted pandapower three-winding transformers against powsybl data."""
-    original_trafos = _get_table_or_empty(
-        original_network, "get_3_windings_transformers"
-    )
+    original_trafos = _get_table_or_empty(original_network, "get_3_windings_transformers")
 
     pp_trafos = pandapower_network.trafo3w.copy()
 
@@ -1649,8 +1502,7 @@ def _assert_converted_3w_transformers_match_powsybl(
 
         for bus_column in ["hv_bus", "mv_bus", "lv_bus"]:
             assert int(pp_trafo[bus_column]) in pandapower_network.bus.index, (
-                f"3W transformer {trafo_id!r} has invalid {bus_column}: "
-                f"{pp_trafo[bus_column]}"
+                f"3W transformer {trafo_id!r} has invalid {bus_column}: {pp_trafo[bus_column]}"
             )
 
         for column in ["sn_hv_mva", "sn_mv_mva", "sn_lv_mva"]:
@@ -1688,9 +1540,7 @@ def _assert_converted_3w_transformers_match_powsybl(
         ]
 
         if all(column is not None for column in rated_u_columns):
-            expected_voltages = sorted(
-                [float(pyp_trafo[column]) for column in rated_u_columns], reverse=True
-            )
+            expected_voltages = sorted([float(pyp_trafo[column]) for column in rated_u_columns], reverse=True)
 
             actual_voltages = [
                 float(pp_trafo["vn_hv_kv"]),
@@ -1728,9 +1578,7 @@ def _assert_converted_3w_transformers_match_powsybl(
                 ),
             ]
 
-            powsybl_sides = sorted(
-                powsybl_sides, key=lambda item: item[0], reverse=True
-            )
+            powsybl_sides = sorted(powsybl_sides, key=lambda item: item[0], reverse=True)
 
             expected_sn_values = [
                 powsybl_sides[0][1],
@@ -1753,9 +1601,7 @@ def _assert_converted_3w_transformers_match_powsybl(
             )
 
 
-def _assert_converted_switches_match_powsybl(
-    original_network: Any, pandapower_network: Any
-) -> None:
+def _assert_converted_switches_match_powsybl(original_network: Any, pandapower_network: Any) -> None:
     """Check converted pandapower bus-bus switches against powsybl switches."""
     original_switches = _get_table_or_empty(original_network, "get_switches")
 
@@ -1774,13 +1620,10 @@ def _assert_converted_switches_match_powsybl(
             f"Switch {switch_index} is connected to an invalid bus: {pp_switch['bus']}"
         )
 
-        assert pp_switch["et"] == "b", (
-            f"Switch {switch_index} has invalid element type et = {pp_switch['et']!r}"
-        )
+        assert pp_switch["et"] == "b", f"Switch {switch_index} has invalid element type et = {pp_switch['et']!r}"
 
         assert int(pp_switch["element"]) in pandapower_network.bus.index, (
-            f"Bus-bus switch {switch_index} points to invalid bus element: "
-            f"{pp_switch['element']}"
+            f"Bus-bus switch {switch_index} points to invalid bus element: {pp_switch['element']}"
         )
 
         assert isinstance(pp_switch["closed"], (bool, np.bool_)), (
@@ -1799,13 +1642,9 @@ def _assert_converted_switches_match_powsybl(
 
     if "open" in original_switches.columns and "name" in pp_switches.columns:
         for switch_id, pyp_switch in original_switches.iterrows():
-            matching_pp_switch = pp_switches[
-                pp_switches["name"].astype(str) == str(switch_id)
-            ]
+            matching_pp_switch = pp_switches[pp_switches["name"].astype(str) == str(switch_id)]
 
-            assert not matching_pp_switch.empty, (
-                f"Switch {switch_id!r} exists in powsybl but not in pandapower"
-            )
+            assert not matching_pp_switch.empty, f"Switch {switch_id!r} exists in powsybl but not in pandapower"
 
             expected_closed = not _to_test_bool(pyp_switch["open"], default=False)
             actual_closed = bool(matching_pp_switch.iloc[0]["closed"])
@@ -1840,9 +1679,7 @@ def _assert_roundtrip_numeric_columns_close(
     )
 
     missing_columns = [
-        column
-        for column in columns
-        if column in original_table.columns and column not in roundtrip_table.columns
+        column for column in columns if column in original_table.columns and column not in roundtrip_table.columns
     ]
 
     assert not missing_columns, (
@@ -1852,22 +1689,16 @@ def _assert_roundtrip_numeric_columns_close(
     )
 
     compared_columns = [
-        column
-        for column in columns
-        if column in original_table.columns and column in roundtrip_table.columns
+        column for column in columns if column in original_table.columns and column in roundtrip_table.columns
     ]
 
     if not compared_columns:
         return
 
     for column in compared_columns:
-        original_values = pd.to_numeric(
-            original_table[column], errors="coerce"
-        ).to_numpy(dtype=float)
+        original_values = pd.to_numeric(original_table[column], errors="coerce").to_numpy(dtype=float)
 
-        roundtrip_values = pd.to_numeric(
-            roundtrip_table[column], errors="coerce"
-        ).to_numpy(dtype=float)
+        roundtrip_values = pd.to_numeric(roundtrip_table[column], errors="coerce").to_numpy(dtype=float)
 
         comparable_mask = np.isfinite(original_values)
 
@@ -1879,10 +1710,7 @@ def _assert_roundtrip_numeric_columns_close(
             original_values[comparable_mask],
             rtol=rtol,
             atol=atol,
-            err_msg=(
-                f"{component_name} column {column!r} differs after "
-                f"powsybl -> pandapower -> powsybl roundtrip"
-            ),
+            err_msg=(f"{component_name} column {column!r} differs after powsybl -> pandapower -> powsybl roundtrip"),
         )
 
 
@@ -1920,9 +1748,7 @@ def _assert_roundtrip_bool_columns_equal(
         )
 
 
-def _assert_roundtrip_loads_match_powsybl(
-    original_network: Any, roundtrip_network: Any
-) -> None:
+def _assert_roundtrip_loads_match_powsybl(original_network: Any, roundtrip_network: Any) -> None:
     original_loads = _get_table_or_empty(original_network, "get_loads")
 
     roundtrip_loads = _get_table_or_empty(roundtrip_network, "get_loads")
@@ -1937,9 +1763,7 @@ def _assert_roundtrip_loads_match_powsybl(
     )
 
 
-def _assert_roundtrip_generators_match_powsybl(
-    original_network: Any, roundtrip_network: Any
-) -> None:
+def _assert_roundtrip_generators_match_powsybl(original_network: Any, roundtrip_network: Any) -> None:
     original_generators = _get_table_or_empty(original_network, "get_generators")
 
     roundtrip_generators = _get_table_or_empty(roundtrip_network, "get_generators")
@@ -1967,14 +1791,10 @@ def _assert_roundtrip_lines_match_powsybl(
     original_lines = original_network.get_lines(all_attributes=True)
     roundtrip_lines = roundtrip_network.get_lines(all_attributes=True)
 
-    cross_voltage_line_ids = _get_cross_voltage_line_ids_from_pandapower(
-        pandapower_network
-    )
+    cross_voltage_line_ids = _get_cross_voltage_line_ids_from_pandapower(pandapower_network)
 
     if cross_voltage_line_ids:
-        original_lines = original_lines[
-            ~original_lines.index.astype(str).isin(cross_voltage_line_ids)
-        ].copy()
+        original_lines = original_lines[~original_lines.index.astype(str).isin(cross_voltage_line_ids)].copy()
 
     assert len(original_lines) == len(roundtrip_lines), (
         f"Number of comparable lines changed during roundtrip:\n"
@@ -2005,16 +1825,10 @@ def _assert_roundtrip_lines_match_powsybl(
     )
 
 
-def _assert_roundtrip_2w_transformers_match_powsybl(
-    original_network: Any, roundtrip_network: Any
-) -> None:
-    original_trafos = _get_table_or_empty(
-        original_network, "get_2_windings_transformers"
-    )
+def _assert_roundtrip_2w_transformers_match_powsybl(original_network: Any, roundtrip_network: Any) -> None:
+    original_trafos = _get_table_or_empty(original_network, "get_2_windings_transformers")
 
-    roundtrip_trafos = _get_table_or_empty(
-        roundtrip_network, "get_2_windings_transformers"
-    )
+    roundtrip_trafos = _get_table_or_empty(roundtrip_network, "get_2_windings_transformers")
 
     _assert_roundtrip_numeric_columns_close(
         original_trafos,
@@ -2034,9 +1848,7 @@ def _assert_roundtrip_2w_transformers_match_powsybl(
 
 
 def _get_original_3w_transformer_ids(original_network: Any) -> set[str]:
-    original_trafos = _get_table_or_empty(
-        original_network, "get_3_windings_transformers"
-    )
+    original_trafos = _get_table_or_empty(original_network, "get_3_windings_transformers")
 
     if original_trafos.empty:
         return set()
@@ -2044,16 +1856,10 @@ def _get_original_3w_transformer_ids(original_network: Any) -> set[str]:
     return set(original_trafos.index.astype(str))
 
 
-def _assert_roundtrip_3w_transformers_match_powsybl(
-    original_network: Any, roundtrip_network: Any
-) -> None:
-    original_trafos = _get_table_or_empty(
-        original_network, "get_3_windings_transformers"
-    )
+def _assert_roundtrip_3w_transformers_match_powsybl(original_network: Any, roundtrip_network: Any) -> None:
+    original_trafos = _get_table_or_empty(original_network, "get_3_windings_transformers")
 
-    roundtrip_trafos = _get_table_or_empty(
-        roundtrip_network, "get_3_windings_transformers"
-    )
+    roundtrip_trafos = _get_table_or_empty(roundtrip_network, "get_3_windings_transformers")
 
     if original_trafos.empty and roundtrip_trafos.empty:
         return
@@ -2102,9 +1908,7 @@ def _assert_roundtrip_3w_transformers_match_powsybl(
     )
 
 
-def _assert_roundtrip_switches_match_powsybl(
-    original_network: Any, roundtrip_network: Any
-) -> None:
+def _assert_roundtrip_switches_match_powsybl(original_network: Any, roundtrip_network: Any) -> None:
     original_switches = _get_table_or_empty(original_network, "get_switches")
 
     roundtrip_switches = _get_table_or_empty(roundtrip_network, "get_switches")
@@ -2135,9 +1939,7 @@ def _assert_roundtrip_static_values_match_powsybl(
 
     _assert_roundtrip_generators_match_powsybl(original_network, roundtrip_network)
 
-    _assert_roundtrip_lines_match_powsybl(
-        original_network, roundtrip_network, pandapower_network
-    )
+    _assert_roundtrip_lines_match_powsybl(original_network, roundtrip_network, pandapower_network)
 
     _assert_roundtrip_2w_transformers_match_powsybl(original_network, roundtrip_network)
 
@@ -2150,13 +1952,9 @@ def _run_conversion_roundtrip_cycle(
     case_name: str, original_network: Any, tmp_path: Path, pyp_lf: Any, pandapower: Any
 ) -> None:
     """Run the full powsybl -> pandapower -> powsybl conversion test cycle."""
-    _powsybl_loadflow_must_converge(
-        original_network, pyp_lf, label=f"original {case_name}"
-    )
+    _powsybl_loadflow_must_converge(original_network, pyp_lf, label=f"original {case_name}")
 
-    xiidm_path = _save_network_as_xiidm(
-        original_network, tmp_path / f"{case_name}.xiidm"
-    )
+    xiidm_path = _save_network_as_xiidm(original_network, tmp_path / f"{case_name}.xiidm")
 
     converter = PyPowSyBlConverter()
     pandapower_network, _, json_path, *_ = converter._powsybl_to_pandapower(
@@ -2187,13 +1985,9 @@ def _run_conversion_roundtrip_cycle(
 
     _assert_converted_lines_match_powsybl(original_network, pandapower_network)
 
-    _assert_converted_2w_transformers_match_powsybl(
-        original_network, pandapower_network
-    )
+    _assert_converted_2w_transformers_match_powsybl(original_network, pandapower_network)
 
-    _assert_converted_3w_transformers_match_powsybl(
-        original_network, pandapower_network
-    )
+    _assert_converted_3w_transformers_match_powsybl(original_network, pandapower_network)
 
     _assert_converted_switches_match_powsybl(original_network, pandapower_network)
 
@@ -2223,23 +2017,15 @@ def _run_conversion_roundtrip_cycle(
         )
         return
 
-    roundtrip_network, roundtrip_xiidm_path = _pandapower_to_powsybl(
-        pandapower_network, tmp_path
-    )
+    roundtrip_network, roundtrip_xiidm_path = _pandapower_to_powsybl(pandapower_network, tmp_path)
 
     assert roundtrip_xiidm_path.exists()
 
-    _assert_basic_network_size_is_preserved(
-        original_network, roundtrip_network, pandapower_network
-    )
+    _assert_basic_network_size_is_preserved(original_network, roundtrip_network, pandapower_network)
 
-    _assert_roundtrip_static_values_match_powsybl(
-        original_network, roundtrip_network, pandapower_network
-    )
+    _assert_roundtrip_static_values_match_powsybl(original_network, roundtrip_network, pandapower_network)
 
-    cross_voltage_line_ids = _get_cross_voltage_line_ids_from_pandapower(
-        pandapower_network
-    )
+    cross_voltage_line_ids = _get_cross_voltage_line_ids_from_pandapower(pandapower_network)
 
     if cross_voltage_line_ids:
         logger.info(
@@ -2251,15 +2037,12 @@ def _run_conversion_roundtrip_cycle(
         )
         return
 
-    _powsybl_loadflow_must_converge(
-        roundtrip_network, pyp_lf, label=f"roundtrip {case_name}"
-    )
+    _powsybl_loadflow_must_converge(roundtrip_network, pyp_lf, label=f"roundtrip {case_name}")
 
-    _assert_same_bus_loadflow_results(
-        original_network, roundtrip_network, pandapower_network
-    )
+    _assert_same_bus_loadflow_results(original_network, roundtrip_network, pandapower_network)
 
 
+@pytest.mark.skip(reason="pypowsybl's pandapower importer is not pp4 ready")  # TODO: remove once they fixed the issue.
 @pytest.mark.parametrize(
     "case_name, network_factory",
     PYP_NETWORK_CASES,
@@ -2279,32 +2062,22 @@ def test_network_conversion_and_roundtrip_static_checks(
     )
 
 
-def _assert_same_pandapower_network_results(
-    original_pp_net: Any, roundtrip_pp_net: Any
-) -> None:
+def _assert_same_pandapower_network_results(original_pp_net: Any, roundtrip_pp_net: Any) -> None:
     """Compare pandapower results tables before and after a powsybl roundtrip."""
     assert len(original_pp_net.bus) == len(roundtrip_pp_net.bus), (
-        f"Number of buses changed: "
-        f"original = {len(original_pp_net.bus)}, "
-        f"roundtrip = {len(roundtrip_pp_net.bus)}"
+        f"Number of buses changed: original = {len(original_pp_net.bus)}, roundtrip = {len(roundtrip_pp_net.bus)}"
     )
 
     assert len(original_pp_net.load) == len(roundtrip_pp_net.load), (
-        f"Number of loads changed: "
-        f"original = {len(original_pp_net.load)}, "
-        f"roundtrip = {len(roundtrip_pp_net.load)}"
+        f"Number of loads changed: original = {len(original_pp_net.load)}, roundtrip = {len(roundtrip_pp_net.load)}"
     )
 
     assert len(original_pp_net.gen) == len(roundtrip_pp_net.gen), (
-        f"Number of generators changed: "
-        f"original = {len(original_pp_net.gen)}, "
-        f"roundtrip = {len(roundtrip_pp_net.gen)}"
+        f"Number of generators changed: original = {len(original_pp_net.gen)}, roundtrip = {len(roundtrip_pp_net.gen)}"
     )
 
     assert len(original_pp_net.line) == len(roundtrip_pp_net.line), (
-        f"Number of lines changed: "
-        f"original = {len(original_pp_net.line)}, "
-        f"roundtrip = {len(roundtrip_pp_net.line)}"
+        f"Number of lines changed: original = {len(original_pp_net.line)}, roundtrip = {len(roundtrip_pp_net.line)}"
     )
 
     assert len(original_pp_net.trafo) == len(roundtrip_pp_net.trafo), (
@@ -2313,23 +2086,20 @@ def _assert_same_pandapower_network_results(
         f"roundtrip = {len(roundtrip_pp_net.trafo)}"
     )
 
-    original_v_mag = original_pp_net.res_bus["vm_pu"].to_numpy(
+    original_v_mag = original_pp_net.res_bus["vm_pu"].to_numpy(dtype=float) * original_pp_net.bus["vn_kv"].to_numpy(
         dtype=float
-    ) * original_pp_net.bus["vn_kv"].to_numpy(dtype=float)
+    )
 
-    roundtrip_v_mag = roundtrip_pp_net.res_bus["vm_pu"].to_numpy(
+    roundtrip_v_mag = roundtrip_pp_net.res_bus["vm_pu"].to_numpy(dtype=float) * roundtrip_pp_net.bus["vn_kv"].to_numpy(
         dtype=float
-    ) * roundtrip_pp_net.bus["vn_kv"].to_numpy(dtype=float)
+    )
 
     np.testing.assert_allclose(
         roundtrip_v_mag,
         original_v_mag,
         rtol=5e-2,
         atol=1e-1,
-        err_msg=(
-            "Pandapower bus voltage magnitudes differ after "
-            "pandapower -> powsybl -> pandapower roundtrip"
-        ),
+        err_msg=("Pandapower bus voltage magnitudes differ after pandapower -> powsybl -> pandapower roundtrip"),
     )
 
     original_angles = (
@@ -2347,10 +2117,7 @@ def _assert_same_pandapower_network_results(
         original_angles,
         rtol=5e-2,
         atol=1.0,
-        err_msg=(
-            "Pandapower bus voltage angles differ after "
-            "pandapower -> powsybl -> pandapower roundtrip"
-        ),
+        err_msg=("Pandapower bus voltage angles differ after pandapower -> powsybl -> pandapower roundtrip"),
     )
 
 
@@ -2371,13 +2138,9 @@ def _run_conversion_pandapower_cycle(
 
     pyp_network = convert_from_pandapower(original_pp_net)
 
-    _powsybl_loadflow_must_converge(
-        pyp_network, pyp_lf, label=f"powsybl converted from pandapower {case_name}"
-    )
+    _powsybl_loadflow_must_converge(pyp_network, pyp_lf, label=f"powsybl converted from pandapower {case_name}")
 
-    xiidm_path = _save_network_as_xiidm(
-        pyp_network, tmp_path / f"{case_name}_from_pandapower.xiidm"
-    )
+    xiidm_path = _save_network_as_xiidm(pyp_network, tmp_path / f"{case_name}_from_pandapower.xiidm")
 
     converter = PyPowSyBlConverter()
 
@@ -2404,14 +2167,13 @@ def _run_conversion_pandapower_cycle(
     _assert_same_pandapower_network_results(original_pp_net, roundtrip_pp_net)
 
 
+@pytest.mark.skip(reason="pypowsybl's pandapower importer is not pp4 ready")  # TODO: remove once they fixed the issue.
 @pytest.mark.parametrize(
     "case_name, network_factory",
     PANDAPOWER_NETWORK_CASES,
     ids=[case_name for case_name, _ in PANDAPOWER_NETWORK_CASES],
 )
-def test_pandapower_powsybl_pandapower_roundtrip(
-    case_name, network_factory, tmp_path, pyp_lf, pandapower
-) -> None:
+def test_pandapower_powsybl_pandapower_roundtrip(case_name, network_factory, tmp_path, pyp_lf, pandapower) -> None:
     original_pp_net = network_factory(pandapower)
 
     _run_conversion_pandapower_cycle(

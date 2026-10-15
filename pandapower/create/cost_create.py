@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -11,7 +9,7 @@ from typing import Iterable, Sequence
 import numpy as np
 import numpy.typing as npt
 
-from pandapower.auxiliary import pandapowerNet
+from pandapower.network import pandapowerNet
 from pandapower.pp_types import Int, CostElementType, PWLPowerType
 from pandapower.create._utils import (
     _cost_existance_check,
@@ -155,11 +153,11 @@ def create_poly_cost(
     element: Int | Iterable[Int],
     et: CostElementType,
     cp1_eur_per_mw: float,
-    cp0_eur: float = 0.,
-    cq1_eur_per_mvar: float = 0.,
-    cq0_eur: float = 0.,
-    cp2_eur_per_mw2: float = 0.,
-    cq2_eur_per_mvar2: float = 0.,
+    cp0_eur: float = 0.0,
+    cq1_eur_per_mvar: float = 0.0,
+    cq0_eur: float = 0.0,
+    cp2_eur_per_mw2: float = 0.0,
+    cq2_eur_per_mvar2: float = 0.0,
     redispatch_up_eur_per_mw: float = np.nan,
     redispatch_down_eur_per_mw: float = np.nan,
     index: int | None = None,

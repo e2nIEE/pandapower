@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -7,22 +5,23 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower.converter.pandamodels.to_pm import init_ne_line, convert_pp_to_pm
 from pandapower.converter.pandamodels.from_pm import read_tnep_results
+from pandapower.converter.pandamodels.to_pm import convert_pp_to_pm, init_ne_line
 from pandapower.create import create_poly_cost
 from pandapower.networks.cigre_networks import create_cigre_network_mv
 from pandapower.run import runpp
 from pandapower.runpm import runpm_tnep
 
 try:
-    from juliacall import JuliaError as UnsupportedPythonError # type: ignore
+    from juliacall import JuliaError as UnsupportedPythonError  # type: ignore
 except ImportError:
     UnsupportedPythonError = Exception
 
 try:
-    from juliacall import Main # type: ignore
+    from juliacall import Main  # type: ignore
+
     julia_installed = True
-except (ImportError, RuntimeError, UnsupportedPythonError) as e:
+except (ImportError, RuntimeError, UnsupportedPythonError):
     julia_installed = False
 
 
@@ -32,7 +31,7 @@ def cigre_grid():
     net["bus"].loc[:, "min_vm_pu"] = 0.95
     net["bus"].loc[:, "max_vm_pu"] = 1.05
 
-    net["line"].loc[:, "max_loading_percent"] = 60.
+    net["line"].loc[:, "max_loading_percent"] = 60.0
     return net
 
 
@@ -41,9 +40,9 @@ def define_possible_new_lines(net):
     max_idx = max(net["line"].index)
     net["line"] = pd.concat([net["line"]] * 2, ignore_index=True)  # duplicate
     # they must be set out of service in the line DataFrame (otherwise they are already "built")
-    net["line"].loc[max_idx + 1:, "in_service"] = False
+    net["line"].loc[max_idx + 1 :, "in_service"] = False
     # get the index of the new lines
-    new_lines = net["line"].loc[max_idx + 1:].index
+    new_lines = net["line"].loc[max_idx + 1 :].index
 
     # creates the new line DataFrame net["ne_line"] which defines the measures to choose from. The costs are defined
     # exemplary as 1. for every line.
@@ -54,17 +53,50 @@ def define_possible_new_lines(net):
 
 def test_tnep_built_result_uses_boolean_dtype():
     net = cigre_grid()
-    new_line = net.line.index[-2:].tolist()
-    init_ne_line(net, new_line)
+    candidate_labels = [23, 7, 41]
+    net["line"] = net["line"].iloc[: len(candidate_labels)].copy()
+    net["line"].index = candidate_labels
+    net["line"].loc[:, "in_service"] = False
+    line_before = net["line"].copy(deep=True)
 
-    assert net.res_ne_line["built"].dtype == bool
-    assert not net.res_ne_line["built"].any()
+    init_ne_line(net, candidate_labels, construction_costs=np.ones(len(candidate_labels)))
 
-    net["_pm_result"] = {"ne_branch": {"1": {"built": 0.25}, "2": {"built": 0.75}}}
+    pd.testing.assert_frame_equal(net["line"], line_before)
+    assert list(net["res_ne_line"].index) == candidate_labels
+    built_lines = net["res_ne_line"].loc[net["res_ne_line"]["built"]]
+    assert built_lines.empty
+    assert net["res_ne_line"]["built"].dtype == bool
+
+    net._pm_result = {
+        "ne_branch": {
+            "3": {"built": 0.75},
+            "1": {"built": 0.25},
+            "2": {"built": 0.5},
+        }
+    }
     read_tnep_results(net)
 
-    assert net.res_ne_line["built"].tolist() == [False, True]
-    assert net.res_ne_line["built"].dtype == bool
+    pd.testing.assert_frame_equal(net["line"], line_before)
+    built_lines = net["res_ne_line"].loc[net["res_ne_line"]["built"]]
+    assert list(built_lines.index) == [41]
+    expected_built = pd.Series(False, index=candidate_labels, name="built", dtype=bool)
+    expected_built.loc[41] = True
+    pd.testing.assert_series_equal(net["res_ne_line"]["built"], expected_built)
+    assert net["res_ne_line"]["built"].dtype == bool
+    net["line"].loc[built_lines.index, "in_service"] = True
+    assert net["line"].loc[[23, 7], "in_service"].eq(False).all()
+    assert net["line"].loc[41, "in_service"]
+
+
+def test_tnep_empty_candidate_result_is_boolean_mask():
+    net = cigre_grid()
+    line_before = net["line"].copy(deep=True)
+
+    init_ne_line(net, [], construction_costs=[])
+
+    pd.testing.assert_frame_equal(net["line"], line_before)
+    assert net["res_ne_line"].loc[net["res_ne_line"]["built"]].empty
+    assert net["res_ne_line"]["built"].dtype == bool
 
 
 @pytest.mark.slow
@@ -83,7 +115,7 @@ def test_pm_tnep_cigre_dc():
     runpm_tnep(net, pm_solver="juniper", pm_model="DCMPPowerModel")  # gurobi is a better option, but not for travis
 
     # set lines to be built in service
-    lines_to_built = net["res_ne_line"].loc[net["res_ne_line"].loc[:, "built"], "built"].index
+    lines_to_built = net["res_ne_line"].loc[net["res_ne_line"]["built"].astype(bool), "built"].index
     net["line"].loc[lines_to_built, "in_service"] = True
 
     # run a power flow calculation again and check if max_loading percent is still violated
@@ -95,13 +127,13 @@ def test_pm_tnep_cigre_dc():
 
 def define_ext_grid_limits(net):
     # define limits
-    net["ext_grid"].loc[:, "min_p_mw"] = -9999.
-    net["ext_grid"].loc[:, "max_p_mw"] = 9999.
-    net["ext_grid"].loc[:, "min_q_mvar"] = -9999.
-    net["ext_grid"].loc[:, "max_q_mvar"] = 9999.
+    net["ext_grid"].loc[:, "min_p_mw"] = -9999.0
+    net["ext_grid"].loc[:, "max_p_mw"] = 9999.0
+    net["ext_grid"].loc[:, "min_q_mvar"] = -9999.0
+    net["ext_grid"].loc[:, "max_q_mvar"] = 9999.0
     # define costs
     for i in net.ext_grid.index:
-        create_poly_cost(net, i, 'ext_grid', cp1_eur_per_mw=1)
+        create_poly_cost(net, i, "ext_grid", cp1_eur_per_mw=1)
 
 
 def test_pm_tnep_cigre_only_conversion():
@@ -129,11 +161,12 @@ def test_pm_tnep_cigre_ac_S():
     assert np.any(net["res_line"].loc[:, "loading_percent"] > net["line"].loc[:, "max_loading_percent"])
 
     # run power models tnep optimization
-    runpm_tnep(net, pm_solver="juniper", pm_model="ACPPowerModel",
-               opf_flow_lim="S", pm_mip_solver='cbc')  # gurobi is a better option, but not for travis
+    runpm_tnep(
+        net, pm_solver="juniper", pm_model="ACPPowerModel", opf_flow_lim="S", pm_mip_solver="cbc"
+    )  # gurobi is a better option, but not for travis
 
     # set lines to be built in service
-    lines_to_built = net["res_ne_line"].loc[net["res_ne_line"].loc[:, "built"], "built"].index
+    lines_to_built = net["res_ne_line"].loc[net["res_ne_line"]["built"].astype(bool), "built"].index
     net["line"].loc[lines_to_built, "in_service"] = True
 
     # run a power flow calculation again and check if max_loading percent is still violated
@@ -162,7 +195,7 @@ def test_pm_tnep_cigre_ac_I():
     # print(net["res_ne_line"])
 
     # set lines to be built in service
-    lines_to_built = net["res_ne_line"].loc[net["res_ne_line"].loc[:, "built"], "built"].index
+    lines_to_built = net["res_ne_line"].loc[net["res_ne_line"]["built"].astype(bool), "built"].index
     net["line"].loc[lines_to_built, "in_service"] = True
 
     # run a power flow calculation again and check if max_loading percent is still violated
@@ -172,5 +205,5 @@ def test_pm_tnep_cigre_ac_I():
     assert not np.any(net["res_line"].loc[:, "loading_percent"] > net["line"].loc[:, "max_loading_percent"])
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

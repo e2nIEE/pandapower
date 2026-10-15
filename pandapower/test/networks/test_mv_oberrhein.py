@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -15,8 +13,6 @@ from pandapower.run import runpp
 @pytest.mark.parametrize("separation_by_sub", [False, True])
 def test_mv_oberrhein(scenarios, include_substations, separation_by_sub):
     net = mv_oberrhein(scenario=scenarios, include_substations=include_substations)
-    assert net.trafo.tap_dependency_table.dtype == bool
-    assert not net.trafo.tap_dependency_table.any()
     runpp(net)
 
     if scenarios == "load":

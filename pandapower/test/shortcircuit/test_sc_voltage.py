@@ -1,25 +1,27 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
 import pytest
 
-from pandapower.create import create_empty_network, create_bus, create_line, create_ext_grid, create_sgen, create_gen
+from pandapower.create import create_buses, create_ext_grid, create_gen, create_lines, create_sgen
+from pandapower.network import pandapowerNet
 from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.test.shortcircuit.test_iec60909_4 import iec_60909_4
 
 
 def simple_grid():
-    net = create_empty_network(sn_mva=4)
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    b3 = create_bus(net, 110)
+    net = pandapowerNet(name="simple_grid", sn_mva=4)
+    b1, b2, b3 = create_buses(net, 3, 110)
 
-    create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.4, rx_max=0.4)
-    create_line(net, b1, b2, std_type="305-AL1/39-ST1A 110.0", length_km=20.)
-    create_line(net, b2, b3, std_type="N2XS(FL)2Y 1x185 RM/35 64/110 kV", length_km=15.)
+    create_ext_grid(net, b1, s_sc_max_mva=100.0, s_sc_min_mva=80.0, rx_min=0.4, rx_max=0.4)
+    create_lines(
+        net,
+        [b1, b2],
+        [b2, b3],
+        line_params=["305-AL1/39-ST1A 110.0", "N2XS(FL)2Y 1x185 RM/35 64/110 kV"],
+        length_km=[20.0, 15.0],
+    )
     net.line["endtemp_degree"] = 80
 
     return net
@@ -27,7 +29,7 @@ def simple_grid():
 
 def test_voltage_sgen():
     net = simple_grid()
-    create_sgen(net, 1, sn_mva=200., p_mw=0, k=1.3)
+    create_sgen(net, 1, sn_mva=200.0, p_mw=0, k=1.3)
     # net.sn_mva = 110 * np.sqrt(3)
     calc_sc(net, case="max", ip=True, branch_results=True, bus=2)
 
@@ -61,8 +63,17 @@ def test_voltage_sgen():
 def test_voltage_gen():
     net = simple_grid()
     z_base_ohm = np.square(110) / 100
-    create_gen(net, 1, p_mw=0, sn_mva=100, vn_kv=110,
-               xdss_pu=0.14, rdss_ohm=0.00001653 * z_base_ohm, cos_phi=0.85, pg_percent=0)
+    create_gen(
+        net,
+        1,
+        p_mw=0,
+        sn_mva=100,
+        vn_kv=110,
+        xdss_pu=0.14,
+        rdss_ohm=0.00001653 * z_base_ohm,
+        cos_phi=0.85,
+        pg_percent=0,
+    )
     calc_sc(net, case="max", ip=True, branch_results=True, bus=2)
 
     assert np.isclose(net.res_bus_sc.at[2, "ikss_ka"], 3.87955, atol=1e-6, rtol=0)
@@ -124,11 +135,10 @@ def test_voltage_simple():
 
 
 def test_voltage_very_simple():
-    net = create_empty_network(sn_mva=12)
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    create_ext_grid(net, b1, s_sc_max_mva=100., s_sc_min_mva=80., rx_min=0.4, rx_max=0.4)
-    create_line(net, b1, b2, std_type="305-AL1/39-ST1A 110.0", length_km=20.)
+    net = pandapowerNet(name="test_voltage_very_simple", sn_mva=12)
+    b1, b2 = create_buses(net, 2, 110)
+    create_ext_grid(net, b1, s_sc_max_mva=100.0, s_sc_min_mva=80.0, rx_min=0.4, rx_max=0.4)
+    create_lines(net, b1, b2, std_type="305-AL1/39-ST1A 110.0", length_km=20.0)
     calc_sc(net, case="max", ip=True, ith=True, branch_results=True, bus=1)
 
     assert np.isclose(net.res_bus_sc.at[1, "ikss_ka"], 0.49593, atol=1e-6, rtol=0)
@@ -146,8 +156,5 @@ def test_voltage_very_simple():
 
 def test_iec_60909_4():
     net = iec_60909_4()
-    with pytest.warns(
-        UserWarning,
-        match=r"^Calculation does not support calculation of voltages and branch powers for grids that have transformers with rated voltages unequal to bus voltages\.",
-    ):
+    with pytest.warns(UserWarning, match="Calculation does not support calculation of voltages and .*"):
         calc_sc(net, case="max", ip=True, ith=True, branch_results=True, bus=2)

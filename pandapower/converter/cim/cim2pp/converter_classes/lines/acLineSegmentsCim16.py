@@ -8,7 +8,7 @@ from pandapower.converter.cim import cim_tools
 from pandapower.converter.cim.cim2pp import build_pp_net
 from pandapower.converter.cim.other_classes import Report, LogLevel, ReportCode
 
-logger = logging.getLogger('cim.cim2pp.converter_classes.acLineSegmentsCim16')
+logger = logging.getLogger("cim.cim2pp.converter_classes.acLineSegmentsCim16")
 
 sc = cim_tools.get_pp_net_special_columns_dict()
 
@@ -25,39 +25,58 @@ class AcLineSegmentsCim16:
 
         # now create the lines and the switches
         # -------- lines --------
-        if 'line' in eq_ac_line_segments['kindOfType'].values:
-            line_df = eq_ac_line_segments.loc[eq_ac_line_segments['kindOfType'] == 'line']
-            line_df = line_df.rename(columns={
-                'rdfId': sc['o_id'], 'rdfId_Terminal': sc['t_from'], 'rdfId_Terminal2': sc['t_to'],
-                'index_bus': 'from_bus', 'index_bus2': 'to_bus', 'length': 'length_km',
-                'shortCircuitEndTemperature': 'endtemp_degree', 'EquipmentContainer': 'EquipmentContainer_id'})
-            self.cimConverter.copy_to_pp('line', line_df)
+        if "line" in eq_ac_line_segments["kindOfType"].values:
+            line_df = eq_ac_line_segments.loc[eq_ac_line_segments["kindOfType"] == "line"]
+            line_df = line_df.rename(
+                columns={
+                    "rdfId": sc["o_id"],
+                    "rdfId_Terminal": sc["t_from"],
+                    "rdfId_Terminal2": sc["t_to"],
+                    "index_bus": "from_bus",
+                    "index_bus2": "to_bus",
+                    "length": "length_km",
+                    "shortCircuitEndTemperature": "endtemp_degree",
+                    "EquipmentContainer": "EquipmentContainer_id",
+                }
+            )
+            self.cimConverter.copy_to_pp("line", line_df)
         else:
             line_df = pd.DataFrame(None)
         # -------- switches --------
-        if 'switch' in eq_ac_line_segments['kindOfType'].values:
-            switch_df = eq_ac_line_segments.loc[eq_ac_line_segments['kindOfType'] == 'switch']
+        if "switch" in eq_ac_line_segments["kindOfType"].values:
+            switch_df = eq_ac_line_segments.loc[eq_ac_line_segments["kindOfType"] == "switch"]
 
-            switch_df = switch_df.rename(columns={
-                'rdfId': sc['o_id'], 'index_bus': 'bus', 'index_bus2': 'element', 'rdfId_Terminal': sc['t_bus'],
-                'rdfId_Terminal2': sc['t_ele']})
-            self.cimConverter.copy_to_pp('switch', switch_df)
+            switch_df = switch_df.rename(
+                columns={
+                    "rdfId": sc["o_id"],
+                    "index_bus": "bus",
+                    "index_bus2": "element",
+                    "rdfId_Terminal": sc["t_bus"],
+                    "rdfId_Terminal2": sc["t_ele"],
+                }
+            )
+            self.cimConverter.copy_to_pp("switch", switch_df)
         else:
             switch_df = pd.DataFrame(None)
 
-        self.logger.info("Created %s lines and %s switches in %ss" %
-                         (line_df.index.size, switch_df.index.size, time.time() - time_start))
-        self.cimConverter.report_container.add_log(Report(
-            level=LogLevel.INFO, code=ReportCode.INFO_CONVERTING,
-            message="Created %s lines and %s switches from ACLineSegments in %ss" %
-                    (line_df.index.size, switch_df.index.size, time.time() - time_start)))
+        self.logger.info(
+            "Created %s lines and %s switches in %ss"
+            % (line_df.index.size, switch_df.index.size, time.time() - time_start)
+        )
+        self.cimConverter.report_container.add_log(
+            Report(
+                level=LogLevel.INFO,
+                code=ReportCode.INFO_CONVERTING,
+                message="Created %s lines and %s switches from ACLineSegments in %ss"
+                % (line_df.index.size, switch_df.index.size, time.time() - time_start),
+            )
+        )
 
     def _prepare_ac_line_segments_cim16(self, convert_line_to_switch, line_r_limit, line_x_limit) -> pd.DataFrame:
-
-        if 'sc' in self.cimConverter.cim:  # CGMES 3.0
-            ac_line_segments = self.cimConverter.merge_eq_sc_profile('ACLineSegment')
+        if "sc" in self.cimConverter.cim:  # CGMES 3.0
+            ac_line_segments = self.cimConverter.merge_eq_sc_profile("ACLineSegment")
         else:  # CGMES 2.4.15
-            ac_line_segments = self.cimConverter.cim['eq']['ACLineSegment']
+            ac_line_segments = self.cimConverter.cim["eq"]["ACLineSegment"]
 
         line_length_before_merge = ac_line_segments.index.size
         # until now self.cim['eq']['ACLineSegment'] looks like:
@@ -65,8 +84,8 @@ class AcLineSegmentsCim16:
         #   _x01    line1   0.056   ...
         #   _x02    line2   0.471   ...
         # now join with the terminals
-        ac_line_segments = pd.merge(ac_line_segments, self.cimConverter.bus_merge, how='left', on='rdfId')
-        ac_line_segments[sc['o_cl']] = 'ACLineSegment'
+        ac_line_segments = pd.merge(ac_line_segments, self.cimConverter.bus_merge, how="left", on="rdfId")
+        ac_line_segments[sc["o_cl"]] = "ACLineSegment"
         # now ac_line_segments looks like:
         #   rdfId   name    r       rdfId_Terminal  connected   ...
         #   _x01    line1   0.056   termi025        True        ...
@@ -75,55 +94,72 @@ class AcLineSegmentsCim16:
         #   _x02    line2   0.471   termi199        True        ...
         # if each switch got two terminals, reduce back to one line to use fast slicing
         if ac_line_segments.index.size != line_length_before_merge * 2:
-            self.logger.error("Error processing the ACLineSegments, there is a problem with Terminals in the source "
-                              "data!")
-            self.cimConverter.report_container.add_log(Report(
-                level=LogLevel.ERROR, code=ReportCode.ERROR_CONVERTING,
-                message="Error processing the ACLineSegments, there is a problem with Terminals in the source data!"))
-            dups = ac_line_segments.pivot_table(index=['rdfId'], aggfunc='size')  # type: ignore[arg-type]
+            self.logger.error(
+                "Error processing the ACLineSegments, there is a problem with Terminals in the source data!"
+            )
+            self.cimConverter.report_container.add_log(
+                Report(
+                    level=LogLevel.ERROR,
+                    code=ReportCode.ERROR_CONVERTING,
+                    message="Error processing the ACLineSegments, there is a problem with Terminals in the source data!",
+                )
+            )
+            dups = ac_line_segments.pivot_table(index=["rdfId"], aggfunc="size")  # type: ignore[arg-type]
             dups = dups.loc[dups != 2]  # type: ignore[call-overload]
             for rdfId, count in dups.items():
                 self.logger.warning("The ACLineSegment with RDF ID %s has %s Terminals!" % (rdfId, count))
-                self.logger.warning("The ACLineSegment data: \n%s" %
-                                    ac_line_segments[ac_line_segments['rdfId'] == rdfId])
-                self.cimConverter.report_container.add_log(Report(
-                    level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
-                    message="The ACLineSegment with RDF ID %s has %s Terminals!" % (rdfId, count)))
+                self.logger.warning(
+                    "The ACLineSegment data: \n%s" % ac_line_segments[ac_line_segments["rdfId"] == rdfId]
+                )
+                self.cimConverter.report_container.add_log(
+                    Report(
+                        level=LogLevel.WARNING,
+                        code=ReportCode.WARNING_CONVERTING,
+                        message="The ACLineSegment with RDF ID %s has %s Terminals!" % (rdfId, count),
+                    )
+                )
             # Only remove the problematic ACLineSegments, keep the valid ones
-            ac_line_segments = ac_line_segments[~ac_line_segments['rdfId'].isin(dups.index)]
-            self.logger.warning("Removed %s ACLineSegments with invalid Terminals, continuing with %s valid segments." %
-                                (len(dups), ac_line_segments.index.size // 2))
-            self.cimConverter.report_container.add_log(Report(
-                level=LogLevel.WARNING, code=ReportCode.WARNING_CONVERTING,
-                message="Removed %s ACLineSegments with invalid Terminals, continuing with %s valid segments." %
-                        (len(dups), ac_line_segments.index.size // 2)))
+            ac_line_segments = ac_line_segments[~ac_line_segments["rdfId"].isin(dups.index)]
+            self.logger.warning(
+                "Removed %s ACLineSegments with invalid Terminals, continuing with %s valid segments."
+                % (len(dups), ac_line_segments.index.size // 2)
+            )
+            self.cimConverter.report_container.add_log(
+                Report(
+                    level=LogLevel.WARNING,
+                    code=ReportCode.WARNING_CONVERTING,
+                    message="Removed %s ACLineSegments with invalid Terminals, continuing with %s valid segments."
+                    % (len(dups), ac_line_segments.index.size // 2),
+                )
+            )
         ac_line_segments = ac_line_segments.reset_index()
         # now merge with OperationalLimitSets and CurrentLimits
-        eq_operational_limit_sets = self.cimConverter.cim['eq']['OperationalLimitSet'][['rdfId', 'Terminal']]
-        eq_operational_limit_sets = eq_operational_limit_sets.rename(columns={'rdfId': 'rdfId_OperationalLimitSet',
-                                                  'Terminal': 'rdfId_Terminal'})
-        ac_line_segments = pd.merge(ac_line_segments, eq_operational_limit_sets, how='left',
-                                       on='rdfId_Terminal')
-        if 'CurrentLimit' in self.cimConverter.cim['ssh']:  # CGMES 3.0
-            current_limits = self.cimConverter.merge_eq_ssh_profile('CurrentLimit')[['rdfId', 'OperationalLimitSet',
-                                                                                     'value']]
+        eq_operational_limit_sets = self.cimConverter.cim["eq"]["OperationalLimitSet"][["rdfId", "Terminal"]]
+        eq_operational_limit_sets = eq_operational_limit_sets.rename(
+            columns={"rdfId": "rdfId_OperationalLimitSet", "Terminal": "rdfId_Terminal"}
+        )
+        ac_line_segments = pd.merge(ac_line_segments, eq_operational_limit_sets, how="left", on="rdfId_Terminal")
+        if "CurrentLimit" in self.cimConverter.cim["ssh"]:  # CGMES 3.0
+            current_limits = self.cimConverter.merge_eq_ssh_profile("CurrentLimit")[
+                ["rdfId", "OperationalLimitSet", "value"]
+            ]
         else:  # CGMES 2.4.15
-            current_limits = self.cimConverter.cim['eq']['CurrentLimit'][['rdfId', 'OperationalLimitSet', 'value']]
-        current_limits = current_limits.rename(columns={'rdfId': 'rdfId_CurrentLimit',
-                                          'OperationalLimitSet': 'rdfId_OperationalLimitSet'})
-        ac_line_segments = pd.merge(ac_line_segments, current_limits, how='left',
-                                    on='rdfId_OperationalLimitSet')
+            current_limits = self.cimConverter.cim["eq"]["CurrentLimit"][["rdfId", "OperationalLimitSet", "value"]]
+        current_limits = current_limits.rename(
+            columns={"rdfId": "rdfId_CurrentLimit", "OperationalLimitSet": "rdfId_OperationalLimitSet"}
+        )
+        ac_line_segments = pd.merge(ac_line_segments, current_limits, how="left", on="rdfId_OperationalLimitSet")
         ac_line_segments.value = ac_line_segments.value.astype(float)  # type: ignore[attr-defined]
         # sort by rdfId, sequenceNumber and value. value is max_i_ka, choose the lowest one if more than one is
         # given (A line may have more than one max_i_ka in CIM, different modes e.g. normal)
-        ac_line_segments = ac_line_segments.sort_values(by=['rdfId', 'sequenceNumber', 'value'])
-        ac_line_segments = ac_line_segments.drop_duplicates(['rdfId', 'rdfId_Terminal'], keep='first')
+        ac_line_segments = ac_line_segments.sort_values(by=["rdfId", "sequenceNumber", "value"])
+        ac_line_segments = ac_line_segments.drop_duplicates(["rdfId", "rdfId_Terminal"], keep="first")
 
         # copy the columns which are needed to reduce the ac_line_segments to one row per line
-        ac_line_segments['rdfId_Terminal2'] = ac_line_segments['rdfId_Terminal'].copy()
-        ac_line_segments['connected2'] = ac_line_segments['connected'].copy()
-        ac_line_segments['index_bus2'] = ac_line_segments['index_bus'].copy()
-        ac_line_segments['value2'] = ac_line_segments['value'].copy()
+        ac_line_segments["rdfId_Terminal2"] = ac_line_segments["rdfId_Terminal"].copy()
+        ac_line_segments["connected2"] = ac_line_segments["connected"].copy()
+        ac_line_segments["index_bus2"] = ac_line_segments["index_bus"].copy()
+        ac_line_segments["value2"] = ac_line_segments["value"].copy()
         ac_line_segments = ac_line_segments.reset_index()
         # here is where the magic happens: just remove the first value from the copied columns, reset the index
         # and replace the old column with the cut one. At least just remove the duplicates on column rdfId
@@ -131,41 +167,42 @@ class AcLineSegmentsCim16:
         ac_line_segments.connected2 = ac_line_segments.connected2.iloc[1:].reset_index().connected2  # type: ignore[attr-defined]
         ac_line_segments.index_bus2 = ac_line_segments.index_bus2.iloc[1:].reset_index().index_bus2  # type: ignore[attr-defined]
         ac_line_segments.value2 = ac_line_segments.value2.iloc[1:].reset_index().value2  # type: ignore[attr-defined]
-        ac_line_segments = ac_line_segments.drop_duplicates(['rdfId'], keep='first')
+        ac_line_segments = ac_line_segments.drop_duplicates(["rdfId"], keep="first")
         # get the max_i_ka
-        ac_line_segments['max_i_ka'] = ac_line_segments['value'].fillna(ac_line_segments['value2']) * 1e-3
-        if self.cimConverter.cim_version == '3.0':
-           ac_line_segments['in_service'] = (ac_line_segments.connected & ac_line_segments.connected2 &
-                                             ac_line_segments.inService)
-        elif self.cimConverter.cim_version == 'ltds':
-            mapping = self.cimConverter.cim['ssh']['Equipment'][['rdfId', 'inService']]
-            mapping = mapping.set_index('rdfId').to_dict()['inService']
-            ac_line_segments['in_service'] = ac_line_segments['rdfId'].map(mapping)
+        ac_line_segments["max_i_ka"] = ac_line_segments["value"].fillna(ac_line_segments["value2"]) * 1e-3
+        if self.cimConverter.cim_version == "3.0":
+            ac_line_segments["in_service"] = (
+                ac_line_segments.connected & ac_line_segments.connected2 & ac_line_segments.inService
+            )
+        elif self.cimConverter.cim_version == "ltds":
+            mapping = self.cimConverter.cim["ssh"]["Equipment"][["rdfId", "inService"]]
+            mapping = mapping.set_index("rdfId").to_dict()["inService"]
+            ac_line_segments["in_service"] = ac_line_segments["rdfId"].map(mapping)
         else:
-            ac_line_segments['in_service'] = ac_line_segments.connected & ac_line_segments.connected2
-        ac_line_segments['closed'] = ac_line_segments['in_service']
+            ac_line_segments["in_service"] = ac_line_segments.connected & ac_line_segments.connected2
+        ac_line_segments["closed"] = ac_line_segments["in_service"]
 
         # filter if line or switches will be added
-        ac_line_segments['kindOfType'] = 'line'
+        ac_line_segments["kindOfType"] = "line"
         if convert_line_to_switch:
-            ac_line_segments.loc[(abs(ac_line_segments['r']) <= line_r_limit) |
-                                    (abs(ac_line_segments['x']) <= line_x_limit), 'kindOfType'] = 'switch'
-        ac_line_segments[sc['o_cl']] = 'ACLineSegment'
-        ac_line_segments['r_ohm_per_km'] = abs(ac_line_segments.r) / ac_line_segments.length
-        ac_line_segments['x_ohm_per_km'] = abs(ac_line_segments.x) / ac_line_segments.length
-        ac_line_segments['c_nf_per_km'] = abs(ac_line_segments.bch) / (2 * 50 * np.pi * ac_line_segments.length) * 1e9
-        ac_line_segments['g_us_per_km'] = abs(ac_line_segments.gch) * 1e6 / ac_line_segments.length
-        ac_line_segments['r0_ohm_per_km'] = abs(ac_line_segments.r0) / ac_line_segments.length
-        ac_line_segments['x0_ohm_per_km'] = abs(ac_line_segments.x0) / ac_line_segments.length
-        ac_line_segments['c0_nf_per_km'] = abs(ac_line_segments.b0ch) / (2 * 50 * np.pi * ac_line_segments.length) * 1e9
-        ac_line_segments['g0_us_per_km'] = abs(ac_line_segments.g0ch) * 1e6 / ac_line_segments.length
-        ac_line_segments['parallel'] = 1
-        ac_line_segments['df'] = 1.
-        ac_line_segments['type'] = None
-        ac_line_segments['std_type'] = None
-        ac_line_segments['et'] = 'b'
-        if self.cimConverter.kwargs.get('set_switch_impedance', False):
-            ac_line_segments['z_ohm'] = (abs(ac_line_segments.r)**2 + abs(ac_line_segments.x)**2)**.5
+            ac_line_segments.loc[
+                (abs(ac_line_segments["r"]) <= line_r_limit) | (abs(ac_line_segments["x"]) <= line_x_limit),
+                "kindOfType",
+            ] = "switch"
+        ac_line_segments[sc["o_cl"]] = "ACLineSegment"
+        ac_line_segments["r_ohm_per_km"] = abs(ac_line_segments.r) / ac_line_segments.length
+        ac_line_segments["x_ohm_per_km"] = abs(ac_line_segments.x) / ac_line_segments.length
+        ac_line_segments["c_nf_per_km"] = abs(ac_line_segments.bch) / (2 * 50 * np.pi * ac_line_segments.length) * 1e9
+        ac_line_segments["g_us_per_km"] = abs(ac_line_segments.gch) * 1e6 / ac_line_segments.length
+        ac_line_segments["r0_ohm_per_km"] = abs(ac_line_segments.r0) / ac_line_segments.length
+        ac_line_segments["x0_ohm_per_km"] = abs(ac_line_segments.x0) / ac_line_segments.length
+        ac_line_segments["c0_nf_per_km"] = abs(ac_line_segments.b0ch) / (2 * 50 * np.pi * ac_line_segments.length) * 1e9
+        ac_line_segments["g0_us_per_km"] = abs(ac_line_segments.g0ch) * 1e6 / ac_line_segments.length
+        ac_line_segments["parallel"] = 1
+        ac_line_segments["df"] = 1.0
+        ac_line_segments["et"] = "b"
+        if self.cimConverter.kwargs.get("set_switch_impedance", False):
+            ac_line_segments["z_ohm"] = (abs(ac_line_segments.r) ** 2 + abs(ac_line_segments.x) ** 2) ** 0.5
         else:
-            ac_line_segments['z_ohm'] = 0
+            ac_line_segments["z_ohm"] = 0
         return ac_line_segments

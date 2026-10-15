@@ -1,12 +1,9 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
 
 import numpy as np
-import pandas as pd
 import scipy.io
 
 from pandapower.converter.pypower import from_ppc
@@ -26,7 +23,7 @@ logger = logging.getLogger(__name__)
 def from_mpc(
     mpc_file,
     f_hz=50,
-    casename_mpc_file='mpc',
+    casename_mpc_file="mpc",
     validate_conversion=False,
     load_case_engine=None,
     **kwargs,
@@ -72,7 +69,7 @@ def from_mpc(
         if "_options" not in net:
             net["_options"] = {}
         net._options.update(ppc["mpc_additional_data"])
-        logger.info('added fields %s in net._options' % list(ppc["mpc_additional_data"].keys()))
+        logger.info("added fields %s in net._options" % list(ppc["mpc_additional_data"].keys()))
 
     return net
 
@@ -99,14 +96,13 @@ def _m2ppc(mpc_file, load_case_engine=None):
     if not matpowercaseframes_imported:
         raise NotImplementedError(
             "matpowercaseframes is used to convert .m file. Please install that python "
-            "package, e.g. via 'pip install matpowercaseframes'.")
+            "package, e.g. via 'pip install matpowercaseframes'."
+        )
     mpc_frames = CaseFrames(mpc_file, load_case_engine=load_case_engine)
-    ppc = {
-        key: mpc_frames.__getattribute__(key)  # directly get python value
-        if not isinstance(mpc_frames.__getattribute__(key), pd.DataFrame)
-        else mpc_frames.__getattribute__(key).values  # get value from pandas
-        for key in mpc_frames._attributes
-    }
+    ppc = mpc_frames.to_dict()
+    for k, v in ppc.items():
+        if isinstance(v, list):
+            ppc[k] = np.array(v)
     _adjust_ppc_indices(ppc)
     _change_ppc_TAP_value(ppc)
     return ppc
@@ -126,23 +122,23 @@ def _adjust_ppc_indices(ppc):
 def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
     if casename_mpc_file in mpc:
         # if struct contains a field named mpc
-        ppc['version'] = mpc[casename_mpc_file].version
+        ppc["version"] = mpc[casename_mpc_file].version
         ppc["baseMVA"] = mpc[casename_mpc_file].baseMVA
         ppc["bus"] = mpc[casename_mpc_file].bus
         ppc["gen"] = mpc[casename_mpc_file].gen
         ppc["branch"] = mpc[casename_mpc_file].branch
 
         try:
-            ppc['gencost'] = mpc[casename_mpc_file].gencost
+            ppc["gencost"] = mpc[casename_mpc_file].gencost
         except:
-            logger.info('gencost is not in mpc')
+            logger.info("gencost is not in mpc")
 
         for k in mpc[casename_mpc_file]._fieldnames:
             if k not in ppc:
                 ppc.setdefault("mpc_additional_data", {})[k] = getattr(mpc[casename_mpc_file], k)
 
     else:
-        logger.error('Matfile does not contain a valid mpc structure.')
+        logger.error("Matfile does not contain a valid mpc structure.")
 
 
 def _change_ppc_TAP_value(ppc):

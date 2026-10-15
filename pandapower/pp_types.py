@@ -1,4 +1,4 @@
-from typing import Literal, Union
+from typing import Literal, Union, TypedDict, Any
 
 import numpy as np
 
@@ -14,13 +14,16 @@ LineType = Literal["ol", "cs"]
 HVLVType = Literal["hv", "lv"]
 HVMVLVType = Literal["hv", "mv", "lv"]
 MeasurementType = Literal["v", "p", "q", "i", "va", "ia"]
-MeasurementElementType = Literal["bus", "line", "trafo", "trafow3", "load", "gen", "sgen", "shunt", "ward", "xward",
-                                 "ext_grid"]
+MeasurementElementType = Literal[
+    "bus", "line", "trafo", "trafow3", "load", "gen", "sgen", "shunt", "ward", "xward", "ext_grid"
+]
+MeasurementSideType = Literal["from", "to", "hv", "mv", "lv"]
 PWLPowerType = Literal["p", "q"]
 SwitchElementType = Literal[
     "b",  # bus
     "l",  # line
     "t",  # transformer
+    "t3",  # 3 winding transformer
 ]
 SwitchType = Literal[
     "LS",  # load switch
@@ -32,3 +35,18 @@ TapChangerType = Literal["Ratio", "Symmetrical", "Ideal"]
 TapChangerWithTabularType = Literal["Ratio", "Symmetrical", "Ideal", "Tabular"]
 UnderOverExcitedType = Literal["underexcited", "overexcited"]
 WyeDeltaType = Literal["wye", "delta"]
+
+
+class StandardTypesDict(TypedDict):
+    """
+    Typing for the Standard Types.
+    """
+
+    line: dict[str, Any]
+    line_dc: dict[str, Any]
+    trafo: dict[str, Any]
+    trafo3w: dict[str, Any]
+    fuse: dict[str, Any]
+
+
+StandardTypesDictKeys = Literal["line", "line_dc", "trafo", "trafo3w", "fuse"]

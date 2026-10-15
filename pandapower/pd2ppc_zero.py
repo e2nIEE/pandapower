@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 """
 Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 and Energy System Technology (IEE), Kassel. All rights reserved.
@@ -136,9 +134,7 @@ def _build_branch_ppc_zero(net, ppc, k_st=None):
         _add_trafo3w_sc_impedance_zero(net, ppc)
     else:
         if "trafo3w" in lookup:
-            raise NotImplementedError(
-                "Three winding transformers are not implemented for unbalanced calculations"
-            )
+            raise NotImplementedError("Three winding transformers are not implemented for unbalanced calculations")
 
 
 def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
@@ -178,7 +174,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         )
 
     for vector_group, trafos in trafo_df.groupby("vector_group"):
-        # TODO Roman: check this/expand this
+        # TODO: check this/expand this
         ppc_idx = trafos["_ppc_idx"].values.astype(np.int64)
 
         if mode == "pf_3ph" and vector_group.lower() not in ["ynyn", "dyn", "yzn"]:
@@ -242,16 +238,14 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         si0_hv_partial = trafos.si0_hv_partial.values.astype(float)
         parallel = trafos.parallel.values.astype(float)
         if "power_station_unit" in trafos.columns:
-            power_station_unit = trafos.power_station_unit.to_numpy(dtype=bool, na_value=False)
+            power_station_unit = trafos.power_station_unit.astype("boolean").fillna(False).astype(bool)
         else:
             power_station_unit = np.zeros(len(trafos), dtype=bool)
         in_service = trafos["in_service"].astype(np.int64)
         vn_trafo_hv, vn_trafo_lv, shift = _calc_tap_from_dataframe(net, trafos)
         vn_bus_lv = ppc["bus"][lv_buses_ppc, BASE_KV]
         vn_bus_hv = ppc["bus"][hv_buses_ppc, BASE_KV]
-        ratio = _calc_nominal_ratio_from_dataframe(
-            ppc, trafos, vn_trafo_hv, vn_trafo_lv, bus_lookup
-        )
+        ratio = _calc_nominal_ratio_from_dataframe(ppc, trafos, vn_trafo_hv, vn_trafo_lv, bus_lookup)
         ppc["branch"][ppc_idx, TAP] = ratio
         ppc["branch"][ppc_idx, SHIFT] = shift
 
@@ -285,8 +279,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         # Neutral earthing impedance Z_N (e.g. an earthing transformer star point
         # grounded through a neutral earthing resistor/reactor). xn_ohm carries
         # the reactance, rn_ohm the resistance.
-        rn_ohm = (trafos["rn_ohm"].fillna(0).values
-                   if "rn_ohm" in trafos.columns else np.zeros_like(xn_ohm))
+        rn_ohm = trafos["rn_ohm"].fillna(0).values if "rn_ohm" in trafos.columns else np.zeros_like(xn_ohm)
         zn_ohm = rn_ohm + 1j * xn_ohm
         k_st_tr = trafos["k_st"].fillna(1).values
 
@@ -300,11 +293,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             # z_othv is for power station block unit transformer -> page 20 of IEC60909-4:2021 (example 4.4.2):
             # todo: check if sn_mva must be included here?
             vkx0_percent = np.sqrt(np.square(vk0_percent) - np.square(vkr0_percent))
-            z_othv = (
-                (vkr0_percent / 100 + 1j * vkx0_percent / 100)
-                * (np.square(vn_trafo_hv) / sn_trafo_mva)
-                / parallel
-            )
+            z_othv = (vkr0_percent / 100 + 1j * vkx0_percent / 100) * (np.square(vn_trafo_hv) / sn_trafo_mva) / parallel
             z0_k_psu = (z_othv * k_st_tr + 3 * zn_ohm) / ((vn_bus_hv**2) / net.sn_mva)
             z0_k = np.where(power_station_unit, z0_k_psu, z0_k)
 
@@ -319,10 +308,19 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         _zigzag = ("znyn", "znd", "zny", "zd")
         zn_pu = np.zeros(len(trafos), dtype=np.complex128)
         if np.any(np.abs(zn_ohm) > 0) and vector_group.lower() in (
-                "dyn", "ynd", "yyn", "ynyn", "yny", "yzn",
-                "znyn", "znd", "zny", "zd"):
+            "dyn",
+            "ynd",
+            "yyn",
+            "ynyn",
+            "yny",
+            "yzn",
+            "znyn",
+            "znd",
+            "zny",
+            "zd",
+        ):
             vn_earth = vn_bus_hv if vector_group.lower() in _earthed_hv else vn_bus_lv
-            zn_pu = 3 * zn_ohm / ((vn_earth ** 2) / net.sn_mva)
+            zn_pu = 3 * zn_ohm / ((vn_earth**2) / net.sn_mva)
             # Ordinary earthed-star groups: add 3*Z_N in series with z0_k here.
             # Zigzag groups place 3*Z_N at the star-point node in their own branch
             # below (so z0_k stays the bare leakage for the si0 split).
@@ -394,7 +392,6 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             if trafo_model == "pi":
                 y = 1 / (z0_mag + z0_k).astype(complex)  # pi model
             else:
-                # y = (YAB_AN + YBN).astype(complex)  # T model
                 y = (YAB + YAB_BN + YBN).astype(complex)  # T model
             y_asym = y * in_service.values * 2
 
@@ -404,13 +401,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             # zc = ZAB
             ppc["branch"][ppc_idx, BR_R] = zc.real
             ppc["branch"][ppc_idx, BR_X] = zc.imag
-            y_sym = (
-                YAN
-                * in_service.values
-                * 2
-                * (tap_lv / tap_hv)
-                * ppc["branch"][ppc_idx, TAP] ** 2
-            )
+            y_sym = YAN * in_service.values * 2 * (tap_lv / tap_hv) * ppc["branch"][ppc_idx, TAP] ** 2
             y_asym = YBN * in_service.values * 2 - y_sym
 
         elif vector_group.lower() == "yny":
@@ -438,7 +429,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             # Per the YNzn T-model (PF TechRef Fig 8.3, J&P App.5): the HV zigzag
             # shunt = the HV-WINDING leakage portion (si0_hv_partial) in series
             # with 3*Z_N at the star-point node -- NOT the full HV+LV leakage.
-            z0_leak = z0_k          # for zigzag groups z0_k is the bare leakage
+            z0_leak = z0_k  # for zigzag groups z0_k is the bare leakage
             z0_hv = si0_hv_partial * z0_leak + zn_pu
             ys_hv = (ppc["baseMVA"] * in_service.values / z0_hv).astype(complex)
             np.add.at(ppc["bus"][:, GS], hv_buses_ppc, ys_hv.real)
@@ -464,8 +455,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             )
         else:
             raise ValueError(
-                "Transformer vector group %s is unknown "
-                "/ not implemented for three phase load flow" % vector_group
+                "Transformer vector group %s is unknown / not implemented for three phase load flow" % vector_group
             )
         ppc["branch"][ppc_idx, BR_G] = y_sym.astype(complex).real
         ppc["branch"][ppc_idx, BR_B] = y_sym.astype(complex).imag
@@ -488,7 +478,6 @@ def _add_gen_sc_impedance_zero(net, ppc):
     eg_buses_ppc = bus_lookup[eg_buses]
 
     y0_gen = 1 / (1e3 + 1e3 * 1j)
-    # buses, gs, bs = aux._sum_by_group(eg_buses_ppc, y0_gen.real, y0_gen.imag)
     ppc["bus"][eg_buses_ppc, GS] += y0_gen.real
     ppc["bus"][eg_buses_ppc, BS] += y0_gen.imag
 
@@ -509,30 +498,23 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     eg_buses_ppc = bus_lookup[eg_buses]
 
     if mode == "sc":
-        c = (
-            ppc["bus"][eg_buses_ppc, C_MAX]
-            if case == "max"
-            else ppc["bus"][eg_buses_ppc, C_MIN]
-        )
+        c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
     else:
         c = 1.1
     if "s_sc_%s_mva" % case not in eg:
-        raise ValueError(
-            "short circuit apparent power s_sc_%s_mva needs to be specified for " % case
-            + "external grid"
-        )
+        raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for " % case + "external grid")
     s_sc = eg["s_sc_%s_mva" % case].values
     if "rx_%s" % case not in eg:
-        raise ValueError(
-            "short circuit R/X rate rx_%s needs to be specified for external grid"
-            % case
-        )
+        raise ValueError("short circuit R/X rate rx_%s needs to be specified for external grid" % case)
     rx = eg["rx_%s" % case].values
 
     z_grid = c / s_sc
     if mode == "pf_3ph":
         z_grid = c / (s_sc / 3)
     x_grid = z_grid / np.sqrt(rx**2 + 1)
+    r_grid = rx * x_grid
+    eg["r"] = r_grid
+    eg["x"] = x_grid
 
     # ext_grid zero sequence impedance
     x0_grid = net.ext_grid[is_egs]["x0x_%s" % case].values * x_grid
@@ -567,19 +549,10 @@ def _add_line_sc_impedance_zero(net, ppc):
     if mode == "sc":
         # temperature correction
         if net["_options"]["case"] == "min":
-            ppc["branch"][f:t, BR_R] *= _end_temperature_correction_factor(
-                net, short_circuit=True
-            )
+            ppc["branch"][f:t, BR_R] *= _end_temperature_correction_factor(net, short_circuit=True)
     ppc["branch"][f:t, BR_X] = line["x0_ohm_per_km"].values * length / baseR / parallel
     ppc["branch"][f:t, BR_B] = (
-        2
-        * net["f_hz"]
-        * math.pi
-        * line["c0_nf_per_km"].values
-        * 1e-9
-        * baseR
-        * length
-        * parallel
+        2 * net["f_hz"] * math.pi * line["c0_nf_per_km"].values * 1e-9 * baseR * length * parallel
     )
     ppc["branch"][f:t, BR_STATUS] = line["in_service"].astype(np.int64)
 
@@ -594,8 +567,8 @@ def _add_impedance_sc_impedance_zero(net, ppc):
     f, t = branch_lookup["impedance"]
 
     # impedance zero sequence impedance
-    rij, xij, r_asym, x_asym, gi, bi, g_asym, b_asym = (
-        _calc_impedance_parameters_from_dataframe(net, zero_sequence=True)
+    rij, xij, r_asym, x_asym, gi, bi, g_asym, b_asym = _calc_impedance_parameters_from_dataframe(
+        net, zero_sequence=True
     )
     branch[f:t, BR_R] = rij
     branch[f:t, BR_X] = xij
@@ -611,7 +584,7 @@ def _add_impedance_sc_impedance_zero(net, ppc):
 
 
 def _add_trafo3w_sc_impedance_zero(net, ppc):
-    # TODO Roman: check this/expand this
+    # TODO: check this/expand this
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
     if "trafo3w" not in branch_lookup:
         return
@@ -625,9 +598,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
     branch[f:t, F_BUS] = bus_lookup[hv_bus]
     branch[f:t, T_BUS] = bus_lookup[lv_bus]
 
-    r, x, *_, ratio, shift = _calc_branch_values_from_trafo_df(
-        net, ppc, trafo_df, sequence=0
-    )
+    r, x, *_, ratio, shift = _calc_branch_values_from_trafo_df(net, ppc, trafo_df, sequence=0)
 
     # Y0y0d5,  YN0y0d5,  Y0yn0d5,  YN0yn0d5, Y0y0y0, Y0d5d5,
     # YN0d5d5,  Y0d5y0,  Y0y0d11  und  D0d0d0
@@ -657,10 +628,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
         elif t3.vector_group.lower() == "ynyd":
             # Correction for YNyd
             # z3->y3
-            ys = ppc["baseMVA"] / (
-                (x[t3_ix + n_t3 * 2] * 1j + r[t3_ix + n_t3 * 2])
-                * ratio[t3_ix + n_t3 * 2] ** 2
-            )
+            ys = ppc["baseMVA"] / ((x[t3_ix + n_t3 * 2] * 1j + r[t3_ix + n_t3 * 2]) * ratio[t3_ix + n_t3 * 2] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]
             ppc["bus"][aux_bus, BS] += ys.imag
             ppc["bus"][aux_bus, GS] += ys.real
@@ -671,9 +639,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
         elif t3.vector_group.lower() == "yndy":
             # Correction for YNyd
             # z3->y3
-            ys = ppc["baseMVA"] / (
-                (x[t3_ix + n_t3] * 1j + r[t3_ix + n_t3]) * ratio[t3_ix + n_t3] ** 2
-            )
+            ys = ppc["baseMVA"] / ((x[t3_ix + n_t3] * 1j + r[t3_ix + n_t3]) * ratio[t3_ix + n_t3] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]
             ppc["bus"][aux_bus, BS] += ys.imag
             ppc["bus"][aux_bus, GS] += ys.real
@@ -683,10 +649,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
             r[[t3_ix + n_t3, t3_ix + n_t3 * 2]] = BIG_NUMBER
         elif t3.vector_group.lower() == "yynd":
             # z3->y3
-            ys = ppc["baseMVA"] / (
-                (x[t3_ix + n_t3 * 2] * 1j + r[t3_ix + n_t3 * 2])
-                * ratio[t3_ix + n_t3 * 2] ** 2
-            )
+            ys = ppc["baseMVA"] / ((x[t3_ix + n_t3 * 2] * 1j + r[t3_ix + n_t3 * 2]) * ratio[t3_ix + n_t3 * 2] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]
             ppc["bus"][aux_bus, BS] += ys.imag
             ppc["bus"][aux_bus, GS] += ys.real
@@ -696,9 +659,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
             r[[t3_ix, t3_ix + n_t3 * 2]] = BIG_NUMBER
         elif t3.vector_group.lower() == "ydyn":
             # z3->y3
-            ys = ppc["baseMVA"] / (
-                (x[t3_ix + n_t3] * 1j + r[t3_ix + n_t3]) * ratio[t3_ix + n_t3] ** 2
-            )
+            ys = ppc["baseMVA"] / ((x[t3_ix + n_t3] * 1j + r[t3_ix + n_t3]) * ratio[t3_ix + n_t3] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]
             ppc["bus"][aux_bus, BS] += ys.imag
             ppc["bus"][aux_bus, GS] += ys.real
@@ -708,10 +669,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
             r[[t3_ix, t3_ix + n_t3]] = BIG_NUMBER
         elif t3.vector_group.lower() == "ynynd":
             # z3->y3
-            ys = ppc["baseMVA"] / (
-                (x[t3_ix + n_t3 * 2] * 1j + r[t3_ix + n_t3 * 2])
-                * ratio[t3_ix + n_t3 * 2] ** 2
-            )
+            ys = ppc["baseMVA"] / ((x[t3_ix + n_t3 * 2] * 1j + r[t3_ix + n_t3 * 2]) * ratio[t3_ix + n_t3 * 2] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]
             ppc["bus"][aux_bus, BS] += ys.imag
             ppc["bus"][aux_bus, GS] += ys.real
@@ -721,9 +679,7 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
             r[t3_ix + n_t3 * 2] = BIG_NUMBER
         elif t3.vector_group.lower() == "yndyn":
             # z3->y3
-            ys = ppc["baseMVA"] / (
-                (x[t3_ix + n_t3] * 1j + r[t3_ix + n_t3]) * ratio[t3_ix + n_t3] ** 2
-            )
+            ys = ppc["baseMVA"] / ((x[t3_ix + n_t3] * 1j + r[t3_ix + n_t3]) * ratio[t3_ix + n_t3] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]
             ppc["bus"][aux_bus, BS] += ys.imag
             ppc["bus"][aux_bus, GS] += ys.real
@@ -735,13 +691,8 @@ def _add_trafo3w_sc_impedance_zero(net, ppc):
             # Correction for YNdd
             # z3->y3
             # we need a shunt impedance for both "delta" windings -> ys1, ys2
-            ys1 = ppc["baseMVA"] / (
-                (x[t3_ix + n_t3] * 1j + r[t3_ix + n_t3]) * ratio[t3_ix + n_t3] ** 2
-            )
-            ys2 = ppc["baseMVA"] / (
-                (x[t3_ix + n_t3 * 2] * 1j + r[t3_ix + n_t3 * 2])
-                * ratio[t3_ix + n_t3 * 2] ** 2
-            )
+            ys1 = ppc["baseMVA"] / ((x[t3_ix + n_t3] * 1j + r[t3_ix + n_t3]) * ratio[t3_ix + n_t3] ** 2)
+            ys2 = ppc["baseMVA"] / ((x[t3_ix + n_t3 * 2] * 1j + r[t3_ix + n_t3 * 2]) * ratio[t3_ix + n_t3 * 2] ** 2)
             aux_bus = bus_lookup[lv_bus[t3_ix]]
             ppc["bus"][aux_bus, BS] += ys1.imag + ys2.imag
             ppc["bus"][aux_bus, GS] += ys1.real + ys2.real

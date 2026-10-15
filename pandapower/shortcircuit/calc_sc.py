@@ -1,20 +1,26 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from numbers import Number
+from typing import Literal
 
 import numpy as np
 from scipy.sparse.linalg import factorized
 
 from pandapower.auxiliary import _clean_up, _add_ppc_options, _add_sc_options, _add_auxiliary_elements
+from pandapower.network import pandapowerNet
 from pandapower.pd2ppc_zero import _pd2ppc_zero
 from pandapower.pypower.idx_brch_sc import K_ST
 from pandapower.results import _copy_results_ppci_to_ppc
 from pandapower.results import init_results
-from pandapower.shortcircuit.currents import _calc_ikss, \
-    _calc_ikss_1ph, _calc_ip, _calc_ith, _calc_branch_currents, _calc_branch_currents_complex
+from pandapower.shortcircuit.currents import (
+    _calc_ikss,
+    _calc_ikss_1ph,
+    _calc_ip,
+    _calc_ith,
+    _calc_branch_currents,
+    _calc_branch_currents_complex,
+)
 from pandapower.shortcircuit.impedance import _calc_zbus, _calc_ybus, _calc_rx
 from pandapower.shortcircuit.kappa import _add_kappa_to_ppc
 from pandapower.shortcircuit.ppc_conversion import _init_ppc, _create_k_updated_ppci, _get_is_ppci_bus
@@ -25,11 +31,25 @@ import logging
 logger = logging.getLogger(__name__)
 
 
-def calc_sc(net, bus=None,
-            fault="3ph", case='max', lv_tol_percent=10, topology="auto", ip=False,
-            ith=False, tk_s=1., kappa_method="C", r_fault_ohm=0., x_fault_ohm=0.,
-            branch_results=False, check_connectivity=True, return_all_currents=False,
-            inverse_y=True, use_pre_fault_voltage=False):
+def calc_sc(
+    net: pandapowerNet,
+    bus=None,
+    fault: Literal["3ph", "2ph", "1ph"] = "3ph",
+    case: Literal["max", "min"] = "max",
+    lv_tol_percent: int = 10,
+    topology: Literal["meshed", "radial", "auto"] = "auto",
+    ip: bool = False,
+    ith: bool = False,
+    tk_s: float = 1.0,
+    kappa_method: Literal["B", "C"] = "C",
+    r_fault_ohm: float = 0.0,
+    x_fault_ohm: float = 0.0,
+    branch_results: bool = False,
+    check_connectivity: bool = True,
+    return_all_currents: bool = False,
+    inverse_y: bool = True,
+    use_pre_fault_voltage: bool = False,
+):
     """
     Calculates minimal or maximal symmetrical short-circuit currents.
     The calculation is based on the method of the equivalent voltage source
@@ -42,96 +62,80 @@ def calc_sc(net, bus=None,
     The output is stored in the net.res_bus_sc table as a short_circuit current
     for each bus.
 
-    INPUT:
-        **net** (pandapowerNet) pandapower Network
-
-        **bus** (int, list, np.array, None) defines if short-circuit calculations should only be calculated for
-        defined bus
-
-        ***fault** (str, 3ph) type of fault
+    Parameters:
+        net: the pandapower Network
+        bus (int, list, np.array, None): defines if short-circuit calculations should only be calculated for defined bus
+        fault: type of fault
 
             - "3ph" for three-phase
-
             - "2ph" for two-phase (phase-to-phase) short-circuits
-
             - "1ph" for single-phase-to-ground faults
 
-        **case** (str, "max")
+        case:
 
             - "max" for maximal current calculation
-
             - "min" for minimal current calculation
 
-        **lv_tol_percent** (int, 10) voltage tolerance in low voltage grids
+        lv_tol_percent (int, 10): voltage tolerance in low voltage grids
 
             - 6 for 6% voltage tolerance
-
             - 10 for 10% voltage olerance
 
-        **ip** (bool, False) if True, calculate aperiodic short-circuit current
-
-        **ith** (bool, False) if True, calculate equivalent thermical short-circuit current Ith
-
-        **topology** (str, "auto") define option for meshing (only relevant for ip and ith)
+        topology: define option for meshing (only relevant for ip and ith)
 
             - "meshed" - it is assumed all buses are supplied over multiple paths
-
             - "radial" - it is assumed all buses are supplied over exactly one path
-
             - "auto" - topology check for each bus is performed to see if it is supplied over multiple paths
 
-        **tk_s** (float, 1) failure clearing time in seconds (only relevant for ith)
-
-        **r_fault_ohm** (float, 0) fault resistance in Ohm
-
-        **x_fault_ohm** (float, 0) fault reactance in Ohm
-
-        **branch_results** (bool, False) defines if short-circuit results should also be generated for branches
-
-        **return_all_currents** (bool, False) applies only if branch_results=True, if True short-circuit currents for
-        each (branch, bus) tuple is returned otherwise only the max/min is returned
-
-        **inverse_y** (bool, True) defines if complete inverse should be used instead of LU factorization,
-        factorization version is in experiment which should be faster and memory efficienter
-
-        **use_pre_fault_voltage** (bool, False) whether to consider the pre-fault grid state (superposition method,
-        "Type C")
+        ip: if True, calculate aperiodic short-circuit current
+        ith: if True, calculate equivalent thermical short-circuit current Ith
+        tk_s: failure clearing time in seconds (only relevant for ith)
+        r_fault_ohm: fault resistance in Ohm
+        x_fault_ohm: fault reactance in Ohm
+        branch_results: defines if short-circuit results should also be generated for branches
+        return_all_currents: applies only if branch_results=True, if True short-circuit currents for each (branch, bus)
+            tuple is returned otherwise only the max/min is returned
+        inverse_y: defines if complete inverse should be used instead of LU factorization.
+            factorization is experimental. It should be faster and more memory efficient.
+        use_pre_fault_voltage: whether to consider the pre-fault grid state (superposition method, "Type C")
 
 
-    OUTPUT:
+    Returns:
 
-    EXAMPLE:
-        calc_sc(net)
-
-        print(net.res_bus_sc)
+    Example:
+        >>> calc_sc(net)
+        >>> print(net.res_bus_sc)
     """
     if fault not in ["3ph", "2ph", "1ph"]:
-        raise NotImplementedError(
-            "Only 3ph, 2ph and 1ph short-circuit currents implemented")
+        raise NotImplementedError("Only 3ph, 2ph and 1ph short-circuit currents implemented")
 
     if len(net.gen) and (ip or ith):
-        logger.warning("aperiodic, thermal short-circuit currents are only implemented for "
-                       "faults far from generators!")
+        logger.warning("aperiodic, thermal short-circuit currents are only implemented for faults far from generators!")
 
-    if case not in ['max', 'min']:
-        raise ValueError('case can only be "min" or "max" for minimal or maximal short "\
-                                "circuit current')
+    if case not in ["max", "min"]:
+        raise ValueError(
+            'case can only be "min" or "max" for minimal or maximal short "\
+                                "circuit current'
+        )
 
     if topology not in ["meshed", "radial", "auto"]:
-        raise ValueError(
-            'specify network structure as "meshed", "radial" or "auto"')
+        raise ValueError('specify network structure as "meshed", "radial" or "auto"')
 
     if branch_results:
-        logger.warning("Branch results are in beta mode and might not always be reliable, "
-                       "especially for transformers")
+        logger.warning("Branch results are in beta mode and might not always be reliable, especially for transformers")
 
+    init_vm_pu: Literal["results", "flat"]
+    init_va_degree: Literal["results", "flat"]
+    trafo_model: Literal["t", "pi"]
     if use_pre_fault_voltage:
-        init_vm_pu = init_va_degree = "results"
+        init_vm_pu = "results"
+        init_va_degree = "results"
         trafo_model = net._options["trafo_model"]  # trafo model for SC must match the trafo model for PF calculation
         if not isinstance(bus, Number) and len(net.sgen.query("in_service")) > 0:
             raise NotImplementedError("Short-circuit with Type C method and sgen is only implemented for a single bus")
     else:
-        init_vm_pu = init_va_degree = "flat"
+        init_vm_pu = "flat"
+        init_va_degree = "flat"
         trafo_model = "pi"
 
     # Convert bus to numpy array
@@ -142,14 +146,37 @@ def calc_sc(net, bus=None,
 
     kappa = ith or ip
     net["_options"] = {}
-    _add_ppc_options(net, calculate_voltage_angles=False, trafo_model=trafo_model,
-                     check_connectivity=check_connectivity, mode="sc", switch_rx_ratio=2,
-                     init_vm_pu=init_vm_pu, init_va_degree=init_va_degree, enforce_q_lims=False,
-                     enforce_p_lims=False, recycle=None)
-    _add_sc_options(net, fault=fault, case=case, lv_tol_percent=lv_tol_percent, tk_s=tk_s, topology=topology,
-                    r_fault_ohm=r_fault_ohm, x_fault_ohm=x_fault_ohm, kappa=kappa, ip=ip, ith=ith,
-                    branch_results=branch_results, kappa_method=kappa_method, return_all_currents=return_all_currents,
-                    inverse_y=inverse_y, use_pre_fault_voltage=use_pre_fault_voltage)
+    _add_ppc_options(
+        net,
+        calculate_voltage_angles=False,
+        trafo_model=trafo_model,
+        check_connectivity=check_connectivity,
+        mode="sc",
+        switch_rx_ratio=2,
+        init_vm_pu=init_vm_pu,
+        init_va_degree=init_va_degree,
+        enforce_p_lims=False,
+        enforce_q_lims=False,
+        recycle=None,
+    )
+    _add_sc_options(
+        net,
+        fault=fault,
+        case=case,
+        lv_tol_percent=lv_tol_percent,
+        tk_s=tk_s,
+        topology=topology,
+        r_fault_ohm=r_fault_ohm,
+        x_fault_ohm=x_fault_ohm,
+        kappa=kappa,
+        ip=ip,
+        ith=ith,
+        branch_results=branch_results,
+        kappa_method=kappa_method,
+        return_all_currents=return_all_currents,
+        inverse_y=inverse_y,
+        use_pre_fault_voltage=use_pre_fault_voltage,
+    )
     init_results(net, "sc")
 
     if fault in ("2ph", "3ph"):
@@ -157,7 +184,7 @@ def calc_sc(net, bus=None,
     elif fault == "1ph":
         _calc_sc_1ph(net, bus)
     else:
-        raise ValueError("Invalid fault %s" % fault)
+        raise ValueError(f"Invalid fault {fault}")
 
 
 def _calc_current(net, ppci_orig, bus):
@@ -165,8 +192,9 @@ def _calc_current(net, ppci_orig, bus):
     ppci_bus = _get_is_ppci_bus(net, bus)
 
     # update ppci
-    non_ps_gen_ppci_bus, non_ps_gen_ppci, ps_gen_bus_ppci_dict = \
-        _create_k_updated_ppci(net, ppci_orig, ppci_bus=ppci_bus)
+    non_ps_gen_ppci_bus, non_ps_gen_ppci, ps_gen_bus_ppci_dict = _create_k_updated_ppci(
+        net, ppci_orig, ppci_bus=ppci_bus
+    )
 
     # For each ps_gen_bus one unique ppci is required
     ps_gen_ppci_bus = list(ps_gen_bus_ppci_dict.keys())
@@ -202,8 +230,7 @@ def _calc_current(net, ppci_orig, bus):
             else:
                 _calc_branch_currents(net, this_ppci, this_ppci_bus)
 
-        _copy_result_to_ppci_orig(ppci_orig, this_ppci, this_ppci_bus,
-                                  calc_options=net._options)
+        _copy_result_to_ppci_orig(ppci_orig, this_ppci, this_ppci_bus, calc_options=net._options)
 
 
 def _calc_sc(net, bus):
@@ -233,7 +260,7 @@ def _calc_sc_1ph(net, bus):
     _calc_ybus(ppci)
 
     # zero seq bus impedance
-    ppc_0, ppci_0 = _pd2ppc_zero(net, ppc['branch'][:, K_ST])
+    ppc_0, ppci_0 = _pd2ppc_zero(net, ppc["branch"][:, K_ST])
     _calc_ybus(ppci_0)
 
     if net["_options"]["inverse_y"]:
@@ -241,8 +268,8 @@ def _calc_sc_1ph(net, bus):
         _calc_zbus(net, ppci_0)
     else:
         # Factorization Ybus once
-        ppci["internal"]["ybus_fact"] = factorized(ppci["internal"]["Ybus"].tocsc())
-        ppci_0["internal"]["ybus_fact"] = factorized(ppci_0["internal"]["Ybus"].tocsc())
+        ppci["internal"]["ybus_fact"] = factorized(ppci["internal"]["Ybus"])
+        ppci_0["internal"]["ybus_fact"] = factorized(ppci_0["internal"]["Ybus"])
 
     ppci_bus = _get_is_ppci_bus(net, bus)
     _calc_rx(net, ppci, ppci_bus)

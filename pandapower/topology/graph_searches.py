@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -75,9 +73,7 @@ def connected_components(mg, notravbuses=set()):
                 yield {f, t}
 
 
-def calc_distance_to_bus(
-        net, bus, respect_switches=True, nogobuses=None, notravbuses=None, weight='weight', g=None
-):
+def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None, notravbuses=None, weight="weight", g=None):
     """
     Calculates the shortest distance between a source bus and all buses connected to it.
 
@@ -85,10 +81,10 @@ def calc_distance_to_bus(
         net (pandapowerNet): Variable that contains a pandapower network.
         bus (integer): Index of the source bus.
         respect_switches (boolean, True)
-        
+
             - True: open line switches are being considered (no edge between nodes).
             - False: open line switches are being ignored.
-        
+
         nogobuses (integer/list, None): nogobuses are not being considered.
         notravbuses (integer/list, None): lines connected to these buses are not being considered.
         weight (string, None): Edge data key corresponding to the edge weight.
@@ -103,8 +99,7 @@ def calc_distance_to_bus(
          >>> dist = calc_distance_to_bus(net, 5)
     """
     if g is None:
-        g = create_nxgraph(net, respect_switches=respect_switches, nogobuses=nogobuses,
-                           notravbuses=notravbuses)
+        g = create_nxgraph(net, respect_switches=respect_switches, nogobuses=nogobuses, notravbuses=notravbuses)
     return pd.Series(nx.single_source_dijkstra_path_length(g, bus, weight=weight))
 
 
@@ -112,7 +107,7 @@ def unsupplied_buses(net, mg=None, slacks=None, respect_switches=True):
     """
     Finds buses, that are not connected electrically (no lines, trafos etc or if respect_switches
     is True only connected via open switches) to an external grid and that are in service.
-    
+
     Parameters:
         net (pandapowerNet): variable that contains a pandapower network
         mg (NetworkX graph): NetworkX Graph or MultiGraph that represents a pandapower network.
@@ -120,10 +115,10 @@ def unsupplied_buses(net, mg=None, slacks=None, respect_switches=True):
         slacks (set, None): buses which are considered as root / slack buses. If None, all existing slack buses are
             considered.
         respect_switches (boolean, True): Fixes how to consider switches - only in case of no given mg.
-    
+
     Returns:
         A Set of unsupplied buses
-    
+
     Example:
         >>> from pandapower.topology.graph_searches import unsupplied_buses
         >>> unsupplied_buses(net)
@@ -131,9 +126,11 @@ def unsupplied_buses(net, mg=None, slacks=None, respect_switches=True):
 
     mg = mg or create_nxgraph(net, respect_switches=respect_switches)
     if slacks is None:
-        slacks = (set(net.ext_grid[net.ext_grid.in_service].bus.values) |
-                  set(net.gen[net.gen.in_service & net.gen.slack].bus.values) |
-                  set(net.vsc[net.vsc.in_service & (net.vsc.control_mode_ac == "slack")].bus.values))
+        slacks = (
+            set(net.ext_grid[net.ext_grid.in_service].bus.values)
+            | set(net.gen[net.gen.in_service & net.gen.slack].bus.values)
+            | set(net.vsc[net.vsc.in_service & (net.vsc.control_mode_ac == "slack")].bus.values)
+        )
     not_supplied = set()
     for cc in nx.connected_components(mg):
         if not set(cc) & slacks:
@@ -151,16 +148,21 @@ def find_basic_graph_characteristics(g, roots, characteristics):
         This is the base function for find_graph_characteristics. Please use the latter
         function instead!
     """
-    connected = 'connected' in characteristics
-    stub_buses = 'stub_buses' in characteristics
-    bridges = {'bridges', 'required_bridges'} & set(characteristics)
-    articulation_points = {'articulation_points', 'notn1_areas'} & set(characteristics)
-    notn1_starts = 'notn1_areas' in characteristics
+    connected = "connected" in characteristics
+    stub_buses = "stub_buses" in characteristics
+    bridges = {"bridges", "required_bridges"} & set(characteristics)
+    articulation_points = {"articulation_points", "notn1_areas"} & set(characteristics)
+    notn1_starts = "notn1_areas" in characteristics
 
-    char_dict = {'connected': set(), 'stub_buses': set(), 'bridges': set(),
-                 'articulation_points': set(), 'notn1_starts': set()}
+    char_dict = {
+        "connected": set(),
+        "stub_buses": set(),
+        "bridges": set(),
+        "articulation_points": set(),
+        "notn1_starts": set(),
+    }
 
-    discovery = dict.fromkeys(roots, 0) # "time" of first discovery of node during search
+    discovery = dict.fromkeys(roots, 0)  # "time" of first discovery of node during search
     low = dict.fromkeys(roots, 0)
     visited = set(roots)
     path = []
@@ -187,26 +189,26 @@ def find_basic_graph_characteristics(g, roots, characteristics):
                 # Articulation points and start of not n-1 safe buses
                 if grandparent not in roots:
                     if articulation_points:
-                        char_dict['articulation_points'].add(grandparent)
+                        char_dict["articulation_points"].add(grandparent)
                     if notn1_starts:
-                        char_dict['notn1_starts'].add(parent)
+                        char_dict["notn1_starts"].add(parent)
                 if low[parent] > discovery[grandparent]:
                     # Bridges
                     if bridges:
-                        char_dict['bridges'].add((grandparent, parent))
+                        char_dict["bridges"].add((grandparent, parent))
 
                     # Stub buses
                     if stub_buses:
                         stub = path.pop()
                         if stub != grandparent:
-                            char_dict['stub_buses'].add(stub)
+                            char_dict["stub_buses"].add(stub)
                         while path and path[-1] != grandparent and path[-1] not in roots:
                             stub = path.pop()
-                            char_dict['stub_buses'].add(stub)
+                            char_dict["stub_buses"].add(stub)
             low[grandparent] = min(low[parent], low[grandparent])
 
     if connected:
-        char_dict['connected'] = visited
+        char_dict["connected"] = visited
     return char_dict
 
 
@@ -259,13 +261,13 @@ def find_graph_characteristics(g, roots, characteristics):
     """
     char_dict = find_basic_graph_characteristics(g, roots, characteristics)
 
-    required_bridges = 'required_bridges' in characteristics
-    notn1_areas = 'notn1_areas' in characteristics
+    required_bridges = "required_bridges" in characteristics
+    notn1_areas = "notn1_areas" in characteristics
 
     if not required_bridges and not notn1_areas:
         return {key: char_dict[key] for key in characteristics}
 
-    char_dict.update({'required_bridges': {}, 'notn1_areas': {}})
+    char_dict.update({"required_bridges": {}, "notn1_areas": {}})
 
     visited = set(roots)
     visited_bridges = []
@@ -282,12 +284,13 @@ def find_graph_characteristics(g, roots, characteristics):
             if child not in visited:
                 visited.add(child)
                 stack.append((parent, child, iter(g[child])))
-                if required_bridges and ((parent, child) in char_dict['bridges'] or
-                                         (child, parent) in char_dict['bridges']):
+                if required_bridges and (
+                    (parent, child) in char_dict["bridges"] or (child, parent) in char_dict["bridges"]
+                ):
                     visited_bridges.append((parent, child))
 
                 if notn1_areas:
-                    if child in char_dict['notn1_starts'] and not notn1_area_start:
+                    if child in char_dict["notn1_starts"] and not notn1_area_start:
                         notn1_area_start = parent
                     if notn1_area_start:
                         curr_notn1_area.append(child)
@@ -296,9 +299,8 @@ def find_graph_characteristics(g, roots, characteristics):
             stack.pop()
             if required_bridges:
                 if len(visited_bridges) > 0:
-                    char_dict['required_bridges'][parent] = visited_bridges[:]
-                if ((parent, grandparent) in char_dict['bridges'] or
-                        (grandparent, parent) in char_dict['bridges']):
+                    char_dict["required_bridges"][parent] = visited_bridges[:]
+                if (parent, grandparent) in char_dict["bridges"] or (grandparent, parent) in char_dict["bridges"]:
                     visited_bridges.pop()
 
             if notn1_areas and grandparent == notn1_area_start:
@@ -320,8 +322,8 @@ def get_2connected_buses(g, roots):
         g (NetworkX graph): NetworkX Graph or MultiGraph that represents a pandapower network
         roots: Roots of the graphsearch
     """
-    char_dict = find_graph_characteristics(g, roots, characteristics=['connected', 'stub_buses'])
-    connected, stub_buses = char_dict['connected'], char_dict['stub_buses']
+    char_dict = find_graph_characteristics(g, roots, characteristics=["connected", "stub_buses"])
+    connected, stub_buses = char_dict["connected"], char_dict["stub_buses"]
     two_connected = connected - stub_buses
     return connected, two_connected
 
@@ -330,7 +332,7 @@ def determine_stubs(net, roots=None, mg=None, respect_switches=False):
     """
     Finds stubs in a network. Open switches are being ignored. Results are being written in a new column in the bus
     table ("on_stub") and line table ("is_stub") as True/False value.
-    
+
     Parameters:
         net (pandapowerNet): Variable that contains a pandapower network.
         roots (integer/list, None): indices of buses that should be excluded (by default, the ext_grid buses will be set
@@ -362,59 +364,63 @@ def determine_stubs(net, roots=None, mg=None, respect_switches=False):
 
 def lines_on_path(mg, path):
     """
-     Finds all lines that connect a given path of buses.
+    Finds all lines that connect a given path of buses.
 
-     INPUT:
-        **mg** (NetworkX graph) - NetworkX Graph or MultiGraph that represents a pandapower network.
+    INPUT:
+       **mg** (NetworkX graph) - NetworkX Graph or MultiGraph that represents a pandapower network.
 
-        **path** (list) - List of connected buses.
+       **path** (list) - List of connected buses.
 
-     OUTPUT:
-        **lines** (list) - Returns a list of all lines on the path.
+    OUTPUT:
+       **lines** (list) - Returns a list of all lines on the path.
 
-     EXAMPLE:
-         import topology as top
+    EXAMPLE:
+        import topology as top
 
-         mg = top.create_nxgraph(net)
-         lines = top.lines_on_path(mg, [4, 5, 6])
+        mg = top.create_nxgraph(net)
+        lines = top.lines_on_path(mg, [4, 5, 6])
 
-     """
+    """
 
     return elements_on_path(mg, path, "line")
 
 
 def elements_on_path(mg, path, element="line"):
     """
-     Finds all elements that connect a given path of buses.
+    Finds all elements that connect a given path of buses.
 
-     INPUT:
-        **mg** (NetworkX graph) - NetworkX Graph or MultiGraph that represents a pandapower network.
+    INPUT:
+       **mg** (NetworkX graph) - NetworkX Graph or MultiGraph that represents a pandapower network.
 
-        **path** (list) - List of connected buses.
+       **path** (list) - List of connected buses.
 
-        **element** (string, "l") - element type
+       **element** (string, "l") - element type
 
-        **multi** (boolean, True) - True: Applied on a NetworkX MultiGraph
-                                    False: Applied on a NetworkX Graph
+       **multi** (boolean, True) - True: Applied on a NetworkX MultiGraph
+                                   False: Applied on a NetworkX Graph
 
-     OUTPUT:
-        **elements** (list) - Returns a list of all lines on the path.
+    OUTPUT:
+       **elements** (list) - Returns a list of all lines on the path.
 
-     EXAMPLE:
-         import topology as top
+    EXAMPLE:
+        import topology as top
 
-         mg = top.create_nxgraph(net)
-         elements = top.elements_on_path(mg, [4, 5, 6])
+        mg = top.create_nxgraph(net)
+        elements = top.elements_on_path(mg, [4, 5, 6])
 
-     """
+    """
     if element not in ["line", "switch", "trafo", "trafo3w"]:
         raise ValueError("Invalid element type %s" % element)
     if isinstance(mg, nx.MultiGraph):
-        return [edge[1] for b1, b2 in zip(path, path[1:]) for edge in mg.get_edge_data(b1, b2).keys()
-                if edge[0] == element]
+        return [
+            edge[1] for b1, b2 in zip(path, path[1:]) for edge in mg.get_edge_data(b1, b2).keys() if edge[0] == element
+        ]
     else:
-        return [mg.get_edge_data(b1, b2)["key"][1] for b1, b2 in zip(path, path[1:])
-                if mg.get_edge_data(b1, b2)["key"][0] == element]
+        return [
+            mg.get_edge_data(b1, b2)["key"][1]
+            for b1, b2 in zip(path, path[1:])
+            if mg.get_edge_data(b1, b2)["key"][0] == element
+        ]
 
 
 def get_end_points_of_continuously_connected_lines(net, lines):

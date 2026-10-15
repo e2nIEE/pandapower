@@ -1,24 +1,42 @@
 import time
 from copy import deepcopy
 
+import pandas as pd
+
 from pandapower.create import create_group_from_dict
 from pandapower.grid_equivalents.auxiliary import (
-    drop_assist_elms_by_creating_ext_net, drop_internal_branch_elements, add_ext_grids_to_boundaries,
-    _ensure_unique_boundary_bus_names, match_cost_functions_and_eq_net, _check_network, _runpp_except_voltage_angles
+    drop_assist_elms_by_creating_ext_net,
+    drop_internal_branch_elements,
+    add_ext_grids_to_boundaries,
+    _ensure_unique_boundary_bus_names,
+    match_cost_functions_and_eq_net,
+    _check_network,
+    _runpp_except_voltage_angles,
 )
 from pandapower.grid_equivalents.rei_generation import (
-    _create_net_zpbn, _get_internal_and_external_nets, _calculate_equivalent_Ybus, _create_bus_lookups,
-    _calclate_equivalent_element_params, _replace_ext_area_by_impedances_and_shunts
+    _create_net_zpbn,
+    _get_internal_and_external_nets,
+    _calculate_equivalent_Ybus,
+    _create_bus_lookups,
+    _calclate_equivalent_element_params,
+    _replace_ext_area_by_impedances_and_shunts,
 )
 from pandapower.grid_equivalents.ward_generation import (
-    _calculate_ward_and_impedance_parameters, _calculate_xward_and_impedance_parameters,
-    create_passive_external_net_for_ward_admittance, _replace_external_area_by_wards, _replace_external_area_by_xwards
+    _calculate_ward_and_impedance_parameters,
+    _calculate_xward_and_impedance_parameters,
+    create_passive_external_net_for_ward_admittance,
+    _replace_external_area_by_wards,
+    _replace_external_area_by_xwards,
 )
 from pandapower.groups import isin_group, set_group_reference_column
 from pandapower.toolbox.data_modification import reindex_buses
 from pandapower.toolbox.grid_modification import (
-    replace_ward_by_internal_elements, replace_xward_by_internal_elements, drop_buses, drop_elements_at_buses,
-    merge_nets, fuse_buses
+    replace_ward_by_internal_elements,
+    replace_xward_by_internal_elements,
+    drop_buses,
+    drop_elements_at_buses,
+    merge_nets,
+    fuse_buses,
 )
 from pandapower.topology.create_graph import create_nxgraph
 from pandapower.topology.graph_searches import connected_component, connected_components
@@ -29,9 +47,18 @@ logger = logging.getLogger(__name__)
 
 
 def get_equivalent(
-    net, eq_type, boundary_buses, internal_buses, return_internal=True, show_computing_time=False,
-    ward_type="ward_injection", adapt_va_degree=False, calculate_voltage_angles=True,
-    allow_net_change_for_convergence=False, runpp_fct=_runpp_except_voltage_angles, **kwargs
+    net,
+    eq_type,
+    boundary_buses,
+    internal_buses,
+    return_internal=True,
+    show_computing_time=False,
+    ward_type="ward_injection",
+    adapt_va_degree=False,
+    calculate_voltage_angles=True,
+    allow_net_change_for_convergence=False,
+    runpp_fct=_runpp_except_voltage_angles,
+    **kwargs,
 ):
     """
     This function calculates and implements the rei or ward/xward network
@@ -113,11 +140,12 @@ def get_equivalent(
     _check_network(net)
     logger.info(eq_type + " equivalent calculation started.")
 
-    # --- determine interal buses, external buses, buses connected to boundary buses via
+    # --- determine internal buses, external buses, buses connected to boundary buses via
     #     bus-bus-switch and update boundary buses by external slack buses
 
-    all_internal_buses, all_external_buses, boundary_buses_inclusive_bswitch, boundary_buses = \
-        _determine_bus_groups(net, boundary_buses, internal_buses, show_computing_time)
+    all_internal_buses, all_external_buses, boundary_buses_inclusive_bswitch, boundary_buses = _determine_bus_groups(
+        net, boundary_buses, internal_buses, show_computing_time
+    )
     if not len(all_external_buses):
         logger.warning("There are no external buses so that no equivalent grid can be calculated.")
         return None
@@ -128,9 +156,14 @@ def get_equivalent(
 
     # --- create reference buses
     orig_slack_gens = add_ext_grids_to_boundaries(
-        net, boundary_buses, adapt_va_degree, calc_volt_angles=calculate_voltage_angles,
-        allow_net_change_for_convergence=allow_net_change_for_convergence, runpp_fct=runpp_fct,
-        **kwargs)
+        net,
+        boundary_buses,
+        adapt_va_degree,
+        calc_volt_angles=calculate_voltage_angles,
+        allow_net_change_for_convergence=allow_net_change_for_convergence,
+        runpp_fct=runpp_fct,
+        **kwargs,
+    )
 
     # --- replace ward and xward elements by internal elements (load, shunt, impedance, gen)
     ext_buses_with_ward = net.ward.bus[net.ward.bus.isin(all_external_buses)]
@@ -146,31 +179,45 @@ def get_equivalent(
     if eq_type == "rei":
         # --- create zero power balance network
         net_zpbn, net_internal, _ = _create_net_zpbn(
-            net, boundary_buses, all_internal_buses,
-            all_external_buses, calc_volt_angles=calculate_voltage_angles,
-            runpp_fct=runpp_fct, **kwargs)
+            net,
+            boundary_buses,
+            all_internal_buses,
+            all_external_buses,
+            calc_volt_angles=calculate_voltage_angles,
+            runpp_fct=runpp_fct,
+            **kwargs,
+        )
 
         # --- determine bus-lookups for the following calculation
         bus_lookups = _create_bus_lookups(
-            net_zpbn, boundary_buses, all_internal_buses,
-            all_external_buses, boundary_buses_inclusive_bswitch,
-            show_computing_time)
+            net_zpbn,
+            boundary_buses,
+            all_internal_buses,
+            all_external_buses,
+            boundary_buses_inclusive_bswitch,
+            show_computing_time,
+        )
 
         # --- calculate equivalent Ybus according to gaussian elimination
-        Ybus_eq = _calculate_equivalent_Ybus(net_zpbn, bus_lookups,
-                                             eq_type, show_computing_time,
-                                             **kwargs)
+        Ybus_eq = _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type, show_computing_time, **kwargs)
 
         # --- calculate equivalent impedance and shunts
-        shunt_params, impedance_params = \
-            _calclate_equivalent_element_params(net_zpbn, Ybus_eq, bus_lookups,
-                                                show_computing_time, **kwargs)
+        shunt_params, impedance_params = _calclate_equivalent_element_params(
+            net_zpbn, Ybus_eq, bus_lookups, show_computing_time, **kwargs
+        )
 
         # --- replace external network by equivalent elements
         _replace_ext_area_by_impedances_and_shunts(
-            net_zpbn, bus_lookups, impedance_params, shunt_params,
-            net_internal, return_internal, show_computing_time,
-            calc_volt_angles=calculate_voltage_angles, runpp_fct=runpp_fct)
+            net_zpbn,
+            bus_lookups,
+            impedance_params,
+            shunt_params,
+            net_internal,
+            return_internal,
+            show_computing_time,
+            calc_volt_angles=calculate_voltage_angles,
+            runpp_fct=runpp_fct,
+        )
         net_eq = net_zpbn
 
     # --- ward and xward calculations
@@ -178,24 +225,30 @@ def get_equivalent(
         # --- switch from ward injection to ward addmittance if requested
         if ward_type == "ward_admittance":
             create_passive_external_net_for_ward_admittance(
-                net, all_external_buses, boundary_buses, runpp_fct=runpp_fct, **kwargs)
+                net, all_external_buses, boundary_buses, runpp_fct=runpp_fct, **kwargs
+            )
 
         net_internal, net_external = _get_internal_and_external_nets(
-            net, boundary_buses, all_internal_buses, all_external_buses,
-            calc_volt_angles=calculate_voltage_angles, runpp_fct=runpp_fct)
+            net,
+            boundary_buses,
+            all_internal_buses,
+            all_external_buses,
+            calc_volt_angles=calculate_voltage_angles,
+            runpp_fct=runpp_fct,
+        )
 
         # --- remove buses without power flow results in net_eq
         drop_buses(net_external, net_external.res_bus.index[net_external.res_bus.vm_pu.isnull()])
 
         # --- determine bus-lookups for the following calculation
         bus_lookups = _create_bus_lookups(
-            net_external, boundary_buses, all_internal_buses,
-            all_external_buses, boundary_buses_inclusive_bswitch)
+            net_external, boundary_buses, all_internal_buses, all_external_buses, boundary_buses_inclusive_bswitch
+        )
 
         # --- cacluate equivalent Ybus accourding to gaussian elimination
-        Ybus_eq = _calculate_equivalent_Ybus(net_external, bus_lookups,
-                                             eq_type, show_computing_time,
-                                             check_validity=False)
+        Ybus_eq = _calculate_equivalent_Ybus(
+            net_external, bus_lookups, eq_type, show_computing_time, check_validity=False
+        )
 
         if eq_type == "ward":
             # --- calculate equivalent impedance and wards
@@ -212,7 +265,7 @@ def get_equivalent(
                 ext_buses_with_xward,
                 show_computing_time,
                 calc_volt_angles=calculate_voltage_angles,
-                runpp_fct=runpp_fct
+                runpp_fct=runpp_fct,
             )
         else:  # eq_type == "xward"
             # --- calculate equivalent impedance and xwards
@@ -229,7 +282,7 @@ def get_equivalent(
                 ext_buses_with_xward,
                 show_computing_time,
                 calc_volt_angles=calculate_voltage_angles,
-                runpp_fct=runpp_fct
+                runpp_fct=runpp_fct,
             )
         net_eq = net_external
     else:
@@ -240,12 +293,20 @@ def get_equivalent(
     if return_internal:
         logger.debug("Merging of internal and equivalent network begins.")
         if len(kwargs.get("central_controller_types", [])):
-            net_internal.controller.drop([idx for idx in net_internal.controller.index if any(
-                isinstance(net_internal.controller.object.at[idx], central_controller_type) for
-                central_controller_type in kwargs["central_controller_types"])], inplace=True)
+            net_internal.controller.drop(
+                [
+                    idx
+                    for idx in net_internal.controller.index
+                    if any(
+                        isinstance(net_internal.controller.object.at[idx], central_controller_type)
+                        for central_controller_type in kwargs["central_controller_types"]
+                    )
+                ],
+                inplace=True,
+            )
         net_eq = merge_internal_net_and_equivalent_external_net(
-            net_eq, net_internal, show_computing_time=show_computing_time,
-            calc_volt_angles=calculate_voltage_angles)
+            net_eq, net_internal, show_computing_time=show_computing_time, calc_volt_angles=calculate_voltage_angles
+        )
         if len(orig_slack_gens):
             net_eq.gen.loc[net_eq.gen.index.intersection(orig_slack_gens), "slack"] = True
         # run final power flow calculation
@@ -262,31 +323,42 @@ def get_equivalent(
 
     if kwargs.get("add_group", True):
         # declare a group for the new equivalent
-        ib_buses_after_merge, be_buses_after_merge = \
-            _get_buses_after_merge(net_eq, net_internal, bus_lookups, return_internal)
+        ib_buses_after_merge, be_buses_after_merge = _get_buses_after_merge(
+            net_eq, net_internal, bus_lookups, return_internal
+        )
         eq_elms = {}
-        for elm in ["bus", "gen", "impedance", "load", "sgen", "shunt",
-                    "switch", "ward", "xward"]:
+        for elm in ["bus", "gen", "impedance", "load", "sgen", "shunt", "switch", "ward", "xward"]:
             if "ward" in elm:
-                new_idx = net_eq[elm].index[net_eq[elm].name == "network_equivalent"].difference(
-                    net[elm].index[net[elm].name == "network_equivalent"])
+                if "name" in net[elm].columns:
+                    new_idx = (
+                        net_eq[elm]
+                        .index[net_eq[elm].name == "network_equivalent"]
+                        .difference(net[elm].index[net[elm].name == "network_equivalent"])
+                    )
+                else:
+                    new_idx = []
             else:
-                names = net_eq[elm].name.astype(str)
+                names = (
+                    net_eq[elm].name.astype(str)
+                    if "name" in net_eq[elm].columns
+                    else pd.Series("", index=net_eq[elm].index)
+                )
                 if elm in ["bus", "sgen", "gen", "load"]:
                     buses = net_eq.bus.index if elm == "bus" else net_eq[elm].bus
-                    new_idx = net_eq[elm].index[names.str.contains("_integrated") |
-                                                names.str.contains("_separate") &
-                                                ~buses.isin(ib_buses_after_merge)]
+                    new_idx = net_eq[elm].index[
+                        names.str.contains("_integrated")
+                        | names.str.contains("_separate") & ~buses.isin(ib_buses_after_merge)
+                    ]
                 elif elm in ["impedance"]:
                     fr_buses = net_eq[elm].from_bus
                     to_buses = net_eq[elm].to_bus
-                    new_idx = net_eq[elm].index[names.str.startswith("eq_%s" % elm) |
-                                                (fr_buses.isin(be_buses_after_merge) &
-                                                 to_buses.isin(be_buses_after_merge))]
+                    new_idx = net_eq[elm].index[
+                        names.str.startswith("eq_%s" % elm)
+                        | (fr_buses.isin(be_buses_after_merge) & to_buses.isin(be_buses_after_merge))
+                    ]
                 else:
                     buses = net_eq[elm].bus
-                    new_idx = net_eq[elm].index[names.str.startswith("eq_%s" % elm) &
-                                                buses.isin(be_buses_after_merge)]
+                    new_idx = net_eq[elm].index[names.str.startswith("eq_%s" % elm) & buses.isin(be_buses_after_merge)]
 
                 # don't include eq elements to this Group if these are already included to other
                 # groups
@@ -309,7 +381,8 @@ def get_equivalent(
 
 
 def merge_internal_net_and_equivalent_external_net(
-        net_eq, net_internal, fuse_bus_column="auto", show_computing_time=False, **kwargs):
+    net_eq, net_internal, fuse_bus_column="auto", show_computing_time=False, **kwargs
+):
     """
     Merges the internal network and the equivalent external network.
     It is expected that the boundaries occur in both, equivalent net and
@@ -348,15 +421,17 @@ def merge_internal_net_and_equivalent_external_net(
 
     # --- merge equivalent external net and internal net
     merged_net = merge_nets(
-        net_internal, net_eq, validate=kwargs.pop("validate", False),
-        net2_reindex_log_level=kwargs.pop("net2_reindex_log_level", "debug"), **kwargs
+        net_internal,
+        net_eq,
+        validate=kwargs.pop("validate", False),
+        net2_reindex_log_level=kwargs.pop("net2_reindex_log_level", "debug"),
+        **kwargs,
     )
 
     # --- fuse or combine the boundary buses in external and internal nets
     if fuse_bus_column == "auto":
         if fuse_bus_column in merged_net.bus.columns:
-            raise ValueError(
-                f"{fuse_bus_column=} is ambiguous since the column 'auto' exists in net.bus")
+            raise ValueError(f"{fuse_bus_column=} is ambiguous since the column 'auto' exists in net.bus")
         if "name_equivalent" in merged_net.bus.columns:
             fuse_bus_column = "name_equivalent"
         else:
@@ -373,7 +448,8 @@ def merge_internal_net_and_equivalent_external_net(
             raise ValueError(
                 "The code expects all boundary buses to occur double. One because "
                 "of net_eq and one because of net_internal. However target_buses is "
-                "'%s'." % str(target_buses))
+                "'%s'." % str(target_buses)
+            )
         fuse_buses(merged_net, target_buses[0], target_buses[1])
 
     # --- drop assist elements
@@ -386,25 +462,33 @@ def merge_internal_net_and_equivalent_external_net(
     is_total_bus = merged_net.bus.name.astype(str).str.contains("total", na=False)
     if sum(is_total_bus):
         max_non_total_bus_idx = merged_net.bus[~is_total_bus].index.values.max()
-        lookup = dict(zip(merged_net.bus.index[is_total_bus], range(
-            max_non_total_bus_idx + 1, max_non_total_bus_idx + sum(is_total_bus) + 1)))
+        lookup = dict(
+            zip(
+                merged_net.bus.index[is_total_bus],
+                range(max_non_total_bus_idx + 1, max_non_total_bus_idx + sum(is_total_bus) + 1),
+            )
+        )
         reindex_buses(merged_net, lookup)
 
     t_end = time.perf_counter()
     if show_computing_time:
-        logger.info("'merge_int_and_eq_net' finished in %s seconds." %
-                    round((t_end - t_start), 2))
+        logger.info("'merge_int_and_eq_net' finished in %s seconds." % round((t_end - t_start), 2))
 
     return merged_net
 
 
 def drop_repeated_characteristic(net):
-    for characteristic in ["trafo_characteristic_table", "shunt_characteristic_table",
-                           "trafo_characteristic_spline", "shunt_characteristic_spline"]:
+    for characteristic in [
+        "trafo_characteristic_table",
+        "shunt_characteristic_table",
+        "trafo_characteristic_spline",
+        "shunt_characteristic_spline",
+    ]:
         if characteristic in net:
             # get the list of indices of duplicate rows
             repeated_idxs = net[characteristic][
-                net[characteristic].fillna("NA_PLACEHOLDER").duplicated()].index.tolist()
+                net[characteristic].fillna("NA_PLACEHOLDER").duplicated()
+            ].index.tolist()
             # drop repeated rows
             net[characteristic] = net[characteristic].drop(repeated_idxs)
 
@@ -442,32 +526,44 @@ def _determine_bus_groups(net, boundary_buses, internal_buses, show_computing_ti
 
     boundary_buses = set(boundary_buses)
 
-    unsupplied_buses = set(net.res_bus.index[net.res_bus.vm_pu.isnull()])
+    unsupplied_buses = set(net.res_bus.index[net.res_bus.vm_pu.isnull()]) if "res_bus" in net else set()
     unsupplied_boundary_buses = boundary_buses & unsupplied_buses
     if len(unsupplied_boundary_buses):
         raise ValueError(
-            "get_equivalent() do not allow unsupplied boundary " +
-            "buses, these have no voltage results (possibly because power " +
-            "flow results miss, the buses are isolated " +
-            "or out of service): " + str(sorted(unsupplied_boundary_buses)) +
-            ". Remove these buses from the boundary buses and try again.")
+            "get_equivalent() do not allow unsupplied boundary "
+            + "buses, these have no voltage results (possibly because power "
+            + "flow results miss, the buses are isolated "
+            + "or out of service): "
+            + str(sorted(unsupplied_boundary_buses))
+            + ". Remove these buses from the boundary buses and try again."
+        )
 
     if internal_buses & boundary_buses:
-        logger.info("Some internal buses are also contained in the boundary buses, " +
-                    "this could cause small inaccuracy.")
+        logger.info(
+            "Some internal buses are also contained in the boundary buses, " + "this could cause small inaccuracy."
+        )
 
     # --- determine buses connected to boundary buses via bus-bus-switch
     boundary_buses_inclusive_bswitch = set()
-    mg_sw = create_nxgraph(net, respect_switches=True, include_lines=False, include_impedances=False,
-                           include_tcsc=False, include_trafos=False, include_trafo3ws=False)
+    mg_sw = create_nxgraph(
+        net,
+        respect_switches=True,
+        include_lines=False,
+        include_impedances=False,
+        include_tcsc=False,
+        include_trafos=False,
+        include_trafo3ws=False,
+    )
     for bbus in boundary_buses:
         boundary_buses_inclusive_bswitch |= set(connected_component(mg_sw, bbus))
     if len(boundary_buses_inclusive_bswitch) > len(boundary_buses):
-        logger.info("There are some buses connected to the boundary buses via " +
-                    "bus-bus-switches. They could be the nodes on the same bus bar " +
-                    "of the boundary buses. It is suggested to consider all these " +
-                    "buses (the connected buses and the given boundary buses) " +
-                    "as the boundary. They are: %s." % boundary_buses_inclusive_bswitch)
+        logger.info(
+            "There are some buses connected to the boundary buses via "
+            + "bus-bus-switches. They could be the nodes on the same bus bar "
+            + "of the boundary buses. It is suggested to consider all these "
+            + "buses (the connected buses and the given boundary buses) "
+            + "as the boundary. They are: %s." % boundary_buses_inclusive_bswitch
+        )
 
     # --- determine all internal buses
     all_internal_buses = set()
@@ -487,16 +583,12 @@ def _determine_bus_groups(net, boundary_buses, internal_buses, show_computing_ti
         all_internal_buses -= boundary_buses_inclusive_bswitch
 
     # --- determine all external buses
-    all_external_buses = set(net.bus.index) - unsupplied_buses - \
-                         all_internal_buses - boundary_buses_inclusive_bswitch
+    all_external_buses = set(net.bus.index) - unsupplied_buses - all_internal_buses - boundary_buses_inclusive_bswitch
 
     # --- move all slack buses from external net to boundary if no slack is
     #     in boundary or internal
-    slack_buses = set(net.ext_grid.bus[net.ext_grid.in_service]) | \
-                  set(net.gen.bus[net.gen.in_service & net.gen.slack])
-    if len(all_internal_buses) and not len((
-                                                   all_internal_buses | boundary_buses_inclusive_bswitch) &
-                                           slack_buses):
+    slack_buses = set(net.ext_grid.bus[net.ext_grid.in_service]) | set(net.gen.bus[net.gen.in_service & net.gen.slack])
+    if len(all_internal_buses) and not len((all_internal_buses | boundary_buses_inclusive_bswitch) & slack_buses):
         if not len(slack_buses):
             raise ValueError("There is no active slack in the net.")
         for bbus in slack_buses & all_external_buses:
@@ -506,15 +598,17 @@ def _determine_bus_groups(net, boundary_buses, internal_buses, show_computing_ti
             all_external_buses -= {bbus} | bbus_bswitch
 
     # --- function endings
-    _check_bus_groups(all_internal_buses, all_external_buses, internal_buses,
-                      boundary_buses)
+    _check_bus_groups(all_internal_buses, all_external_buses, internal_buses, boundary_buses)
     t_end = time.perf_counter()
     if show_computing_time:
-        logger.info("\"determine_bus_groups\" finished in %s seconds." %
-                    round((t_end - t_start), 2))
+        logger.info('"determine_bus_groups" finished in %s seconds.' % round((t_end - t_start), 2))
 
-    return sorted(all_internal_buses), sorted(all_external_buses), \
-        sorted(boundary_buses_inclusive_bswitch), sorted(boundary_buses)
+    return (
+        sorted(all_internal_buses),
+        sorted(all_external_buses),
+        sorted(boundary_buses_inclusive_bswitch),
+        sorted(boundary_buses),
+    )
 
 
 def _check_bus_groups(all_internal_buses, all_external_buses, internal_buses, boundary_buses):
@@ -523,12 +617,12 @@ def _check_bus_groups(all_internal_buses, all_external_buses, internal_buses, bo
     """
     missing_internals = internal_buses - all_internal_buses
     if len(missing_internals) and not (missing_internals & boundary_buses):
-        raise ValueError("These internal buses miss in 'all_internal_buses': " + str(sorted(
-            missing_internals)))
+        raise ValueError("These internal buses miss in 'all_internal_buses': " + str(sorted(missing_internals)))
     in_and_extern_buses = all_internal_buses & all_external_buses
     if len(in_and_extern_buses):
-        raise ValueError("These buses are in 'all_internal_buses' and 'all_external_buses': " + str(
-            sorted(in_and_extern_buses)))
+        raise ValueError(
+            "These buses are in 'all_internal_buses' and 'all_external_buses': " + str(sorted(in_and_extern_buses))
+        )
 
 
 def _get_buses_after_merge(net_eq, net_internal, bus_lookups, return_internal):
@@ -538,11 +632,12 @@ def _get_buses_after_merge(net_eq, net_internal, bus_lookups, return_internal):
     if return_internal:
         bus_list = net_eq.bus.index.tolist()
         bus_list_old = net_internal.bus.index.tolist()
-        ib_buses_after_merge = bus_list[:sum(~net_internal.bus.name.str.contains("assist_", na=False))]
+        ib_buses_after_merge = bus_list[: sum(~net_internal.bus.name.str.contains("assist_", na=False))]
         i_pos = [bus_list_old.index(i) for i in bus_lookups["origin_all_internal_buses"]]
         be_buses_after_merge = [x for i, x in enumerate(bus_list) if i not in i_pos]
     else:
         ib_buses_after_merge = bus_lookups["bus_lookup_pd"]["b_area_buses"]
-        be_buses_after_merge = bus_lookups["bus_lookup_pd"]["b_area_buses"] + \
-                               bus_lookups["bus_lookup_pd"]["e_area_buses"]
+        be_buses_after_merge = (
+            bus_lookups["bus_lookup_pd"]["b_area_buses"] + bus_lookups["bus_lookup_pd"]["e_area_buses"]
+        )
     return ib_buses_after_merge, be_buses_after_merge

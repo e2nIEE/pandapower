@@ -1,3 +1,0 @@
-**Parameter**;**Datatype**;**Explanation**
-vm_pu;float;voltage magnitude [p.u]
-p_mw;float;resulting active power demand [MW]

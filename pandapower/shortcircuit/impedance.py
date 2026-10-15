@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -52,7 +50,7 @@ def _calc_ybus(ppci):
 def _calc_zbus(net, ppci):
     try:
         Ybus = ppci["internal"]["Ybus"]
-        sparsity = Ybus.nnz / Ybus.shape[0]**2
+        sparsity = Ybus.nnz / Ybus.shape[0] ** 2
         if sparsity < 0.002:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
@@ -61,7 +59,7 @@ def _calc_zbus(net, ppci):
             ppci["internal"]["Zbus"] = inv(Ybus.toarray())
     except Exception as e:
         _clean_up(net, res=False)
-        raise (e)
+        raise e
 
 
 def _calc_zbus_diag(net, ppci, bus_idx=None):

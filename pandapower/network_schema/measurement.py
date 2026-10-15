@@ -4,9 +4,18 @@ import pandera.pandas as pa
 # TODO: to discuss whole concept
 # TODO: whats required and whats not ?
 
+_side_allowed = {"line": ["from", "to"], "trafo": ["hv", "lv"], "trafo3w": ["hv", "mv", "lv"]}
+
+
+def _check_elment_type_side_combination(row: pd.Series) -> bool:
+    return row.element_type not in _side_allowed or row.side in _side_allowed[row.element_type]
+
+
+# TODO: add cross reference (foreign_key) check for element column
+
 measurement_schema = pa.DataFrameSchema(
     {
-        "name": pa.Column(pd.StringDtype, description="Name of measurement"),
+        "name": pa.Column(pd.StringDtype, nullable=True, description="Name of measurement"),
         "measurement_type": pa.Column(
             str, pa.Check.isin(["p", "q", "i", "v"]), description="Defines what physical quantity is measured"
         ),
@@ -19,25 +28,60 @@ measurement_schema = pa.DataFrameSchema(
         ),
         "value": pa.Column(float, description="Measurement value"),
         "std_dev": pa.Column(float, description="Standard deviation (same unit as measurement)"),
-        "bus": pa.Column(
-            int,
-            pa.Check.ge(0),
-            required=False,
-            description="Defines the bus at which the measurement is placed. For line or transformer measurement, it defines the side at which the measurement is placed (from_bus or to_bus). must be in net.bus.index",
-            metadata={"foreign_key": "bus.index"},
-        ),
         "element": pa.Column(
             int,
-            description="If the element_type is “line”, “trafo”, “trafo3w”, “load”, “gen”, “sgen”, “shunt”, “ward”, “xward” or “ext_grid”, element is the index of the relevant element. For “bus” measurements, it is None (default)",
+            description="Element is the index of the element in `net[element_type]`.",
         ),
-        "check_existing": pa.Column(
-            bool,
-            description="Checks if a measurement of the type already exists and overwrites it. If set to False, the measurement may be added twice (unsafe behaviour), but the performance increases",
-        ),  # TODO: shouldn't this be called overwrite?
         "side": pa.Column(
-            str,
-            description="Only used for measured lines or transformers. Side defines at which end of the branch the measurement is gathered. For lines this may be “from“, “to“ to denote the side with the from_bus or to_bus. It can also be the index of the from_bus or to_bus. For transformers, it can be “hv“, “mv“ or “lv“ or the corresponding bus index, respectively.",
-        ),  # TODO: check nur wenn element_type trafo oder line
+            pd.StringDtype,
+            pa.Check.isin(["from", "to", "hv", "mv", "lv"]),
+            nullable=True,
+            description="Used for element_type line, trafo or trafo3w. Defines where the measurement is gathered.",
+        ),  # TODO: check nur wenn element_type trafo(3w) oder line
+        "origin_id": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="element rdfId from CIM",
+            metadata={"cim": True, "doc": False},
+        ),
+        "origin_class": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="origin_class rdfId from CIM",
+            metadata={"cim": True, "doc": False},
+        ),
+        "source": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="source from converter, not relevant for calculations",
+            metadata={"cim": True, "doc": False},
+        ),
+        "analog_id": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="analog_id from converter, not relevant for calculations",
+            metadata={"cim": True, "doc": False},
+        ),
+        "terminal_id": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="terminal_id from converter, not relevant for calculations",
+            metadata={"cim": True, "doc": False},
+        ),
+        "description": pa.Column(
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="description from converter, not relevant for calculations",
+            metadata={"cim": True, "doc": False},
+        ),
     },
+    pa.Check(_check_elment_type_side_combination, element_wise=True),
+    name="measurement",
     strict=False,
 )

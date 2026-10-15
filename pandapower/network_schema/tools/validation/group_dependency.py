@@ -1,4 +1,3 @@
-import pandas as pd
 import pandera.pandas as pa
 
 
@@ -82,7 +81,7 @@ def create_column_group_dependency_validation_func(columns):
     return validator
 
 
-def create_column_dependency_checks_from_metadata(names: list, schema_columns: dict) -> list:
+def create_column_dependency_checks_from_metadata(names: list, schema_columns: dict) -> list[pa.Check]:
     """
     Create dependency validation checks for columns based on their metadata.
 

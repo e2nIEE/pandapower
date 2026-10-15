@@ -1,20 +1,19 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
+from numpy.linalg import LinAlgError
 from scipy.sparse import csr_matrix, vstack, hstack
 from scipy.sparse.linalg import spsolve, norm, inv
 
 from pandapower.estimation.algorithm.estimator import BaseEstimatorIRWLS, get_estimator
-from pandapower.estimation.algorithm.matrix_base import BaseAlgebra, \
-    BaseAlgebraZeroInjConstraints
+from pandapower.estimation.algorithm.matrix_base import BaseAlgebra, BaseAlgebraZeroInjConstraints
 from pandapower.estimation.idx_bus import ZERO_INJ_FLAG, P, P_STD, Q, Q_STD
 from pandapower.estimation.ppc_conversion import ExtendedPPCI
 from pandapower.pypower.idx_bus import bus_cols
 
 import logging
+
 std_logger = logging.getLogger(__name__)
 std_logger.setLevel(logging.DEBUG)
 
@@ -46,14 +45,10 @@ class BaseAlgorithm:
         # print output for results
         if current_error <= self.tolerance:
             self.successful = True
-            self.logger.debug(
-                f"State Estimation successful ({cur_it:d} iterations)"
-            )
+            self.logger.debug(f"State Estimation successful ({cur_it:d} iterations)")
         else:
             self.successful = False
-            self.logger.debug(
-                f"State Estimation not successful ({cur_it:d}/{self.max_iterations:d} iterations)"
-            )
+            self.logger.debug(f"State Estimation not successful ({cur_it:d}/{self.max_iterations:d} iterations)")
 
     def initialize(self, eppci: ExtendedPPCI):
         # Check observability
@@ -84,10 +79,10 @@ class WLSAlgorithm(BaseAlgorithm):
         # matrix calculation object
         sem = BaseAlgebra(eppci)
 
-        current_error, cur_it = 100., 0
+        current_error, cur_it = 100.0, 0
         # invert covariance matrix
-        eppci.r_cov[eppci.r_cov<(10**(-5))] = 10**(-5)
-        r_weight = 1 / eppci.r_cov ** 2
+        eppci.r_cov[eppci.r_cov < (10 ** (-5))] = 10 ** (-5)
+        r_weight = 1 / eppci.r_cov**2
         len_r = np.arange(len(r_weight))
         r_inv = csr_matrix((r_weight, (len_r, len_r)))
         E = eppci.E
@@ -100,13 +95,13 @@ class WLSAlgorithm(BaseAlgorithm):
                 # jacobian matrix H
                 H = csr_matrix(sem.create_hx_jacobian(E))
 
-                # remove current magnitude measurements at the first iteration 
+                # remove current magnitude measurements at the first iteration
                 # because with flat start they have null derivative
                 if cur_it == 0 and eppci.any_i_meas:
                     idx = eppci.idx_non_imeas
-                    r_inv = r_inv[idx,:][:,idx]
-                    r = r[idx,:]
-                    H = H[idx,:]
+                    r_inv = r_inv[idx, :][:, idx]
+                    r = r[idx, :]
+                    H = H[idx, :]
 
                 # gain matrix G_m
                 # G_m = H^t * R^-1 * H
@@ -114,7 +109,7 @@ class WLSAlgorithm(BaseAlgorithm):
                 if debug_mode:
                     norm_G = norm(G_m, np.inf)
                     norm_invG = norm(inv(G_m), np.inf)
-                    cond = norm_G*norm_invG
+                    cond = norm_G * norm_invG
                     if cond > 10**18:
                         self.logger.warning(f"WARNING: Gain matrix is ill-conditioned: {cond:.2e}")
 
@@ -122,31 +117,32 @@ class WLSAlgorithm(BaseAlgorithm):
                 # d_E = G_m^-1 * (H' * R^-1 * r)
                 d_E = spsolve(G_m, H.T * (r_inv * r))
 
-                # Scaling of Delta_X to avoid divergence due o ill-conditioning and 
+                # Scaling of Delta_X to avoid divergence due o ill-conditioning and
                 # operating conditions far from starting state variables
                 current_error = np.max(np.abs(d_E))
                 if current_error > 0.35:
-                    d_E = d_E*0.35/current_error  # type: ignore[assignment]
+                    d_E = d_E * 0.35 / current_error  # type: ignore[assignment]
 
                 # Update E with d_E
                 E += d_E.ravel()  # type: ignore[union-attr]
                 eppci.update_E(E)
 
                 if debug_mode:
-                    obj_func = (r.T*r_inv*r)[0,0]
+                    obj_func = (r.T * r_inv * r)[0, 0]
                     self.logger.debug("Current delta_x: {:.7f}".format(current_error))
                     self.logger.debug("Current objective function value: {:.1f}".format(obj_func))
 
                 # Restore full weighting matrix with current measurements
                 if cur_it == 0 and eppci.any_i_meas:
-                    r_inv = csr_matrix(np.diagflat(1 / eppci.r_cov ** 2))
+                    r_inv = csr_matrix(np.diagflat(1 / eppci.r_cov**2))
 
                 # prepare next iteration
                 cur_it += 1
 
-            except np.linalg.LinAlgError:
-                self.logger.error("A problem appeared while using the linear algebra methods."
-                                  "Check and change the measurement set.")
+            except LinAlgError:
+                self.logger.error(
+                    "A problem appeared while using the linear algebra methods.Check and change the measurement set."
+                )
                 return False
 
         # check if the estimation is successful
@@ -172,7 +168,9 @@ class WLSZeroInjectionConstraintsAlgorithm(BaseAlgorithm):
         if not np.any(eppci["bus"][:, bus_cols + ZERO_INJ_FLAG]):
             raise UserWarning("Network has no bus with zero injections! Please use WLS instead!")
         zero_injection_bus = np.argwhere(eppci["bus"][:, bus_cols + ZERO_INJ_FLAG]).ravel()
-        eppci["bus"][np.ix_(zero_injection_bus, [bus_cols + P, bus_cols + P_STD, bus_cols + Q, bus_cols + Q_STD])] = np.nan
+        eppci["bus"][np.ix_(zero_injection_bus, [bus_cols + P, bus_cols + P_STD, bus_cols + Q, bus_cols + Q_STD])] = (
+            np.nan
+        )
         # Withn pq buses with zero injection identify those who have also no p or q measurement
         p_zero_injections = zero_injection_bus
         q_zero_injections = zero_injection_bus
@@ -183,8 +181,8 @@ class WLSZeroInjectionConstraintsAlgorithm(BaseAlgorithm):
         # matrix calculation object
         sem = BaseAlgebraZeroInjConstraints(eppci)
 
-        current_error, cur_it = 100., 0
-        r_weight = 1 / eppci.r_cov ** 2
+        current_error, cur_it = 100.0, 0
+        r_weight = 1 / eppci.r_cov**2
         len_r = np.arange(len(r_weight))
         r_inv = csr_matrix((r_weight, (len_r, len_r)))
         E = eppci.E
@@ -220,16 +218,17 @@ class WLSZeroInjectionConstraintsAlgorithm(BaseAlgorithm):
                 # state vector difference d_E and update E
                 d_E_ext = spsolve(M_tx, C_rhs)
                 E_ext += d_E_ext.ravel()
-                E = E_ext[:E.shape[0]]
+                E = E_ext[: E.shape[0]]
                 eppci.update_E(E)
 
                 # prepare next iteration
                 cur_it += 1
-                current_error = np.max(np.abs(d_E_ext[:len(eppci.non_slack_buses) + num_bus]))
+                current_error = np.max(np.abs(d_E_ext[: len(eppci.non_slack_buses) + num_bus]))
                 self.logger.debug("Current error: {:.7f}".format(current_error))
-            except np.linalg.LinAlgError:
-                self.logger.error("A problem appeared while using the linear algebra methods."
-                                  "Check and change the measurement set.")
+            except LinAlgError:
+                self.logger.error(
+                    "A problem appeared while using the linear algebra methods.Check and change the measurement set."
+                )
                 return False
 
         # check if the estimation is successfull
@@ -244,7 +243,7 @@ class IRWLSAlgorithm(BaseAlgorithm):
         # matrix calculation object
         sem = get_estimator(BaseEstimatorIRWLS, estimator)(eppci, **kwargs)
 
-        current_error, cur_it = 100., 0
+        current_error, cur_it = 100.0, 0
         E = eppci.E
         while current_error > self.tolerance and cur_it < self.max_iterations:
             self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
@@ -269,9 +268,10 @@ class IRWLSAlgorithm(BaseAlgorithm):
                 cur_it += 1
                 current_error = np.max(np.abs(d_E))
                 self.logger.debug("Current error: {:.7f}".format(current_error))
-            except np.linalg.LinAlgError:
-                self.logger.error("A problem appeared while using the linear algebra methods."
-                                  "Check and change the measurement set.")
+            except LinAlgError:
+                self.logger.error(
+                    "A problem appeared while using the linear algebra methods.Check and change the measurement set."
+                )
                 return False
 
         # check if the estimation is successfull
@@ -298,10 +298,10 @@ class AFWLSAlgorithm(BaseAlgorithm):
         # matrix calculation object
         sem = BaseAlgebra(eppci)
 
-        current_error, cur_it = 100., 0
+        current_error, cur_it = 100.0, 0
         # invert covariance matrix
-        eppci.r_cov[eppci.r_cov<(10**(-5))] = 10**(-5)
-        r_weight = 1 / eppci.r_cov ** 2
+        eppci.r_cov[eppci.r_cov < (10 ** (-5))] = 10 ** (-5)
+        r_weight = 1 / eppci.r_cov**2
         len_r = np.arange(len(r_weight))
         r_inv = csr_matrix((r_weight, (len_r, len_r)))
         E = eppci.E
@@ -317,16 +317,16 @@ class AFWLSAlgorithm(BaseAlgorithm):
 
                 if cur_it == 0 and eppci.any_i_meas:
                     idx = eppci.idx_non_imeas
-                    r_inv = r_inv[idx,:][:,idx]
-                    r = r[idx,:]
-                    H = H[idx,:]
+                    r_inv = r_inv[idx, :][:, idx]
+                    r = r[idx, :]
+                    H = H[idx, :]
 
                 # gain matrix G_m
                 G_m = H.T * (r_inv * H)
-                if debug_mode: 
+                if debug_mode:
                     norm_G = norm(G_m, np.inf)
                     norm_invG = norm(inv(G_m), np.inf)
-                    cond = norm_G*norm_invG
+                    cond = norm_G * norm_invG
                     if cond > 10**18:
                         self.logger.warning(f"WARNING: Gain matrix is ill-conditioned: {cond:.2e}")
 
@@ -336,26 +336,27 @@ class AFWLSAlgorithm(BaseAlgorithm):
                 # Update E with d_E
                 E += d_E.ravel()  # type: ignore[union-attr]
 
-                # log data 
+                # log data
                 current_error = np.max(np.abs(d_E))
                 if debug_mode:
-                    obj_func = (r.T*r_inv*r)[0,0]
+                    obj_func = (r.T * r_inv * r)[0, 0]
                     self.logger.debug("Current delta_x: {:.7f}".format(current_error))
                     self.logger.debug("Current objective function value: {:.1f}".format(obj_func))
 
                 # Restore full weighting matrix
                 if cur_it == 0 and eppci.any_i_meas:
-                    r_inv = csr_matrix(np.diagflat(1 / eppci.r_cov ** 2))
+                    r_inv = csr_matrix(np.diagflat(1 / eppci.r_cov**2))
 
                 # prepare next iteration
                 cur_it += 1
 
-            except np.linalg.LinAlgError:
-                self.logger.error("A problem appeared while using the linear algebra methods."
-                                  "Check and change the measurement set.")
+            except LinAlgError:
+                self.logger.error(
+                    "A problem appeared while using the linear algebra methods.Check and change the measurement set."
+                )
                 return False
 
-        # check if the estimation is successfull
+        # check if the estimation is successful
         self.check_result(current_error, cur_it)
         self.iterations = cur_it
         if debug_mode:

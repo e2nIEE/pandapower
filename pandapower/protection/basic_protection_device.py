@@ -15,14 +15,16 @@ class ProtectionDevice(JSONSerializableClass):
     """
     Base Class of protection devices found in protection module
     """
+
     def __init__(self, net, index=None, in_service=True, overwrite=False, **kwargs):
         super().__init__()
         # add oneself to net, creating the ['controller'] DataFrame, if necessary
         if index is None and "protection" in net.keys():
             index = get_free_id(net.protection)
         fill_dict = {"in_service": in_service}
-        self.index = super().add_to_net(net=net, element='protection', index=index, overwrite=overwrite,
-                                        fill_dict=fill_dict, preserve_dtypes=True)
+        self.index = super().add_to_net(
+            net=net, element="protection", index=index, overwrite=overwrite, fill_dict=fill_dict, preserve_dtypes=True
+        )
 
     def reset_device(self):
         pass
@@ -40,8 +42,8 @@ class ProtectionDevice(JSONSerializableClass):
         for member in ["index", "json_excludes"]:
             rep += ("\n" + member + ": ").ljust(20)
             d = locals()
-            exec('value = self.' + member, d)
-            rep += str(d['value'])
+            exec("value = self." + member, d)
+            rep += str(d["value"])
 
         return rep
 
@@ -62,10 +64,3 @@ class ProtectionDevice(JSONSerializableClass):
 
     def __setstate__(self, state):
         self.__dict__.update(state)
-
-
-if __name__ == "__main__":
-    from pandapower.create import create_empty_network
-
-    net = create_empty_network()
-    ProtectionDevice(net)

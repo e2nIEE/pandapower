@@ -9,6 +9,7 @@ import pandas as pd
 
 try:
     import matplotlib.pyplot as plt
+
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
@@ -140,12 +141,7 @@ def hover(event, ax, net, hover_text):
 
         df = getattr(net, element, None)
 
-        if (
-            df is not None
-            and idx is not None
-            and idx in df.index
-            and "name" in df.columns
-        ):
+        if df is not None and idx is not None and idx in df.index and "name" in df.columns:
             name = df.at[idx, "name"]
             hover_info = f"Element: {element}\nName: {name}\nIndex: {idx}"
         elif idx is not None:
@@ -160,15 +156,17 @@ def hover(event, ax, net, hover_text):
                 if "vm_pu" in res_bus.columns and "va_degree" in res_bus.columns:
                     hover_info += (
                         f"\nV_m = {res_bus.vm_pu.at[idx]:.2f} p.u."
-                                   f"\nV_m = {(res_bus.vm_pu.at[idx] * net.bus.vn_kv.at[idx]):.2f} kV"
-                                   f"\nV_a = {res_bus.va_degree.at[idx]:.2f} deg")
+                        f"\nV_m = {(res_bus.vm_pu.at[idx] * net.bus.vn_kv.at[idx]):.2f} kV"
+                        f"\nV_a = {res_bus.va_degree.at[idx]:.2f} deg"
+                    )
         elif element == "line" and idx is not None:
             res_line = getattr(net, "res_line", None)
             if res_line is not None and not res_line.empty and idx in res_line.index:
                 if "loading_percent" in res_line.columns and "i_ka" in res_line.columns:
                     hover_info += (
                         f"\nLoading: {res_line.at[idx, 'loading_percent']:.2f} %"
-                        f"\nI_kA: {res_line.at[idx, 'i_ka']:.2f} kA")
+                        f"\nI_kA: {res_line.at[idx, 'i_ka']:.2f} kA"
+                    )
 
         hover_text.set_text(hover_info)
         hover_text.set_ha("left")
@@ -326,7 +324,7 @@ def _set_colormap_mode(
         return  # already in the requested mode – nothing to do
 
     state["active"] = mode
-    is_cmap = (mode == "colormap")
+    is_cmap = mode == "colormap"
     fig = ax.figure
 
     # Swap collection visibility
@@ -349,12 +347,8 @@ def _set_colormap_mode(
         fig.set_size_inches(state["normal_figsize"], forward=True)
 
     # Button highlighting: active mode = magenta, inactive mode = dark blue
-    btn_normal.ax.set_facecolor(
-        _BTN_ACTIVE_COLOR if not is_cmap else _BTN_INACTIVE_COLOR
-    )
-    btn_colormap.ax.set_facecolor(
-        _BTN_ACTIVE_COLOR if is_cmap else _BTN_INACTIVE_COLOR
-    )
+    btn_normal.ax.set_facecolor(_BTN_ACTIVE_COLOR if not is_cmap else _BTN_INACTIVE_COLOR)
+    btn_colormap.ax.set_facecolor(_BTN_ACTIVE_COLOR if is_cmap else _BTN_INACTIVE_COLOR)
 
     fig.canvas.draw_idle()
 
@@ -548,20 +542,34 @@ def simple_plot(
     if plot_line_switches:
         respect_switches = False
 
+    if orientation is None:
+        orientation = math.pi
+
     # create generic coordinates if no geodata is available
-    if (len(net.line.geo) == 0 and len(net.bus.geo) == 0) or (
-            net.line.geo.isna().any() and net.bus.geo.isna().any()):
+    if (
+        "geo" not in net.line.columns
+        or "geo" not in net.bus.columns
+        or (len(net.line.geo) == 0 and len(net.bus.geo) == 0)
+        or (net.line.geo.isna().any() and net.bus.geo.isna().any())
+    ):
         logger.warning(
-            "No or insufficient geodata available --> Creating artificial coordinates."
-            " This may take some time"
+            "No or insufficient geodata available --> Creating artificial coordinates. This may take some time"
         )
-        create_generic_coordinates(net, respect_switches=respect_switches, library=library)
+        buses = net.bus.index.tolist() if "geo" not in net.bus else net.bus.index[net.bus.geo.isna()].tolist()
+        create_generic_coordinates(net, respect_switches=respect_switches, library=library, buses=buses)
 
     if scale_size:
         # scale all symbol sizes relative to the mean distance between buses
         sizes = get_collection_sizes(
-            net, bus_size, ext_grid_size, trafo_size,
-            load_size, sgen_size, switch_size, switch_distance, gen_size,
+            net,
+            bus_size,
+            ext_grid_size,
+            trafo_size,
+            load_size,
+            sgen_size,
+            switch_size,
+            switch_distance,
+            gen_size,
         )
         bus_size = sizes["bus"]
         ext_grid_size = sizes["ext_grid"]
@@ -582,13 +590,11 @@ def simple_plot(
     has_lines = len(net.line) > 0
 
     try:
-        needs_runpp = (
-            (has_buses and net.res_bus.empty)
-            or (has_lines and net.res_line.empty)
-        )
+        needs_runpp = (has_buses and net.res_bus.empty) or (has_lines and net.res_line.empty)
         if needs_runpp:
             logger.info("Result tables empty – running pp.runpp(net) automatically.")
             from pandapower.run import runpp
+
             runpp(net)
 
         from pandapower.plotting.colormaps import cmap_discrete, cmap_continuous
@@ -623,8 +629,7 @@ def simple_plot(
 
     except Exception as exc:
         logger.warning(
-            f"Colormap setup failed ({exc!r}). "
-            "Mode buttons will not be shown; plotting in Normal mode only."
+            f"Colormap setup failed ({exc!r}). Mode buttons will not be shown; plotting in Normal mode only."
         )
 
     normal_bc = cmap_bc = None
@@ -656,13 +661,9 @@ def simple_plot(
 
     # fall back to bus geodata when no line geodata is present
     use_bus_geodata = not has_lines or len(net.line.geo.dropna()) == 0
-    in_service_lines = (
-        net.line[net.line.in_service].index if has_lines else pd.Index([])
-    )
+    in_service_lines = net.line[net.line.in_service].index if has_lines else pd.Index([])
     nogolines = (
-        set(net.switch.element[(net.switch.et == "l") & (net.switch.closed == 0)])
-        if respect_switches
-        else set()
+        set(net.switch.element[(net.switch.et == "l") & (net.switch.closed == 0)]) if respect_switches else set()
     )
     plot_lines = in_service_lines.difference(nogolines)  # type: ignore[arg-type]
     plot_dclines = net.dcline.in_service
@@ -673,15 +674,24 @@ def simple_plot(
     normal_lc = cmap_lc = None
     if has_lines:
         normal_lc = create_line_collection(
-            net, plot_lines,
-            color=line_color, linewidths=line_width,
-            use_bus_geodata=use_bus_geodata, zorder=7, infofunc=line_info,
+            net,
+            plot_lines,
+            color=line_color,
+            linewidths=line_width,
+            use_bus_geodata=use_bus_geodata,
+            zorder=7,
+            infofunc=line_info,
         )
         if cmap_lines_ready:
             cmap_lc = create_line_collection(
-                net, plot_lines,
-                cmap=cmap_l, norm=norm_l, linewidths=line_width,
-                use_bus_geodata=use_bus_geodata, zorder=8, infofunc=line_info,
+                net,
+                plot_lines,
+                cmap=cmap_l,
+                norm=norm_l,
+                linewidths=line_width,
+                use_bus_geodata=use_bus_geodata,
+                zorder=8,
+                infofunc=line_info,
             )
 
     if normal_lc is not None:
@@ -694,9 +704,12 @@ def simple_plot(
         hl_buses_idx = list(set(highlight_buses) & set(net.bus.index))
         if hl_buses_idx:
             hbc = create_bus_collection(
-                net, hl_buses_idx,
+                net,
+                hl_buses_idx,
                 size=bus_size * highlight_bus_size_factor,
-                color=highlight_color, zorder=98, infofunc=bus_info,
+                color=highlight_color,
+                zorder=98,
+                infofunc=bus_info,
             )
             collections.append(hbc)
 
@@ -704,76 +717,97 @@ def simple_plot(
         hl_lines_idx = list(set(highlight_lines) & set(plot_lines))
         if hl_lines_idx:
             hlc = create_line_collection(
-                net, hl_lines_idx,
+                net,
+                hl_lines_idx,
                 color=highlight_color,
                 linewidths=line_width * highlight_line_width_factor,
-                use_bus_geodata=use_bus_geodata, zorder=98, infofunc=line_info,
+                use_bus_geodata=use_bus_geodata,
+                zorder=98,
+                infofunc=line_info,
             )
             collections.append(hlc)
 
     # ── other collections -----------------------------------------------------
     if len(net.dcline) > 0:
-        dclc = create_dcline_collection(
-            net, plot_dclines, color=dcline_color, linewidths=line_width
-        )
+        dclc = create_dcline_collection(net, plot_dclines, color=dcline_color, linewidths=line_width)
         collections.append(dclc)
 
     if len(net.bus_dc) > 0:
         bc_dc = create_bus_collection(
-            net, net.bus_dc.index, size=bus_dc_size, color=bus_dc_color,
-            zorder=10, bus_table="bus_dc",
+            net,
+            net.bus_dc.index,
+            size=bus_dc_size,
+            color=bus_dc_color,
+            zorder=10,
+            bus_table="bus_dc",
         )
         collections.append(bc_dc)
 
     if len(net.vsc) > 0:
-        vsc_ac = create_vsc_collection(
-            net, net.vsc.index, size=vsc_size, color=vsc_color, zorder=12
-        )
+        vsc_ac = create_vsc_collection(net, net.vsc.index, size=vsc_size, color=vsc_color, zorder=12)
         collections.append(vsc_ac)
 
     if len(net.line_dc) > 0:
         lc_dc = create_line_collection(
-            net, plot_lines_dc, color=line_dc_color, linewidths=line_width,
-            use_bus_geodata=use_bus_geodata, line_table="line_dc",
+            net,
+            plot_lines_dc,
+            color=line_dc_color,
+            linewidths=line_width,
+            use_bus_geodata=use_bus_geodata,
+            line_table="line_dc",
         )
         collections.append(lc_dc)
 
     if len(net.ext_grid) > 0:
         sc = create_ext_grid_collection(
-            net, size=ext_grid_size, orientation=0,
+            net,
+            size=ext_grid_size,
+            orientation=0,
             ext_grids=net.ext_grid.index,
-            patch_edgecolor=ext_grid_color, zorder=12,
+            patch_edgecolor=ext_grid_color,
+            zorder=12,
         )
         collections.append(sc)
 
     trafo_buses_with_geo_coordinates = [
-        t for t, trafo in net.trafo.iterrows()
+        t
+        for t, trafo in net.trafo.iterrows()
         if trafo.hv_bus in net.bus.geo.index and trafo.lv_bus in net.bus.geo.index
     ]
     if len(trafo_buses_with_geo_coordinates) > 0:
         tc = create_trafo_collection(
-            net, trafo_buses_with_geo_coordinates,
-            color=trafo_color, size=trafo_size, infofunc=trafo_info,
+            net,
+            trafo_buses_with_geo_coordinates,
+            color=trafo_color,
+            size=trafo_size,
+            infofunc=trafo_info,
         )
         collections.append(tc)
 
     trafo3w_buses_with_geo_coordinates = [
-        t for t, trafo3w in net.trafo3w.iterrows()
+        t
+        for t, trafo3w in net.trafo3w.iterrows()
         if trafo3w.hv_bus in net.bus.geo.index
         and trafo3w.mv_bus in net.bus.geo.index
         and trafo3w.lv_bus in net.bus.geo.index
     ]
     if len(trafo3w_buses_with_geo_coordinates) > 0:
         tc = create_trafo3w_collection(
-            net, trafo3w_buses_with_geo_coordinates,
-            color=trafo_color, infofunc=trafo3w_info,
+            net,
+            trafo3w_buses_with_geo_coordinates,
+            color=trafo_color,
+            infofunc=trafo3w_info,
         )
         collections.append(tc)
 
     if plot_line_switches and len(net.switch):
         sc = create_line_switch_collection(
-            net, size=switch_size, distance_to_bus=switch_distance,
-            use_line_geodata=not use_bus_geodata, zorder=10, color=switch_color,
+            net,
+            size=switch_size,
+            distance_to_bus=switch_distance,
+            use_line_geodata=not use_bus_geodata,
+            zorder=10,
+            color=switch_color,
         )
         collections.append(sc)
 
@@ -781,23 +815,27 @@ def simple_plot(
 
     if plot_sgens and len(net.sgen):
         sgc = create_sgen_collection(
-            net, size=sgen_size, orientation=orientation,
-            unique_angles=angles, draw_by_type=draw_by_type,
+            net,
+            size=sgen_size,
+            orientation=orientation,
+            unique_angles=angles,
+            draw_by_type=draw_by_type,
         )
         collections.append(sgc)
 
     if plot_gens and len(net.gen):
         gc = create_gen_collection(
-            net, size=gen_size, orientation=orientation,
-            unique_angles=angles, draw_by_type=draw_by_type,
+            net,
+            size=gen_size,
+            orientation=orientation,
+            unique_angles=angles,
+            draw_by_type=draw_by_type,
         )
         collections.append(gc)
 
     if plot_loads and len(net.load):
         # separate variable name to prevent rebinding normal_lc / cmap_lc
-        load_coll = create_load_collection(
-            net, size=load_size, orientation=orientation, unique_angles=angles
-        )
+        load_coll = create_load_collection(net, size=load_size, orientation=orientation, unique_angles=angles)
         collections.append(load_coll)
 
     if plot_bus_switches and len(net.switch):
@@ -807,8 +845,7 @@ def simple_plot(
     # copy_collections=False: axes hold the exact Python objects so that
     # set_visible() in _set_colormap_mode takes effect immediately.
     # Colorbars are managed manually; suppress draw_collections auto-colorbars.
-    ax = draw_collections(collections, ax=ax, plot_colorbars=False,
-                          copy_collections=False)
+    ax = draw_collections(collections, ax=ax, plot_colorbars=False, copy_collections=False)
 
     # ── initial visibility: Normal mode ───────────────────────────────────────
     # Must be set AFTER draw_collections so the collections are in the axes,
@@ -841,9 +878,7 @@ def simple_plot(
         if _colorbars:
             cmap_ax_pos = list(ax.get_position().bounds)
             ax_x1 = cmap_ax_pos[0] + cmap_ax_pos[2]
-            expand = (
-                normal_ax_pos[2] / cmap_ax_pos[2] if cmap_ax_pos[2] > 0 else 1.0
-            )
+            expand = normal_ax_pos[2] / cmap_ax_pos[2] if cmap_ax_pos[2] > 0 else 1.0
             cmap_figsize = (normal_figsize[0] * expand, normal_figsize[1])
 
             for cbar in _colorbars:
@@ -863,10 +898,8 @@ def simple_plot(
         btn_normal_ax = fig.add_axes([0.02, 0.01, 0.10, 0.04])
         btn_colormap_ax = fig.add_axes([0.135, 0.01, 0.10, 0.04])
 
-        btn_normal = Button(btn_normal_ax, "Normal",
-                            color=_BTN_INACTIVE_COLOR, hovercolor=_BTN_ACTIVE_COLOR)
-        btn_colormap = Button(btn_colormap_ax, "Colormap",
-                              color=_BTN_INACTIVE_COLOR, hovercolor=_BTN_ACTIVE_COLOR)
+        btn_normal = Button(btn_normal_ax, "Normal", color=_BTN_INACTIVE_COLOR, hovercolor=_BTN_ACTIVE_COLOR)
+        btn_colormap = Button(btn_colormap_ax, "Colormap", color=_BTN_INACTIVE_COLOR, hovercolor=_BTN_ACTIVE_COLOR)
 
         for btn in (btn_normal, btn_colormap):
             btn.label.set_color("white")
@@ -887,16 +920,26 @@ def simple_plot(
 
         btn_normal.on_clicked(
             lambda e: _set_colormap_mode(
-                "normal", _state, ax,
-                _normal_colls, _cmap_colls,
-                _colorbars, btn_normal, btn_colormap,
+                "normal",
+                _state,
+                ax,
+                _normal_colls,
+                _cmap_colls,
+                _colorbars,
+                btn_normal,
+                btn_colormap,
             )
         )
         btn_colormap.on_clicked(
             lambda e: _set_colormap_mode(
-                "colormap", _state, ax,
-                _normal_colls, _cmap_colls,
-                _colorbars, btn_normal, btn_colormap,
+                "colormap",
+                _state,
+                ax,
+                _normal_colls,
+                _cmap_colls,
+                _colorbars,
+                btn_normal,
+                btn_colormap,
             )
         )
 
@@ -913,10 +956,16 @@ def simple_plot(
 
     if enable_hover:
         hover_text = ax.text(
-            0, 0, "", fontsize=12, fontweight="bold", color="white",
-            ha="center", va="center", zorder=99,
-            bbox={"boxstyle": "round", "facecolor": "#C7105C",
-                  "alpha": 1, "edgecolor": "white"},
+            0,
+            0,
+            "",
+            fontsize=12,
+            fontweight="bold",
+            color="white",
+            ha="center",
+            va="center",
+            zorder=99,
+            bbox={"boxstyle": "round", "facecolor": "#C7105C", "alpha": 1, "edgecolor": "white"},
         )
         hover_text.set_visible(False)
         fig.canvas.mpl_connect(
@@ -950,12 +999,14 @@ def calculate_unique_angles(
             plain ``float`` instead of a nested dict, because loads are not
             grouped by sub-type.
     """
-    sgen_counts = (
-        net.sgen.groupby(["bus", "type"], dropna=False).size().unstack(fill_value=0)
-    )
-    gen_counts = (
-        net.gen.groupby(["bus", "type"], dropna=False).size().unstack(fill_value=0)
-    )
+    if "type" in net.sgen:
+        sgen_counts = net.sgen.groupby(["bus", "type"], dropna=False).size().unstack(fill_value=0)
+    else:
+        sgen_counts = pd.DataFrame(net.sgen.groupby(["bus"], dropna=False).size())
+    if "type" in net.gen:
+        gen_counts = net.gen.groupby(["bus", "type"], dropna=False).size().unstack(fill_value=0)
+    else:
+        gen_counts = pd.DataFrame(net.gen.groupby(["bus"], dropna=False).size())
     loads = pd.Series(1, index=net.load.bus.unique(), name="load")
 
     patch_counts = pd.concat([sgen_counts, gen_counts, loads], axis=1).fillna(0)
@@ -972,7 +1023,7 @@ def calculate_unique_angles(
             for c, v in row.items():  # type: ignore[assignment]
                 _type: str
                 if v > 0:
-                    if isinstance(c, float) and math.isnan(c):
+                    if pd.isna(c) or isinstance(c, int):
                         _type = "none"
                     else:
                         _type = str(c)

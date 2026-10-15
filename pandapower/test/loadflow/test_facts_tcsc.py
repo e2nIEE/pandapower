@@ -3,9 +3,16 @@ import copy
 import numpy as np
 import pytest
 
-from pandapower.create import create_impedance, create_buses, create_tcsc, create_bus, \
-    create_empty_network, create_line_from_parameters, create_load, create_ext_grid
-
+from pandapower.create import (
+    create_impedance,
+    create_buses,
+    create_tcsc,
+    create_bus,
+    create_line_from_parameters,
+    create_load,
+    create_ext_grid,
+)
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 from pandapower.test.consistency_checks import runpp_with_consistency_checks
 from pandapower.test.loadflow.test_facts import copy_with_impedance, facts_case_study_grid, compare_tcsc_impedance
@@ -20,7 +27,7 @@ def add_tcsc_to_line(net, xl, xc, set_p_mw, from_bus, line, side="from_bus"):
 
 
 def test_tcsc_simple():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_tcsc_simple")
     create_buses(net, 2, 110)
     create_ext_grid(net, 0)
     # create_line_from_parameters(net, 0, 1, 100, 0.0487, 0.13823, 160, 0.664)
@@ -40,7 +47,7 @@ def test_tcsc_simple():
 
 
 def test_tcsc_simple1():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_tcsc_simple1")
     create_buses(net, 3, 110)
     create_ext_grid(net, 0)
     create_line_from_parameters(net, 0, 1, 100, 0.0487, 0.13823, 160, 0.664)
@@ -61,7 +68,7 @@ def test_tcsc_simple1():
 
 
 def test_tcsc_simple2():
-    net = create_empty_network()
+    net = pandapowerNet(name="test_tcsc_simple2")
     create_buses(net, 3, 110)
     create_ext_grid(net, 0)
     # create_line_from_parameters(net, 0, 1, 100, 0.0487, 0.13823, 160, 0.664)
@@ -92,7 +99,7 @@ def test_tcsc_simple3():
     baseMVA = 100  # MVA
     baseV = 110  # kV
     baseI = baseMVA / (baseV * np.sqrt(3))
-    baseZ = baseV ** 2 / baseMVA
+    baseZ = baseV**2 / baseMVA
     xl = 0.2
     xc = -20
     # plot_z(baseZ, xl, xc)
@@ -100,7 +107,7 @@ def test_tcsc_simple3():
     # (0)-------------(1)-----------------(3)->
     #                  |--(TCSC)--(2)------|
 
-    net = create_empty_network(sn_mva=baseMVA)
+    net = pandapowerNet(name="test_tcsc_simple3", sn_mva=baseMVA)
     create_buses(net, 4, baseV)
     create_ext_grid(net, 0)
     create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)
@@ -126,7 +133,7 @@ def test_tcsc_simple3_slack():
     baseMVA = 100  # MVA
     baseV = 110  # kV
     baseI = baseMVA / (baseV * np.sqrt(3))
-    baseZ = baseV ** 2 / baseMVA
+    baseZ = baseV**2 / baseMVA
     xl = 0.2
     xc = -20
     # plot_z(baseZ, xl, xc)
@@ -134,7 +141,7 @@ def test_tcsc_simple3_slack():
     # (0)-------------(1)-----------------(3)->
     #  |-----(TCSC)--(2)-------------------|
 
-    net = create_empty_network(sn_mva=baseMVA)
+    net = pandapowerNet(name="test_tcsc_simple3_slack", sn_mva=baseMVA)
     create_buses(net, 4, baseV)
     create_ext_grid(net, 0)
     create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)
@@ -162,7 +169,7 @@ def test_compare_to_impedance():
     baseMVA = 100  # MVA
     baseV = 110  # kV
     baseI = baseMVA / (baseV * np.sqrt(3))
-    baseZ = baseV ** 2 / baseMVA
+    baseZ = baseV**2 / baseMVA
     xl = 0.2
     xc = -20
     # plot_z(baseZ, xl, xc)
@@ -170,7 +177,7 @@ def test_compare_to_impedance():
     # (0)-------------(1)-----------------(3)->
     #                  |--(TCSC)--(2)------|
 
-    net = create_empty_network(sn_mva=baseMVA)
+    net = pandapowerNet(name="test_compare_to_impedance", sn_mva=baseMVA)
     create_buses(net, 4, baseV)
     create_ext_grid(net, 0)
     create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)
@@ -191,10 +198,12 @@ def test_compare_to_impedance():
 
     # compare when controllable
     compare_tcsc_impedance(net, net_ref, 0, 0)
-    assert np.allclose(net._ppc["internal"]["J"].toarray()[:-1, :-1], net_ref._ppc["internal"]["J"].toarray(), rtol=0,
-                       atol=5e-5)
-    assert np.allclose(net._ppc["internal"]["Ybus"].toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0,
-                       atol=1e-6)
+    assert np.allclose(
+        net._ppc["internal"]["J"].toarray()[:-1, :-1], net_ref._ppc["internal"]["J"].toarray(), rtol=0, atol=5e-5
+    )
+    assert np.allclose(
+        net._ppc["internal"]["Ybus"].toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0, atol=1e-6
+    )
 
     # compare when not controllable
     net.tcsc.thyristor_firing_angle_degree = net.res_tcsc.thyristor_firing_angle_degree
@@ -203,15 +212,16 @@ def test_compare_to_impedance():
 
     compare_tcsc_impedance(net, net_ref, 0, 0)
     assert np.allclose(net._ppc["internal"]["J"].toarray(), net_ref._ppc["internal"]["J"].toarray(), rtol=0, atol=5e-5)
-    assert np.allclose(net._ppc["internal"]["Ybus"].toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0,
-                       atol=1e-6)
+    assert np.allclose(
+        net._ppc["internal"]["Ybus"].toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0, atol=1e-6
+    )
 
 
 def test_tcsc_case_study():
     net = facts_case_study_grid()
     baseMVA = net.sn_mva
     baseV = 230
-    baseZ = baseV ** 2 / baseMVA
+    baseZ = baseV**2 / baseMVA
     xl = 0.2
     xc = -20
     # plot_z(baseZ, xl, xc)
@@ -230,12 +240,13 @@ def test_tcsc_case_study():
     runpp(net_ref)
 
     compare_tcsc_impedance(net, net_ref, 0, 0)
-    assert np.allclose(net._ppc["internal"]["Ybus"].toarray(),
-                       net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0, atol=1e-6)
+    assert np.allclose(
+        net._ppc["internal"]["Ybus"].toarray(), net_ref._ppc["internal"]["Ybus"].toarray(), rtol=0, atol=1e-6
+    )
 
 
 def test_tcsc_simple5():
-    net = create_empty_network(sn_mva=100)
+    net = pandapowerNet(name="test_tcsc_simple5", sn_mva=100)
     create_buses(net, 4, 110)
     create_ext_grid(net, 0)
     create_line_from_parameters(net, 0, 1, 20, 0.0487, 0.13823, 160, 0.664)

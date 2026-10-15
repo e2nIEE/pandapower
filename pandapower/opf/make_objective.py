@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright 1996-2015 PSERC. All rights reserved.
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
@@ -42,7 +40,7 @@ def _make_objective(ppci, net):
 def _get_gen_index(net, et, element):
     if et == "dcline":
         dc_idx = net.dcline.index.get_loc(element)
-        element = len(net.gen.index) - 2*len(net.dcline) + dc_idx*2 + 1
+        element = len(net.gen.index) - 2 * len(net.dcline) + dc_idx * 2 + 1
         et = "gen"
     lookup = "%s_controllable" % et if et in ["load", "sgen", "storage"] else et
     try:
@@ -52,8 +50,7 @@ def _get_gen_index(net, et, element):
 
 
 def _map_costs_to_gen(net, cost):
-    gens = array([_get_gen_index(net, et, element)
-                  for et, element in zip(cost.et.values, cost.element.values)])
+    gens = array([_get_gen_index(net, et, element) for et, element in zip(cost.et.values, cost.element.values)])
     cost_is = array([gen is not None for gen in gens])
     cost = cost[cost_is]
     gens = gens[cost_is].astype(int64)
@@ -63,15 +60,16 @@ def _map_costs_to_gen(net, cost):
 
 def _init_gencost(ppci, net):
     is_quadratic = net.poly_cost[["cp2_eur_per_mw2", "cq2_eur_per_mvar2"]].values.any()
-    q_costs = net.poly_cost[["cq1_eur_per_mvar", "cq2_eur_per_mvar2"]].values.any() or \
-        "q" in net.pwl_cost.power_type.values
-    rows = len(ppci["gen"])*2 if q_costs else len(ppci["gen"])
+    q_costs = (
+        net.poly_cost[["cq1_eur_per_mvar", "cq2_eur_per_mvar2"]].values.any() or "q" in net.pwl_cost.power_type.values
+    )
+    rows = len(ppci["gen"]) * 2 if q_costs else len(ppci["gen"])
     if len(net.pwl_cost):
         nr_points = {len(p) for p in net.pwl_cost.points.values}
         points = max(nr_points)
         if is_quadratic:
             raise ValueError("Quadratic costs can be mixed with piecewise linear costs")
-        columns = COST + (max(points, 2) + 1)*2
+        columns = COST + (max(points, 2) + 1) * 2
     else:
         columns = COST + 3 if is_quadratic else COST + 2
     ppci["gencost"] = zeros((rows, columns), dtype=float)
@@ -117,7 +115,7 @@ def _fill_gencost_pwl(ppci, net):
             gens += len(ppci["gen"])
         for gen, points, sign in zip(gens, cost.points.values, signs):
             costs = costs_from_areas(points, sign)
-            ppci["gencost"][gen, COST:COST+len(costs)] = costs
+            ppci["gencost"][gen, COST : COST + len(costs)] = costs
             ppci["gencost"][gen, NCOST] = len(costs) / 2
 
 
