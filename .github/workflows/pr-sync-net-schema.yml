@@ -39,7 +39,7 @@ jobs:
           uv pip list
       - name: Test with pytest, Codecov and Coverage
         run: |
-          uv run pytest --cov=./ --cov-report=xml --splits 4 --group ${{ matrix.group }} pandapower/test/network_schema
+          uv run pytest --cov=./ --cov-report=xml --splits 4 --group ${{ matrix.group }} test/network_schema
           cp ./coverage.xml ./coverage-net-schema-${{ matrix.group }}.xml
       - name: Upload coverage as artifact
         uses: actions/upload-artifact@v7
