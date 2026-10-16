@@ -33,7 +33,6 @@ from pandapower.file_io import from_json
 from pandapower.network import pandapowerNet
 from pandapower.pf.makeYbus_facts import calc_y_svc_pu
 from pandapower.run import runpp
-
 from test import test_path
 from test.consistency_checks import runpp_with_consistency_checks
 from test.loadflow.test_facts import compare_ssc_impedance_gen
@@ -2457,7 +2456,7 @@ def test_2vsc_1ac_1dc(control_mode_ac, control_mode_dc):
 
 def test_vsc_slack_minimal_wrong():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=2)
-    # from pandapower.test.loadflow.test_facts import *
+    # from test.loadflow.test_facts import *
     net = pandapowerNet(name="test_vsc_slack_minimal_wrong")
     # AC part
     create_buses(net, 2, 110, geodata=[(200, 0), (400, 0)])
@@ -2496,7 +2495,7 @@ def test_vsc_slack_minimal_wrong():
 
 def test_vsc_slack_minimal_wrong2():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=2)
-    # from pandapower.test.loadflow.test_facts import *
+    # from test.loadflow.test_facts import *
     net = pandapowerNet(name="test_vsc_slack_minimal_wrong2")
     # AC part
     create_buses(net, 2, 110, geodata=[(200, 0), (400, 0)])
@@ -2534,7 +2533,7 @@ def test_vsc_slack_minimal_wrong2():
 @pytest.mark.xfail(reason="AC bus same as ext_grid bus not implemented")
 def test_vsc_slack_minimal():  # todo: fix that FACTS elements can be connected to ext_grid buses
     # np.set_printoptions(linewidth=1000, suppress=True, precision=2)
-    # from pandapower.test.loadflow.test_facts import *
+    # from test.loadflow.test_facts import *
     net = pandapowerNet(name="test_vsc_slack_minimal")
     # AC part
     create_buses(net, 2, 110, geodata=[(200, 0), (400, 0)])
@@ -2572,7 +2571,7 @@ def test_vsc_slack_minimal():  # todo: fix that FACTS elements can be connected 
 
 def test_vsc_slack():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
-    # from pandapower.test.loadflow.test_facts import *
+    # from test.loadflow.test_facts import *
     net = pandapowerNet(name="test_vsc_slack")
     # AC part
     create_buses(net, 4, 110, geodata=[(0, 0), (200, 0), (400, 0), (600, 0)])
@@ -2619,7 +2618,7 @@ def test_vsc_slack():
 
 def test_vsc_slack2():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
-    # from pandapower.test.loadflow.test_facts import *
+    # from test.loadflow.test_facts import *
     net = pandapowerNet(name="test_vsc_slack2")
     # AC part
     create_buses(net, 3, 110, geodata=[(0, 0), (200, 0), (400, 0)])
@@ -2665,7 +2664,7 @@ def test_vsc_slack2():
 
 def test_vsc_slack_oos():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
-    # from pandapower.test.loadflow.test_facts import *
+    # from test.loadflow.test_facts import *
     net = pandapowerNet(name="test_vsc_slack_oos")
     # AC part
     create_buses(net, 4, 110, geodata=[(0, 0), (200, 0), (400, 0), (600, 0)])
@@ -2711,7 +2710,7 @@ def test_vsc_slack_oos():
 
 def test_vsc_dc_r():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
-    # from pandapower.test.loadflow.test_facts import *
+    # from test.loadflow.test_facts import *
     net = pandapowerNet(name="test_vsc_dc_r")
     # AC part
     create_buses(net, 3, 110, geodata=[(0, 0), (200, 0), (400, 0)])
@@ -2754,7 +2753,7 @@ def test_vsc_dc_r():
 
 
 def test_vsc_hvdc_dc_rl():
-    # from pandapower.test.loadflow.test_facts import *
+    # from test.loadflow.test_facts import *
     net = pandapowerNet(name="test_vsc_hvdc_dc_rl")
     # AC part
     create_buses(net, 3, 110)

@@ -52,10 +52,10 @@ from pandapower.pypower.idx_brch import BR_B, BR_G, BR_R, BR_X
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
 from pandapower.results import reset_results
 from pandapower.run import runopp, runpp, set_user_pf_options
-from pandapower.test.consistency_checks import runpp_with_consistency_checks
-from pandapower.test.control.test_shunt_control import simple_test_net_shunt_control
-from pandapower.test.helper_functions import add_grid_connection, assert_net_equal, assert_res_equal, create_test_line
-from pandapower.test.loadflow.result_test_network_generator import (
+from test.consistency_checks import runpp_with_consistency_checks
+from test.control.test_shunt_control import simple_test_net_shunt_control
+from test.helper_functions import add_grid_connection, assert_net_equal, assert_res_equal, create_test_line
+from test.loadflow.result_test_network_generator import (
     add_test_line,
     add_test_oos_bus_with_is_element,
     add_test_trafo,

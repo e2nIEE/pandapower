@@ -605,7 +605,7 @@ def test_iec_60909_4_small_with_gen_ps_unit_1ph():
 
 def test_vde_232_with_gen_ps_unit_1ph():
     # IEC 60909-4:2021, example from section 4.4.2
-    # from pandapower.test.shortcircuit.test_1ph import *
+    # from test.shortcircuit.test_1ph import *
     # from pandapower.pypower.idx_bus import *
     net = vde_232()
 
