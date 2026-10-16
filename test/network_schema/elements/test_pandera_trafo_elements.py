@@ -822,6 +822,51 @@ class TestTrafoForeignKeys:
 
         validate_network(net)
 
+class TestTrafoCrossFieldValidations:
+    """Tests for cross-field validations (tap_min <= tap_max, etc.)"""
+
+    def test_tap_min_less_than_tap_max_valid(self):
+        """Test: tap_min < tap_max is valid"""
+        net = _create_net_with_buses()
+        net.trafo = _create_valid_trafo_dataframe()
+        net.trafo["tap_min"] = -5.0
+        net.trafo["tap_max"] = 5.0
+        validate_network(net)
+
+    def test_tap_min_equal_tap_max_valid(self):
+        """Test: tap_min == tap_max is valid"""
+        net = _create_net_with_buses()
+        net.trafo = _create_valid_trafo_dataframe()
+        net.trafo["tap_min"] = 3.0
+        net.trafo["tap_max"] = 3.0
+        validate_network(net)
+
+    def test_tap_min_greater_than_tap_max_invalid(self):
+        """Test: tap_min > tap_max is invalid"""
+        net = _create_net_with_buses()
+        net.trafo = _create_valid_trafo_dataframe()
+        net.trafo["tap_min"] = 5.0
+        net.trafo["tap_max"] = -5.0
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_tap2_min_less_than_tap2_max_valid(self):
+        """Test: tap2_min < tap2_max is valid"""
+        net = _create_net_with_buses()
+        net.trafo = _create_valid_trafo_dataframe()
+        net.trafo["tap2_min"] = -3.0
+        net.trafo["tap2_max"] = 3.0
+        validate_network(net)
+
+    def test_tap2_min_greater_than_tap2_max_invalid(self):
+        """Test: tap2_min > tap2_max is invalid"""
+        net = _create_net_with_buses()
+        net.trafo = _create_valid_trafo_dataframe()
+        net.trafo["tap2_min"] = 3.0
+        net.trafo["tap2_max"] = -3.0
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
 
 class TestTrafoResults:
     """Tests for trafo results after calculations"""

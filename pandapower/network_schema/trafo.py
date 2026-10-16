@@ -1,6 +1,7 @@
 import pandas as pd
 import pandera.pandas as pa
 
+from pandapower.network_schema.tools.validation.column_condition import create_lower_equals_column_check
 from pandapower.network_schema.tools.validation.group_dependency import (
     create_column_dependency_checks_from_metadata,
     create_column_group_dependency_validation_func,
@@ -395,6 +396,8 @@ tap_columns = [
     "tap_step_degree",
 ]
 trafo_checks = [
+    create_lower_equals_column_check(first_element="tap_min", second_element="tap_max"),
+    create_lower_equals_column_check(first_element="tap2_min", second_element="tap2_max"),
     pa.Check(
         create_column_group_dependency_validation_func(tap_columns),
         error=f"trafo tap configuration columns have dependency violations. Please ensure {tap_columns} are present in the dataframe.",

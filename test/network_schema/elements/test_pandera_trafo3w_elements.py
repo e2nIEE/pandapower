@@ -609,6 +609,36 @@ class TestTrafo3wOptionalFieldsNullable:
         net.trafo3w["tap_neutral"] = 0.0
 
 
+class TestTrafo3wCrossFieldValidations:
+    """Tests for cross-field validations in trafo3w"""
+
+    def test_tap_min_less_than_tap_max_passes(self):
+        """Test: tap_min < tap_max passes validation"""
+        net = _create_net_with_buses()
+        net.trafo3w = _create_valid_trafo3w_dataframe()
+        net.trafo3w["tap_min"] = -5.0
+        net.trafo3w["tap_max"] = 5.0
+        validate_network(net)
+
+    def test_tap_min_equals_tap_max_passes(self):
+        """Test: tap_min == tap_max passes validation"""
+        net = _create_net_with_buses()
+        net.trafo3w = _create_valid_trafo3w_dataframe()
+        net.trafo3w["tap_min"] = 0.0
+        net.trafo3w["tap_max"] = 0.0
+        validate_network(net)
+
+    def test_tap_min_greater_than_tap_max_fails(self):
+        """Test: tap_min > tap_max fails validation"""
+        net = _create_net_with_buses()
+        net.trafo3w = _create_valid_trafo3w_dataframe()
+        net.trafo3w["tap_min"] = 5.0
+        net.trafo3w["tap_max"] = -5.0
+
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+
 class TestTrafo3wForeignKeys:
     """Tests for foreign key constraints (hv_bus, mv_bus, lv_bus -> bus.index)"""
 
