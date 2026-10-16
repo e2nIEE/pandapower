@@ -25,6 +25,7 @@ from test import test_path
 from test.consistency_checks import runpp_with_consistency_checks
 from test.loadflow.result_test_network_generator import (
     add_test_enforce_plims,
+    add_test_enforce_plims_sgen,
     add_test_enforce_qlims,
     add_test_enforce_qlims_sgen,
     add_test_gen,
