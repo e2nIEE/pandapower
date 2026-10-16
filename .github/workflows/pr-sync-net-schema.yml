@@ -1,4 +1,4 @@
-name: pr-sync-tutorials.yml
+name: pr-sync-net-schema.yml
 on:
   pull_request:
     types: [ synchronize ]
