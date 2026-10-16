@@ -458,11 +458,13 @@ def _add_measurements_to_ppci(net, ppci, zero_injection, algorithm):
     if not i_meas.empty:
         # Convert side from string to bus id
         i_meas["side"] = i_meas.apply(
-            lambda row: net["line"].at[row["element"], row["side"] + "_bus"]
-            if row["side"] in ("from", "to")
-            else net[row["element_type"]].at[row["element"], row["side"] + "_bus"]
-            if row["side"] in ("hv", "mv", "lv")
-            else row["side"],
+            lambda row: (
+                net["line"].at[row["element"], row["side"] + "_bus"]
+                if row["side"] in ("from", "to")
+                else net[row["element_type"]].at[row["element"], row["side"] + "_bus"]
+                if row["side"] in ("hv", "mv", "lv")
+                else row["side"]
+            ),
             axis=1,
         )
         base_i_ka = ppci["baseMVA"] / i_meas.side.map(net.bus.vn_kv)

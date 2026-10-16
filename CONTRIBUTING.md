@@ -184,18 +184,18 @@ Say you have added a new function that doubles the rated power of a grid and add
 
 ```python
 def double_rated_power(net):
-   net.sn_mva *= 2
+    net.sn_mva *= 2
 ```
 You would then add a new test to the test suite. In this case `test/api/test_toolbox.py` is the file that contains the
 tests for the toolbox functions. You then add a new test function to this file:
 
 ```python
 def test_double_rated_power():
-   init_sn_mva = 100
-   net = pandapowerNet(name="test_double_rated_power", sn_mva=init_sn_mva)
-   assert net.sn_mva == init_sn_mva
-   double_rated_power(net)
-   assert net.sn_mva == init_sn_mva*2
+    init_sn_mva = 100
+    net = pandapowerNet(name="test_double_rated_power", sn_mva=init_sn_mva)
+    assert net.sn_mva == init_sn_mva
+    double_rated_power(net)
+    assert net.sn_mva == init_sn_mva * 2
 ```
 
 This function is now automatically detected by pytest as part of the test suite and will be tested in all supported
@@ -204,7 +204,7 @@ python versions. If someone later changes your new toolbox function and introduc
 Example:
 ```python
 def double_rated_power(net):
-   net.sn_mva *= 3
+    net.sn_mva *= 3
 ```
 
 If this change would be submitted, the pull request would be rejected, as it leads to a failing tests.
