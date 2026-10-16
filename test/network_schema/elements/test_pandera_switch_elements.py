@@ -64,7 +64,9 @@ class TestSwitchRequiredFields:
             itertools.chain(
                 itertools.product(["bus"], [float(np.nan), pd.NA, *negativ_ints, *not_ints_list]),
                 itertools.product(["element"], [float(np.nan), pd.NA, *negativ_ints, *not_ints_list]),
-                itertools.product(["et"], [float(np.nan), pd.NA, *strings, *not_strings_list]),  # anything not in {"b","l","t","t3"}
+                itertools.product(
+                    ["et"], [float(np.nan), pd.NA, *strings, *not_strings_list]
+                ),  # anything not in {"b","l","t","t3"}
                 itertools.product(["closed"], [float(np.nan), pd.NA, *not_boolean_list]),
                 itertools.product(["in_ka"], [pd.NA, *negativ_floats_plus_zero, *not_floats_list]),
                 itertools.product(["z_ohm"], [pd.NA, *not_floats_list]),
@@ -130,7 +132,7 @@ class TestSwitchOptionalFields:
         "parameter,valid_value",
         list(
             itertools.chain(
-               itertools.product(["name"], [pd.NA, *strings]),
+                itertools.product(["name"], [pd.NA, *strings]),
                 itertools.product(["type"], [pd.NA, *strings]),
                 itertools.product(["origin_id"], [pd.NA, *strings]),
                 itertools.product(["origin_class"], [pd.NA, *strings]),
@@ -193,7 +195,7 @@ class TestSwitchForeignKey:
     def test_valid_bus_index_non_sequential(self):
         """Test: bus FK works with non-sequential bus indices"""
         net = pandapowerNet(name="test_valid_bus_index_non_sequential")
-        create_buses(net, 3,0.4, index=[10, 42, 100])
+        create_buses(net, 3, 0.4, index=[10, 42, 100])
 
         # Bus-bus switches with non-sequential indices
         create_switch(net, bus=10, element=42, et="b", closed=True)
