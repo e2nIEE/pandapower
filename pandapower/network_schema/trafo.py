@@ -403,7 +403,8 @@ trafo_checks = [
         create_column_group_dependency_validation_func(tap2_columns),
         error=f"trafo tap2 configuration columns have dependency violations. Please ensure {tap2_columns} are present in the dataframe.",
     ),
-    *create_column_dependency_checks_from_metadata(["tdt"], _trafo_columns),]
+    *create_column_dependency_checks_from_metadata(["tdt"], _trafo_columns),
+]
 trafo_schema = pa.DataFrameSchema(
     _trafo_columns,
     checks=trafo_checks,

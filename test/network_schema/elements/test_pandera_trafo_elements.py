@@ -69,7 +69,7 @@ def _create_valid_trafo_dataframe():
 def _create_net_with_buses():
     """Helper to create a network with HV and LV buses."""
     net = pandapowerNet(name="_create_net_with_buses")
-    create_buses(net, 2, [110.0, 10.0])  # index 0 (HV)
+    create_buses(net, 2, [110.0, 10.0])  # index 0 (HV), index 1 (MV), index 2 (LV)
     return net
 
 
@@ -103,7 +103,7 @@ class TestTrafoRequiredFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product( ["hv_bus", "lv_bus"], [float(np.nan), pd.NA, None, *negativ_ints, *not_ints_list]),
+                itertools.product(["hv_bus", "lv_bus"], [float(np.nan), pd.NA, None, *negativ_ints, *not_ints_list]),
                 itertools.product(
                     ["sn_mva", "vn_hv_kv", "vn_lv_kv", "vk_percent"],
                     [float(np.nan), pd.NA, None, 0.0, *negativ_floats, *not_floats_list],
@@ -313,7 +313,7 @@ class TestTrafoOptionalFieldsNullable:
         net = _create_net_with_buses()
         net.trafo = _create_valid_trafo_dataframe()
 
-        add_column_to_df(net, 'trafo', parameter)
+        add_column_to_df(net, "trafo", parameter)
         net.trafo.at[0, parameter] = valid_value
 
         validate_network(net)
@@ -347,7 +347,7 @@ class TestTrafoOptionalFieldsNullable:
         net = _create_net_with_buses()
         net.trafo = _create_valid_trafo_dataframe()
 
-        add_column_to_df(net, 'trafo', parameter)
+        add_column_to_df(net, "trafo", parameter)
         net.trafo[parameter] = invalid_value
 
         with pytest.raises(pa.errors.SchemaError):
@@ -373,7 +373,7 @@ class TestTrafoOptionalFieldsNullable:
         self._setup_tap_group(net)
         self._setup_tap2_group(net)
 
-        add_column_to_df(net, 'trafo', parameter)
+        add_column_to_df(net, "trafo", parameter)
         net.trafo.at[0, parameter] = valid_value
 
         validate_network(net)
@@ -385,7 +385,9 @@ class TestTrafoOptionalFieldsNullable:
                 itertools.product(["tap_side"], [*not_strings_list, *invalid_tap_side]),
                 itertools.product(["tap2_side"], [*not_strings_list, *invalid_tap_side]),
                 itertools.product(["tap_changer_type"], [float(np.nan), *not_strings_list, *invalid_tap_changer_types]),
-                itertools.product(["tap2_changer_type"], [float(np.nan), *not_strings_list, *invalid_tap2_changer_types]),
+                itertools.product(
+                    ["tap2_changer_type"], [float(np.nan), *not_strings_list, *invalid_tap2_changer_types]
+                ),
             )
         ),
     )
@@ -433,7 +435,7 @@ class TestTrafoOptionalFieldsNullable:
         self._setup_tap_group(net)
         self._setup_tap2_group(net)
 
-        add_column_to_df(net, 'trafo', parameter)
+        add_column_to_df(net, "trafo", parameter)
         net.trafo.at[0, parameter] = valid_value
 
         validate_network(net)
@@ -495,7 +497,7 @@ class TestTrafoOptionalFieldsNullable:
         self._setup_tap_group(net)
         self._setup_tap2_group(net)
 
-        add_column_to_df(net, 'trafo', parameter)
+        add_column_to_df(net, "trafo", parameter)
         net.trafo.at[0, parameter] = valid_value
 
         validate_network(net)
@@ -545,7 +547,7 @@ class TestTrafoOptionalFieldsNullable:
         self._setup_tap_group(net)
         self._setup_tap2_group(net)
 
-        add_column_to_df(net, 'trafo', parameter)
+        add_column_to_df(net, "trafo", parameter)
         net.trafo.at[0, parameter] = valid_value
 
         validate_network(net)
@@ -587,7 +589,7 @@ class TestTrafoOptionalFieldsNullable:
         net = _create_net_with_buses()
         net.trafo = _create_valid_trafo_dataframe()
 
-        add_column_to_df(net, 'trafo', parameter)
+        add_column_to_df(net, "trafo", parameter)
         net.trafo.at[0, parameter] = valid_value
 
         validate_network(net)
@@ -618,8 +620,8 @@ class TestTrafoOptionalFieldsNullable:
         net = _create_net_with_buses()
         net.trafo = _create_valid_trafo_dataframe()
 
-        add_column_to_df(net, 'trafo', 'df')
-        net.trafo.at[0, 'df'] = valid_value
+        add_column_to_df(net, "trafo", "df")
+        net.trafo.at[0, "df"] = valid_value
 
         validate_network(net)
 
@@ -629,7 +631,7 @@ class TestTrafoOptionalFieldsNullable:
         net = _create_net_with_buses()
         net.trafo = _create_valid_trafo_dataframe()
 
-        net.trafo['df'] = invalid_value
+        net.trafo["df"] = invalid_value
 
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
@@ -653,7 +655,7 @@ class TestTrafoOptionalFieldsNullable:
         if parameter == "tap_dependency_table":
             net.trafo["id_characteristic_table"] = pd.Series([0 if valid_value in bools else pd.NA], dtype="Int64")
 
-        add_column_to_df(net, 'trafo', parameter)
+        add_column_to_df(net, "trafo", parameter)
         net.trafo.at[0, parameter] = valid_value
 
         validate_network(net)
@@ -692,8 +694,8 @@ class TestTrafoOptionalFieldsNullable:
         is_null = pd.isna(valid_value) if not isinstance(valid_value, int) else False
         net.trafo["tap_dependency_table"] = pd.Series([pd.NA if is_null else True], dtype="boolean")
 
-        add_column_to_df(net, 'trafo', 'id_characteristic_table')
-        net.trafo.at[0, 'id_characteristic_table'] = valid_value
+        add_column_to_df(net, "trafo", "id_characteristic_table")
+        net.trafo.at[0, "id_characteristic_table"] = valid_value
 
         validate_network(net)
 
@@ -745,7 +747,7 @@ class TestTrafoOptionalFieldsNotNullable:
         net = _create_net_with_buses()
         net.trafo = _create_valid_trafo_dataframe()
 
-        add_column_to_df(net, 'trafo', parameter)
+        add_column_to_df(net, "trafo", parameter)
         net.trafo.at[0, parameter] = valid_value
 
         validate_network(net)
@@ -799,20 +801,24 @@ class TestTrafoForeignKeys:
         net = pandapowerNet(name="test_valid_bus_index_non_sequential")
 
         create_buses(net, 2, [110.0, 10.0], index=[10, 42])
-        net.trafo = pd.DataFrame([{
-            "hv_bus": 10,
-            "lv_bus": 42,
-            "sn_mva": 25.0,
-            "vn_hv_kv": 110.0,
-            "vn_lv_kv": 10.0,
-            "vk_percent": 10.0,
-            "vkr_percent": 0.5,
-            "pfe_kw": 30.0,
-            "i0_percent": 0.1,
-            "shift_degree": 0.0,
-            "parallel": 1,
-            "in_service": True,
-        }])
+        net.trafo = pd.DataFrame(
+            [
+                {
+                    "hv_bus": 10,
+                    "lv_bus": 42,
+                    "sn_mva": 25.0,
+                    "vn_hv_kv": 110.0,
+                    "vn_lv_kv": 10.0,
+                    "vk_percent": 10.0,
+                    "vkr_percent": 0.5,
+                    "pfe_kw": 30.0,
+                    "i0_percent": 0.1,
+                    "shift_degree": 0.0,
+                    "parallel": 1,
+                    "in_service": True,
+                }
+            ]
+        )
 
         validate_network(net)
 
