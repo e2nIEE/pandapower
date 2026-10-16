@@ -35,7 +35,7 @@ from pandapower.pypower.idx_ssc import SSC_BUS, SSC_INTERNAL_BUS, SSC_STATUS
 from pandapower.pypower.idx_tcsc import TCSC_F_BUS, TCSC_STATUS, TCSC_T_BUS
 from pandapower.pypower.idx_vsc import VSC_BUS, VSC_BUS_DC, VSC_INTERNAL_BUS, VSC_INTERNAL_BUS_DC, VSC_STATUS
 
-if find_spec("lightsim2grid.newtonpf") is not None:
+if find_spec("lightsim2gird") is not None:
     lightsim2grid_available = True
 else:
     lightsim2grid_available = False
