@@ -1,11 +1,12 @@
 import copy
+
 import numpy as np
 import pandas as pd
 
 from pandapower.protection.basic_protection_device import ProtectionDevice
 from pandapower.protection.utility_functions import (
-    create_sc_bus,
     bus_path_multiple_ext_bus,
+    create_sc_bus,
     get_line_path,
     parallel_lines,
 )
@@ -424,7 +425,7 @@ def time_grading(net, time_settings):
 
         # assign tg based on longest line path
         line_length_time = {}
-        for line_length in range(0, len(sorted_line_path[-1])):
+        for line_length in range(len(sorted_line_path[-1])):
             distance_counter = len(sorted_line_path[-1]) - line_length
             t_g = time_settings[1] + (line_length) * time_settings[2]
             line_length_time[distance_counter] = t_g

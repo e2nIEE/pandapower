@@ -1,22 +1,22 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pandas as pd
+import logging
+
 import numpy as np
+import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
+from pandapower.plotting.plotly.mapbox_plot import *
 from pandapower.plotting.plotly.traces import (
+    _create_node_trace,
     create_bus_trace,
-    create_line_trace,
     create_dcline_trace,
+    create_line_trace,
     create_scale_trace,
     create_trafo_trace,
     draw_traces,
-    _create_node_trace,
 )
-from pandapower.plotting.plotly.mapbox_plot import *
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -26,9 +26,9 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
     if element == "bus":
         load_str, sgen_str = [], []
         for ln in [net.load.loc[net.load.bus == b, "p_mw"].sum() for b in net.bus.index]:
-            load_str.append("Load: {:.3f} MW<br />".format(ln) if not np.isclose(ln, 0.0) else "")
+            load_str.append(f"Load: {ln:.3f} MW<br />" if not np.isclose(ln, 0.0) else "")
         for s in [net.sgen.loc[net.sgen.bus == b, "p_mw"].sum() for b in net.bus.index]:
-            sgen_str.append("Static generation: {:.3f} MW<br />".format(s) if not np.isclose(s, 0.0) else "")
+            sgen_str.append(f"Static generation: {s:.3f} MW<br />" if not np.isclose(s, 0.0) else "")
         # we do not really need vsc result for every bus:
         # for vn in [net.res_vsc.loc[net.vsc.bus == b, "p_mw"].fillna(0).sum() for b in net.bus.index]:
         #    vsc_str.append("VSC: {:.3f} MW<br />".format(vn) if vn != 0. else "")
@@ -49,7 +49,7 @@ def get_hoverinfo(net, element, precision=3, sub_index=None):
     elif element == "bus_dc":
         vsc_str = []
         for vn in [net.res_vsc.loc[net.vsc.bus_dc == b, "p_dc_mw"].fillna().sum() for b in net.bus_dc.index]:
-            vsc_str.append("VSC: {:.3f} MW<br />".format(vn) if not np.isclose(vn, 0.0) else "")
+            vsc_str.append(f"VSC: {vn:.3f} MW<br />" if not np.isclose(vn, 0.0) else "")
         hoverinfo = (
             "Index: "
             + net.bus_dc.index.astype(str)

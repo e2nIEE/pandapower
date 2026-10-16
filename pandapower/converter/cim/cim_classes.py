@@ -14,7 +14,7 @@ import pandas as pd
 from lxml import etree
 
 from .cim_tools import get_cim_schema
-from .other_classes import ReportContainer, Report, LogLevel, ReportCode
+from .other_classes import LogLevel, Report, ReportCode, ReportContainer
 
 
 class CimParser:
@@ -931,9 +931,9 @@ class CimParser:
         else:
             for ele, df in prf_content.items():  # type: ignore[assignment]
                 if ele not in output[prf]:
-                    concat_list = [prf_content[ele]]  # type: ignore[index]
+                    concat_list = [df]  # type: ignore[index]
                 else:
-                    concat_list = [output[prf][ele], prf_content[ele]]  # type: ignore[index]
+                    concat_list = [output[prf][ele], df]  # type: ignore[index]
                 output[prf][ele] = pd.concat(concat_list, ignore_index=True, sort=False)  # type: ignore[index]
 
     def _check_file(self, file: str) -> bool:

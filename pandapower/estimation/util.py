@@ -3,11 +3,11 @@
 
 import numpy as np
 import pandas as pd
-from pandas import DataFrame, notnull, isnull
+from pandas import DataFrame, isnull, notnull
 
-from pandapower.run import runpp
 from pandapower.create import create_measurement
-from pandapower.topology import create_nxgraph, connected_component
+from pandapower.run import runpp
+from pandapower.topology import connected_component, create_nxgraph
 
 
 def estimate_voltage_vector(net):

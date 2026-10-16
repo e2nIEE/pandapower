@@ -1,10 +1,10 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from typing import Optional, TYPE_CHECKING
+from typing import TYPE_CHECKING
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from pandapower import io_utils, pandapowerNet
 
@@ -437,7 +437,7 @@ def to_postgresql(
     dsn: str,
     schema: str,
     include_results: bool = False,
-    grid_id: Optional[int] = None,
+    grid_id: int | None = None,
     grid_id_column: str = "grid_id",
     grid_catalogue_name: str = "grid_catalogue",
     index_name=None,
@@ -478,7 +478,7 @@ def from_postgresql(
     schema: str,
     grid_id_column: str = "grid_id",
     grid_catalogue_name: str = "grid_catalogue",
-    empty_dict_like_object: Optional[dict] = None,
+    empty_dict_like_object: dict | None = None,
     grid_tables=None,
 ):
     """

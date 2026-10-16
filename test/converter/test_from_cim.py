@@ -1,17 +1,15 @@
+import math
 import os
 
 import numpy as np
-import pytest
-import math
 import pandas as pd
+import pytest
 
-from test import test_path
-
+from pandapower.control.util.auxiliary import create_trafo_characteristic_object, create_shunt_characteristic_object
 from pandapower.converter.cim.cim2pp.from_cim import from_cim, from_cim_dict
 from pandapower.converter.cim.cim_classes import CimParser
 from pandapower.run import runpp
-
-from pandapower.control.util.auxiliary import create_trafo_characteristic_object, create_shunt_characteristic_object
+from test import test_path
 
 
 @pytest.fixture(scope="module")

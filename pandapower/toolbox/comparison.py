@@ -1,9 +1,10 @@
 from io import StringIO
+
 import networkx as nx
 import numpy as np
 import pandas as pd
-from pandas import testing as pdt
 from deepdiff import DeepDiff
+from pandas import testing as pdt
 
 from pandapower.network import pandapowerNet
 
@@ -66,8 +67,8 @@ def dataframes_equal(df1, df2, ignore_index_order=True, assume_geojson_strings=T
             return False
 
         # create DataFrames from geo information
-        df1_geo = pd.concat([pd.read_json(StringIO(df1.geo.at[idx])).assign(**{"idx": idx}) for idx in notnull1])
-        df2_geo = pd.concat([pd.read_json(StringIO(df2.geo.at[idx])).assign(**{"idx": idx}) for idx in notnull2])
+        df1_geo = pd.concat([pd.read_json(StringIO(df1.geo.at[idx])).assign(idx=idx) for idx in notnull1])
+        df2_geo = pd.concat([pd.read_json(StringIO(df2.geo.at[idx])).assign(idx=idx) for idx in notnull2])
 
         # check equal columns and reorder columns of df2_geo
         if len(df1_geo.columns.symmetric_difference(df2_geo.columns)):

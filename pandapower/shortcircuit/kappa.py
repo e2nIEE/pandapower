@@ -1,17 +1,16 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
 import copy
+
 import networkx as nx
 import numpy as np
 from scipy.sparse.linalg import factorized
 
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X
-from pandapower.pypower.idx_bus import BUS_I, GS, BS, BASE_KV
-
-from pandapower.pypower.idx_bus_sc import KAPPA, R_EQUIV, X_EQUIV, GS_P, BS_P, K_G
-from pandapower.shortcircuit.impedance import _calc_ybus, _calc_zbus, _calc_rx
+from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS, T_BUS
+from pandapower.pypower.idx_bus import BASE_KV, BS, BUS_I, GS
+from pandapower.pypower.idx_bus_sc import BS_P, GS_P, K_G, KAPPA, R_EQUIV, X_EQUIV
+from pandapower.shortcircuit.impedance import _calc_rx, _calc_ybus, _calc_zbus
 
 
 def _add_kappa_to_ppc(net, ppc):

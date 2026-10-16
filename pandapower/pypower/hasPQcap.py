@@ -6,9 +6,9 @@
 
 from sys import stderr
 
-from numpy import any, zeros, nonzero
+from numpy import any, nonzero, zeros
 
-from pandapower.pypower.idx_gen import QMAX, QMIN, PMAX, PC1, PC2, QC1MIN, QC1MAX, QC2MIN, QC2MAX
+from pandapower.pypower.idx_gen import PC1, PC2, PMAX, QC1MAX, QC1MIN, QC2MAX, QC2MIN, QMAX, QMIN
 
 
 def hasPQcap(gen, hilo="B"):

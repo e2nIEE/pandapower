@@ -37,12 +37,12 @@ def to_html(net, filename, respect_switches=True, include_lines=True, include_tr
         f.close()
 
 
-class Raw(object):
+class Raw:
     def __init__(self, html):
         self.html = html
 
 
-class Tag(object):
+class Tag:
     def __init__(self, name):
         self.name = name
 

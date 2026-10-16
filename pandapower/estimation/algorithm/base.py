@@ -1,23 +1,23 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
+
 import numpy as np
 from numpy.linalg import LinAlgError
-from scipy.sparse import csr_matrix, vstack, hstack
-from scipy.sparse.linalg import spsolve, norm, inv
+from scipy.sparse import csr_matrix, hstack, vstack
+from scipy.sparse.linalg import inv, norm, spsolve
 
 from pandapower.estimation.algorithm.estimator import BaseEstimatorIRWLS, get_estimator
 from pandapower.estimation.algorithm.matrix_base import BaseAlgebra, BaseAlgebraZeroInjConstraints
-from pandapower.estimation.idx_bus import ZERO_INJ_FLAG, P, P_STD, Q, Q_STD
+from pandapower.estimation.idx_bus import P_STD, Q_STD, ZERO_INJ_FLAG, P, Q
 from pandapower.estimation.ppc_conversion import ExtendedPPCI
 from pandapower.pypower.idx_bus import bus_cols
-
-import logging
 
 std_logger = logging.getLogger(__name__)
 std_logger.setLevel(logging.DEBUG)
 
-__all__ = ["WLSAlgorithm", "WLSZeroInjectionConstraintsAlgorithm", "IRWLSAlgorithm"]
+__all__ = ["IRWLSAlgorithm", "WLSAlgorithm", "WLSZeroInjectionConstraintsAlgorithm"]
 
 
 class BaseAlgorithm:
@@ -63,7 +63,7 @@ class BaseAlgorithm:
 
 class WLSAlgorithm(BaseAlgorithm):
     def __init__(self, tolerance, maximum_iterations, logger=std_logger):
-        super(WLSAlgorithm, self).__init__(tolerance, maximum_iterations, logger)
+        super().__init__(tolerance, maximum_iterations, logger)
 
         # Parameters for Bad data detection
         self.R_inv = None
@@ -129,8 +129,8 @@ class WLSAlgorithm(BaseAlgorithm):
 
                 if debug_mode:
                     obj_func = (r.T * r_inv * r)[0, 0]
-                    self.logger.debug("Current delta_x: {:.7f}".format(current_error))
-                    self.logger.debug("Current objective function value: {:.1f}".format(obj_func))
+                    self.logger.debug(f"Current delta_x: {current_error:.7f}")
+                    self.logger.debug(f"Current objective function value: {obj_func:.1f}")
 
                 # Restore full weighting matrix with current measurements
                 if cur_it == 0 and eppci.any_i_meas:
@@ -190,7 +190,7 @@ class WLSZeroInjectionConstraintsAlgorithm(BaseAlgorithm):
         E_ext = np.r_[eppci.E, new_states]
 
         while current_error > self.tolerance and cur_it < self.max_iterations:
-            self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
+            self.logger.debug(f"Starting iteration {1 + cur_it:d}")
             try:
                 c_x = sem.create_cx(E, p_zero_injections, q_zero_injections)
 
@@ -224,7 +224,7 @@ class WLSZeroInjectionConstraintsAlgorithm(BaseAlgorithm):
                 # prepare next iteration
                 cur_it += 1
                 current_error = np.max(np.abs(d_E_ext[: len(eppci.non_slack_buses) + num_bus]))
-                self.logger.debug("Current error: {:.7f}".format(current_error))
+                self.logger.debug(f"Current error: {current_error:.7f}")
             except LinAlgError:
                 self.logger.error(
                     "A problem appeared while using the linear algebra methods.Check and change the measurement set."
@@ -246,7 +246,7 @@ class IRWLSAlgorithm(BaseAlgorithm):
         current_error, cur_it = 100.0, 0
         E = eppci.E
         while current_error > self.tolerance and cur_it < self.max_iterations:
-            self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
+            self.logger.debug(f"Starting iteration {1 + cur_it:d}")
             try:
                 # residual r
                 r = csr_matrix(sem.create_rx(E)).T
@@ -267,7 +267,7 @@ class IRWLSAlgorithm(BaseAlgorithm):
                 # prepare next iteration
                 cur_it += 1
                 current_error = np.max(np.abs(d_E))
-                self.logger.debug("Current error: {:.7f}".format(current_error))
+                self.logger.debug(f"Current error: {current_error:.7f}")
             except LinAlgError:
                 self.logger.error(
                     "A problem appeared while using the linear algebra methods.Check and change the measurement set."
@@ -282,7 +282,7 @@ class IRWLSAlgorithm(BaseAlgorithm):
 
 class AFWLSAlgorithm(BaseAlgorithm):
     def __init__(self, tolerance, maximum_iterations, logger=std_logger):
-        super(AFWLSAlgorithm, self).__init__(tolerance, maximum_iterations, logger)
+        super().__init__(tolerance, maximum_iterations, logger)
 
         # Parameters for Bad data detection
         self.R_inv = None
@@ -340,8 +340,8 @@ class AFWLSAlgorithm(BaseAlgorithm):
                 current_error = np.max(np.abs(d_E))
                 if debug_mode:
                     obj_func = (r.T * r_inv * r)[0, 0]
-                    self.logger.debug("Current delta_x: {:.7f}".format(current_error))
-                    self.logger.debug("Current objective function value: {:.1f}".format(obj_func))
+                    self.logger.debug(f"Current delta_x: {current_error:.7f}")
+                    self.logger.debug(f"Current objective function value: {obj_func:.1f}")
 
                 # Restore full weighting matrix
                 if cur_it == 0 and eppci.any_i_meas:

@@ -3,13 +3,12 @@
 
 import logging
 import time
-from typing import Union, List, Type, Dict
 
 from pandapower import pandapowerNet
+
+from .. import cim_classes, interfaces
 from . import build_pp_net
 from . import converter_classes as std_converter_classes
-from .. import cim_classes
-from .. import interfaces
 
 logger = logging.getLogger("cim.cim2pp.from_cim")
 
@@ -20,11 +19,11 @@ def from_cim_dict(
     convert_line_to_switch: bool = False,
     line_r_limit: float = 0.1,
     line_x_limit: float = 0.1,
-    repair_cim: Union[str, interfaces.CIMRepair] | None = None,
-    repair_cim_class: Type[interfaces.CIMRepair] | None = None,
-    repair_pp: Union[str, interfaces.PandapowerRepair] | None = None,
-    repair_pp_class: Type[interfaces.PandapowerRepair] | None = None,
-    custom_converter_classes: Dict | None = None,
+    repair_cim: str | interfaces.CIMRepair | None = None,
+    repair_cim_class: type[interfaces.CIMRepair] | None = None,
+    repair_pp: str | interfaces.PandapowerRepair | None = None,
+    repair_pp_class: type[interfaces.PandapowerRepair] | None = None,
+    custom_converter_classes: dict | None = None,
     cim_version: str | None = None,
     **kwargs,
 ) -> pandapowerNet:
@@ -107,16 +106,16 @@ def get_converter_classes() -> dict[str, object]:
 
 
 def from_cim(
-    file_list: Union[str, List[str]] | None = None,
+    file_list: str | list[str] | None = None,
     encoding: str | None = None,
     convert_line_to_switch: bool = False,
     line_r_limit: float = 0.1,
     line_x_limit: float = 0.1,
-    repair_cim: Union[str, interfaces.CIMRepair] | None = None,
-    repair_cim_class: Type[interfaces.CIMRepair] | None = None,
-    repair_pp: Union[str, interfaces.PandapowerRepair] | None = None,
-    repair_pp_class: Type[interfaces.PandapowerRepair] | None = None,
-    custom_converter_classes: Dict | None = None,
+    repair_cim: str | interfaces.CIMRepair | None = None,
+    repair_cim_class: type[interfaces.CIMRepair] | None = None,
+    repair_pp: str | interfaces.PandapowerRepair | None = None,
+    repair_pp_class: type[interfaces.PandapowerRepair] | None = None,
+    custom_converter_classes: dict | None = None,
     cgmes_version: str = "2.4.15",
     **kwargs,
 ) -> pandapowerNet:

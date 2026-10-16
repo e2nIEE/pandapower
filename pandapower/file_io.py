@@ -2,11 +2,12 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+import json
 import os
 import pickle
 import sys
-import json
-from typing import Union, TextIO, overload as function_overload
+from typing import TextIO
+from typing import overload as function_overload
 from warnings import warn
 
 import numpy
@@ -26,23 +27,23 @@ try:
 except ImportError:
     openpyxl_INSTALLED = False
 
-from pandapower.auxiliary import soft_dependency_error
+import logging
+
 from pandapower import pandapowerNet
-from pandapower.std_types import basic_std_types
+from pandapower.auxiliary import soft_dependency_error
 from pandapower.convert_format import convert_format
 from pandapower.io_utils import (
-    to_dict_with_coord_transform,
-    to_dict_of_dfs,
-    PPJSONEncoder,
-    encrypt_string,
-    get_raw_data_from_pickle,
-    transform_net_with_df_and_geo,
-    from_dict_of_dfs,
-    decrypt_string,
     PPJSONDecoder,
+    PPJSONEncoder,
+    decrypt_string,
+    encrypt_string,
+    from_dict_of_dfs,
+    get_raw_data_from_pickle,
+    to_dict_of_dfs,
+    to_dict_with_coord_transform,
+    transform_net_with_df_and_geo,
 )
-
-import logging
+from pandapower.std_types import basic_std_types
 
 logger = logging.getLogger(__name__)
 
@@ -96,8 +97,8 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
 def to_json(
     net: pandapowerNet,
     filename: None = ...,
-    encryption_key: Union[str, None] = ...,
-    indent: Union[int, str, None] = ...,
+    encryption_key: str | None = ...,
+    indent: int | str | None = ...,
     sort_keys: bool = ...,
 ) -> str: ...
 
@@ -105,20 +106,20 @@ def to_json(
 @function_overload
 def to_json(
     net: pandapowerNet,
-    filename: Union[str, TextIO],
-    encryption_key: Union[str, None] = ...,
-    indent: Union[int, str, None] = ...,
+    filename: str | TextIO,
+    encryption_key: str | None = ...,
+    indent: int | str | None = ...,
     sort_keys: bool = ...,
 ) -> None: ...
 
 
 def to_json(
     net: pandapowerNet,
-    filename: Union[str, TextIO, None] = None,
-    encryption_key: Union[str, None] = None,
-    indent: Union[int, str, None] = 2,
+    filename: str | TextIO | None = None,
+    encryption_key: str | None = None,
+    indent: int | str | None = 2,
     sort_keys: bool = False,
-) -> Union[str, None]:
+) -> str | None:
     """
     Saves a pandapower Network in JSON format. The index columns of all pandas DataFrames will
     be saved in ascending order. net elements which name begins with "_" (internal elements)

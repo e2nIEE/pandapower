@@ -1,3 +1,4 @@
+import logging
 import time
 from copy import deepcopy
 
@@ -5,43 +6,41 @@ import pandas as pd
 
 from pandapower.create import create_group_from_dict
 from pandapower.grid_equivalents.auxiliary import (
+    _check_network,
+    _ensure_unique_boundary_bus_names,
+    _runpp_except_voltage_angles,
+    add_ext_grids_to_boundaries,
     drop_assist_elms_by_creating_ext_net,
     drop_internal_branch_elements,
-    add_ext_grids_to_boundaries,
-    _ensure_unique_boundary_bus_names,
     match_cost_functions_and_eq_net,
-    _check_network,
-    _runpp_except_voltage_angles,
 )
 from pandapower.grid_equivalents.rei_generation import (
-    _create_net_zpbn,
-    _get_internal_and_external_nets,
+    _calclate_equivalent_element_params,
     _calculate_equivalent_Ybus,
     _create_bus_lookups,
-    _calclate_equivalent_element_params,
+    _create_net_zpbn,
+    _get_internal_and_external_nets,
     _replace_ext_area_by_impedances_and_shunts,
 )
 from pandapower.grid_equivalents.ward_generation import (
     _calculate_ward_and_impedance_parameters,
     _calculate_xward_and_impedance_parameters,
-    create_passive_external_net_for_ward_admittance,
     _replace_external_area_by_wards,
     _replace_external_area_by_xwards,
+    create_passive_external_net_for_ward_admittance,
 )
 from pandapower.groups import isin_group, set_group_reference_column
 from pandapower.toolbox.data_modification import reindex_buses
 from pandapower.toolbox.grid_modification import (
-    replace_ward_by_internal_elements,
-    replace_xward_by_internal_elements,
     drop_buses,
     drop_elements_at_buses,
-    merge_nets,
     fuse_buses,
+    merge_nets,
+    replace_ward_by_internal_elements,
+    replace_xward_by_internal_elements,
 )
 from pandapower.topology.create_graph import create_nxgraph
 from pandapower.topology.graph_searches import connected_component, connected_components
-
-import logging
 
 logger = logging.getLogger(__name__)
 

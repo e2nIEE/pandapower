@@ -1,12 +1,11 @@
 import numpy as np
 import pytest
 
-from pandapower.create import create_buses, create_ext_grid, create_lines, create_switches, create_loads
+from pandapower.create import create_buses, create_ext_grid, create_lines, create_loads, create_switches
 from pandapower.network import pandapowerNet
 from pandapower.protection.protection_devices.ocrelay import OCRelay
 from pandapower.protection.run_protection import calculate_protection_times
-from pandapower.protection.utility_functions import create_sc_bus
-from pandapower.protection.utility_functions import plot_tripped_grid_protection_device
+from pandapower.protection.utility_functions import create_sc_bus, plot_tripped_grid_protection_device
 from pandapower.shortcircuit.calc_sc import calc_sc
 
 try:

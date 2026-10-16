@@ -1,10 +1,9 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import json
 import logging
 import os
-import json
-from typing import Dict
 
 import pandas as pd
 
@@ -13,7 +12,7 @@ from pandapower import pandapowerNet
 logger = logging.getLogger(__name__)
 
 
-def get_pp_net_special_columns_dict() -> Dict[str, str]:
+def get_pp_net_special_columns_dict() -> dict[str, str]:
     """
     Get a dictionary with the special CIM fields, used as columns in a pandapower network.
     :return Dict[str, str]: The dictionary with the special CIM fields.
@@ -82,7 +81,7 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
     return net
 
 
-def get_cim_schema(cgmes_version: str = "2.4.15") -> Dict[str, Dict[str, Dict[str, str | Dict[str, Dict[str, str]]]]]:
+def get_cim_schema(cgmes_version: str = "2.4.15") -> dict[str, dict[str, dict[str, str | dict[str, dict[str, str]]]]]:
     """
     Parses the CIM schema from the serialized CIM schema json files which have been created from the RDF schema files.
     The schema is parsed for the serializer from the CIM data structure used by the cim2pp and pp2cim converters.

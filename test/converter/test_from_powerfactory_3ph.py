@@ -1,8 +1,9 @@
-import os
 import json
-import pytest
+import os
+
 import numpy as np
 import pandas as pd
+import pytest
 
 from pandapower.pf.runpp_3ph import runpp_3ph
 from pandapower.file_io import from_json
@@ -22,6 +23,7 @@ try:
 except ImportError:
     PF_INSTALLED = False
     logger.info("could not import powerfactory, unbalanced load flow comparsion between pf and pp not possible")
+
 
 from pandapower.converter.powerfactory.pf_export_functions import run_load_flow as run_powerfactory_load_flow
 from pandapower.converter.powerfactory.validate import _get_pf_results_unbalanced, _set_pf_results_unbalanced

@@ -2,9 +2,9 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import gc
+import logging
 import warnings
-from collections.abc import Collection
-from typing import Iterable
+from collections.abc import Collection, Iterable
 
 import numpy as np
 import pandas as pd
@@ -12,8 +12,6 @@ from packaging.version import Version
 
 from pandapower._version import __version__
 from pandapower.auxiliary import ets_to_element_types, pandapowerNet
-
-import logging
 
 logger = logging.getLogger(__name__)
 

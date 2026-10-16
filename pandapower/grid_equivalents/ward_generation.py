@@ -1,15 +1,15 @@
+import logging
 import time
+
+import numpy as np
+import pandas as pd
+
+from pandapower.create import create_impedance, create_shunt, create_switch, create_ward, create_xward
 from pandapower.grid_equivalents.auxiliary import (
-    drop_internal_branch_elements,
     _runpp_except_voltage_angles,
+    drop_internal_branch_elements,
     impedance_columns,
 )
-import pandas as pd
-import numpy as np
-
-import logging
-
-from pandapower.create import create_shunt, create_impedance, create_switch, create_ward, create_xward
 from pandapower.toolbox.grid_modification import drop_buses
 
 logger = logging.getLogger(__name__)

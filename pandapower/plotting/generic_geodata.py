@@ -1,21 +1,22 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import sys
 import copy
-from typing import TYPE_CHECKING, Iterable
+import sys
+from collections.abc import Iterable
+from typing import TYPE_CHECKING
 
 import geojson
 import networkx
 import networkx as nx
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from pandapower.auxiliary import pandapowerNet, soft_dependency_error
 from pandapower.create._utils import add_column_to_df
+from pandapower.plotting.plotting_toolbox import safe_geojson_loads
 from pandapower.topology.create_graph import create_nxgraph
 from pandapower.topology.graph_searches import connected_components
-from pandapower.plotting.plotting_toolbox import safe_geojson_loads
 
 try:
     import igraph

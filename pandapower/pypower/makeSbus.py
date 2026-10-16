@@ -4,12 +4,12 @@
 
 """Builds the vector of complex bus power injections."""
 
-from numpy import ones, flatnonzero as find
-from pandapower.pypower.idx_bus import PD, QD
-from pandapower.pypower.idx_gen import GEN_BUS, PG, QG, GEN_STATUS
+from numpy import flatnonzero as find
+from numpy import ones
 from scipy.sparse import csr_matrix as sparse
 
-from pandapower.pypower.idx_bus import CID_P, CID_Q, CZD_P, CZD_Q
+from pandapower.pypower.idx_bus import CID_P, CID_Q, CZD_P, CZD_Q, PD, QD
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG
 
 
 def _get_Sbus(baseMVA, bus, gen_on, Cg, vm=None):
