@@ -1922,15 +1922,22 @@ def _init_runpp_options(
         if init_va_degree is None or (isinstance(init_va_degree, str) and init_va_degree == "auto"):
             init_va_degree = "dc" if calculate_voltage_angles and not with_facts else "flat"
         if init_vm_pu is None or (isinstance(init_vm_pu, str) and init_vm_pu == "auto"):
-            init_vm_pu = (
-                net.ext_grid.query("in_service").vm_pu.to_numpy().sum()
-                + net.gen.query("in_service").vm_pu.to_numpy().sum()
-                + net.vsc.query("in_service & (control_mode_ac == 'slack')").control_value_ac.to_numpy().sum()
-            ) / (
-                len(net.ext_grid.query("in_service"))
-                + len(net.gen.query("in_service"))
-                + len(net.vsc.query("in_service & (control_mode_ac == 'slack')"))
+            eg_tbl = net["ext_grid"]
+            gen_tbl = net["gen"]
+            vsc_tbl = net["vsc"]
+
+            eg = eg_tbl["in_service"].to_numpy()
+            gen = gen_tbl["in_service"].to_numpy()
+            vsc_mask = (vsc_tbl["in_service"].to_numpy() & (vsc_tbl["control_mode_ac"].to_numpy() == "slack"))
+
+            total = (
+                eg_tbl["vm_pu"].to_numpy()[eg].sum() +
+                gen_tbl["vm_pu"].to_numpy()[gen].sum() +
+                vsc_tbl["control_value_ac"].to_numpy()[vsc_mask].sum()
             )
+            count = eg.sum() + gen.sum() + vsc_mask.sum()
+
+            init_vm_pu = total / count
     elif init == "dc":
         init_vm_pu = "flat"
         init_va_degree = "dc"
