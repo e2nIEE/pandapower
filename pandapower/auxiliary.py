@@ -1866,7 +1866,10 @@ def _init_runpp_options(
     if not cols.issubset(net.load.columns) or net.load[list(cols)].isna().any().any():
         raise AttributeError(f"Network is missing one or more of net.load columns: {cols}")
     
-    if not net.load[list(cols)].any().any():
+    if not (np.any(net["load"]["const_z_p_percent"].values)
+                or np.any(net["load"]["const_i_p_percent"].values)
+                or np.any(net["load"]["const_z_q_percent"].values)
+                or np.any(net["load"]["const_i_q_percent"].values)):
         voltage_depend_loads = False
 
     lightsim2grid = _check_lightsim2grid_compatibility(
