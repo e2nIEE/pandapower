@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower.control.util.auxiliary import create_trafo_characteristic_object
+from pandapower.control.util.auxiliary import create_trafo_characteristic_object, create_shunt_characteristic_object
 from pandapower.converter.cim.cim2pp.from_cim import from_cim, from_cim_dict
 from pandapower.converter.cim.cim_classes import CimParser
 from pandapower.run import runpp
