@@ -305,6 +305,13 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
         # transformer impedance and must not be scaled by kt).
         _earthed_hv = ("ynd", "yny", "ynyn", "znyn", "znd", "zny", "zd")
         _zigzag = ("znyn", "znd", "zny", "zd")
+        # Groups whose only zero-sequence path is a shunt at the earthed LV terminal:
+        # 3*Z_N is added in series with that shunt below (after the T/pi conversion),
+        # so it appears in full independently of si0_hv_partial and trafo_model.
+        _zn_in_lv_shunt = ("dyn", "yzn")
+        # per-unit power base of the zero-sequence network (pf_3ph uses the
+        # per-phase base 3*sn_mva, see tap_lv / tap_hv above)
+        s_base_zero = 3 * net.sn_mva if mode == "pf_3ph" else net.sn_mva
         zn_pu = np.zeros(len(trafos), dtype=np.complex128)
         if np.any(np.abs(zn_ohm) > 0) and vector_group.lower() in (
             "dyn",
@@ -319,12 +326,14 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             "zd",
         ):
             vn_earth = vn_bus_hv if vector_group.lower() in _earthed_hv else vn_bus_lv
-            zn_pu = 3 * zn_ohm / ((vn_earth**2) / net.sn_mva)
-            # Ordinary earthed-star groups: add 3*Z_N in series with z0_k here.
+            zn_pu = 3 * zn_ohm / ((vn_earth**2) / s_base_zero)
+            # Other earthed-star groups: add 3*Z_N in series with z0_k here.
             # Zigzag groups place 3*Z_N at the star-point node in their own branch
             # below (so z0_k stays the bare leakage for the si0 split).
-            if vector_group.lower() not in _zigzag:
+            if vector_group.lower() not in _zigzag + _zn_in_lv_shunt:
                 z0_k = np.where(power_station_unit, z0_k, z0_k + zn_pu)
+        # power station units already contain 3*Z_N in z0_k_psu
+        zn_lv_shunt = np.where(power_station_unit, 0, zn_pu)
 
         y0_k = 1 / z0_k  # adding admittance for "pi" model
         # y0_k = 1 / (z0_k * k_st_tr + 3j * z_n_ohm)  # adding admittance for "pi" model
@@ -371,6 +380,8 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
                 y = y0_k  # pi model
             else:
                 y = (YAB + YBN).astype(complex)  # T model
+            if np.any(zn_lv_shunt):
+                y = 1 / (1 / y + zn_lv_shunt)  # 3*Z_N at the LV star point
             y_asym = y * in_service.values * 2
 
         elif vector_group.lower() == "ynd":
@@ -412,10 +423,14 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
             y_asym = -y_sym
 
         elif vector_group.lower() == "yzn":
-            #            y = 1/(z0_mag+z0_k).astype(complex)* int(ppc["baseMVA"])#T model
-            #            y= (za+zb+zc)/((za+zc)*zb).astype(complex)* int(ppc["baseMVA"])#pi model
-            y = (YAB_AN + YBN).astype(complex)
-            y_asym = (1.1547) * y * in_service.values * ppc["baseMVA"] * 2
+            # The zigzag winding cancels the zero-sequence ampere-turns on each limb,
+            # so no zero-sequence flux reaches the magnetising branch, and the
+            # unearthed HV star carries no zero-sequence current: the zero-sequence
+            # path is the zigzag zero-sequence impedance (vk0) plus 3*Z_N, as a
+            # shunt at the LV bus. Branch admittances are already per unit, so no
+            # baseMVA factor (which made the result depend on net.sn_mva).
+            y = 1 / (z0_k + zn_lv_shunt).astype(complex)
+            y_asym = y * in_service.values * 2
 
         elif vector_group.lower() in ("znyn", "znd", "zny", "zd"):
             # Zigzag earthing transformer. The zigzag (ZN) winding presents a low

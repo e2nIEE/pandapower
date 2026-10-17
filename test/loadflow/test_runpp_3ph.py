@@ -31,6 +31,7 @@ from pandapower.file_io import from_json
 from pandapower.network import pandapowerNet
 from pandapower.networks import create_cigre_network_mv
 from pandapower.pf.runpp_3ph import runpp_3ph
+from pandapower.pypower.idx_brch import BR_B, BR_B_ASYM, BR_G, BR_G_ASYM
 from pandapower.run import runpp
 from pandapower.std_types import add_zero_impedance_parameters, create_std_type
 from test.consistency_checks import (
@@ -629,7 +630,7 @@ def check_bus_voltages(net, result, trafo_vector_group):
     #         max_tol = tol
     # print('Voltage Magnitude for %s is within tolerance of %s' % (trafo_vector_group, max_tol))
 
-    tolerances = {"YNyn": 1e-05, "Dyn": 1e-05, "Yzn": 1e-03}
+    tolerances = {"YNyn": 1e-05, "Dyn": 1e-05, "Yzn": 1e-05}
 
     assert np.allclose(result, res_vm_pu, atol=tolerances[trafo_vector_group], rtol=0), (
         f"Incorrect results for {trafo_vector_group}"
@@ -654,7 +655,7 @@ def check_line_currents(net, result, trafo_vector_group):
     #         max_tol = tol
     # print('Line current for %s is within tolerance of %s' % (trafo_vector_group, max_tol))
 
-    tolerances = {"YNyn": 1e-07, "Dyn": 1e-07, "Yzn": 1e-04}
+    tolerances = {"YNyn": 1e-07, "Dyn": 1e-07, "Yzn": 1e-05}
 
     assert np.allclose(result, res_line_i_ka, atol=tolerances[trafo_vector_group])
     if not np.allclose(result, res_line_i_ka, atol=tolerances[trafo_vector_group]):
@@ -859,6 +860,53 @@ def test_trafo_asym_currents__high_neg_seq():
     )
     create_asymmetric_load(net, 2, 1.6, 0.44019238, 0.95980762, 0.8, 0.86961524, -0.16961524)
     _test_trafo_shifts(net, rtol=1e-9)
+
+
+@pytest.mark.parametrize("vector_group", ("Dyn", "Yzn"))
+def test_trafo_neutral_earthing_impedance_3ph(vector_group):
+    # The zero-sequence shunt of the transformer at its earthed LV bus must not
+    # depend on net.sn_mva, and a neutral earthing impedance Z_N must add exactly
+    # 3*Z_N to it. The shunt is read from the zero-sequence branch data in ohm
+    # (per-phase impedance base vn_kv**2 / (3 * sn_mva) of the 3ph power flow).
+    zn = 0.01 + 0.02j
+
+    def lv_z0(sn_mva, zn_ohm):
+        net = pandapowerNet(name="test_trafo_neutral_earthing_impedance_3ph", sn_mva=sn_mva)
+        b_hv, b_lv = create_buses(net, 2, vn_kv=[10.0, 0.4])
+        create_ext_grid(net, b_hv, s_sc_max_mva=1000, rx_max=0.1, r0x0_max=0.1, x0x_max=1.0)
+        create_transformer_from_parameters(
+            net,
+            b_hv,
+            b_lv,
+            sn_mva=0.63,
+            vn_hv_kv=10.0,
+            vn_lv_kv=0.4,
+            vk_percent=6.0,
+            vkr_percent=1.0,
+            pfe_kw=0.0,
+            i0_percent=0.0,
+            vector_group=vector_group,
+            shift_degree=0.0,
+            vk0_percent=6.0,
+            vkr0_percent=1.0,
+            mag0_percent=100.0,
+            mag0_rx=0.0,
+            si0_hv_partial=0.9,
+            rn_ohm=zn_ohm.real,
+            xn_ohm=zn_ohm.imag,
+        )
+        create_asymmetric_load(net, b_lv, p_a_mw=0.05, p_b_mw=0.03, p_c_mw=0.01)
+        runpp_3ph(net)
+        assert net.converged
+        br = net._ppc0["branch"][net._pd2ppc_lookups["branch"]["trafo"][0]]
+        y_lv = (br[BR_G] + br[BR_G_ASYM] + 1j * (br[BR_B] + br[BR_B_ASYM])) / 2
+        return 1 / y_lv * 0.4**2 / (3 * sn_mva)
+
+    z0_ref = lv_z0(1.0, 0j)
+    for sn_mva in (1.0, 10.0):
+        z0 = lv_z0(sn_mva, 0j)
+        assert np.isclose(z0, z0_ref, rtol=1e-9, atol=0)
+        assert np.isclose(lv_z0(sn_mva, zn) - z0, 3 * zn, rtol=1e-9, atol=0)
 
 
 def test_2trafos():
