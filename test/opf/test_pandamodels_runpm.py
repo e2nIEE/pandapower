@@ -785,6 +785,23 @@ def _storage_power_models_result(ps, qs, se):
     }
 
 
+def _assert_storage_result_frames(storage_results):
+    pd.testing.assert_frame_equal(
+        storage_results[7],
+        pd.DataFrame(
+            {"p_mw": [-1.0, 3.0], "q_mvar": [0.1, -0.3], "soc_mwh": [1.0, 2.0], "soc_percent": [25.0, 50.0]},
+            index=["0", "1"],
+        ),
+    )
+    pd.testing.assert_frame_equal(
+        storage_results[23],
+        pd.DataFrame(
+            {"p_mw": [2.0, 4.0], "q_mvar": [0.2, 0.5], "soc_mwh": [3.6, 4.5], "soc_percent": [60.0, 75.0]},
+            index=["0", "1"],
+        ),
+    )
+
+
 def test_add_storage_results_initializes_multiple_storage_rows():
     net = _storage_result_net()
     add_storage_results(net, _storage_power_models_result([-1.0, 2.0], [0.1, 0.2], [0.25, 0.6]))
@@ -815,20 +832,7 @@ def test_read_pm_storage_results_maps_each_storage_and_timestep():
     storage_results = read_pm_storage_results(net)
 
     assert list(storage_results) == [7, 23]
-    pd.testing.assert_frame_equal(
-        storage_results[7],
-        pd.DataFrame(
-            {"p_mw": [-1.0, 3.0], "q_mvar": [0.1, -0.3], "soc_mwh": [1.0, 2.0], "soc_percent": [25.0, 50.0]},
-            index=["0", "1"],
-        ),
-    )
-    pd.testing.assert_frame_equal(
-        storage_results[23],
-        pd.DataFrame(
-            {"p_mw": [2.0, 4.0], "q_mvar": [0.2, 0.5], "soc_mwh": [3.6, 4.5], "soc_percent": [60.0, 75.0]},
-            index=["0", "1"],
-        ),
-    )
+    _assert_storage_result_frames(storage_results)
     pd.testing.assert_frame_equal(frame_0, frame_0_before)
     pd.testing.assert_frame_equal(frame_1, frame_1_before)
 
@@ -854,20 +858,7 @@ def test_storage_result_labels_reach_timeseries_reader():
     assert list(storage_results) == [7, 23]
     assert list(storage_results[7].index) == ["0", "1"]
     assert list(storage_results[23].index) == ["0", "1"]
-    pd.testing.assert_frame_equal(
-        storage_results[7],
-        pd.DataFrame(
-            {"p_mw": [-1.0, 3.0], "q_mvar": [0.1, -0.3], "soc_mwh": [1.0, 2.0], "soc_percent": [25.0, 50.0]},
-            index=["0", "1"],
-        ),
-    )
-    pd.testing.assert_frame_equal(
-        storage_results[23],
-        pd.DataFrame(
-            {"p_mw": [2.0, 4.0], "q_mvar": [0.2, 0.5], "soc_mwh": [3.6, 4.5], "soc_percent": [60.0, 75.0]},
-            index=["0", "1"],
-        ),
-    )
+    _assert_storage_result_frames(storage_results)
 
 
 @pytest.mark.slow
