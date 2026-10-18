@@ -21,6 +21,7 @@ from pandapower.create import (
     create_xward,
 )
 from pandapower.network import pandapowerNet
+from pandapower.results import BRANCH_RESULTS_KEYS
 from pandapower.run import runpp
 from pandapower.shortcircuit.calc_sc import calc_sc
 
@@ -406,6 +407,39 @@ def test_all_currents_with_oos_elements():
     )  # sgen does not contribute in case == "min"
     # np.array([0.01259673, 0.3989686]), atol=1e-5)  # <- old
     assert np.allclose(net.res_line_sc.ikss_ka.loc[[(0, 2), (1, 0), (1, 1), (1, 2)]].values, 0, atol=1e-10)
+
+
+@pytest.mark.parametrize("branch_key", BRANCH_RESULTS_KEYS)
+@pytest.mark.parametrize("bus_labels", [None, np.array([17, 4])], ids=["default-bus-labels", "custom-bus-labels"])
+def test_short_circuit_branch_result_padding_is_zero(monkeypatch, branch_key, bus_labels):
+    import pandapower.results as pp_results
+
+    active_values = np.array([[1.25, -2.5], [3.75, -4.5]])
+    internal = {"branch_is": np.array([True, False, True]), branch_key: active_values}
+    if bus_labels is not None:
+        internal["br_res_ks_ppci_bus"] = bus_labels
+    result = {"internal": internal}
+    ppc = {"branch": np.zeros((3, 1)), "internal": {}}
+
+    real_numpy = pp_results.np
+
+    class PoisonedNumpy:
+        def __getattr__(self, name):
+            return getattr(real_numpy, name)
+
+        def empty(self, shape, *args, **kwargs):
+            dtype = kwargs.get("dtype", args[0] if args else float)
+            return real_numpy.full(shape, np.nan, dtype=dtype)
+
+    monkeypatch.setattr(pp_results, "np", PoisonedNumpy())
+    pp_results._ppci_internal_to_ppc(result, ppc)
+
+    frame = ppc["internal"][branch_key]
+    expected_labels = [0, 1, -1] if bus_labels is None else [17, 4, -1]
+    assert frame.columns.tolist() == expected_labels
+    np.testing.assert_array_equal(frame.loc[[0, 2], [expected_labels[0], expected_labels[1]]].to_numpy(), active_values)
+    np.testing.assert_array_equal(frame.loc[1].to_numpy(), np.zeros(3))
+    np.testing.assert_array_equal(frame[-1].to_numpy(), np.zeros(3))
 
 
 # TODO: This example should not work anymore
