@@ -282,7 +282,7 @@ def test_sqlite_public_functions_close_connections(net_in, tmp_path, monkeypatch
         with closing(original_connect(filename)) as connection:
             assert connection.execute("SELECT COUNT(*) FROM bus").fetchone()[0] == len(net_in.bus)
     else:
-        with closing(original_connect(filename)) as connection, connection:
+        with closing(original_connect(filename)) as opened_connection, opened_connection as connection:
             for name, table in sql_io.io_utils.to_dict_of_dfs(net_in, include_results=False).items():
                 table.to_sql(name, connection)
         monkeypatch.setattr(sql_io.sqlite3, "connect", _recording_sqlite_connect(original_connect, events, connections))
@@ -311,7 +311,7 @@ def test_sqlite_public_functions_close_after_error(net_in, tmp_path, monkeypatch
     else:
         injected = ValueError("injected reader failure")
         monkeypatch.setattr(sql_io.io_utils, "from_dict_of_dfs", lambda *args, **kwargs: (_ for _ in ()).throw(injected))
-        with closing(original_connect(filename)) as connection, connection:
+        with closing(original_connect(filename)) as opened_connection, opened_connection as connection:
             connection.execute('CREATE TABLE marker ("index" INTEGER)')
         with pytest.raises(ValueError) as exc_info:
             from_sqlite(filename)
@@ -328,7 +328,7 @@ def test_sqlite_transaction_completes_before_close(net_in, tmp_path, monkeypatch
     connections = []
     monkeypatch.setattr(sql_io.sqlite3, "connect", _recording_sqlite_connect(original_connect, events, connections))
     filename = tmp_path / "testfile.db"
-    with closing(original_connect(filename)) as connection, connection:
+    with closing(original_connect(filename)) as opened_connection, opened_connection as connection:
         connection.execute("CREATE TABLE sentinel (value TEXT)")
         connection.execute("INSERT INTO sentinel VALUES ('committed')")
 
@@ -357,7 +357,7 @@ def test_sqlite_transaction_commits_successful_pending_write(net_in, tmp_path, m
     connections = []
     monkeypatch.setattr(sql_io.sqlite3, "connect", _recording_sqlite_connect(original_connect, events, connections))
     filename = tmp_path / "testfile.db"
-    with closing(original_connect(filename)) as connection, connection:
+    with closing(original_connect(filename)) as opened_connection, opened_connection as connection:
         connection.execute("CREATE TABLE sentinel (value TEXT)")
         connection.execute("INSERT INTO sentinel VALUES ('committed')")
 
