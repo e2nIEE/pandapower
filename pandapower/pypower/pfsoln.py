@@ -24,7 +24,7 @@ from numpy import (
     isin,
     arange,
     int64,
-    flatnonzero
+    flatnonzero,
 )
 from scipy.sparse import csr_matrix
 

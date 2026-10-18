@@ -362,9 +362,7 @@ def _create_lines(net: pandapowerNet, data: dict[str, pd.DataFrame], max_i_ka_fi
             data[key][("Electrical Parameters", "Resistance_R(Ω)")].values / length_km,  # type: ignore[operator]
             data[key][("Electrical Parameters", "Reactance_X(Ω)")].values / length_km,  # type: ignore[operator]
             data[key][("Electrical Parameters", "Susceptance_B(μS)")].values / length_km,  # type: ignore[operator]
-            data[key][("Maximum Current Imax (A)", "Fixed")].fillna(  # type: ignore[operator]
-                max_i_ka_fillna * 1e3
-            ).values / 1e3,
+            data[key][("Maximum Current Imax (A)", "Fixed")].fillna(max_i_ka_fillna * 1e3).values / 1e3,  # type: ignore[operator]
             name=data[key].xs("NE_name", level=1, axis=1).values[:, 0],  # type: ignore[call-overload]
             EIC_Code=data[key].xs("EIC_Code", level=1, axis=1).values[:, 0],  # type: ignore[call-overload]
             TSO=data[key].xs("TSO", level=1, axis=1).values[:, 0],  # type: ignore[call-overload]

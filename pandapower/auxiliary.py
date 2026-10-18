@@ -16,14 +16,15 @@ from typing import (
 )
 
 import numpy as np
-from numpy.typing import NDArray
 import pandas as pd
-from pandas.api.types import is_numeric_dtype, is_string_dtype, is_object_dtype
 import pandera.typing as pdt
 import scipy as sp
 from geojson import loads, GeoJSON
+from numpy.typing import NDArray
 from packaging.version import Version
+from pandas.api.types import is_numeric_dtype, is_string_dtype, is_object_dtype
 
+from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 from pandapower.pypower.idx_brch_dc import DC_BR_STATUS, DC_F_BUS, DC_T_BUS
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, PQ, VMIN, VMAX, PV
@@ -32,7 +33,6 @@ from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
 from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
 from pandapower.pypower.idx_vsc import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS, VSC_BUS_DC, VSC_INTERNAL_BUS_DC
-from pandapower.network import pandapowerNet
 
 try:
     from lightsim2grid.newtonpf import newtonpf_new as newtonpf_ls
@@ -1865,6 +1865,12 @@ def _init_runpp_options(
     cols = {"const_z_p_percent", "const_i_p_percent", "const_z_q_percent", "const_i_q_percent"}
     if not cols.issubset(net.load.columns) or net.load[list(cols)].isna().any().any():
         raise AttributeError(f"Network is missing one or more of net.load columns: {cols}")
+    
+    if not (np.any(net["load"]["const_z_p_percent"].values)
+                or np.any(net["load"]["const_i_p_percent"].values)
+                or np.any(net["load"]["const_z_q_percent"].values)
+                or np.any(net["load"]["const_i_q_percent"].values)):
+        voltage_depend_loads = False
 
     lightsim2grid = _check_lightsim2grid_compatibility(
         net, lightsim2grid, voltage_depend_loads, algorithm, distributed_slack, tdpf
