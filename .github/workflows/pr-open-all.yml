@@ -160,7 +160,7 @@ jobs:
           cache-dependency-glob: "pyproject.toml"
       - name: Install dependencies
         run: |
-          uv sync --extra pandapmodels --extra test
+          uv sync --extra pandamodels --extra test
       - name: Setup Julia
         uses: julia-actions/setup-julia@5c9647d97b78a5debe5164e9eec09d653d29bd71 #v2
         with:
