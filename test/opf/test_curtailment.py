@@ -8,10 +8,10 @@ import pytest
 from numpy import all, allclose
 
 from pandapower.create import (
-    create_bus,
+    create_buses,
     create_ext_grid,
     create_gen,
-    create_line,
+    create_lines,
     create_load,
     create_poly_cost,
     create_transformer,
@@ -27,18 +27,15 @@ def test_minimize_active_power_curtailment():
     net = pandapowerNet(name="test_minimize_active_power_curtailment")
 
     # create buses
-    bus1 = create_bus(net, vn_kv=220.0)
-    bus2 = create_bus(net, vn_kv=110.0)
-    bus3 = create_bus(net, vn_kv=110.0)
-    bus4 = create_bus(net, vn_kv=110.0)
+    bus1, bus2, bus3, bus4 = create_buses(net, 4, vn_kv=[220.0, 110.0, 110.0, 110.0])
 
     # create 220/110 kV transformer
     create_transformer(net, bus1, bus2, std_type="100 MVA 220/110 kV")
 
     # create 110 kV lines
-    create_line(net, bus2, bus3, length_km=70.0, std_type="149-AL1/24-ST1A 110.0")
-    create_line(net, bus3, bus4, length_km=50.0, std_type="149-AL1/24-ST1A 110.0")
-    create_line(net, bus4, bus2, length_km=40.0, std_type="149-AL1/24-ST1A 110.0")
+    create_lines(
+        net, [bus2, bus3, bus4], [bus3, bus4, bus2], length_km=[70.0, 50.0, 40.0], line_params="149-AL1/24-ST1A 110.0"
+    )
 
     # create loads
     create_load(net, bus2, p_mw=60, controllable=False)

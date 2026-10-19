@@ -7,10 +7,10 @@ import pytest
 from numpy import allclose, array, isclose
 
 from pandapower.create import (
-    create_bus,
+    create_buses,
     create_dcline,
     create_ext_grid,
-    create_line,
+    create_lines,
     create_load,
     create_poly_cost,
     create_pwl_cost,
@@ -26,14 +26,10 @@ logger = logging.getLogger(__name__)
 def dcline_net():
     net = pandapowerNet(name="dcline_net")
 
-    b5 = create_bus(net, 380)
-    b3 = create_bus(net, 380)
-    b2 = create_bus(net, 380)
-    b4 = create_bus(net, 380)
-    b1 = create_bus(net, 380)
+    b5, b3, b2, b4, b1 = create_buses(net, 5, 380)
 
     create_ext_grid(net, b1, 1.02, min_p_mw=0.0, max_p_mw=1e9)
-    create_line(net, b1, b2, 30, "490-AL1/64-ST1A 380.0")
+    create_lines(net, [b1, b3, b4], [b2, b4, b5], [30, 20, 20], "490-AL1/64-ST1A 380.0")
     create_dcline(
         net,
         name="dc line",
@@ -48,10 +44,8 @@ def dcline_net():
         in_service=True,
         index=4,
     )
-    create_line(net, b3, b4, 20, "490-AL1/64-ST1A 380.0")
 
     create_load(net, bus=b4, p_mw=800, controllable=False)
-    create_line(net, b4, b5, 20, "490-AL1/64-ST1A 380.0")
     create_ext_grid(net, b5, 1.02, min_p_mw=0.0, max_p_mw=1e9)
 
     return net
