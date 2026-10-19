@@ -23,8 +23,9 @@ def test_3point_pwl():
     # create net
     net = pandapowerNet(name="test_3point_pwl")
     create_buses(net, 2, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=[10.0, 0.4])
-    create_sgen(net, 1, p_mw=0.1, q_mvar=0, controllable=True, min_p_mw=0.1, max_p_mw=0.15,
-                max_q_mvar=0.05, min_q_mvar=-0.05)
+    create_sgen(
+        net, 1, p_mw=0.1, q_mvar=0, controllable=True, min_p_mw=0.1, max_p_mw=0.15, max_q_mvar=0.05, min_q_mvar=-0.05
+    )
     create_ext_grid(net, 0)
     create_load(net, 1, p_mw=0.02, controllable=False)
     create_lines(

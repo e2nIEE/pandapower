@@ -28,14 +28,25 @@ def dcline_net():
 
     b5, b3, b2, b4, b1 = create_buses(net, 5, 380)
 
-    create_ext_grid(net, b1, 1.02, min_p_mw=0., max_p_mw=1e9)
+    create_ext_grid(net, b1, 1.02, min_p_mw=0.0, max_p_mw=1e9)
     create_lines(net, [b1, b3, b4], [b2, b4, b5], [30, 20, 20], "490-AL1/64-ST1A 380.0")
-    create_dcline(net, name="dc line", from_bus=b2, to_bus=b3, p_mw=200, loss_percent=1.0,
-                  loss_mw=0.5, vm_from_pu=1.01, vm_to_pu=1.012, max_p_mw=1000,
-                  in_service=True, index=4)
+    create_dcline(
+        net,
+        name="dc line",
+        from_bus=b2,
+        to_bus=b3,
+        p_mw=200,
+        loss_percent=1.0,
+        loss_mw=0.5,
+        vm_from_pu=1.01,
+        vm_to_pu=1.012,
+        max_p_mw=1000,
+        in_service=True,
+        index=4,
+    )
 
     create_load(net, bus=b4, p_mw=800, controllable=False)
-    create_ext_grid(net, b5, 1.02, min_p_mw=0., max_p_mw=1e9)
+    create_ext_grid(net, b5, 1.02, min_p_mw=0.0, max_p_mw=1e9)
 
     return net
 

@@ -31,8 +31,7 @@ def test_cost_piecewise_linear_gen():
     # create net
     net = pandapowerNet(name="test_cost_piecewise_linear_gen")
     create_buses(net, 2, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=[10.0, 0.4])
-    create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.05, max_p_mw=0.15, max_q_mvar=0.05,
-               min_q_mvar=-0.05)
+    create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.05, max_p_mw=0.15, max_q_mvar=0.05, min_q_mvar=-0.05)
     create_ext_grid(net, 0)
     create_load(net, 1, p_mw=0.02, controllable=False)
     create_lines(
@@ -99,8 +98,7 @@ def test_get_costs():
     # create net
     net = pandapowerNet(name="test_get_costs")
     create_buses(net, 2, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=[10.0, 0.4])
-    create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.05, max_p_mw=0.15, max_q_mvar=0.05,
-               min_q_mvar=-0.05)
+    create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.05, max_p_mw=0.15, max_q_mvar=0.05, min_q_mvar=-0.05)
     create_ext_grid(net, 0)
     create_load(net, 1, p_mw=0.02, controllable=False)
     create_lines(
@@ -134,8 +132,7 @@ def test_cost_piecewise_linear_sgen():
     # create net
     net = pandapowerNet(name="test_cost_piecewise_linear_sgen")
     create_buses(net, 2, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=[10.0, 0.4])
-    create_sgen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.05, max_p_mw=0.15, max_q_mvar=0.05,
-                min_q_mvar=-0.05)
+    create_sgen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.05, max_p_mw=0.15, max_q_mvar=0.05, min_q_mvar=-0.05)
     create_ext_grid(net, 0)
     create_load(net, 1, p_mw=0.02, controllable=False)
     create_lines(
@@ -168,8 +165,7 @@ def test_cost_piecewise_linear_load():
     # create net
     net = pandapowerNet(name="test_cost_piecewise_linear_load")
     create_buses(net, 2, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=[10.0, 0.4])
-    create_load(net, 1, p_mw=0.1, controllable=True, max_p_mw=0.15, min_p_mw=0.050, max_q_mvar=0,
-                min_q_mvar=0)
+    create_load(net, 1, p_mw=0.1, controllable=True, max_p_mw=0.15, min_p_mw=0.050, max_q_mvar=0, min_q_mvar=0)
     create_ext_grid(net, 0)
     create_lines(
         net,
@@ -200,8 +196,7 @@ def test_cost_piecewise_linear_sgen_uneven_slopes():
     # create net
     net = pandapowerNet(name="test_cost_piecewise_linear_sgen_uneven_slopes")
     create_buses(net, 2, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=[10.0, 0.4])
-    create_sgen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.05, max_p_mw=0.15, max_q_mvar=0.05,
-                min_q_mvar=-0.05)
+    create_sgen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.05, max_p_mw=0.15, max_q_mvar=0.05, min_q_mvar=-0.05)
     create_ext_grid(net, 0)
     create_load(net, 1, p_mw=0.02, controllable=False)
     create_lines(
@@ -267,8 +262,7 @@ def test_cost_piecewise_linear_sgen_very_unsteady_slopes():
     # create net
     net = pandapowerNet(name="test_cost_piecewise_linear_sgen_very_unsteady_slopes")
     create_buses(net, 2, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=[10.0, 0.4])
-    create_sgen(net, 1, p_mw=0.10, controllable=True, min_p_mw=0, max_p_mw=1.50,
-                max_q_mvar=0.05, min_q_mvar=-0.05)
+    create_sgen(net, 1, p_mw=0.10, controllable=True, min_p_mw=0, max_p_mw=1.50, max_q_mvar=0.05, min_q_mvar=-0.05)
     create_ext_grid(net, 0)
     create_load(net, 1, p_mw=0.02, controllable=False)
     create_lines(
