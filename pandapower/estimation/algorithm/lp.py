@@ -9,14 +9,15 @@ from scipy.sparse import hstack
 # Otherwise, load the scipy linprog
 try:
     from ortools.linear_solver import pywraplp
+
     ortools_available = True
 except ImportError:
     ortools_available = False
 import warnings
 
-from pandapower.estimation.ppc_conversion import ExtendedPPCI
 from pandapower.estimation.algorithm.base import BaseAlgorithm
 from pandapower.estimation.algorithm.matrix_base import BaseAlgebra
+from pandapower.estimation.ppc_conversion import ExtendedPPCI
 
 
 class LPAlgorithm(BaseAlgorithm):
@@ -27,10 +28,10 @@ class LPAlgorithm(BaseAlgorithm):
         # matrix calculation object
         sem = BaseAlgebra(eppci)
 
-        current_error, cur_it = 100., 0
+        current_error, cur_it = 100.0, 0
         E = eppci.E
         while current_error > self.tolerance and cur_it < self.max_iterations:
-            self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
+            self.logger.debug(f"Starting iteration {1 + cur_it:d}")
             try:
                 # residual r
                 r = sem.create_rx(E)
@@ -47,10 +48,11 @@ class LPAlgorithm(BaseAlgorithm):
                 # prepare next iteration
                 cur_it += 1
                 current_error = np.max(np.abs(d_E))
-                self.logger.debug("Current error: {:.7f}".format(current_error))
+                self.logger.debug(f"Current error: {current_error:.7f}")
             except np.linalg.LinAlgError:  # pragma: no cover
-                self.logger.error("A problem appeared while using the linear algebra methods."
-                                  "Check and change the measurement set.")
+                self.logger.error(
+                    "A problem appeared while using the linear algebra methods.Check and change the measurement set."
+                )
                 return False
 
         # check if the estimation is successfull
@@ -59,7 +61,6 @@ class LPAlgorithm(BaseAlgorithm):
 
     @staticmethod
     def _solve_lp(H, x, r, with_ortools):
-
         """Function to choose the best option based on the installed libraries to solve linear programming.
 
         Performance comparison(601 bus system/1204 random measurements):
@@ -83,19 +84,18 @@ class LPAlgorithm(BaseAlgorithm):
 
     @staticmethod
     def _solve_scipy(c_T, A, r, n):
-
         """The use of linprog function from the scipy library."""
 
         with warnings.catch_warnings():
             warnings.simplefilter("ignore")
-            res = linprog(c_T.ravel(), A_eq=A, b_eq=r,
-                          method="highs", options={'tol': 1e-5, 'disp': False, 'maxiter': 20000})
+            res = linprog(
+                c_T.ravel(), A_eq=A, b_eq=r, method="highs", options={"tol": 1e-5, "disp": False, "maxiter": 20000}
+            )
         if res.success:
-            d_x = np.array(res['x'][:n]).ravel() - np.array(res['x'][n:2 * n]).ravel()
+            d_x = np.array(res["x"][:n]).ravel() - np.array(res["x"][n : 2 * n]).ravel()
             return d_x
         else:  # pragma: no cover
             raise np.linalg.LinAlgError
-
 
     @staticmethod
     def _solve_or_tools(c_T, A, r, n_E):
@@ -104,14 +104,12 @@ class LPAlgorithm(BaseAlgorithm):
         error_margin = 1e-10
 
         #'GLOP' fails with ortools version > 9.4.1874
-        solver = pywraplp.Solver.CreateSolver('SCIP')
-
+        solver = pywraplp.Solver.CreateSolver("SCIP")
 
         # Create the states...
         x = []
         for counter in range(len(c_T)):
-            x.append(solver.NumVar(0, solver.infinity(), 'x_' + str(counter)))
-
+            x.append(solver.NumVar(0, solver.infinity(), "x_" + str(counter)))
 
         # # Give the equality constraints...
         # for row_counter, row in enumerate(A):
@@ -128,23 +126,18 @@ class LPAlgorithm(BaseAlgorithm):
             vals = A.data[start:end]  # entsprechende Werte
 
             # baue OR-Tools Ausdruck nur aus den (j, val)-Paaren mit |val|>error_margin
-            expr = solver.Sum(
-                vals[k] * x[cols[k]]
-                for k in range(len(vals))
-                if abs(vals[k]) > error_margin
-            )
+            expr = solver.Sum(vals[k] * x[cols[k]] for k in range(len(vals)) if abs(vals[k]) > error_margin)
             solver.Add(expr == r[i])
 
         # What to optimize?
         to_minimize = 0
         for counter, coef in enumerate(c_T):
-            to_minimize = to_minimize + coef*x[counter]
+            to_minimize = to_minimize + coef * x[counter]
 
         solver.Minimize(to_minimize)
 
         # Solve the optimization problem
         status = solver.Solve()
-
 
         d_x = []
         if status == pywraplp.Solver.OPTIMAL or status == solver.FEASIBLE:
@@ -154,9 +147,7 @@ class LPAlgorithm(BaseAlgorithm):
 
             d_x = np.array(d_x)
             # return d_x[:n] - d_x[n:2*n]
-            return d_x[:n_E] - d_x[n_E:2*n_E]
+            return d_x[:n_E] - d_x[n_E : 2 * n_E]
         else:
             # No solution found...
             raise np.linalg.LinAlgError
-
-

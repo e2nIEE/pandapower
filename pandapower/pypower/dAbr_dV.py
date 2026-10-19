@@ -2,8 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""Partial derivatives of squared flow magnitudes w.r.t voltage.
-"""
+"""Partial derivatives of squared flow magnitudes w.r.t voltage."""
 
 from scipy.sparse import csr_matrix
 

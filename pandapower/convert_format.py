@@ -1,51 +1,56 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from collections import defaultdict
 import logging
+from collections import defaultdict
 
+import geojson
 import numpy as np
 import pandas as pd
-import geojson
 from packaging.version import Version
 
-from pandapower._version import __version__, __format_version__
 from pandapower import pandapowerNet
-from pandapower.control import TrafoController, BinarySearchControl, DroopControl
-from pandapower.create._utils import add_column_to_df
+from pandapower._version import __format_version__, __version__
+from pandapower.control import BinarySearchControl, DroopControl, TrafoController
 from pandapower.create import create_poly_cost
+from pandapower.create._utils import add_column_to_df
 from pandapower.create.trafo_characteristic_create import create_trafo_characteristic
 from pandapower.network_structure import get_structure_dict
-from pandapower.plotting.geo import convert_geodata_to_geojson, _is_valid_number
+from pandapower.plotting.geo import _is_valid_number, convert_geodata_to_geojson
 from pandapower.results import reset_results
 
 logger = logging.getLogger(__name__)
 
 
-def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=False,
-                   donot_open_newer=True):
+def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=False, donot_open_newer=True):
     """
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
     from pandapower.toolbox.data_modification import set_data_type_of_columns_to_default
-    if not isinstance(net.version, str) or not hasattr(net, 'format_version'):
+
+    if not isinstance(net.version, str) or not hasattr(net, "format_version"):
         # if net.format_version and net.version are integers, this network is very old and will
         # just pass the whole convert_format process.
         net.format_version = net.version
     net_format_version = Version(str(net.format_version))
-    if net_format_version > Version(str(net.version).split('.dev')[0]):
+    if net_format_version > Version(str(net.version).split(".dev")[0]):
         net.format_version = net.version
     if net_format_version > Version(__format_version__):
-        msg1 = (f"The network format version {net.format_version} is newer than the current "
-                f"pandapower version {__format_version__}. ")
+        msg1 = (
+            f"The network format version {net.format_version} is newer than the current "
+            f"pandapower version {__format_version__}. "
+        )
         if donot_open_newer:
-            msg = msg1 + ("Please update pandapower to the latest version (e.g. by using `pip "
-                          "install --upgrade pandapower`).")
+            msg = msg1 + (
+                "Please update pandapower to the latest version (e.g. by using `pip install --upgrade pandapower`)."
+            )
             raise ValueError(msg)
         else:
-            logger.warning(msg1 + "Some features may not work as expected. You should consider "
-                                  "updating pandapower to the latest version (e.g. by using `pip "
-                                  "install --upgrade pandapower`).")
+            logger.warning(
+                msg1 + "Some features may not work as expected. You should consider "
+                "updating pandapower to the latest version (e.g. by using `pip "
+                "install --upgrade pandapower`)."
+            )
     if isinstance(net.format_version, str) and Version(net.format_version) >= Version(__format_version__):
         return net
     _add_nominal_power(net)
@@ -99,7 +104,7 @@ def _drop_empty_if_not_required(net):
     """
     net_struct = get_structure_dict()
     tables_to_drop = []
-    exceptions = ["res_bus_sc"] # TODO: why?
+    exceptions = ["res_bus_sc"]  # TODO: why?
     for table_name, table in net.items():
         if isinstance(table, pd.DataFrame):
             if table_name.startswith("res_"):
@@ -121,52 +126,59 @@ def _drop_empty_if_not_required(net):
 def _convert_q_capability_characteristic(net: pandapowerNet):
     # rename the q_capability_curve_characteristic table to q_capability_characteristic if exists
     # this is necessary due to the fact that Excel sheet names have a limit of 31 characters
-    if 'q_capability_curve_characteristic' in net:
-        net['q_capability_characteristic'] = net.pop('q_capability_curve_characteristic')
+    if "q_capability_curve_characteristic" in net:
+        net["q_capability_characteristic"] = net.pop("q_capability_curve_characteristic")
 
 
 def _replace_invalid_data(net, elements_to_deserialize, drop_invalid_geodata):
-    for element in ['bus', 'bus_dc', 'line', 'line_dc']:
+    for element in ["bus", "bus_dc", "line", "line_dc"]:
         if not _check_elements_to_deserialize(element, elements_to_deserialize):
             continue
         try:
-            geo_df = net[element]['geo'].dropna().apply(geojson.loads)
+            geo_df = net[element]["geo"].dropna().apply(geojson.loads)
         except TypeError:
-            geo_df = net[element]['geo'].dropna()
+            geo_df = net[element]["geo"].dropna()
         except KeyError:
-            geo_df = {} # skip if no geo column exists
+            geo_df = {}  # skip if no geo column exists
         if element in ["bus", "bus_dc"]:
             for i, geo in geo_df.items():
-                coords = geo['coordinates']
+                coords = geo["coordinates"]
                 if not drop_invalid_geodata and ((not _is_valid_number(coords[0])) | (not _is_valid_number(coords[1]))):
-                    raise ValueError("There exists invalid bus geodata at index %s. Please clean up your data first or "
-                                     "set 'drop_invalid_geodata' to True" % i)
+                    raise ValueError(
+                        "There exists invalid bus geodata at index %s. Please clean up your data first or "
+                        "set 'drop_invalid_geodata' to True" % i
+                    )
                 elif (not _is_valid_number(coords[0])) | (not _is_valid_number(coords[1])):
                     net[element].loc[i, "geo"] = None
                     logger.warning("bus geodata at index %s is invalid and replaced by None" % i)
 
         else:
             for i, geo in geo_df.items():
-                for x, y in geo['coordinates']:
+                for x, y in geo["coordinates"]:
                     if not drop_invalid_geodata and ((not _is_valid_number(x)) | (not _is_valid_number(y))):
                         raise ValueError(
                             "There exists invalid line geodata at index %s. Please clean up your data first or "
-                            "set 'drop_invalid_geodata' to True" % i)
+                            "set 'drop_invalid_geodata' to True" % i
+                        )
                     elif (not _is_valid_number(x)) | (not _is_valid_number(y)):
-                        net[element].loc[i, 'geo'] = None
+                        net[element].loc[i, "geo"] = None
                         logger.warning("line geodata at index %s is invalid and replaced by None" % i)
                         break
 
+
 def _convert_geo_data(net, elements_to_deserialize=None, drop_invalid_geodata=True):
-    if ((_check_elements_to_deserialize('bus_geodata', elements_to_deserialize)
-         and _check_elements_to_deserialize('bus', elements_to_deserialize))
-        or (_check_elements_to_deserialize('line_geodata', elements_to_deserialize)
-            and _check_elements_to_deserialize('line', elements_to_deserialize))):
-        if hasattr(net, 'bus_geodata') or hasattr(net, 'line_geodata'):
+    if (
+        _check_elements_to_deserialize("bus_geodata", elements_to_deserialize)
+        and _check_elements_to_deserialize("bus", elements_to_deserialize)
+    ) or (
+        _check_elements_to_deserialize("line_geodata", elements_to_deserialize)
+        and _check_elements_to_deserialize("line", elements_to_deserialize)
+    ):
+        if hasattr(net, "bus_geodata") or hasattr(net, "line_geodata"):
             if Version(str(net.format_version)) < Version("1.6"):
-                if hasattr(net, 'bus_geodata'):
+                if hasattr(net, "bus_geodata"):
                     net.bus_geodata = pd.DataFrame.from_dict(net.bus_geodata)
-                if hasattr(net, 'line_geodata'):
+                if hasattr(net, "line_geodata"):
                     net.line_geodata = pd.DataFrame.from_dict(net.line_geodata)
             convert_geodata_to_geojson(net)
 
@@ -177,8 +189,10 @@ def _restore_index_names(net):
     """
     if "index_names" in net:
         if not isinstance(net["index_names"], dict):
-            raise ValueError("To restore the index names of the dataframes, a dict including this "
-                             f"information is expected, not {type(net['index_names'])}")
+            raise ValueError(
+                "To restore the index names of the dataframes, a dict including this "
+                f"information is expected, not {type(net['index_names'])}"
+            )
         for key, index_name in net["index_names"].items():
             if key in net:
                 net[key].index.name = index_name
@@ -197,8 +211,8 @@ def correct_dtypes(net, error):
                 if key not in structure_dict:
                     # skip unknown/custom dataframes
                     continue
-                required_dtype = structure_dict[key].get(col, 'Unknown')
-                if required_dtype == 'Unknown':
+                required_dtype = structure_dict[key].get(col, "Unknown")
+                if required_dtype == "Unknown":
                     # skip custom columns
                     continue
                 if table[col].dtype != required_dtype:
@@ -227,7 +241,6 @@ def _convert_trafo_controller_parameter_names(net):
     for ctrl_idx in net.controller.index:
         controller = net.controller.at[ctrl_idx, "object"]
         if issubclass(type(controller), TrafoController):
-
             if "tid" in controller.__dict__:
                 controller.__dict__["element_index"] = controller.__dict__.pop("tid")
             elif "transformer_index" in controller.__dict__:
@@ -245,22 +258,22 @@ def _convert_trafo_controller_parameter_names(net):
 
 
 def _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize):
-    if _check_elements_to_deserialize('measurement', elements_to_deserialize):
+    if _check_elements_to_deserialize("measurement", elements_to_deserialize):
         bus_pq_meas_mask = net.measurement.measurement_type.isin(["p", "q"]) & (net.measurement.element_type == "bus")
         net.measurement.loc[bus_pq_meas_mask, "value"] *= -1
 
 
 def _convert_to_generation_system(net, elements_to_deserialize):
     update_elements = []
-    if _check_elements_to_deserialize('sgen', elements_to_deserialize):
+    if _check_elements_to_deserialize("sgen", elements_to_deserialize):
         net.sgen.p_kw *= -1
         net.sgen.q_kvar *= -1
-        update_elements += ['sgen']
-    if _check_elements_to_deserialize('gen', elements_to_deserialize):
+        update_elements += ["sgen"]
+    if _check_elements_to_deserialize("gen", elements_to_deserialize):
         net.gen.p_kw *= -1
-        update_elements += ['gen']
-    if _check_elements_to_deserialize('ext_grid', elements_to_deserialize):
-        update_elements += ['ext_grid']
+        update_elements += ["gen"]
+    if _check_elements_to_deserialize("ext_grid", elements_to_deserialize):
+        update_elements += ["ext_grid"]
     for element in update_elements:
         for suffix in ["p_kw", "q_kvar"]:
             constraints = {}
@@ -288,8 +301,14 @@ def _convert_costs(net):
                 cp0 = values[2]
                 cp1 = values[1]
                 cp2 = values[0]
-            create_poly_cost(net, et=cost.element_type, element=cost.element, cp0_eur=cp0,
-                             cp1_eur_per_mw=cp1 * 1e3, cp2_eur_per_mw2=cp2 * 1e6)
+            create_poly_cost(
+                net,
+                et=cost.element_type,
+                element=cost.element,
+                cp0_eur=cp0,
+                cp1_eur_per_mw=cp1 * 1e3,
+                cp2_eur_per_mw2=cp2 * 1e6,
+            )
         del net.polynomial_cost
     if "piecewise_linear_cost" in net:
         if len(net.piecewise_linear_cost) > 0:
@@ -307,7 +326,7 @@ def _add_nominal_power(net):
 
 
 def _add_missing_tables(net):
-    net_new = pandapowerNet(name='missing_tables_net')
+    net_new = pandapowerNet(name="missing_tables_net")
     net_new.name = ""  # name is set to avoid warnings, then unset here to avoid adding it to any network
     for key in net_new:
         if key.startswith("_empty_res") or key not in net:
@@ -315,62 +334,60 @@ def _add_missing_tables(net):
 
 
 def _create_seperate_cost_tables(net, elements_to_deserialize):
-    if _check_elements_to_deserialize('gen', elements_to_deserialize) and "cost_per_kw" in net.gen:
+    if _check_elements_to_deserialize("gen", elements_to_deserialize) and "cost_per_kw" in net.gen:
         for index, cost in net.gen.cost_per_kw.items():
             if not np.isnan(cost):
                 create_poly_cost(net, index, "gen", cp1_eur_per_mw=cost * 1e3)
 
-    if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
-            "cost_per_kw" in net.sgen:
+    if _check_elements_to_deserialize("sgen", elements_to_deserialize) and "cost_per_kw" in net.sgen:
         for index, cost in net.sgen.cost_per_kw.items():
             if not np.isnan(cost):
                 create_poly_cost(net, index, "sgen", cp1_eur_per_mw=cost * 1e3)
 
-    if _check_elements_to_deserialize('ext_grid', elements_to_deserialize) and \
-            "cost_per_kw" in net.ext_grid:
+    if _check_elements_to_deserialize("ext_grid", elements_to_deserialize) and "cost_per_kw" in net.ext_grid:
         for index, cost in net.ext_grid.cost_per_kw.items():
             if not np.isnan(cost):
                 create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=cost * 1e3)
 
-    if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
-            "cost_per_kvar" in net.gen:
+    if _check_elements_to_deserialize("gen", elements_to_deserialize) and "cost_per_kvar" in net.gen:
         for index, cost in net.gen.cost_per_kvar.items():
             if not np.isnan(cost):
-                create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0,
-                                 cq1_eur_per_mvar=cost * 1e3)
+                create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost * 1e3)
 
-    if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
-            "cost_per_kvar" in net.sgen:
+    if _check_elements_to_deserialize("sgen", elements_to_deserialize) and "cost_per_kvar" in net.sgen:
         for index, cost in net.sgen.cost_per_kvar.items():
             if not np.isnan(cost):
-                create_poly_cost(net, index, "sgen", cp1_eur_per_mw=0,
-                                 cq1_eur_per_mvar=cost * 1e3)
+                create_poly_cost(net, index, "sgen", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost * 1e3)
 
-    if _check_elements_to_deserialize('ext_grid', elements_to_deserialize) and \
-            "cost_per_kvar" in net.ext_grid:
+    if _check_elements_to_deserialize("ext_grid", elements_to_deserialize) and "cost_per_kvar" in net.ext_grid:
         for index, cost in net.ext_grid.cost_per_kvar.items():
             if not np.isnan(cost):
-                create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0,
-                                 cq1_eur_per_mvar=cost * 1e3)
+                create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost * 1e3)
 
 
 def _rename_columns(net, elements_to_deserialize):
-    if _check_elements_to_deserialize('line', elements_to_deserialize):
-        net.line = net.line.rename(columns={'imax_ka': 'max_i_ka'})
-    if _check_elements_to_deserialize('load', elements_to_deserialize) and \
-        ('const_z_percent' in net.load.columns and 'const_i_percent' in net.load.columns) :
-            net.load = net.load.rename(columns={'const_z_percent': 'const_z_p_percent',
-                                                'const_i_percent': 'const_i_p_percent'})
-            net.load.insert(net.load.columns.get_loc('const_i_p_percent') + 1, 'const_i_q_percent', net.load.const_i_p_percent)
-            net.load.insert(net.load.columns.get_loc('const_z_p_percent') + 1, 'const_z_q_percent', net.load.const_z_p_percent)
-    if _check_elements_to_deserialize('gen', elements_to_deserialize):
+    if _check_elements_to_deserialize("line", elements_to_deserialize):
+        net.line = net.line.rename(columns={"imax_ka": "max_i_ka"})
+    if _check_elements_to_deserialize("load", elements_to_deserialize) and (
+        "const_z_percent" in net.load.columns and "const_i_percent" in net.load.columns
+    ):
+        net.load = net.load.rename(
+            columns={"const_z_percent": "const_z_p_percent", "const_i_percent": "const_i_p_percent"}
+        )
+        net.load.insert(
+            net.load.columns.get_loc("const_i_p_percent") + 1, "const_i_q_percent", net.load.const_i_p_percent
+        )
+        net.load.insert(
+            net.load.columns.get_loc("const_z_p_percent") + 1, "const_z_q_percent", net.load.const_z_p_percent
+        )
+    if _check_elements_to_deserialize("gen", elements_to_deserialize):
         net.gen = net.gen.rename(columns={"qmin_mvar": "min_q_mvar", "qmax_mvar": "max_q_mvar"})
     for typ, data in net.std_types["line"].items():
         if "imax_ka" in data:
             net.std_types["line"][typ]["max_i_ka"] = net.std_types["line"][typ].pop("imax_ka")
     _update_trafo_parameter_names(net, elements_to_deserialize)
     # initialize measurement dataframe
-    if _check_elements_to_deserialize('measurement', elements_to_deserialize):
+    if _check_elements_to_deserialize("measurement", elements_to_deserialize):
         if "measurement" in net and "type" in net.measurement and "measurement":
             if net.measurement.empty:
                 ms = "measurement"
@@ -379,42 +396,47 @@ def _rename_columns(net, elements_to_deserialize):
             else:
                 net.measurement["side"] = None
                 bus_measurements = net.measurement.element_type == "bus"
-                net.measurement.loc[bus_measurements, "element"] = \
-                    net.measurement.loc[bus_measurements, "bus"].values
-                net.measurement.loc[~bus_measurements, "side"] = \
-                    net.measurement.loc[~bus_measurements, "bus"].values
-                net.measurement = net.measurement.rename(columns={'type': 'measurement_type'})
+                net.measurement.loc[bus_measurements, "element"] = net.measurement.loc[bus_measurements, "bus"].values
+                net.measurement.loc[~bus_measurements, "side"] = net.measurement.loc[~bus_measurements, "bus"].values
+                net.measurement = net.measurement.rename(columns={"type": "measurement_type"})
                 net.measurement = net.measurement.drop(["bus"], axis=1)
-    for ele in ['gen', 'sgen']:
-        if (_check_elements_to_deserialize(ele, elements_to_deserialize) and
-                'id_q_capability_curve_characteristic' in net[ele]):
+    for ele in ["gen", "sgen"]:
+        if (
+            _check_elements_to_deserialize(ele, elements_to_deserialize)
+            and "id_q_capability_curve_characteristic" in net[ele]
+        ):
             net[ele] = net[ele].rename(
-                columns={'id_q_capability_curve_characteristic': 'id_q_capability_characteristic'})
-    if _check_elements_to_deserialize('controller', elements_to_deserialize):
+                columns={"id_q_capability_curve_characteristic": "id_q_capability_characteristic"}
+            )
+    if _check_elements_to_deserialize("controller", elements_to_deserialize):
         if "controller" in net:
             net["controller"] = net["controller"].rename(columns={"controller": "object"})
 
-    if 'res_line_3ph' in net and _check_elements_to_deserialize('res_line_3ph', elements_to_deserialize):
+    if "res_line_3ph" in net and _check_elements_to_deserialize("res_line_3ph", elements_to_deserialize):
         if "p_a_l_mw" in net.res_line_3ph:
-            net['res_line_3ph'] = net['res_line_3ph'].rename(columns={
-                'p_a_l_mw': 'pl_a_mw',
-                'p_b_l_mw': 'pl_b_mw',
-                'p_c_l_mw': 'pl_c_mw',
-                'q_a_l_mvar': 'ql_a_mvar',
-                'q_b_l_mvar': 'ql_b_mvar',
-                'q_c_l_mvar': 'ql_c_mvar',
-            })
+            net["res_line_3ph"] = net["res_line_3ph"].rename(
+                columns={
+                    "p_a_l_mw": "pl_a_mw",
+                    "p_b_l_mw": "pl_b_mw",
+                    "p_c_l_mw": "pl_c_mw",
+                    "q_a_l_mvar": "ql_a_mvar",
+                    "q_b_l_mvar": "ql_b_mvar",
+                    "q_c_l_mvar": "ql_c_mvar",
+                }
+            )
 
-    if 'res_trafo_3ph' in net and _check_elements_to_deserialize('res_trafo_3ph', elements_to_deserialize):
+    if "res_trafo_3ph" in net and _check_elements_to_deserialize("res_trafo_3ph", elements_to_deserialize):
         if "p_a_l_mw" in net.res_trafo_3ph:
-            net['res_trafo_3ph'] = net['res_trafo_3ph'].rename(columns={
-                'p_a_l_mw': 'pl_a_mw',
-                'p_b_l_mw': 'pl_b_mw',
-                'p_c_l_mw': 'pl_c_mw',
-                'q_a_l_mvar': 'ql_a_mvar',
-                'q_b_l_mvar': 'ql_b_mvar',
-                'q_c_l_mvar': 'ql_c_mvar',
-            })
+            net["res_trafo_3ph"] = net["res_trafo_3ph"].rename(
+                columns={
+                    "p_a_l_mw": "pl_a_mw",
+                    "p_b_l_mw": "pl_b_mw",
+                    "p_c_l_mw": "pl_c_mw",
+                    "q_a_l_mvar": "ql_a_mvar",
+                    "q_b_l_mvar": "ql_b_mvar",
+                    "q_c_l_mvar": "ql_c_mvar",
+                }
+            )
 
     if "options" in net and "recycle" in net["options"]:
         if "Ybus" in net["options"]["recycle"]:
@@ -433,179 +455,182 @@ def _rename_columns(net, elements_to_deserialize):
 
 def _add_missing_columns(net, elements_to_deserialize):
     update_elements = []
-    if _check_elements_to_deserialize('trafo', elements_to_deserialize):
-        update_elements += ['trafo']
-    if _check_elements_to_deserialize('line', elements_to_deserialize):
-        update_elements += ['line']
+    if _check_elements_to_deserialize("trafo", elements_to_deserialize):
+        update_elements += ["trafo"]
+    if _check_elements_to_deserialize("line", elements_to_deserialize):
+        update_elements += ["line"]
     for element in update_elements:
         if "df" not in net[element]:
             net[element]["df"] = 1.0
 
-    if _check_elements_to_deserialize('bus', elements_to_deserialize) \
-            and _check_elements_to_deserialize('bus_geodata', elements_to_deserialize) \
-            and "geo" not in net.bus:
+    if (
+        _check_elements_to_deserialize("bus", elements_to_deserialize)
+        and _check_elements_to_deserialize("bus_geodata", elements_to_deserialize)
+        and "geo" not in net.bus
+    ):
         net.bus["geo"] = None
-    if _check_elements_to_deserialize('trafo3w', elements_to_deserialize) and \
-            "tap_at_star_point" not in net.trafo3w:
+    if _check_elements_to_deserialize("trafo3w", elements_to_deserialize) and "tap_at_star_point" not in net.trafo3w:
         net.trafo3w["tap_at_star_point"] = False
-    if _check_elements_to_deserialize('trafo3w', elements_to_deserialize) and \
-            "tap_step_degree" not in net.trafo3w:
+    if _check_elements_to_deserialize("trafo3w", elements_to_deserialize) and "tap_step_degree" not in net.trafo3w:
         net.trafo3w["tap_step_degree"] = 0
-    if _check_elements_to_deserialize('load', elements_to_deserialize) and \
-            "const_z_p_percent" not in net.load or "const_i_p_percent" not in net.load and \
-            "const_z_q_percent" not in net.load or "const_i_q_percent" not in net.load:
+    if (
+        _check_elements_to_deserialize("load", elements_to_deserialize)
+        and "const_z_p_percent" not in net.load
+        or "const_i_p_percent" not in net.load
+        and "const_z_q_percent" not in net.load
+        or "const_i_q_percent" not in net.load
+    ):
         net.load["const_z_p_percent"] = np.zeros(net.load.shape[0])
         net.load["const_i_p_percent"] = np.zeros(net.load.shape[0])
         net.load["const_z_q_percent"] = np.zeros(net.load.shape[0])
         net.load["const_i_q_percent"] = np.zeros(net.load.shape[0])
 
-    if _check_elements_to_deserialize('shunt', elements_to_deserialize) and \
-            "vn_kv" not in net["shunt"]:
+    if _check_elements_to_deserialize("shunt", elements_to_deserialize) and "vn_kv" not in net["shunt"]:
         net.shunt["vn_kv"] = net.bus.vn_kv.loc[net.shunt.bus.values].values
-    if _check_elements_to_deserialize('shunt', elements_to_deserialize) and \
-            "step" not in net["shunt"]:
+    if _check_elements_to_deserialize("shunt", elements_to_deserialize) and "step" not in net["shunt"]:
         net.shunt["step"] = 1
-    if _check_elements_to_deserialize('shunt', elements_to_deserialize) and \
-            "max_step" not in net["shunt"]:
+    if _check_elements_to_deserialize("shunt", elements_to_deserialize) and "max_step" not in net["shunt"]:
         net.shunt["max_step"] = 1
-    if _check_elements_to_deserialize('shunt', elements_to_deserialize) and \
-            "id_characteristic_table" not in net["shunt"]:
-        net.shunt["id_characteristic_table"] = pd.Series(dtype='Int64')
-    if _check_elements_to_deserialize('shunt', elements_to_deserialize) and \
-            "step_dependency_table" not in net["shunt"]:
+    if (
+        _check_elements_to_deserialize("shunt", elements_to_deserialize)
+        and "id_characteristic_table" not in net["shunt"]
+    ):
+        net.shunt["id_characteristic_table"] = pd.Series(dtype="Int64")
+    if _check_elements_to_deserialize("shunt", elements_to_deserialize) and "step_dependency_table" not in net["shunt"]:
         net.shunt["step_dependency_table"] = False
-    if _check_elements_to_deserialize('trafo3w', elements_to_deserialize) and \
-            "std_type" not in net.trafo3w:
+    if _check_elements_to_deserialize("trafo3w", elements_to_deserialize) and "std_type" not in net.trafo3w:
         net.trafo3w["std_type"] = None
 
-    if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
-            "current_source" not in net.sgen:
-        net.sgen["current_source"] = net.sgen["type"].apply(
-            func=lambda x: False if x == "motor" else True)
-    if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
-            "id_q_capability_characteristic" not in net.sgen:
-        net.sgen["id_q_capability_characteristic"] = pd.Series(dtype='Int64')
-    if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
-            "reactive_capability_curve" not in net.sgen:
+    if _check_elements_to_deserialize("sgen", elements_to_deserialize) and "current_source" not in net.sgen:
+        net.sgen["current_source"] = net.sgen["type"].apply(func=lambda x: False if x == "motor" else True)
+    if (
+        _check_elements_to_deserialize("sgen", elements_to_deserialize)
+        and "id_q_capability_characteristic" not in net.sgen
+    ):
+        net.sgen["id_q_capability_characteristic"] = pd.Series(dtype="Int64")
+    if _check_elements_to_deserialize("sgen", elements_to_deserialize) and "reactive_capability_curve" not in net.sgen:
         net.sgen["reactive_capability_curve"] = False
-    if _check_elements_to_deserialize('sgen', elements_to_deserialize) and \
-            "curve_style" not in net.sgen:
+    if _check_elements_to_deserialize("sgen", elements_to_deserialize) and "curve_style" not in net.sgen:
         net.sgen["curve_style"] = None
 
-    if _check_elements_to_deserialize('line', elements_to_deserialize):
+    if _check_elements_to_deserialize("line", elements_to_deserialize):
         if "g_us_per_km" not in net.line:
-            net.line["g_us_per_km"] = 0.
-        if _check_elements_to_deserialize('line_geodata', elements_to_deserialize) and "geo" not in net.line:
+            net.line["g_us_per_km"] = 0.0
+        if _check_elements_to_deserialize("line_geodata", elements_to_deserialize) and "geo" not in net.line:
             net.line["geo"] = None
 
-    if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
-            "slack" not in net.gen:
+    if _check_elements_to_deserialize("gen", elements_to_deserialize) and "slack" not in net.gen:
         net.gen["slack"] = False
-    if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
-            "id_q_capability_characteristic" not in net.gen:
-        net.gen["id_q_capability_characteristic"] = pd.Series(dtype='Int64')
-    if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
-            "reactive_capability_curve" not in net.gen:
+    if (
+        _check_elements_to_deserialize("gen", elements_to_deserialize)
+        and "id_q_capability_characteristic" not in net.gen
+    ):
+        net.gen["id_q_capability_characteristic"] = pd.Series(dtype="Int64")
+    if _check_elements_to_deserialize("gen", elements_to_deserialize) and "reactive_capability_curve" not in net.gen:
         net.gen["reactive_capability_curve"] = False
-    if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
-            "curve_style" not in net.gen:
+    if _check_elements_to_deserialize("gen", elements_to_deserialize) and "curve_style" not in net.gen:
         net.gen["curve_style"] = None
 
-    if _check_elements_to_deserialize('trafo', elements_to_deserialize) and \
-            "tap_changer_type" not in net.trafo:
+    if _check_elements_to_deserialize("trafo", elements_to_deserialize) and "tap_changer_type" not in net.trafo:
         net.trafo["tap_changer_type"] = None
 
     # asymmetric impedance
-    if _check_elements_to_deserialize('impedance', elements_to_deserialize):
+    if _check_elements_to_deserialize("impedance", elements_to_deserialize):
         if "r_pu" in net.impedance:
             net.impedance["rft_pu"] = net.impedance["rtf_pu"] = net.impedance["r_pu"]
             net.impedance["xft_pu"] = net.impedance["xtf_pu"] = net.impedance["x_pu"]
         if "gf_pu" not in net.impedance:
-            net.impedance["gf_pu"] = 0.
-            net.impedance["gt_pu"] = 0.
-            net.impedance["bf_pu"] = 0.
-            net.impedance["bt_pu"] = 0.
+            net.impedance["gf_pu"] = 0.0
+            net.impedance["gt_pu"] = 0.0
+            net.impedance["bf_pu"] = 0.0
+            net.impedance["bt_pu"] = 0.0
 
     # Update the switch table with 'z_ohm'
-    if _check_elements_to_deserialize('switch', elements_to_deserialize) and \
-            'z_ohm' not in net.switch:
-        net.switch['z_ohm'] = 0
+    if _check_elements_to_deserialize("switch", elements_to_deserialize) and "z_ohm" not in net.switch:
+        net.switch["z_ohm"] = 0
 
     # Update the switch table with 'in_ka'
-    if _check_elements_to_deserialize('switch', elements_to_deserialize) and \
-            'in_ka' not in net.switch:
-        net.switch['in_ka'] = np.nan
+    if _check_elements_to_deserialize("switch", elements_to_deserialize) and "in_ka" not in net.switch:
+        net.switch["in_ka"] = np.nan
 
     # Update the switch table with 'in_ka'
-    if ('res_switch' in net and _check_elements_to_deserialize('res_switch', elements_to_deserialize) and
-            'p_from_mw' not in net.res_switch):
-            net.res_switch['p_from_mw'] = np.nan
-            net.res_switch['q_from_mvar'] = np.nan
-            net.res_switch['p_to_mw'] = np.nan
-            net.res_switch['q_to_mvar'] = np.nan
+    if (
+        "res_switch" in net
+        and _check_elements_to_deserialize("res_switch", elements_to_deserialize)
+        and "p_from_mw" not in net.res_switch
+    ):
+        net.res_switch["p_from_mw"] = np.nan
+        net.res_switch["q_from_mvar"] = np.nan
+        net.res_switch["p_to_mw"] = np.nan
+        net.res_switch["q_to_mvar"] = np.nan
 
     # Update the switch table with 'in_ka'
-    if ('res_switch_est' in net and _check_elements_to_deserialize('res_switch_est', elements_to_deserialize) and
-            'p_from_mw' not in net.res_switch_est):
-        net.res_switch_est['p_from_mw'] = np.nan
-        net.res_switch_est['q_from_mvar'] = np.nan
-        net.res_switch_est['p_to_mw'] = np.nan
-        net.res_switch_est['q_to_mvar'] = np.nan
+    if (
+        "res_switch_est" in net
+        and _check_elements_to_deserialize("res_switch_est", elements_to_deserialize)
+        and "p_from_mw" not in net.res_switch_est
+    ):
+        net.res_switch_est["p_from_mw"] = np.nan
+        net.res_switch_est["q_from_mvar"] = np.nan
+        net.res_switch_est["p_to_mw"] = np.nan
+        net.res_switch_est["q_to_mvar"] = np.nan
 
-    if _check_elements_to_deserialize('measurement', elements_to_deserialize) and \
-            "name" not in net.measurement:
+    if _check_elements_to_deserialize("measurement", elements_to_deserialize) and "name" not in net.measurement:
         net.measurement.insert(0, "name", None)
 
-    if _check_elements_to_deserialize('controller', elements_to_deserialize) and \
-            "initial_run" not in net.controller:
-        net.controller.insert(4, 'initial_run', False)
+    if _check_elements_to_deserialize("controller", elements_to_deserialize) and "initial_run" not in net.controller:
+        net.controller.insert(4, "initial_run", False)
         for _, ctrl in net.controller.iterrows():
-            if hasattr(ctrl['object'], 'initial_run'):
-                net.controller.at[ctrl.name, 'initial_run'] = ctrl['object'].initial_run
-            elif hasattr(ctrl['object'], 'initial_powerflow'):
-                net.controller.at[ctrl.name, 'initial_run'] = ctrl['object'].initial_powerflow
+            if hasattr(ctrl["object"], "initial_run"):
+                net.controller.at[ctrl.name, "initial_run"] = ctrl["object"].initial_run
+            elif hasattr(ctrl["object"], "initial_powerflow"):
+                net.controller.at[ctrl.name, "initial_run"] = ctrl["object"].initial_powerflow
             else:
-                net.controller.at[ctrl.name, 'initial_run'] = False
+                net.controller.at[ctrl.name, "initial_run"] = False
 
     # distributed slack
-    if _check_elements_to_deserialize('ext_grid', elements_to_deserialize) and \
-            "slack_weight" not in net.ext_grid:
-        net.ext_grid['slack_weight'] = 1.0
+    if _check_elements_to_deserialize("ext_grid", elements_to_deserialize) and "slack_weight" not in net.ext_grid:
+        net.ext_grid["slack_weight"] = 1.0
 
-    if _check_elements_to_deserialize('gen', elements_to_deserialize) and \
-            "slack_weight" not in net.gen:
-        net.gen['slack_weight'] = 0.0
+    if _check_elements_to_deserialize("gen", elements_to_deserialize) and "slack_weight" not in net.gen:
+        net.gen["slack_weight"] = 0.0
 
-    if _check_elements_to_deserialize('xward', elements_to_deserialize) and \
-            "slack_weight" not in net.xward:
-        net.xward['slack_weight'] = 0.0
+    if _check_elements_to_deserialize("xward", elements_to_deserialize) and "slack_weight" not in net.xward:
+        net.xward["slack_weight"] = 0.0
 
-    if ('res_line_3ph' in net and _check_elements_to_deserialize('res_line_3ph', elements_to_deserialize) and
-            "p_c_from_mw" not in net.res_line_3ph):
-            net.res_line_3ph['p_c_from_mw'] = np.nan
-            net.res_line_3ph['loading_a_percent'] = np.nan
-            net.res_line_3ph['loading_b_percent'] = np.nan
-            net.res_line_3ph['loading_c_percent'] = np.nan
+    if (
+        "res_line_3ph" in net
+        and _check_elements_to_deserialize("res_line_3ph", elements_to_deserialize)
+        and "p_c_from_mw" not in net.res_line_3ph
+    ):
+        net.res_line_3ph["p_c_from_mw"] = np.nan
+        net.res_line_3ph["loading_a_percent"] = np.nan
+        net.res_line_3ph["loading_b_percent"] = np.nan
+        net.res_line_3ph["loading_c_percent"] = np.nan
 
 
 def _update_trafo_type_parameter_names(net):
-    for element in ('trafo', 'trafo3w'):
+    for element in ("trafo", "trafo3w"):
         for type in net.std_types[element]:
-            keys = {col: _update_column(col) for col in net.std_types[element][type] if
-                    col.startswith("tp") or col.startswith("vsc")}
+            keys = {
+                col: _update_column(col)
+                for col in net.std_types[element][type]
+                if col.startswith("tp") or col.startswith("vsc")
+            }
             for old_key, new_key in keys.items():
                 net.std_types[element][type][new_key] = net.std_types[element][type].pop(old_key)
 
 
 def _update_trafo_parameter_names(net, elements_to_deserialize):
     update_data = []
-    if _check_elements_to_deserialize('trafo', elements_to_deserialize):
-        update_data += ['trafo']
-    if _check_elements_to_deserialize('trafo3w', elements_to_deserialize):
-        update_data += ['trafo3w']
+    if _check_elements_to_deserialize("trafo", elements_to_deserialize):
+        update_data += ["trafo"]
+    if _check_elements_to_deserialize("trafo3w", elements_to_deserialize):
+        update_data += ["trafo3w"]
     for element in update_data:
-        replace_cols = {col: _update_column(col) for col in net[element].columns if
-                        col.startswith("tp") or col.startswith("vsc")}
+        replace_cols = {
+            col: _update_column(col) for col in net[element].columns if col.startswith("tp") or col.startswith("vsc")
+        }
         net[element] = net[element].rename(columns=replace_cols)
     _update_trafo_type_parameter_names(net)
 
@@ -619,7 +644,7 @@ def _update_column(column):
 
 
 def _set_data_type_of_columns(net):
-    new_net = pandapowerNet(name='')
+    new_net = pandapowerNet(name="")
     for key, item in net.items():
         if isinstance(item, pd.DataFrame):
             for col in item.columns:
@@ -628,8 +653,7 @@ def _set_data_type_of_columns(net):
                 if key in new_net and col in new_net[key].columns:
                     if set(item.columns) == set(new_net[key]):
                         net[key] = net[key].reindex(new_net[key].columns, axis=1)
-                    net[key][col] = net[key][col].astype(new_net[key][col].dtype,
-                                                         errors="ignore")
+                    net[key][col] = net[key][col].astype(new_net[key][col].dtype, errors="ignore")
 
 
 def _convert_to_mw(net):
@@ -637,8 +661,11 @@ def _convert_to_mw(net):
     for element in net:
         if isinstance(net[element], pd.DataFrame):
             for old, new in replace:
-                diff = {column: column.replace(old, new) for column in net[element].columns if
-                        old in column and column != "pfe_kw"}
+                diff = {
+                    column: column.replace(old, new)
+                    for column in net[element].columns
+                    if old in column and column != "pfe_kw"
+                }
                 net[element] = net[element].rename(columns=diff)
                 if len(net[element]) == 0:
                     continue
@@ -662,9 +689,7 @@ def _update_object_attributes(obj):
         obj.__dict__["name"] = ""
 
     if isinstance(obj, TrafoController):
-        to_rename = {"u_set": "vm_set_pu",
-                    "u_lower": "vm_lower_pu",
-                    "u_upper": "vm_upper_pu"}
+        to_rename = {"u_set": "vm_set_pu", "u_lower": "vm_lower_pu", "u_upper": "vm_upper_pu"}
 
         for key, val in to_rename.items():
             if key in obj.__dict__:
@@ -674,15 +699,17 @@ def _update_object_attributes(obj):
             obj.__dict__["hunting_limit"] = None
     elif isinstance(obj, BinarySearchControl):
         if "output_adjustable" not in obj.__dict__:
-            obj.__dict__["output_adjustable"] = np.array([
-                False if not distribution else service for distribution, service in zip(
-                    obj.output_values_distribution, obj.output_element_in_service
-                )
-            ], dtype=bool)
+            obj.__dict__["output_adjustable"] = np.array(
+                [
+                    False if not distribution else service
+                    for distribution, service in zip(obj.output_values_distribution, obj.output_element_in_service)
+                ],
+                dtype=bool,
+            )
         if "output_max_q_mvar" not in obj.__dict__:
-            obj.__dict__["output_max_q_mvar"] = np.array([np.inf]*len(obj.output_element_index), dtype=np.float64)
+            obj.__dict__["output_max_q_mvar"] = np.array([np.inf] * len(obj.output_element_index), dtype=np.float64)
         if "output_min_q_mvar" not in obj.__dict__:
-            obj.__dict__["output_min_q_mvar"] = np.array([-np.inf]*len(obj.output_element_index), dtype=np.float64)
+            obj.__dict__["output_min_q_mvar"] = np.array([-np.inf] * len(obj.output_element_index), dtype=np.float64)
         if "input_sign" not in obj.__dict__:
             n = len(obj.input_element_index)
             obj.__dict__["input_sign"] = [1] * n
@@ -700,9 +727,8 @@ def _convert_objects(net, elements_to_deserialize):
     TrafoController and Station Controller.
     Should be expanded for other objects if necessary.
     """
-    _check_elements_to_deserialize('controller', elements_to_deserialize)
-    if _check_elements_to_deserialize('controller', elements_to_deserialize) and \
-            "controller" in net:
+    _check_elements_to_deserialize("controller", elements_to_deserialize)
+    if _check_elements_to_deserialize("controller", elements_to_deserialize) and "controller" in net:
         for obj in net["controller"].object.values:
             _update_object_attributes(obj)
 
@@ -723,8 +749,11 @@ def _add_missing_std_type_tables(net):
 
 def _update_characteristics(net, elements_to_deserialize):
     # new interpolator type has been added to SplineCharacteristic - "pchip", and the attributes have been refactored
-    if not _check_elements_to_deserialize("characteristic", elements_to_deserialize) or \
-            "characteristic" not in net or net.characteristic.empty:
+    if (
+        not _check_elements_to_deserialize("characteristic", elements_to_deserialize)
+        or "characteristic" not in net
+        or net.characteristic.empty
+    ):
         return
     for c in net.characteristic.object.values:
         # meta check for old SplineCharacteristic (cannot import it here to use isinstance):
@@ -734,10 +763,20 @@ def _update_characteristics(net, elements_to_deserialize):
         c.kwargs = {"kind": c.__dict__.pop("kind"), "bounds_error": False, "fill_value": c.__dict__.pop("fill_value")}
 
     # convert characteristics to tap_dependency_table
-    characteristic_cols = [("trafo", ["vk_percent_characteristic", "vkr_percent_characteristic"]),
-                           ("trafo3w", ["vk_hv_percent_characteristic", "vkr_hv_percent_characteristic",
-                                        "vk_mv_percent_characteristic", "vkr_mv_percent_characteristic",
-                                        "vk_lv_percent_characteristic", "vkr_lv_percent_characteristic"])]
+    characteristic_cols = [
+        ("trafo", ["vk_percent_characteristic", "vkr_percent_characteristic"]),
+        (
+            "trafo3w",
+            [
+                "vk_hv_percent_characteristic",
+                "vkr_hv_percent_characteristic",
+                "vk_mv_percent_characteristic",
+                "vkr_mv_percent_characteristic",
+                "vk_lv_percent_characteristic",
+                "vkr_lv_percent_characteristic",
+            ],
+        ),
+    ]
 
     for table, columns in characteristic_cols:
         if "tap_dependency_table" not in net[table].columns:
@@ -749,19 +788,19 @@ def _update_characteristics(net, elements_to_deserialize):
             fallbacks = {}
             for name in columns:
                 # new column name does not end with _characteristic so it is sliced here.
-                new_name = name[:-len("_characteristic")]
+                new_name = name[: -len("_characteristic")]
                 if name in net[table] and pd.notna(row[name]):  # check if col exists and is not nan
-                    characteristics[new_name] = net.characteristic.loc[row[name], 'object']
+                    characteristics[new_name] = net.characteristic.loc[row[name], "object"]
                 elif new_name in net[table] and pd.notna(row[new_name]):
                     fallbacks[new_name] = row[new_name]
             if len(characteristics) == 0:
                 continue
             tap_min = row["tap_min"]
             if pd.isna(tap_min):
-                raise UserWarning(f'tap_min is missing for {table} with id {row.name}')
+                raise UserWarning(f"tap_min is missing for {table} with id {row.name}")
             tap_max = row["tap_max"]
             if pd.isna(tap_max):
-                raise UserWarning(f'tap_max is missing for {table} with id {row.name}')
+                raise UserWarning(f"tap_max is missing for {table} with id {row.name}")
             # cast to int, for compatibility with range
             tap_max = int(tap_max)
             tap_min = int(tap_min)
@@ -769,17 +808,15 @@ def _update_characteristics(net, elements_to_deserialize):
             tap_step_degree = row["tap_step_degree"]
             if tap_max < tap_min:
                 tap_min, tap_max = tap_max, tap_min
-            vals = {
-                'step': list(range(tap_min, tap_max + 1))
-            }
-            vals['voltage_ratio'] = [(100 + step * tap_step_percent) / 100 for step in vals['step']]
-            vals['angle_deg'] = [step * tap_step_degree for step in vals['step']]
+            vals = {"step": list(range(tap_min, tap_max + 1))}
+            vals["voltage_ratio"] = [(100 + step * tap_step_percent) / 100 for step in vals["step"]]
+            vals["angle_deg"] = [step * tap_step_degree for step in vals["step"]]
             for key, value in fallbacks.items():
-                vals[key] = [value] * len(vals['step'])
+                vals[key] = [value] * len(vals["step"])
             for key, value in characteristics.items():
                 vals[key] = value.interpolator(range(tap_min, tap_max + 1))
-            net[table].at[ind, 'id_characteristic_table'] = create_trafo_characteristic(net, vals)
-            net[table].at[ind, 'tap_dependency_table'] = True
+            net[table].at[ind, "id_characteristic_table"] = create_trafo_characteristic(net, vals)
+            net[table].at[ind, "tap_dependency_table"] = True
 
         net[table] = net[table].drop(columns=columns, errors="ignore")  # ignore errors if columns are not present
 
@@ -797,24 +834,32 @@ def convert_trafo_pst_logic(net):
                         net[trafotable] = net[trafotable].drop(columns=f"tap{t}_phase_shifter")
                     if (f"tap{t}_step_degree" in net[trafotable]) or (f"tap{t}_step_percent" in net[trafotable]):
                         # no phase shifters - check if both tap_step_percent & tap_step_degree are 0 or nan
-                        mask_na = (((net[trafotable][f"tap{t}_step_degree"].isna()) |
-                                   (net[trafotable][f"tap{t}_step_degree"] == 0)) &
-                                   ((net[trafotable][f"tap{t}_step_percent"].isna()) |
-                                    (net[trafotable][f"tap{t}_step_percent"] == 0)))
+                        mask_na = (
+                            (net[trafotable][f"tap{t}_step_degree"].isna())
+                            | (net[trafotable][f"tap{t}_step_degree"] == 0)
+                        ) & (
+                            (net[trafotable][f"tap{t}_step_percent"].isna())
+                            | (net[trafotable][f"tap{t}_step_percent"] == 0)
+                        )
                         net[trafotable].loc[mask_na, f"tap{t}_changer_type"] = None
                         # ratio/asymmetrical phase shifters
-                        mask_ratio_asym = ((net[trafotable][f"tap{t}_step_degree"] != 90) &
-                                           ((net[trafotable][f"tap{t}_step_percent"].notna()) &
-                                            (net[trafotable][f"tap{t}_step_percent"] != 0)))
+                        mask_ratio_asym = (net[trafotable][f"tap{t}_step_degree"] != 90) & (
+                            (net[trafotable][f"tap{t}_step_percent"].notna())
+                            & (net[trafotable][f"tap{t}_step_percent"] != 0)
+                        )
                         net[trafotable].loc[mask_ratio_asym, f"tap{t}_changer_type"] = "Ratio"
                         # symmetrical phase shifters
-                        mask_sym = ((net[trafotable][f"tap{t}_step_degree"] == 90) &
-                                    ((net[trafotable][f"tap{t}_step_percent"].notna()) &
-                                    (net[trafotable][f"tap{t}_step_percent"] != 0)))
+                        mask_sym = (net[trafotable][f"tap{t}_step_degree"] == 90) & (
+                            (net[trafotable][f"tap{t}_step_percent"].notna())
+                            & (net[trafotable][f"tap{t}_step_percent"] != 0)
+                        )
                         net[trafotable].loc[mask_sym, f"tap{t}_changer_type"] = "Symmetrical"
                         # ideal phase shifters
-                        mask_ideal = (((net[trafotable][f"tap{t}_step_degree"].notna()) &
-                                      (net[trafotable][f"tap{t}_step_degree"] != 0)) &
-                                      ((net[trafotable][f"tap{t}_step_percent"].isna()) |
-                                       (net[trafotable][f"tap{t}_step_percent"] == 0)))
+                        mask_ideal = (
+                            (net[trafotable][f"tap{t}_step_degree"].notna())
+                            & (net[trafotable][f"tap{t}_step_degree"] != 0)
+                        ) & (
+                            (net[trafotable][f"tap{t}_step_percent"].isna())
+                            | (net[trafotable][f"tap{t}_step_percent"] == 0)
+                        )
                         net[trafotable].loc[mask_ideal, f"tap{t}_changer_type"] = "Ideal"

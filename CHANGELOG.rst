@@ -3,6 +3,8 @@ Change Log
 
 [upcoming 4.0.0] - 2026-..-..
 -------------------------------
+- [CHANGED] ran ruff format for whole project
+- [CHANGED] moved test module to top level
 - [ADDED] pandera network validation
 - [CHANGED] removed deprecated trafo support characteristics table (replaced by trafo_characteristc_table)
 - [ADDED] create function for trafo characteristic entries

@@ -2,29 +2,28 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from __future__ import annotations
 
-import sys
+import logging
 import math
-from collections.abc import Iterable, Callable
+import sys
+from collections.abc import Callable, Iterable
 from typing import Any
 
+import geojson
 import numpy as np
 import pandas as pd
-import geojson
 
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.network import ADict
-from pandapower.plotting.plotly.get_colors import get_plotly_color, get_plotly_cmap
+from pandapower.plotting.plotly.get_colors import get_plotly_cmap, get_plotly_color
 from pandapower.plotting.plotly.mapbox_plot import _on_map_test
-
-import logging
 
 logger = logging.getLogger(__name__)
 
 try:
-    from plotly.graph_objs.scatter.marker import ColorBar
     from plotly.graph_objs import Figure, Layout
     from plotly.graph_objs.layout import XAxis, YAxis
     from plotly.graph_objs.scatter import Line, Marker
+    from plotly.graph_objs.scatter.marker import ColorBar
     from plotly.graph_objs.scattermap import Line as scmLine
     from plotly.graph_objs.scattermap import Marker as scmMarker
 
@@ -634,10 +633,10 @@ def _create_branch_trace(
         else:
             if net["res_" + branch_element].shape[0] == 0:
                 logger.error(
-                    "There are no simulation results for branches which are default for {}"
+                    f"There are no simulation results for branches which are default for {branch_element}"
                     "colormap coloring..."
                     "set cmap_vals input argument if you want colormap according to some specific "
-                    "values...".format(branch_element)
+                    "values..."
                 )
             cmap_vals = net["res_" + branch_element].loc[branches_to_plot.index, cmap_vals_category].values
 
@@ -663,14 +662,14 @@ def _create_branch_trace(
                 )
 
         line_trace = {
-            'type': "scatter",
-            'text': line_info,
-            'hoverinfo': "text",
-            'mode': "lines",
-            'name': trace_name,
-            'line': Line(width=width, color=line_color, dash=dash),
-            'showlegend': False,
-            'legendgroup': legendgroup,
+            "type": "scatter",
+            "text": line_info,
+            "hoverinfo": "text",
+            "mode": "lines",
+            "name": trace_name,
+            "line": Line(width=width, color=line_color, dash=dash),
+            "showlegend": False,
+            "legendgroup": legendgroup,
         }
 
         line_trace["x"], line_trace["y"] = _get_branch_geodata_plotly(
@@ -756,7 +755,7 @@ def _create_branch_trace(
         ):
             infofunc = pd.Series(index=net[branch_element].index, data=infofunc)
         assert isinstance(infofunc, pd.Series), (
-            "infofunc should be a pandas series with the net.{}.index to the infofunc contents".format(branch_element)
+            f"infofunc should be a pandas series with the net.{branch_element}.index to the infofunc contents"
         )
         sorted_idx = branches_to_plot.index.tolist()
         if no_go_branches_to_plot is not None:
@@ -876,14 +875,14 @@ def create_trafo_trace(
             color = cmap_colors[col_i]
         for from_bus1, to_bus1 in connections:
             trafo_trace = {
-                'type': "scatter",
-                'text': trafo["name"] if infofunc is None else infofunc.loc[idx],
-                'line': Line(width=width, color=color),
-                'hoverinfo': "text",
-                'mode': "lines",
-                'name': trace_name,
-                'legendgroup': trace_name,
-                'showlegend': False,
+                "type": "scatter",
+                "text": trafo["name"] if infofunc is None else infofunc.loc[idx],
+                "line": Line(width=width, color=color),
+                "hoverinfo": "text",
+                "mode": "lines",
+                "name": trace_name,
+                "legendgroup": trace_name,
+                "showlegend": False,
             }
 
             from_bus = next(geojson.utils.coords(geojson.loads(net.bus.loc[trafo[from_bus1], "geo"])))
@@ -1024,8 +1023,8 @@ def create_weighted_marker_trace(
             "color": color,
             "size": values_by_bus.abs() * marker_scaling,
             "symbol": patch_type,
-            "sizemode": sizemode
-        }
+            "sizemode": sizemode,
+        },
     }
 
     # additional info for the create_scale_trace function:
@@ -1033,12 +1032,12 @@ def create_weighted_marker_trace(
         scale_marker_size = [scale_marker_size]  # type: ignore[list-item]
 
     marker_trace["meta"] = {
-        'marker_scaling': marker_scaling,
-        'column_to_plot': column_to_plot,
-        'scale_legend_unit': scale_legend_unit or column_to_plot.split("_")[1].upper(),
-        'show_scale_legend': show_scale_legend,
-        'scale_marker_size': scale_marker_size,
-        'scale_marker_color': scale_marker_color or color,
+        "marker_scaling": marker_scaling,
+        "column_to_plot": column_to_plot,
+        "scale_legend_unit": scale_legend_unit or column_to_plot.split("_")[1].upper(),
+        "show_scale_legend": show_scale_legend,
+        "scale_marker_size": scale_marker_size,
+        "scale_marker_color": scale_marker_color or color,
     }
     if trace_kwargs is not None:
         marker_trace.update(trace_kwargs)
@@ -1067,7 +1066,7 @@ def create_scale_trace(net, weighted_trace, down_shift=0):
     x_pos = x_max + (x_max - x_min) * 0.2
     x_pos2 = x_max + ((x_max - x_min) * 0.2 * 2)
 
-    y_pos_original = y_max - (.2 * (y_max-y_min) * down_shift)
+    y_pos_original = y_max - (0.2 * (y_max - y_min) * down_shift)
     y_pos = y_pos_original
     scale_traces = []
     for idx, sze in enumerate(scale_info["scale_marker_size"]):
@@ -1082,25 +1081,21 @@ def create_scale_trace(net, weighted_trace, down_shift=0):
 
         # second (dummy) position is needed for correct marker sizing
         scale_trace = {
-            'type': "scatter",
-            'x': [x_pos, x_pos2],
-            'y': [y_pos, y_pos],
-            'mode': "markers+text",
-            'hoverinfo': "skip",
-            'marker': {
-                'size': [scale_size, 0],
-                'color': scale_info.get("scale_marker_color"),
-                'symbol': marker["symbol"],
-                'sizemode': marker["sizemode"],
+            "type": "scatter",
+            "x": [x_pos, x_pos2],
+            "y": [y_pos, y_pos],
+            "mode": "markers+text",
+            "hoverinfo": "skip",
+            "marker": {
+                "size": [scale_size, 0],
+                "color": scale_info.get("scale_marker_color"),
+                "symbol": marker["symbol"],
+                "sizemode": marker["sizemode"],
             },
-            'text': [f"{scale_size / scale_info['marker_scaling']:.0f} {unit}", ""],
-            'textposition': "top center",
-            'showlegend': False,
-            'textfont': {
-                'family': 'Helvetica',
-                'size': 14,
-                'color': 'DarkSlateGrey'
-            },
+            "text": [f"{scale_size / scale_info['marker_scaling']:.0f} {unit}", ""],
+            "textposition": "top center",
+            "showlegend": False,
+            "textfont": {"family": "Helvetica", "size": 14, "color": "DarkSlateGrey"},
         }
         scale_traces.append(scale_trace)
 
@@ -1197,11 +1192,11 @@ def draw_traces(
     fig = Figure(
         data=traces,  # edge_trace
         layout=Layout(
-            title_font={'size': 16},
+            title_font={"size": 16},
             showlegend=showlegend,
             autosize=(aspectratio == "auto"),
             hovermode="closest",
-            margin={'b': 5, 'l': 5, 'r': 5, 't': 5},
+            margin={"b": 5, "l": 5, "r": 5, "t": 5},
             xaxis=XAxis(showgrid=False, zeroline=False, showticklabels=False),
             yaxis=YAxis(showgrid=False, zeroline=False, showticklabels=False),
             legend={"itemsizing": "constant"},
@@ -1260,7 +1255,8 @@ def draw_traces(
 
     # check if called from ipynb or not in order to consider appropriate plot function
     if _in_ipynb() and auto_open:
-        from plotly.offline import init_notebook_mode, iplot as plot
+        from plotly.offline import init_notebook_mode
+        from plotly.offline import iplot as plot
 
         init_notebook_mode()
         plot(fig, filename=filename)

@@ -118,9 +118,6 @@ version = {attr = "pandapower._version.__version__"}
 include = [
     "pandapower*",
 ]
-exclude = [
-    "pandapower.test*",
-]
 
 [tool.setuptools.package-data]
 "*" = [
@@ -165,3 +162,7 @@ exclude_lines = [
 # styling information for ruff formatter
 [tool.ruff]
 line-length = 120
+
+[tool.ruff.format]
+# Use `\n` line endings for all files
+line-ending = "lf"

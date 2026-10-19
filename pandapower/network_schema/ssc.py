@@ -14,7 +14,9 @@ ssc_schema = pa.DataFrameSchema(
             float, pa.Check.ge(0), description="resistance of the coupling transformer component of SSC"
         ),
         "x_ohm": pa.Column(
-            float, pa.Check.le(0), description="reactance of the coupling transformer component of SSC",
+            float,
+            pa.Check.le(0),
+            description="reactance of the coupling transformer component of SSC",
         ),  # TODO: is le0 correct? test_facts.py:_many_tcsc_test_net creates ssc with 5.
         "set_vm_pu": pa.Column(
             float,

@@ -1,10 +1,11 @@
 """
 Sphinx extension for generating the element csv's for pandapower use.
 """
+
+import json
 import os
 import shutil
 
-import json
 import pandas as pd
 from pandera.api.pandas.container import DataFrameSchema
 
@@ -15,7 +16,7 @@ check_name_to_symbol: dict[str, str] = {
     "greater_than_or_equal_to": ">=",
     "less_than": "<",
     "less_than_or_equal_to": "<=",
-    "isin": ""
+    "isin": "",
 }
 
 dtype_to_str: dict[str, str] = {
@@ -29,16 +30,15 @@ dtype_to_str: dict[str, str] = {
     "": "",
 }
 
-bool_to_checkmark: dict[bool, str] = {
-    True: '✓',
-    False: pd.NA
-}
+bool_to_checkmark: dict[bool, str] = {True: "✓", False: pd.NA}
+
 
 def get_dtype(dtype: str):
     if dtype in dtype_to_str:
         return dtype_to_str[dtype]
     print(f"Unknown dtype {dtype}")
     return ""
+
 
 def create_docu_csv_from_schema(schema: DataFrameSchema, path: str, filename: str | None = None):
     schema_json = schema.to_json()
@@ -85,9 +85,9 @@ def create_docu_csv_from_schema(schema: DataFrameSchema, path: str, filename: st
     df = df[df.doc == True]
     df = df.drop(columns=["doc"])
     # Drop empty columns
-    df = df.dropna(how='all', axis=1)
+    df = df.dropna(how="all", axis=1)
     # fill NA fields with empty string
-    df = df.fillna('')
+    df = df.fillna("")
 
     # pd.set_option("display.max_columns", None)
     # print(df)
@@ -102,7 +102,7 @@ def create_docu_csv_from_schema(schema: DataFrameSchema, path: str, filename: st
 def gen_csv(_):
     import pandapower.network_schema as net_schema
 
-    path = os.path.join(file_path, '..', 'elements', 'table_structures')
+    path = os.path.join(file_path, "..", "elements", "table_structures")
     if os.path.isdir(path):
         shutil.rmtree(path)
     os.makedirs(path)
@@ -113,9 +113,9 @@ def gen_csv(_):
 
 
 def setup(app):
-    app.connect('builder-inited', gen_csv)
-    return {'version': '0.1'}
+    app.connect("builder-inited", gen_csv)
+    return {"version": "0.1"}
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     gen_csv(None)

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -71,9 +69,7 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
 
         return pd.DataFrame(rows, columns=columns)
 
-    def _build_transfer_dataframes(
-        self, only_errors=False
-    ) -> tuple[dict[str, pd.DataFrame], pd.DataFrame]:
+    def _build_transfer_dataframes(self, only_errors=False) -> tuple[dict[str, pd.DataFrame], pd.DataFrame]:
         """
         Split the transfer table into grouped DataFrames.
 
@@ -96,9 +92,7 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
 
         if not table.empty:
             for element_type, dataframe in table.groupby("element_type", sort=False):
-                self.transfer_dataframes[str(element_type)] = dataframe.reset_index(
-                    drop=True
-                ).copy()
+                self.transfer_dataframes[str(element_type)] = dataframe.reset_index(drop=True).copy()
 
         self.transfer_summary = self._build_transfer_summary_dataframe()
 
@@ -113,15 +107,10 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
 
         """
         if self.transfer_table is None or self.transfer_table.empty:
-            return pd.DataFrame(
-                [{"status": "TOTAL_ERRORS", "count": 0}], columns=["status", "count"]
-            )
+            return pd.DataFrame([{"status": "TOTAL_ERRORS", "count": 0}], columns=["status", "count"])
 
         summary = (
-            self.transfer_table["status"]
-            .value_counts(dropna=False)
-            .rename_axis("status")
-            .reset_index(name="count")
+            self.transfer_table["status"].value_counts(dropna=False).rename_axis("status").reset_index(name="count")
         )
 
         error_count = int((self.transfer_table["status"] != "OK").sum())
@@ -137,18 +126,11 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
             only_errors: If ``True``, log only failing comparison rows.
 
         """
-        self.transfer_dataframes, self.transfer_summary = (
-            self._build_transfer_dataframes(only_errors=only_errors)
-        )
+        self.transfer_dataframes, self.transfer_summary = self._build_transfer_dataframes(only_errors=only_errors)
 
         logger.info("\nSTATIC COMPARISON POWSYBL -> PANDAPOWER")
-        logger.info(
-            "Note: IDs and names are used only for mapping, not as value comparisons."
-        )
-        logger.info(
-            "Expected pandapower values derived from powsybl are compared against the "
-            "actually created values."
-        )
+        logger.info("Note: IDs and names are used only for mapping, not as value comparisons.")
+        logger.info("Expected pandapower values derived from powsybl are compared against the actually created values.")
 
         if not self.transfer_dataframes:
             logger.info("\nNo comparison values available.")
@@ -192,9 +174,7 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
             voltage_level_id = row.get("voltage_level_id")
 
             if voltage_level_id in pyp_voltage_levels.index:
-                expected_vn_kv = self._comparison_to_float(
-                    pyp_voltage_levels.at[voltage_level_id, "nominal_v"], np.nan
-                )
+                expected_vn_kv = self._comparison_to_float(pyp_voltage_levels.at[voltage_level_id, "nominal_v"], np.nan)
             else:
                 expected_vn_kv = np.nan
 
@@ -231,9 +211,7 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
             bus_vn_kv = np.nan
 
             if pp_bus_idx in self.pandap_net.bus.index:
-                bus_vn_kv = self._comparison_to_float(
-                    self.pandap_net.bus.at[pp_bus_idx, "vn_kv"], np.nan
-                )
+                bus_vn_kv = self._comparison_to_float(self.pandap_net.bus.at[pp_bus_idx, "vn_kv"], np.nan)
 
             target_v_kv = self._comparison_to_float(row.get("target_v"), np.nan)
 
@@ -245,9 +223,7 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
             checks = [
                 (
                     "p_mw",
-                    self._comparison_to_float(
-                        row.get("target_p"), self.default_active_power_mw
-                    ),
+                    self._comparison_to_float(row.get("target_p"), self.default_active_power_mw),
                     pp_row.get("p_mw"),
                     "MW",
                 ),
@@ -285,9 +261,7 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
             ]
 
             for parameter, expected, actual, unit in checks:
-                self._add_transfer_check(
-                    rows, "gen", gen_id, parameter, expected, actual, unit
-                )
+                self._add_transfer_check(rows, "gen", gen_id, parameter, expected, actual, unit)
 
     def _build_line_transfer_rows(self, rows) -> None:
         """Append static line parameter comparison rows."""
@@ -301,14 +275,8 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
             if pp_row is None:
                 pp_impedance_row = self._comparison_get_pp_match(pp_impedances, line_id)
 
-                if (
-                    pp_impedance_row is None
-                    and not pp_impedances.empty
-                    and "powsybl_id" in pp_impedances.columns
-                ):
-                    match = pp_impedances[
-                        pp_impedances["powsybl_id"].astype(str) == str(line_id)
-                    ]
+                if pp_impedance_row is None and not pp_impedances.empty and "powsybl_id" in pp_impedances.columns:
+                    match = pp_impedances[pp_impedances["powsybl_id"].astype(str) == str(line_id)]
 
                     if not match.empty:
                         pp_impedance_row = match.iloc[0]
@@ -317,11 +285,7 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
                     self._add_missing_pp_element(rows, "line", line_id)
                     continue
 
-                expected_impedance = (
-                    self._comparison_expected_cross_voltage_impedance_values(
-                        row, pp_impedance_row
-                    )
-                )
+                expected_impedance = self._comparison_expected_cross_voltage_impedance_values(row, pp_impedance_row)
 
                 for parameter, unit in (
                     ("rft_pu", "pu"),
@@ -403,15 +367,11 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
         r_ohm_per_km = r_ohm * parallel / length_km
         x_ohm_per_km = x_ohm * parallel / length_km
 
-        c_nf_per_km = (b_total_s * 1e9) / (
-            2.0 * np.pi * self.pandap_net.f_hz * length_km * parallel
-        )
+        c_nf_per_km = (b_total_s * 1e9) / (2.0 * np.pi * self.pandap_net.f_hz * length_km * parallel)
 
         g_us_per_km = (g_total_s * 1e6) / (length_km * parallel)
 
-        in_service = self._to_bool(row.get("connected1"), True) and self._to_bool(
-            row.get("connected2"), True
-        )
+        in_service = self._to_bool(row.get("connected1"), True) and self._to_bool(row.get("connected2"), True)
 
         return {
             "length_km": length_km,
@@ -423,9 +383,7 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
             "in_service": in_service,
         }
 
-    def _comparison_expected_cross_voltage_impedance_values(
-        self, row, pp_impedance_row
-    ) -> dict[str, Any]:
+    def _comparison_expected_cross_voltage_impedance_values(self, row, pp_impedance_row) -> dict[str, Any]:
         """
         Calculate expected pandapower impedance values for cross-voltage powsybl lines.
 
@@ -453,16 +411,12 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
         from_vn_kv = self._get_bus_vn_kv(from_bus)
         to_vn_kv = self._get_bus_vn_kv(to_bus)
 
-        sn_mva = self._to_float(
-            pp_impedance_row.get("sn_mva"), self.default_base_sn_mva
-        )
+        sn_mva = self._to_float(pp_impedance_row.get("sn_mva"), self.default_base_sn_mva)
 
         if not np.isfinite(sn_mva) or sn_mva <= 0:
             sn_mva = self.default_base_sn_mva
 
-        in_service = self._to_bool(row.get("connected1"), True) and self._to_bool(
-            row.get("connected2"), True
-        )
+        in_service = self._to_bool(row.get("connected1"), True) and self._to_bool(row.get("connected2"), True)
 
         return {
             "rft_pu": self._ohm_to_pu(r_ohm, from_vn_kv, sn_mva),
@@ -568,13 +522,9 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
 
         pfe_kw = (rated_u2**2) * g_s * 1000.0
 
-        expected_alpha = self._comparison_to_float(
-            row.get("alpha"), self.default_shift_degree
-        )
+        expected_alpha = self._comparison_to_float(row.get("alpha"), self.default_shift_degree)
 
-        in_service = self._to_bool(row.get("connected1"), True) and self._to_bool(
-            row.get("connected2"), True
-        )
+        in_service = self._to_bool(row.get("connected1"), True) and self._to_bool(row.get("connected2"), True)
 
         return {
             "sn_mva": rated_s,
@@ -656,9 +606,7 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
             )
 
             connected = self._to_bool(
-                self._get_first_non_missing_value(
-                    row, f"connected{leg_no}", default=not self._is_missing(bus_ref)
-                ),
+                self._get_first_non_missing_value(row, f"connected{leg_no}", default=not self._is_missing(bus_ref)),
                 default=not self._is_missing(bus_ref),
             )
 
@@ -666,16 +614,12 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
                 connected = False
 
             rated_u = self._to_float(
-                self._get_first_non_missing_value(
-                    row, f"rated_u{leg_no}", f"ratedU{leg_no}", default=np.nan
-                ),
+                self._get_first_non_missing_value(row, f"rated_u{leg_no}", f"ratedU{leg_no}", default=np.nan),
                 np.nan,
             )
 
             rated_s = self._to_float(
-                self._get_first_non_missing_value(
-                    row, f"rated_s{leg_no}", f"ratedS{leg_no}", default=np.nan
-                ),
+                self._get_first_non_missing_value(row, f"rated_s{leg_no}", f"ratedS{leg_no}", default=np.nan),
                 np.nan,
             )
 
@@ -726,9 +670,7 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
             )
 
             alpha_degree = self._to_float(
-                self._get_first_non_missing_value(
-                    row, f"alpha{leg_no}", default=self.default_shift_degree
-                ),
+                self._get_first_non_missing_value(row, f"alpha{leg_no}", default=self.default_shift_degree),
                 self.default_shift_degree,
             )
 
@@ -763,17 +705,11 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
         lv_leg = legs[2]
         reference_u_kv = hv_leg["rated_u"]
 
-        vk_hv_percent, vkr_hv_percent = self._calculate_3w_pair_short_circuit_values(
-            hv_leg, mv_leg, reference_u_kv
-        )
+        vk_hv_percent, vkr_hv_percent = self._calculate_3w_pair_short_circuit_values(hv_leg, mv_leg, reference_u_kv)
 
-        vk_mv_percent, vkr_mv_percent = self._calculate_3w_pair_short_circuit_values(
-            mv_leg, lv_leg, reference_u_kv
-        )
+        vk_mv_percent, vkr_mv_percent = self._calculate_3w_pair_short_circuit_values(mv_leg, lv_leg, reference_u_kv)
 
-        vk_lv_percent, vkr_lv_percent = self._calculate_3w_pair_short_circuit_values(
-            hv_leg, lv_leg, reference_u_kv
-        )
+        vk_lv_percent, vkr_lv_percent = self._calculate_3w_pair_short_circuit_values(hv_leg, lv_leg, reference_u_kv)
 
         pfe_kw = hv_leg["pfe_kw"] + mv_leg["pfe_kw"] + lv_leg["pfe_kw"]
 
@@ -831,9 +767,7 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
                 "load",
                 load_id,
                 "q_mvar",
-                self._comparison_to_float(
-                    row.get("q0"), self.default_reactive_power_mvar
-                ),
+                self._comparison_to_float(row.get("q0"), self.default_reactive_power_mvar),
                 pp_row.get("q_mvar"),
                 "MVar",
             )
@@ -877,9 +811,7 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
                 pp_row.get("closed"),
             )
 
-            self._add_transfer_check(
-                rows, "switch", switch_id, "type", expected_type, pp_row.get("type")
-            )
+            self._add_transfer_check(rows, "switch", switch_id, "type", expected_type, pp_row.get("type"))
 
             self._add_transfer_check(
                 rows,

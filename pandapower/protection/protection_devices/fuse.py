@@ -1,12 +1,14 @@
-from pandapower import std_type_exists, load_std_type
+from pandapower import load_std_type, std_type_exists
 
 try:
     import matplotlib.pyplot as plt
+
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
 
 import numpy as np
+
 from pandapower.control.util.characteristic import LogSplineCharacteristic
 from pandapower.protection.basic_protection_device import ProtectionDevice
 
@@ -36,8 +38,20 @@ class Fuse(ProtectionDevice):
         name (str, None): name of the fuse. For example, name = "Line 2 Fuse"
     """
 
-    def __init__(self, net, switch_index, fuse_type="none", rated_i_a=0, characteristic_index=None, in_service=True,
-                 overwrite=False, curve_select=0, z_ohm=0.0001, name=None, **kwargs):
+    def __init__(
+        self,
+        net,
+        switch_index,
+        fuse_type="none",
+        rated_i_a=0,
+        characteristic_index=None,
+        in_service=True,
+        overwrite=False,
+        curve_select=0,
+        z_ohm=0.0001,
+        name=None,
+        **kwargs,
+    ):
         super().__init__(net, in_service=in_service, overwrite=overwrite, **kwargs)
         self.switch_index = switch_index
         self.fuse_type = fuse_type
@@ -46,7 +60,7 @@ class Fuse(ProtectionDevice):
         # create protection characteristic curve from std type
         if std_type_exists(net, fuse_type, element="fuse"):
             fuse_data = load_std_type(net=net, name=fuse_type, element="fuse")
-            self.rated_i_a = fuse_data['i_rated_a']
+            self.rated_i_a = fuse_data["i_rated_a"]
             if fuse_data["t_avg"] != 0:
                 self.create_characteristic(net, fuse_data["x_avg"], fuse_data["t_avg"])
             elif fuse_data["t_min"] != 0 and curve_select == 0:
@@ -64,15 +78,16 @@ class Fuse(ProtectionDevice):
         self.activation_parameter = "i_ka"
         self.tripped = False
         self.z_ohm = z_ohm
-        net.switch.at[self.switch_index, 'z_ohm'] = self.z_ohm
+        net.switch.at[self.switch_index, "z_ohm"] = self.z_ohm
 
     def create_characteristic(self, net, x_values, y_values, interpolator_kind="Pchip", **kwargs):
         """
         Create characteristic curve of fuse melting behavior using Piece Cubic Hermite Interpolating Polynomial (PCHIP)
         from scipy.interpolate
         """
-        c = LogSplineCharacteristic(net, x_values=x_values, y_values=y_values, interpolator_kind=interpolator_kind,
-                                    **kwargs)
+        c = LogSplineCharacteristic(
+            net, x_values=x_values, y_values=y_values, interpolator_kind=interpolator_kind, **kwargs
+        )
         self.characteristic_index = c.index
         self.i_start_a = min(x_values)
         self.i_stop_a = max(x_values)
@@ -106,17 +121,20 @@ class Fuse(ProtectionDevice):
             self.tripped = True
             act_time_s = 0
 
-        protection_result = {"switch_id": self.switch_index,
-                             "protection_type": self.__class__.__name__,
-                             "trip_melt": self.has_tripped(),
-                             "activation_parameter": self.activation_parameter,
-                             "activation_parameter_value": i_ka,
-                             "trip_melt_time_s": act_time_s}
+        protection_result = {
+            "switch_id": self.switch_index,
+            "protection_type": self.__class__.__name__,
+            "trip_melt": self.has_tripped(),
+            "activation_parameter": self.activation_parameter,
+            "activation_parameter_value": i_ka,
+            "trip_melt_time_s": act_time_s,
+        }
 
         return protection_result
 
-    def plot_protection_characteristic(self, net, num=35, xlabel="I [A]", ylabel="time [s]",
-                                       title="Time-Current Characteristic of Fuse"):
+    def plot_protection_characteristic(
+        self, net, num=35, xlabel="I [A]", ylabel="time [s]", title="Time-Current Characteristic of Fuse"
+    ):
         # plots protection characteristic for fuse
         start = min(net.characteristic.at[self.characteristic_index, "object"].x_vals)
         stop = max(net.characteristic.at[self.characteristic_index, "object"].x_vals)
@@ -127,8 +145,10 @@ class Fuse(ProtectionDevice):
         plt.xlabel(xlabel)
         plt.ylabel(ylabel)
         plt.xlim(10 ** np.floor(start), 10 ** np.ceil(stop))
-        plt.ylim(10 ** np.floor(min(net.characteristic.at[self.characteristic_index, "object"].y_vals)),
-                 10 ** np.floor(max(net.characteristic.at[self.characteristic_index, "object"].y_vals)))
+        plt.ylim(
+            10 ** np.floor(min(net.characteristic.at[self.characteristic_index, "object"].y_vals)),
+            10 ** np.floor(max(net.characteristic.at[self.characteristic_index, "object"].y_vals)),
+        )
         plt.title(title)
         plt.grid(True, which="both", ls="-")
 
@@ -147,13 +167,19 @@ class Fuse(ProtectionDevice):
             and self.name == other.name
             and (
                 (self.i_start_a is None and other.i_start_a is None)
-                or (self.i_start_a is not None and other.i_start_a is not None
-                    and np.isclose(self.i_start_a, other.i_start_a, equal_nan=True))
+                or (
+                    self.i_start_a is not None
+                    and other.i_start_a is not None
+                    and np.isclose(self.i_start_a, other.i_start_a, equal_nan=True)
+                )
             )
             and (
                 (self.i_stop_a is None and other.i_stop_a is None)
-                or (self.i_stop_a is not None and other.i_stop_a is not None
-                    and np.isclose(self.i_stop_a, other.i_stop_a, equal_nan=True))
+                or (
+                    self.i_stop_a is not None
+                    and other.i_stop_a is not None
+                    and np.isclose(self.i_stop_a, other.i_stop_a, equal_nan=True)
+                )
             )
             and self.activation_parameter == other.activation_parameter
             and np.isclose(self.z_ohm, other.z_ohm, equal_nan=True)
@@ -165,15 +191,17 @@ class Fuse(ProtectionDevice):
                 return None
             return round(float(v), 12)
 
-        return hash((
-            self.__class__,
-            self.switch_index,
-            self.fuse_type,
-            _hfloat(self.rated_i_a),
-            self.in_service,
-            self.name,
-            _hfloat(self.i_start_a),
-            _hfloat(self.i_stop_a),
-            self.activation_parameter,
-            _hfloat(self.z_ohm),
-        ))
+        return hash(
+            (
+                self.__class__,
+                self.switch_index,
+                self.fuse_type,
+                _hfloat(self.rated_i_a),
+                self.in_service,
+                self.name,
+                _hfloat(self.i_start_a),
+                _hfloat(self.i_stop_a),
+                self.activation_parameter,
+                _hfloat(self.z_ohm),
+            )
+        )

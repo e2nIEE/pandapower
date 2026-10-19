@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -11,6 +9,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+
 from pandapower import runpp
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.converter.pypowsybl.pypowsybl_comparison_utils import (
@@ -50,18 +49,11 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
 
         """
         self.loadflow_table = self._build_loadflow_table()
-        self.loadflow_dataframes, self.loadflow_summary = (
-            self._build_loadflow_dataframes(only_errors=only_errors)
-        )
+        self.loadflow_dataframes, self.loadflow_summary = self._build_loadflow_dataframes(only_errors=only_errors)
 
         logger.info("\nLOAD FLOW COMPARISON POWSYBL -> PANDAPOWER")
-        logger.info(
-            "Note: After conversion, an AC load flow is calculated in both networks."
-        )
-        logger.info(
-            "Result values from powsybl are compared against the pandapower res_* "
-            "tables."
-        )
+        logger.info("Note: After conversion, an AC load flow is calculated in both networks.")
+        logger.info("Result values from powsybl are compared against the pandapower res_* tables.")
 
         if not self.loadflow_dataframes:
             logger.info("\nNo load flow comparison values available.")
@@ -142,9 +134,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
 
         return pd.DataFrame(rows, columns=columns)
 
-    def _build_loadflow_dataframes(
-        self, only_errors=False
-    ) -> tuple[dict[str, pd.DataFrame], pd.DataFrame]:
+    def _build_loadflow_dataframes(self, only_errors=False) -> tuple[dict[str, pd.DataFrame], pd.DataFrame]:
         """
         Split the load-flow into grouped DataFrames.
 
@@ -167,9 +157,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
 
         if not table.empty:
             for element_type, dataframe in table.groupby("element_type", sort=False):
-                self.loadflow_dataframes[str(element_type)] = dataframe.reset_index(
-                    drop=True
-                ).copy()
+                self.loadflow_dataframes[str(element_type)] = dataframe.reset_index(drop=True).copy()
 
         self.loadflow_summary = self._build_loadflow_summary_dataframe()
 
@@ -184,15 +172,10 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
 
         """
         if self.loadflow_table is None or self.loadflow_table.empty:
-            return pd.DataFrame(
-                [{"status": "TOTAL_ERRORS", "count": 0}], columns=["status", "count"]
-            )
+            return pd.DataFrame([{"status": "TOTAL_ERRORS", "count": 0}], columns=["status", "count"])
 
         summary = (
-            self.loadflow_table["status"]
-            .value_counts(dropna=False)
-            .rename_axis("status")
-            .reset_index(name="count")
+            self.loadflow_table["status"].value_counts(dropna=False).rename_axis("status").reset_index(name="count")
         )
 
         error_count = int((self.loadflow_table["status"] != "OK").sum())
@@ -221,10 +204,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
                 statuses.append(f"component_{index}={status}")
 
             success = bool(results) and all(
-                self._comparison_loadflow_status_is_converged(
-                    getattr(result, "status", "OK")
-                )
-                for result in results
+                self._comparison_loadflow_status_is_converged(getattr(result, "status", "OK")) for result in results
             )
 
             if not results:
@@ -264,9 +244,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
 
             return {
                 "success": converged,
-                "message": "converged"
-                if converged
-                else "pandapower load flow did not converge",
+                "message": "converged" if converged else "pandapower load flow did not converge",
             }
 
         except Exception as exc:
@@ -302,9 +280,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
                         "powsybl_result": status,
                         "pandapower_result": "",
                         "delta": "",
-                        "status": "OK"
-                        if self._comparison_loadflow_status_is_converged(status)
-                        else "ERROR",
+                        "status": "OK" if self._comparison_loadflow_status_is_converged(status) else "ERROR",
                     }
                 )
 
@@ -355,9 +331,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
         status according to the given tolerances.
 
         """
-        is_equal = self._comparison_values_equal(
-            powsybl_result, pandapower_result, abs_tol=abs_tol, rel_tol=rel_tol
-        )
+        is_equal = self._comparison_values_equal(powsybl_result, pandapower_result, abs_tol=abs_tol, rel_tol=rel_tol)
 
         rows.append(
             {
@@ -391,9 +365,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
             if pp_row is None:
                 continue
 
-            pp_result_row = self._comparison_get_pp_result_row(
-                pp_res_buses, pp_row.name
-            )
+            pp_result_row = self._comparison_get_pp_result_row(pp_res_buses, pp_row.name)
 
             if pp_result_row is None:
                 continue
@@ -408,20 +380,14 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
 
             pp_vn_kv = self._comparison_to_float(pp_row.get("vn_kv"), np.nan)
             pp_vm_pu = self._comparison_to_float(pp_result_row.get("vm_pu"), np.nan)
-            pp_vm_kv = (
-                pp_vm_pu * pp_vn_kv
-                if np.isfinite(pp_vm_pu) and np.isfinite(pp_vn_kv)
-                else np.nan
-            )
+            pp_vm_kv = pp_vm_pu * pp_vn_kv if np.isfinite(pp_vm_pu) and np.isfinite(pp_vn_kv) else np.nan
 
             self._add_loadflow_check(
                 rows,
                 "bus",
                 bus_name,
                 "v_mag",
-                self._comparison_get_result_values(
-                    pyp_row, "v_mag", "voltage", "voltage_kv"
-                ),
+                self._comparison_get_result_values(pyp_row, "v_mag", "voltage", "voltage_kv"),
                 pp_vm_kv,
                 "kV",
                 abs_tol=1e-3,
@@ -433,9 +399,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
                 "bus",
                 bus_name,
                 "v_angle",
-                self._comparison_get_result_values(
-                    pyp_row, "v_angle", "angle", "va_degree"
-                ),
+                self._comparison_get_result_values(pyp_row, "v_angle", "angle", "va_degree"),
                 pp_result_row.get("va_degree"),
                 "deg",
                 abs_tol=1e-2,
@@ -465,9 +429,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
             if not self._is_missing(pyp_p_terminal):
                 pyp_p = -self._comparison_to_float(pyp_p_terminal, np.nan)
             else:
-                pyp_p = self._comparison_to_float(
-                    self._comparison_get_result_values(row, "p_mw", "target_p"), np.nan
-                )
+                pyp_p = self._comparison_to_float(self._comparison_get_result_values(row, "p_mw", "target_p"), np.nan)
 
             if not self._is_missing(pyp_q_terminal):
                 pyp_q = -self._comparison_to_float(pyp_q_terminal, np.nan)
@@ -520,9 +482,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
             pp_row = self._comparison_get_pp_match(pp_lines, line_id)
 
             if pp_row is not None:
-                pp_result_row = self._comparison_get_pp_result_row(
-                    pp_res_line, pp_row.name
-                )
+                pp_result_row = self._comparison_get_pp_result_row(pp_res_line, pp_row.name)
 
                 element_type = "line"
             else:
@@ -531,9 +491,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
                 if pp_row is None:
                     continue
 
-                pp_result_row = self._comparison_get_pp_result_row(
-                    pp_res_impedance, pp_row.name
-                )
+                pp_result_row = self._comparison_get_pp_result_row(pp_res_impedance, pp_row.name)
 
                 element_type = "impedance"
 
@@ -593,9 +551,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
             if pp_row is None:
                 continue
 
-            pp_result_row = self._comparison_get_pp_result_row(
-                pp_res_trafo, pp_row.name
-            )
+            pp_result_row = self._comparison_get_pp_result_row(pp_res_trafo, pp_row.name)
 
             if pp_result_row is None:
                 continue
@@ -626,10 +582,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
                     if pyp_prefix == "i":
                         pyp_value = self._comparison_ampere_to_kiloampere(pyp_value)
 
-                    if pyp_prefix.startswith("p"):
-                        abs_tol = 5e-3
-                        rel_tol = 3e-2
-                    elif pyp_prefix.startswith("q"):
+                    if pyp_prefix.startswith("p") or pyp_prefix.startswith("q"):
                         abs_tol = 5e-3
                         rel_tol = 3e-2
                     else:
@@ -666,9 +619,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
             if pp_row is None:
                 continue
 
-            pp_result_row = self._comparison_get_pp_result_row(
-                pp_res_trafo, pp_row.name
-            )
+            pp_result_row = self._comparison_get_pp_result_row(pp_res_trafo, pp_row.name)
 
             if pp_result_row is None:
                 continue
@@ -676,9 +627,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
             legs = []
             for leg_no in (1, 2, 3):
                 rated_u = self._comparison_to_float(
-                    self._get_first_non_missing_value(
-                        row, f"rated_u{leg_no}", f"ratedU{leg_no}", default=np.nan
-                    ),
+                    self._get_first_non_missing_value(row, f"rated_u{leg_no}", f"ratedU{leg_no}", default=np.nan),
                     np.nan,
                 )
 
@@ -736,9 +685,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
             if pp_row is None:
                 continue
 
-            pp_result_row = self._comparison_get_pp_result_row(
-                pp_res_loads, pp_row.name
-            )
+            pp_result_row = self._comparison_get_pp_result_row(pp_res_loads, pp_row.name)
 
             if pp_result_row is None:
                 continue

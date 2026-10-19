@@ -4,13 +4,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Iterable, Sequence
+from collections.abc import Iterable, Sequence
 
 import numpy as np
 import numpy.typing as npt
 
-from pandapower.network import pandapowerNet
-from pandapower.pp_types import Int, CostElementType, PWLPowerType
 from pandapower.create._utils import (
     _cost_existance_check,
     _costs_existance_check,
@@ -19,6 +17,8 @@ from pandapower.create._utils import (
     _set_entries,
     _set_multiple_entries,
 )
+from pandapower.network import pandapowerNet
+from pandapower.pp_types import CostElementType, Int, PWLPowerType
 
 logger = logging.getLogger(__name__)
 
@@ -153,11 +153,11 @@ def create_poly_cost(
     element: Int | Iterable[Int],
     et: CostElementType,
     cp1_eur_per_mw: float,
-    cp0_eur: float = 0.,
-    cq1_eur_per_mvar: float = 0.,
-    cq0_eur: float = 0.,
-    cp2_eur_per_mw2: float = 0.,
-    cq2_eur_per_mvar2: float = 0.,
+    cp0_eur: float = 0.0,
+    cq1_eur_per_mvar: float = 0.0,
+    cq0_eur: float = 0.0,
+    cp2_eur_per_mw2: float = 0.0,
+    cq2_eur_per_mvar2: float = 0.0,
     redispatch_up_eur_per_mw: float = np.nan,
     redispatch_down_eur_per_mw: float = np.nan,
     index: int | None = None,

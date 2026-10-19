@@ -1,17 +1,19 @@
 import copy
-import numpy as np
-from typing import Optional
+import logging
 import multiprocessing as mp
 from functools import partial
-from pandapower.run import runpp
-from pandapower import pandapowerNet
 
-import logging
+import numpy as np
+
+from pandapower import pandapowerNet
+from pandapower.run import runpp
 
 logger = logging.getLogger(__name__)
 
-def _run_single_contingency(contingency_case, net, pf_options_nminus1, result_variables,
-                            contingency_evaluation_function, raise_errors, **kwargs):
+
+def _run_single_contingency(
+    contingency_case, net, pf_options_nminus1, result_variables, contingency_evaluation_function, raise_errors, **kwargs
+):
     """
     Worker function executed by each parallel process.
     It runs a single contingency analysis.
@@ -20,16 +22,12 @@ def _run_single_contingency(contingency_case, net, pf_options_nminus1, result_va
     # Create a shallow copy of the net object and a deep copy of the element to ensure process safety
     net_copy = copy.copy(net)
     net_copy[element] = copy.deepcopy(net[element])
-    net_copy[element].at[i, 'in_service'] = False
+    net_copy[element].at[i, "in_service"] = False
 
     try:
         contingency_evaluation_function(net_copy, **pf_options_nminus1, **kwargs)
         # If successful, extract the relevant results
-        result_pack = {
-            "success": True,
-            "case": contingency_case,
-            "res_vals": {}
-        }
+        result_pack = {"success": True, "case": contingency_case, "res_vals": {}}
         for res_element, res_vars in result_variables.items():
             result_pack["res_vals"][res_element] = {var: net_copy[f"res_{res_element}"][var].values for var in res_vars}
         return result_pack
@@ -41,14 +39,16 @@ def _run_single_contingency(contingency_case, net, pf_options_nminus1, result_va
         return {"success": False, "case": contingency_case}
 
 
-def run_contingency_parallel(net: pandapowerNet,
-                             nminus1_cases: dict,
-                             pf_options: Optional[dict] = None,
-                             pf_options_nminus1: Optional[dict] = None,
-                             write_to_net: bool = True,
-                             contingency_evaluation_function=runpp,
-                             n_procs: int = 1,
-                             **kwargs):
+def run_contingency_parallel(
+    net: pandapowerNet,
+    nminus1_cases: dict,
+    pf_options: dict | None = None,
+    pf_options_nminus1: dict | None = None,
+    write_to_net: bool = True,
+    contingency_evaluation_function=runpp,
+    n_procs: int = 1,
+    **kwargs,
+):
     """
     Obtain either loading (N-0) or max. loading (N-0 and all N-1 cases), and min/max bus voltage magnitude.
     This function can be run in parallel by setting n_procs.
@@ -72,23 +72,34 @@ def run_contingency_parallel(net: pandapowerNet,
     if pf_options_nminus1 is None:
         pf_options_nminus1 = net.user_pf_options.get("pf_options_nminus1", net.user_pf_options)
     if kwargs is not None:
-        pf_options = {key: val for key, val in pf_options.items() if key not in kwargs.keys()}
-        pf_options_nminus1 = {key: val for key, val in pf_options_nminus1.items() if key not in kwargs.keys()}
+        pf_options = {key: val for key, val in pf_options.items() if key not in kwargs}
+        pf_options_nminus1 = {key: val for key, val in pf_options_nminus1.items() if key not in kwargs}
 
-    contingency_results = {element: {"index": net[element].index.values}
-                           for element in ("bus", "line", "trafo", "trafo3w") if len(net[element]) > 0}
-    for element in contingency_results.keys():
+    contingency_results = {
+        element: {"index": net[element].index.values}
+        for element in ("bus", "line", "trafo", "trafo3w")
+        if len(net[element]) > 0
+    }
+    for element in contingency_results:
         if element == "bus":
             continue
         contingency_results[element].update(
-            {"causes_overloading": np.zeros_like(net[element].index.values, dtype=bool),
-             "cause_element": np.empty_like(net[element].index.values, dtype=object),
-             "cause_index": np.empty_like(net[element].index.values, dtype=np.int64)})
+            {
+                "causes_overloading": np.zeros_like(net[element].index.values, dtype=bool),
+                "cause_element": np.empty_like(net[element].index.values, dtype=object),
+                "cause_index": np.empty_like(net[element].index.values, dtype=np.int64),
+            }
+        )
 
-    result_variables = {**{"bus": ["vm_pu"]},
-                        **{key: ["loading_percent"] for key in ("line", "trafo", "trafo3w") if len(net[key]) > 0}}
-    if len(net.line) > 0 and (net.get("_options", {}).get("tdpf", False) or
-                              pf_options.get("tdpf", False) or pf_options_nminus1.get("tdpf", False)):
+    result_variables = {
+        "bus": ["vm_pu"],
+        **{key: ["loading_percent"] for key in ("line", "trafo", "trafo3w") if len(net[key]) > 0},
+    }
+    if len(net.line) > 0 and (
+        net.get("_options", {}).get("tdpf", False)
+        or pf_options.get("tdpf", False)
+        or pf_options_nminus1.get("tdpf", False)
+    ):
         result_variables["line"].append("temperature_degree_celsius")
 
     # --- N-1 Contingency Analysis ---
@@ -103,22 +114,32 @@ def run_contingency_parallel(net: pandapowerNet,
                 if net[element].at[i, "in_service"]:
                     tasks.append((element, i))
 
-        worker_func = partial(_run_single_contingency, net=net, pf_options_nminus1=pf_options_nminus1,
-                              result_variables=result_variables,
-                              contingency_evaluation_function=contingency_evaluation_function,
-                              raise_errors=raise_errors, **kwargs)
+        worker_func = partial(
+            _run_single_contingency,
+            net=net,
+            pf_options_nminus1=pf_options_nminus1,
+            result_variables=result_variables,
+            contingency_evaluation_function=contingency_evaluation_function,
+            raise_errors=raise_errors,
+            **kwargs,
+        )
 
         with mp.Pool(processes=n_procs) as pool:
-        #with cf.ProcessPoolExecutor(max_workers=n_procs) as pool:
+            # with cf.ProcessPoolExecutor(max_workers=n_procs) as pool:
             results_list = pool.map(worker_func, tasks)
 
         # Aggregate results from parallel runs
         for single_result in results_list:
             if single_result["success"]:
-                _update_contingency_results_parallel(net, contingency_results, result_variables, nminus1=True,
-                                                     cause_element=single_result["case"][0],
-                                                     cause_index=single_result["case"][1],
-                                                     parallel_results=single_result["res_vals"])
+                _update_contingency_results_parallel(
+                    net,
+                    contingency_results,
+                    result_variables,
+                    nminus1=True,
+                    cause_element=single_result["case"][0],
+                    cause_index=single_result["case"][1],
+                    parallel_results=single_result["res_vals"],
+                )
 
     # --- Sequential Execution Path ---
     else:
@@ -126,17 +147,18 @@ def run_contingency_parallel(net: pandapowerNet,
             for i in val["index"]:
                 if not net[element].at[i, "in_service"]:
                     continue
-                net[element].at[i, 'in_service'] = False
+                net[element].at[i, "in_service"] = False
                 try:
                     contingency_evaluation_function(net, **pf_options_nminus1, **kwargs)
-                    _update_contingency_results_parallel(net, contingency_results, result_variables, nminus1=True,
-                                                         cause_element=element, cause_index=i)
+                    _update_contingency_results_parallel(
+                        net, contingency_results, result_variables, nminus1=True, cause_element=element, cause_index=i
+                    )
                 except Exception as err:
                     logger.error(f"{element} {i} causes {err}")
                     if raise_errors:
                         raise err
                 finally:
-                    net[element].at[i, 'in_service'] = True
+                    net[element].at[i, "in_service"] = True
 
     # --- N-0 (Base Case) Analysis ---
     contingency_evaluation_function(net, **pf_options, **kwargs)
@@ -154,8 +176,9 @@ def run_contingency_parallel(net: pandapowerNet,
     return contingency_results
 
 
-def _update_contingency_results_parallel(net, contingency_results, result_variables, nminus1, cause_element=None,
-                                         cause_index=None, parallel_results=None):
+def _update_contingency_results_parallel(
+    net, contingency_results, result_variables, nminus1, cause_element=None, cause_index=None, parallel_results=None
+):
     """
     Updates the main results dictionary with results from a single contingency run.
     This function is used by both the sequential and parallel execution paths.
@@ -167,13 +190,17 @@ def _update_contingency_results_parallel(net, contingency_results, result_variab
 
             if nminus1:
                 if var == "loading_percent":
-                    s = 'max_loading_percent_nminus1' if 'max_loading_percent_nminus1' in net[
-                        element].columns else 'max_loading_percent'
+                    s = (
+                        "max_loading_percent_nminus1"
+                        if "max_loading_percent_nminus1" in net[element].columns
+                        else "max_loading_percent"
+                    )
                     loading_limit = net[element].loc[contingency_results[element]["index"], s].values
                     cause_mask = val > loading_limit
                     if np.any(cause_mask):
                         contingency_results[cause_element]["causes_overloading"][
-                            contingency_results[cause_element]["index"] == cause_index] = True
+                            contingency_results[cause_element]["index"] == cause_index
+                        ] = True
 
                     # Check if this contingency causes a new maximum loading
                     current_max = contingency_results[element].get("max_loading_percent", np.full_like(val, -1.0))
@@ -192,21 +219,25 @@ def _update_contingency_results_parallel(net, contingency_results, result_variab
                     # Use in_service mask for sequential, assume all are valid for parallel (handled in worker)
                     where_mask = net[element]["in_service"].values if not parallel_results else ~np.isnan(val)
 
-                    func(val, contingency_results[element][key], out=contingency_results[element][key],
-                         where=where_mask & ~np.isnan(val))
+                    func(
+                        val,
+                        contingency_results[element][key],
+                        out=contingency_results[element][key],
+                        where=where_mask & ~np.isnan(val),
+                    )
             else:  # nminus1 is False (N-0 case)
                 contingency_results[element][var] = val
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     import time
-    from pandapower.networks.power_system_test_cases import case2869pegase
+
     from pandapower.contingency import (
-        get_element_limits,
         check_elements_within_limits,
+        get_element_limits,
         report_contingency_results,
-        run_contingency
     )
+    from pandapower.networks.power_system_test_cases import case2869pegase
 
     net = case2869pegase()
     nminus1_cases = {"line": {"index": net.line.index.values}}

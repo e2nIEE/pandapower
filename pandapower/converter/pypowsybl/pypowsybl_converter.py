@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -23,6 +21,8 @@ import os
 from typing import Any
 
 import numpy as np
+import pandas as pd
+
 from pandapower import (
     create_buses,
     create_empty_network,
@@ -35,18 +35,17 @@ from pandapower import (
     create_transformer_from_parameters,
     to_json,
 )
-import pandas as pd
 from pandapower.auxiliary import soft_dependency_error
-from pandapower.pp_types import SwitchType
-from pandapower.converter.pypowsybl.pypowsybl_static_comparison import (
-    PyPowSyBlStaticComparisonMixin,
+from pandapower.converter.pypowsybl.pypowsybl_comparison_utils import (
+    PyPowSyBlComparisonUtilsMixin,
 )
 from pandapower.converter.pypowsybl.pypowsybl_loadflow_comparison import (
     PyPowSyBlLoadflowComparisonMixin,
 )
-from pandapower.converter.pypowsybl.pypowsybl_comparison_utils import (
-    PyPowSyBlComparisonUtilsMixin,
+from pandapower.converter.pypowsybl.pypowsybl_static_comparison import (
+    PyPowSyBlStaticComparisonMixin,
 )
+from pandapower.pp_types import SwitchType
 
 logger = logging.getLogger(__name__)
 
@@ -67,7 +66,6 @@ class PyPowSyBlConverter(
     PyPowSyBlLoadflowComparisonMixin,
     PyPowSyBlComparisonUtilsMixin,
 ):
-
     """Convert powsybl network models into pandapower networks.
 
     The class stores both the source powsybl network and the generated pandapower
@@ -164,13 +162,9 @@ class PyPowSyBlConverter(
             returned as a fourth value.
 
         """
-        self.default_shift_degree = self._to_float(
-            default_shift_degree, self.default_shift_degree
-        )
+        self.default_shift_degree = self._to_float(default_shift_degree, self.default_shift_degree)
 
-        self.default_length_km = self._to_float(
-            default_length_km, self.default_length_km
-        )
+        self.default_length_km = self._to_float(default_length_km, self.default_length_km)
         if not np.isfinite(self.default_length_km) or self.default_length_km <= 0:
             self.default_length_km = 1.0
 
@@ -294,9 +288,7 @@ class PyPowSyBlConverter(
 
         return default
 
-    def _get_pp_bus_names(
-        self, elements_map, bus_id_to_bus_names, pyp_bus_ref
-    ) -> list[str]:
+    def _get_pp_bus_names(self, elements_map, bus_id_to_bus_names, pyp_bus_ref) -> list[str]:
         """
         Resolve a powsybl bus reference to pandapower bus names.
 
@@ -317,9 +309,7 @@ class PyPowSyBlConverter(
 
         return list(bus_id_to_bus_names.get(pyp_bus_ref, []))
 
-    def _get_pp_bus_indices(
-        self, elements_map, bus_id_to_bus_names, pyp_bus_ref
-    ) -> list[int]:
+    def _get_pp_bus_indices(self, elements_map, bus_id_to_bus_names, pyp_bus_ref) -> list[int]:
         """
         Resolve a powsybl bus reference to pandapower bus indices.
 
@@ -334,18 +324,14 @@ class PyPowSyBlConverter(
         """
         bus_indices = []
 
-        for bus_name in self._get_pp_bus_names(
-            elements_map, bus_id_to_bus_names, pyp_bus_ref
-        ):
+        for bus_name in self._get_pp_bus_names(elements_map, bus_id_to_bus_names, pyp_bus_ref):
             pp_bus_idx = elements_map.get(bus_name, {}).get("pandap_bus_idx")
             if pp_bus_idx is not None:
                 bus_indices.append(pp_bus_idx)
 
         return bus_indices
 
-    def _get_pp_bus_idx(
-        self, elements_map, bus_id_to_bus_names, pyp_bus_ref
-    ) -> int | None:
+    def _get_pp_bus_idx(self, elements_map, bus_id_to_bus_names, pyp_bus_ref) -> int | None:
         """
         Return the first pandapower bus index for a powsybl bus reference.
 
@@ -354,9 +340,7 @@ class PyPowSyBlConverter(
         usually skips the affected element.
 
         """
-        bus_indices = self._get_pp_bus_indices(
-            elements_map, bus_id_to_bus_names, pyp_bus_ref
-        )
+        bus_indices = self._get_pp_bus_indices(elements_map, bus_id_to_bus_names, pyp_bus_ref)
         if not bus_indices:
             return None
 
@@ -393,15 +377,11 @@ class PyPowSyBlConverter(
             bus_id = row.get("bus_id")
 
             if bus_id in pyp_buses.index and "v_angle" in pyp_buses.columns:
-                angle_score = abs(
-                    self._to_float(pyp_buses.at[bus_id, "v_angle"], np.inf)
-                )
+                angle_score = abs(self._to_float(pyp_buses.at[bus_id, "v_angle"], np.inf))
             else:
                 angle_score = np.inf
 
-            target_p_score = abs(
-                self._to_float(row.get("target_p"), self.default_active_power_mw)
-            )
+            target_p_score = abs(self._to_float(row.get("target_p"), self.default_active_power_mw))
 
             candidates.append((angle_score, -target_p_score, str(gen_id), gen_id))
 
@@ -495,10 +475,7 @@ class PyPowSyBlConverter(
             raise RuntimeError(f"Failed to load powsybl file: {exc}") from exc
 
         if getattr(self.pyp_net, "per_unit", False):
-            raise ValueError(
-                "This converter mapping expects physical powsybl data "
-                "(per_unit == False)."
-            )
+            raise ValueError("This converter mapping expects physical powsybl data (per_unit == False).")
 
     def _init_pandapower_network(self) -> None:
         """
@@ -509,18 +486,10 @@ class PyPowSyBlConverter(
         configured default base apparent power.
 
         """
-        base_sn_mva = self._to_float(
-            getattr(self.pyp_net, "nominal_apparent_power", np.nan), np.nan
-        )
-        base_sn_mva = (
-            base_sn_mva / 1000.0
-            if np.isfinite(base_sn_mva) and base_sn_mva > 0
-            else self.default_base_sn_mva
-        )
+        base_sn_mva = self._to_float(getattr(self.pyp_net, "nominal_apparent_power", np.nan), np.nan)
+        base_sn_mva = base_sn_mva / 1000.0 if np.isfinite(base_sn_mva) and base_sn_mva > 0 else self.default_base_sn_mva
 
-        self.pandap_net = create_empty_network(
-            f_hz=self.default_frequency_hz, sn_mva=base_sn_mva
-        )
+        self.pandap_net = create_empty_network(f_hz=self.default_frequency_hz, sn_mva=base_sn_mva)
 
     # ======================================================
     # Collect base data
@@ -596,17 +565,9 @@ class PyPowSyBlConverter(
         created pandapower index in ``elements_map`` for later element creation.
 
         """
-        bus_names = [
-            bus_name
-            for vl_id, names in bus_map.items()
-            for bus_name in names
-        ]
+        bus_names = [bus_name for vl_id, names in bus_map.items() for bus_name in names]
 
-        vn_kv_values = [
-            voltage_level_map.get(vl_id)
-            for vl_id, names in bus_map.items()
-            for _ in names
-        ]
+        vn_kv_values = [voltage_level_map.get(vl_id) for vl_id, names in bus_map.items() for _ in names]
 
         if not bus_names:
             return
@@ -645,9 +606,7 @@ class PyPowSyBlConverter(
 
             connected = self._to_bool(row.get("connected"), True)
 
-            target_p_mw = self._to_float(
-                row.get("target_p"), self.default_active_power_mw
-            )
+            target_p_mw = self._to_float(row.get("target_p"), self.default_active_power_mw)
 
             target_v_kv = self._to_float(row.get("target_v"), np.nan)
 
@@ -694,16 +653,12 @@ class PyPowSyBlConverter(
         target_q = self._to_float(row.get("target_q"), np.nan)
 
         min_q = self._to_float(
-            self._get_first_non_missing_value(
-                row, "min_q", "min_q_mvar", "minimum_q", default=np.nan
-            ),
+            self._get_first_non_missing_value(row, "min_q", "min_q_mvar", "minimum_q", default=np.nan),
             np.nan,
         )
 
         max_q = self._to_float(
-            self._get_first_non_missing_value(
-                row, "max_q", "max_q_mvar", "maximum_q", default=np.nan
-            ),
+            self._get_first_non_missing_value(row, "max_q", "max_q_mvar", "maximum_q", default=np.nan),
             np.nan,
         )
 
@@ -742,9 +697,7 @@ class PyPowSyBlConverter(
         """Return the nominal voltage of a pandapower bus in kV."""
         return self._to_float(self.pandap_net.bus.at[pp_bus_idx, "vn_kv"], np.nan)
 
-    def _buses_have_different_nominal_voltage(
-        self, pp_from_bus, pp_to_bus, atol=1e-6
-    ) -> bool:
+    def _buses_have_different_nominal_voltage(self, pp_from_bus, pp_to_bus, atol=1e-6) -> bool:
         """Return whether two pandapower buses have different voltages."""
         from_vn_kv = self._get_bus_vn_kv(pp_from_bus)
         to_vn_kv = self._get_bus_vn_kv(pp_to_bus)
@@ -776,23 +729,19 @@ class PyPowSyBlConverter(
         from_vn_kv = self._get_bus_vn_kv(pp_from_bus)
         to_vn_kv = self._get_bus_vn_kv(pp_to_bus)
 
-        sn_mva = self._to_float(
-            getattr(self.pandap_net, "sn_mva", np.nan), self.default_base_sn_mva
-        )
+        sn_mva = self._to_float(getattr(self.pandap_net, "sn_mva", np.nan), self.default_base_sn_mva)
 
         if not np.isfinite(sn_mva) or sn_mva <= 0:
             sn_mva = self.default_base_sn_mva
 
         if not np.isfinite(from_vn_kv) or from_vn_kv <= 0:
             raise ValueError(
-                f"Cannot create impedance for line {line_id!r}: "
-                f"invalid from-bus nominal voltage {from_vn_kv} kV."
+                f"Cannot create impedance for line {line_id!r}: invalid from-bus nominal voltage {from_vn_kv} kV."
             )
 
         if not np.isfinite(to_vn_kv) or to_vn_kv <= 0:
             raise ValueError(
-                f"Cannot create impedance for line {line_id!r}: "
-                f"invalid to-bus nominal voltage {to_vn_kv} kV."
+                f"Cannot create impedance for line {line_id!r}: invalid to-bus nominal voltage {to_vn_kv} kV."
             )
 
         if not np.isfinite(r_ohm):
@@ -824,9 +773,7 @@ class PyPowSyBlConverter(
         )
 
         self.pandap_net.impedance.at[impedance_idx, "powsybl_id"] = str(line_id)
-        self.pandap_net.impedance.at[impedance_idx, "powsybl_element_type"] = (
-            "cross_voltage_line"
-        )
+        self.pandap_net.impedance.at[impedance_idx, "powsybl_element_type"] = "cross_voltage_line"
         self.pandap_net.impedance.at[impedance_idx, "from_vn_kv"] = from_vn_kv
         self.pandap_net.impedance.at[impedance_idx, "to_vn_kv"] = to_vn_kv
         self.pandap_net.impedance.at[impedance_idx, "powsybl_g_total_s"] = g_total_s
@@ -844,12 +791,8 @@ class PyPowSyBlConverter(
         lines = self.pyp_net.get_lines(all_attributes=True)
 
         for line_id, row in lines.iterrows():
-            pp_from_bus = self._get_pp_bus_idx(
-                elements_map, bus_id_to_bus_names, row.get("bus1_id")
-            )
-            pp_to_bus = self._get_pp_bus_idx(
-                elements_map, bus_id_to_bus_names, row.get("bus2_id")
-            )
+            pp_from_bus = self._get_pp_bus_idx(elements_map, bus_id_to_bus_names, row.get("bus1_id"))
+            pp_to_bus = self._get_pp_bus_idx(elements_map, bus_id_to_bus_names, row.get("bus2_id"))
 
             if pp_from_bus is None or pp_to_bus is None:
                 continue
@@ -865,9 +808,7 @@ class PyPowSyBlConverter(
             g_total_s = g1_s + g2_s
             b_total_s = b1_s + b2_s
 
-            in_service = self._to_bool(row.get("connected1"), True) and self._to_bool(
-                row.get("connected2"), True
-            )
+            in_service = self._to_bool(row.get("connected1"), True) and self._to_bool(row.get("connected2"), True)
 
             if self._buses_have_different_nominal_voltage(pp_from_bus, pp_to_bus):
                 self._create_cross_voltage_line_as_impedance(
@@ -897,9 +838,7 @@ class PyPowSyBlConverter(
             r_ohm_per_km = r_ohm * parallel / length_km
             x_ohm_per_km = x_ohm * parallel / length_km
 
-            c_nf_per_km = (b_total_s * 1e9) / (
-                2 * np.pi * self.pandap_net.f_hz * length_km * parallel
-            )
+            c_nf_per_km = (b_total_s * 1e9) / (2 * np.pi * self.pandap_net.f_hz * length_km * parallel)
             g_us_per_km = (g_total_s * 1e6) / (length_km * parallel)
 
             create_line_from_parameters(
@@ -917,9 +856,7 @@ class PyPowSyBlConverter(
                 in_service=in_service,
             )
 
-    def _create_2_windings_transformers(
-        self, elements_map, bus_id_to_bus_names
-    ) -> None:
+    def _create_2_windings_transformers(self, elements_map, bus_id_to_bus_names) -> None:
         """
         Create pandapower two-windings transformers from powsybl data.
 
@@ -931,12 +868,8 @@ class PyPowSyBlConverter(
         trafos = self.pyp_net.get_2_windings_transformers(all_attributes=True)
 
         for trafo_id, row in trafos.iterrows():
-            pp_bus1 = self._get_pp_bus_idx(
-                elements_map, bus_id_to_bus_names, row.get("bus1_id")
-            )
-            pp_bus2 = self._get_pp_bus_idx(
-                elements_map, bus_id_to_bus_names, row.get("bus2_id")
-            )
+            pp_bus1 = self._get_pp_bus_idx(elements_map, bus_id_to_bus_names, row.get("bus1_id"))
+            pp_bus2 = self._get_pp_bus_idx(elements_map, bus_id_to_bus_names, row.get("bus2_id"))
 
             if pp_bus1 is None or pp_bus2 is None:
                 continue
@@ -959,9 +892,7 @@ class PyPowSyBlConverter(
             if not np.isfinite(rated_s) or rated_s <= 0:
                 rated_s = self.default_trafo_sn_mva
 
-            in_service = self._to_bool(row.get("connected1"), True) and self._to_bool(
-                row.get("connected2"), True
-            )
+            in_service = self._to_bool(row.get("connected1"), True) and self._to_bool(row.get("connected2"), True)
 
             if rated_u1 >= rated_u2:
                 hv_bus = pp_bus1
@@ -1011,9 +942,7 @@ class PyPowSyBlConverter(
                 in_service=in_service,
             )
 
-    def _create_3_windings_transformers(
-        self, elements_map, bus_id_to_bus_names
-    ) -> None:
+    def _create_3_windings_transformers(self, elements_map, bus_id_to_bus_names) -> None:
         """
         Create pandapower three-windings transformer from powsybl data.
 
@@ -1044,9 +973,7 @@ class PyPowSyBlConverter(
                 )
 
                 connected = self._to_bool(
-                    self._get_first_non_missing_value(
-                        row, f"connected{leg_no}", default=not self._is_missing(bus_ref)
-                    ),
+                    self._get_first_non_missing_value(row, f"connected{leg_no}", default=not self._is_missing(bus_ref)),
                     default=not self._is_missing(bus_ref),
                 )
 
@@ -1054,24 +981,18 @@ class PyPowSyBlConverter(
                     bus_ref = connectable_bus_ref
                     connected = False
 
-                pp_bus = self._get_pp_bus_idx(
-                    elements_map, bus_id_to_bus_names, bus_ref
-                )
+                pp_bus = self._get_pp_bus_idx(elements_map, bus_id_to_bus_names, bus_ref)
 
                 if pp_bus is None:
                     legs = []
                     break
 
                 rated_u = self._to_float(
-                    self._get_first_non_missing_value(
-                        row, f"rated_u{leg_no}", f"ratedU{leg_no}", default=np.nan
-                    )
+                    self._get_first_non_missing_value(row, f"rated_u{leg_no}", f"ratedU{leg_no}", default=np.nan)
                 )
 
                 rated_s = self._to_float(
-                    self._get_first_non_missing_value(
-                        row, f"rated_s{leg_no}", f"ratedS{leg_no}", default=np.nan
-                    )
+                    self._get_first_non_missing_value(row, f"rated_s{leg_no}", f"ratedS{leg_no}", default=np.nan)
                 )
 
                 if not np.isfinite(rated_u) or rated_u <= 0:
@@ -1122,9 +1043,7 @@ class PyPowSyBlConverter(
                 )
 
                 alpha_degree = self._to_float(
-                    self._get_first_non_missing_value(
-                        row, f"alpha{leg_no}", default=self.default_shift_degree
-                    ),
+                    self._get_first_non_missing_value(row, f"alpha{leg_no}", default=self.default_shift_degree),
                     self.default_shift_degree,
                 )
 
@@ -1159,32 +1078,16 @@ class PyPowSyBlConverter(
             mv_leg = legs[1]
             lv_leg = legs[2]
 
-            in_service = (
-                hv_leg["connected"] and mv_leg["connected"] and lv_leg["connected"]
-            )
+            in_service = hv_leg["connected"] and mv_leg["connected"] and lv_leg["connected"]
 
             reference_u_kv = hv_leg["rated_u"]
 
-            vk_hv_percent, vkr_hv_percent = (
-                self._calculate_3w_pair_short_circuit_values(
-                    hv_leg, mv_leg, reference_u_kv
-                )
-            )
-            vk_mv_percent, vkr_mv_percent = (
-                self._calculate_3w_pair_short_circuit_values(
-                    mv_leg, lv_leg, reference_u_kv
-                )
-            )
-            vk_lv_percent, vkr_lv_percent = (
-                self._calculate_3w_pair_short_circuit_values(
-                    hv_leg, lv_leg, reference_u_kv
-                )
-            )
+            vk_hv_percent, vkr_hv_percent = self._calculate_3w_pair_short_circuit_values(hv_leg, mv_leg, reference_u_kv)
+            vk_mv_percent, vkr_mv_percent = self._calculate_3w_pair_short_circuit_values(mv_leg, lv_leg, reference_u_kv)
+            vk_lv_percent, vkr_lv_percent = self._calculate_3w_pair_short_circuit_values(hv_leg, lv_leg, reference_u_kv)
 
             pfe_kw = hv_leg["pfe_kw"] + mv_leg["pfe_kw"] + lv_leg["pfe_kw"]
-            i0_percent = (
-                hv_leg["i0_percent"] + mv_leg["i0_percent"] + lv_leg["i0_percent"]
-            )
+            i0_percent = hv_leg["i0_percent"] + mv_leg["i0_percent"] + lv_leg["i0_percent"]
 
             shift_mv_degree = mv_leg["alpha_degree"] - hv_leg["alpha_degree"]
             shift_lv_degree = lv_leg["alpha_degree"] - hv_leg["alpha_degree"]
@@ -1226,9 +1129,7 @@ class PyPowSyBlConverter(
         loads = self.pyp_net.get_loads(all_attributes=True)
 
         for load_id, row in loads.iterrows():
-            pp_bus_idx = self._get_pp_bus_idx(
-                elements_map, bus_id_to_bus_names, row.get("bus_id")
-            )
+            pp_bus_idx = self._get_pp_bus_idx(elements_map, bus_id_to_bus_names, row.get("bus_id"))
             if pp_bus_idx is None:
                 continue
 
@@ -1300,9 +1201,7 @@ class PyPowSyBlConverter(
         to_json(self.pandap_net, json_filename)
         return json_filename
 
-    def _calculate_3w_pair_short_circuit_values(
-        self, leg_a, leg_b, reference_u_kv
-    ) -> tuple[float, float]:
+    def _calculate_3w_pair_short_circuit_values(self, leg_a, leg_b, reference_u_kv) -> tuple[float, float]:
         """
         Calculate pairwise short-circuit values for the three-winding transformer.
 

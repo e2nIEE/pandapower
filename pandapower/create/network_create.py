@@ -5,6 +5,7 @@ from typing_extensions import deprecated
 
 from pandapower.auxiliary import pandapowerNet
 
+
 @deprecated('Use the pandapowerNet constructor instead: pandapowerNet(name="Name", ...)')
 def create_empty_network(
     name: str = "", f_hz: float = 50.0, sn_mva: float = 1, add_stdtypes: bool = True, structure: dict | None = None
