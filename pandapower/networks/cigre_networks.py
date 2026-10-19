@@ -6,11 +6,10 @@ import logging
 from numpy import nan
 
 from pandapower.create import (
-    create_bus,
     create_buses,
     create_ext_grid,
     create_gen,
-    create_line,
+    create_lines,
     create_load,
     create_load_from_cosphi,
     create_sgen,
@@ -52,30 +51,30 @@ def create_cigre_network_hv(length_km_6a_6b=0.1):
     create_std_type(net_cigre_hv, line_data, "Line380kV", element="line")
 
     # Busses
-    bus1 = create_bus(net_cigre_hv, name="Bus 1", vn_kv=220, type="b", zone="CIGRE_HV")
-    bus2 = create_bus(net_cigre_hv, name="Bus 2", vn_kv=220, type="b", zone="CIGRE_HV")
-    bus3 = create_bus(net_cigre_hv, name="Bus 3", vn_kv=220, type="b", zone="CIGRE_HV")
-    bus4 = create_bus(net_cigre_hv, name="Bus 4", vn_kv=220, type="b", zone="CIGRE_HV")
-    bus5 = create_bus(net_cigre_hv, name="Bus 5", vn_kv=220, type="b", zone="CIGRE_HV")
-    bus6a = create_bus(net_cigre_hv, name="Bus 6a", vn_kv=220, type="b", zone="CIGRE_HV")
-    bus6b = create_bus(net_cigre_hv, name="Bus 6b", vn_kv=220, type="b", zone="CIGRE_HV")
-    bus7 = create_bus(net_cigre_hv, name="Bus 7", vn_kv=380, type="b", zone="CIGRE_HV")
-    bus8 = create_bus(net_cigre_hv, name="Bus 8", vn_kv=380, type="b", zone="CIGRE_HV")
-    bus9 = create_bus(net_cigre_hv, name="Bus 9", vn_kv=22, type="b", zone="CIGRE_HV")
-    bus10 = create_bus(net_cigre_hv, name="Bus 10", vn_kv=22, type="b", zone="CIGRE_HV")
-    bus11 = create_bus(net_cigre_hv, name="Bus 11", vn_kv=22, type="b", zone="CIGRE_HV")
-    bus12 = create_bus(net_cigre_hv, name="Bus 12", vn_kv=22, type="b", zone="CIGRE_HV")
+    bus1, bus2, bus3, bus4, bus5, bus6a, bus6b = create_buses(
+        net_cigre_hv,
+        7,
+        name=["Bus 1", "Bus 2", "Bus 3", "Bus 4", "Bus 5", "Bus 6a", "Bus 6b"],
+        vn_kv=220,
+        type="b",
+        zone="CIGRE_HV",
+    )
+
+    bus7, bus8 = create_buses(net_cigre_hv, 2, name=["Bus 7", "Bus 8"], vn_kv=380, type="b", zone="CIGRE_HV")
+
+    bus9, bus10, bus11, bus12 = create_buses(
+        net_cigre_hv, 4, name=["Bus 9", "Bus 10", "Bus 11", "Bus 12"], vn_kv=22, type="b", zone="CIGRE_HV"
+    )
 
     # Lines
-    create_line(net_cigre_hv, bus1, bus2, length_km=100, std_type="Line220kV", name="Line 1-2")
-    create_line(net_cigre_hv, bus1, bus6a, length_km=300, std_type="Line220kV", name="Line 1-6a")
-    create_line(net_cigre_hv, bus2, bus5, length_km=300, std_type="Line220kV", name="Line 2-5")
-    create_line(net_cigre_hv, bus3, bus4, length_km=100, std_type="Line220kV", name="Line 3-4")
-    create_line(net_cigre_hv, bus3, bus4, length_km=100, std_type="Line220kV", name="Line 3-4_2")
-    create_line(net_cigre_hv, bus4, bus5, length_km=300, std_type="Line220kV", name="Line 4-5")
-    create_line(net_cigre_hv, bus4, bus6a, length_km=300, std_type="Line220kV", name="Line 4-6a")
-    create_line(net_cigre_hv, bus7, bus8, length_km=600, std_type="Line380kV", name="Line 7-8")
-    create_line(net_cigre_hv, bus6a, bus6b, length_km=length_km_6a_6b, std_type="Line220kV", name="Line 6a-6b")
+    names = ["Line 1-2", "Line 1-6a", "Line 2-5", "Line 3-4", "Line 3-4_2", "Line 4-5", "Line 4-6a"]
+    length_km = [100, 300, 300, 100, 100, 300, 300]
+    from_buses = [bus1, bus1, bus2, bus3, bus3, bus4, bus4]
+    to_buses = [bus2, bus6a, bus5, bus4, bus4, bus5, bus6a]
+    create_lines(net_cigre_hv, from_buses, to_buses, length_km, "Line220kV", names)
+
+    create_lines(net_cigre_hv, bus7, bus8, length_km=600, line_params="Line380kV", name="Line 7-8")
+    create_lines(net_cigre_hv, bus6a, bus6b, length_km=length_km_6a_6b, line_params="Line220kV", name="Line 6a-6b")
 
     # Trafos
     create_transformer_from_parameters(
@@ -185,15 +184,13 @@ def create_cigre_network_hv(length_km_6a_6b=0.1):
     create_shunt(net_cigre_hv, bus6a, p_mw=0.0, q_mvar=-180, name="Shunt 6a")
 
     # Bus geo data
-    bus_geodata = list(
-        map(
-            lambda xy: f'{{"type":"Point", "coordinates":[{xy[0]}, {xy[1]}]}}',
-            zip(
-                [4, 8, 20, 16, 12, 8, 12, 4, 20, 0, 8, 24, 16],
-                [8.0, 8.0, 8.0, 8.0, 8.0, 6.0, 4.5, 1.0, 1.0, 8.0, 12.0, 8.0, 4.5],
-            ),
+    bus_geodata = [
+        f'{{"type":"Point", "coordinates":[{xy[0]}, {xy[1]}]}}'
+        for xy in zip(
+            [4, 8, 20, 16, 12, 8, 12, 4, 20, 0, 8, 24, 16],
+            [8.0, 8.0, 8.0, 8.0, 8.0, 6.0, 4.5, 1.0, 1.0, 8.0, 12.0, 8.0, 4.5],
         )
-    )
+    ]
     # Match bus.index
     net_cigre_hv.bus["geo"] = bus_geodata
 
@@ -234,11 +231,11 @@ def create_cigre_network_mv(with_der=False):
             [16.0, 15.0, 13.0, 11.0, 9.0, 7.0, 3.0, 3.0, 5.0, 5.0, 5.0, 7.0, 15.0, 11.0, 5.0],
         )
     )
-    bus0 = create_bus(net_cigre_mv, name="Bus 0", vn_kv=110, type="b", zone="CIGRE_MV", geodata=bus_geodata[0])
+    (bus0,) = create_buses(net_cigre_mv, 1, name="Bus 0", vn_kv=110, type="b", zone="CIGRE_MV", geodata=bus_geodata[0])
     buses = create_buses(
         net_cigre_mv,
         14,
-        name=["Bus %i" % i for i in range(1, 15)],
+        name=[f"Bus {i}" for i in range(1, 15)],
         vn_kv=20,
         type="b",
         zone="CIGRE_MV",
@@ -246,24 +243,44 @@ def create_cigre_network_mv(with_der=False):
     )
 
     # Lines
-    create_line(net_cigre_mv, buses[0], buses[1], length_km=2.82, std_type="CABLE_CIGRE_MV", name="Line 1-2")
-    create_line(net_cigre_mv, buses[1], buses[2], length_km=4.42, std_type="CABLE_CIGRE_MV", name="Line 2-3")
-    create_line(net_cigre_mv, buses[2], buses[3], length_km=0.61, std_type="CABLE_CIGRE_MV", name="Line 3-4")
-    create_line(net_cigre_mv, buses[3], buses[4], length_km=0.56, std_type="CABLE_CIGRE_MV", name="Line 4-5")
-    create_line(net_cigre_mv, buses[4], buses[5], length_km=1.54, std_type="CABLE_CIGRE_MV", name="Line 5-6")
-    create_line(net_cigre_mv, buses[6], buses[7], length_km=1.67, std_type="CABLE_CIGRE_MV", name="Line 7-8")
-    create_line(net_cigre_mv, buses[7], buses[8], length_km=0.32, std_type="CABLE_CIGRE_MV", name="Line 8-9")
-    create_line(net_cigre_mv, buses[8], buses[9], length_km=0.77, std_type="CABLE_CIGRE_MV", name="Line 9-10")
-    create_line(net_cigre_mv, buses[9], buses[10], length_km=0.33, std_type="CABLE_CIGRE_MV", name="Line 10-11")
-    create_line(net_cigre_mv, buses[2], buses[7], length_km=1.3, std_type="CABLE_CIGRE_MV", name="Line 3-8")
-    create_line(net_cigre_mv, buses[11], buses[12], length_km=4.89, std_type="OHL_CIGRE_MV", name="Line 12-13")
-    create_line(net_cigre_mv, buses[12], buses[13], length_km=2.99, std_type="OHL_CIGRE_MV", name="Line 13-14")
+    from_buses = [buses[i] for i in [0, 1, 2, 3, 4, 6, 7, 8, 9, 2]]
+    to_buses = [buses[i] for i in [1, 2, 3, 4, 5, 7, 8, 9, 10, 7]]
+    length_km = [2.82, 4.42, 0.61, 0.56, 1.54, 1.67, 0.32, 0.77, 0.33, 1.3]
+    names = [
+        "Line 1-2",
+        "Line 2-3",
+        "Line 3-4",
+        "Line 4-5",
+        "Line 5-6",
+        "Line 7-8",
+        "Line 8-9",
+        "Line 9-10",
+        "Line 10-11",
+        "Line 3-8",
+    ]
+    create_lines(net_cigre_mv, from_buses, to_buses, length_km, "CABLE_CIGRE_MV", names)
 
-    line6_7 = create_line(net_cigre_mv, buses[5], buses[6], length_km=0.24, std_type="CABLE_CIGRE_MV", name="Line 6-7")
-    line4_11 = create_line(
-        net_cigre_mv, buses[10], buses[3], length_km=0.49, std_type="CABLE_CIGRE_MV", name="Line 11-4"
+    create_lines(
+        net_cigre_mv,
+        [buses[11], buses[12]],
+        [buses[12], buses[13]],
+        length_km=[4.89, 2.99],
+        line_params="OHL_CIGRE_MV",
+        name=["Line 12-13", "Line 13-14"],
     )
-    line8_14 = create_line(net_cigre_mv, buses[13], buses[7], length_km=2.0, std_type="OHL_CIGRE_MV", name="Line 14-8")
+
+    line6_7, line4_11 = create_lines(
+        net_cigre_mv,
+        [buses[5], buses[10]],
+        [buses[6], buses[3]],
+        length_km=[0.24, 0.49],
+        line_params="CABLE_CIGRE_MV",
+        name=["Line 6-7", "Line 11-4"],
+    )
+
+    (line8_14,) = create_lines(
+        net_cigre_mv, buses[13], buses[7], length_km=2.0, line_params="OHL_CIGRE_MV", name="Line 14-8"
+    )
 
     # Ext-Grid
     create_ext_grid(
@@ -429,93 +446,223 @@ def create_cigre_network_lv():
     create_std_type(net_cigre_lv, line_data, name="OH3", element="line")
 
     # Busses
-    bus0 = create_bus(net_cigre_lv, name="Bus 0", vn_kv=20.0, type="b", zone="CIGRE_LV")
-    busR0 = create_bus(net_cigre_lv, name="Bus R0", vn_kv=20.0, type="b", zone="CIGRE_LV")
-    busR1 = create_bus(net_cigre_lv, name="Bus R1", vn_kv=0.4, type="b", zone="CIGRE_LV")
-    busR2 = create_bus(net_cigre_lv, name="Bus R2", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busR3 = create_bus(net_cigre_lv, name="Bus R3", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busR4 = create_bus(net_cigre_lv, name="Bus R4", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busR5 = create_bus(net_cigre_lv, name="Bus R5", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busR6 = create_bus(net_cigre_lv, name="Bus R6", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busR7 = create_bus(net_cigre_lv, name="Bus R7", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busR8 = create_bus(net_cigre_lv, name="Bus R8", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busR9 = create_bus(net_cigre_lv, name="Bus R9", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busR10 = create_bus(net_cigre_lv, name="Bus R10", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busR11 = create_bus(net_cigre_lv, name="Bus R11", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busR12 = create_bus(net_cigre_lv, name="Bus R12", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busR13 = create_bus(net_cigre_lv, name="Bus R13", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busR14 = create_bus(net_cigre_lv, name="Bus R14", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busR15 = create_bus(net_cigre_lv, name="Bus R15", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busR16 = create_bus(net_cigre_lv, name="Bus R16", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busR17 = create_bus(net_cigre_lv, name="Bus R17", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busR18 = create_bus(net_cigre_lv, name="Bus R18", vn_kv=0.4, type="m", zone="CIGRE_LV")
+    bus0, busR0, busR1 = create_buses(
+        net_cigre_lv, 3, name=["Bus 0", "Bus R0", "Bus R1"], vn_kv=[20.0, 20.0, 0.4], type="b", zone="CIGRE_LV"
+    )
 
-    busI0 = create_bus(net_cigre_lv, name="Bus I0", vn_kv=20.0, type="b", zone="CIGRE_LV")
-    busI1 = create_bus(net_cigre_lv, name="Bus I1", vn_kv=0.4, type="b", zone="CIGRE_LV")
-    busI2 = create_bus(net_cigre_lv, name="Bus I2", vn_kv=0.4, type="m", zone="CIGRE_LV")
+    name = [
+        "Bus R2",
+        "Bus R3",
+        "Bus R4",
+        "Bus R5",
+        "Bus R6",
+        "Bus R7",
+        "Bus R8",
+        "Bus R9",
+        "Bus R10",
+        "Bus R11",
+        "Bus R12",
+        "Bus R13",
+        "Bus R14",
+        "Bus R15",
+        "Bus R16",
+        "Bus R17",
+        "Bus R18",
+    ]
+    (
+        busR2,
+        busR3,
+        busR4,
+        busR5,
+        busR6,
+        busR7,
+        busR8,
+        busR9,
+        busR10,
+        busR11,
+        busR12,
+        busR13,
+        busR14,
+        busR15,
+        busR16,
+        busR17,
+        busR18,
+    ) = create_buses(net_cigre_lv, 17, name=name, vn_kv=0.4, type="m", zone="CIGRE_LV")
 
-    busC0 = create_bus(net_cigre_lv, name="Bus C0", vn_kv=20.0, type="b", zone="CIGRE_LV")
-    busC1 = create_bus(net_cigre_lv, name="Bus C1", vn_kv=0.4, type="b", zone="CIGRE_LV")
-    busC2 = create_bus(net_cigre_lv, name="Bus C2", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busC3 = create_bus(net_cigre_lv, name="Bus C3", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busC4 = create_bus(net_cigre_lv, name="Bus C4", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busC5 = create_bus(net_cigre_lv, name="Bus C5", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busC6 = create_bus(net_cigre_lv, name="Bus C6", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busC7 = create_bus(net_cigre_lv, name="Bus C7", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busC8 = create_bus(net_cigre_lv, name="Bus C8", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busC9 = create_bus(net_cigre_lv, name="Bus C9", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busC10 = create_bus(net_cigre_lv, name="Bus C10", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busC11 = create_bus(net_cigre_lv, name="Bus C11", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busC12 = create_bus(net_cigre_lv, name="Bus C12", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busC13 = create_bus(net_cigre_lv, name="Bus C13", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busC14 = create_bus(net_cigre_lv, name="Bus C14", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busC15 = create_bus(net_cigre_lv, name="Bus C15", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busC16 = create_bus(net_cigre_lv, name="Bus C16", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busC17 = create_bus(net_cigre_lv, name="Bus C17", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busC18 = create_bus(net_cigre_lv, name="Bus C18", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busC19 = create_bus(net_cigre_lv, name="Bus C19", vn_kv=0.4, type="m", zone="CIGRE_LV")
-    busC20 = create_bus(net_cigre_lv, name="Bus C20", vn_kv=0.4, type="m", zone="CIGRE_LV")
+    busI0, busI1, busI2 = create_buses(
+        net_cigre_lv,
+        3,
+        name=["Bus I0", "Bus I1", "Bus I2"],
+        vn_kv=[20.0, 0.4, 0.4],
+        type=["b", "b", "m"],
+        zone="CIGRE_LV",
+    )
+
+    busC0, busC1 = create_buses(
+        net_cigre_lv, 2, name=["Bus C0", "Bus C1"], vn_kv=[20.0, 0.4], type="b", zone="CIGRE_LV"
+    )
+
+    names = [
+        "Bus C2",
+        "Bus C3",
+        "Bus C4",
+        "Bus C5",
+        "Bus C6",
+        "Bus C7",
+        "Bus C8",
+        "Bus C9",
+        "Bus C10",
+        "Bus C11",
+        "Bus C12",
+        "Bus C13",
+        "Bus C14",
+        "Bus C15",
+        "Bus C16",
+        "Bus C17",
+        "Bus C18",
+        "Bus C19",
+        "Bus C20",
+    ]
+    (
+        busC2,
+        busC3,
+        busC4,
+        busC5,
+        busC6,
+        busC7,
+        busC8,
+        busC9,
+        busC10,
+        busC11,
+        busC12,
+        busC13,
+        busC14,
+        busC15,
+        busC16,
+        busC17,
+        busC18,
+        busC19,
+        busC20,
+    ) = create_buses(net_cigre_lv, 19, name=names, vn_kv=0.4, type="m", zone="CIGRE_LV")
 
     # Lines
-    create_line(net_cigre_lv, busR1, busR2, length_km=0.035, std_type="UG1", name="Line R1-R2")
-    create_line(net_cigre_lv, busR2, busR3, length_km=0.035, std_type="UG1", name="Line R2-R3")
-    create_line(net_cigre_lv, busR3, busR4, length_km=0.035, std_type="UG1", name="Line R3-R4")
-    create_line(net_cigre_lv, busR4, busR5, length_km=0.035, std_type="UG1", name="Line R4-R5")
-    create_line(net_cigre_lv, busR5, busR6, length_km=0.035, std_type="UG1", name="Line R5-R6")
-    create_line(net_cigre_lv, busR6, busR7, length_km=0.035, std_type="UG1", name="Line R6-R7")
-    create_line(net_cigre_lv, busR7, busR8, length_km=0.035, std_type="UG1", name="Line R7-R8")
-    create_line(net_cigre_lv, busR8, busR9, length_km=0.035, std_type="UG1", name="Line R8-R9")
-    create_line(net_cigre_lv, busR9, busR10, length_km=0.035, std_type="UG1", name="Line R9-R10")
-    create_line(net_cigre_lv, busR3, busR11, length_km=0.030, std_type="UG3", name="Line R3-R11")
-    create_line(net_cigre_lv, busR4, busR12, length_km=0.035, std_type="UG3", name="Line R4-R12")
-    create_line(net_cigre_lv, busR12, busR13, length_km=0.035, std_type="UG3", name="Line R12-R13")
-    create_line(net_cigre_lv, busR13, busR14, length_km=0.035, std_type="UG3", name="Line R13-R14")
-    create_line(net_cigre_lv, busR14, busR15, length_km=0.030, std_type="UG3", name="Line R14-R15")
-    create_line(net_cigre_lv, busR6, busR16, length_km=0.030, std_type="UG3", name="Line R6-R16")
-    create_line(net_cigre_lv, busR9, busR17, length_km=0.030, std_type="UG3", name="Line R9-R17")
-    create_line(net_cigre_lv, busR10, busR18, length_km=0.030, std_type="UG3", name="Line R10-R18")
+    from_buses = [busR1, busR2, busR3, busR4, busR5, busR6, busR7, busR8, busR9]
+    to_buses = [busR2, busR3, busR4, busR5, busR6, busR7, busR8, busR9, busR10]
+    names = [
+        "Line R1-R2",
+        "Line R2-R3",
+        "Line R3-R4",
+        "Line R4-R5",
+        "Line R5-R6",
+        "Line R6-R7",
+        "Line R7-R8",
+        "Line R8-R9",
+        "Line R9-R10",
+    ]
+    create_lines(net_cigre_lv, from_buses, to_buses, length_km=0.035, line_params="UG1", name=names)
 
-    create_line(net_cigre_lv, busI1, busI2, length_km=0.2, std_type="UG2", name="Line I1-I2")
+    from_buses = [busR3, busR4, busR12, busR13, busR14, busR6, busR9, busR10]
+    to_buses = [busR11, busR12, busR13, busR14, busR15, busR16, busR17, busR18]
+    length_km = [0.030, 0.035, 0.035, 0.035, 0.030, 0.030, 0.030, 0.030]
+    names = [
+        "Line R3-R11",
+        "Line R4-R12",
+        "Line R12-R13",
+        "Line R13-R14",
+        "Line R14-R15",
+        "Line R6-R16",
+        "Line R9-R17",
+        "Line R10-R18",
+    ]
+    create_lines(net_cigre_lv, from_buses, to_buses, length_km, "UG3", names)
 
-    create_line(net_cigre_lv, busC1, busC2, length_km=0.030, std_type="OH1", name="Line C1-C2")
-    create_line(net_cigre_lv, busC2, busC3, length_km=0.030, std_type="OH1", name="Line C2-C3")
-    create_line(net_cigre_lv, busC3, busC4, length_km=0.030, std_type="OH1", name="Line C3-C4")
-    create_line(net_cigre_lv, busC4, busC5, length_km=0.030, std_type="OH1", name="Line C4-C5")
-    create_line(net_cigre_lv, busC5, busC6, length_km=0.030, std_type="OH1", name="Line C5-C6")
-    create_line(net_cigre_lv, busC6, busC7, length_km=0.030, std_type="OH1", name="Line C6-C7")
-    create_line(net_cigre_lv, busC7, busC8, length_km=0.030, std_type="OH1", name="Line C7-C8")
-    create_line(net_cigre_lv, busC8, busC9, length_km=0.030, std_type="OH1", name="Line C8-C9")
-    create_line(net_cigre_lv, busC3, busC10, length_km=0.030, std_type="OH2", name="Line C3-C10")
-    create_line(net_cigre_lv, busC10, busC11, length_km=0.030, std_type="OH2", name="Line C10-C11")
-    create_line(net_cigre_lv, busC11, busC12, length_km=0.030, std_type="OH3", name="Line C11-C12")
-    create_line(net_cigre_lv, busC11, busC13, length_km=0.030, std_type="OH3", name="Line C11-C13")
-    create_line(net_cigre_lv, busC10, busC14, length_km=0.030, std_type="OH3", name="Line C10-C14")
-    create_line(net_cigre_lv, busC5, busC15, length_km=0.030, std_type="OH2", name="Line C5-C15")
-    create_line(net_cigre_lv, busC15, busC16, length_km=0.030, std_type="OH2", name="Line C15-C16")
-    create_line(net_cigre_lv, busC15, busC17, length_km=0.030, std_type="OH3", name="Line C15-C17")
-    create_line(net_cigre_lv, busC16, busC18, length_km=0.030, std_type="OH3", name="Line C16-C18")
-    create_line(net_cigre_lv, busC8, busC19, length_km=0.030, std_type="OH3", name="Line C8-C19")
-    create_line(net_cigre_lv, busC9, busC20, length_km=0.030, std_type="OH3", name="Line C9-C20")
+    create_lines(net_cigre_lv, busI1, busI2, length_km=0.2, line_params="UG2", name="Line I1-I2")
+
+    from_buses = [
+        busC1,
+        busC2,
+        busC3,
+        busC4,
+        busC5,
+        busC6,
+        busC7,
+        busC8,
+        busC3,
+        busC10,
+        busC11,
+        busC11,
+        busC10,
+        busC5,
+        busC15,
+        busC15,
+        busC16,
+        busC8,
+        busC9,
+    ]
+    to_buses = [
+        busC2,
+        busC3,
+        busC4,
+        busC5,
+        busC6,
+        busC7,
+        busC8,
+        busC9,
+        busC10,
+        busC11,
+        busC12,
+        busC13,
+        busC14,
+        busC15,
+        busC16,
+        busC17,
+        busC18,
+        busC19,
+        busC20,
+    ]
+    std_types = [
+        "OH1",
+        "OH1",
+        "OH1",
+        "OH1",
+        "OH1",
+        "OH1",
+        "OH1",
+        "OH1",
+        "OH2",
+        "OH2",
+        "OH3",
+        "OH3",
+        "OH3",
+        "OH2",
+        "OH2",
+        "OH3",
+        "OH3",
+        "OH3",
+        "OH3",
+    ]
+    names = [
+        "Line C1-C2",
+        "Line C2-C3",
+        "Line C3-C4",
+        "Line C4-C5",
+        "Line C5-C6",
+        "Line C6-C7",
+        "Line C7-C8",
+        "Line C8-C9",
+        "Line C3-C10",
+        "Line C10-C11",
+        "Line C11-C12",
+        "Line C11-C13",
+        "Line C10-C14",
+        "Line C5-C15",
+        "Line C15-C16",
+        "Line C15-C17",
+        "Line C16-C18",
+        "Line C8-C19",
+        "Line C9-C20",
+    ]
+    create_lines(net_cigre_lv, from_buses, to_buses, length_km=0.030, line_params=std_types, name=names)
 
     # Trafos
     create_transformer_from_parameters(
@@ -594,111 +741,103 @@ def create_cigre_network_lv():
     create_switch(net_cigre_lv, bus0, busC0, et="b", closed=True, type="CB", name="S3")
 
     # Bus geo data
-    bus_geodata = list(
-        map(
-            lambda xy: f'{{"type":"Point", "coordinates":[{xy[0]}, {xy[1]}]}}',
-            zip(
-                [
-                    0.2,
-                    0.2,
-                    -1.4583333333,
-                    -1.4583333333,
-                    -1.4583333333,
-                    -1.9583333333,
-                    -2.7083333333,
-                    -2.7083333333,
-                    -3.2083333333,
-                    -3.2083333333,
-                    -3.2083333333,
-                    -3.7083333333,
-                    -0.9583333333,
-                    -1.2083333333,
-                    -1.2083333333,
-                    -1.2083333333,
-                    -1.2083333333,
-                    -2.2083333333,
-                    -2.7083333333,
-                    -3.7083333333,
-                    0.2,
-                    0.2,
-                    0.2,
-                    0.2,
-                    1.9166666667,
-                    1.9166666667,
-                    1.9166666667,
-                    0.5416666667,
-                    0.5416666667,
-                    -0.2083333333,
-                    -0.2083333333,
-                    -0.2083333333,
-                    -0.7083333333,
-                    3.2916666667,
-                    2.7916666667,
-                    2.2916666667,
-                    3.2916666667,
-                    3.7916666667,
-                    1.2916666667,
-                    0.7916666667,
-                    1.7916666667,
-                    0.7916666667,
-                    0.2916666667,
-                    -0.7083333333,
-                ],
-                [
-                    1.0,
-                    1.0,
-                    2.0,
-                    3.0,
-                    4.0,
-                    5.0,
-                    6.0,
-                    7.0,
-                    8.0,
-                    9.0,
-                    10.0,
-                    11.0,
-                    5.0,
-                    6.0,
-                    7.0,
-                    8.0,
-                    9.0,
-                    8.0,
-                    11.0,
-                    12.0,
-                    1.0,
-                    2.0,
-                    3.0,
-                    1.0,
-                    2.0,
-                    3.0,
-                    4.0,
-                    5.0,
-                    6.0,
-                    7.0,
-                    8.0,
-                    9.0,
-                    10.0,
-                    5.0,
-                    6.0,
-                    7.0,
-                    7.0,
-                    6.0,
-                    7.0,
-                    8.0,
-                    8.0,
-                    9.0,
-                    10.0,
-                    11.0,
-                ],
-            ),
+    bus_geodata = [
+        f'{{"type":"Point", "coordinates":[{x}, {y}]}}'
+        for x, y in zip(
+            [
+                0.2,
+                0.2,
+                -1.4583333333,
+                -1.4583333333,
+                -1.4583333333,
+                -1.9583333333,
+                -2.7083333333,
+                -2.7083333333,
+                -3.2083333333,
+                -3.2083333333,
+                -3.2083333333,
+                -3.7083333333,
+                -0.9583333333,
+                -1.2083333333,
+                -1.2083333333,
+                -1.2083333333,
+                -1.2083333333,
+                -2.2083333333,
+                -2.7083333333,
+                -3.7083333333,
+                0.2,
+                0.2,
+                0.2,
+                0.2,
+                1.9166666667,
+                1.9166666667,
+                1.9166666667,
+                0.5416666667,
+                0.5416666667,
+                -0.2083333333,
+                -0.2083333333,
+                -0.2083333333,
+                -0.7083333333,
+                3.2916666667,
+                2.7916666667,
+                2.2916666667,
+                3.2916666667,
+                3.7916666667,
+                1.2916666667,
+                0.7916666667,
+                1.7916666667,
+                0.7916666667,
+                0.2916666667,
+                -0.7083333333,
+            ],
+            [
+                1.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0,
+                5.0,
+                6.0,
+                7.0,
+                8.0,
+                9.0,
+                10.0,
+                11.0,
+                5.0,
+                6.0,
+                7.0,
+                8.0,
+                9.0,
+                8.0,
+                11.0,
+                12.0,
+                1.0,
+                2.0,
+                3.0,
+                1.0,
+                2.0,
+                3.0,
+                4.0,
+                5.0,
+                6.0,
+                7.0,
+                8.0,
+                9.0,
+                10.0,
+                5.0,
+                6.0,
+                7.0,
+                7.0,
+                6.0,
+                7.0,
+                8.0,
+                8.0,
+                9.0,
+                10.0,
+                11.0,
+            ],
         )
-    )
+    ]
     # Match bus.index
     net_cigre_lv.bus["geo"] = bus_geodata
     return net_cigre_lv
-
-
-if __name__ == "__main__":
-    net = create_cigre_network_lv()
-    net = create_cigre_network_mv()
-    net = create_cigre_network_hv()
