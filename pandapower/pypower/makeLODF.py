@@ -8,12 +8,12 @@
 # Builds the line outage distribution factor matrix.
 
 
-from numpy import ones, diag, r_, arange
 import numpy as np
+from numpy import arange, diag, ones, r_
 from scipy.sparse import csr_matrix as sparse
 
-from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.auxiliary import version_check
+from pandapower.pypower.idx_brch import F_BUS, T_BUS
 
 try:
     from numba import jit

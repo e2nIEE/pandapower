@@ -1,6 +1,5 @@
-from logging import StreamHandler, Formatter
-
 import logging
+from logging import Formatter, StreamHandler
 
 
 class AppHandler(StreamHandler):
@@ -28,9 +27,7 @@ class AppHandler(StreamHandler):
             self.PrintInfo(msg)
         elif level == "WARNING":
             self.PrintWarn(msg)
-        elif level == "ERROR":
-            self.PrintError(msg)
-        elif level == "CRITICAL":
+        elif level == "ERROR" or level == "CRITICAL":
             self.PrintError(msg)
         else:
             self.PrintPlain(msg)

@@ -2,17 +2,17 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import logging
-from datetime import datetime, timezone
 import os
 import tempfile
 import time
-from typing import Dict, List
+from datetime import UTC, datetime
+
 import numpy as np
 import pandas as pd
 
 
 class UCTEParser:
-    def __init__(self, path_ucte_file: str | None = None, config: Dict | None = None):
+    def __init__(self, path_ucte_file: str | None = None, config: dict | None = None):
         """
         This class parses an UCTE file and loads its content to a dictionary of
         UCTE element type (str) -> UCTE elements (DataFrame)
@@ -20,11 +20,11 @@ class UCTEParser:
         :param config: The configuration dictionary. Optional, default: None. This parameter may be set later.
         """
         self.path_ucte_file: str | None = path_ucte_file
-        self.config: Dict = config if isinstance(config, dict) else {}
+        self.config: dict = config if isinstance(config, dict) else {}
         self.logger = logging.getLogger(self.__class__.__name__)
         self.ucte_elements = ["##C", "##N", "##L", "##T", "##R", "##TT", "##E"]
-        self.data: Dict[str, pd.DataFrame] = {}
-        self.date: datetime = datetime.now(timezone.utc)
+        self.data: dict[str, pd.DataFrame] = {}
+        self.date: datetime = datetime.now(UTC)
         self.bus_ucte_countries: list = []
 
     def parse_file(self, path_ucte_file: str | None = None) -> bool:
@@ -59,7 +59,7 @@ class UCTEParser:
             ucte_country = ""
             is_in_N = False
             # iterate through the origin input file
-            for row in f.readlines():
+            for row in f:
                 row = row.strip()
                 if row.startswith("##N"):
                     is_in_N = True
@@ -92,7 +92,7 @@ class UCTEParser:
             self.date = datetime.strptime(date_str, "%Y%m%d_%H%M")
         except Exception:
             self.logger.info(f"The given {date_str=} couldn't be parsed as '%Y%m%d_%H%M'.")
-            self.date = datetime.now(timezone.utc)
+            self.date = datetime.now(UTC)
 
     def _create_df_from_raw(self, raw_input_dict):
         # create DataFrames from the raw_input_dict
@@ -299,7 +299,7 @@ class UCTEParser:
         df["p"] = df[0].str[6:13].str.strip()
         df["comment"] = df[0].str[14:26].str.strip()
 
-    def get_fields_dict(self) -> Dict[str, Dict[str, List[str]]]:
+    def get_fields_dict(self) -> dict[str, dict[str, list[str]]]:
         """
         Get an overview about the UCTE element types and their fields.
         :return: A dictionary containing a dictionary with the UCTE element types as keys and for each UCTE element
@@ -332,17 +332,17 @@ class UCTEParser:
     def get_path_ucte_file(self) -> str | None:
         return self.path_ucte_file
 
-    def set_config(self, config: Dict):
+    def set_config(self, config: dict):
         if isinstance(config, dict):
             self.config = config
         else:
             self.logger.warning("The configuration is not a dictionary! Default configuration is set.")
             self.config = {}
 
-    def get_config(self) -> Dict:
+    def get_config(self) -> dict:
         return self.config
 
-    def get_data(self) -> Dict[str, pd.DataFrame]:
+    def get_data(self) -> dict[str, pd.DataFrame]:
         return self.data
 
     def get_date(self) -> datetime:

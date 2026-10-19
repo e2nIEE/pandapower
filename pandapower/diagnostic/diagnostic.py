@@ -2,18 +2,18 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import logging
-from typing import Literal, Any
 from collections.abc import Callable
+from typing import Any, Literal
 
-from pandapower.network import ADict
-from pandapower.diagnostic.diagnostic_functions import default_diagnostic_functions, default_argument_values
+from pandapower.diagnostic.diagnostic_functions import default_argument_values, default_diagnostic_functions
 from pandapower.diagnostic.diagnostic_helpers import (
-    logger,
     DiagnosticFunction,
+    LogCount,
     NotCompactFilter,
     NotDetailedFilter,
-    LogCount,
+    logger,
 )
+from pandapower.network import ADict
 
 # LOGGER:
 # there is no local logger here because it requires the custom log levels from diagnostic_helpers

@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -23,6 +21,8 @@ import os
 from typing import Any
 
 import numpy as np
+import pandas as pd
+
 from pandapower import (
     create_buses,
     create_empty_network,
@@ -35,18 +35,17 @@ from pandapower import (
     create_transformer_from_parameters,
     to_json,
 )
-import pandas as pd
 from pandapower.auxiliary import soft_dependency_error
-from pandapower.pp_types import SwitchType
-from pandapower.converter.pypowsybl.pypowsybl_static_comparison import (
-    PyPowSyBlStaticComparisonMixin,
+from pandapower.converter.pypowsybl.pypowsybl_comparison_utils import (
+    PyPowSyBlComparisonUtilsMixin,
 )
 from pandapower.converter.pypowsybl.pypowsybl_loadflow_comparison import (
     PyPowSyBlLoadflowComparisonMixin,
 )
-from pandapower.converter.pypowsybl.pypowsybl_comparison_utils import (
-    PyPowSyBlComparisonUtilsMixin,
+from pandapower.converter.pypowsybl.pypowsybl_static_comparison import (
+    PyPowSyBlStaticComparisonMixin,
 )
+from pandapower.pp_types import SwitchType
 
 logger = logging.getLogger(__name__)
 

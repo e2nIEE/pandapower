@@ -3,24 +3,23 @@
 
 
 import inspect
+import logging
 
 from pandapower.auxiliary import (
     _check_bus_index_and_print_warning_if_high,
     _check_gen_index_and_print_warning_if_high,
-    _init_runpp_options,
     _init_rundcopp_options,
     _init_rundcpp_options,
     _init_runopp_options,
+    _init_runpp_options,
     _internal_stored,
 )
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
-from pandapower.powerflow import _powerflow, _recycled_powerflow
 from pandapower.optimal_powerflow import _optimal_powerflow
-
-import logging
+from pandapower.powerflow import _powerflow, _recycled_powerflow
 
 try:
-    from power_grid_model import PowerGridModel, CalculationType, CalculationMethod
+    from power_grid_model import CalculationMethod, CalculationType, PowerGridModel
     from power_grid_model.errors import PowerGridError
     from power_grid_model.validation import validate_input_data
     from power_grid_model_io.converters import PandaPowerConverter
@@ -645,7 +644,7 @@ def _passed_runpp_parameters(local_parameters):
     passed_parameters = {
         key: val
         for key, val in local_parameters.items()
-        if key not in default_parameters.keys() or val != default_parameters.get(key, None)
+        if key not in default_parameters or val != default_parameters.get(key, None)
     }
     # passed_parameters should have the "kwargs" parameters in the same level as other parameters
     # (not nested in "kwargs: {...}") for them to be considered later on, otherwise they will be ignored

@@ -1,19 +1,19 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
 from copy import deepcopy
+
 import numpy as np
 import pandas as pd
 
-from pandapower.pd2ppc import _pd2ppc, _ppc2ppci
 from pandapower.auxiliary import _add_auxiliary_elements, _sum_by_group
-from pandapower.build_branch import get_trafo_values, _transformer_correction_factor
-from pandapower.pypower.idx_bus import GS, BS, BASE_KV
-from pandapower.pypower.idx_brch import BR_X, BR_R, T_BUS, F_BUS
-from pandapower.pypower.idx_bus_sc import C_MAX, K_G, K_SG, V_G, PS_TRAFO_IX, GS_P, BS_P, KAPPA, GS_GEN, BS_GEN
-from pandapower.pypower.idx_brch_sc import K_T, K_ST
-
-import logging
+from pandapower.build_branch import _transformer_correction_factor, get_trafo_values
+from pandapower.pd2ppc import _pd2ppc, _ppc2ppci
+from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS, T_BUS
+from pandapower.pypower.idx_brch_sc import K_ST, K_T
+from pandapower.pypower.idx_bus import BASE_KV, BS, GS
+from pandapower.pypower.idx_bus_sc import BS_GEN, BS_P, C_MAX, GS_GEN, GS_P, K_G, K_SG, KAPPA, PS_TRAFO_IX, V_G
 
 logger = logging.getLogger(__name__)
 

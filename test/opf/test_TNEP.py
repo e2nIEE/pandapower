@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower.converter.pandamodels.to_pm import init_ne_line, convert_pp_to_pm
+from pandapower.converter.pandamodels.to_pm import convert_pp_to_pm, init_ne_line
 from pandapower.create import create_poly_cost
 from pandapower.networks.cigre_networks import create_cigre_network_mv
 from pandapower.run import runpp

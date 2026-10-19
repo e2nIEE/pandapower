@@ -26,16 +26,16 @@
 
 import copy
 import logging
-from typing import overload
-from typing_extensions import deprecated
 from collections.abc import MutableMapping
+from typing import overload
 
 import numpy as np
 import pandas as pd
+from typing_extensions import deprecated
 
 from pandapower.network_structure import get_structure_dict
-from pandapower.std_types import add_basic_std_types
 from pandapower.pp_types import StandardTypesDict
+from pandapower.std_types import add_basic_std_types
 
 logger = logging.getLogger(__name__)
 
@@ -111,7 +111,7 @@ class ADict(dict, MutableMapping):
         elif getattr(self, "_allow_invalid_attributes", True):
             super(MutableMapping, self).__setattr__(key, value)
         else:
-            raise TypeError("'{cls}' does not allow attribute creation.".format(cls=self.__class__.__name__))
+            raise TypeError(f"'{self.__class__.__name__}' does not allow attribute creation.")
 
     def _delattr(self, key):
         """
@@ -131,7 +131,7 @@ class ADict(dict, MutableMapping):
         elif getattr(self, "_allow_invalid_attributes", True):
             super(MutableMapping, self).__delattr__(key)
         else:
-            raise TypeError("'{cls}' does not allow attribute deletion.".format(cls=self.__class__.__name__))
+            raise TypeError(f"'{self.__class__.__name__}' does not allow attribute deletion.")
 
     def __call__(self, key):
         """
@@ -143,9 +143,7 @@ class ADict(dict, MutableMapping):
         of an Attr (if the value is a Mapping object).
         """
         if key not in self:
-            raise AttributeError(
-                "'{cls} instance has no attribute '{name}'".format(cls=self.__class__.__name__, name=key)
-            )
+            raise AttributeError(f"'{self.__class__.__name__} instance has no attribute '{key}'")
 
         return self._build(self[key])
 
@@ -154,9 +152,7 @@ class ADict(dict, MutableMapping):
         Access an item as an attribute.
         """
         if key not in self or not self._valid_name(key):
-            raise AttributeError(
-                "'{cls}' instance has no attribute '{name}'".format(cls=self.__class__.__name__, name=key)
-            )
+            raise AttributeError(f"'{self.__class__.__name__}' instance has no attribute '{key}'")
 
         return self._build(self[key])
 

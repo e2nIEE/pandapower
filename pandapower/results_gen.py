@@ -4,17 +4,17 @@
 import numpy as np
 
 from pandapower.auxiliary import (
-    _sum_by_group,
-    sequence_to_phase,
-    _sum_by_group_nvals,
     I_from_SV_elementwise,
     S_from_VI_elementwise,
     SVabc_from_SV012,
+    _sum_by_group,
+    _sum_by_group_nvals,
+    sequence_to_phase,
 )
-from pandapower.pypower.idx_bus import VM, VA, BASE_KV
+from pandapower.pypower.idx_bus import BASE_KV, VA, VM
 from pandapower.pypower.idx_bus_dc import DC_PD
-from pandapower.pypower.idx_gen import PG, QG, GEN_BUS
-from pandapower.pypower.idx_source_dc import SOURCE_DC_STATUS, SOURCE_DC_BUS
+from pandapower.pypower.idx_gen import GEN_BUS, PG, QG
+from pandapower.pypower.idx_source_dc import SOURCE_DC_BUS, SOURCE_DC_STATUS
 from pandapower.pypower.idx_vsc import VSC_MODE_AC, VSC_MODE_AC_SL, VSC_P, VSC_Q
 
 

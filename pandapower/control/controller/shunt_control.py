@@ -1,7 +1,8 @@
-import numpy as np
-from pandapower.control.basic_controller import Controller
-
 import logging
+
+import numpy as np
+
+from pandapower.control.basic_controller import Controller
 
 
 class ShuntController(Controller):
@@ -168,13 +169,19 @@ class DiscreteShuntController(ShuntController):
 
         if self.check_step_bounds:
             if net.shunt.at[self.shunt_index, "q_mvar"] >= 0:
-                if vm_pu < self.vm_set_pu and self.step == self.step_min:
-                    return True
-                elif vm_pu > self.vm_set_pu and self.step == self.step_max:
+                if (
+                    vm_pu < self.vm_set_pu
+                    and self.step == self.step_min
+                    or vm_pu > self.vm_set_pu
+                    and self.step == self.step_max
+                ):
                     return True
             else:
-                if vm_pu < self.vm_set_pu and self.step == self.step_max:
-                    return True
-                elif vm_pu > self.vm_set_pu and self.step == self.step_min:
+                if (
+                    vm_pu < self.vm_set_pu
+                    and self.step == self.step_max
+                    or vm_pu > self.vm_set_pu
+                    and self.step == self.step_min
+                ):
                     return True
         return False

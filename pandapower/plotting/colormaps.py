@@ -3,7 +3,7 @@
 
 
 try:
-    from matplotlib.colors import ListedColormap, BoundaryNorm, LinearSegmentedColormap, Normalize, LogNorm
+    from matplotlib.colors import BoundaryNorm, LinearSegmentedColormap, ListedColormap, LogNorm, Normalize
 
     MATPLOTLIB_INSTALLED = True
 except ImportError:

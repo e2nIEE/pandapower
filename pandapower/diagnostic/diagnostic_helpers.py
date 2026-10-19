@@ -2,9 +2,9 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import logging
-from typing import Generic, TypeVar, Literal
-from abc import abstractmethod, ABC
+from abc import ABC, abstractmethod
 from collections import defaultdict
+from typing import Generic, Literal, TypeVar
 
 import numpy as np
 
@@ -59,7 +59,6 @@ class DiagnosticFunction(ABC, Generic[N, T]):
         Returns:
             the diagnostic result or None if successful
         """
-        pass
 
     @abstractmethod
     def report(self, error: Exception | None, results: T | None) -> None:
@@ -98,7 +97,6 @@ class DiagnosticFunction(ABC, Generic[N, T]):
         Use info if the message should only show when warnings_only is False.
         Use warning if the message should always be shown.
         """
-        pass
 
 
 class NotCompactFilter(logging.Filter):

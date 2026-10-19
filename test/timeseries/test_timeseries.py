@@ -144,7 +144,7 @@ def output_setup(request):
 def test_const_control(simple_test_net, output_setup):
     net = simple_test_net
     profiles, ds = create_data_source()
-    time_steps = range(0, 10)
+    time_steps = range(10)
     ow = output_setup(net, time_steps)
 
     ConstControl(net, "load", "p_mw", element_index=0, data_source=ds, profile_name="load1", scale_factor=0.85)
@@ -190,7 +190,7 @@ def test_switch_states_in_time_series(output_setup):
 def test_const_control_write_to_object_attribute(simple_test_net, output_setup):
     net = simple_test_net
     profiles, ds = create_data_source()
-    time_steps = range(0, 10)
+    time_steps = range(10)
     ow = output_setup(net, time_steps)
 
     ContinuousTapControl(net, 0, 1.0, tol=1e-4, level=1, check_tap_bounds=False)
@@ -256,7 +256,7 @@ def test_timeseries_results(simple_test_net):
         scale_factor=0.5,
     )
 
-    time_steps = range(0, n_timesteps)
+    time_steps = range(n_timesteps)
     ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
     ow.log_variable("res_load", "p_mw")
     ow.log_variable("res_bus", "vm_pu")
@@ -298,7 +298,7 @@ def test_timeseries_var_func(simple_test_net):
         scale_factor=0.5,
     )
 
-    time_steps = range(0, n_timesteps)
+    time_steps = range(n_timesteps)
     ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
     ow.log_variable("res_load", "p_mw", eval_function=np.max)
     ow.log_variable("res_bus", "vm_pu", eval_function=np.min)
@@ -343,7 +343,7 @@ def test_time_steps(simple_test_net):
     )
 
     # correct
-    run_timeseries(net, time_steps=range(0, n_timesteps), verbose=False)
+    run_timeseries(net, time_steps=range(n_timesteps), verbose=False)
     # also correct
     run_timeseries(net, time_steps=[0, 2, 4, 8, 9], verbose=False)
     # ok. missing time_step list -> should check the datasource
@@ -368,7 +368,7 @@ def test_output_dump_after_time(simple_test_net):
         profile_name=["load1", "load2_mv_p", "load3_hv_p"],
     )
 
-    time_steps = range(0, n_timesteps)
+    time_steps = range(n_timesteps)
     # write output after 0.1 minutes to disk
     ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json", write_time=0.05)
     ow.log_variable("res_load", "p_mw")
@@ -383,7 +383,7 @@ def test_output_dump_after_time(simple_test_net):
 def test_pf_options(simple_test_net, output_setup):
     net = simple_test_net
     _, ds = create_data_source()
-    time_steps = range(0, 3)
+    time_steps = range(3)
     ow = output_setup(net, time_steps)
 
     ConstControl(net, "load", "p_mw", element_index=0, data_source=ds, profile_name="load1", scale_factor=0.85)
@@ -397,7 +397,7 @@ def test_pf_options(simple_test_net, output_setup):
 def test_user_pf_options(simple_test_net, output_setup):
     net = simple_test_net
     _, ds = create_data_source()
-    time_steps = range(0, 3)
+    time_steps = range(3)
     ow = output_setup(net, time_steps)
 
     ConstControl(net, "load", "p_mw", element_index=0, data_source=ds, profile_name="load1", scale_factor=0.85)
@@ -417,7 +417,7 @@ def test_user_pf_options(simple_test_net, output_setup):
 def test_user_pf_options_init_run(simple_test_net, output_setup):
     net = simple_test_net
     _, ds = create_data_source()
-    time_steps = range(0, 3)
+    time_steps = range(3)
     ow = output_setup(net, time_steps)
 
     ConstControl(net, "load", "p_mw", element_index=0, data_source=ds, profile_name="load1", scale_factor=0.85)
@@ -434,7 +434,7 @@ def test_user_pf_options_init_run(simple_test_net, output_setup):
 def test_user_pf_options_recycle_manual(simple_test_net, output_setup):
     net = simple_test_net
     _, ds = create_data_source()
-    time_steps = range(0, 3)
+    time_steps = range(3)
     ow = output_setup(net, time_steps)
 
     ConstControl(net, "load", "p_mw", element_index=0, data_source=ds, profile_name="load1", scale_factor=0.85)

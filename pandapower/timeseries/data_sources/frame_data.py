@@ -1,11 +1,13 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import numbers
+
 import numpy as np
+
 from pandapower.timeseries.data_source import DataSource
 
 try:
-    import pandaplan.core.pplog as pplog
+    from pandaplan.core import pplog
 except ImportError:
     import logging as pplog
 

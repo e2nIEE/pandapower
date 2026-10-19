@@ -284,7 +284,7 @@ def get_sc_location_annotation(
     sc_geo_x_y = next(geojson.utils.coords(geojson.loads(net.bus.geo.at[max_bus_idx])))
     sc_geo_x_y = (sc_geo_x_y[0], sc_geo_x_y[1] + 0.02)
 
-    sc_annotate: "PatchCollection" = create_annotation_collection(
+    sc_annotate: PatchCollection = create_annotation_collection(
         texts=[sc_text], coords=[sc_geo_x_y], size=font_size_bus, prop=None
     )
 
@@ -777,10 +777,10 @@ def create_I_t_plot(trip_decisions, switch_id):
     plt.figure()
 
     for count, data in enumerate(X):
-        plt.loglog(X[count][0], X[count][1], label=X[count][2])
+        plt.loglog(data[0], data[1], label=data[2])
 
-        plt.axvline(x=X[count][3], ymin=0, ymax=X[0][1][0], color="r")
-        plt.text(X[count][3] + 0.01, 0.01, "Ikss  " + str(round(fault_current, 1)) + "kA", rotation=0)
+        plt.axvline(x=data[3], ymin=0, ymax=X[0][1][0], color="r")
+        plt.text(data[3] + 0.01, 0.01, "Ikss  " + str(round(fault_current, 1)) + "kA", rotation=0)
 
         plt.grid(True, which="both", ls="-")
         plt.title("I-t-plot")
@@ -797,9 +797,7 @@ def create_I_t_plot(trip_decisions, switch_id):
         cursor = mplcursors.cursor(hover=True)
         cursor.connect(
             "add",
-            lambda sel: sel.annotation.set_text(
-                "I:{} kA,t:{} s".format(round(sel.target[0], 2), round(sel.target[1], 2))
-            ),
+            lambda sel: sel.annotation.set_text(f"I:{round(sel.target[0], 2)} kA,t:{round(sel.target[1], 2)} s"),
         )
 
 

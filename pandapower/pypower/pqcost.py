@@ -6,7 +6,7 @@
 
 from sys import stderr
 
-from numpy import array, arange
+from numpy import arange, array
 
 
 def pqcost(gencost, ng, on=None):

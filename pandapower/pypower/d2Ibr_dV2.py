@@ -4,7 +4,7 @@
 
 """Computes 2nd derivatives of complex branch current w.r.t. voltage."""
 
-from numpy import ones, arange
+from numpy import arange, ones
 from scipy.sparse import csr_matrix as sparse
 
 

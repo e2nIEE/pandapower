@@ -6,8 +6,9 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-from numpy import complex128, float64, int64, r_, zeros, empty, array
-from scipy.sparse import csr_matrix as sparse, vstack, hstack
+from numpy import array, complex128, empty, float64, int64, r_, zeros
+from scipy.sparse import csr_matrix as sparse
+from scipy.sparse import hstack, vstack
 
 from pandapower.pypower.dSbus_dV import dSbus_dV
 

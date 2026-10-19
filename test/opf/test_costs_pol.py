@@ -1,22 +1,22 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
+
 import numpy as np
 import pytest
 
 from pandapower.create import (
     create_bus,
-    create_gen,
     create_ext_grid,
-    create_load,
+    create_gen,
     create_line_from_parameters,
+    create_load,
     create_poly_cost,
     create_sgen,
 )
 from pandapower.network import pandapowerNet
 from pandapower.run import runopp
-
-import logging
 
 
 def test_cost_pol_gen():

@@ -2,7 +2,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-from pandapower.networks.kerber_networks import _create_branched_loads_network, _create_branch_network
+from pandapower.networks.kerber_networks import _create_branch_network, _create_branched_loads_network
 
 # The Kerber extreme networks complement the typical Kerber networks.
 # Categories:

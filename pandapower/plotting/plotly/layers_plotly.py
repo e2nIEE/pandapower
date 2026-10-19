@@ -1,9 +1,11 @@
 import logging
+
 import pandas as pd
-from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, create_trafo_trace
-from pandapower.plotting.plotly.get_colors import get_plotly_color_palette
-from pandapower.topology import create_nxgraph, connected_components
+
 from pandapower.plotting.plotly.draw_layers import draw_layers
+from pandapower.plotting.plotly.get_colors import get_plotly_color_palette
+from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, create_trafo_trace
+from pandapower.topology import connected_components, create_nxgraph
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +126,7 @@ def layers_plotly(
             size=bus_size,
             legendgroup=str(vn_kv),
             color=vlev_color,
-            trace_name="Group {0}".format(vn_kv),
+            trace_name=f"Group {vn_kv}",
         )
         if bus_trace_vlev is not None:
             bus_traces += bus_trace_vlev
@@ -139,7 +141,7 @@ def layers_plotly(
             legendgroup=str(vn_kv),
             color="gray",
             width=line_width,
-            trace_name="lines {0} kV".format(vn_kv),
+            trace_name=f"lines {vn_kv} kV",
         )
         if line_trace_vlev is not None:
             line_traces += line_trace_vlev

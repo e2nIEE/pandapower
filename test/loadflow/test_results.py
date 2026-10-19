@@ -6,30 +6,29 @@ import os
 import numpy as np
 import pandas as pd
 import pytest
-from numpy import isin, isnan, isclose
+from numpy import isclose, isin, isnan
 
 from pandapower.create import (
     create_bus,
-    create_load,
-    create_transformer3w_from_parameters,
-    create_transformer,
     create_ext_grid,
-    create_line_from_parameters,
-    create_transformer_from_parameters,
     create_impedance,
+    create_line_from_parameters,
+    create_load,
+    create_transformer,
+    create_transformer3w_from_parameters,
+    create_transformer_from_parameters,
 )
 from pandapower.file_io import from_json
 from pandapower.network import pandapowerNet
 from pandapower.run import runpp
-
 from test import test_path
 from test.consistency_checks import runpp_with_consistency_checks
 from test.loadflow.result_test_network_generator import (
-    add_test_enforce_qlims,
-    add_test_gen,
-    add_test_enforce_qlims_sgen,
     add_test_enforce_plims,
     add_test_enforce_plims_sgen,
+    add_test_enforce_qlims,
+    add_test_enforce_qlims_sgen,
+    add_test_gen,
 )
 
 
@@ -388,7 +387,6 @@ def test_xward(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_tol=1e
     u = 1.00308684
     pxw = -1.7210380
     qxw = -0.9759919
-    #
     assert abs(net.res_bus.vm_pu.at[b2] - u) < v_tol
     assert abs(net.res_xward.p_mw.at[xw1] - (-pxw)) < s_tol
     assert abs(net.res_xward.q_mvar.at[xw1] - (-qxw)) < s_tol
@@ -486,23 +484,23 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
     pmv = -0.200
     plv = -0.100
 
-    assert abs((net.res_bus.vm_pu.at[b2] - uhv)) < v_tol
-    assert abs((net.res_bus.vm_pu.at[b3] - umv)) < v_tol
-    assert abs((net.res_bus.vm_pu.at[b4] - ulv)) < v_tol
+    assert abs(net.res_bus.vm_pu.at[b2] - uhv) < v_tol
+    assert abs(net.res_bus.vm_pu.at[b3] - umv) < v_tol
+    assert abs(net.res_bus.vm_pu.at[b4] - ulv) < v_tol
 
-    assert abs((net.res_trafo3w.loading_percent.at[t3] - load)) < l_tol
+    assert abs(net.res_trafo3w.loading_percent.at[t3] - load) < l_tol
 
-    assert abs((net.res_trafo3w.p_hv_mw.at[t3] - phv)) < s_tol
-    assert abs((net.res_trafo3w.p_mv_mw.at[t3] - pmv)) < s_tol
-    assert abs((net.res_trafo3w.p_lv_mw.at[t3] - plv)) < s_tol
+    assert abs(net.res_trafo3w.p_hv_mw.at[t3] - phv) < s_tol
+    assert abs(net.res_trafo3w.p_mv_mw.at[t3] - pmv) < s_tol
+    assert abs(net.res_trafo3w.p_lv_mw.at[t3] - plv) < s_tol
 
-    assert abs((net.res_trafo3w.q_hv_mvar.at[t3] - qhv)) < s_tol
-    assert abs((net.res_trafo3w.q_mv_mvar.at[t3] - qmv)) < s_tol
-    assert abs((net.res_trafo3w.q_lv_mvar.at[t3] - qlv)) < s_tol
+    assert abs(net.res_trafo3w.q_hv_mvar.at[t3] - qhv) < s_tol
+    assert abs(net.res_trafo3w.q_mv_mvar.at[t3] - qmv) < s_tol
+    assert abs(net.res_trafo3w.q_lv_mvar.at[t3] - qlv) < s_tol
 
-    assert abs((net.res_trafo3w.i_hv_ka.at[t3] - ihv)) < i_tol
-    assert abs((net.res_trafo3w.i_mv_ka.at[t3] - imv)) < i_tol
-    assert abs((net.res_trafo3w.i_lv_ka.at[t3] - ilv)) < i_tol
+    assert abs(net.res_trafo3w.i_hv_ka.at[t3] - ihv) < i_tol
+    assert abs(net.res_trafo3w.i_mv_ka.at[t3] - imv) < i_tol
+    assert abs(net.res_trafo3w.i_lv_ka.at[t3] - ilv) < i_tol
 
     runpp_with_consistency_checks(net, trafo_model="pi", trafo3w_losses="star")
 
@@ -524,23 +522,23 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
     pmv = -0.200
     plv = -0.100
 
-    assert abs((net.res_bus.vm_pu.at[b2] - uhv)) < v_tol
-    assert abs((net.res_bus.vm_pu.at[b3] - umv)) < v_tol
-    assert abs((net.res_bus.vm_pu.at[b4] - ulv)) < v_tol
+    assert abs(net.res_bus.vm_pu.at[b2] - uhv) < v_tol
+    assert abs(net.res_bus.vm_pu.at[b3] - umv) < v_tol
+    assert abs(net.res_bus.vm_pu.at[b4] - ulv) < v_tol
 
-    assert abs((net.res_trafo3w.loading_percent.at[t3] - load)) < l_tol
+    assert abs(net.res_trafo3w.loading_percent.at[t3] - load) < l_tol
 
-    assert abs((net.res_trafo3w.p_hv_mw.at[t3] - phv)) < s_tol
-    assert abs((net.res_trafo3w.p_mv_mw.at[t3] - pmv)) < s_tol
-    assert abs((net.res_trafo3w.p_lv_mw.at[t3] - plv)) < s_tol
+    assert abs(net.res_trafo3w.p_hv_mw.at[t3] - phv) < s_tol
+    assert abs(net.res_trafo3w.p_mv_mw.at[t3] - pmv) < s_tol
+    assert abs(net.res_trafo3w.p_lv_mw.at[t3] - plv) < s_tol
 
-    assert abs((net.res_trafo3w.q_hv_mvar.at[t3] - qhv)) < s_tol
-    assert abs((net.res_trafo3w.q_mv_mvar.at[t3] - qmv)) < s_tol
-    assert abs((net.res_trafo3w.q_lv_mvar.at[t3] - qlv)) < s_tol
+    assert abs(net.res_trafo3w.q_hv_mvar.at[t3] - qhv) < s_tol
+    assert abs(net.res_trafo3w.q_mv_mvar.at[t3] - qmv) < s_tol
+    assert abs(net.res_trafo3w.q_lv_mvar.at[t3] - qlv) < s_tol
 
-    assert abs((net.res_trafo3w.i_hv_ka.at[t3] - ihv)) < i_tol
-    assert abs((net.res_trafo3w.i_mv_ka.at[t3] - imv)) < i_tol
-    assert abs((net.res_trafo3w.i_lv_ka.at[t3] - ilv)) < i_tol
+    assert abs(net.res_trafo3w.i_hv_ka.at[t3] - ihv) < i_tol
+    assert abs(net.res_trafo3w.i_mv_ka.at[t3] - imv) < i_tol
+    assert abs(net.res_trafo3w.i_lv_ka.at[t3] - ilv) < i_tol
 
 
 @pytest.mark.parametrize("tap_pos", (-1, 2))

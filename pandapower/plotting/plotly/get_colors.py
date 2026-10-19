@@ -3,12 +3,13 @@
 
 
 import sys
+
 import numpy as np
 
 try:
-    import matplotlib.pyplot as plt
-    import matplotlib.cm as cm
     import matplotlib.colors as mplc
+    import matplotlib.pyplot as plt
+    from matplotlib import cm
     from matplotlib import colormaps as mpl_colormaps
 
     MATPLOTLIB_INSTALLED = True
@@ -89,4 +90,4 @@ def get_plotly_cmap(values, cmap_name="jet", cmin=None, cmax=None):
         cmax = values.max()
     norm = mplc.Normalize(vmin=cmin, vmax=cmax)
     bus_fill_colors_rgba = cmap(norm(values).data)[:, 0:3] * 255.0
-    return ["rgb({0},{1},{2})".format(r, g, b) for r, g, b in bus_fill_colors_rgba]
+    return [f"rgb({r},{g},{b})" for r, g, b in bus_fill_colors_rgba]

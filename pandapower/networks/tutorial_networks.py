@@ -4,6 +4,7 @@
 """
 Networks that are used for tutorials AND tests are located here so that both tutorials and tests have access to them.
 """
+
 import numpy as np
 
 from pandapower.create import (
@@ -103,6 +104,7 @@ def facts_case_study_grid():
 
     return net
 
+
 def simplest_test_grid(generator_type, step_up_trafo=False):
     net = pandapowerNet(name="simplest_test_grid", sn_mva=6)
     if step_up_trafo:
@@ -183,7 +185,6 @@ def simple_test_grid(load_scaling=1.0, sgen_scaling=1.0, with_gen=False, distrib
     create_load(net, 4, 400, 160, scaling=load_scaling)
 
     return net
-
 
 
 def vde_232():

@@ -4,8 +4,9 @@
 
 """Computes partial derivatives of power flows w.r.t. voltage."""
 
-from numpy import conj, arange, diag, zeros, asmatrix, asarray, int64
-from scipy.sparse import issparse, csr_matrix as sparse
+from numpy import arange, asarray, asmatrix, conj, diag, int64, zeros
+from scipy.sparse import csr_matrix as sparse
+from scipy.sparse import issparse
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
 
