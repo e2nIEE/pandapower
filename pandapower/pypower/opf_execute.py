@@ -8,11 +8,12 @@
 
 """Executes the OPF specified by an OPF model object."""
 
-from sys import stdout, stderr
+from sys import stderr, stdout
 
-from numpy import array, arange, pi, zeros, r_, int64
+from numpy import arange, array, int64, pi, r_, zeros
+
 from pandapower.pypower.dcopf_solver import dcopf_solver
-from pandapower.pypower.idx_brch import MU_ANGMIN, MU_ANGMAX
+from pandapower.pypower.idx_brch import MU_ANGMAX, MU_ANGMIN
 from pandapower.pypower.idx_bus import VM
 from pandapower.pypower.idx_gen import GEN_BUS, VG
 
@@ -20,11 +21,9 @@ from pandapower.pypower.idx_gen import GEN_BUS, VG
 from pandapower.pypower.makeYbus import makeYbus
 from pandapower.pypower.opf_consfcn import opf_consfcn
 from pandapower.pypower.opf_costfcn import opf_costfcn
-
+from pandapower.pypower.pipsopf_solver import pipsopf_solver  # temporary changed import to match bugfix path
 from pandapower.pypower.ppver import ppver
 from pandapower.pypower.update_mupq import update_mupq
-
-from pandapower.pypower.pipsopf_solver import pipsopf_solver  # temporary changed import to match bugfix path
 
 
 def opf_execute(om, ppopt):

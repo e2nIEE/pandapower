@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import logging
 import warnings
-from collections.abc import Iterable, Collection
+from collections.abc import Collection, Iterable
 from typing import Any
 
 import numpy.typing as npt
@@ -516,11 +516,10 @@ def _set_const_percent_values(const_percent_values_list, kwargs_input):
         )
         warnings.warn(msg, DeprecationWarning)
         return const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs_input
-    elif ("const_z_percent" in kwargs_input or "const_i_percent" in kwargs_input) and (
-        const_percent_values_default_initials == False
-    ):
-        raise UserWarning("Definition of voltage dependecies is faulty, please check the parameters again.")
-    elif ("const_z_percent" in kwargs_input or "const_i_percent" not in kwargs_input) or (
-        "const_z_percent" not in kwargs_input or "const_i_percent" in kwargs_input
+    elif (
+        ("const_z_percent" in kwargs_input or "const_i_percent" in kwargs_input)
+        and (const_percent_values_default_initials == False)
+        or ("const_z_percent" in kwargs_input or "const_i_percent" not in kwargs_input)
+        or ("const_z_percent" not in kwargs_input or "const_i_percent" in kwargs_input)
     ):
         raise UserWarning("Definition of voltage dependecies is faulty, please check the parameters again.")

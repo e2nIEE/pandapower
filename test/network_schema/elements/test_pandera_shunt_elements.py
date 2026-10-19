@@ -298,4 +298,3 @@ class TestShuntResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_shunt_result_totals(self):
         """Test: aggregated p_mw / q_mvar results are consistent"""
-        pass

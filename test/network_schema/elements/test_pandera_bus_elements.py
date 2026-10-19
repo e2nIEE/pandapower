@@ -139,9 +139,7 @@ class TestBusResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_bus_voltage_results(self):
         """Test: Voltage results are within valid range"""
-        pass
 
     @pytest.mark.skip(reason="Not yet implemented")
     def test_bus_power_results(self):
         """Test: Power results are consistent"""
-        pass

@@ -1,23 +1,23 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
 from datetime import datetime
+
 import numpy as np
 from scipy.stats import chi2
 
 from pandapower.estimation.algorithm.base import (
+    AFWLSAlgorithm,
+    IRWLSAlgorithm,
     WLSAlgorithm,
     WLSZeroInjectionConstraintsAlgorithm,
-    IRWLSAlgorithm,
-    AFWLSAlgorithm,
 )
 from pandapower.estimation.algorithm.lp import LPAlgorithm
 from pandapower.estimation.algorithm.optimization import OptAlgorithm
-from pandapower.estimation.ppc_conversion import pp2eppci, _initialize_voltage
+from pandapower.estimation.ppc_conversion import _initialize_voltage, pp2eppci
 from pandapower.estimation.results import eppci2pp
-from pandapower.estimation.util import set_bb_switch_impedance, reset_bb_switch_impedance
-
-import logging
+from pandapower.estimation.util import reset_bb_switch_impedance, set_bb_switch_impedance
 
 std_logger = logging.getLogger(__name__)
 
@@ -84,7 +84,7 @@ def estimate(
         bool: Was the state estimation successful?
     """
     if algorithm not in ALGORITHM_MAPPING:
-        raise UserWarning("Algorithm {} is not a valid estimator".format(algorithm))
+        raise UserWarning(f"Algorithm {algorithm} is not a valid estimator")
 
     se = StateEstimation(net, tolerance, maximum_iterations, algorithm=algorithm)
     v_start, delta_start = _initialize_voltage(net, init)
@@ -240,7 +240,7 @@ class StateEstimation:
             success = estimate(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]))
         """
         # check if all parameter are allowed
-        for var_name in opt_vars.keys():
+        for var_name in opt_vars:
             if var_name not in ALLOWED_OPT_VAR:
                 self.logger.warning(
                     "Caution! %s is not allowed as parameter" % var_name + " for estimate and will be ignored!"

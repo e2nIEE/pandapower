@@ -2,15 +2,17 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import logging
 import time
-from typing import Dict
-import pandas as pd
+
 import numpy as np
+import pandas as pd
+
 from pandapower import pandapowerNet
+
 from .. import cim_tools
 
 
 class CreateMeasurements:
-    def __init__(self, net: pandapowerNet, cim: Dict):
+    def __init__(self, net: pandapowerNet, cim: dict):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.net = net
         self.cim = cim

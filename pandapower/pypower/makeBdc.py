@@ -8,18 +8,19 @@
 
 """Builds the B matrices and phase shift injections for DC power flow."""
 
+import logging
+
 import numpy as np
-from numpy import ones, zeros_like, r_, pi, flatnonzero as find, real, int64, float64, divide, errstate
+from numpy import divide, errstate, float64, int64, ones, pi, r_, real, zeros_like
+from numpy import flatnonzero as find
 from numpy.typing import NDArray
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_X, TAP, SHIFT, BR_STATUS
-from pandapower.pypower.idx_brch_dc import DC_F_BUS, DC_T_BUS, DC_BR_STATUS, DC_BR_R, branch_dc_cols
+from scipy.sparse import csc_matrix, csr_matrix
+
+from pandapower.pypower.idx_brch import BR_STATUS, BR_X, F_BUS, SHIFT, T_BUS, TAP
+from pandapower.pypower.idx_brch_dc import DC_BR_R, DC_BR_STATUS, DC_F_BUS, DC_T_BUS, branch_dc_cols
 from pandapower.pypower.idx_bus import BUS_I
 from pandapower.pypower.idx_bus_dc import dc_bus_cols
-from pandapower.pypower.idx_vsc import VSC_BUS, VSC_BUS_DC, VSC_STATUS, VSC_X, VSC_MODE_DC, VSC_MODE_DC_P, vsc_cols
-
-from scipy.sparse import csr_matrix, csc_matrix
-
-import logging
+from pandapower.pypower.idx_vsc import VSC_BUS, VSC_BUS_DC, VSC_MODE_DC, VSC_MODE_DC_P, VSC_STATUS, VSC_X, vsc_cols
 
 logger = logging.getLogger(__name__)
 

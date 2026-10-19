@@ -8,8 +8,9 @@
 
 """Computes partial derivatives of power injection w.r.t. voltage."""
 
-from numpy import conj, diag, asarray
-from scipy.sparse import issparse, csr_matrix as sparse
+from numpy import asarray, conj, diag
+from scipy.sparse import csr_matrix as sparse
+from scipy.sparse import issparse
 
 
 def dSbus_dV(Ybus, V):

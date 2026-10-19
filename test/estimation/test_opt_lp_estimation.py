@@ -1,11 +1,12 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import copy
 import sys
 
 import numpy as np
 import pytest
-import copy
+
 from pandapower.estimation import estimate
 from pandapower.estimation.algorithm.base import WLSAlgorithm
 from pandapower.estimation.algorithm.lp import LPAlgorithm

@@ -211,4 +211,3 @@ class TestSwitchResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_switch_result_totals(self):
         """Aggregated power and current results are consistent"""
-        pass

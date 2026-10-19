@@ -1,13 +1,14 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from typing import Literal
 import logging
+from typing import Literal
 
 import pandas as pd
 
 from pandapower.auxiliary import pandapowerNet
 from pandapower.plotting.generic_geodata import create_generic_coordinates
+from pandapower.plotting.geo import convert_crs
 from pandapower.plotting.plotly.traces import (
     create_bus_trace,
     create_line_trace,
@@ -15,7 +16,6 @@ from pandapower.plotting.plotly.traces import (
     draw_traces,
 )
 from pandapower.run import runpp
-from pandapower.plotting.geo import convert_crs
 
 logger = logging.getLogger(__name__)
 

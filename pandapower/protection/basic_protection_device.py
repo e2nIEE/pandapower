@@ -4,7 +4,7 @@ from pandapower.auxiliary import get_free_id
 from pandapower.io_utils import JSONSerializableClass
 
 try:
-    import pandaplan.core.pplog as pplog
+    from pandaplan.core import pplog
 except ImportError:
     import logging as pplog
 

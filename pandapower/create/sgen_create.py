@@ -4,15 +4,14 @@
 from __future__ import annotations
 
 import logging
-from typing import Iterable, Sequence
+from collections.abc import Iterable, Sequence
 
-import pandas as pd
-from pandas.api.typing import NAType
-from numpy import nan, bool_
 import numpy.typing as npt
+import pandas as pd
+from numpy import bool_, nan
+from pandas.api.typing import NAType
 
 from pandapower import pandapowerNet
-from pandapower.pp_types import GeneratorType, Int, UnderOverExcitedType, WyeDeltaType
 from pandapower.create._utils import (
     _add_to_entries_if_not_nan,
     _check_element,
@@ -24,6 +23,7 @@ from pandapower.create._utils import (
     _set_value_if_not_nan,
 )
 from pandapower.network_structure import get_default_value
+from pandapower.pp_types import GeneratorType, Int, UnderOverExcitedType, WyeDeltaType
 
 logger = logging.getLogger(__name__)
 

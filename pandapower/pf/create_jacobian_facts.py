@@ -3,7 +3,8 @@
 
 
 import numpy as np
-from scipy.sparse import csr_matrix, lil_matrix, diags
+from scipy.sparse import csr_matrix, diags, lil_matrix
+
 from pandapower.pf.makeYbus_facts import calc_y_svc_pu
 
 SMALL_NUMBER = 1e-9
@@ -382,7 +383,6 @@ def create_J_modification_ssc_vsc(J, V, Vm, y_pu, f, t, pvpq, pq, pvpq_lookup, p
         scipy.sparse.csr_matrix
 
     """
-    #
 
     Vf = V[f]
     Vt = V[t]

@@ -1,5 +1,6 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+import logging
 from itertools import combinations
 
 import networkx as nx
@@ -7,16 +8,14 @@ import numpy as np
 
 from pandapower.auxiliary import _init_nx_options
 from pandapower.build_branch import (
-    _calc_impedance_parameters_from_dataframe,
     _calc_branch_values_from_trafo_df,
+    _calc_impedance_parameters_from_dataframe,
     _trafo_df_from_trafo3w,
 )
 from pandapower.build_bus import _build_bus_ppc
 from pandapower.pd2ppc import _init_ppc
 from pandapower.pf.makeYbus_facts import calc_y_svc_pu
 from pandapower.pypower.idx_bus import BASE_KV
-
-import logging
 
 try:
     from pandapower.topology.graph_tool_interface import GraphToolInterface

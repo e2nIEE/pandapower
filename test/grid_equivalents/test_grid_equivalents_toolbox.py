@@ -5,20 +5,20 @@ from pandapower import pandapowerNet
 from pandapower.convert_format import convert_format
 from pandapower.create import (
     create_bus,
-    create_line_from_parameters,
-    create_transformer3w_from_parameters,
     create_impedance,
+    create_line_from_parameters,
     create_switch,
+    create_transformer3w_from_parameters,
     create_transformer_from_parameters,
 )
 from pandapower.grid_equivalents.toolbox import (
-    set_bus_zone_by_boundary_branches,
-    get_boundaries_by_bus_zone_with_boundary_branches,
     append_set_to_dict,
+    get_boundaries_by_bus_zone_with_boundary_branches,
+    set_bus_zone_by_boundary_branches,
 )
 from pandapower.networks.power_system_test_cases import case9
 from pandapower.run import runpp
-from pandapower.toolbox.grid_modification import replace_ext_grid_by_gen, merge_nets
+from pandapower.toolbox.grid_modification import merge_nets, replace_ext_grid_by_gen
 
 
 def case9_27() -> tuple[pandapowerNet, dict, dict]:

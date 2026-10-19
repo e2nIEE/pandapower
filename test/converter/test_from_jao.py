@@ -2,11 +2,12 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
+
 import numpy as np
 import pytest
 
-from pandapower.toolbox.comparison import nets_equal
 from pandapower.converter.jao import from_jao
+from pandapower.toolbox.comparison import nets_equal
 
 from test import test_path
 

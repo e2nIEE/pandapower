@@ -66,23 +66,6 @@ def three_bus_permuted_index():
     return net
 
 
-# def gen_three_bus_example():
-#     net = pandapowerNet(name="gen_three_bus_example", sn_mva=2)
-#     b1 = create_bus(net, vn_kv=10.)
-#     b2 = create_bus(net, vn_kv=10.)
-#     b3 = create_bus(net, vn_kv=10.)
-#     #create_bus(net, vn_kv=0.4, in_service=False)
-#     create_gen(net, b2, vn_kv=10.5, xdss_pu=0.2, rdss_pu=0.001, cos_phi=0.8, p_mw=0.1, sn_mva=2.5)
-#     create_line_from_parameters(net, b1, b2, length_km=1.0, max_i_ka=0.29,
-#                                    r_ohm_per_km=0.1548, x_ohm_per_km=0.0816814, c_nf_per_km=165)
-#     create_line_from_parameters(net, b2, b3, length_km=1.0, max_i_ka=0.29,
-#                                    r_ohm_per_km=0.1548, x_ohm_per_km=0.0816814, c_nf_per_km=165)
-#     net.line["endtemp_degree"] = 165
-#     create_ext_grid(net, b1, s_sc_max_mva=10., s_sc_min_mva=8., rx_min=0.4, rx_max=0.4)
-#     #create_switch(net, b3, b1, et="b")
-#     return net
-
-
 def net_transformer_simple():
     net = pandapowerNet(name="net_transformer_simple", sn_mva=2)
     b1, b2 = create_buses(net, 2, vn_kv=[10.0, 0.4])

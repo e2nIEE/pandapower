@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -11,6 +9,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+
 from pandapower import runpp
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.converter.pypowsybl.pypowsybl_comparison_utils import (
@@ -583,10 +582,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
                     if pyp_prefix == "i":
                         pyp_value = self._comparison_ampere_to_kiloampere(pyp_value)
 
-                    if pyp_prefix.startswith("p"):
-                        abs_tol = 5e-3
-                        rel_tol = 3e-2
-                    elif pyp_prefix.startswith("q"):
+                    if pyp_prefix.startswith("p") or pyp_prefix.startswith("q"):
                         abs_tol = 5e-3
                         rel_tol = 3e-2
                     else:

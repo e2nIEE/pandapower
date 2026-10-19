@@ -5,7 +5,7 @@
 import pandas as pd
 import pytest
 
-from pandapower.networks.create_examples import example_simple, example_multivoltage
+from pandapower.networks.create_examples import example_multivoltage, example_simple
 from pandapower.run import runpp
 
 

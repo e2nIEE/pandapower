@@ -1,12 +1,12 @@
 import copy
-import numpy as np
-from typing import Optional
+import logging
 import multiprocessing as mp
 from functools import partial
-from pandapower.run import runpp
-from pandapower import pandapowerNet
 
-import logging
+import numpy as np
+
+from pandapower import pandapowerNet
+from pandapower.run import runpp
 
 logger = logging.getLogger(__name__)
 
@@ -42,8 +42,8 @@ def _run_single_contingency(
 def run_contingency_parallel(
     net: pandapowerNet,
     nminus1_cases: dict,
-    pf_options: Optional[dict] = None,
-    pf_options_nminus1: Optional[dict] = None,
+    pf_options: dict | None = None,
+    pf_options_nminus1: dict | None = None,
     write_to_net: bool = True,
     contingency_evaluation_function=runpp,
     n_procs: int = 1,
@@ -72,15 +72,15 @@ def run_contingency_parallel(
     if pf_options_nminus1 is None:
         pf_options_nminus1 = net.user_pf_options.get("pf_options_nminus1", net.user_pf_options)
     if kwargs is not None:
-        pf_options = {key: val for key, val in pf_options.items() if key not in kwargs.keys()}
-        pf_options_nminus1 = {key: val for key, val in pf_options_nminus1.items() if key not in kwargs.keys()}
+        pf_options = {key: val for key, val in pf_options.items() if key not in kwargs}
+        pf_options_nminus1 = {key: val for key, val in pf_options_nminus1.items() if key not in kwargs}
 
     contingency_results = {
         element: {"index": net[element].index.values}
         for element in ("bus", "line", "trafo", "trafo3w")
         if len(net[element]) > 0
     }
-    for element in contingency_results.keys():
+    for element in contingency_results:
         if element == "bus":
             continue
         contingency_results[element].update(
@@ -92,7 +92,7 @@ def run_contingency_parallel(
         )
 
     result_variables = {
-        **{"bus": ["vm_pu"]},
+        "bus": ["vm_pu"],
         **{key: ["loading_percent"] for key in ("line", "trafo", "trafo3w") if len(net[key]) > 0},
     }
     if len(net.line) > 0 and (
@@ -231,12 +231,13 @@ def _update_contingency_results_parallel(
 
 if __name__ == "__main__":
     import time
-    from pandapower.networks.power_system_test_cases import case2869pegase
+
     from pandapower.contingency import (
-        get_element_limits,
         check_elements_within_limits,
+        get_element_limits,
         report_contingency_results,
     )
+    from pandapower.networks.power_system_test_cases import case2869pegase
 
     net = case2869pegase()
     nminus1_cases = {"line": {"index": net.line.index.values}}

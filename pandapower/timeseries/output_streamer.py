@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import os
@@ -11,7 +9,7 @@ from pandapower.io_utils import mkdirs_if_not_existent
 from pandapower.timeseries.output_writer import OutputWriter
 
 try:
-    import pandaplan.core.pplog as pplog
+    from pandaplan.core import pplog
 except ImportError:
     import logging as pplog
 logger = pplog.getLogger(__name__)

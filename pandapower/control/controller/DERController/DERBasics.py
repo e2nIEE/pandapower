@@ -1,11 +1,11 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
+
 import numpy as np
 
-from pandapower.toolbox.power_factor import cosphi_to_pos, cosphi_from_pos
-
-import logging
+from pandapower.toolbox.power_factor import cosphi_from_pos, cosphi_to_pos
 
 logger = logging.getLogger(__name__)
 

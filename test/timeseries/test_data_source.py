@@ -4,8 +4,8 @@
 import copy
 import os
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 import pytest
 
 from pandapower.timeseries.data_sources.frame_data import DFData

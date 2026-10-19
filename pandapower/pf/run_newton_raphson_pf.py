@@ -5,32 +5,36 @@
 from time import perf_counter
 
 from numpy import (
-    flatnonzero as find,
-    r_,
-    zeros,
-    argmax,
-    setdiff1d,
-    union1d,
     any,
+    argmax,
     int32,
     int64,
+    r_,
+    setdiff1d,
+    union1d,
+    zeros,
+)
+from numpy import (
+    flatnonzero as find,
 )
 
+from pandapower.auxiliary import version_check
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 from pandapower.pf.run_dc_pf import _run_dc_pf
 from pandapower.pypower.bustypes import bustypes
-from pandapower.pypower.idx_bus import BUS_I, PD, QD, BUS_TYPE, PQ, PV, GS, BS, SL_FAC as SL_FAC_BUS
-from pandapower.pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS, SL_FAC
+from pandapower.pypower.idx_bus import BS, BUS_I, BUS_TYPE, GS, PD, PQ, PV, QD
+from pandapower.pypower.idx_bus import SL_FAC as SL_FAC_BUS
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMAX, QMIN, SL_FAC
 from pandapower.pypower.makeSbus import makeSbus
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
 from pandapower.pypower.newtonpf import newtonpf
 from pandapower.pypower.pfsoln import _update_v
 from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
-from pandapower.auxiliary import version_check
 
 try:
     from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
-    from pandapower.pf.pfsoln_numba import pfsoln as pfsoln_numba, pf_solution_single_slack
+    from pandapower.pf.pfsoln_numba import pf_solution_single_slack
+    from pandapower.pf.pfsoln_numba import pfsoln as pfsoln_numba
 
     version_check("numba")
     numba_installed = True

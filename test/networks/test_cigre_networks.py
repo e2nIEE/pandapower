@@ -5,7 +5,7 @@
 import pandas as pd
 import pytest
 
-from pandapower.networks.cigre_networks import create_cigre_network_hv, create_cigre_network_mv, create_cigre_network_lv
+from pandapower.networks.cigre_networks import create_cigre_network_hv, create_cigre_network_lv, create_cigre_network_mv
 from pandapower.run import runpp
 
 

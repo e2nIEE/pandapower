@@ -1,1 +1,1 @@
-from . import asynchronousMachinesCim16, synchronousMachinesCim16, energySourcesCim16, powerElectronicsConnection
+from . import asynchronousMachinesCim16, energySourcesCim16, powerElectronicsConnection, synchronousMachinesCim16

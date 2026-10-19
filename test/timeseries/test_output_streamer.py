@@ -82,7 +82,7 @@ def test_output_streamer_with_timesteps_set(simple_test_net):
         profile_name=["load1", "load2_mv_p", "load3_hv_p"],
     )
 
-    time_steps = range(0, n_timesteps)
+    time_steps = range(n_timesteps)
     output_streamer = OutputStreamer(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
     output_streamer.log_variable("res_bus", "vm_pu")
     output_streamer.log_variable("res_line", "i_ka")
@@ -105,7 +105,7 @@ def test_output_streamer_without_timesteps_set(simple_test_net):
         profile_name=["load1", "load2_mv_p", "load3_hv_p"],
     )
 
-    time_steps = range(0, n_timesteps)
+    time_steps = range(n_timesteps)
     output_streamer = OutputStreamer(net, output_path=tempfile.gettempdir(), output_file_type=".json")
     output_streamer.log_variable("res_bus", "vm_pu")
     output_streamer.log_variable("res_line", "i_ka")
@@ -135,7 +135,7 @@ def test_output_streamer_without_timesteps_set_repeat(simple_test_net):
     output_streamer.log_variable("res_line", "i_ka")
 
     for n_timesteps in time_steps_to_check:
-        time_steps = range(0, n_timesteps)
+        time_steps = range(n_timesteps)
         run_timeseries(net, time_steps, verbose=False)
         assert len(output_streamer.output["res_bus.vm_pu"].index) == n_timesteps
 
@@ -156,7 +156,7 @@ def test_output_streamer_short_data_source(simple_test_net):
         profile_name=["load1", "load2_mv_p", "load3_hv_p"],
     )
 
-    time_steps = range(0, n_timesteps)
+    time_steps = range(n_timesteps)
     output_streamer = OutputStreamer(net, output_path=tempfile.gettempdir(), output_file_type=".json")
     output_streamer.log_variable("res_bus", "vm_pu")
     output_streamer.log_variable("res_line", "i_ka")
@@ -179,7 +179,7 @@ def test_default_output_streamer(simple_test_net):
         profile_name=["load1", "load2_mv_p", "load3_hv_p"],
     )
 
-    time_steps = range(0, n_timesteps)
+    time_steps = range(n_timesteps)
     run_timeseries(net, time_steps, verbose=False)
     output_streamer = net.output_writer.iloc[0, 0]
     loading_percent = output_streamer.output["res_line.loading_percent"]
@@ -204,7 +204,7 @@ def test_output_streamer_eval_simple(simple_test_net):
         data_source=ds,
         profile_name=["load1", "load2_mv_p", "load3_hv_p"],
     )
-    time_steps = range(0, n_timesteps)
+    time_steps = range(n_timesteps)
     output_streamer = OutputStreamer(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
     output_streamer.log_variable("res_bus", "vm_pu", eval_function=max, eval_name="max")
     run_timeseries(net, time_steps, verbose=False)
@@ -224,7 +224,7 @@ def test_output_streamer_multiple_index_definition(simple_test_net):
         data_source=ds,
         profile_name=["load1", "load2_mv_p", "load3_hv_p"],
     )
-    time_steps = range(0, n_timesteps)
+    time_steps = range(n_timesteps)
 
     output_streamer = OutputStreamer(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
     output_streamer.log_variable("res_bus", "vm_pu", net.load.bus[[0, 1]])
@@ -294,7 +294,7 @@ def test_store_and_load(simple_test_net):
     output_streamer = net.output_writer.iat[0, 0]
     assert len(output_streamer.log_variables) == 1
     assert output_streamer.output_path == dirname
-    time_steps = range(0, n_timesteps)
+    time_steps = range(n_timesteps)
     run_timeseries(net, time_steps=time_steps, verbose=False)
     # check if results were written
     assert os.path.isfile(res_line_file)
@@ -315,7 +315,7 @@ def test_ppc_log(simple_test_net):
         recycle=True,
     )
 
-    time_steps = range(0, n_timesteps)
+    time_steps = range(n_timesteps)
     output_streamer = OutputStreamer(net, output_path=tempfile.gettempdir(), output_file_type=".json", log_variables=[])
     output_streamer.log_variable("ppc_bus", "vm")
     output_streamer.log_variable("ppc_bus", "va")

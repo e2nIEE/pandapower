@@ -10,82 +10,82 @@ creates the branches in the ppc structure for power flow calculations
 
 import copy
 import math
-from functools import partial
 import warnings
+from functools import partial
 from typing import Any, Literal, overload
 
 import numpy as np
-from numpy.typing import NDArray, ArrayLike
 import pandas as pd
+from numpy.typing import ArrayLike, NDArray
 
-from pandapower.auxiliary import get_values
 from pandapower import pandapowerNet
+from pandapower.auxiliary import get_values
+from pandapower.create._utils import add_column_to_df
+from pandapower.pf.create_jacobian_tdpf import ALPHA_TDPF
 from pandapower.pypower.idx_brch import (
-    F_BUS,
-    T_BUS,
-    BR_R,
-    BR_X,
     BR_B,
-    BR_G,
-    TAP,
-    SHIFT,
-    BR_STATUS,
-    RATE_A,
-    BR_R_ASYM,
-    BR_X_ASYM,
-    BR_G_ASYM,
     BR_B_ASYM,
+    BR_G,
+    BR_G_ASYM,
+    BR_R,
+    BR_R_ASYM,
+    BR_STATUS,
+    BR_X,
+    BR_X_ASYM,
+    F_BUS,
+    RATE_A,
+    SHIFT,
+    T_BUS,
+    TAP,
     branch_cols,
 )
 from pandapower.pypower.idx_brch_dc import (
-    branch_dc_cols,
+    DC_BR_G,
+    DC_BR_R,
+    DC_BR_STATUS,
+    DC_F_BUS,
     DC_RATE_A,
     DC_RATE_B,
     DC_RATE_C,
-    DC_BR_STATUS,
-    DC_F_BUS,
     DC_T_BUS,
-    DC_BR_R,
-    DC_BR_G,
-)
-from pandapower.pypower.idx_brch_tdpf import (
-    BR_R_REF_OHM_PER_KM,
-    BR_LENGTH_KM,
-    RATE_I_KA,
-    T_START_C,
-    R_THETA,
-    WIND_SPEED_MPS,
-    ALPHA,
-    TDPF,
-    OUTER_DIAMETER_M,
-    MC_JOULE_PER_M_K,
-    WIND_ANGLE_DEGREE,
-    SOLAR_RADIATION_W_PER_SQ_M,
-    GAMMA,
-    EPSILON,
-    T_AMBIENT_C,
-    T_REF_C,
-    branch_cols_tdpf,
+    branch_dc_cols,
 )
 from pandapower.pypower.idx_brch_sc import branch_cols_sc
-from pandapower.pypower.idx_bus import BASE_KV, VM, VA, BUS_TYPE, BUS_AREA, ZONE, VMAX, VMIN, PQ
-from pandapower.pypower.idx_bus_dc import DC_BUS_AREA, DC_VM, DC_ZONE, DC_VMAX, DC_VMIN, DC_P, DC_BASE_KV, DC_BUS_TYPE
-from pandapower.pypower.idx_bus_sc import C_MIN, C_MAX
-from pandapower.pypower.idx_tcsc import (
-    TCSC_F_BUS,
-    TCSC_T_BUS,
-    TCSC_X_L,
-    TCSC_X_CVAR,
-    TCSC_SET_P,
-    TCSC_THYRISTOR_FIRING_ANGLE,
-    TCSC_STATUS,
-    TCSC_CONTROLLABLE,
-    tcsc_cols,
-    TCSC_MIN_FIRING_ANGLE,
-    TCSC_MAX_FIRING_ANGLE,
+from pandapower.pypower.idx_brch_tdpf import (
+    ALPHA,
+    BR_LENGTH_KM,
+    BR_R_REF_OHM_PER_KM,
+    EPSILON,
+    GAMMA,
+    MC_JOULE_PER_M_K,
+    OUTER_DIAMETER_M,
+    R_THETA,
+    RATE_I_KA,
+    SOLAR_RADIATION_W_PER_SQ_M,
+    T_AMBIENT_C,
+    T_REF_C,
+    T_START_C,
+    TDPF,
+    WIND_ANGLE_DEGREE,
+    WIND_SPEED_MPS,
+    branch_cols_tdpf,
 )
-from pandapower.pf.create_jacobian_tdpf import ALPHA_TDPF
-from pandapower.create._utils import add_column_to_df
+from pandapower.pypower.idx_bus import BASE_KV, BUS_AREA, BUS_TYPE, PQ, VA, VM, VMAX, VMIN, ZONE
+from pandapower.pypower.idx_bus_dc import DC_BASE_KV, DC_BUS_AREA, DC_BUS_TYPE, DC_P, DC_VM, DC_VMAX, DC_VMIN, DC_ZONE
+from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN
+from pandapower.pypower.idx_tcsc import (
+    TCSC_CONTROLLABLE,
+    TCSC_F_BUS,
+    TCSC_MAX_FIRING_ANGLE,
+    TCSC_MIN_FIRING_ANGLE,
+    TCSC_SET_P,
+    TCSC_STATUS,
+    TCSC_T_BUS,
+    TCSC_THYRISTOR_FIRING_ANGLE,
+    TCSC_X_CVAR,
+    TCSC_X_L,
+    tcsc_cols,
+)
 
 
 def _build_branch_ppc(net: pandapowerNet, ppc: dict, sequence: int = 1) -> None:
@@ -1710,7 +1710,7 @@ def _trafo_df_from_trafo3w(net: pandapowerNet, sequence: int = 1) -> dict:
     }
     if "max_loading_percent" in net.trafo3w:
         trafo2["max_loading_percent"] = {side: net.trafo3w.max_loading_percent.values for side in sides}
-    return {var: np.concatenate([trafo2[var][side] for side in sides]) for var in trafo2.keys()}
+    return {var: np.concatenate([trafo2[var][side] for side in sides]) for var in trafo2}
 
 
 def _calculate_sc_voltages_of_equivalent_transformers(t3, t2, mode, net):
