@@ -161,6 +161,7 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --extra pandamodels --extra test
+          uv pip install pytest-cov pytest-split
       - name: Setup Julia
         uses: julia-actions/setup-julia@5c9647d97b78a5debe5164e9eec09d653d29bd71 #v2
         with:
