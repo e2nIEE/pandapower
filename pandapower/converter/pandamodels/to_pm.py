@@ -6,38 +6,37 @@ import json
 import math
 import os
 import tempfile
-
+from collections import OrderedDict
 from os import remove
 from os.path import isfile
-from collections import OrderedDict
+
 import numpy as np
 import pandas as pd
 
-from pandapower.auxiliary import _add_ppc_options, _add_opf_options, _add_auxiliary_elements
+from pandapower.auxiliary import _add_auxiliary_elements, _add_opf_options, _add_ppc_options
 from pandapower.build_branch import _calc_line_parameter
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pypower.idx_brch import (
-    ANGMIN,
     ANGMAX,
-    BR_R,
-    BR_X,
+    ANGMIN,
     BR_B,
     BR_G,
+    BR_R,
+    BR_STATUS,
+    BR_X,
+    F_BUS,
     RATE_A,
     RATE_B,
     RATE_C,
-    TAP,
     SHIFT,
-    branch_cols,
-    F_BUS,
     T_BUS,
-    BR_STATUS,
+    TAP,
+    branch_cols,
 )
-from pandapower.pypower.idx_bus import ZONE, VA, BASE_KV, BS, GS, BUS_I, BUS_TYPE, VMAX, VMIN, VM, PD, QD
-from pandapower.pypower.idx_cost import MODEL, NCOST, COST
-from pandapower.pypower.idx_gen import PG, QG, GEN_BUS, VG, GEN_STATUS, QMAX, QMIN, PMIN, PMAX
+from pandapower.pypower.idx_bus import BASE_KV, BS, BUS_I, BUS_TYPE, GS, PD, QD, VA, VM, VMAX, VMIN, ZONE
+from pandapower.pypower.idx_cost import COST, MODEL, NCOST
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, PMAX, PMIN, QG, QMAX, QMIN, VG
 from pandapower.results import init_results, verify_results
-
 
 # const value in branch for tnep
 CONSTRUCTION_COST = 23
@@ -236,7 +235,7 @@ def convert_to_pm_structure(net, from_time_step=None, to_time_step=None, **kwarg
 def add_pm_gen_start_values_from_results(net, pm):
     pm_gens = pm.get("gen", {})
     if not pm_gens:
-        return None
+        return
 
     lookup_table_name = {"ext_grid": "res_ext_grid", "gen": "res_gen", "sgen_controllable": "res_sgen"}
     for lookup_name, table_name in lookup_table_name.items():
@@ -265,7 +264,7 @@ def add_pm_gen_start_values_from_results(net, pm):
             if q_mvar is not None:
                 pm_gen["qg_start"] = q_mvar
 
-    return None
+    return
 
 
 def dump_pm_json(pm, buffer_file=None):
@@ -330,14 +329,10 @@ def get_branch_angles(row, correct_pm_network_data):
     # himself)
     if correct_pm_network_data:
         if angmin < -60.0:
-            logger.debug(
-                "changed voltage angle minimum of branch {}, to -60 from {} degrees".format(int(row[0].real), angmin)
-            )
+            logger.debug(f"changed voltage angle minimum of branch {int(row[0].real)}, to -60 from {angmin} degrees")
             angmin = -60.0
         if angmax > 60.0:
-            logger.debug(
-                "changed voltage angle maximum of branch {} to 60. from {} degrees".format(int(row[0].real), angmax)
-            )
+            logger.debug(f"changed voltage angle maximum of branch {int(row[0].real)} to 60. from {angmax} degrees")
             angmax = 60.0
     # convert to rad (per unit value)
     angmin = math.radians(angmin)  # / (360/(2*np.pi))
@@ -351,7 +346,7 @@ def create_pm_lookups(net, pm_lookup):
             # lookup is something like "branch" with dict as val -> iterate over the subdicts
             pm_val = {}
             for subkey, subval in val.items():
-                pm_val[subkey] = tuple((v + 1 for v in subval))
+                pm_val[subkey] = tuple(v + 1 for v in subval)
         elif isinstance(val, int) or isinstance(val, np.ndarray):
             # lookup is a numpy array
             # julia starts counting at 1 instead of 0
@@ -427,7 +422,7 @@ def ppc_to_pm(net, ppci):
         pq_mismatch = not np.allclose(pd_value, 0.0) or not np.allclose(qd_value, 0.0)
         if pq_mismatch:
             # This will be called if ppc PQ != sum at bus.
-            logger.info("PQ mismatch. Adding another load at idx {}".format(load_idx))
+            logger.info(f"PQ mismatch. Adding another load at idx {load_idx}")
             pm["load"][str(load_idx)] = {
                 "pd": pd_value,
                 "qd": qd_value,

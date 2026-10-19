@@ -1,23 +1,23 @@
 import numpy as np
 import pytest
 
+from pandapower import control
 from pandapower.create import (
-    create_buses,
     create_bus,
+    create_bus_dc,
+    create_buses,
+    create_ext_grid,
+    create_line_dc,
+    create_line_dc_from_parameters,
     create_line_from_parameters,
     create_load,
-    create_ext_grid,
-    create_bus_dc,
-    create_vsc_stacked,
-    create_line_dc,
-    create_source_dc,
     create_load_dc,
-    create_line_dc_from_parameters,
+    create_source_dc,
+    create_vsc_stacked,
 )
 from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 from test.consistency_checks import runpp_with_consistency_checks
-import pandapower.control as control
 
 
 def test_hvdc_interconnect_with_dmr():
@@ -149,7 +149,6 @@ def test_source_dc():
     create_load_dc(net, bus_dc=1, p_dc_mw=10)
 
     runpp(net)
-    pass
 
 
 @pytest.mark.xfail

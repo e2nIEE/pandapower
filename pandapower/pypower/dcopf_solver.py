@@ -4,28 +4,25 @@
 
 """Solves a DC optimal power flow."""
 
+from copy import deepcopy
 from sys import stderr
 
-from copy import deepcopy
-
-from numpy import array, zeros, ones, any, diag, r_, pi, inf, isnan, arange, c_, dot
-
+from numpy import any, arange, array, c_, diag, dot, inf, isnan, ones, pi, r_, zeros
 from numpy import flatnonzero as find
+from scipy.sparse import csr_matrix as sparse
+from scipy.sparse import hstack, vstack
 
-from scipy.sparse import vstack, hstack, csr_matrix as sparse
-
-from pandapower.pypower.idx_bus import BUS_TYPE, REF, VA, LAM_P, LAM_Q, MU_VMAX, MU_VMIN
-from pandapower.pypower.idx_gen import PG, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN
-from pandapower.pypower.idx_brch import PF, PT, QF, QT, RATE_A, MU_SF, MU_ST
-from pandapower.pypower.idx_cost import MODEL, POLYNOMIAL, PW_LINEAR, NCOST, COST
-
-from pandapower.pypower.util import sub2ind, have_fcn
+from pandapower.pypower.idx_brch import MU_SF, MU_ST, PF, PT, QF, QT, RATE_A
+from pandapower.pypower.idx_bus import BUS_TYPE, LAM_P, LAM_Q, MU_VMAX, MU_VMIN, REF, VA
+from pandapower.pypower.idx_cost import COST, MODEL, NCOST, POLYNOMIAL, PW_LINEAR
+from pandapower.pypower.idx_gen import MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN, PG
 
 # from pandapower.pypower.ipopt_options import ipopt_options
 # from pandapower.pypower.cplex_options import cplex_options
 # from pandapower.pypower.mosek_options import mosek_options
 # from pandapower.pypower.gurobi_options import gurobi_options
 from pandapower.pypower.qps_pypower import qps_pypower
+from pandapower.pypower.util import have_fcn, sub2ind
 
 
 def dcopf_solver(om, ppopt, out_opt=None):
@@ -273,7 +270,7 @@ def dcopf_solver(om, ppopt, out_opt=None):
 
     pimul = r_[
         mu_l - mu_u,
-        -ones((ny)),  ## dummy entry corresponding to linear cost row in A
+        -ones(ny),  ## dummy entry corresponding to linear cost row in A
         muLB - muUB,
     ]
 

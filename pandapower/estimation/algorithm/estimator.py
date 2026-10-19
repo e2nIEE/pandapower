@@ -2,8 +2,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
+from scipy import sparse
 from scipy.stats import chi2
-import scipy.sparse as sparse
 
 from pandapower.auxiliary import version_check
 
@@ -35,7 +35,7 @@ def get_estimator(base_class, estimator_name):
 class BaseEstimatorIRWLS(BaseAlgebra):
     def __init__(self, eppci: ExtendedPPCI, **hyperparameters):
         # Initilize BaseAlgebra object for calculation of relevant matrix
-        super(BaseEstimatorIRWLS, self).__init__(eppci)
+        super().__init__(eppci)
 
     def create_phi(self, E):  # pragma: no cover
         # Must be implemented for subclasses!
@@ -44,7 +44,7 @@ class BaseEstimatorIRWLS(BaseAlgebra):
 
 class BaseEstimatorOpt(BaseAlgebra):
     def __init__(self, eppci, **hyperparameters):
-        super(BaseEstimatorOpt, self).__init__(eppci)
+        super().__init__(eppci)
         # Hyperparameters for estimator should be added here
 
     def cost_function(self, E):  # pragma: no cover
@@ -59,7 +59,7 @@ class BaseEstimatorOpt(BaseAlgebra):
 
 class WLSEstimator(BaseEstimatorOpt, BaseEstimatorIRWLS):
     def __init__(self, eppci, **hyperparameters):
-        super(WLSEstimator, self).__init__(eppci, **hyperparameters)
+        super().__init__(eppci, **hyperparameters)
 
     def cost_function(self, E):
         rx = self.create_rx(E)
@@ -85,7 +85,7 @@ class WLSEstimator(BaseEstimatorOpt, BaseEstimatorIRWLS):
 
 class SHGMEstimatorIRWLS(BaseEstimatorIRWLS):
     def __init__(self, eppci: ExtendedPPCI, **hyperparameters):
-        super(SHGMEstimatorIRWLS, self).__init__(eppci, **hyperparameters)
+        super().__init__(eppci, **hyperparameters)
         if "a" not in hyperparameters:
             raise AssertionError("a is not in hyperparameters")
         self.a = hyperparameters.get("a")
@@ -168,7 +168,7 @@ class LAVEstimator(BaseEstimatorOpt):
 
 class QCEstimatorOpt(BaseEstimatorOpt):
     def __init__(self, eppci, **hyperparameters):
-        super(QCEstimatorOpt, self).__init__(eppci, **hyperparameters)
+        super().__init__(eppci, **hyperparameters)
         if "a" not in hyperparameters:
             raise AssertionError("a is not in hyperparameters")
         self.a = hyperparameters["a"]
@@ -199,7 +199,7 @@ class QCEstimatorOpt(BaseEstimatorOpt):
 
 class QLEstimatorOpt(BaseEstimatorOpt):
     def __init__(self, eppci, **hyperparameters):
-        super(QLEstimatorOpt, self).__init__(eppci, **hyperparameters)
+        super().__init__(eppci, **hyperparameters)
         if "a" not in hyperparameters:
             raise AssertionError("a is not in hyperparameters")
         self.a = hyperparameters["a"]

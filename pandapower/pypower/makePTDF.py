@@ -10,12 +10,13 @@
 
 from sys import stderr
 
-from numpy import zeros, arange, isscalar, dot, ix_, flatnonzero as find
 import numpy as np
+from numpy import arange, dot, isscalar, ix_, zeros
+from numpy import flatnonzero as find
 from numpy.linalg import solve
-from scipy.sparse.linalg import spsolve, factorized
+from scipy.sparse.linalg import factorized, spsolve
 
-from .idx_bus import BUS_TYPE, REF, BUS_I
+from .idx_bus import BUS_I, BUS_TYPE, REF
 from .makeBdc import makeBdc
 
 

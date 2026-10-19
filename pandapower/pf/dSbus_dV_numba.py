@@ -7,8 +7,10 @@
 
 
 from numba import jit
-from numpy import conj, zeros, complex128
-from scipy.sparse import issparse, csr_matrix as sparse
+from numpy import complex128, conj, zeros
+from scipy.sparse import csr_matrix as sparse
+from scipy.sparse import issparse
+
 from pandapower.pypower.dSbus_dV import dSbus_dV_dense
 
 

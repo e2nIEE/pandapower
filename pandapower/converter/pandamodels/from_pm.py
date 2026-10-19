@@ -3,17 +3,19 @@
 
 
 import math
+from copy import deepcopy
+from logging import getLogger
+
 import numpy as np
 import pandas as pd
-from copy import deepcopy
-from pandapower.auxiliary import _clean_up
+
 from pandapower import pandapowerNet
-from pandapower.pypower.idx_brch import PF, PT, QF, QT, BR_STATUS
+from pandapower.auxiliary import _clean_up
+from pandapower.optimal_powerflow import OPFNotConverged
+from pandapower.pypower.idx_brch import BR_STATUS, PF, PT, QF, QT
 from pandapower.pypower.idx_bus import VA, VM
 from pandapower.pypower.idx_gen import PG, QG
-from pandapower.results import _extract_results, _copy_results_ppci_to_ppc
-from pandapower.optimal_powerflow import OPFNotConverged
-from logging import getLogger
+from pandapower.results import _copy_results_ppci_to_ppc, _extract_results
 
 logger = getLogger("converter.pandamodels.from_pm")
 
@@ -85,7 +87,7 @@ def pm_results_to_ppc_results(net: pandapowerNet, ppc, ppci, result_pm):
     ppci["et"] = result_pm["solve_time"]
     ppci["f"] = result_pm["objective"]
 
-    if "multinetwork" in sol and sol["multinetwork"]:
+    if sol.get("multinetwork"):
         multinetwork = True
         ppc["obj"] = ppci["obj"]
         ppc["success"] = ppci["success"]

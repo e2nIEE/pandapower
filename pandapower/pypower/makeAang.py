@@ -4,11 +4,11 @@
 
 """Construct constraints for branch angle difference limits."""
 
-from numpy import array, ones, zeros, r_, inf, pi, arange, full
+from numpy import arange, array, full, inf, ones, pi, r_, zeros
 from numpy import flatnonzero as find
 from scipy.sparse import csr_matrix as sparse
 
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, ANGMIN, ANGMAX
+from pandapower.pypower.idx_brch import ANGMAX, ANGMIN, F_BUS, T_BUS
 
 
 def makeAang(baseMVA, branch, nb, ppopt):

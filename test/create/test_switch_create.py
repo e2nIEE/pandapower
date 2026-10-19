@@ -9,10 +9,10 @@ import pytest
 from pandapower.create import (
     create_bus,
     create_line,
-    create_transformer,
-    create_transformer3w_from_parameters,
     create_switch,
     create_switches,
+    create_transformer,
+    create_transformer3w_from_parameters,
 )
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network

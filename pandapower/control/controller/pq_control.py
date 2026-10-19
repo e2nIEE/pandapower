@@ -3,8 +3,8 @@
 
 import logging
 
-import pandas as pd
 import numpy as np
+import pandas as pd
 
 from pandapower.control.controller.const_control import ConstControl
 
@@ -141,7 +141,7 @@ class PQController(ConstControl):
             self.q_profile = q_profile
 
     def __repr__(self):
-        rep = super(PQController, self).__repr__()
+        rep = super().__repr__()
 
         for member in [
             "element_index",

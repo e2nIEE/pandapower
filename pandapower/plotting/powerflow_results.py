@@ -7,6 +7,7 @@ from itertools import combinations
 import networkx as nx
 import numpy as np
 import pandas as pd
+
 from pandapower.auxiliary import soft_dependency_error
 
 try:
@@ -221,8 +222,8 @@ def voltage_profile_to_bus_geodata(net, voltages=None, root_bus=None):
 
 
 if __name__ == "__main__":
-    from pandapower.run import runpp
     from pandapower.networks.mv_oberrhein import mv_oberrhein
+    from pandapower.run import runpp
 
     net = mv_oberrhein()
     runpp(net)

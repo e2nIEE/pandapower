@@ -3,6 +3,7 @@
 
 
 import argparse
+import logging
 import os
 import shutil
 import tempfile
@@ -11,8 +12,6 @@ from multiprocessing import cpu_count
 import pytest
 
 from test import test_path, tutorials_path
-
-import logging
 
 logger = logging.getLogger()
 

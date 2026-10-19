@@ -4,10 +4,10 @@
 import numpy as np
 import pytest
 
-from pandapower.run import runpp
-from pandapower.networks.power_system_test_cases import case30
 from pandapower.estimation import StateEstimation
 from pandapower.estimation.util import add_virtual_meas_from_loadflow
+from pandapower.networks.power_system_test_cases import case30
+from pandapower.run import runpp
 
 
 def test_recycle_case30():

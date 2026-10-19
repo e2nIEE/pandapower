@@ -1,6 +1,7 @@
 # test_pandera_vsc_elements.py
 
 import itertools
+
 import pandas as pd
 import pandera as pa
 import pytest
@@ -8,17 +9,18 @@ import pytest
 from pandapower.create import create_bus, create_bus_dc, create_vsc
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
+
 from test.network_schema.elements.helper import (
-    strings,
-    bools,
-    not_strings_list,
-    not_floats_list,
-    not_boolean_list,
-    positiv_ints_plus_zero,
-    negativ_ints,
-    not_ints_list,
-    positiv_floats_plus_zero,
     all_allowed_floats,
+    bools,
+    negativ_ints,
+    not_boolean_list,
+    not_floats_list,
+    not_ints_list,
+    not_strings_list,
+    positiv_floats_plus_zero,
+    positiv_ints_plus_zero,
+    strings,
 )
 
 # Allowed/invalid categorical values
@@ -325,9 +327,7 @@ class TestVscResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_vsc_power_results(self):
         """Test: Power results are consistent"""
-        pass
 
     @pytest.mark.skip(reason="Not yet implemented")
     def test_vsc_voltages(self):
         """Test: AC/DC voltages are within valid ranges"""
-        pass

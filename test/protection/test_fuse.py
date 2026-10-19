@@ -6,18 +6,15 @@ import pytest
 from pandapower.create import (
     create_buses,
     create_ext_grid,
-    create_lines_from_parameters,
-    create_transformer,
+    create_gen,
+    create_lines,
+    create_load,
+    create_loads,
+    create_sgen,
+    create_shunt,
     create_switch,
     create_switches,
-    create_load,
-    create_bus,
-    create_sgen,
-    create_gen,
-    create_line,
-    create_shunt,
-    create_lines,
-    create_loads,
+    create_transformer,
 )
 from pandapower.file_io import from_json_string, to_json
 from pandapower.network import pandapowerNet
@@ -318,17 +315,13 @@ def fuse_test_net3():
     )
     # create external grid
     create_ext_grid(net, 0, vm_pu=1.0, va_degree=0, s_sc_max_mva=100, s_sc_min_mva=50, rx_max=0.1, rx_min=0.1)
-    create_lines_from_parameters(
+    create_lines(
         net,
         from_buses=[1, 2],
         to_buses=[2, 3],
         length_km=[0.1, 0.1],
-        r_ohm_per_km=0.2067,
-        x_ohm_per_km=0.080424,
-        c_nf_per_km=261,
-        name=None,
+        line_params={"r_ohm_per_km": 0.2067, "x_ohm_per_km": 0.080424, "c_nf_per_km": 261, "max_i_ka": 0.27},
         index=[0, 1],
-        max_i_ka=0.27,
     )
     net.line["endtemp_degree"] = 250
     # create transformer
@@ -421,17 +414,13 @@ def fuse_test_net2():
     # create external grid
     create_ext_grid(net, 0, vm_pu=1.0, va_degree=0, s_sc_max_mva=100, s_sc_min_mva=50, rx_max=0.1, rx_min=0.1)
 
-    create_lines_from_parameters(
+    create_lines(
         net,
         from_buses=[1, 2],
         to_buses=[2, 3],
         length_km=[0.1, 0.1],
-        r_ohm_per_km=0.2067,
-        x_ohm_per_km=0.080424,
-        c_nf_per_km=261,
-        name=None,
+        line_params={"r_ohm_per_km": 0.2067, "x_ohm_per_km": 0.080424, "c_nf_per_km": 261, "max_i_ka": 0.27},
         index=[0, 1],
-        max_i_ka=0.27,
     )
 
     net.line["endtemp_degree"] = 250
@@ -471,13 +460,21 @@ def modified_simple_net():
     net = pandapowerNet(name="modified_simple_net")
 
     # create buses
-    bus1 = create_bus(net, name="HV Busbar", vn_kv=110.0, type="b")
-    bus2 = create_bus(net, name="HV Busbar 2", vn_kv=110.0, type="b")
-    bus3 = create_bus(net, name="HV Transformer Bus", vn_kv=110.0, type="n")
-    bus4 = create_bus(net, name="MV Transformer Bus", vn_kv=20.0, type="n")
-    bus5 = create_bus(net, name="MV Main Bus", vn_kv=20.0, type="b")
-    bus6 = create_bus(net, name="MV Bus 1", vn_kv=20.0, type="b")
-    bus7 = create_bus(net, name="MV Bus 2", vn_kv=20.0, type="b")
+    bus1, bus2, bus3, bus4, bus5, bus6, bus7 = create_buses(
+        net,
+        7,
+        name=[
+            "HV Busbar",
+            "HV Busbar 2",
+            "HV Transformer Bus",
+            "MV Transformer Bus",
+            "MV Main Bus",
+            "MV Bus 1",
+            "MV Bus 2",
+        ],
+        vn_kv=[110.0, 110.0, 110.0, 20.0, 20.0, 20.0, 20.0],
+        type=["b", "b", "n", "n", "b", "b", "b"],
+    )
 
     # create external grid
     create_ext_grid(net, bus1, vm_pu=1.02, va_degree=50)
@@ -485,10 +482,19 @@ def modified_simple_net():
     # create transformer
     create_transformer(net, bus3, bus4, name="110kV/20kV transformer", std_type="25 MVA 110/20 kV")
     # create lines
-    create_line(net, bus1, bus2, length_km=10, std_type="N2XS(FL)2Y 1x300 RM/35 64/110 kV", name="Line 1")
-    line2 = create_line(net, bus5, bus6, length_km=2.0, std_type="NA2XS2Y 1x240 RM/25 12/20 kV", name="Line 2")
-    line3 = create_line(net, bus6, bus7, length_km=3.5, std_type="48-AL1/8-ST1A 20.0", name="Line 3")
-    line4 = create_line(net, bus7, bus5, length_km=2.5, std_type="NA2XS2Y 1x240 RM/25 12/20 kV", name="Line 4")
+    _, line2, line3, line4 = create_lines(
+        net,
+        [bus1, bus5, bus6, bus7],
+        [bus2, bus6, bus7, bus5],
+        length_km=[10.0, 2.0, 3.5, 2.5],
+        line_params=[
+            "N2XS(FL)2Y 1x300 RM/35 64/110 kV",
+            "NA2XS2Y 1x240 RM/25 12/20 kV",
+            "48-AL1/8-ST1A 20.0",
+            "NA2XS2Y 1x240 RM/25 12/20 kV",
+        ],
+        name=["Line 1", "Line 2", "Line 3", "Line 4"],
+    )
 
     # create bus-bus switches
     create_switch(net, bus2, bus3, et="b", type="CB", z_ohm=0.1)

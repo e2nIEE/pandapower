@@ -6,37 +6,37 @@ import logging
 
 import numpy as np
 import pandas as pd
-from pandas.testing import assert_frame_equal
 import pytest
+from pandas.testing import assert_frame_equal
 
-from pandapower.control import ConstControl
-from pandapower.run import set_user_pf_options, runpp
-from pandapower.toolbox.grid_modification import replace_ext_grid_by_gen
-from pandapower.toolbox.data_modification import reindex_elements, create_continuous_bus_index
 from pandapower.contingency.contingency import (
     _convert_trafo_phase_shifter,
-    get_element_limits,
-    run_contingency,
-    report_contingency_results,
     check_elements_within_limits,
+    get_element_limits,
+    report_contingency_results,
+    run_contingency,
     run_contingency_ls2g,
 )
 from pandapower.contingency.contingency_parallel import run_contingency_parallel
-from pandapower.network import pandapowerNet
-from pandapower.networks.power_system_test_cases import case9, case118, case14
+from pandapower.control import ConstControl
 from pandapower.create import (
     create_buses,
     create_ext_grid,
-    create_lines,
-    create_transformer_from_parameters,
-    create_load,
-    create_lines_from_parameters,
-    create_transformers_from_parameters,
     create_gen,
+    create_lines,
+    create_lines_from_parameters,
+    create_load,
+    create_transformer_from_parameters,
+    create_transformers_from_parameters,
 )
+from pandapower.network import pandapowerNet
+from pandapower.networks.power_system_test_cases import case9, case14, case118
+from pandapower.run import runpp, set_user_pf_options
+from pandapower.timeseries.data_sources.frame_data import DFData
 from pandapower.timeseries.output_writer import OutputWriter
 from pandapower.timeseries.run_time_series import run_timeseries
-from pandapower.timeseries.data_sources.frame_data import DFData
+from pandapower.toolbox.data_modification import create_continuous_bus_index, reindex_elements
+from pandapower.toolbox.grid_modification import replace_ext_grid_by_gen
 
 try:
     import lightsim2grid

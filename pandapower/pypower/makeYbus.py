@@ -8,25 +8,25 @@
 
 """Builds the bus admittance matrix and branch admittance matrices."""
 
-from numpy import ones, conj, nonzero, any, exp, pi, hstack, real, int64, errstate
+from numpy import any, conj, errstate, exp, hstack, int64, nonzero, ones, pi, real
 from scipy.sparse import csr_matrix
 
 from pandapower.pypower.idx_brch import (
-    F_BUS,
-    T_BUS,
-    BR_R,
-    BR_X,
     BR_B,
-    BR_G,
-    BR_STATUS,
-    SHIFT,
-    TAP,
-    BR_R_ASYM,
-    BR_X_ASYM,
-    BR_G_ASYM,
     BR_B_ASYM,
+    BR_G,
+    BR_G_ASYM,
+    BR_R,
+    BR_R_ASYM,
+    BR_STATUS,
+    BR_X,
+    BR_X_ASYM,
+    F_BUS,
+    SHIFT,
+    T_BUS,
+    TAP,
 )
-from pandapower.pypower.idx_bus import GS, BS
+from pandapower.pypower.idx_bus import BS, GS
 
 
 def makeYbus(baseMVA, bus, branch):

@@ -1,11 +1,11 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import numpy as np
 import pandas as pd
 from numpy import allclose, isclose
-import numpy as np
 
-from pandapower import runpp, rundcpp, runpp_pgm
+from pandapower import rundcpp, runpp, runpp_pgm
 from pandapower.build_branch import _calc_tap_from_dataframe
 from pandapower.pf.runpp_3ph import runpp_3ph
 from pandapower.results import get_relevant_elements

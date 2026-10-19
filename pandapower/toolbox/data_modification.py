@@ -1,19 +1,18 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
 import uuid
 from collections import Counter, defaultdict
 
 import numpy as np
 import pandas as pd
 
-from pandapower.auxiliary import get_indices
 from pandapower import pandapowerNet
+from pandapower.auxiliary import get_indices
+from pandapower.network_structure import get_structure_dict
 from pandapower.toolbox.comparison import compare_arrays
 from pandapower.toolbox.element_selection import element_bus_tuples, pp_elements
-from pandapower.network_structure import get_structure_dict
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -395,7 +394,7 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
             new_index = list(np.arange(start, len(net[et]) + start))
             if et == "trafo_characteristic_table":
                 ids = net[et].id_characteristic.dropna().unique()
-                reindex_elements(net, et, lookup=dict(zip(sorted(ids), range(0, len(ids)))))
+                reindex_elements(net, et, lookup=dict(zip(sorted(ids), range(len(ids)))))
             elif et in net and isinstance(net[et], pd.DataFrame):
                 if et in ["bus_geodata", "line_geodata"]:
                     logger.info(
@@ -456,7 +455,7 @@ def set_data_type_of_columns_to_default(net):
         if isinstance(item, pd.DataFrame):
             for col in item.columns:
                 if key in new_net and col in new_net[key].columns:
-                    if new_net[key][col].dtype == net[key][col].dtype:
+                    if new_net[key][col].dtype == item[col].dtype:
                         continue
                     if set(item.columns) == set(new_net[key]):
                         net[key] = net[key].reindex(new_net[key].columns, axis=1)

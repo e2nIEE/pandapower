@@ -1,8 +1,8 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from pandapower.network import pandapowerNet
 from pandapower.create.trafo_characteristic_create import create_trafo_characteristic
+from pandapower.network import pandapowerNet
 
 
 def test_create_trafo_characteristic():

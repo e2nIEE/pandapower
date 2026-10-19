@@ -9,28 +9,28 @@
 """Updates bus, gen, branch data structures to match power flow soln."""
 
 from numpy import (
-    asarray,
     angle,
-    pi,
-    conj,
-    zeros,
-    ones,
-    finfo,
+    arange,
+    asarray,
     c_,
-    ix_,
-    real,
-    setdiff1d,
+    conj,
+    finfo,
+    flatnonzero,
+    int64,
     intersect1d,
     isin,
-    arange,
-    int64,
-    flatnonzero,
+    ix_,
+    ones,
+    pi,
+    real,
+    setdiff1d,
+    zeros,
 )
 from scipy.sparse import csr_matrix
 
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS, PF, PT, QF, QT
-from pandapower.pypower.idx_bus import VM, VA, PD, QD
-from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMIN, QMAX, SL_FAC
+from pandapower.pypower.idx_brch import BR_STATUS, F_BUS, PF, PT, QF, QT, T_BUS
+from pandapower.pypower.idx_bus import PD, QD, VA, VM
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMAX, QMIN, SL_FAC
 
 EPS = finfo(float).eps  # type: ignore[var-annotated]
 

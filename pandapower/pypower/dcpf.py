@@ -8,7 +8,7 @@
 
 """Solves a DC power flow."""
 
-from numpy import copy, r_, transpose, real, array
+from numpy import array, copy, r_, real, transpose
 from scipy.sparse.linalg import spsolve
 
 

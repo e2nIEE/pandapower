@@ -17,10 +17,10 @@ logger = logging.getLogger(__name__)
 
 try:
     from plotly import __version__ as plotly_version
-    from plotly.graph_objs.scatter.marker import ColorBar
     from plotly.graph_objs import Figure, Layout
     from plotly.graph_objs.layout import XAxis, YAxis
     from plotly.graph_objs.scatter import Line, Marker
+    from plotly.graph_objs.scatter.marker import ColorBar
     from plotly.graph_objs.scattermapbox import Line as scmLine
     from plotly.graph_objs.scattermapbox import Marker as scmMarker
 except ImportError:
@@ -182,7 +182,8 @@ def draw_layers(
 
     # check if called from ipynb or not in order to consider appropriate plot function
     if _in_ipynb():
-        from plotly.offline import init_notebook_mode, iplot as plot
+        from plotly.offline import init_notebook_mode
+        from plotly.offline import iplot as plot
 
         init_notebook_mode()
         if filename is not None:

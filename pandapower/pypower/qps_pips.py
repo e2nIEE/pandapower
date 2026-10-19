@@ -6,8 +6,7 @@
 programming) problems.
 """
 
-from numpy import inf, zeros, dot, full
-
+from numpy import dot, full, inf, zeros
 from scipy.sparse import csr_matrix as sparse
 
 from pandapower.pypower.pips import pips

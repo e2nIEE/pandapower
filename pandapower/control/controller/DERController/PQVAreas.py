@@ -11,10 +11,10 @@ try:
 except ImportError:
     shapely_imported = False
 
+import logging
+
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.control.controller.DERController.DERBasics import BaseModel
-
-import logging
 
 logger = logging.getLogger(__name__)
 

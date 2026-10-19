@@ -4,7 +4,7 @@
 
 """Computes 2nd derivatives of power injection w.r.t. voltage."""
 
-from numpy import ones, conj, arange
+from numpy import arange, conj, ones
 from scipy.sparse import csr_matrix as sparse
 
 

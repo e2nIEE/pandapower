@@ -4,10 +4,11 @@
 
 """Computes total cost for generators at given output level."""
 
-from numpy import zeros, arange, int64, flatnonzero as find
+from numpy import arange, int64, zeros
+from numpy import flatnonzero as find
 
+from pandapower.pypower.idx_cost import COST, MODEL, NCOST, POLYNOMIAL, PW_LINEAR
 from pandapower.pypower.polycost import polycost
-from pandapower.pypower.idx_cost import PW_LINEAR, POLYNOMIAL, COST, NCOST, MODEL
 
 
 def totcost(gencost, Pg):

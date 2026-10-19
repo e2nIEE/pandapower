@@ -1,14 +1,14 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from numpy import allclose, delete, any
+import logging
+
+from numpy import allclose, any, delete
 
 from pandapower.auxiliary import _add_ppc_options
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.powerflow import _pd2ppc
-from pandapower.pypower.idx_brch import BR_G, BR_G_ASYM, BR_B_ASYM, BR_R_ASYM, BR_X_ASYM
-
-import logging
+from pandapower.pypower.idx_brch import BR_B_ASYM, BR_G, BR_G_ASYM, BR_R_ASYM, BR_X_ASYM
 
 logger = logging.getLogger(__name__)
 

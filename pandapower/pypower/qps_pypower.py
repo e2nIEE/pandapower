@@ -5,6 +5,7 @@
 """Quadratic Program Solver for PYPOWER."""
 
 from pandapower.pypower.qps_pips import qps_pips
+
 # from pandapower.pypower.qps_ipopt import qps_ipopt
 # from pandapower.pypower.qps_cplex import qps_cplex
 # from pandapower.pypower.qps_mosek import qps_mosek

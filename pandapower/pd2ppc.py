@@ -1,64 +1,66 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+from itertools import combinations
+
 import numpy as np
+
 from pandapower.auxiliary import (
-    _select_is_elements_numba,
-    _check_connectivity_opf,
     _check_connectivity,
-    _set_isolated_buses_out_of_service,
+    _check_connectivity_opf,
     _replace_nans_with_default_limits,
+    _select_is_elements_numba,
+    _set_isolated_buses_out_of_service,
     _write_lookup_to_net,
 )
 from pandapower.build_branch import (
-    _switch_branches,
     _branches_with_oos_buses,
+    _build_branch_dc_ppc,
     _build_branch_ppc,
     _build_tcsc_ppc,
-    _build_branch_dc_ppc,
+    _switch_branches,
 )
 from pandapower.build_bus import (
+    _add_ext_grid_sc_impedance,
+    _add_load_sc_impedances_ppc,
+    _add_motor_impedances_ppc,
+    _build_bus_dc_ppc,
     _build_bus_ppc,
+    _build_ssc_ppc,
+    _build_svc_ppc,
+    _build_vsc_ppc,
     _calc_pq_elements_and_add_on_ppc,
     _calc_shunts_and_add_on_ppc,
-    _add_ext_grid_sc_impedance,
-    _add_motor_impedances_ppc,
-    _build_svc_ppc,
-    _add_load_sc_impedances_ppc,
-    _build_ssc_ppc,
-    _build_vsc_ppc,
-    _build_bus_dc_ppc,
 )
 from pandapower.build_gen import (
     _build_gen_ppc,
-    _check_voltage_setpoints_at_same_bus,
-    _check_voltage_angles_at_same_bus,
     _check_for_reference_bus,
+    _check_voltage_angles_at_same_bus,
+    _check_voltage_setpoints_at_same_bus,
 )
 from pandapower.opf.make_objective import _make_objective
 from pandapower.pypower.idx_area import PRICE_REF_BUS
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
-from pandapower.pypower.idx_brch_dc import DC_F_BUS, DC_T_BUS, DC_BR_STATUS
-from pandapower.pypower.idx_bus import NONE, BUS_I, BUS_TYPE
-from pandapower.pypower.idx_bus_dc import DC_BUS_I, DC_BUS_TYPE, DC_NONE, DC_B2B
+from pandapower.pypower.idx_brch import BR_STATUS, F_BUS, T_BUS
+from pandapower.pypower.idx_brch_dc import DC_BR_STATUS, DC_F_BUS, DC_T_BUS
+from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE
+from pandapower.pypower.idx_bus_dc import DC_B2B, DC_BUS_I, DC_BUS_TYPE, DC_NONE
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS
-from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
-from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
-from pandapower.pypower.idx_svc import SVC_STATUS, SVC_BUS
+from pandapower.pypower.idx_source_dc import SOURCE_DC_BUS, SOURCE_DC_STATUS
+from pandapower.pypower.idx_ssc import SSC_BUS, SSC_INTERNAL_BUS, SSC_STATUS
+from pandapower.pypower.idx_svc import SVC_BUS, SVC_STATUS
+from pandapower.pypower.idx_tcsc import TCSC_F_BUS, TCSC_STATUS, TCSC_T_BUS
 from pandapower.pypower.idx_vsc import (
     VSC_BUS,
-    VSC_INTERNAL_BUS,
     VSC_BUS_DC,
-    VSC_STATUS,
+    VSC_INTERNAL_BUS,
+    VSC_INTERNAL_BUS_DC,
     VSC_MODE_AC,
-    VSC_MODE_AC_V,
     VSC_MODE_AC_Q,
     VSC_MODE_AC_SL,
-    VSC_INTERNAL_BUS_DC,
+    VSC_MODE_AC_V,
+    VSC_STATUS,
 )
-from pandapower.pypower.idx_source_dc import SOURCE_DC_BUS, SOURCE_DC_STATUS
 from pandapower.pypower.run_userfcn import run_userfcn
-from itertools import combinations
 
 
 def _pd2ppc_recycle(net, sequence, recycle):
@@ -72,11 +74,11 @@ def _pd2ppc_recycle(net, sequence, recycle):
     ppc["iterations"] = 0.0
     ppc["et"] = 0.0
 
-    if "bus_pq" in recycle and recycle["bus_pq"]:
+    if recycle.get("bus_pq"):
         # update pq values in bus
         _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=sequence)
 
-    if "gen" in recycle and recycle["gen"]:
+    if recycle.get("gen"):
         # updates the ppc["gen"] part
         _build_gen_ppc(net, ppc, sequence)
         ppc["gen"] = np.nan_to_num(ppc["gen"])

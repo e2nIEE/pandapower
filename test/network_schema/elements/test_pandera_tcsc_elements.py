@@ -395,9 +395,7 @@ class TestTcscResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_tcsc_voltage_results(self):
         """Test: Voltage results are within valid range"""
-        pass
 
     @pytest.mark.skip(reason="Not yet implemented")
     def test_tcsc_power_results(self):
         """Test: Power results are consistent"""
-        pass

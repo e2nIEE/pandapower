@@ -1,5 +1,5 @@
-from pandera.errors import SchemaError
 import pytest
+from pandera.errors import SchemaError
 
 from pandapower.create._utils import add_tag_group_to_df
 from pandapower.network import pandapowerNet
