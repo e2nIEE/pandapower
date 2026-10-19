@@ -56,7 +56,9 @@ def calc_y_svc_pu(x_control, svc_x_l_pu, svc_x_cvar_pu):
     array-like
         Admittance values of the SVCs in per-unit.
     """
-    y_svc = (2 * (np.pi - x_control) + np.sin(2 * x_control) + np.pi * svc_x_l_pu / svc_x_cvar_pu) / (np.pi * svc_x_l_pu)
+    y_svc = (2 * (np.pi - x_control) + np.sin(2 * x_control) + np.pi * svc_x_l_pu / svc_x_cvar_pu) / (
+        np.pi * svc_x_l_pu
+    )
     return y_svc
 
 

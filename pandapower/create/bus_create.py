@@ -17,7 +17,6 @@ from pandapower.create._utils import (
     _set_multiple_entries,
 )
 from pandapower.network import pandapowerNet
-from pandapower.network_schema.tools.validation.network_validation import validate_network
 from pandapower.network_structure import get_default_value
 from pandapower.plotting.geo import _is_valid_number
 from pandapower.pp_types import BusType, Int

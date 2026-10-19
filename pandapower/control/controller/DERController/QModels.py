@@ -1,13 +1,12 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
+
 import numpy as np
 
 from pandapower.auxiliary import ensure_iterability
-from pandapower.control.controller.DERController.DERBasics import BaseModel, QVCurve, \
-    CosphiVCurve, CosphiPCurve
-
-import logging
+from pandapower.control.controller.DERController.DERBasics import BaseModel, CosphiPCurve, CosphiVCurve, QVCurve
 
 logger = logging.getLogger(__name__)
 
@@ -79,15 +78,19 @@ class QModelCosphiP(QModel):
         if not (-1 <= cosphi <= 1):
             raise AssertionError("cosphi not between -1 and 1")
         self.cosphi = cosphi
-        self.q_setpoint_pu = np.sign(self.cosphi) * np.sqrt(1-self.cosphi**2)
+        self.q_setpoint_pu = np.sign(self.cosphi) * np.sqrt(1 - self.cosphi**2)
 
-    def step(self, vm_pu=None, p_pu=None,):
+    def step(
+        self,
+        vm_pu=None,
+        p_pu=None,
+    ):
         if p_pu is None:
             raise AssertionError("p_pu is None")
         if any(p_pu < 0):
             logger.warning("p < 0 is assumed as p=0 in QModelCosphiP.step()")
-            p_pu[p_pu< 0] = 0
-        return (p_pu * self.q_setpoint_pu)
+            p_pu[p_pu < 0] = 0
+        return p_pu * self.q_setpoint_pu
 
     def __str__(self):
         return self.__class__.name() + f"(cosphi={self.cosphi})"
@@ -104,7 +107,7 @@ class QModelCosphiSn(QModel):
         self.cosphi = cosphi
 
     def step(self, vm_pu=None, p_pu=None):
-        return (1 * self.cosphi)
+        return 1 * self.cosphi
 
     def __str__(self):
         return self.__class__.name() + f"(cosphi={self.cosphi})"
@@ -121,15 +124,19 @@ class QModelCosphiPQ(QModel):
         if not (-1 <= cosphi <= 1):
             raise AssertionError("cosphi not between -1 and 1")
         self.cosphi = cosphi
-        self.q_setpoint_pu = np.sign(self.cosphi) * np.sqrt(1-self.cosphi**2)
+        self.q_setpoint_pu = np.sign(self.cosphi) * np.sqrt(1 - self.cosphi**2)
 
-    def step(self, vm_pu=None, p_pu=None,):
+    def step(
+        self,
+        vm_pu=None,
+        p_pu=None,
+    ):
         if p_pu is None:
             raise AssertionError("p_pu is None")
         if any(p_pu < 0):
             logger.warning("p_pu < 0 is assumed as p_pu=0 QModelCosphiPQ.step()")
             p_pu[p_pu < 0] = 0
-        return (p_pu/abs(self.cosphi) * self.q_setpoint_pu)
+        return p_pu / abs(self.cosphi) * self.q_setpoint_pu
 
     def __str__(self):
         return self.__class__.name() + f"(cosphi={self.cosphi})"

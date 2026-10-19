@@ -6,30 +6,26 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
-
-"""Runs a power flow.
-"""
-
-from time import perf_counter
-from packaging import version
-from numpy import flatnonzero as find, r_, zeros, argmax, real, setdiff1d, int64, isclose
-
-from pandapower.pypower.idx_bus import PD, QD, BUS_TYPE, PQ, REF
-from pandapower.pypower.idx_gen import PG, QG, QMAX, QMIN, GEN_BUS, GEN_STATUS
-from pandapower.pypower.bustypes import bustypes
-from pandapower.pypower.makeSbus import makeSbus
-from pandapower.pypower.pfsoln import pfsoln
-from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
-from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
-
-from pandapower.pypower.makeB import makeB
-from pandapower.pypower.ppoption import ppoption
-from pandapower.pypower.fdpf import fdpf
-from pandapower.pypower.gausspf import gausspf
-
-from pandapower.auxiliary import _check_if_numba_is_installed
+"""Runs a power flow."""
 
 import logging
+from time import perf_counter
+
+from numpy import argmax, int64, isclose, r_, real, setdiff1d, zeros
+from numpy import flatnonzero as find
+
+from pandapower.auxiliary import _check_if_numba_is_installed
+from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
+from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
+from pandapower.pypower.bustypes import bustypes
+from pandapower.pypower.fdpf import fdpf
+from pandapower.pypower.gausspf import gausspf
+from pandapower.pypower.idx_bus import BUS_TYPE, PD, PQ, QD, REF
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMAX, QMIN
+from pandapower.pypower.makeB import makeB
+from pandapower.pypower.makeSbus import makeSbus
+from pandapower.pypower.pfsoln import pfsoln
+from pandapower.pypower.ppoption import ppoption
 
 logger = logging.getLogger(__name__)
 
@@ -73,14 +69,15 @@ def _get_options(options, **kwargs):
     max_iteration = options["max_iteration"]
 
     # algorithms implemented within pypower
-    algorithm_pypower_dict = {'nr': 1, 'fdxb': 2, 'fdbx': 3, 'gs': 4}
+    algorithm_pypower_dict = {"nr": 1, "fdxb": 2, "fdbx": 3, "gs": 4}
 
-    ppopt = ppoption(ENFORCE_Q_LIMS=enforce_q_lims, PF_TOL=tolerance_mva,
-                     PF_ALG=algorithm_pypower_dict[algorithm], **kwargs)
-    ppopt['PF_MAX_IT'] = max_iteration
-    ppopt['PF_MAX_IT_GS'] = max_iteration
-    ppopt['PF_MAX_IT_FD'] = max_iteration
-    ppopt['VERBOSE'] = 0
+    ppopt = ppoption(
+        ENFORCE_Q_LIMS=enforce_q_lims, PF_TOL=tolerance_mva, PF_ALG=algorithm_pypower_dict[algorithm], **kwargs
+    )
+    ppopt["PF_MAX_IT"] = max_iteration
+    ppopt["PF_MAX_IT_GS"] = max_iteration
+    ppopt["PF_MAX_IT_FD"] = max_iteration
+    ppopt["VERBOSE"] = 0
     return init_va_degree, ac, numba, recycle, ppopt
 
 
@@ -107,11 +104,11 @@ def _import_numba_extensions_if_flag_is_true(numba):
 
 def _get_Y_bus(ppci, recycle, makeYbus, baseMVA, bus, branch):
     if recycle and not recycle["trafo"] and ppci["internal"]["Ybus"].size:
-        Ybus, Yf, Yt = ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt']
+        Ybus, Yf, Yt = ppci["internal"]["Ybus"], ppci["internal"]["Yf"], ppci["internal"]["Yt"]
     else:
         ## build admittance matrices
         Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
-        ppci["internal"]['Ybus'], ppci["internal"]['Yf'], ppci["internal"]['Yt'] = Ybus, Yf, Yt
+        ppci["internal"]["Ybus"], ppci["internal"]["Yf"], ppci["internal"]["Yt"] = Ybus, Yf, Yt
     return ppci, Ybus, Yf, Yt
 
 
@@ -140,8 +137,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
     fixedQg = zeros(gen.shape[0])  ## Qg of gens at Q limits
     it = 0
     while True:
-        ppci, success, bus, gen, branch, it_inner = _run_ac_pf_without_qlims_enforced(ppci, recycle,
-                                                                                      makeYbus, ppopt)
+        ppci, success, bus, gen, branch, it_inner = _run_ac_pf_without_qlims_enforced(ppci, recycle, makeYbus, ppopt)
         it += it_inner
 
         ## find gens with violated Q constraints
@@ -153,12 +149,10 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
         mx = find(gen_status & qg_max_lim & non_refs)
         mn = find(gen_status & qg_min_lim & non_refs)
 
-
         if len(mx) > 0 or len(mn) > 0:  ## we have some Q limit violations
             ## one at a time?
             if qlim == 2:  ## fix largest violation, ignore the rest
-                k = argmax(r_[gen[mx, QG] - gen[mx, QMAX],
-                              gen[mn, QMIN] - gen[mn, QG]])
+                k = argmax(r_[gen[mx, QG] - gen[mx, QMAX], gen[mn, QMIN] - gen[mn, QG]])
                 if k > len(mx):
                     mn = mn[k - len(mx)]
                     mx = []
@@ -176,12 +170,12 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
             for i in mx:  ## [one at a time, since they may be at same bus]
                 gen[i, GEN_STATUS] = 0  ## temporarily turn off gen,
                 bi = gen[i, GEN_BUS].astype(int64)  ## adjust load accordingly,
-                bus[bi, [PD, QD]] = (bus[bi, [PD, QD]] - gen[i, [PG, QG]])
+                bus[bi, [PD, QD]] = bus[bi, [PD, QD]] - gen[i, [PG, QG]]
 
             if len(ref) > 1 and any(bus[gen[mx, GEN_BUS].astype(int64), BUS_TYPE] == REF):
-                raise ValueError('Sorry, pandapower cannot enforce Q '
-                                 'limits for slack buses in systems '
-                                 'with multiple slacks.')
+                raise ValueError(
+                    "Sorry, pandapower cannot enforce Q limits for slack buses in systems with multiple slacks."
+                )
 
             changed_gens = gen[mx, GEN_BUS].astype(int64)
             bus[setdiff1d(changed_gens, ref), BUS_TYPE] = PQ  ## & set bus type to PQ
@@ -213,8 +207,8 @@ def _call_power_flow_function(baseMVA, bus, branch, Ybus, Sbus, V0, ref, pv, pq,
     elif alg == 4:
         V, success, it = gausspf(Ybus, Sbus, V0, ref, pv, pq, ppopt)
     else:
-        raise ValueError('Only PYPOWERS fast-decoupled, and '
-                         'Gauss-Seidel power flow algorithms currently '
-                         'implemented.\n')
+        raise ValueError(
+            "Only PYPOWERS fast-decoupled, and Gauss-Seidel power flow algorithms currently implemented.\n"
+        )
 
     return V, success, it

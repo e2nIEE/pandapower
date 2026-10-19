@@ -10,17 +10,17 @@
 
 from sys import stderr
 
-from numpy import zeros, arange, isscalar, dot, ix_, flatnonzero as find
 import numpy as np
+from numpy import arange, dot, isscalar, ix_, zeros
+from numpy import flatnonzero as find
 from numpy.linalg import solve
-from scipy.sparse.linalg import spsolve, factorized
+from scipy.sparse.linalg import factorized, spsolve
 
-from .idx_bus import BUS_TYPE, REF, BUS_I
+from .idx_bus import BUS_I, BUS_TYPE, REF
 from .makeBdc import makeBdc
 
 
-def makePTDF(baseMVA, bus, branch, slack=None,
-             result_side=0, using_sparse_solver=False, branch_id=None, reduced=False):
+def makePTDF(baseMVA, bus, branch, slack=None, result_side=0, using_sparse_solver=False, branch_id=None, reduced=False):
     """Builds the DC PTDF matrix for a given choice of slack.
     Returns the DC PTDF matrix for a given choice of slack. The matrix is
     C{nbr x nb}, where C{nbr} is the number of branches and C{nb} is the
@@ -48,16 +48,16 @@ def makePTDF(baseMVA, bus, branch, slack=None,
     if isscalar(slack):
         slack_bus = slack
     else:
-        slack_bus = 0      ## use bus 1 for temp slack bus
+        slack_bus = 0  ## use bus 1 for temp slack bus
 
     nb = bus.shape[0]
     nbr = branch.shape[0]
-    noref = arange(1, nb)      ## use bus 1 for voltage angle reference
+    noref = arange(1, nb)  ## use bus 1 for voltage angle reference
     noslack = find(arange(nb) != slack_bus)
 
     ## check that bus numbers are equal to indices to bus (one set of bus numbers)
     if any(bus[:, BUS_I] != arange(nb)):
-        stderr.write('makePTDF: buses must be numbered consecutively')
+        stderr.write("makePTDF: buses must be numbered consecutively")
 
     if reduced:
         H = zeros((len(branch_id), nb))
@@ -83,7 +83,7 @@ def makePTDF(baseMVA, bus, branch, slack=None,
             # Use memory saving modus
             Bbus_fact = factorized(Bbus[ix_(noslack, noref)].T)
             for i in range(0, Bf.shape[0], 32):
-                H[i:i+32, noslack] = Bbus_fact(Bf[i:i+32, noref].real.toarray().T).T
+                H[i : i + 32, noslack] = Bbus_fact(Bf[i : i + 32, noref].real.toarray().T).T
     else:
         Bbus, Bf, *_ = makeBdc(bus, branch)
         Bbus, Bf = np.real(Bbus.toarray()), np.real(Bf.toarray())
@@ -100,7 +100,7 @@ def makePTDF(baseMVA, bus, branch, slack=None,
     ## distribute slack, if requested
     if not isscalar(slack):
         if len(slack.shape) == 1:  ## slack is a vector of weights
-            slack = slack / sum(slack)   ## normalize weights
+            slack = slack / sum(slack)  ## normalize weights
 
             ## conceptually, we want to do ...
             ##    H = H * (eye(nb, nb) - slack * ones((1, nb)))

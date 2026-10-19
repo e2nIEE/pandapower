@@ -3,19 +3,21 @@
 
 
 import math
-import numpy as np
-import pandas as pd
 from copy import deepcopy
-from pandapower.auxiliary import _clean_up
-from pandapower import pandapowerNet
-from pandapower.pypower.idx_brch import PF, PT, QF, QT, BR_STATUS
-from pandapower.pypower.idx_bus import VA, VM
-from pandapower.pypower.idx_gen import PG, QG
-from pandapower.results import _extract_results, _copy_results_ppci_to_ppc
-from pandapower.optimal_powerflow import OPFNotConverged
 from logging import getLogger
 
-logger = getLogger('converter.pandamodels.from_pm')
+import numpy as np
+import pandas as pd
+
+from pandapower import pandapowerNet
+from pandapower.auxiliary import _clean_up
+from pandapower.optimal_powerflow import OPFNotConverged
+from pandapower.pypower.idx_brch import BR_STATUS, PF, PT, QF, QT
+from pandapower.pypower.idx_bus import VA, VM
+from pandapower.pypower.idx_gen import PG, QG
+from pandapower.results import _copy_results_ppci_to_ppc, _extract_results
+
+logger = getLogger("converter.pandamodels.from_pm")
 
 
 def read_pm_results_to_net(net: pandapowerNet, ppc, ppci, result_pm):
@@ -40,7 +42,7 @@ def read_pm_results_to_net(net: pandapowerNet, ppc, ppci, result_pm):
             for tp, ri in result.items():
                 add_time_series_data_to_net(neti, net.controller, tp)
                 _extract_results(neti, ri)
-                add_storage_results(neti, result_pm["solution"]["nw"][str(int(tp)+1)])
+                add_storage_results(neti, result_pm["solution"]["nw"][str(int(tp) + 1)])
                 result[tp] = deepcopy(neti)
             net["res_ts_opt"] = result
         _clean_up(net)
@@ -64,6 +66,7 @@ def add_storage_results(net: pandapowerNet, result_pmi):
 
 def add_time_series_data_to_net(net: pandapowerNet, controller, tp):
     from pandapower.control import ConstControl
+
     for idx, content in controller.iterrows():
         if type(content["object"]) == ConstControl:
             element = content["object"].__dict__["matching_params"]["element"]
@@ -84,7 +87,7 @@ def pm_results_to_ppc_results(net: pandapowerNet, ppc, ppci, result_pm):
     ppci["et"] = result_pm["solve_time"]
     ppci["f"] = result_pm["objective"]
 
-    if "multinetwork" in sol and sol["multinetwork"]:
+    if sol.get("multinetwork"):
         multinetwork = True
         ppc["obj"] = ppci["obj"]
         ppc["success"] = ppci["success"]
@@ -93,10 +96,10 @@ def pm_results_to_ppc_results(net: pandapowerNet, ppc, ppci, result_pm):
         result = {}
         for tp, soli in sol["nw"].items():
             pm_results_to_ppc_results_one_time_step(ppci, soli)
-            result[str(int(tp)-1)] = deepcopy(_copy_results_ppci_to_ppc(ppci, ppc, options["mode"]))
+            result[str(int(tp) - 1)] = deepcopy(_copy_results_ppci_to_ppc(ppci, ppc, options["mode"]))
     else:
         if "bus" not in sol:
-            ppci["success"] = False # PowerModels failed
+            ppci["success"] = False  # PowerModels failed
         else:
             pm_results_to_ppc_results_one_time_step(ppci, sol)
             result = _copy_results_ppci_to_ppc(ppci, ppc, options["mode"])

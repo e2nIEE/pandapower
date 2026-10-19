@@ -2,8 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""Computes 2nd derivatives of |complex power flow|**2 w.r.t. V.
-"""
+"""Computes 2nd derivatives of |complex power flow|**2 w.r.t. V."""
 
 from scipy.sparse import csr_matrix
 
@@ -40,9 +39,9 @@ def d2ASbr_dV2(dSbr_dVa, dSbr_dVm, Sbr, Cbr, Ybr, V, lam):
 
     Saa, Sav, Sva, Svv = d2Sbr_dV2(Cbr, Ybr, V, diagSbr_conj * lam)
 
-    Haa = 2 * ( Saa + dSbr_dVa.T * diaglam * dSbr_dVa.conj() ).real
-    Hva = 2 * ( Sva + dSbr_dVm.T * diaglam * dSbr_dVa.conj() ).real
-    Hav = 2 * ( Sav + dSbr_dVa.T * diaglam * dSbr_dVm.conj() ).real
-    Hvv = 2 * ( Svv + dSbr_dVm.T * diaglam * dSbr_dVm.conj() ).real
+    Haa = 2 * (Saa + dSbr_dVa.T * diaglam * dSbr_dVa.conj()).real
+    Hva = 2 * (Sva + dSbr_dVm.T * diaglam * dSbr_dVa.conj()).real
+    Hav = 2 * (Sav + dSbr_dVa.T * diaglam * dSbr_dVm.conj()).real
+    Hvv = 2 * (Svv + dSbr_dVm.T * diaglam * dSbr_dVm.conj()).real
 
     return Haa, Hav, Hva, Hvv

@@ -1,11 +1,11 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import (
-    create_column_group_dependency_validation_func,
-    create_column_dependency_checks_from_metadata,
-)
 from pandapower.network_schema.tools.validation.column_condition import create_lower_than_column_check
+from pandapower.network_schema.tools.validation.group_dependency import (
+    create_column_dependency_checks_from_metadata,
+    create_column_group_dependency_validation_func,
+)
 
 _trafo3w_columns = {
     "name": pa.Column(
@@ -163,10 +163,18 @@ _trafo3w_columns = {
         bool, description="specifies if the transformer is in service.", metadata={"default": True}
     ),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="element rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="origin_class rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "terminal_hv": pa.Column(
         pd.StringDtype,

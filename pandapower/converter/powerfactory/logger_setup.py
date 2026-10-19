@@ -1,6 +1,5 @@
-from logging import StreamHandler, Formatter
-
 import logging
+from logging import Formatter, StreamHandler
 
 
 class AppHandler(StreamHandler):
@@ -11,8 +10,8 @@ class AppHandler(StreamHandler):
         self.PrintInfo = app.PrintInfo
         self.PrintWarn = app.PrintWarn
         self.PrintError = app.PrintError
-        self.name = 'PowerFactory Converter'
-        formatter = Formatter('%(message)s')
+        self.name = "PowerFactory Converter"
+        formatter = Formatter("%(message)s")
         self.setFormatter(formatter)
         self.freeze_app_between_messages = freeze_app_between_messages
 
@@ -28,9 +27,7 @@ class AppHandler(StreamHandler):
             self.PrintInfo(msg)
         elif level == "WARNING":
             self.PrintWarn(msg)
-        elif level == "ERROR":
-            self.PrintError(msg)
-        elif level == 'CRITICAL':
+        elif level == "ERROR" or level == "CRITICAL":
             self.PrintError(msg)
         else:
             self.PrintPlain(msg)
@@ -47,20 +44,20 @@ def setup_logger(app, name, level):
 
     set_PF_level(logger, app_handler, level)
 
-    logger.info('initialized logger %s' % logger.name)
+    logger.info("initialized logger %s" % logger.name)
     return logger, app_handler
 
 
 def set_PF_level(logger, app_handler, level):
-    if level == 'DEBUG':
+    if level == "DEBUG":
         logger.setLevel(logging.DEBUG)
         app_handler.setLevel(logging.DEBUG)
-    elif level == 'INFO':
+    elif level == "INFO":
         logger.setLevel(logging.INFO)
         app_handler.setLevel(logging.INFO)
-    elif level == 'WARNING':
+    elif level == "WARNING":
         logger.setLevel(logging.WARNING)
         app_handler.setLevel(logging.WARNING)
-    elif level == 'ERROR':
+    elif level == "ERROR":
         logger.setLevel(logging.ERROR)
         app_handler.setLevel(logging.ERROR)

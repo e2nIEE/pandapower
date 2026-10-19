@@ -1,4 +1,4 @@
-from typing import Literal, Union, TypedDict, Any
+from typing import Any, Literal, TypedDict, Union
 
 import numpy as np
 
@@ -14,8 +14,9 @@ LineType = Literal["ol", "cs"]
 HVLVType = Literal["hv", "lv"]
 HVMVLVType = Literal["hv", "mv", "lv"]
 MeasurementType = Literal["v", "p", "q", "i", "va", "ia"]
-MeasurementElementType = Literal["bus", "line", "trafo", "trafow3", "load", "gen", "sgen", "shunt", "ward", "xward",
-                                 "ext_grid"]
+MeasurementElementType = Literal[
+    "bus", "line", "trafo", "trafow3", "load", "gen", "sgen", "shunt", "ward", "xward", "ext_grid"
+]
 MeasurementSideType = Literal["from", "to", "hv", "mv", "lv"]
 PWLPowerType = Literal["p", "q"]
 SwitchElementType = Literal[
@@ -40,6 +41,7 @@ class StandardTypesDict(TypedDict):
     """
     Typing for the Standard Types.
     """
+
     line: dict[str, Any]
     line_dc: dict[str, Any]
     trafo: dict[str, Any]

@@ -1,17 +1,29 @@
 import logging
+
 import pandas as pd
-from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, \
-    create_trafo_trace
-from pandapower.plotting.plotly.get_colors import get_plotly_color_palette
-from pandapower.topology import create_nxgraph, connected_components
+
 from pandapower.plotting.plotly.draw_layers import draw_layers
+from pandapower.plotting.plotly.get_colors import get_plotly_color_palette
+from pandapower.plotting.plotly.traces import create_bus_trace, create_line_trace, create_trafo_trace
+from pandapower.topology import connected_components, create_nxgraph
 
 logger = logging.getLogger(__name__)
 
 
-def layers_plotly(net, bus_groups, respect_switches=True, use_line_geo=None, colors_dict=None, on_map=False,
-                  map_style='basic', figsize=1, aspectratio='auto', line_width=2,
-                  bus_size=10, auto_open=True):
+def layers_plotly(
+    net,
+    bus_groups,
+    respect_switches=True,
+    use_line_geo=None,
+    colors_dict=None,
+    on_map=False,
+    map_style="basic",
+    figsize=1,
+    aspectratio="auto",
+    line_width=2,
+    bus_size=10,
+    auto_open=True,
+):
     """
     Plot pandapower network buses grouped into layers in plotly
     If no geodata is available, artificial geodata is generated. For advanced plotting see the
@@ -78,9 +90,9 @@ def layers_plotly(net, bus_groups, respect_switches=True, use_line_geo=None, col
     # getting unique sets of buses for each voltage level
     vlev_bus_dict = {}
     for vl_buses in vlev_buses:
-        if len(net.bus.loc[list(vl_buses), 'vn_kv'].unique().tolist()) > 1:
-            logger.warning('buses from the same voltage level does not have the same vn_kv !?')
-        vn_kv = net.bus.loc[list(vl_buses), 'vn_kv'].unique()[0]
+        if len(net.bus.loc[list(vl_buses), "vn_kv"].unique().tolist()) > 1:
+            logger.warning("buses from the same voltage level does not have the same vn_kv !?")
+        vn_kv = net.bus.loc[list(vl_buses), "vn_kv"].unique()[0]
         if vlev_bus_dict.get(vn_kv):
             vlev_bus_dict[vn_kv].update(vl_buses)
         else:
@@ -99,7 +111,7 @@ def layers_plotly(net, bus_groups, respect_switches=True, use_line_geo=None, col
                 set_a.add(ind_bus[j])
         layers[unique_layers[i]] = set_a
 
-    num_layer = len(bus_groups['group'].unique())
+    num_layer = len(bus_groups["group"].unique())
     # getting number of groups for each bus
     nvlevs = len(layers)
     colors = get_plotly_color_palette(nvlevs)
@@ -109,27 +121,32 @@ def layers_plotly(net, bus_groups, respect_switches=True, use_line_geo=None, col
     for vn_kv, buses_vl in layers.items():
         vlev_color = colors_dict[vn_kv]
         bus_trace_vlev = create_bus_trace(
-            net, buses=buses_vl, size=bus_size, legendgroup=str(vn_kv), color=vlev_color,
-            trace_name='Group {0}'.format(vn_kv))
+            net,
+            buses=buses_vl,
+            size=bus_size,
+            legendgroup=str(vn_kv),
+            color=vlev_color,
+            trace_name=f"Group {vn_kv}",
+        )
         if bus_trace_vlev is not None:
             bus_traces += bus_trace_vlev
     line_traces = []
     for vn_kv, buses_vl in vlev_bus_dict.items():
-        vlev_lines = net.line[net.line.from_bus.isin(buses_vl) &
-                        net.line.to_bus.isin(buses_vl)].index.tolist()
+        vlev_lines = net.line[net.line.from_bus.isin(buses_vl) & net.line.to_bus.isin(buses_vl)].index.tolist()
         line_trace_vlev = create_line_trace(
             net=net,
             lines=vlev_lines,
             use_line_geo=use_line_geo,
             respect_switches=respect_switches,
-            legendgroup=str(vn_kv), color='gray',
+            legendgroup=str(vn_kv),
+            color="gray",
             width=line_width,
-            trace_name='lines {0} kV'.format(vn_kv)
+            trace_name=f"lines {vn_kv} kV",
         )
         if line_trace_vlev is not None:
             line_traces += line_trace_vlev
 
-    trafo_traces = create_trafo_trace(net, color='gray', width=line_width * 2)
+    trafo_traces = create_trafo_trace(net, color="gray", width=line_width * 2)
 
     return draw_layers(
         line_traces + trafo_traces + bus_traces,
@@ -139,5 +156,5 @@ def layers_plotly(net, bus_groups, respect_switches=True, use_line_geo=None, col
         on_map=on_map,
         map_style=map_style,
         figsize=figsize,
-        auto_open=auto_open
+        auto_open=auto_open,
     )

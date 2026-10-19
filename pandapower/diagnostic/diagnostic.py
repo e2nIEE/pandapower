@@ -2,12 +2,18 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import logging
-from typing import Literal, Any
 from collections.abc import Callable
+from typing import Any, Literal
 
+from pandapower.diagnostic.diagnostic_functions import default_argument_values, default_diagnostic_functions
+from pandapower.diagnostic.diagnostic_helpers import (
+    DiagnosticFunction,
+    LogCount,
+    NotCompactFilter,
+    NotDetailedFilter,
+    logger,
+)
 from pandapower.network import ADict
-from pandapower.diagnostic.diagnostic_functions import default_diagnostic_functions, default_argument_values
-from pandapower.diagnostic.diagnostic_helpers import logger, DiagnosticFunction, NotCompactFilter, NotDetailedFilter, LogCount
 
 # LOGGER:
 # there is no local logger here because it requires the custom log levels from diagnostic_helpers
@@ -35,6 +41,7 @@ class Diagnostic:
         >>> result = diag.diagnose_network(net, report_style="detailed")
 
     """
+
     def __init__(self, add_default_functions: bool = True):
         self._functions: list[tuple[str, DiagnosticFunction, list[str] | None]] = []
         self._report_functions: list[Callable] = []
@@ -53,7 +60,7 @@ class Diagnostic:
         "Dictionary storing the errors raised by the DiagnosticFunctions"
 
     def register_function(
-            self, diagnostic_function: DiagnosticFunction, argument_names: list[str] | None, name: str | None
+        self, diagnostic_function: DiagnosticFunction, argument_names: list[str] | None, name: str | None
     ):
         """
         register a diagnostic function to run when running network diagnostics and the associated report function.
@@ -63,7 +70,7 @@ class Diagnostic:
             argument_names: the kwargs that should be passed to the diagnostic function. If None is provided all kwargs
                 will be passed.
             name: name to use for results dict and reports, if None will use name of the class
-            
+
         Example:
             >>> from pandapower.diagnostic import Diagnostic
             >>> from pandapower.diagnostic.diagnostic_functions import DeviationFromStdType
@@ -71,7 +78,7 @@ class Diagnostic:
             >>> diag = Diagnostic(add_default_functions=False)
             >>> diag.register_function(DeviationFromStdType(), None)
             >>> diag.register_function(DeviationFromStdType(), None, "dev_from_std_twice")
-        
+
         """
         if name is None:
             name = diagnostic_function.__class__.__name__
@@ -131,9 +138,12 @@ class Diagnostic:
             args: dict[str, Any] = self.kwargs if arg_names is None else {}
             if arg_names is not None:
                 for arg_name in arg_names:
-                    args[arg_name] = self.kwargs.get(arg_name, ValueError(
-                        f"Diagnostic function '{name}' expects argument '{arg_name}', which was not provided."
-                    ))
+                    args[arg_name] = self.kwargs.get(
+                        arg_name,
+                        ValueError(
+                            f"Diagnostic function '{name}' expects argument '{arg_name}', which was not provided."
+                        ),
+                    )
                     if isinstance(args[arg_name], ValueError):
                         raise args[arg_name]
             try:
@@ -151,10 +161,10 @@ class Diagnostic:
     def compact_report(self, warnings_only: bool = False):
         """
         Generate the compact diagnostic report.
-        
+
         Parameters:
             warnings_only: If True only warnings are printed
-        
+
         Raises:
             RuntimeError: When called and no diagnostic results are available.
         """
@@ -163,10 +173,10 @@ class Diagnostic:
     def detailed_report(self, warnings_only: bool = False):
         """
         Generate the detailed diagnostic report.
-        
+
         Parameters:
             warnings_only: If True only warnings are printed
-        
+
         Raises:
             RuntimeError: When called and no diagnostic results are available.
         """
@@ -175,11 +185,11 @@ class Diagnostic:
     def report(self, compact_report: bool = True, warnings_only: bool = False) -> None:
         """
         Generate a diagnostic report.
-        
+
         Parameters:
             compact_report: diagnostic report should be compact or detailed
             warnings_only: diagnostic report should be only warnings or all info
-        
+
         Raises:
             RuntimeError: When called and no diagnostic results are available.
         """

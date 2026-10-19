@@ -24,7 +24,7 @@ def panda_four_load_branch():
         >>> from pandapower.networks.simple_pandapower_test_networks import panda_four_load_branch
         >>> net_four_load = panda_four_load_branch()
     """
-    net = pandapowerNet(name='four_load_branch')
+    net = pandapowerNet(name="four_load_branch")
 
     geo = [(0, -1), (0, -2), (0, -3), (0, -4), (0, -5)]
     names = [f"bus{i}" for i in range(2, 7)]
@@ -55,7 +55,7 @@ def four_loads_with_branches_out():
         >>> from pandapower.networks.simple_pandapower_test_networks import four_loads_with_branches_out
         >>> net_four_load_with_branches = four_loads_with_branches_out()
     """
-    net = pandapowerNet(name='four_loads_with_branches_out')
+    net = pandapowerNet(name="four_loads_with_branches_out")
 
     geo = [(0, -1), (0, -2), (0, -3), (0, -4), (0, -5), (1, -3), (1, -4), (1, -5), (1, -6)]
     names = [f"bus{i}" for i in range(2, 11)]
@@ -87,7 +87,7 @@ def simple_four_bus_system():
         >>> from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_system
         >>> net_simple_four_bus = simple_four_bus_system()
     """
-    net = pandapowerNet(name='simple_four_bus_system')
+    net = pandapowerNet(name="simple_four_bus_system")
     names = ["bus2", "bus3", "bus4"]
     geo = [(0, -1), (0, -2), (0, -3)]
     (busnr1,) = create_buses(net, 1, name="bus1ref", vn_kv=10, geodata=(0, 0))
@@ -118,7 +118,7 @@ def simple_mv_open_ring_net():
          >>> net_simple_open_ring = simple_mv_open_ring_net()
     """
 
-    net = pandapowerNet(name='simple_mv_open_ring_net')
+    net = pandapowerNet(name="simple_mv_open_ring_net")
 
     names = ["20 kV bar", "bus 2", "bus 3", "bus 4", "bus 5", "bus 6"]
     geo = [(0, -1), (-0.5, -2), (-0.5, -3), (-0.5, -4), (0.5, -4), (0.5, -3)]

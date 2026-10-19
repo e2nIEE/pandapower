@@ -5,17 +5,15 @@ from __future__ import annotations
 
 import logging
 import warnings
-from typing import Iterable, Sequence
-from functools import partial
+from collections.abc import Iterable, Sequence
 
-import pandas as pd
-from pandas.api.typing import NAType
-from numpy import nan, isnan, isin, array, bool_, float64, full, integer, all as all_
 import numpy.typing as npt
+import pandas as pd
+from numpy import all as all_
+from numpy import array, bool_, float64, full, integer, isin, isnan, nan
+from pandas.api.typing import NAType
 
 from pandapower import pandapowerNet
-from pandapower.std_types import load_std_type
-from pandapower.pp_types import HVMVLVType, HVLVType, Int, TapChangerType, TapChangerWithTabularType
 from pandapower.create._utils import (
     _add_to_entries_if_not_nan,
     _check_branch_element,
@@ -26,7 +24,9 @@ from pandapower.create._utils import (
     _set_multiple_entries,
     _set_value_if_not_nan,
 )
-from pandapower.network_structure import get_structure_dict, get_default_value
+from pandapower.network_structure import get_default_value, get_structure_dict
+from pandapower.pp_types import HVLVType, HVMVLVType, Int, TapChangerType, TapChangerWithTabularType
+from pandapower.std_types import load_std_type
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,7 @@ def create_transformer(
     lv_bus: Int,
     std_type: str,
     name: str | None = None,
-    tap_pos: int | float = nan,
+    tap_pos: float = nan,
     in_service: bool = get_default_value("trafo", "in_service"),
     index: Int | None = None,
     max_loading_percent: float = nan,
@@ -49,7 +49,7 @@ def create_transformer(
     pt_percent: float = nan,
     xn_ohm: float = nan,
     rn_ohm: float = nan,
-    tap2_pos: int | float = nan,
+    tap2_pos: float = nan,
     **kwargs,
 ) -> Int:
     """
@@ -196,7 +196,7 @@ def create_transformers(
     lv_buses: Sequence,
     std_type: str,
     name: Iterable[str] | None = None,
-    tap_pos: int | Iterable[int] | float = nan,
+    tap_pos: Iterable[int] | float = nan,
     in_service: bool | Iterable[bool] = get_default_value("trafo", "in_service"),
     index: Int | Iterable[Int] | None = None,
     max_loading_percent: float | Iterable[float] = nan,
@@ -209,7 +209,7 @@ def create_transformers(
     # oltc: bool | Iterable[bool] = False,
     xn_ohm: float | Iterable[float] = nan,
     rn_ohm: float | Iterable[float] = nan,
-    tap2_pos: int | Iterable[int] | float = nan,
+    tap2_pos: Iterable[int] | float = nan,
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
@@ -273,7 +273,7 @@ def create_transformers(
         "tap_step_degree",
         "tap_step_percent",
         "trafo_characteristic_table",
-        *required_params
+        *required_params,
     )
 
     params = {param: std_params[param] for param in params_from_std_type if param in std_params}
@@ -320,12 +320,12 @@ def create_transformer_from_parameters(
     i0_percent: float,
     shift_degree: float = get_default_value("trafo", "shift_degree"),
     tap_side: HVLVType | None = None,
-    tap_neutral: int | float = nan,
-    tap_max: int | float = nan,
-    tap_min: int | float = nan,
+    tap_neutral: float = nan,
+    tap_max: float = nan,
+    tap_min: float = nan,
     tap_step_percent: float = nan,
     tap_step_degree: float = nan,
-    tap_pos: int | float = nan,
+    tap_pos: float = nan,
     tap_changer_type: TapChangerWithTabularType | None = None,
     id_characteristic_table: int | None = None,
     in_service: bool = get_default_value("trafo", "in_service"),
@@ -346,12 +346,12 @@ def create_transformer_from_parameters(
     xn_ohm: float = nan,
     rn_ohm: float = nan,
     tap2_side: HVLVType | None = None,
-    tap2_neutral: int | float = nan,
-    tap2_max: int | float = nan,
-    tap2_min: int | float = nan,
+    tap2_neutral: float = nan,
+    tap2_max: float = nan,
+    tap2_min: float = nan,
     tap2_step_percent: float = nan,
     tap2_step_degree: float = nan,
-    tap2_pos: int | float = nan,
+    tap2_pos: float = nan,
     tap2_changer_type: TapChangerType | None = None,
     **kwargs,
 ) -> Int:
@@ -549,12 +549,12 @@ def create_transformers_from_parameters(  # index missing ?
     i0_percent: float | Iterable[float],
     shift_degree: float | Iterable[float] = get_default_value("trafo", "shift_degree"),
     tap_side: HVLVType | Iterable[str] | None = None,
-    tap_neutral: int | Iterable[int] | float = nan,
-    tap_max: int | Iterable[int] | float = nan,
-    tap_min: int | Iterable[int] | float = nan,
+    tap_neutral: Iterable[int] | float = nan,
+    tap_max: Iterable[int] | float = nan,
+    tap_min: Iterable[int] | float = nan,
     tap_step_percent: float | Iterable[float] = nan,
     tap_step_degree: float | Iterable[float] = nan,
-    tap_pos: int | Iterable[int] | float = nan,
+    tap_pos: Iterable[int] | float = nan,
     tap_changer_type: TapChangerWithTabularType | Iterable[str] | None = None,
     id_characteristic_table: int | Iterable[int] | None = None,
     in_service: bool | Iterable[bool] = get_default_value("trafo", "in_service"),
@@ -575,12 +575,12 @@ def create_transformers_from_parameters(  # index missing ?
     xn_ohm: float | Iterable[float] = nan,
     rn_ohm: float | Iterable[float] = nan,
     tap2_side: HVLVType | Iterable[str] | None = None,
-    tap2_neutral: int | Iterable[int] | float = nan,
-    tap2_max: int | Iterable[int] | float = nan,
-    tap2_min: int | Iterable[int] | float = nan,
+    tap2_neutral: Iterable[int] | float = nan,
+    tap2_max: Iterable[int] | float = nan,
+    tap2_min: Iterable[int] | float = nan,
     tap2_step_percent: float | Iterable[float] = nan,
     tap2_step_degree: float | Iterable[float] = nan,
-    tap2_pos: int | Iterable[int] | float = nan,
+    tap2_pos: Iterable[int] | float = nan,
     tap2_changer_type: TapChangerType | Iterable[str] | None = None,
     **kwargs,
 ) -> npt.NDArray[Int]:
@@ -750,7 +750,7 @@ def create_transformer3w(
     lv_bus: Int,
     std_type: str,
     name: str | NAType = pd.NA,
-    tap_pos: int | float = nan,
+    tap_pos: float = nan,
     in_service: bool = get_default_value("trafo3w", "in_service"),
     index: Int | None = None,
     max_loading_percent: float = nan,
@@ -1013,9 +1013,9 @@ def create_transformer3w_from_parameters(
     tap_side: HVMVLVType | None = None,
     tap_step_percent: float = nan,
     tap_step_degree: float = nan,
-    tap_pos: int | float = nan,
-    tap_neutral: int | float = nan,
-    tap_max: int | float = nan,
+    tap_pos: float = nan,
+    tap_neutral: float = nan,
+    tap_max: float = nan,
     tap_changer_type: TapChangerWithTabularType | None = None,
     tap_min: float | None = nan,
     name: pd.StringDtype | NAType = pd.NA,

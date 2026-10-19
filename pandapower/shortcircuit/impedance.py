@@ -1,16 +1,15 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
 import warnings
 
 import numpy as np
-from scipy.sparse.linalg import inv as inv_sparse
 from scipy.linalg import inv
+from scipy.sparse.linalg import inv as inv_sparse
 
-from pandapower.pypower.idx_bus_sc import R_EQUIV, X_EQUIV
-from pandapower.pypower.idx_bus import BASE_KV
 from pandapower.auxiliary import _clean_up
+from pandapower.pypower.idx_bus import BASE_KV
+from pandapower.pypower.idx_bus_sc import R_EQUIV, X_EQUIV
 
 try:
     from pandapower.pf.makeYbus_numba import makeYbus
@@ -50,7 +49,7 @@ def _calc_ybus(ppci):
 def _calc_zbus(net, ppci):
     try:
         Ybus = ppci["internal"]["Ybus"]
-        sparsity = Ybus.nnz / Ybus.shape[0]**2
+        sparsity = Ybus.nnz / Ybus.shape[0] ** 2
         if sparsity < 0.002:
             with warnings.catch_warnings():
                 warnings.simplefilter("ignore")
