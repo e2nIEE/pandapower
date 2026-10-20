@@ -49,8 +49,8 @@ except ImportError:
         pass
 
 
-from pandapower import pandapowerNet
 from pandapower.auxiliary import soft_dependency_error
+from pandapower.network import pandapowerNet
 from pandapower.plotting.patch_makers import (
     ext_grid_patches,
     gen_patches,

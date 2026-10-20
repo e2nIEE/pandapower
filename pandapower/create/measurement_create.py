@@ -7,8 +7,8 @@ import logging
 
 import pandas as pd
 
-from pandapower import pandapowerNet
 from pandapower.create._utils import _get_index_with_check, _set_entries
+from pandapower.network import pandapowerNet
 from pandapower.pp_types import Int, MeasurementElementType, MeasurementSideType, MeasurementType
 
 logger = logging.getLogger(__name__)

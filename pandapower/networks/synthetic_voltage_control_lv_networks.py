@@ -5,7 +5,6 @@ import pandas as pd
 from geojson import Point, dumps
 from numpy import append, nan
 
-from pandapower import pandapowerNet
 from pandapower.create import (
     create_ext_grid,
     create_transformer,
@@ -14,6 +13,7 @@ from pandapower.create import (
     create_load,
     create_sgen,
 )
+from pandapower.network import pandapowerNet
 from pandapower.std_types import create_std_type
 
 

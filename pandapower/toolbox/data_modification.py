@@ -8,8 +8,8 @@ from collections import Counter, defaultdict
 import numpy as np
 import pandas as pd
 
-from pandapower import pandapowerNet
 from pandapower.auxiliary import get_indices
+from pandapower.network import pandapowerNet
 from pandapower.network_structure import get_structure_dict
 from pandapower.toolbox.comparison import compare_arrays
 from pandapower.toolbox.element_selection import element_bus_tuples, pp_elements

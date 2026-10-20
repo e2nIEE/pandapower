@@ -10,7 +10,6 @@ from typing import Literal
 import numpy as np
 import numpy.typing as npt
 
-from pandapower import pandapowerNet
 from pandapower.create._utils import (
     _check_element,
     _check_multiple_elements,
@@ -20,6 +19,7 @@ from pandapower.create._utils import (
     _set_multiple_entries,
     _set_value_if_not_nan,
 )
+from pandapower.network import pandapowerNet
 from pandapower.network_structure import get_default_value
 from pandapower.pp_types import Int
 

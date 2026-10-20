@@ -10,26 +10,17 @@ from typing import TextIO
 from typing import overload as function_overload
 from warnings import warn
 
+import importlib.util
+
 import numpy
 import pandas as pd
 from packaging.version import Version
 
-try:
-    import xlsxwriter
-
-    xlsxwriter_INSTALLED = True
-except ImportError:
-    xlsxwriter_INSTALLED = False
-try:
-    import openpyxl
-
-    openpyxl_INSTALLED = True
-except ImportError:
-    openpyxl_INSTALLED = False
+xlsxwriter_INSTALLED = importlib.util.find_spec("xlsxwriter") is not None
+openpyxl_INSTALLED = importlib.util.find_spec("openpyxl") is not None
 
 import logging
 
-from pandapower import pandapowerNet
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.convert_format import convert_format
 from pandapower.io_utils import (
@@ -43,6 +34,7 @@ from pandapower.io_utils import (
     to_dict_with_coord_transform,
     transform_net_with_df_and_geo,
 )
+from pandapower.network import pandapowerNet
 from pandapower.std_types import basic_std_types
 
 logger = logging.getLogger(__name__)
