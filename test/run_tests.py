@@ -8,6 +8,7 @@ import os
 import shutil
 import tempfile
 from multiprocessing import cpu_count
+from importlib.util import find_spec
 
 import pytest
 
@@ -141,12 +142,10 @@ def run_tutorials(parallel=False, n_cpu=None):
     :return : No Output.
 
     """
-    try:
-        import nbmake
-    except ImportError:
+    if find_spec("nbmake") is None:
         raise ModuleNotFoundError(
-            "Testing of jupyter notebooks requires the pytest extension "
-            '"nbmake". Please make sure that nbmake is installed correctly.'
+            'Testing of jupyter notebooks requires the pytest extension "nbmake". '
+            "Please make sure that nbmake is installed correctly."
         )
 
     # run notebooks in tempdir to safely remove output files

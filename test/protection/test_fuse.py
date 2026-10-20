@@ -1,5 +1,5 @@
 import copy
-
+from importlib.util import find_spec
 import numpy as np
 import pytest
 
@@ -27,11 +27,9 @@ from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.std_types import create_std_type
 from test.helper_functions import assert_net_equal
 
-try:
-    import matplotlib.pyplot as plt
-
+if find_spec("matplotlib") is not None:
     MATPLOTLIB_INSTALLED = True
-except ImportError:
+else:
     MATPLOTLIB_INSTALLED = False
 
 
@@ -80,7 +78,7 @@ def test_calculate_protection_times():
     print(net_sc3)
 
     # evaluate results from calculate_protection_times
-    df_protection_results3 = calculate_protection_times(net_sc3)
+    calculate_protection_times(net_sc3)
 
     # create fault at bus 2
     net_sc2 = copy.deepcopy(net)
@@ -88,7 +86,7 @@ def test_calculate_protection_times():
     print("\nnet_sc2 has fault at bus 2\n")
     print(net_sc2)
 
-    df_protection_results2 = calculate_protection_times(net_sc2)
+    calculate_protection_times(net_sc2)
 
 
 @pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason="requires matplotlib")
@@ -166,7 +164,7 @@ def test_calc_prot_times_with_std_lib():
         net_sc = copy.deepcopy(net)
         calc_sc(net_sc, bus=row_index, branch_results=True)
         print("\nnet_sc has fault at bus " + str(row_index) + "\n")
-        df_protection_results = calculate_protection_times(net_sc)
+        calculate_protection_times(net_sc)
 
 
 def test_calc_prot_times_pp_scenario():
@@ -253,7 +251,7 @@ def test_prot_func_tripping():
 
     # run short-circuit calculation
     calc_sc(net=net, bus=4, branch_results=True)
-    df_protection_results = calculate_protection_times(net)
+    calculate_protection_times(net)
 
     print(net.switch)
 
