@@ -1,6 +1,8 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+from importlib.util import find_spec
+
 import pandas as pd
 import pytest
 
@@ -8,12 +10,7 @@ from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 from test.helper_functions import create_test_network
 
-try:
-    import igraph
-
-    IGRAPH_INSTALLED = True
-except ImportError:
-    IGRAPH_INSTALLED = False
+IGRAPH_INSTALLED = find_spec("igraph") is not None
 
 
 @pytest.mark.skipif(IGRAPH_INSTALLED is False, reason="Requires igraph.")
