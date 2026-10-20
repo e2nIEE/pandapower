@@ -37,7 +37,7 @@ __all__ = [
     "replace_zero_branches_with_switches",
     "select_subnet",
     "set_element_status",
-    "set_isolated_areas_out_of_service"
+    "set_isolated_areas_out_of_service",
 ]
 
 import copy
