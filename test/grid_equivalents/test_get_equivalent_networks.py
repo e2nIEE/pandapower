@@ -1,12 +1,12 @@
-import pytest
 import logging
 from itertools import product
 
-from pandapower.grid_equivalents.get_equivalent import get_equivalent
-from pandapower.run import runpp
-from pandapower.create import create_switch
+import pytest
 
+from pandapower.create import create_switch
+from pandapower.grid_equivalents.get_equivalent import get_equivalent
 from pandapower.networks.power_system_test_cases import case9, case30, case39, case118
+from pandapower.run import runpp
 
 epsilon = 1e-4
 """

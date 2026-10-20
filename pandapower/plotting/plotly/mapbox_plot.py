@@ -1,9 +1,10 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import os
-from typing_extensions import deprecated
 import logging
+import os
+
+from typing_extensions import deprecated
 
 logger = logging.getLogger(__name__)
 
@@ -13,8 +14,8 @@ def _on_map_test(x, y):
     checks if bus_geodata can be located on a map using geopy
     """
     try:
-        from geopy.geocoders import Nominatim
         from geopy.exc import GeocoderTimedOut
+        from geopy.geocoders import Nominatim
 
         geolocator = Nominatim(user_agent="pandapower_user_mapboxplot")
 

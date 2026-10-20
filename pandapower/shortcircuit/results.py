@@ -5,6 +5,8 @@ import numpy as np
 import pandas as pd
 
 from pandapower.pypower.idx_brch_sc import (
+    IKSS_ANGLE_F,
+    IKSS_ANGLE_T,
     IKSS_F,
     IKSS_T,
     IP_F,
@@ -12,20 +14,18 @@ from pandapower.pypower.idx_brch_sc import (
     ITH_F,
     ITH_T,
     PKSS_F,
-    QKSS_F,
     PKSS_T,
+    QKSS_F,
     QKSS_T,
-    VKSS_MAGN_F,
-    VKSS_MAGN_T,
     VKSS_ANGLE_F,
     VKSS_ANGLE_T,
-    IKSS_ANGLE_F,
-    IKSS_ANGLE_T,
+    VKSS_MAGN_F,
+    VKSS_MAGN_T,
 )
-from pandapower.pypower.idx_bus_sc import IKSS1, IP, ITH, IKSS2, R_EQUIV_OHM, X_EQUIV_OHM, SKSS
-from pandapower.pypower.idx_bus import BUS_TYPE, BASE_KV
-from pandapower.results_branch import _copy_switch_results_from_branches
+from pandapower.pypower.idx_bus import BASE_KV, BUS_TYPE
+from pandapower.pypower.idx_bus_sc import IKSS1, IKSS2, IP, ITH, R_EQUIV_OHM, SKSS, X_EQUIV_OHM
 from pandapower.results import BRANCH_RESULTS_KEYS
+from pandapower.results_branch import _copy_switch_results_from_branches
 
 
 def _copy_result_to_ppci_orig(ppci_orig, ppci, ppci_bus, calc_options):

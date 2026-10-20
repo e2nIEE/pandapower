@@ -1,12 +1,11 @@
 import logging
 import time
-from typing import Tuple
 
 import pandas as pd
 
 from pandapower.converter.cim import cim_tools
 from pandapower.converter.cim.cim2pp import build_pp_net
-from pandapower.converter.cim.other_classes import Report, LogLevel, ReportCode
+from pandapower.converter.cim.other_classes import LogLevel, Report, ReportCode
 
 logger = logging.getLogger("cim.cim2pp.converter_classes.connectivityNodesCim16")
 
@@ -50,7 +49,7 @@ class ConnectivityNodesCim16:
             )
         )
 
-    def _prepare_connectivity_nodes_cim16(self) -> Tuple[pd.DataFrame, pd.DataFrame]:
+    def _prepare_connectivity_nodes_cim16(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         # check the model: Bus-Branch or Node-Breaker: In the Bus-Branch model are no ConnectivityNodes
         node_breaker = True if self.cimConverter.cim["eq"]["ConnectivityNode"].index.size > 0 else False
         # use this dictionary to store the source profile from the element (normal or boundary profile)

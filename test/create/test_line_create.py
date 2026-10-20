@@ -549,7 +549,6 @@ def test_create_lines_raise_errorexcept():
 
 
 def test_create_lines_optional_columns():
-    #
     net = pandapowerNet(name="test_create_lines_optional_columns")
     create_buses(net, 5, 110)
     create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0")

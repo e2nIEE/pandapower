@@ -1,11 +1,11 @@
+import numpy as np
 import pandas as pd
 import pandera.pandas as pa
 import pytest
-import numpy as np
 
 from pandapower.network_schema.tools.validation.group_dependency import (
-    create_column_group_dependency_validation_func,
     create_column_dependency_checks_from_metadata,
+    create_column_group_dependency_validation_func,
 )
 
 

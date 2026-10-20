@@ -12,11 +12,11 @@ from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 from test.network_schema.elements.helper import (
     bools,
-    not_strings_list,
-    not_floats_list,
-    not_boolean_list,
-    positiv_floats,
     not_allowed_floats,
+    not_boolean_list,
+    not_floats_list,
+    not_strings_list,
+    positiv_floats,
 )
 
 

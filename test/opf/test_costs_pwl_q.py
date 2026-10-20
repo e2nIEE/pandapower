@@ -4,12 +4,12 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_bus,
-    create_sgen,
+    create_buses,
     create_ext_grid,
+    create_lines,
     create_load,
-    create_line_from_parameters,
     create_pwl_cost,
+    create_sgen,
 )
 from pandapower.network import pandapowerNet
 from pandapower.run import runopp
@@ -22,23 +22,19 @@ def test_3point_pwl():
 
     # create net
     net = pandapowerNet(name="test_3point_pwl")
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.0)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
+    create_buses(net, 2, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=[10.0, 0.4])
     create_sgen(
         net, 1, p_mw=0.1, q_mvar=0, controllable=True, min_p_mw=0.1, max_p_mw=0.15, max_q_mvar=0.05, min_q_mvar=-0.05
     )
     create_ext_grid(net, 0)
     create_load(net, 1, p_mw=0.02, controllable=False)
-    create_line_from_parameters(
+    create_lines(
         net,
         0,
         1,
         50,
         name="line2",
-        r_ohm_per_km=0.876,
-        c_nf_per_km=260.0,
-        max_i_ka=0.123,
-        x_ohm_per_km=0.1159876,
+        line_params={"r_ohm_per_km": 0.876, "c_nf_per_km": 260.0, "max_i_ka": 0.123, "x_ohm_per_km": 0.1159876},
         max_loading_percent=100 * 690,
     )
 

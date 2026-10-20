@@ -2,12 +2,12 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
-from numpy import conj, arange, int64
-from scipy.sparse import vstack, hstack
-from scipy.sparse import eye, csr_matrix as sparse
-from pandapower.pypower.idx_brch import F_BUS, T_BUS
+from numpy import arange, conj, int64
+from scipy.sparse import csr_matrix as sparse
+from scipy.sparse import eye, hstack, vstack
 
 from pandapower.estimation.ppc_conversion import ExtendedPPCI
+from pandapower.pypower.idx_brch import F_BUS, T_BUS
 
 try:
     from numpy import isin

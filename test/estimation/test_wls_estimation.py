@@ -10,16 +10,16 @@ import pytest
 from pandapower.create import (
     create_bus,
     create_ext_grid,
-    create_line_from_parameters,
-    create_measurement,
-    create_load,
-    create_transformer,
     create_line,
+    create_line_from_parameters,
+    create_load,
+    create_measurement,
     create_sgen,
-    create_transformer3w,
     create_switch,
+    create_transformer,
+    create_transformer3w,
 )
-from pandapower.estimation import chi2_analysis, remove_bad_data, estimate
+from pandapower.estimation import chi2_analysis, estimate, remove_bad_data
 from pandapower.file_io import from_json
 from pandapower.network import pandapowerNet
 from pandapower.networks.cigre_networks import create_cigre_network_mv

@@ -1,14 +1,16 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+import logging
 import warnings
 
 import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import _sum_by_group
-from pandapower.pypower.idx_bus import BASE_KV, VM, VA
 from pandapower.pypower.idx_brch import TAP
 from pandapower.pypower.idx_brch_sc import (
+    IKSS_ANGLE_F,
+    IKSS_ANGLE_T,
     IKSS_F,
     IKSS_T,
     IP_F,
@@ -16,40 +18,37 @@ from pandapower.pypower.idx_brch_sc import (
     ITH_F,
     ITH_T,
     PKSS_F,
-    QKSS_F,
     PKSS_T,
+    QKSS_F,
     QKSS_T,
-    VKSS_MAGN_F,
-    VKSS_MAGN_T,
     VKSS_ANGLE_F,
     VKSS_ANGLE_T,
-    IKSS_ANGLE_F,
-    IKSS_ANGLE_T,
+    VKSS_MAGN_F,
+    VKSS_MAGN_T,
 )
+from pandapower.pypower.idx_bus import BASE_KV, VA, VM
 from pandapower.pypower.idx_bus_sc import (
-    C_MIN,
     C_MAX,
-    KAPPA,
-    R_EQUIV,
+    C_MIN,
+    IKCV,
     IKSS1,
+    IKSS2,
     IP,
     ITH,
-    X_EQUIV,
-    IKSS2,
-    IKCV,
-    M,
-    R_EQUIV_OHM,
-    X_EQUIV_OHM,
-    V_G,
     K_SG,
-    SKSS,
+    KAPPA,
+    PHI_IKCV_DEGREE,
     PHI_IKSS1_DEGREE,
     PHI_IKSS2_DEGREE,
-    PHI_IKCV_DEGREE,
+    R_EQUIV,
+    R_EQUIV_OHM,
+    SKSS,
+    V_G,
+    X_EQUIV,
+    X_EQUIV_OHM,
+    M,
 )
 from pandapower.shortcircuit.impedance import _calc_zbus_diag
-
-import logging
 
 logger = logging.getLogger(__name__)
 

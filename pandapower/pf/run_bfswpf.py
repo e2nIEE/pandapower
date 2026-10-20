@@ -6,19 +6,19 @@ from time import perf_counter  # alternatively use import timeit.default_timer a
 
 import numpy as np
 import scipy as sp
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X, BR_B, BR_G, TAP, BR_STATUS, SHIFT
-from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, GS, BS
-from pandapower.pypower.idx_gen import GEN_BUS, QG, QMAX, QMIN, GEN_STATUS, VG
-from pandapower.pypower.makeSbus import makeSbus
-from scipy.sparse import csr_matrix, csgraph
+from scipy.sparse import csgraph, csr_matrix
 
 from pandapower.auxiliary import LoadflowNotConverged
-from pandapower.pypower.bustypes import bustypes
-from pandapower.pypower.newtonpf import _evaluate_Fx, _check_for_convergence
-from pandapower.pypower.pfsoln import pfsoln
+from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 from pandapower.pf.run_newton_raphson_pf import _get_Y_bus
 from pandapower.pf.runpf_pypower import _import_numba_extensions_if_flag_is_true
-from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
+from pandapower.pypower.bustypes import bustypes
+from pandapower.pypower.idx_brch import BR_B, BR_G, BR_R, BR_STATUS, BR_X, F_BUS, SHIFT, T_BUS, TAP
+from pandapower.pypower.idx_bus import BS, BUS_I, BUS_TYPE, GS
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, QG, QMAX, QMIN, VG
+from pandapower.pypower.makeSbus import makeSbus
+from pandapower.pypower.newtonpf import _check_for_convergence, _evaluate_Fx
+from pandapower.pypower.pfsoln import pfsoln
 
 
 def _make_bibc_bcbv(bus, branch, graph):
@@ -47,8 +47,8 @@ def _make_bibc_bcbv(bus, branch, graph):
     # TODO use list or array, not both
     branches_lst = list(zip(branch[:, F_BUS].real.astype(np.int64), branch[:, T_BUS].real.astype(np.int64)))
     branches_arr = branch[:, F_BUS : T_BUS + 1].real.astype(np.int64)
-    branches_ind_dict = dict(zip(zip(branches_arr[:, 0], branches_arr[:, 1]), range(0, nobranch)))
-    branches_ind_dict.update(dict(zip(zip(branches_arr[:, 1], branches_arr[:, 0]), range(0, nobranch))))
+    branches_ind_dict = dict(zip(zip(branches_arr[:, 0], branches_arr[:, 1]), range(nobranch)))
+    branches_ind_dict.update(dict(zip(zip(branches_arr[:, 1], branches_arr[:, 0]), range(nobranch))))
 
     tap = branch[:, TAP]  # * np.exp(1j * np.pi / 180 * branch[:, SHIFT])
     z_ser = (branch[:, BR_R].real + 1j * branch[:, BR_X].real) * tap  # series impedance
@@ -313,7 +313,7 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
             if n_iter_inner > max_iter_pv:
                 raise LoadflowNotConverged(
                     " FBSW Power Flow did not converge - inner iterations for PV nodes "
-                    "reached maximum value of {0}!".format(max_iter_pv)
+                    f"reached maximum value of {max_iter_pv}!"
                 )
 
             n_iter_inner += 1
@@ -329,7 +329,7 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
         converged = _check_for_convergence(F, tolerance_mva)
 
         if converged and verbose:
-            print("\nFwd-back sweep power flow converged in {0} iterations.\n".format(n_iter))
+            print(f"\nFwd-back sweep power flow converged in {n_iter} iterations.\n")
 
         # updating injected currents
         Iinj = np.conj(Sbus / V) - Ysh * V

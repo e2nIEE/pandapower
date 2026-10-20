@@ -1,12 +1,11 @@
 import logging
 import time
-from typing import Dict, List
 
 import pandas as pd
 
 from pandapower.converter.cim import cim_tools
 from pandapower.converter.cim.cim2pp import build_pp_net
-from pandapower.converter.cim.other_classes import Report, LogLevel, ReportCode
+from pandapower.converter.cim.other_classes import LogLevel, Report, ReportCode
 
 logger = logging.getLogger("cim.cim2pp.converter_classes.acLineSegmentsCim16")
 
@@ -104,7 +103,7 @@ class DcLineSegmentsCim16:
         t = self.cimConverter.cim["eq"]["DCTerminal"][["DCNode", "DCConductingEquipment", "sequenceNumber"]]
         t = t.rename(columns={"DCNode": "ConnectivityNode", "DCConductingEquipment": "ConductingEquipment"})
 
-        def search_converter(cn_ids: Dict[str, str], visited_cns: List[str]) -> str | None:
+        def search_converter(cn_ids: dict[str, str], visited_cns: list[str]) -> str | None:
             new_cn_dict = {}
             for one_cn, from_dev in cn_ids.items():
                 # get the Terminals

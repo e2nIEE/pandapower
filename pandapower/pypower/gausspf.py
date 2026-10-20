@@ -6,7 +6,7 @@
 
 import sys
 
-from numpy import linalg, conj, r_, inf
+from numpy import conj, inf, linalg, r_
 
 from pandapower.pypower.ppoption import ppoption
 

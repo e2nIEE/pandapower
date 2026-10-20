@@ -52,7 +52,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs) -> pandapowerNet
 
     Example:
         >>> from pandapower.converter.pypower.from_ppc import from_ppc
-        >>> from pandapower.test.converter.test_from_ppc import get_testgrids
+        >>> from test.converter.test_from_ppc import get_testgrids
         >>> ppc = get_testgrids('pypower_cases', 'case4gs.json')
         >>> net = from_ppc(ppc, f_hz=60)
     """
@@ -640,7 +640,7 @@ def validate_from_ppc(ppc: dict, net: pandapowerNet, max_diff_values: dict | Non
 
     Example:
         >>> import pandapower
-        >>> from pandapower.test.converter.test_from_ppc import get_testgrids
+        >>> from test.converter.test_from_ppc import get_testgrids
         >>> ppc = get_testgrids('pypower_cases', 'case4gs.json')
         >>> net = pandapower.converter.from_ppc(ppc, f_hz=50)
         >>> pandapower.runpp(net)

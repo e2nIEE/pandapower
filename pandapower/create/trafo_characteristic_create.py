@@ -3,9 +3,9 @@
 
 import pandas as pd
 
+from pandapower.create._utils import _get_index_with_check
 from pandapower.network import pandapowerNet
 from pandapower.pp_types import Int
-from pandapower.create._utils import _get_index_with_check
 
 
 def _create_trafo_characteristic_table(net: pandapowerNet):

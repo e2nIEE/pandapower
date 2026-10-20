@@ -4,12 +4,13 @@
 
 """Make the A matrix and RHS for the CCV formulation."""
 
-from numpy import array, diff, any, zeros, r_, flatnonzero as find, int64
+from numpy import any, array, diff, int64, r_, zeros
+from numpy import flatnonzero as find
 
 # from scipy.sparse import csr_matrix as sparse
 from scipy.sparse import lil_matrix as sparse
 
-from pandapower.pypower.idx_cost import MODEL, PW_LINEAR, NCOST, COST
+from pandapower.pypower.idx_cost import COST, MODEL, NCOST, PW_LINEAR
 
 
 def makeAy(baseMVA, ng, gencost, pgbas, qgbas, ybas):

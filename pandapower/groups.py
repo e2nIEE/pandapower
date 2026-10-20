@@ -10,27 +10,27 @@ Notes:
 import copy
 import logging
 import uuid
+from collections.abc import Collection, Iterable
 from typing import Any, Literal
-from collections.abc import Iterable, Collection
-from typing_extensions import deprecated
 
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
 import pandas.testing as pdt
+from typing_extensions import deprecated
 
 from pandapower.auxiliary import ensure_iterability, log_to_level
-from pandapower.create import _group_parameter_list, _set_multiple_entries, _check_elements_existence, create_group
+from pandapower.create import _check_elements_existence, _group_parameter_list, _set_multiple_entries, create_group
+from pandapower.network import pandapowerNet
 from pandapower.pp_types import Int
-from pandapower.toolbox.power_factor import signing_system_value
 from pandapower.toolbox.element_selection import (
     branch_element_bus_dict,
     element_bus_tuples,
-    pp_elements,
     get_connected_elements_dict,
+    pp_elements,
 )
+from pandapower.toolbox.power_factor import signing_system_value
 from pandapower.toolbox.result_info import res_power_columns
-from pandapower.network import pandapowerNet
 
 logger = logging.getLogger(__name__)
 
@@ -708,7 +708,7 @@ def group_res_power_per_bus(net: pandapowerNet, index: int) -> pd.DataFrame:
         3   -2.875066e+00 -1.318864e+00
         4   -2.000000e-02  0.000000e+00
     """
-    pq_sums = pd.DataFrame({"p_mw": float(), "q_mvar": float()}, index=[])
+    pq_sums = pd.DataFrame({"p_mw": 0.0, "q_mvar": 0.0}, index=[])
     bra_ets = pp_elements(bus=False, bus_elements=False, other_elements=False)
     bra_ebd = branch_element_bus_dict()
     missing_res_idx = []

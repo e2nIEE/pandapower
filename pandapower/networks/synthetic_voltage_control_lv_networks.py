@@ -3,11 +3,9 @@
 
 import pandas as pd
 from geojson import Point, dumps
-from numpy import nan, append
+from numpy import append, nan
 
-from pandapower import pandapowerNet
 from pandapower.create import (
-    create_bus,
     create_ext_grid,
     create_transformer,
     create_buses,
@@ -15,6 +13,7 @@ from pandapower.create import (
     create_load,
     create_sgen,
 )
+from pandapower.network import pandapowerNet
 from pandapower.std_types import create_std_type
 
 
@@ -205,8 +204,7 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
         create_std_type(net, data, name=trafo_type[network_class], element="trafo")
 
     # create mv connection
-    mv_bus = create_bus(net, 20, name="mv bus")
-    bb = create_bus(net, 0.4, name="busbar")
+    mv_bus, bb = create_buses(net, 2, [20, 0.4], name=["mv bus", "busbar"])
     create_ext_grid(net, mv_bus)
     create_transformer(net, mv_bus, bb, std_type=trafo_type[network_class])
 

@@ -5,23 +5,23 @@ import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import get_vsc_stacked_names, pandapowerNet
+from pandapower.network_structure import get_results_structure_dict
 from pandapower.results_branch import _get_branch_results, _get_branch_results_3ph
 from pandapower.results_bus import (
-    _get_bus_results,
     _get_bus_dc_results,
-    _set_buses_out_of_service,
-    _get_shunt_results,
-    _get_p_q_results,
+    _get_bus_dc_v_results,
+    _get_bus_results,
+    _get_bus_results_3ph,
     _get_bus_v_results,
     _get_bus_v_results_3ph,
-    _get_p_q_results_3ph,
-    _get_bus_results_3ph,
-    _get_bus_dc_v_results,
     _get_p_dc_results,
+    _get_p_q_results,
+    _get_p_q_results_3ph,
+    _get_shunt_results,
+    _set_buses_out_of_service,
     _set_dc_buses_out_of_service,
 )
-from pandapower.results_gen import _get_gen_results, _get_gen_results_3ph, _get_dc_slack_results
-from pandapower.network_structure import get_results_structure_dict
+from pandapower.results_gen import _get_dc_slack_results, _get_gen_results, _get_gen_results_3ph
 
 BRANCH_RESULTS_KEYS = (
     "branch_ikss_f",
@@ -67,7 +67,7 @@ class EmptyResults(metaclass=_EmptyResultsMeta):
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(EmptyResults, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             # Initialization:
             # create dataframes from results_structure_dict
             dataframes = pandapowerNet.create_dataframes(get_results_structure_dict())
@@ -216,8 +216,8 @@ def verify_results(net, mode="pf"):
                 # if the indices of bus and res_bus are not equal, but init_results is set, the voltage vector
                 # is wrong. A UserWarning is raised in this case. For all other elements the result table is emptied.
                 raise UserWarning(
-                    "index of result table '{}' is not equal to the element table '{}'. The init result"
-                    " option may lead to a non-converged power flow.".format(res_element, element)
+                    f"index of result table '{res_element}' is not equal to the element table '{element}'. The init result"
+                    " option may lead to a non-converged power flow."
                 )
             # init result table for
             init_element(net, element)

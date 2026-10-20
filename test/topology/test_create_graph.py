@@ -10,6 +10,7 @@ from pandapower.create import create_switch
 from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_brch import BR_R, BR_X
 from pandapower.run import runpp
+from pandapower.topology.create_graph import create_nxgraph, graph_tool_available
 from test.loadflow.result_test_network_generator import (
     add_test_bus_bus_switch,
     add_test_impedance,
@@ -17,12 +18,7 @@ from test.loadflow.result_test_network_generator import (
     add_test_trafo,
     add_test_trafo3w,
 )
-
-# reexported with "as" to prevent ruff removing it as unused
-from test.loadflow.test_scenarios import (
-    network_with_trafo3ws as network_with_trafo3ws,
-)
-from pandapower.topology.create_graph import create_nxgraph, graph_tool_available
+from test.loadflow.test_scenarios import network_with_trafo3ws as _network_with_trafo3ws  # noqa: F401
 
 libraries = ["networkx"]
 if graph_tool_available:
@@ -150,8 +146,8 @@ def test_trafo3w(library):
 
 
 @pytest.mark.parametrize("library", libraries)
-def test_trafo3w_impedances(network_with_trafo3ws, library):
-    net, t3, hv, mv, lv = network_with_trafo3ws
+def test_trafo3w_impedances(_network_with_trafo3ws, library):
+    net, t3, hv, mv, lv = _network_with_trafo3ws
     net.trafo3w.vn_hv_kv = 20
     net.trafo3w.vn_mv_kv = 0.6
     net.trafo3w.vn_lv_kv = 0.4
@@ -255,7 +251,7 @@ def test_nogo():
 def test_branch_impedance_unit():
     net = pandapowerNet(name="test_nogo")
     with pytest.raises(ValueError, match="branch impedance unit can be either 'ohm' or 'pu'"):
-        mg = create_nxgraph(net, branch_impedance_unit="p.u.")
+        create_nxgraph(net, branch_impedance_unit="p.u.")
 
 
 @pytest.mark.skipif(not graph_tool_available, reason="graph_tool not available")

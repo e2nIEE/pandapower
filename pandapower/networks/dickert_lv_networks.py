@@ -2,8 +2,8 @@ from copy import deepcopy
 
 from numpy import append, ceil
 
-from pandapower import pandapowerNet
 from pandapower.create import create_buses, create_ext_grid, create_lines, create_load, create_transformer
+from pandapower.network import pandapowerNet
 from pandapower.std_types import change_std_type, create_std_type
 from pandapower.toolbox.element_selection import get_connected_elements
 from pandapower.toolbox.power_factor import pq_from_cosphi

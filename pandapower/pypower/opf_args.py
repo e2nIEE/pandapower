@@ -11,6 +11,7 @@ from scipy.sparse import issparse
 
 from pandapower.pypower._compat import PY2
 from pandapower.pypower.ppoption import ppoption
+
 # from pandapower.pypower.loadcase import loadcase
 
 

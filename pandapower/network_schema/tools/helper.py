@@ -91,8 +91,9 @@ def get_dtypes(schema: pa.DataFrameSchema, required_only: bool = True, metadata:
 
 
 def create_docu_csv_from_schema(schema: pa.DataFrameSchema):
-    import pandas as pd
     import json
+
+    import pandas as pd
 
     schema_json = schema.to_json()
     schema_dict = json.loads(schema_json)

@@ -15,10 +15,10 @@ from pandapower.converter.pandamodels import convert_pp_to_pm
 from pandapower.converter.pandamodels.from_pm import add_storage_results
 from pandapower.converter.pandamodels.to_pm import init_ne_line
 from pandapower.create import (
-    create_bus,
+    create_buses,
     create_ext_grid,
+    create_lines,
     create_gen,
-    create_line,
     create_load,
     create_poly_cost,
     create_pwl_cost,
@@ -59,12 +59,12 @@ from pandapower.runpm import (
     runpm_tnep,
     runpm_vstab,
 )
+from pandapower.timeseries import DFData, run_timeseries
 from test.consistency_checks import consistency_checks
 from test.helper_functions import add_grid_connection, create_test_line
 
 # reexported with "as" to prevent ruff removing it as unused
 from test.opf.test_basic import net_3w_trafo_opf as net_3w_trafo_opf
-from pandapower.timeseries import DFData, run_timeseries
 
 try:
     from juliacall import JuliaError as UnsupportedPythonError  # type: ignore
@@ -304,13 +304,10 @@ def test_pwl():
     net = pandapowerNet(name="test_pwl")
 
     # create buses
-    bus1 = create_bus(net, vn_kv=110.0, min_vm_pu=0.9, max_vm_pu=1.1)
-    bus2 = create_bus(net, vn_kv=110.0, min_vm_pu=0.9, max_vm_pu=1.1)
-    bus3 = create_bus(net, vn_kv=110.0, min_vm_pu=0.9, max_vm_pu=1.1)
+    bus1, bus2, bus3 = create_buses(net, 3, vn_kv=110.0, min_vm_pu=0.9, max_vm_pu=1.1)
 
     # create 110 kV lines
-    create_line(net, bus1, bus2, length_km=50.0, std_type="149-AL1/24-ST1A 110.0")
-    create_line(net, bus2, bus3, length_km=50.0, std_type="149-AL1/24-ST1A 110.0")
+    create_lines(net, [bus1, bus2], [bus2, bus3], length_km=50.0, line_params="149-AL1/24-ST1A 110.0")
 
     # create loads
     create_load(net, bus2, p_mw=80, controllable=False)
@@ -367,11 +364,10 @@ def test_without_ext_grid():
     max_vm_pu = 1.05
 
     # create buses
-    bus1 = create_bus(net, vn_kv=220.0, geodata=(5, 9))
-    bus2 = create_bus(net, vn_kv=110.0, geodata=(6, 10), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
-    bus3 = create_bus(net, vn_kv=110.0, geodata=(10, 9), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
-    bus4 = create_bus(net, vn_kv=110.0, geodata=(8, 8), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
-    bus5 = create_bus(net, vn_kv=110.0, geodata=(6, 8), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
+    bus1 = create_buses(net, 1, vn_kv=220.0, geodata=(5, 9))
+    bus2, bus3, bus4, bus5 = create_buses(
+        net, 4, vn_kv=110.0, geodata=[(6, 10), (10, 9), (8, 8), (6, 8)], min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu
+    )
 
     # create 220/110/110 kV 3W-transformer
     create_transformer3w_from_parameters(
@@ -398,10 +394,13 @@ def test_without_ext_grid():
     )
 
     # create 110 kV lines
-    create_line(net, bus2, bus3, length_km=70.0, std_type="149-AL1/24-ST1A 110.0")
-    create_line(net, bus3, bus4, length_km=50.0, std_type="149-AL1/24-ST1A 110.0")
-    create_line(net, bus4, bus2, length_km=40.0, std_type="149-AL1/24-ST1A 110.0")
-    create_line(net, bus4, bus5, length_km=30.0, std_type="149-AL1/24-ST1A 110.0")
+    create_lines(
+        net,
+        [bus2, bus3, bus4, bus4],
+        [bus3, bus4, bus2, bus5],
+        length_km=[70.0, 50.0, 40.0, 30.0],
+        line_params="149-AL1/24-ST1A 110.0",
+    )
 
     # create loads
     create_load(net, bus2, p_mw=60, controllable=False)
@@ -502,9 +501,7 @@ def test_multiple_ext_grids():
 def test_voltage_angles():
     net = pandapowerNet(name="test_voltage_angles")
     b1, b2, _ = add_grid_connection(net, vn_kv=110.0)
-    b3 = create_bus(net, vn_kv=20.0)
-    b4 = create_bus(net, vn_kv=10.0)
-    b5 = create_bus(net, vn_kv=10.0, in_service=False)
+    b3, b4, b5 = create_buses(net, 3, vn_kv=[20.0, 10.0, 10.0], in_service=[True, True, False])
     tidx = create_transformer3w(net, b2, b3, b4, std_type="63/25/38 MVA 110/20/10 kV", max_loading_percent=120)
     create_load(net, b3, p_mw=5, controllable=False)
     load_id = create_load(
@@ -544,15 +541,14 @@ def tnep_grid():
     max_vm_pu = 1.05
 
     # create buses
-    bus1 = create_bus(net, vn_kv=110.0, geodata=(5, 9), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
-    bus2 = create_bus(net, vn_kv=110.0, geodata=(6, 10), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
-    bus3 = create_bus(net, vn_kv=110.0, geodata=(10, 9), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
-    bus4 = create_bus(net, vn_kv=110.0, geodata=(8, 8), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
+    bus1, bus2, bus3, bus4 = create_buses(
+        net, 4, vn_kv=110.0, geodata=[(5, 9), (6, 10), (10, 9), (8, 8)], min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu
+    )
 
     # create 110 kV lines
-    create_line(net, bus1, bus2, length_km=70.0, std_type="149-AL1/24-ST1A 110.0")
-    create_line(net, bus1, bus3, length_km=50.0, std_type="149-AL1/24-ST1A 110.0")
-    create_line(net, bus1, bus4, length_km=100.0, std_type="149-AL1/24-ST1A 110.0")
+    create_lines(
+        net, [bus1] * 3, [bus2, bus3, bus4], length_km=[70.0, 50.0, 100.0], line_params="149-AL1/24-ST1A 110.0"
+    )
 
     # create loads
     create_load(net, bus2, p_mw=60)
@@ -572,43 +568,13 @@ def tnep_grid():
     net.line["max_loading_percent"] = 20
 
     # possible new lines (set out of service in line DataFrame)
-    l1 = create_line(
+    l1, l2, l3, l4 = create_lines(
         net,
-        bus1,
-        bus4,
-        10.0,
-        std_type="305-AL1/39-ST1A 110.0",
-        name="new_line1",
-        max_loading_percent=20.0,
-        in_service=False,
-    )
-    l2 = create_line(
-        net,
-        bus2,
-        bus4,
-        20.0,
+        [bus1, bus2, bus3, bus3],
+        [bus4] * 4,
+        [10.0, 20.0, 30.0, 40.0],
         std_type="149-AL1/24-ST1A 110.0",
-        name="new_line2",
-        max_loading_percent=20.0,
-        in_service=False,
-    )
-    l3 = create_line(
-        net,
-        bus3,
-        bus4,
-        30.0,
-        std_type="149-AL1/24-ST1A 110.0",
-        name="new_line3",
-        max_loading_percent=20.0,
-        in_service=False,
-    )
-    l4 = create_line(
-        net,
-        bus3,
-        bus4,
-        40.0,
-        std_type="149-AL1/24-ST1A 110.0",
-        name="new_line4",
+        name=["new_line1", "new_line2", "new_line3", "new_line4"],
         max_loading_percent=20.0,
         in_service=False,
     )
@@ -1033,15 +999,14 @@ def _create_redispatch_net():
     overloads the line - so redispatch has to shift generation to the expensive gen.
     """
     net = pandapowerNet(name="_create_redispatch_net")
-    b0 = create_bus(net, vn_kv=110.0, min_vm_pu=0.9, max_vm_pu=1.1)  # slack
-    b1 = create_bus(net, vn_kv=110.0, min_vm_pu=0.9, max_vm_pu=1.1)  # cheap gen
-    b2 = create_bus(net, vn_kv=110.0, min_vm_pu=0.9, max_vm_pu=1.1)  # load + expensive gen
+    b0, b1, b2 = create_buses(
+        net, 3, vn_kv=110.0, min_vm_pu=0.9, max_vm_pu=1.1
+    )  # slack, cheap gen, load + expensive gen
 
     create_ext_grid(net, b0, min_p_mw=-100.0, max_p_mw=100.0, min_q_mvar=-100.0, max_q_mvar=100.0)  # ext_grid at b0
 
     # weakly rated line from the cheap-gen side to the load; a strong line elsewhere
-    l_weak = create_line(net, b1, b2, length_km=10.0, std_type="149-AL1/24-ST1A 110.0")
-    create_line(net, b0, b1, length_km=10.0, std_type="149-AL1/24-ST1A 110.0")
+    l_weak, _ = create_lines(net, [b1, b0], [b2, b1], length_km=10.0, std_type="149-AL1/24-ST1A 110.0")
     net.line.loc[:, "max_loading_percent"] = 100.0
     net.line.loc[l_weak, "max_loading_percent"] = 25.0
 

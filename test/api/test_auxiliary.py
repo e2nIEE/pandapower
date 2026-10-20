@@ -5,32 +5,30 @@ import copy
 import gc
 import logging
 import warnings
+from math import isclose
 
-import pytest
 import geojson
 import numpy as np
 import pandas as pd
+import pytest
 
-from pandapower.control import Characteristic
-from pandapower.control.util.characteristic import SplineCharacteristic, LogSplineCharacteristic
-from math import isclose
-
-from pandapower.file_io import from_json_string, to_json
-from pandapower.create import create_bus, create_lines, create_line, create_buses, create_shunt
-from pandapower.create._utils import add_column_to_df
 from pandapower.auxiliary import get_indices
-from pandapower.network import pandapowerNet
-from pandapower.networks import example_simple, example_multivoltage, mv_oberrhein
-from pandapower.timeseries import DFData
-from pandapower.toolbox.element_selection import get_gc_objects_dict
-from pandapower.control import ContinuousTapControl, ConstControl
+from pandapower.control import Characteristic, ConstControl, ContinuousTapControl
 from pandapower.control.util.auxiliary import (
-    create_trafo_characteristic_object,
-    create_shunt_characteristic_object,
     _create_trafo_characteristics,
     create_q_capability_characteristics_object,
+    create_shunt_characteristic_object,
+    create_trafo_characteristic_object,
     get_min_max_q_mvar_from_characteristics_object,
 )
+from pandapower.control.util.characteristic import LogSplineCharacteristic, SplineCharacteristic
+from pandapower.create import create_bus, create_buses, create_line, create_lines, create_shunt
+from pandapower.create._utils import add_column_to_df
+from pandapower.file_io import from_json_string, to_json
+from pandapower.network import pandapowerNet
+from pandapower.networks import example_multivoltage, example_simple, mv_oberrhein
+from pandapower.timeseries import DFData
+from pandapower.toolbox.element_selection import get_gc_objects_dict
 
 try:
     import geopandas as gpd

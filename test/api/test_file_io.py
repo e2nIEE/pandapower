@@ -15,23 +15,23 @@ from pandas.testing import assert_frame_equal, assert_series_equal
 
 from pandapower import pandapowerNet, sql_io
 from pandapower.control import (
-    DiscreteTapControl,
+    Characteristic,
     ConstControl,
     ContinuousTapControl,
-    Characteristic,
+    DiscreteTapControl,
     SplineCharacteristic,
 )
-from pandapower.create import create_transformer
 from pandapower.convert_format import convert_format
-from pandapower.file_io import to_pickle, from_pickle, to_excel, from_excel, from_json, to_json, from_json_string
-from pandapower.io_utils import PPJSONEncoder, PPJSONDecoder
-from pandapower.networks import mv_oberrhein, simple_four_bus_system, case9, case14, create_kerber_dorfnetz
-from pandapower.run import set_user_pf_options, runpp
-from pandapower.sql_io import to_sqlite, from_sqlite
-from test.helper_functions import assert_net_equal, create_test_network, create_test_network2
+from pandapower.create import create_transformer
+from pandapower.file_io import from_excel, from_json, from_json_string, from_pickle, to_excel, to_json, to_pickle
+from pandapower.io_utils import PPJSONDecoder, PPJSONEncoder
+from pandapower.networks import case9, case14, create_kerber_dorfnetz, mv_oberrhein, simple_four_bus_system
+from pandapower.run import runpp, set_user_pf_options
+from pandapower.sql_io import from_sqlite, to_sqlite
 from pandapower.timeseries import DFData
-from pandapower.toolbox.comparison import nets_equal, dataframes_equal
+from pandapower.toolbox.comparison import dataframes_equal, nets_equal
 from pandapower.topology.create_graph import create_nxgraph
+from test.helper_functions import assert_net_equal, create_test_network, create_test_network2
 
 try:
     import cryptography.fernet  # type: ignore
@@ -165,8 +165,8 @@ def test_json(net_in, tmp_path):
     if GEOPANDAS_INSTALLED and SHAPELY_INSTALLED:
         net_geo = copy.deepcopy(net_in)
         # make GeodataFrame
-        from shapely.geometry import shape, Point, LineString
         import geopandas as gpd
+        from shapely.geometry import LineString, Point, shape
 
         bus_geometry = net_geo.bus["geo"].dropna().apply(geojson.loads).apply(shape)
         net_geo["bus_geodata"] = gpd.GeoDataFrame(geometry=bus_geometry, crs="epsg:4326")
@@ -566,17 +566,11 @@ def test_elements_to_deserialize(tmp_path):
     to_json(net, filename)
     net_select = from_json(filename, elements_to_deserialize=["bus", "load"])
     for key, item in net_select.items():
-        if key in ["bus", "load"]:
+        if key in ["bus", "load"] or "_empty" in key:
             assert isinstance(item, pd.DataFrame)
-        elif "_empty" in key:
-            assert isinstance(item, pd.DataFrame)
-        elif "_lookup" in key:
+        elif "_lookup" in key or key in ["std_types", "user_pf_options"]:
             assert isinstance(item, dict)
-        elif key in ["std_types", "user_pf_options"]:
-            assert isinstance(item, dict)
-        elif "_ppc" in key:
-            assert item is None
-        elif key == "_is_elements":
+        elif "_ppc" in key or key == "_is_elements":
             assert item is None
         elif key in ["converged", "OPF_converged"]:
             assert isinstance(item, bool)
@@ -596,17 +590,11 @@ def test_elements_to_deserialize_wo_keep(tmp_path):
     to_json(net, filename)
     net_select = from_json(filename, elements_to_deserialize=["bus", "load"], keep_serialized_elements=False)
     for key, item in net_select.items():
-        if key in ["bus", "load"]:
+        if key in ["bus", "load"] or "_empty" in key:
             assert isinstance(item, pd.DataFrame)
-        elif "_empty" in key:
-            assert isinstance(item, pd.DataFrame)
-        elif "_lookup" in key:
+        elif "_lookup" in key or key in ["std_types", "user_pf_options"]:
             assert isinstance(item, dict)
-        elif key in ["std_types", "user_pf_options"]:
-            assert isinstance(item, dict)
-        elif "_ppc" in key:
-            assert item is None
-        elif key == "_is_elements":
+        elif "_ppc" in key or key == "_is_elements":
             assert item is None
         elif key in ["converged", "OPF_converged"]:
             assert isinstance(item, bool)
@@ -855,8 +843,8 @@ def test_json_deserialization_hardening():
     )
 
     # Writing to a temp file
-    import tempfile
     import os
+    import tempfile
 
     with tempfile.NamedTemporaryFile(mode="w", suffix=".json", delete=False) as f:
         f.write(hardened_json)

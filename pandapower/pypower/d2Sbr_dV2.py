@@ -4,7 +4,7 @@
 
 """Computes 2nd derivatives of complex power flow w.r.t. voltage."""
 
-from numpy import ones, conj
+from numpy import conj, ones
 from scipy.sparse import csr_matrix
 
 

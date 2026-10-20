@@ -2,28 +2,28 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+import logging
+
 import numpy as np
 import pandas as pd
 
-
+from pandapower.auxiliary import _subnetworks, _sum_by_group, pandapowerNet
 from pandapower.pf.ppci_variables import bustypes
 from pandapower.pypower.bustypes import bustypes_dc
-from pandapower.pypower.idx_bus import PV, REF, VA, VM, BUS_TYPE, NONE, VMAX, VMIN, SL_FAC as SL_FAC_BUS
-from pandapower.pypower.idx_bus_dc import DC_BUS_TYPE, DC_NONE
-from pandapower.pypower.idx_gen import QMIN, QMAX, PMIN, PMAX, GEN_BUS, PG, VG, QG, MBASE, SL_FAC, gen_cols
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
-from pandapower.auxiliary import _subnetworks, _sum_by_group, pandapowerNet
-from pandapower.pypower.idx_ssc import SSC_BUS, SSC_SET_VM_PU, SSC_CONTROLLABLE
+from pandapower.pypower.idx_bus import BUS_TYPE, NONE, PV, REF, VA, VM, VMAX, VMIN
+from pandapower.pypower.idx_bus import SL_FAC as SL_FAC_BUS
+from pandapower.pypower.idx_bus_dc import DC_BUS_TYPE, DC_NONE
+from pandapower.pypower.idx_gen import GEN_BUS, MBASE, PG, PMAX, PMIN, QG, QMAX, QMIN, SL_FAC, VG, gen_cols
+from pandapower.pypower.idx_ssc import SSC_BUS, SSC_CONTROLLABLE, SSC_SET_VM_PU
 from pandapower.pypower.idx_vsc import (
-    VSC_MODE_AC,
     VSC_BUS,
-    VSC_VALUE_AC,
     VSC_CONTROLLABLE,
-    VSC_MODE_AC_V,
+    VSC_MODE_AC,
     VSC_MODE_AC_SL,
+    VSC_MODE_AC_V,
+    VSC_VALUE_AC,
 )
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -146,21 +146,19 @@ def _check_gen_vm_limits(net, ppc, gen_buses, gen_is):
     v_max_bound = ppc["bus"][gen_buses, VMAX] < net["gen"]["vm_pu"].values[gen_is]
     if np.any(v_max_bound):
         bound_gens = net["gen"].index.values[gen_is][v_max_bound]
-        logger.warning("gen vm_pu > bus max_vm_pu for gens {}. Setting bus limit for these gens.".format(bound_gens))
+        logger.warning(f"gen vm_pu > bus max_vm_pu for gens {bound_gens}. Setting bus limit for these gens.")
 
     v_min_bound = net["gen"]["vm_pu"].values[gen_is] < ppc["bus"][gen_buses, VMIN]
     if np.any(v_min_bound):
         bound_gens = net["gen"].index.values[gen_is][v_min_bound]
-        logger.warning("gen vm_pu < bus min_vm_pu for gens {}. Setting bus limit for these gens.".format(bound_gens))
+        logger.warning(f"gen vm_pu < bus min_vm_pu for gens {bound_gens}. Setting bus limit for these gens.")
 
     # check max_vm_pu / min_vm_pu limit violation
     if "max_vm_pu" in net["gen"].columns:
         v_max_bound = ppc["bus"][gen_buses, VMAX] < net["gen"]["max_vm_pu"].values[gen_is]
         if np.any(v_max_bound):
             bound_gens = net["gen"].index.values[gen_is][v_max_bound]
-            logger.warning(
-                "gen max_vm_pu > bus max_vm_pu for gens {}. Setting bus limit for these gens.".format(bound_gens)
-            )
+            logger.warning(f"gen max_vm_pu > bus max_vm_pu for gens {bound_gens}. Setting bus limit for these gens.")
             # set only vm of gens which do not violate the limits
             ppc["bus"][gen_buses[~v_max_bound], VMAX] = net["gen"]["max_vm_pu"].values[gen_is][~v_max_bound]
         else:
@@ -171,9 +169,7 @@ def _check_gen_vm_limits(net, ppc, gen_buses, gen_is):
         v_min_bound = net["gen"]["min_vm_pu"].values[gen_is] < ppc["bus"][gen_buses, VMIN]
         if np.any(v_min_bound):
             bound_gens = net["gen"].index.values[gen_is][v_min_bound]
-            logger.warning(
-                "gen min_vm_pu < bus min_vm_pu for gens {}. Setting bus limit for these gens.".format(bound_gens)
-            )
+            logger.warning(f"gen min_vm_pu < bus min_vm_pu for gens {bound_gens}. Setting bus limit for these gens.")
             # set only vm of gens which do not violate the limits
             ppc["bus"][gen_buses[~v_max_bound], VMIN] = net["gen"]["min_vm_pu"].values[gen_is][~v_min_bound]
         else:

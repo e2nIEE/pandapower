@@ -1,8 +1,8 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pytest
 import numpy as np
+import pytest
 
 from pandapower.create import create_bus, create_buses, create_gen, create_gens
 from pandapower.network import pandapowerNet

@@ -1,30 +1,31 @@
 # test_pandera_line_dc_elements.py
 
 import itertools
+
 import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_bus_dc, create_line_dc_from_parameters, create_line_dc
+from pandapower.create import create_bus_dc, create_line_dc, create_line_dc_from_parameters
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 from test.network_schema.elements.helper import (
-    strings,
+    all_allowed_floats,
     bools,
-    not_strings_list,
-    not_floats_list,
-    not_boolean_list,
-    positiv_ints_plus_zero,
-    positiv_ints,
-    negativ_ints,
-    negativ_ints_plus_zero,
-    positiv_floats,
-    positiv_floats_plus_zero,
     negativ_floats,
     negativ_floats_plus_zero,
-    all_allowed_floats,
+    negativ_ints,
+    negativ_ints_plus_zero,
+    not_boolean_list,
+    not_floats_list,
     not_ints_list,
+    not_strings_list,
+    positiv_floats,
+    positiv_floats_plus_zero,
+    positiv_ints,
+    positiv_ints_plus_zero,
+    strings,
 )
 
 # df must be in [0, 1]
@@ -444,4 +445,3 @@ class TestLineDcResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_line_dc_result_totals(self):
         """Test: aggregated p_mw results are consistent"""
-        pass
