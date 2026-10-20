@@ -1,6 +1,15 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "test_path",
+    "tutorials_path",
+    "run_all_tests",
+    "run_fast_tests",
+    "run_slow_tests",
+    "run_tutorials",
+    "start_tests",
+]
 
 import argparse
 import logging
@@ -8,12 +17,14 @@ import os
 import shutil
 import tempfile
 from multiprocessing import cpu_count
+from importlib.util import find_spec
 
 import pytest
 
-from test import test_path, tutorials_path
-
 logger = logging.getLogger()
+
+test_path = os.path.dirname(os.path.realpath(__file__))
+tutorials_path = os.path.join(test_path, "..", "tutorials")
 
 
 def _remove_logger():
@@ -141,12 +152,10 @@ def run_tutorials(parallel=False, n_cpu=None):
     :return : No Output.
 
     """
-    try:
-        import nbmake
-    except ImportError:
+    if find_spec("nbmake") is None:
         raise ModuleNotFoundError(
-            "Testing of jupyter notebooks requires the pytest extension "
-            '"nbmake". Please make sure that nbmake is installed correctly.'
+            'Testing of jupyter notebooks requires the pytest extension "nbmake". '
+            "Please make sure that nbmake is installed correctly."
         )
 
     # run notebooks in tempdir to safely remove output files

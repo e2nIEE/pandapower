@@ -21,7 +21,7 @@ from pandapower.sql_io import (
     from_postgresql,
     to_postgresql,
 )
-from test import assert_res_equal
+from test.helper_functions import assert_res_equal
 
 if PSYCOPG_INSTALLED:
     import psycopg

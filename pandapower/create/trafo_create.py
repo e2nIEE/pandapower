@@ -13,7 +13,6 @@ from numpy import all as all_
 from numpy import array, bool_, float64, full, integer, isin, isnan, nan
 from pandas.api.typing import NAType
 
-from pandapower import pandapowerNet
 from pandapower.create._utils import (
     _add_to_entries_if_not_nan,
     _check_branch_element,
@@ -24,6 +23,7 @@ from pandapower.create._utils import (
     _set_multiple_entries,
     _set_value_if_not_nan,
 )
+from pandapower.network import pandapowerNet
 from pandapower.network_structure import get_default_value, get_structure_dict
 from pandapower.pp_types import HVLVType, HVMVLVType, Int, TapChangerType, TapChangerWithTabularType
 from pandapower.std_types import load_std_type

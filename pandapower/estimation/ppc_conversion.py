@@ -8,7 +8,6 @@ from collections import UserDict
 import numpy as np
 import pandas as pd
 
-from pandapower import pandapowerNet
 from pandapower.auxiliary import _init_runse_options
 from pandapower.estimation.idx_brch import (
     IA_FROM,
@@ -54,6 +53,7 @@ from pandapower.estimation.idx_bus import (
     bus_cols_se,
 )
 from pandapower.estimation.util import estimate_voltage_vector
+from pandapower.network import pandapowerNet
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
 from pandapower.pypower.idx_brch import branch_cols

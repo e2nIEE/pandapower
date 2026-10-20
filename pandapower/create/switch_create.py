@@ -11,7 +11,6 @@ import numpy.typing as npt
 from numpy import any as np_any
 from numpy import nan
 
-from pandapower import pandapowerNet
 from pandapower.create._utils import (
     _check_element,
     _check_multiple_elements,
@@ -20,6 +19,7 @@ from pandapower.create._utils import (
     _set_entries,
     _set_multiple_entries,
 )
+from pandapower.network import pandapowerNet
 from pandapower.network_structure import get_default_value
 from pandapower.pp_types import Int, SwitchElementType, SwitchType
 

@@ -5,8 +5,8 @@ import logging
 
 import numpy as np
 
-from pandapower import pandapowerNet
 from pandapower.control.basic_controller import Controller
+from pandapower.network import pandapowerNet
 
 logger = logging.getLogger(__name__)
 

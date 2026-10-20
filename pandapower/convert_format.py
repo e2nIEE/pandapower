@@ -9,12 +9,12 @@ import numpy as np
 import pandas as pd
 from packaging.version import Version
 
-from pandapower import pandapowerNet
 from pandapower._version import __format_version__, __version__
 from pandapower.control import BinarySearchControl, DroopControl, TrafoController
 from pandapower.create import create_poly_cost
 from pandapower.create._utils import add_column_to_df
 from pandapower.create.trafo_characteristic_create import create_trafo_characteristic
+from pandapower.network import pandapowerNet
 from pandapower.network_structure import get_structure_dict
 from pandapower.plotting.geo import _is_valid_number, convert_geodata_to_geojson
 from pandapower.results import reset_results

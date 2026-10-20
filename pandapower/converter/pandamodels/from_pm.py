@@ -9,8 +9,8 @@ from logging import getLogger
 import numpy as np
 import pandas as pd
 
-from pandapower import pandapowerNet
 from pandapower.auxiliary import _clean_up
+from pandapower.network import pandapowerNet
 from pandapower.optimal_powerflow import OPFNotConverged
 from pandapower.pypower.idx_brch import BR_STATUS, PF, PT, QF, QT
 from pandapower.pypower.idx_bus import VA, VM
