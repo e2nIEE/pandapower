@@ -746,7 +746,16 @@ def _storage_power_models_result(ps, qs, se):
     return {
         "storage": {
             "8": {"ps": ps[0], "qs": qs[0], "se": se[0], "qsc": 0.01, "sc": 1.0, "sc_on": 1.0, "sd": 2.0, "sd_on": 0.0},
-            "24": {"ps": ps[1], "qs": qs[1], "se": se[1], "qsc": 0.02, "sc": 3.0, "sc_on": 0.0, "sd": 4.0, "sd_on": 1.0},
+            "24": {
+                "ps": ps[1],
+                "qs": qs[1],
+                "se": se[1],
+                "qsc": 0.02,
+                "sc": 3.0,
+                "sc_on": 0.0,
+                "sd": 4.0,
+                "sd_on": 1.0,
+            },
         }
     }
 

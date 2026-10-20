@@ -310,7 +310,9 @@ def test_sqlite_public_functions_close_after_error(net_in, tmp_path, monkeypatch
             to_sqlite(net_in, filename)
     else:
         injected = ValueError("injected reader failure")
-        monkeypatch.setattr(sql_io.io_utils, "from_dict_of_dfs", lambda *args, **kwargs: (_ for _ in ()).throw(injected))
+        monkeypatch.setattr(
+            sql_io.io_utils, "from_dict_of_dfs", lambda *args, **kwargs: (_ for _ in ()).throw(injected)
+        )
         with closing(original_connect(filename)) as opened_connection, opened_connection as connection:
             connection.execute('CREATE TABLE marker ("index" INTEGER)')
         with pytest.raises(ValueError) as exc_info:
@@ -365,7 +367,9 @@ def test_sqlite_transaction_commits_successful_pending_write(net_in, tmp_path, m
         def to_sql(self, name, connection):
             connection.execute("INSERT INTO sentinel VALUES ('pending')")
 
-    monkeypatch.setattr(sql_io.io_utils, "to_dict_of_dfs", lambda *args, **kwargs: {"pending": SuccessfulPendingWrite()})
+    monkeypatch.setattr(
+        sql_io.io_utils, "to_dict_of_dfs", lambda *args, **kwargs: {"pending": SuccessfulPendingWrite()}
+    )
     to_sqlite(net_in, filename)
     assert events == ["exit", "close"]
     with pytest.raises(sqlite3.ProgrammingError):

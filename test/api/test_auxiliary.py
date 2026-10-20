@@ -632,9 +632,7 @@ def test_log_characteristic_property():
 def test_log_characteristic_json_roundtrip_positive_values(interpolator_kind, kwargs, diagnostic_mode, caplog):
     net = pandapowerNet(name="test_log_characteristic_json_roundtrip")
     first = LogSplineCharacteristic(net, [1, 2], [1, 4], interpolator_kind=interpolator_kind, **kwargs)
-    original = LogSplineCharacteristic(
-        net, [0.1, 1, 10], [0.01, 1, 100], interpolator_kind=interpolator_kind, **kwargs
-    )
+    original = LogSplineCharacteristic(net, [0.1, 1, 10], [0.01, 1, 100], interpolator_kind=interpolator_kind, **kwargs)
     assert original.index != first.index
     assert original.index != 0
     original([0.2, 0.5, 2, 5])
