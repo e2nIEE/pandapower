@@ -33,7 +33,7 @@ percent_invalid = [-0.1, 100.1]
 
 
 class TestMotorRequiredFields:
-    """All columns except 'name' are required"""
+    """Tests for required motor fields"""
 
     @pytest.mark.parametrize(
         "parameter,valid_value",
@@ -50,6 +50,7 @@ class TestMotorRequiredFields:
         ),
     )
     def test_valid_required_values(self, parameter, valid_value):
+        """Test: valid required values are accepted"""
         net = pandapowerNet(name="test_valid_required_values")
         create_buses(net, 2, 0.4)  # 0, 1
         create_buses(net, 1, 0.4, index=42)
@@ -89,6 +90,7 @@ class TestMotorRequiredFields:
         ),
     )
     def test_invalid_required_values(self, parameter, invalid_value):
+        """Test: invalid required values are rejected"""
         net = pandapowerNet(name="test_invalid_required_values")
         create_buses(net, 2, 0.4)
 
@@ -110,6 +112,8 @@ class TestMotorRequiredFields:
 
 
 class TestMotorOptionalFields:
+    """Tests for optional nullable fields. Can be absent, null, or have valid values"""
+
     def test_optional_fields_with_nulls(self):
         """Test: name field can be null"""
         net = pandapowerNet(name="test_optional_fields_with_nulls")
