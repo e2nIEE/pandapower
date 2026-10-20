@@ -18,9 +18,9 @@ import numpy as np
 import pandas as pd
 from numpy.typing import ArrayLike, NDArray
 
-from pandapower import pandapowerNet
 from pandapower.auxiliary import get_values
 from pandapower.create._utils import add_column_to_df
+from pandapower.network import pandapowerNet
 from pandapower.pf.create_jacobian_tdpf import ALPHA_TDPF
 from pandapower.pypower.idx_brch import (
     BR_B,
