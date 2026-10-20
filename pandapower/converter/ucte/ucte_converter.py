@@ -4,7 +4,6 @@
 import logging
 import math
 import time
-from typing import Dict, Union
 
 import numpy as np
 import pandas as pd
@@ -26,7 +25,7 @@ class UCTE2pandapower:
         self.slack_as_gen = slack_as_gen
         self.clip_small_x_values = clip_small_x_values
 
-    def convert(self, ucte_dict: Dict) -> pandapowerNet:
+    def convert(self, ucte_dict: dict) -> pandapowerNet:
         self.logger.info("Converting UCTE data to a pandapower network.")
         time_start = time.time()
         # create a temporary copy from the origin input data
@@ -526,7 +525,7 @@ class UCTE2pandapower:
             self.logger.error("Couldn't set data type %s for column %s!" % (data_type, column))
             self.logger.exception(e)
 
-    def _fill_empty_names(self, input_df: pd.DataFrame, input_column: Union[str, int] = 0):
+    def _fill_empty_names(self, input_df: pd.DataFrame, input_column: str | int = 0):
         """Fills empty names with node1_node2_order-code"""
 
         def get_name_from_ucte_string(ucte_string: str) -> str:
@@ -537,7 +536,7 @@ class UCTE2pandapower:
         )
         input_df.loc[input_df["name"] == "", "name"] = new_names
 
-    def _fill_amica_names(self, input_df: pd.DataFrame, suffix: str, input_column: Union[str, int] = 0) -> None:
+    def _fill_amica_names(self, input_df: pd.DataFrame, suffix: str, input_column: str | int = 0) -> None:
         def get_name_from_ucte_string(ucte_string: str) -> str:
             node1 = ucte_string[:7].replace(" ", "_")
             node2 = ucte_string[9:16].replace(" ", "_")

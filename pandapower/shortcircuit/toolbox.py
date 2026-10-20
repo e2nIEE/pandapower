@@ -1,8 +1,8 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-from pandapower.auxiliary import _preserve_dtypes
-
 import logging
+
+from pandapower.auxiliary import _preserve_dtypes
 
 logger = logging.getLogger(__name__)
 
@@ -20,7 +20,7 @@ from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.topology import create_nxgraph
 from pandapower.topology.graph_searches import connected_component
 
-__all__ = ["detect_power_station_unit", "calc_sc_on_line"]
+__all__ = ["calc_sc_on_line", "detect_power_station_unit"]
 
 
 def detect_power_station_unit(net, mode="auto", max_gen_voltage_kv=80, max_distance_km=0.01):

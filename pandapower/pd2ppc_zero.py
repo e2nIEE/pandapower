@@ -5,57 +5,56 @@ and Energy System Technology (IEE), Kassel. All rights reserved.
 """
 
 import math
-import numpy as np
 from itertools import product
 
+import numpy as np
+
 from pandapower.auxiliary import _select_is_elements_numba, _sum_by_group
-from pandapower.pypower.idx_bus_dc import DC_NONE, DC_BUS_TYPE
+from pandapower.build_branch import (
+    _branches_with_oos_buses,
+    _build_branch_dc_ppc,
+    _build_tcsc_ppc,
+    _calc_branch_values_from_trafo_df,
+    _calc_impedance_parameters_from_dataframe,
+    _calc_nominal_ratio_from_dataframe,
+    _calc_switch_parameter,
+    _calc_tap_from_dataframe,
+    _end_temperature_correction_factor,
+    _initialize_branch_lookup,
+    _switch_branches,
+    _trafo_df_from_trafo3w,
+    _transformer_correction_factor,
+    get_trafo_values,
+)
 from pandapower.build_bus import (
-    _build_bus_ppc,
-    _build_svc_ppc,
-    _build_ssc_ppc,
-    _build_vsc_ppc,
     _build_bus_dc_ppc,
+    _build_bus_ppc,
+    _build_ssc_ppc,
+    _build_svc_ppc,
+    _build_vsc_ppc,
 )
 from pandapower.build_gen import _build_gen_ppc
+from pandapower.pd2ppc import _init_ppc, _ppc2ppci
 from pandapower.pypower.idx_brch import (
-    BR_G,
     BR_B,
-    BR_R,
-    BR_X,
-    F_BUS,
-    T_BUS,
-    branch_cols,
-    BR_STATUS,
-    SHIFT,
-    TAP,
-    BR_R_ASYM,
-    BR_X_ASYM,
-    BR_G_ASYM,
     BR_B_ASYM,
+    BR_G,
+    BR_G_ASYM,
+    BR_R,
+    BR_R_ASYM,
+    BR_STATUS,
+    BR_X,
+    BR_X_ASYM,
+    F_BUS,
+    SHIFT,
+    T_BUS,
+    TAP,
+    branch_cols,
 )
-from pandapower.pypower.idx_bus import BASE_KV, BS, GS, BUS_TYPE, NONE
 from pandapower.pypower.idx_brch_sc import branch_cols_sc
+from pandapower.pypower.idx_bus import BASE_KV, BS, BUS_TYPE, GS, NONE
+from pandapower.pypower.idx_bus_dc import DC_BUS_TYPE, DC_NONE
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN
-from pandapower.build_branch import (
-    _calc_tap_from_dataframe,
-    _transformer_correction_factor,
-    _calc_nominal_ratio_from_dataframe,
-    get_trafo_values,
-    _trafo_df_from_trafo3w,
-    _calc_branch_values_from_trafo_df,
-    _calc_switch_parameter,
-    _calc_impedance_parameters_from_dataframe,
-    _build_tcsc_ppc,
-    _build_branch_dc_ppc,
-)
-from pandapower.build_branch import (
-    _switch_branches,
-    _branches_with_oos_buses,
-    _initialize_branch_lookup,
-    _end_temperature_correction_factor,
-)
-from pandapower.pd2ppc import _ppc2ppci, _init_ppc
 
 
 def _pd2ppc_zero(net, k_st, sequence=0):

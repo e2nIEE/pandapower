@@ -335,4 +335,3 @@ class TestForeignKeyMultipleColumns:
         # (Note: may need actual trafo creation - simplified for test structure)
 
         # Would need actual trafo creation in integration test
-        pass

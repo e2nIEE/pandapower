@@ -4,11 +4,11 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_buses,
     create_bus,
+    create_buses,
+    create_ext_grid,
     create_line_from_parameters,
     create_load,
-    create_ext_grid,
     create_ssc,
 )
 from pandapower.network import pandapowerNet

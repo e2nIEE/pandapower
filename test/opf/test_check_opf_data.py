@@ -1,21 +1,21 @@
+import logging
+
 import pytest
 from numpy import nan
 
 from pandapower.create import (
     create_bus,
     create_buses,
-    create_transformer,
-    create_line,
-    create_ext_grid,
     create_dcline,
-    create_load,
+    create_ext_grid,
     create_gen,
+    create_line,
+    create_load,
     create_sgen,
+    create_transformer,
 )
 from pandapower.network import pandapowerNet
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
-
-import logging
 
 logger = logging.getLogger(__name__)
 

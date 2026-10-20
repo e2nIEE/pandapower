@@ -10,8 +10,7 @@ import numpy.typing as npt
 from numpy import nan
 from typing_extensions import deprecated
 
-from pandapower import ensure_iterability, pandapowerNet
-from pandapower.auxiliary import warn_and_fix_parameter_renaming
+from pandapower.auxiliary import ensure_iterability, warn_and_fix_parameter_renaming
 from pandapower.create._utils import (
     _add_multiple_branch_geodata,
     _add_to_entries_if_not_nan,
@@ -22,6 +21,7 @@ from pandapower.create._utils import (
     _set_entries,
     _set_multiple_entries,
 )
+from pandapower.network import pandapowerNet
 from pandapower.network_structure import get_default_value
 from pandapower.pp_types import Int, LineType
 from pandapower.std_types import load_std_type

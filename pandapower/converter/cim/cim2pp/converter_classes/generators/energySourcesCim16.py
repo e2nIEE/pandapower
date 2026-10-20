@@ -1,12 +1,12 @@
 import logging
-import time
 import math
+import time
 
 import pandas as pd
 
 from pandapower.converter.cim import cim_tools
 from pandapower.converter.cim.cim2pp import build_pp_net
-from pandapower.converter.cim.other_classes import Report, LogLevel, ReportCode
+from pandapower.converter.cim.other_classes import LogLevel, Report, ReportCode
 
 logger = logging.getLogger("cim.cim2pp.converter_classes.energySourceCim16")
 

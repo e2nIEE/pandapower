@@ -8,12 +8,14 @@
 
 """Python Interior Point Solver (PIPS)."""
 
-from numpy import array, inf, any, isnan, ones, r_, finfo, zeros, dot, absolute, log, flatnonzero as find, full
+from numpy import absolute, any, array, dot, finfo, full, inf, isnan, log, ones, r_, zeros
+from numpy import flatnonzero as find
 from numpy.linalg import norm
-from pandapower.pypower.pipsver import pipsver
-from scipy.sparse import vstack, hstack, eye, csr_matrix as sparse
+from scipy.sparse import csr_matrix as sparse
+from scipy.sparse import eye, hstack, vstack
 from scipy.sparse.linalg import spsolve
 
+from pandapower.pypower.pipsver import pipsver
 
 EPS = finfo(float).eps  # type: ignore[var-annotated]
 

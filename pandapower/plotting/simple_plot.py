@@ -1,10 +1,11 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import sys
-import math
 import logging
+import math
+import sys
 from collections import defaultdict
+
 import pandas as pd
 
 try:
@@ -14,24 +15,24 @@ try:
 except ImportError:
     MATPLOTLIB_INSTALLED = False
 
-from pandapower.auxiliary import soft_dependency_error, pandapowerNet
-from pandapower.plotting.plotting_toolbox import get_collection_sizes
+from pandapower.auxiliary import pandapowerNet, soft_dependency_error
 from pandapower.plotting.collections import (
-    create_bus_collection,
-    create_line_collection,
-    create_trafo_collection,
-    create_trafo3w_collection,
-    create_line_switch_collection,
-    draw_collections,
     create_bus_bus_switch_collection,
-    create_ext_grid_collection,
-    create_sgen_collection,
-    create_gen_collection,
-    create_load_collection,
+    create_bus_collection,
     create_dcline_collection,
+    create_ext_grid_collection,
+    create_gen_collection,
+    create_line_collection,
+    create_line_switch_collection,
+    create_load_collection,
+    create_sgen_collection,
+    create_trafo3w_collection,
+    create_trafo_collection,
     create_vsc_collection,
+    draw_collections,
 )
 from pandapower.plotting.generic_geodata import create_generic_coordinates
+from pandapower.plotting.plotting_toolbox import get_collection_sizes
 
 logger = logging.getLogger(__name__)
 
@@ -597,7 +598,7 @@ def simple_plot(
 
             runpp(net)
 
-        from pandapower.plotting.colormaps import cmap_discrete, cmap_continuous
+        from pandapower.plotting.colormaps import cmap_continuous, cmap_discrete
 
         if colormap_type == "discrete":
             if has_lines:

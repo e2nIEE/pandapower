@@ -4,13 +4,11 @@
 from __future__ import annotations
 
 import logging
-from typing import Iterable, Sequence
+from collections.abc import Iterable, Sequence
 
 import numpy as np
 import numpy.typing as npt
 
-from pandapower import pandapowerNet
-from pandapower.pp_types import Int
 from pandapower.create._utils import (
     _check_element,
     _check_multiple_elements,
@@ -19,7 +17,9 @@ from pandapower.create._utils import (
     _set_entries,
     _set_multiple_entries,
 )
+from pandapower.network import pandapowerNet
 from pandapower.network_structure import get_default_value
+from pandapower.pp_types import Int
 
 logger = logging.getLogger(__name__)
 

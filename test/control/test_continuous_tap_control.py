@@ -1,28 +1,29 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from copy import deepcopy
-import pytest
 import logging as log
+from copy import deepcopy
+
 import numpy as np
+import pytest
 
 logger = log.getLogger(__name__)
 
-from pandapower import set_user_pf_options, runpp
+from pandapower import runpp, set_user_pf_options
+from pandapower.control import ContinuousTapControl
 from pandapower.create import (
+    create_bus,
     create_buses,
     create_ext_grid,
-    create_lines,
-    create_transformer,
-    create_load,
-    create_bus,
     create_line,
+    create_lines,
+    create_load,
+    create_transformer,
     create_transformer3w,
 )
 from pandapower.network import pandapowerNet
-from pandapower.networks import simple_four_bus_system, mv_oberrhein
+from pandapower.networks import mv_oberrhein, simple_four_bus_system
 from pandapower.toolbox.data_modification import create_continuous_bus_index
-from pandapower.control import ContinuousTapControl
 
 
 def test_continuous_tap_control_lv():

@@ -1,13 +1,13 @@
 import logging
 from copy import deepcopy
+
 import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import ensure_iterability
-from pandapower.toolbox.element_selection import pp_elements, element_bus_tuples
+from pandapower.toolbox.element_selection import element_bus_tuples, pp_elements
 from pandapower.topology.create_graph import create_nxgraph
 from pandapower.topology.graph_searches import connected_component, connected_components
-
 
 logger = logging.getLogger(__name__)
 
@@ -55,7 +55,7 @@ def set_bus_zone_by_boundary_branches(net, all_boundary_branches):
             The dict keys must be pandapower elements, e.g. "line" or "trafo"
     """
     include = {"line": None, "trafo": None, "trafo3w": None, "impedance": None}
-    for elm in include.keys():
+    for elm in include:
         if elm in all_boundary_branches.keys():
             include[elm] = net[elm].index.difference(all_boundary_branches[elm])
         else:

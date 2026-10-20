@@ -2,20 +2,16 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 from copy import deepcopy
+from importlib.util import find_spec
 
 import pandas as pd
 import pytest
 
-try:
-    import matplotlib.pyplot as plt
-
-    MATPLOTLIB_INSTALLED = True
-except ImportError:
-    MATPLOTLIB_INSTALLED = False
-
 from pandapower.networks.power_system_test_cases import case9
 from pandapower.plotting.plotting_toolbox import set_line_geodata_from_bus_geodata
 from pandapower.plotting.simple_plot import simple_plot
+
+MATPLOTLIB_INSTALLED = find_spec("matplotlib") is not None
 
 
 @pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason="requires matplotlib")

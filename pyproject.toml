@@ -118,9 +118,6 @@ version = {attr = "pandapower._version.__version__"}
 include = [
     "pandapower*",
 ]
-exclude = [
-    "pandapower.test*",
-]
 
 [tool.setuptools.package-data]
 "*" = [
@@ -169,3 +166,7 @@ line-length = 120
 [tool.ruff.format]
 # Use `\n` line endings for all files
 line-ending = "lf"
+
+[tool.ruff.lint.extend-per-file-ignores]
+# F811 is redefinition of symbol because ruff does not understand pytest fixtures and will complain
+"test/**/*.py" = ["F811"]

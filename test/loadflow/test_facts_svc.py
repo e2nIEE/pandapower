@@ -6,12 +6,12 @@ from pandas.testing import assert_frame_equal
 
 from pandapower.create import (
     create_buses,
-    create_svc,
+    create_ext_grid,
     create_line_from_parameters,
     create_load,
-    create_shunt,
-    create_ext_grid,
     create_loads,
+    create_shunt,
+    create_svc,
 )
 from pandapower.network import pandapowerNet
 from pandapower.networks.power_system_test_cases import case9

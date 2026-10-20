@@ -1,9 +1,9 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from pandapower.control.controller.const_control import ConstControl as ConstController
-
 import logging
+
+from pandapower.control.controller.const_control import ConstControl as ConstController
 
 logger = logging.getLogger(__name__)
 

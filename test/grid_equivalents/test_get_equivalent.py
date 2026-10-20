@@ -8,39 +8,39 @@ import pytest
 from pandapower.control import ConstControl
 from pandapower.control.util.auxiliary import create_trafo_characteristic_object
 from pandapower.create import (
+    create_bus,
     create_buses,
     create_ext_grid,
-    create_poly_cost,
+    create_group,
     create_line,
     create_load,
-    create_sgen,
-    create_pwl_cost,
-    create_bus,
-    create_switch,
     create_motor,
-    create_group,
+    create_poly_cost,
+    create_pwl_cost,
+    create_sgen,
+    create_switch,
 )
 from pandapower.create._utils import add_column_to_df
-from pandapower.grid_equivalents.auxiliary import replace_motor_by_load, _runpp_except_voltage_angles
+from pandapower.grid_equivalents.auxiliary import _runpp_except_voltage_angles, replace_motor_by_load
 from pandapower.grid_equivalents.get_equivalent import get_equivalent, merge_internal_net_and_equivalent_external_net
 from pandapower.grid_equivalents.ward_generation import create_passive_external_net_for_ward_admittance
 from pandapower.groups import (
-    group_element_lists,
     compare_group_elements,
-    group_row,
-    set_group_reference_column,
     count_group_elements,
     group_element_index,
+    group_element_lists,
+    group_row,
+    set_group_reference_column,
 )
 from pandapower.network import pandapowerNet
 from pandapower.networks.create_examples import example_multivoltage
 from pandapower.networks.power_system_test_cases import case9, case30
 from pandapower.run import runpp
 from pandapower.timeseries import DFData
-from pandapower.toolbox.comparison import nets_equal, dataframes_equal, compare_arrays
+from pandapower.toolbox.comparison import compare_arrays, dataframes_equal, nets_equal
 from pandapower.toolbox.data_modification import reindex_buses
 from pandapower.toolbox.element_selection import pp_elements
-from pandapower.toolbox.grid_modification import select_subnet, replace_gen_by_sgen, replace_ext_grid_by_gen
+from pandapower.toolbox.grid_modification import replace_ext_grid_by_gen, replace_gen_by_sgen, select_subnet
 
 from test import test_path
 

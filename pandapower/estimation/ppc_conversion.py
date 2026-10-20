@@ -2,67 +2,66 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+import logging
 from collections import UserDict
-from typing import Dict
 
 import numpy as np
 import pandas as pd
 
-from pandapower.pypower.idx_bus import BUS_TYPE as pypower_BUS_TYPE, VM as pypower_VM, VA as pypower_VA
 from pandapower.auxiliary import _init_runse_options
-from pandapower import pandapowerNet
-from pandapower.estimation.util import estimate_voltage_vector
-from pandapower.pd2ppc import _pd2ppc
-from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
-from pandapower.pypower.idx_brch import branch_cols
-from pandapower.pypower.idx_bus import bus_cols
-from pandapower.pypower.makeYbus import makeYbus
-
-from pandapower.estimation.idx_bus import (
-    VM,
-    VM_IDX,
-    VM_STD,
-    VA,
-    VA_IDX,
-    VA_STD,
-    P,
-    P_IDX,
-    P_STD,
-    Q,
-    Q_IDX,
-    Q_STD,
-    ZERO_INJ_FLAG,
-    bus_cols_se,
-)
 from pandapower.estimation.idx_brch import (
-    P_FROM,
-    P_FROM_IDX,
-    P_FROM_STD,
-    Q_FROM,
-    Q_FROM_IDX,
-    Q_FROM_STD,
-    IM_FROM,
-    IM_FROM_IDX,
-    IM_FROM_STD,
     IA_FROM,
     IA_FROM_IDX,
     IA_FROM_STD,
-    P_TO,
-    P_TO_IDX,
-    P_TO_STD,
-    Q_TO,
-    Q_TO_IDX,
-    Q_TO_STD,
-    IM_TO,
-    IM_TO_IDX,
-    IM_TO_STD,
     IA_TO,
     IA_TO_IDX,
     IA_TO_STD,
+    IM_FROM,
+    IM_FROM_IDX,
+    IM_FROM_STD,
+    IM_TO,
+    IM_TO_IDX,
+    IM_TO_STD,
+    P_FROM,
+    P_FROM_IDX,
+    P_FROM_STD,
+    P_TO,
+    P_TO_IDX,
+    P_TO_STD,
+    Q_FROM,
+    Q_FROM_IDX,
+    Q_FROM_STD,
+    Q_TO,
+    Q_TO_IDX,
+    Q_TO_STD,
     branch_cols_se,
 )
-
-import logging
+from pandapower.estimation.idx_bus import (
+    P_IDX,
+    P_STD,
+    Q_IDX,
+    Q_STD,
+    VA,
+    VA_IDX,
+    VA_STD,
+    VM,
+    VM_IDX,
+    VM_STD,
+    ZERO_INJ_FLAG,
+    P,
+    Q,
+    bus_cols_se,
+)
+from pandapower.estimation.util import estimate_voltage_vector
+from pandapower.network import pandapowerNet
+from pandapower.pd2ppc import _pd2ppc
+from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
+from pandapower.pypower.idx_brch import branch_cols
+from pandapower.pypower.idx_bus import BUS_TYPE as pypower_BUS_TYPE
+from pandapower.pypower.idx_bus import VA as pypower_VA
+from pandapower.pypower.idx_bus import VM as pypower_VM
+from pandapower.pypower.idx_bus import bus_cols
+from pandapower.pypower.makeYbus import makeYbus
 
 std_logger = logging.getLogger(__name__)
 ZERO_INJECTION_STD_DEV = 0.001
@@ -139,7 +138,7 @@ def _add_measurements_to_branch(
     branch_append: np.ndarray,
     meas: pd.DataFrame,
     element_name: str,
-    side_map: Dict[str, str],
+    side_map: dict[str, str],
     map_branch: pd.Series,
 ) -> None:
     """

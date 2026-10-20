@@ -66,23 +66,6 @@ def three_bus_permuted_index():
     return net
 
 
-# def gen_three_bus_example():
-#     net = pandapowerNet(name="gen_three_bus_example", sn_mva=2)
-#     b1 = create_bus(net, vn_kv=10.)
-#     b2 = create_bus(net, vn_kv=10.)
-#     b3 = create_bus(net, vn_kv=10.)
-#     #create_bus(net, vn_kv=0.4, in_service=False)
-#     create_gen(net, b2, vn_kv=10.5, xdss_pu=0.2, rdss_pu=0.001, cos_phi=0.8, p_mw=0.1, sn_mva=2.5)
-#     create_line_from_parameters(net, b1, b2, length_km=1.0, max_i_ka=0.29,
-#                                    r_ohm_per_km=0.1548, x_ohm_per_km=0.0816814, c_nf_per_km=165)
-#     create_line_from_parameters(net, b2, b3, length_km=1.0, max_i_ka=0.29,
-#                                    r_ohm_per_km=0.1548, x_ohm_per_km=0.0816814, c_nf_per_km=165)
-#     net.line["endtemp_degree"] = 165
-#     create_ext_grid(net, b1, s_sc_max_mva=10., s_sc_min_mva=8., rx_min=0.4, rx_max=0.4)
-#     #create_switch(net, b3, b1, et="b")
-#     return net
-
-
 def net_transformer_simple():
     net = pandapowerNet(name="net_transformer_simple", sn_mva=2)
     b1, b2 = create_buses(net, 2, vn_kv=[10.0, 0.4])
@@ -952,11 +935,6 @@ def test_type_c_trafo_simple_other_voltage4(inverse_y):
         net, case="max", lv_tol_percent=6.0, branch_results=True, bus=6, use_pre_fault_voltage=True, inverse_y=inverse_y
     )
 
-    baseMVA = net.sn_mva  # MVA
-    baseV = net.bus.vn_kv.values  # kV
-    # baseI = baseMVA / (baseV * np.sqrt(3))
-    # baseZ = baseV ** 2 / baseMVA
-
     assert np.allclose(
         net.res_bus_sc.loc[6, ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]].values,
         [2.096122, 1.452236, 0.054549, 0.085178],
@@ -1139,11 +1117,6 @@ def test_type_c_trafo_simple_other_voltage4_sgen(inverse_y):
     calc_sc(
         net, case="max", lv_tol_percent=6.0, branch_results=True, bus=6, use_pre_fault_voltage=True, inverse_y=inverse_y
     )
-
-    baseMVA = net.sn_mva  # MVA
-    baseV = net.bus.vn_kv.values  # kV
-    baseI = baseMVA / (baseV * np.sqrt(3))
-    baseZ = baseV**2 / baseMVA
 
     assert np.allclose(
         net.res_bus_sc.loc[6, ["ikss_ka", "skss_mw", "rk_ohm", "xk_ohm"]].values,
@@ -2062,7 +2035,6 @@ def test_trafo_impedance(trafo_impedance_case):
     create_buses(net, 1, 20)
     create_buses(net, 2, 0.4)
     create_ext_grid(net, 0, s_sc_max_mva=100, s_sc_min_mva=80, rx_max=0.1, rx_min=0.1)
-    v_lv = 410
     create_transformer_from_parameters(
         net=net,
         hv_bus=0,
@@ -2087,19 +2059,6 @@ def test_trafo_impedance(trafo_impedance_case):
         parallel=1,
         endtemp_degree=20,
     )
-    # create_load(net, 2, 0.1)
-
-    # runpp(net)
-
-    # trafo:
-    # v_lv = 410
-    # z_tlv = 4 / 100 * v_lv ** 2 / (400 * 1e3)
-    # r_tlv = 4600 * v_lv ** 2 / ((400 * 1e3) ** 2)
-    # x_tlv = np.sqrt(z_tlv ** 2 - r_tlv ** 2)
-    # z_tlv = r_tlv + 1j * x_tlv
-    # x_t = x_tlv * 400 * 1e3 / (v_lv ** 2)
-    # k_t = 0.95 * 1.05 / (1 + 0.6 * x_t)
-    # z_tk = k_t * z_tlv
 
     calc_sc(net, case=case, lv_tol_percent=6.0, bus=2, branch_results=True, use_pre_fault_voltage=False)
 
@@ -2116,34 +2075,6 @@ def test_trafo_impedance(trafo_impedance_case):
         assert np.allclose(net.res_bus_sc.skss_mw, 1.463523, rtol=0, atol=1e-5)
         assert np.allclose(net.res_bus_sc.rk_ohm, 0.106, rtol=0, atol=1e-3)
         assert np.allclose(net.res_bus_sc.xk_ohm, 0.045, rtol=0, atol=1e-3)
-
-    # ppci = net.ppci
-    # tap = ppci["branch"][:, TAP].real
-    # ikss1 = ppci["bus"][:, IKSS1] * np.exp(1j * np.deg2rad(ppci["bus"][:, PHI_IKSS1_DEGREE]))
-
-    # line:
-    # z_l = 0.416 * 1e-3 + 1j * 0.136 * 1e-3  # Ohm
-    #
-    # v_1 = ikss1[2] * z_l / 0.4 * np.sqrt(3)  # kA * Ohm / V_base -> p.u.
-    # np.abs(v_1)
-    # np.angle(v_1, deg=True)
-    #
-    # v_0 = v_1 + ikss1[2] * z_tk / 0.4 * np.sqrt(3) * 0.4 / 0.41
-    # np.abs(v_0)
-    # np.angle(v_0, deg=True)
-    #
-    # v_0_ref = v_1 + ikss1[2] * z_tk / 0.4 * np.sqrt(3)
-    #
-    # Yf = ppci["internal"]["Yf"]
-    # Yt = ppci["internal"]["Yt"]
-    # V_diff = np.ones_like(net.bus.index.values, dtype=np.complex128)
-    # V_diff[0] = v_0
-    # V_diff[1] = v_1
-    # V_diff[2] = 0
-    # i_f = Yf.dot(V_diff) / ppci["internal"]["baseI"][ppci["branch"][:, F_BUS].real.astype(np.int64)]
-    # i_t = Yt.dot(V_diff) / ppci["internal"]["baseI"][ppci["branch"][:, T_BUS].real.astype(np.int64)]
-    # abs(i_f)
-    # abs(i_t)
 
 
 @pytest.mark.parametrize("inverse_y", (True, False), ids=("Inverse Y", "LU factorization"))

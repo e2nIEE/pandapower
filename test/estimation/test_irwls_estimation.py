@@ -2,17 +2,17 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+from copy import deepcopy
+
 import numpy as np
 import pytest
 
-from pandapower.run import runpp
-from pandapower.networks.power_system_test_cases import case14
 from pandapower.estimation import estimate
-from pandapower.estimation.util import add_virtual_meas_from_loadflow
-from pandapower.estimation.ppc_conversion import pp2eppci
-from copy import deepcopy
-
 from pandapower.estimation.algorithm.estimator import SHGMEstimatorIRWLS
+from pandapower.estimation.ppc_conversion import pp2eppci
+from pandapower.estimation.util import add_virtual_meas_from_loadflow
+from pandapower.networks.power_system_test_cases import case14
+from pandapower.run import runpp
 
 
 def test_irwls_comp_wls():

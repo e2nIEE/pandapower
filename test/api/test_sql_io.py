@@ -1,27 +1,27 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import os
 import copy
-
-import pandas as pd
-import pandas.testing as pdt
-import numpy as np
-import pytest
+import os
 import time
 
+import numpy as np
+import pandas as pd
+import pandas.testing as pdt
+import pytest
+
 from pandapower import reset_results, runpp
-from pandapower.networks import case9, case14, case39, simple_mv_open_ring_net, create_cigre_network_hv, mv_oberrhein
-from pandapower.plotting.geo import convert_geodata_to_geojson
 from pandapower.auxiliary import _preserve_dtypes
+from pandapower.networks import case9, case14, case39, create_cigre_network_hv, mv_oberrhein, simple_mv_open_ring_net
+from pandapower.plotting.geo import convert_geodata_to_geojson
 from pandapower.sql_io import (
-    download_sql_table,
-    to_postgresql,
-    from_postgresql,
-    delete_postgresql_net,
     PSYCOPG_INSTALLED,
+    delete_postgresql_net,
+    download_sql_table,
+    from_postgresql,
+    to_postgresql,
 )
-from test import assert_res_equal
+from test.helper_functions import assert_res_equal
 
 if PSYCOPG_INSTALLED:
     import psycopg
@@ -143,11 +143,10 @@ def test_delete():
         _ = from_postgresql(dsn=dsn, schema=schema, grid_id=grid_id)
 
     # check that it is not only deleted from the grid catalogue
-    with psycopg.connect(dsn) as conn:
-        with conn.cursor() as cursor:
-            for element in ("bus", "line", "load", "ext_grid", "gen"):
-                tab = download_sql_table(cursor, f"{schema}.{element}", grid_id=grid_id)
-                assert tab.empty
+    with psycopg.connect(dsn) as conn, conn.cursor() as cursor:
+        for element in ("bus", "line", "load", "ext_grid", "gen"):
+            tab = download_sql_table(cursor, f"{schema}.{element}", grid_id=grid_id)
+            assert tab.empty
 
 
 if __name__ == "__main__":

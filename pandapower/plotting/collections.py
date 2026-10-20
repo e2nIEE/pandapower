@@ -49,8 +49,8 @@ except ImportError:
         pass
 
 
-from pandapower import pandapowerNet
 from pandapower.auxiliary import soft_dependency_error
+from pandapower.network import pandapowerNet
 from pandapower.plotting.patch_makers import (
     ext_grid_patches,
     gen_patches,
@@ -1889,4 +1889,4 @@ def add_collections_to_axes(ax, collections, plot_colorbars=True, copy_collectio
             # if c is a tuple or a list of collections
             add_collections_to_axes(ax, c, plot_colorbars, copy_collections)
         else:
-            logger.warning("{} in collections is of unknown type. Skipping".format(i))
+            logger.warning(f"{i} in collections is of unknown type. Skipping")

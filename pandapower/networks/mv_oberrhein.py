@@ -6,7 +6,7 @@ import os
 
 import numpy as np
 
-from pandapower import pp_dir
+from pandapower.__init__ import pp_dir
 from pandapower.file_io import from_json
 from pandapower.run import runpp
 from pandapower.toolbox.grid_modification import select_subnet

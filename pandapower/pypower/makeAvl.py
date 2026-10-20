@@ -6,12 +6,11 @@
 
 from sys import stderr
 
-from numpy import array, zeros, arange, sin, cos, arctan2, r_
+from numpy import arange, arctan2, array, cos, r_, sin, zeros
 from numpy import flatnonzero as find
 from scipy.sparse import csr_matrix as sparse
 
-from pandapower.pypower.idx_gen import PG, QG, PMIN, QMIN, QMAX
-
+from pandapower.pypower.idx_gen import PG, PMIN, QG, QMAX, QMIN
 from pandapower.pypower.isload import isload
 
 

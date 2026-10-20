@@ -5,12 +5,12 @@ import pytest
 
 from pandapower.create import (
     create_bus,
+    create_ext_grid,
+    create_gen,
+    create_line,
     create_line_from_parameters,
     create_load,
-    create_gen,
     create_transformer,
-    create_ext_grid,
-    create_line,
     create_transformer_from_parameters,
 )
 from pandapower.network import pandapowerNet

@@ -1,15 +1,16 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pytest
-import numpy as np
-import pandas as pd
 import logging as log
 
+import numpy as np
+import pandas as pd
+import pytest
+
+from pandapower.control import ConstControl, ContinuousTapControl
 from pandapower.create import create_sgen
 from pandapower.networks import simple_four_bus_system
 from pandapower.timeseries import DFData
-from pandapower.control import ConstControl, ContinuousTapControl
 
 logger = log.getLogger(__name__)
 
