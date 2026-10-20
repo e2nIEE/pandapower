@@ -16,15 +16,11 @@ from pandapower.file_io import from_excel, to_excel
 from pandapower.networks import simple_four_bus_system
 from pandapower.networks.power_system_test_cases import case5
 from pandapower.run import runpp
-from test.timeseries.test_timeseries import create_data_source
-
-# reexported with "as" to prevent ruff removing it as unused
-from test.timeseries.test_timeseries import (
-    simple_test_net as simple_test_net,
-)
 from pandapower.timeseries.data_sources.frame_data import DFData
 from pandapower.timeseries.output_streamer import OutputStreamer
 from pandapower.timeseries.run_time_series import run_timeseries
+from test.timeseries.test_timeseries import create_data_source
+from test.timeseries.test_timeseries import simple_test_net as _simple_test_net  # noqa: F401
 
 logger = logging.getLogger(__name__)
 output_streamer_logger = logging.getLogger("hp.control.output_streamer")
@@ -32,8 +28,8 @@ logger.setLevel(logging.ERROR)
 output_streamer_logger.setLevel(logging.CRITICAL)
 
 
-def test_output_streamer_log(simple_test_net):
-    net = simple_test_net
+def test_output_streamer_log(_simple_test_net):
+    net = _simple_test_net
 
     # timeseries data
     df = pd.DataFrame([[15, 30, 2], [12, 27, 1.5], [7, 29, 2.1]])
@@ -67,8 +63,8 @@ def test_output_streamer_log(simple_test_net):
     assert all(output_streamer4.output["res_bus.vm_pu"].columns == orig_index + new_idx)
 
 
-def test_output_streamer_with_timesteps_set(simple_test_net):
-    net = simple_test_net
+def test_output_streamer_with_timesteps_set(_simple_test_net):
+    net = _simple_test_net
 
     n_timesteps = 10
     _, ds = create_data_source(n_timesteps)
@@ -91,8 +87,8 @@ def test_output_streamer_with_timesteps_set(simple_test_net):
     assert len(output_streamer.output["res_line.i_ka"]) == n_timesteps
 
 
-def test_output_streamer_without_timesteps_set(simple_test_net):
-    net = simple_test_net
+def test_output_streamer_without_timesteps_set(_simple_test_net):
+    net = _simple_test_net
     n_timesteps = 5
     _, ds = create_data_source(n_timesteps)
     # 1load
@@ -114,8 +110,8 @@ def test_output_streamer_without_timesteps_set(simple_test_net):
     assert len(output_streamer.output["res_line.i_ka"]) == n_timesteps
 
 
-def test_output_streamer_without_timesteps_set_repeat(simple_test_net):
-    net = simple_test_net
+def test_output_streamer_without_timesteps_set_repeat(_simple_test_net):
+    net = _simple_test_net
     # the same OutputStreamer should be able to run repeated time series
 
     time_steps_to_check = [8, 5, 10]
@@ -140,8 +136,8 @@ def test_output_streamer_without_timesteps_set_repeat(simple_test_net):
         assert len(output_streamer.output["res_bus.vm_pu"].index) == n_timesteps
 
 
-def test_output_streamer_short_data_source(simple_test_net):
-    net = simple_test_net
+def test_output_streamer_short_data_source(_simple_test_net):
+    net = _simple_test_net
     # OutputStreamer should fail if data source is shorter than time steps
 
     n_timesteps = 10
@@ -165,8 +161,8 @@ def test_output_streamer_short_data_source(simple_test_net):
         run_timeseries(net, time_steps, verbose=False)
 
 
-def test_default_output_streamer(simple_test_net):
-    net = simple_test_net
+def test_default_output_streamer(_simple_test_net):
+    net = _simple_test_net
 
     n_timesteps = 5
     _, ds = create_data_source(n_timesteps)
@@ -190,8 +186,8 @@ def test_default_output_streamer(simple_test_net):
     assert vm_pu.shape[1] == len(net.bus)
 
 
-def test_output_streamer_eval_simple(simple_test_net):
-    net = simple_test_net
+def test_output_streamer_eval_simple(_simple_test_net):
+    net = _simple_test_net
 
     n_timesteps = 1
     _, ds = create_data_source(n_timesteps)
@@ -211,8 +207,8 @@ def test_output_streamer_eval_simple(simple_test_net):
     assert len(output_streamer.output["res_bus.vm_pu"]["max"]) == n_timesteps
 
 
-def test_output_streamer_multiple_index_definition(simple_test_net):
-    net = simple_test_net
+def test_output_streamer_multiple_index_definition(_simple_test_net):
+    net = _simple_test_net
 
     n_timesteps = 1
     _, ds = create_data_source(n_timesteps)
@@ -248,8 +244,8 @@ def test_output_streamer_multiple_index_definition(simple_test_net):
     assert np.allclose(backup_result, output_streamer.output["res_bus.vm_pu"].loc[:, net.bus.index])
 
 
-def test_remove_variable(simple_test_net):
-    net = simple_test_net
+def test_remove_variable(_simple_test_net):
+    net = _simple_test_net
 
     output_streamer = OutputStreamer(net)
     # test printing
@@ -266,8 +262,8 @@ def test_remove_variable(simple_test_net):
     assert len(output_streamer.log_variables) == 0
 
 
-def test_store_and_load(simple_test_net):
-    net = simple_test_net
+def test_store_and_load(_simple_test_net):
+    net = _simple_test_net
 
     n_timesteps = 2
     _, ds = create_data_source(n_timesteps)
@@ -300,8 +296,8 @@ def test_store_and_load(simple_test_net):
     assert os.path.isfile(res_line_file)
 
 
-def test_ppc_log(simple_test_net):
-    net = simple_test_net
+def test_ppc_log(_simple_test_net):
+    net = _simple_test_net
     n_timesteps = 5
     _, ds = create_data_source(n_timesteps)
     # 1load
@@ -363,8 +359,8 @@ def test_output_streamer_index():
     assert np.all(output_streamer.output["res_line.loading_percent"].index == p_data.index)
 
 
-def test_output_streamer_save_interval(simple_test_net, tmp_path):
-    net = simple_test_net
+def test_output_streamer_save_interval(_simple_test_net, tmp_path):
+    net = _simple_test_net
 
     n_timesteps = 6
     _, ds = create_data_source(n_timesteps)
@@ -400,8 +396,8 @@ def test_output_streamer_save_interval(simple_test_net, tmp_path):
     assert len(result) == n_timesteps
 
 
-def test_get_data_since_last_save(simple_test_net):
-    net = simple_test_net
+def test_get_data_since_last_save(_simple_test_net):
+    net = _simple_test_net
 
     output_streamer = OutputStreamer(
         net,
@@ -423,8 +419,8 @@ def test_get_data_since_last_save(simple_test_net):
     assert list(result["value"]) == [0, 1, 2]
 
 
-def test_get_data_since_last_save_second_chunk(simple_test_net):
-    net = simple_test_net
+def test_get_data_since_last_save_second_chunk(_simple_test_net):
+    net = _simple_test_net
 
     output_streamer = OutputStreamer(
         net,
@@ -445,8 +441,8 @@ def test_get_data_since_last_save_second_chunk(simple_test_net):
     assert list(result["value"]) == [3, 4, 5]
 
 
-def test_get_data_since_last_save_last_chunk(simple_test_net):
-    net = simple_test_net
+def test_get_data_since_last_save_last_chunk(_simple_test_net):
+    net = _simple_test_net
 
     output_streamer = OutputStreamer(
         net,
@@ -467,8 +463,8 @@ def test_get_data_since_last_save_last_chunk(simple_test_net):
     assert list(result["value"]) == [9]
 
 
-def test_output_streamer_save_interval_zero(simple_test_net, tmp_path):
-    net = simple_test_net
+def test_output_streamer_save_interval_zero(_simple_test_net, tmp_path):
+    net = _simple_test_net
 
     output_streamer = OutputStreamer(
         net,
