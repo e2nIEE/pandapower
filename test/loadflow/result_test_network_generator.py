@@ -9,7 +9,7 @@ from pandapower.create import (
     create_ext_grid,
     create_gen,
     create_impedance,
-    create_line_from_parameters,
+    create_lines,
     create_load,
     create_sgen,
     create_shunt,
@@ -323,8 +323,19 @@ def add_test_gen(net):
     vm_set_pu = 1.0
 
     (b3,) = create_buses(net, 1, zone="test_gen", vn_kv=0.4)
-    create_line_from_parameters(
-        net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    create_lines(
+        net,
+        b2,
+        b3,
+        12.2,
+        {
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
 
     create_load(net, b3, p_mw=pl, q_mvar=ql)
@@ -345,8 +356,19 @@ def add_test_enforce_qlims(net):
     vm_set_pu = 1.0
 
     (b3,) = create_buses(net, 1, zone="test_enforce_qlims", vn_kv=0.4)
-    create_line_from_parameters(
-        net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    create_lines(
+        net,
+        b2,
+        b3,
+        12.2,
+        {
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
 
     create_load(net, b3, p_mw=pl, q_mvar=ql)
@@ -365,8 +387,19 @@ def add_test_enforce_plims(net):
     vm_set_pu = 1.0
 
     (b3,) = create_buses(net, 1, zone="test_enforce_plims", vn_kv=0.4)
-    create_line_from_parameters(
-        net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    create_lines(
+        net,
+        b2,
+        b3,
+        12.2,
+        {
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
     create_load(net, b3, p_mw=pl, q_mvar=ql)
     create_gen(net, b3, p_mw=ps, vm_pu=vm_set_pu, min_p_mw=pmin)
@@ -384,8 +417,19 @@ def add_test_enforce_qlims_sgen(net):
     qmax = 0.200
 
     (b3,) = create_buses(net, 1, zone="test_enforce_qlims_sgen", vn_kv=0.4)
-    create_line_from_parameters(
-        net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    create_lines(
+        net,
+        b2,
+        b3,
+        12.2,
+        {
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
     create_load(net, b3, p_mw=pl, q_mvar=ql)
     create_sgen(net, b3, p_mw=ps, q_mvar=qs, max_q_mvar=qmax)
@@ -403,8 +447,19 @@ def add_test_enforce_plims_sgen(net):
     pmax = 0.200
 
     (b3,) = create_buses(net, 1, zone="test_enforce_plims_sgen", vn_kv=0.4)
-    create_line_from_parameters(
-        net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    create_lines(
+        net,
+        b2,
+        b3,
+        12.2,
+        {
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
     create_load(net, b3, p_mw=pl, q_mvar=ql)
     create_sgen(net, b3, p_mw=ps, q_mvar=qs, max_p_mw=pmax)
@@ -575,14 +630,47 @@ def add_test_oos_bus_with_is_element(net):
     (b4,) = create_buses(net, 1, zone="test_oos_bus_with_is_element", vn_kv=0.4, in_service=False)
     (b5,) = create_buses(net, 1, zone="test_oos_bus_with_is_element", vn_kv=0.4, in_service=False)
 
-    create_line_from_parameters(
-        net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    create_lines(
+        net,
+        b2,
+        b3,
+        12.2,
+        {
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
-    create_line_from_parameters(
-        net, b2, b4, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    create_lines(
+        net,
+        b2,
+        b4,
+        12.2,
+        {
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
-    create_line_from_parameters(
-        net, b2, b5, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    create_lines(
+        net,
+        b2,
+        b5,
+        12.2,
+        {
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
 
     # in service elements
