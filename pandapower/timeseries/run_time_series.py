@@ -292,7 +292,7 @@ def print_progress(i, time_step, time_steps, verbose, **kwargs):
         kwargs["ts_variables"]["progress_bar"].update(1)
 
     # print debug info
-    if logger.level == pplog.DEBUG and verbose:
+    if logger.level == logging.DEBUG and verbose:
         logger.debug("run time step %i" % time_step)
 
     # call a custom progress function
