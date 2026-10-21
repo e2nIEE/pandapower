@@ -1,0 +1,319 @@
+# Automated PyPI release.
+#
+# Triggered by pushing a version tag (v*) that points at a commit contained in
+# master/main. The tag must match pandapower/_version.py, otherwise the release
+# is refused before any test minutes are spent.
+#
+#   guard -> tiered tests -> build -> publish -> GitHub Release -> verify install
+#
+# Releasing a new version:
+#   1. bump __version__ in pandapower/_version.py and merge to master
+#   2. git tag v<version> <merge commit> && git push origin v<version>
+#
+# Publishing uses PyPI Trusted Publishing (OIDC), so no API token is stored.
+# This requires, on PyPI, a trusted publisher for this repository with the
+# workflow filename 'release.yml' and the environment name 'pypi'
+# (https://pypi.org/manage/project/pandapower/settings/publishing/), plus the
+# matching 'pypi' / 'testpypi' environments in the GitHub repository settings.
+
+name: release
+
+on:
+  push:
+    tags:
+      - 'v*'
+  # Dry run: build, test and publish to TestPyPI without touching PyPI.
+  workflow_dispatch:
+    inputs:
+      upload_server:
+        description: 'upload server'
+        required: true
+        default: 'testpypi'
+        type: choice
+        options:
+          - 'testpypi'
+          - 'pypi'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+
+  # =========================================================================
+  # Tier 0 - validate the release itself. Seconds, and fails fast on a
+  # mistagged or off-branch release before the test tiers start.
+  # =========================================================================
+  guard:
+    name: Validate release
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      target: ${{ steps.target.outputs.target }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Resolve upload target
+        id: target
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "target=${{ inputs.upload_server }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "target=pypi" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Read version from pandapower/_version.py
+        id: version
+        run: |
+          VERSION=$(python3 - <<'PY'
+          import pathlib, re
+          text = pathlib.Path("pandapower/_version.py").read_text()
+          print(re.search(r"""__version__\s*=\s*["']([^"']+)""", text).group(1))
+          PY
+          )
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "pandapower/_version.py declares $VERSION"
+
+      - name: Tag must match the declared version
+        if: github.event_name == 'push'
+        run: |
+          TAG="${GITHUB_REF#refs/tags/}"
+          VERSION="${{ steps.version.outputs.version }}"
+          if [ "$TAG" != "v$VERSION" ]; then
+            echo "::error::Tag '$TAG' does not match pandapower/_version.py ('v$VERSION')."
+            echo "Bump _version.py, or delete the tag and recreate it on the right commit."
+            exit 1
+          fi
+          echo "Tag $TAG matches the declared version."
+
+      - name: Tag must point at a commit on master/main
+        if: github.event_name == 'push'
+        run: |
+          for BRANCH in master main; do
+            if git show-ref --verify --quiet "refs/remotes/origin/$BRANCH" \
+               && git merge-base --is-ancestor "$GITHUB_SHA" "origin/$BRANCH"; then
+              echo "Tagged commit is contained in origin/$BRANCH."
+              exit 0
+            fi
+          done
+          echo "::error::Tagged commit is not contained in origin/master or origin/main."
+          echo "Releases are only published from the main branch."
+          exit 1
+
+      - name: Version must not already exist on PyPI
+        if: steps.target.outputs.target == 'pypi'
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          CODE=$(curl -sS -o /dev/null -w '%{http_code}' \
+            "https://pypi.org/pypi/pandapower/$VERSION/json")
+          if [ "$CODE" = "200" ]; then
+            echo "::error::pandapower $VERSION is already on PyPI. Bump the version."
+            exit 1
+          fi
+          echo "Version $VERSION is not yet on PyPI (HTTP $CODE)."
+
+  # =========================================================================
+  # Tiers 1-4 - the same tiered pipeline the pull requests run, so a release
+  # is gated on exactly the checks a PR is gated on.
+  # =========================================================================
+  tests:
+    name: Tests
+    needs: guard
+    uses: ./.github/workflows/tiered-tests.yml
+    with:
+      run_tier3: true
+      # Tutorials and flake8 are advisory and slow; they have already run on the
+      # PR that produced this commit.
+      run_tier4: false
+      collect_coverage: false
+
+  # =========================================================================
+  # Build
+  # =========================================================================
+  build:
+    name: Build distributions
+    needs: [ guard, tests ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          python-version: '3.11'
+          enable-cache: true
+          cache-dependency-glob: 'pyproject.toml'
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Check distribution metadata
+        run: uv tool run twine check --strict dist/*
+
+      - name: Verify the built version
+        run: |
+          VERSION="${{ needs.guard.outputs.version }}"
+          ls -la dist/
+          test -f "dist/pandapower-$VERSION.tar.gz" \
+            || { echo "::error::dist/pandapower-$VERSION.tar.gz is missing"; exit 1; }
+
+      - name: Upload distributions as artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  # =========================================================================
+  # Publish
+  # =========================================================================
+  publish-testpypi:
+    name: Publish to TestPyPI
+    needs: [ guard, build ]
+    if: needs.guard.outputs.target == 'testpypi'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: testpypi
+      url: https://test.pypi.org/p/pandapower/
+    permissions:
+      id-token: write
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e #release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
+          verbose: true
+          skip-existing: true
+
+  publish-pypi:
+    name: Publish to PyPI
+    needs: [ guard, build ]
+    if: needs.guard.outputs.target == 'pypi'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    environment:
+      name: pypi
+      url: https://pypi.org/p/pandapower/
+    permissions:
+      id-token: write
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e #release/v1
+        with:
+          verbose: true
+
+  # =========================================================================
+  # Post-release
+  # =========================================================================
+  github-release:
+    name: Create GitHub Release
+    needs: [ guard, publish-pypi ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
+
+      - name: Download distributions
+        uses: actions/download-artifact@v8
+        with:
+          name: dist
+          path: dist/
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION: ${{ needs.guard.outputs.version }}
+        run: |
+          gh release create "v$VERSION" \
+            --title "pandapower $VERSION" \
+            --generate-notes \
+            --verify-tag \
+            dist/*
+
+  verify-install:
+    name: Verify install from PyPI
+    needs: [ guard, publish-pypi ]
+    runs-on: ${{ matrix.os }}
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
+        python-version: [ '3.11', '3.12', '3.13', '3.14' ]
+        # Reminder: when removing the support of an old python version here, then don't forget to
+        # remove it also in pyproject.toml 'requires-python' and the test pipelines
+    steps:
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Install from PyPI
+        shell: bash
+        env:
+          VERSION: ${{ needs.guard.outputs.version }}
+        run: |
+          # PyPI needs a moment to make a fresh release installable.
+          for i in 1 2 3 4 5 6; do
+            if python -m pip install "pandapower==$VERSION"; then exit 0; fi
+            echo "Attempt $i failed, waiting 30s for the release to propagate."
+            sleep 30
+          done
+          echo "::error::Could not install pandapower==$VERSION from PyPI."
+          exit 1
+
+      - name: Smoke test
+        shell: bash
+        env:
+          VERSION: ${{ needs.guard.outputs.version }}
+        run: |
+          python -c "
+          import os
+          import pandapower as pp
+          expected = os.environ['VERSION']
+          assert pp.__version__ == expected, (pp.__version__, expected)
+          net = pp.networks.example_simple()
+          pp.runpp(net)
+          assert net['converged'], 'power flow did not converge'
+          print('pandapower', pp.__version__, 'installed and converging')
+          "
+
+  notify-fraunhofer:
+    name: Notify Fraunhofer CI
+    needs: [ publish-pypi, verify-install ]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: eic/trigger-gitlab-ci@1318fa9f4adda50e003db101bc3f9d5ae1b6ab91 #v3
+        with:
+          url: https://gitlab.cc-asp.fraunhofer.de
+          project_id: 27329
+          token: ${{ secrets.GITLAB_TRIGGER_TOKEN }}
+          ref_name: develop
