@@ -102,9 +102,7 @@ class TestVscBipolarRequiredFields:
                 itertools.product(["x_ohm"], [float(np.nan), pd.NA, None, *not_floats_list]),
                 itertools.product(["r_dc_ohm"], [float(np.nan), pd.NA, None, *not_floats_list]),
                 itertools.product(["pl_dc_mw"], [float(np.nan), pd.NA, None, *not_floats_list]),
-                itertools.product(
-                    ["control_mode"], [float(np.nan), pd.NA, None, *strings, *not_strings_list]
-                ),
+                itertools.product(["control_mode"], [float(np.nan), pd.NA, None, *strings, *not_strings_list]),
                 itertools.product(["control_value_1"], [float(np.nan), pd.NA, None, *not_floats_list]),
                 itertools.product(["control_value_2"], [float(np.nan), pd.NA, None, *not_floats_list]),
                 itertools.product(["controllable"], [float(np.nan), pd.NA, None, *not_boolean_list]),
