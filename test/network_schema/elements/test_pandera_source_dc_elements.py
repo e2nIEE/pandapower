@@ -7,10 +7,9 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_bus_dc, create_source_dc
+from pandapower.create import create_buses_dc, create_source_dc
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
-
 from test.network_schema.elements.helper import (
     all_allowed_floats,
     bools,
@@ -40,9 +39,8 @@ class TestSourceDcRequiredFields:
     def test_valid_required_values(self, parameter, valid_value):
         """Valid required values are accepted"""
         net = pandapowerNet(name="test_valid_required_values")
-        create_bus_dc(net, 0.4)  # index 0
-        create_bus_dc(net, 0.4)  # index 1
-        create_bus_dc(net, 0.4, index=42)
+        create_buses_dc(net, 2, 0.4)  # index 0
+        create_buses_dc(net, 1, 0.4, index=42)
 
         create_source_dc(net, bus_dc=0, vm_pu=1.0, in_service=True)
         net.source_dc[parameter] = valid_value
@@ -52,17 +50,16 @@ class TestSourceDcRequiredFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["bus_dc"], [*negativ_ints, *not_ints_list]),
-                itertools.product(["vm_pu"], not_floats_list),
-                itertools.product(["in_service"], not_boolean_list),
+                itertools.product(["bus_dc"], [float(np.nan), pd.NA, *negativ_ints, *not_ints_list]),
+                itertools.product(["vm_pu"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["in_service"], [float(np.nan), pd.NA, *not_boolean_list]),
             )
         ),
     )
     def test_invalid_required_values(self, parameter, invalid_value):
         """Invalid required values are rejected"""
         net = pandapowerNet(name="test_invalid_required_values")
-        create_bus_dc(net, 0.4)  # 0
-        create_bus_dc(net, 0.4)  # 1
+        create_buses_dc(net, 2, 0.4)
 
         create_source_dc(net, bus_dc=0, vm_pu=1.0, in_service=True)
         net.source_dc[parameter] = invalid_value
@@ -73,7 +70,7 @@ class TestSourceDcRequiredFields:
     def test_required_fields_nan_invalid(self, parameter):
         """NaN in required columns is invalid"""
         net = pandapowerNet(name="test_required_fields_nan_invalid")
-        b0 = create_bus_dc(net, 0.4)
+        (b0,) = create_buses_dc(net, 1, 0.4)
         create_source_dc(net, bus_dc=b0, vm_pu=1.0, in_service=True)
 
         net.source_dc[parameter] = float(np.nan)
@@ -87,7 +84,7 @@ class TestSourceDcOptionalFields:
     def test_all_optional_fields_valid(self):
         """All optional fields set"""
         net = pandapowerNet(name="test_all_optional_fields_valid")
-        b0 = create_bus_dc(net, 0.4)
+        (b0,) = create_buses_dc(net, 1, 0.4)
 
         create_source_dc(net, bus_dc=b0, vm_pu=1.02, in_service=True, name="SRC A", type="voltage_source")
         # ensure string dtypes
@@ -98,7 +95,7 @@ class TestSourceDcOptionalFields:
     def test_optional_fields_with_nulls(self):
         """Optional fields including nulls are valid"""
         net = pandapowerNet(name="test_optional_fields_with_nulls")
-        b0 = create_bus_dc(net, 0.4)
+        (b0,) = create_buses_dc(net, 1, 0.4)
 
         # Row 1: name None
         create_source_dc(net, bus_dc=b0, vm_pu=1.0, in_service=True, name=None)
@@ -121,7 +118,7 @@ class TestSourceDcOptionalFields:
     def test_valid_optional_values(self, parameter, valid_value):
         """Valid optional values are accepted"""
         net = pandapowerNet(name="test_valid_optional_values")
-        b0 = create_bus_dc(net, 0.4)
+        (b0,) = create_buses_dc(net, 1, 0.4)
 
         create_source_dc(net, bus_dc=b0, vm_pu=1.01, in_service=True, name="ok", type="ok")
         net.source_dc[parameter] = pd.Series([valid_value], dtype="string")
@@ -131,15 +128,15 @@ class TestSourceDcOptionalFields:
         "parameter,invalid_value",
         list(
             itertools.chain(
-                itertools.product(["name"], not_strings_list),
-                itertools.product(["type"], not_strings_list),
+                itertools.product(["name"], [float(np.nan), *not_strings_list]),
+                itertools.product(["type"], [float(np.nan), *not_strings_list]),
             )
         ),
     )
     def test_invalid_optional_values(self, parameter, invalid_value):
         """Invalid optional values are rejected"""
         net = pandapowerNet(name="test_invalid_optional_values")
-        b0 = create_bus_dc(net, 0.4)
+        (b0,) = create_buses_dc(net, 1, 0.4)
 
         create_source_dc(net, bus_dc=b0, vm_pu=1.0, in_service=True, name="ok", type="ok")
         net.source_dc[parameter] = invalid_value
@@ -153,12 +150,23 @@ class TestSourceDcForeignKey:
     def test_invalid_bus_index(self):
         """bus_dc must reference an existing bus_dc index"""
         net = pandapowerNet(name="test_invalid_bus_index")
-        b0 = create_bus_dc(net, 0.4)
+        (b0,) = create_buses_dc(net, 1, 0.4)
         create_source_dc(net, bus_dc=b0, vm_pu=1.0, in_service=True)
 
         net.source_dc["bus_dc"] = 9999
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
+
+    def test_valid_bus_index_non_sequential(self):
+        """Test: bus_dc FK works with non-sequential bus_dc indices"""
+        net = pandapowerNet(name="test_valid_bus_index_non_sequential")
+        create_buses_dc(net, 3, 0.4, index=[10, 42, 100])
+
+        create_source_dc(net, bus_dc=10, vm_pu=1.0, in_service=True)
+        create_source_dc(net, bus_dc=42, vm_pu=0.98, in_service=True)
+        create_source_dc(net, bus_dc=100, vm_pu=1.02, in_service=False)
+
+        validate_network(net)
 
 
 class TestSourceDcResults:
@@ -167,3 +175,4 @@ class TestSourceDcResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_source_dc_result_totals(self):
         """Aggregated p_dc_mw results are consistent"""
+        pass
