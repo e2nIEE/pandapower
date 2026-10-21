@@ -4,6 +4,7 @@
 import copy
 import os
 from copy import deepcopy
+from importlib.util import find_spec
 
 import numpy as np
 import pandas as pd
@@ -61,22 +62,10 @@ from pandapower.timeseries import DFData, run_timeseries
 from test.consistency_checks import consistency_checks
 from test.helper_functions import add_grid_connection, create_test_line
 
-# reexported with "as" to prevent ruff removing it as unused
-from test.opf.test_basic import net_3w_trafo_opf as net_3w_trafo_opf
-
-try:
-    from juliacall import JuliaError as UnsupportedPythonError  # type: ignore
-except ImportError:
-    UnsupportedPythonError = Exception
-
-try:
-    from juliacall import Main
-
-    julia_installed = True
-except (ImportError, RuntimeError, UnsupportedPythonError):
-    julia_installed = False
-
+from test.opf.test_basic import net_3w_trafo_opf as _net_3w_trafo_opf  # noqa: F401
 from test import test_path
+
+julia_installed = find_spec("juliacall") is not None
 
 
 def create_cigre_grid_with_time_series(json_path, net=None, add_ts_constaints=False):
@@ -254,8 +243,8 @@ def test_pm_dc_powerflow_tap():
 
 @pytest.mark.slow
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
-def test_compare_pwl_and_poly(net_3w_trafo_opf):
-    net = deepcopy(net_3w_trafo_opf)
+def test_compare_pwl_and_poly(_net_3w_trafo_opf):
+    net = deepcopy(_net_3w_trafo_opf)
     net.ext_grid.loc[:, "min_p_mw"] = -999.0
     net.ext_grid.loc[:, "max_p_mw"] = 999.0
     net.ext_grid.loc[:, "max_q_mvar"] = 999.0

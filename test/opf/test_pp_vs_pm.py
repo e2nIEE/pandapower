@@ -2,6 +2,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
+import logging
+from importlib.util import find_spec
 
 import numpy as np
 import pytest
@@ -14,19 +16,7 @@ from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, REF, VMAX, VMIN
 from pandapower.run import runopp, runpp
 from pandapower.runpm import runpm_ac_opf
 
-try:
-    from juliacall import JuliaError as UnsupportedPythonError  # type: ignore
-except ImportError:
-    UnsupportedPythonError = Exception
-
-try:
-    from juliacall import Main
-
-    julia_installed = True
-except (ImportError, RuntimeError, UnsupportedPythonError):
-    julia_installed = False
-
-import logging
+julia_installed = find_spec("juliacall") is not None
 
 logger = logging.getLogger(__name__)
 
