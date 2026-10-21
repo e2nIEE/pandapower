@@ -16,6 +16,7 @@ from pandapower.create._utils import add_column_to_df
 
 if find_spec("matplotlib"):
     import matplotlib.pyplot as plt
+
     MATPLOTLIB_INSTALLED = True
 else:
     MATPLOTLIB_INSTALLED = False
