@@ -4,7 +4,18 @@
 
 import pytest
 
-from pandapower.networks.kerber_extreme_networks import *
+from pandapower.networks.kerber_extreme_networks import (
+    kb_extrem_dorfnetz,
+    kb_extrem_dorfnetz_trafo,
+    kb_extrem_landnetz_freileitung,
+    kb_extrem_landnetz_freileitung_trafo,
+    kb_extrem_landnetz_kabel,
+    kb_extrem_landnetz_kabel_trafo,
+    kb_extrem_vorstadtnetz_1,
+    kb_extrem_vorstadtnetz_2,
+    kb_extrem_vorstadtnetz_trafo_1,
+    kb_extrem_vorstadtnetz_trafo_2,
+)
 from pandapower.run import runpp
 
 
