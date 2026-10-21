@@ -104,9 +104,13 @@ class TestVscRequiredFields:
                 itertools.product(["x_ohm"], [float(np.nan), pd.NA, None, *negativ_floats, *not_floats_list]),
                 itertools.product(["r_dc_ohm"], [float(np.nan), pd.NA, None, *not_floats_list]),
                 itertools.product(["pl_dc_mw"], [float(np.nan), pd.NA, None, *not_floats_list]),
-                itertools.product(["control_mode_ac"], [float(np.nan), pd.NA, None, *invalid_control_mode_ac, *not_strings_list]),
+                itertools.product(
+                    ["control_mode_ac"], [float(np.nan), pd.NA, None, *invalid_control_mode_ac, *not_strings_list]
+                ),
                 itertools.product(["control_value_ac"], [float(np.nan), pd.NA, None, *not_floats_list]),
-                itertools.product(["control_mode_dc"], [float(np.nan), pd.NA, None, *invalid_control_mode_dc, *not_strings_list]),
+                itertools.product(
+                    ["control_mode_dc"], [float(np.nan), pd.NA, None, *invalid_control_mode_dc, *not_strings_list]
+                ),
                 itertools.product(["control_value_dc"], [float(np.nan), pd.NA, None, *not_floats_list]),
                 itertools.product(["controllable"], [float(np.nan), pd.NA, None, *not_boolean_list]),
                 itertools.product(["in_service"], [float(np.nan), pd.NA, None, *not_boolean_list]),
