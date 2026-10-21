@@ -338,16 +338,18 @@ def get_branch_angles(row, correct_pm_network_data):
     return angmin, angmax
 
 
-def _branch_to_pm(row, idx, opf_flow_lim, correct_pm_network_data, z_scale=1.):
+def _branch_to_pm(row, idx, opf_flow_lim, correct_pm_network_data, z_scale=1.0):
     # MATPOWER units: impedances in per unit on baseMVA, ratings in MVA, angles in degrees.
     # z_scale converts the ppci per unit values (on net.sn_mva) to the PowerModels baseMVA
-    branch = {"index": idx,
-              "br_r": row[BR_R].real * z_scale,
-              "br_x": row[BR_X].real * z_scale,
-              "g_fr": row[BR_G].real / 2.0 / z_scale,
-              "g_to": row[BR_G].real / 2.0 / z_scale,
-              "b_fr": row[BR_B].real / 2.0 / z_scale,
-              "b_to": row[BR_B].real / 2.0 / z_scale}
+    branch = {
+        "index": idx,
+        "br_r": row[BR_R].real * z_scale,
+        "br_x": row[BR_X].real * z_scale,
+        "g_fr": row[BR_G].real / 2.0 / z_scale,
+        "g_to": row[BR_G].real / 2.0 / z_scale,
+        "b_fr": row[BR_B].real / 2.0 / z_scale,
+        "b_to": row[BR_B].real / 2.0 / z_scale,
+    }
     rate_a = row[RATE_A].real if row[RATE_A].real > 0 else row[RATE_B].real
     if opf_flow_lim == "S":
         branch["rate_a"] = rate_a

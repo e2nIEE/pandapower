@@ -69,8 +69,11 @@ def _read_multinetwork_results(net: pandapowerNet, ppc, ppci, sol):
         _extract_results(neti, _copy_results_ppci_to_ppc(ppci, ppc, net._options["mode"]))
         add_storage_results(neti, soli)
         if res_tables is None:
-            res_tables = [key for key, val in neti.items() if key.startswith("res_") and
-                          isinstance(val, pd.DataFrame) and len(val)]
+            res_tables = [
+                key
+                for key, val in neti.items()
+                if key.startswith("res_") and isinstance(val, pd.DataFrame) and len(val)
+            ]
         for table in res_tables:
             frames.setdefault(table, []).append(neti[table].copy())
         time_steps.append(time_step)
@@ -98,7 +101,7 @@ def add_storage_results(net: pandapowerNet, result_pmi):
     soc_mwh = np.array([_float(v["se"]) for v in values])
     df.loc[pp_idx, "soc_mwh"] = soc_mwh
     capacity = (net.storage.max_e_mwh - net.storage.min_e_mwh).loc[pp_idx].values
-    df.loc[pp_idx, "soc_percent"] = soc_mwh / capacity * 100.
+    df.loc[pp_idx, "soc_percent"] = soc_mwh / capacity * 100.0
 
 
 def _float(value):
@@ -132,8 +135,11 @@ def pm_results_to_ppc_results(net: pandapowerNet, ppc, ppci, result_pm):
     ppci["obj"] = result_pm["objective"]
     # the native power flows (pm_model "ACNative" / "DCNative") return a bool
     termination_status = result_pm["termination_status"]
-    ppci["success"] = termination_status is True or "LOCALLY_SOLVED" in str(termination_status) or \
-        "OPTIMAL" in str(termination_status)
+    ppci["success"] = (
+        termination_status is True
+        or "LOCALLY_SOLVED" in str(termination_status)
+        or "OPTIMAL" in str(termination_status)
+    )
     ppci["et"] = result_pm["solve_time"]
     ppci["f"] = result_pm["objective"]
 

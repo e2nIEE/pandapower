@@ -39,9 +39,13 @@ def _runpm(
         passed to :func:`convert_to_pm_structure`
     """
     if pdm_dev_mode:
-        warnings.warn("pdm_dev_mode is deprecated and has no effect. To use a local PandaModels.jl "
-                      "checkout run juliapkg.add('PandaModels', '2dbab86a-7cbf-476f-9afe-75ffd3079e7c', "
-                      "path=<checkout>, dev=True) once.", DeprecationWarning, stacklevel=3)
+        warnings.warn(
+            "pdm_dev_mode is deprecated and has no effect. To use a local PandaModels.jl "
+            "checkout run juliapkg.add('PandaModels', '2dbab86a-7cbf-476f-9afe-75ffd3079e7c', "
+            "path=<checkout>, dev=True) once.",
+            DeprecationWarning,
+            stacklevel=3,
+        )
     # convert pandapower to power models file -> this is done in python
     net, pm, ppc, ppci = convert_to_pm_structure(net, **kwargs)
     # call optional callback function
@@ -53,8 +57,12 @@ def _runpm(
     # run power models optimization in julia
     result_pm = _call_pandamodels(buffer_file, net._options["julia_file"])
 
-    logger.info("Optimization ('" + net._options["julia_file"] + "') " +
-                "is finished in %s seconds:" % round(result_pm["solve_time"], 2))
+    logger.info(
+        "Optimization ('"
+        + net._options["julia_file"]
+        + "') "
+        + "is finished in %s seconds:" % round(result_pm["solve_time"], 2)
+    )
     # read results and write back to net
     try:
         read_pm_results_to_net(net, ppc, ppci, result_pm)
@@ -86,18 +94,21 @@ def _load_pandamodels():  # pragma: no cover
     try:
         from juliacall import Main  # type: ignore
     except ImportError:
-        raise ImportError(
-            "Please install juliacall properly to run pandapower with PandaModels.jl.")
+        raise ImportError("Please install juliacall properly to run pandapower with PandaModels.jl.")
     try:
         Main.seval("using PandaModels")
     except Exception as e:
-        raise ImportError("PandaModels.jl could not be loaded. It is installed by juliapkg from "
-                          "pandapower/juliapkg.json, run juliapkg.resolve(force=True) to "
-                          "reinstall it.") from e
+        raise ImportError(
+            "PandaModels.jl could not be loaded. It is installed by juliapkg from "
+            "pandapower/juliapkg.json, run juliapkg.resolve(force=True) to "
+            "reinstall it."
+        ) from e
     if not Main.seval(f'pkgversion(PandaModels) >= v"{MIN_PANDAMODELS_VERSION}"'):
-        raise ImportError("PandaModels.jl %s is installed, but pandapower requires >= %s. Run "
-                          "juliapkg.resolve(force=True) to update it."
-                          % (Main.seval("string(pkgversion(PandaModels))"), MIN_PANDAMODELS_VERSION))
+        raise ImportError(
+            "PandaModels.jl %s is installed, but pandapower requires >= %s. Run "
+            "juliapkg.resolve(force=True) to update it."
+            % (Main.seval("string(pkgversion(PandaModels))"), MIN_PANDAMODELS_VERSION)
+        )
     _pandamodels = Main.PandaModels
     return _pandamodels
 

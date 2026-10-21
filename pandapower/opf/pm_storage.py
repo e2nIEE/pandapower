@@ -62,5 +62,7 @@ def read_pm_storage_results(net):
     (index: time steps, columns: p_mw, q_mvar, soc_mwh, soc_percent).
     """
     columns = ["p_mw", "q_mvar", "soc_mwh", "soc_percent"]
-    return {idx: pd.DataFrame({col: net.res_ts_opt["res_storage." + col][idx] for col in columns})
-            for idx in net.storage.index}
+    return {
+        idx: pd.DataFrame({col: net.res_ts_opt["res_storage." + col][idx] for col in columns})
+        for idx in net.storage.index
+    }
