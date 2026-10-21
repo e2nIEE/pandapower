@@ -1,5 +1,6 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+from importlib.util import find_spec
 
 import numpy as np
 import pandas as pd
@@ -12,16 +13,11 @@ from pandapower.run import runpp
 from pandapower.runpm import runpm_tnep
 
 try:
-    from juliacall import JuliaError as UnsupportedPythonError  # type: ignore
+    from juliacall import JuliaError as UnsupportedPythonError  # noqa: 401 # type: ignore
 except ImportError:
     UnsupportedPythonError = Exception
 
-try:
-    from juliacall import Main  # type: ignore
-    
-    julia_installed = True
-except (ImportError, RuntimeError, UnsupportedPythonError):
-    julia_installed = False
+julia_installed = find_spec("juliacall") is not None
 
 
 def cigre_grid():
