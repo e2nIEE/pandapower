@@ -80,7 +80,7 @@ def test_runopp_init_results_preserves_model_v0(monkeypatch):
     class StopAfterCapturingX0(RuntimeError):
         pass
 
-    def recording_pips(f_fcn, x0, A, l, u, xmin, xmax, gh_fcn, hess_fcn, opt):
+    def recording_pips(___, x0, *_, **__):
         captured["solver_x0"] = x0.copy()
         raise StopAfterCapturingX0
 
