@@ -1,17 +1,13 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+import logging
 import numbers
 
 import numpy as np
 
 from pandapower.timeseries.data_source import DataSource
 
-try:
-    from pandaplan.core import pplog
-except ImportError:
-    import logging as pplog
-
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class DFData(DataSource):
