@@ -4,6 +4,7 @@
 import json
 import os
 from copy import deepcopy
+from importlib.util import find_spec
 
 import numpy as np
 import pytest
@@ -19,17 +20,7 @@ from pandapower.run import runopp
 from test.opf.test_basic import net_3w_trafo_opf as net_3w_trafo_opf
 from test.opf.test_basic import simple_opf_test_net as simple_opf_test_net
 
-try:
-    from juliacall import JuliaError as UnsupportedPythonError  # type: ignore
-except ImportError:
-    UnsupportedPythonError = Exception
-
-try:
-    from juliacall import Main  # type: ignore
-
-    julia_installed = True
-except (ImportError, RuntimeError, UnsupportedPythonError):
-    julia_installed = False
+julia_installed = find_spec("juliacall") is not None
 
 
 def test_pp_to_pm_conversion(net_3w_trafo_opf):
