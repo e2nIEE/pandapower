@@ -113,9 +113,15 @@ class TestTrafo3wRequiredFields:
                 ),
                 itertools.product(
                     [
-                        "vn_hv_kv", "vn_mv_kv", "vn_lv_kv",
-                        "sn_hv_mva", "sn_mv_mva", "sn_lv_mva",
-                        "vk_hv_percent", "vk_mv_percent", "vk_lv_percent",
+                        "vn_hv_kv",
+                        "vn_mv_kv",
+                        "vn_lv_kv",
+                        "sn_hv_mva",
+                        "sn_mv_mva",
+                        "sn_lv_mva",
+                        "vk_hv_percent",
+                        "vk_mv_percent",
+                        "vk_lv_percent",
                     ],
                     [float(np.nan), pd.NA, None, 0.0, *negativ_floats, *not_floats_list],
                 ),
@@ -292,7 +298,6 @@ class TestTrafo3wOptionalFieldsNullable:
         net.trafo3w["OperationalLimitType.limitType_mv"] = pd.Series([pd.NA], dtype="string")
         net.trafo3w["OperationalLimitType.limitType_lv"] = pd.Series([pd.NA], dtype="string")
 
-
         validate_network(net)
 
     @pytest.mark.parametrize(
@@ -324,7 +329,7 @@ class TestTrafo3wOptionalFieldsNullable:
         net = _create_net_with_buses()
         net.trafo3w = _create_valid_trafo3w_dataframe()
 
-        add_column_to_df(net, 'trafo3w', parameter)
+        add_column_to_df(net, "trafo3w", parameter)
         net.trafo3w.at[0, parameter] = valid_value
 
         validate_network(net)
@@ -358,7 +363,7 @@ class TestTrafo3wOptionalFieldsNullable:
         net = _create_net_with_buses()
         net.trafo3w = _create_valid_trafo3w_dataframe()
 
-        add_column_to_df(net, 'trafo3w', parameter)
+        add_column_to_df(net, "trafo3w", parameter)
         net.trafo3w[parameter] = invalid_value
 
         with pytest.raises(pa.errors.SchemaError):
@@ -368,7 +373,7 @@ class TestTrafo3wOptionalFieldsNullable:
         "parameter,valid_value",
         list(
             itertools.chain(
-                itertools.product(["tap_side"], [*allowed_tap_side]), # pd.NA not included due to dependencies
+                itertools.product(["tap_side"], [*allowed_tap_side]),  # pd.NA not included due to dependencies
                 itertools.product(["tap_changer_type"], [pd.NA, *allowed_tap_changer_types]),
             )
         ),
@@ -381,7 +386,7 @@ class TestTrafo3wOptionalFieldsNullable:
         # Satisfy tap group dependencies
         self._setup_tap_group(net)
 
-        add_column_to_df(net, 'trafo3w', parameter)
+        add_column_to_df(net, "trafo3w", parameter)
         net.trafo3w.at[0, parameter] = valid_value
 
         validate_network(net)
@@ -444,7 +449,7 @@ class TestTrafo3wOptionalFieldsNullable:
         if parameter in ("tap_pos", "tap_neutral"):
             self._setup_tap_group(net)
 
-        add_column_to_df(net, 'trafo3w', parameter)
+        add_column_to_df(net, "trafo3w", parameter)
         net.trafo3w.at[0, parameter] = valid_value
 
         validate_network(net)
@@ -503,7 +508,7 @@ class TestTrafo3wOptionalFieldsNullable:
         net = _create_net_with_buses()
         net.trafo3w = _create_valid_trafo3w_dataframe()
 
-        add_column_to_df(net, 'trafo3w', parameter)
+        add_column_to_df(net, "trafo3w", parameter)
         net.trafo3w.at[0, parameter] = valid_value
 
         validate_network(net)
@@ -545,7 +550,7 @@ class TestTrafo3wOptionalFieldsNullable:
         if parameter == "tap_dependency_table":
             net.trafo3w["id_characteristic_table"] = pd.Series([0 if valid_value in bools else pd.NA], dtype="Int64")
 
-        add_column_to_df(net, 'trafo3w', parameter)
+        add_column_to_df(net, "trafo3w", parameter)
         net.trafo3w.at[0, parameter] = valid_value
 
         validate_network(net)
@@ -584,8 +589,8 @@ class TestTrafo3wOptionalFieldsNullable:
         is_null = pd.isna(valid_value) if not isinstance(valid_value, int) else False
         net.trafo3w["tap_dependency_table"] = pd.Series([pd.NA if is_null else True], dtype="boolean")
 
-        add_column_to_df(net, 'trafo3w', 'id_characteristic_table')
-        net.trafo3w.at[0, 'id_characteristic_table'] = valid_value
+        add_column_to_df(net, "trafo3w", "id_characteristic_table")
+        net.trafo3w.at[0, "id_characteristic_table"] = valid_value
 
         validate_network(net)
 
@@ -677,28 +682,32 @@ class TestTrafo3wForeignKeys:
         net = pandapowerNet(name="test_valid_bus_index_non_sequential")
         create_buses(net, 3, [110.0, 20.0, 10.0], index=[10, 20, 42])
 
-        net.trafo3w = pd.DataFrame([{
-            "hv_bus": 10,
-            "mv_bus": 20,
-            "lv_bus": 42,
-            "vn_hv_kv": 110.0,
-            "vn_mv_kv": 20.0,
-            "vn_lv_kv": 10.0,
-            "sn_hv_mva": 63.0,
-            "sn_mv_mva": 25.0,
-            "sn_lv_mva": 25.0,
-            "vk_hv_percent": 10.0,
-            "vk_mv_percent": 8.0,
-            "vk_lv_percent": 6.0,
-            "vkr_hv_percent": 0.5,
-            "vkr_mv_percent": 0.4,
-            "vkr_lv_percent": 0.3,
-            "pfe_kw": 30.0,
-            "i0_percent": 0.1,
-            "shift_mv_degree": 0.0,
-            "shift_lv_degree": 0.0,
-            "in_service": True,
-        }])
+        net.trafo3w = pd.DataFrame(
+            [
+                {
+                    "hv_bus": 10,
+                    "mv_bus": 20,
+                    "lv_bus": 42,
+                    "vn_hv_kv": 110.0,
+                    "vn_mv_kv": 20.0,
+                    "vn_lv_kv": 10.0,
+                    "sn_hv_mva": 63.0,
+                    "sn_mv_mva": 25.0,
+                    "sn_lv_mva": 25.0,
+                    "vk_hv_percent": 10.0,
+                    "vk_mv_percent": 8.0,
+                    "vk_lv_percent": 6.0,
+                    "vkr_hv_percent": 0.5,
+                    "vkr_mv_percent": 0.4,
+                    "vkr_lv_percent": 0.3,
+                    "pfe_kw": 30.0,
+                    "i0_percent": 0.1,
+                    "shift_mv_degree": 0.0,
+                    "shift_lv_degree": 0.0,
+                    "in_service": True,
+                }
+            ]
+        )
 
         validate_network(net)
 

@@ -822,6 +822,7 @@ class TestTrafoForeignKeys:
 
         validate_network(net)
 
+
 class TestTrafoCrossFieldValidations:
     """Tests for cross-field validations (tap_min <= tap_max, etc.)"""
 
