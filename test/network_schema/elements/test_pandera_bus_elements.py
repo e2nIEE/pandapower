@@ -137,7 +137,9 @@ class TestBusOptionalFields:
         list(
             itertools.chain(
                 itertools.product(["min_vm_pu"], [*negativ_floats, *not_floats_list, *not_allowed_floats, -3.0, 3.0]),
-                itertools.product(["max_vm_pu"], [*negativ_floats_plus_zero, *not_floats_list, *not_allowed_floats, -3.0, 3.0]),
+                itertools.product(
+                    ["max_vm_pu"], [*negativ_floats_plus_zero, *not_floats_list, *not_allowed_floats, -3.0, 3.0]
+                ),
                 itertools.product(["type", "zone", "geo"], [np.nan, float(np.nan), *not_strings_list]),
                 itertools.product(
                     [
