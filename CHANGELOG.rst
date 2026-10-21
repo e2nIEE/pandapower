@@ -13,6 +13,15 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [CHANGED] PandaModels.jl interface: the network is sent in MATPOWER units (MW, MVAr, degrees, ``per_unit=False``) and converted to per unit by PandaModels.jl, which is now required in version >= 0.10. The new keyword ``pm_base_mva`` (default ``net.sn_mva``) sets the per unit base; Ipopt is much faster on a base fitting the grid (e.g. case118: 0.1 s at 100 MVA instead of 2.2 s at 1 MVA).
+- [CHANGED] time series optimizations (``runpm_storage_opf``, ``runpm_multi_vstab``, ``runpm_multi_qflex``) store their results in ``net.res_ts_opt`` as dict ``"res_<table>.<column>"`` -> DataFrame (index: time steps, columns: element indices) instead of one copy of the net per time step. Reading the results is several times faster.
+- [CHANGED] ``juliapkg.json`` is shipped with the pandapower package; PandaModels.jl is no longer installed or built at runtime. ``pdm_dev_mode`` is deprecated; a local checkout is registered with ``juliapkg.add(..., path=..., dev=True)``.
+- [ADDED] new ``runpm_redispatch`` function: keeps generators close to a base dispatch while respecting network constraints; supports both squared-deviation and cost-weighted objectives.
+- [FIXED] PandaModels.jl interface: bus shunts and branch conductances were scaled wrongly for ``sn_mva != 1``.
+- [FIXED] PandaModels.jl interface: ``ne_line`` construction costs overwrote the ``BR_G`` column; ``opf_flow_lim="I"`` used a different current rating for ``ne_line`` than for lines.
+- [FIXED] PandaModels.jl interface: time series optimizations with ``from_time_step != 0`` used the time series values of the wrong time steps.
+- [FIXED] PandaModels.jl interface: ``read_pm_storage_results`` treated the stored energy as a fraction; ``soc_mwh`` and ``soc_percent`` were only correct for 1 MWh storages.
+- [FIXED] PandaModels.jl interface: the native power flows (``pm_model="ACNative"/"DCNative"``) were reported as not converged; SOC models wrote ``w = vm^2`` as ``vm``.
 - [FIXED] ``create_load_dc`` now allocates and validates indexes against ``load_dc``, preventing overwrites and false ``source_dc`` conflicts.
 - [FIXED] OPF cleaned up in case of non convergence
 - [FIXED] ``create_continuous_bus_index`` (and other toolbox functions relying on ``element_bus_tuples``) now also update the ``bus`` column of the ``ssc`` element table; it was previously missing from the list of bus-referencing elements

@@ -11,6 +11,7 @@ import pytest
 
 from pandapower.control import ConstControl
 from pandapower.converter.pandamodels import convert_pp_to_pm
+from pandapower.converter.pandamodels.from_pm import add_time_series_data_to_net
 from pandapower.converter.pandamodels.to_pm import init_ne_line
 from pandapower.create import (
     create_buses,
@@ -712,9 +713,7 @@ def test_storage_opt():
     assert abs(storage_results_100[0].values - storage_results_1[0].values).max() < 1e-6
 
 
-@pytest.mark.slow
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
-def test_runpm_multi_vstab():
+def _create_multi_vstab_net():
     net = create_cigre_network_mv(with_der="pv_wind")
     net.load["controllable"] = False
     net.sgen["controllable"] = True
@@ -729,10 +728,10 @@ def test_runpm_multi_vstab():
     net.ext_grid["min_p_mw"] = -10000.0
 
     # lower and upper bounds for DERs
-    net.sgen["max_p_mw"] = net.sgen.p_mw
-    net.sgen["min_p_mw"] = net.sgen.p_mw
-    net.sgen["max_q_mvar"] = net.sgen.p_mw * 0.328
-    net.sgen["min_q_mvar"] = -net.sgen.p_mw * 0.328
+    net.sgen["max_p_mw"] = net.sgen.p_mw.values
+    net.sgen["min_p_mw"] = net.sgen.p_mw.values
+    net.sgen["max_q_mvar"] = net.sgen.p_mw.values * 0.328
+    net.sgen["min_q_mvar"] = -net.sgen.p_mw.values * 0.328
 
     net.trafo["max_loading_percent"] = 100.0
     net.line["max_loading_percent"] = 100.0
@@ -743,18 +742,39 @@ def test_runpm_multi_vstab():
     # load time series data for 96 time steps
     json_path = os.path.join(test_path, "opf", "cigre_timeseries_15min.json")
     create_cigre_grid_with_time_series(json_path, net, True)
+    return net
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
+def test_runpm_multi_vstab():
+    net = _create_multi_vstab_net()
 
     # run time series opf
     runpm_multi_vstab(net, from_time_step=0, to_time_step=96)
-    assert len(net.res_ts_opt) == 96
+    vm_pu = net.res_ts_opt["res_bus.vm_pu"]
+    assert list(vm_pu.index) == list(range(96))
 
     # get opf-results
-    y_multi = []
-    for t in range(96):
-        y_multi.append(net.res_ts_opt[str(t)].res_bus.vm_pu[net.sgen.bus].values.mean() - 0.96)
+    y_multi = vm_pu[net.sgen.bus].values.mean(axis=1) - 0.96
 
-    assert np.array(y_multi).max() < 0.018
-    assert np.array(y_multi).min() > -0.002
+    assert y_multi.max() < 0.018
+    assert y_multi.min() > -0.002
+
+
+@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
+def test_runpm_multi_vstab_from_time_step():
+    # a time series that does not start at 0 must use the time series values of its own time steps
+    net = _create_multi_vstab_net()
+    runpm_multi_vstab(net, from_time_step=40, to_time_step=43)
+    vm_multi = net.res_ts_opt["res_bus.vm_pu"]
+    assert list(vm_multi.index) == [40, 41, 42]
+
+    # the time steps are independent of each other -> same result as a single optimization
+    net_single = _create_multi_vstab_net()
+    add_time_series_data_to_net(net_single, net_single.controller, 42)
+    runpm_vstab(net_single)
+    assert np.allclose(vm_multi.loc[42].values, net_single.res_bus.vm_pu.values, atol=1e-6)
 
 
 @pytest.mark.slow
@@ -866,15 +886,38 @@ def test_convergence_dc_opf(net_func, cpnd):
 
 
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
-def test_ac_opf_differnt_snmva():
-    net = case9()
-    res = pd.DataFrame(columns=net.bus.index.tolist())
-    for i, snmva in enumerate([1, 13, 45, 78, 98, 100]):
+@pytest.mark.parametrize("net_func", [case9, case30])
+def test_ac_opf_differnt_snmva(net_func):
+    # case30 has bus shunts
+    net = net_func()
+    vm_pu, cost = [], []
+    for snmva in [1, 13, 45, 78, 98, 100]:
         net.sn_mva = snmva
         runpm_ac_opf(net)
-        res.loc[i] = net.res_bus.vm_pu.values
-    for i in res.columns:
-        assert res[i].values.min() - res[i].values.max() < 1e-10
+        vm_pu.append(net.res_bus.vm_pu.values)
+        cost.append(net.res_cost)
+    assert np.ptp(np.array(vm_pu), axis=0).max() < 1e-6
+    assert np.ptp(cost) < 1e-6 * max(cost)
+
+
+@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
+@pytest.mark.parametrize("sn_mva, pm_base_mva", [(1.0, None), (13.0, None), (100.0, None), (1.0, 100.0)])
+@pytest.mark.parametrize("net_func", (case30, create_cigre_network_mv))
+def test_pm_ac_powerflow_sn_mva(net_func, sn_mva, pm_base_mva):
+    # unit conversion of bus shunts (case30), branch conductances and impedances for different bases.
+    # PowerModels' Newton power flow, the Ipopt power flow can fail numerically on some bases
+    net = net_func()
+    if len(net.trafo):
+        net.trafo["pfe_kw"] = 30.0
+        net.trafo["i0_percent"] = 0.5
+        net.line["g_us_per_km"] = 1.0
+    net.sn_mva = sn_mva
+    runpm_pf(net, pm_model="ACNative", pm_base_mva=pm_base_mva)
+    vm_pm = net.res_bus.vm_pu.values.copy()
+    va_pm = net.res_bus.va_degree.values.copy()
+    runpp(net, calculate_voltage_angles=True)
+    assert np.allclose(vm_pm, net.res_bus.vm_pu.values)
+    assert np.allclose(va_pm, net.res_bus.va_degree.values)
 
 
 def _create_redispatch_net():
