@@ -703,7 +703,7 @@ def test_storage_opt():
     assert net._pm_org_result["multinetwork"]
     assert net._pm["pm_solver"] == "juniper"
     assert net._pm["pm_mip_solver"] == "cbc"
-    assert len(net.res_ts_opt) == 5
+    assert list(net.res_ts_opt["res_bus.vm_pu"].index) == list(range(5))
 
     net2 = create_cigre_grid_with_time_series(json_path)
     net2.sn_mva = 100.0
@@ -820,10 +820,10 @@ def test_runpm_qflex_and_multi_qflex():
     create_cigre_grid_with_time_series(json_path, net, True)
     runpm_multi_qflex(net, from_time_step=0, to_time_step=96)
     # get opf-results
-    y_multi = []
-    for t in range(96):
-        y_multi.append(abs(abs(net.res_ts_opt[str(t)].res_trafo.q_lv_mvar[0]) - 5))
-    assert np.array(y_multi).max() < 1e-6
+    q_lv_mvar = net.res_ts_opt["res_trafo.q_lv_mvar"]
+    assert list(q_lv_mvar.index) == list(range(96))
+    y_multi = (q_lv_mvar[0].abs() - 5).abs()
+    assert y_multi.max() < 1e-6
 
 
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
