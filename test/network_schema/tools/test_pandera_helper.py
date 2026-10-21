@@ -180,9 +180,9 @@ class TestGetDtypes:
 
         assert len(result) == 5
         assert isinstance(result["pandas_string"], pd.StringDtype)
-        assert result["numpy_int"] == np.int64
+        assert result["numpy_int"] == np.dtype(np.int64)
         assert isinstance(result["pandas_float"], pd.Float32Dtype)
-        assert result["python_bool"] == bool
+        assert result["python_bool"] == np.dtype(bool)
         assert isinstance(result["pandas_categorical"], pd.CategoricalDtype)
 
     def test_get_dtypes_all_required_schema(self):
@@ -323,19 +323,19 @@ class TestGetDtypes:
 
         # Test required columns
         assert len(result_required) == 6
-        assert result_required["python_str"] == str
-        assert result_required["python_float"] == float
+        assert result_required["python_str"] == np.dtype(str)
+        assert result_required["python_float"] == np.dtype(float)
         assert isinstance(result_required["pandas_string"], pd.StringDtype)
         assert isinstance(result_required["pandas_float"], pd.Float32Dtype)
-        assert result_required["numpy_int"] == np.int64
+        assert result_required["numpy_int"] == np.dtype(np.int64)
         assert isinstance(result_required["categorical"], pd.CategoricalDtype)
 
         # Test all columns
         assert len(result_all) == 12
-        assert result_all["python_str"] == str
-        assert result_all["python_int"] == int
-        assert result_all["python_float"] == float
-        assert result_all["python_bool"] == bool
+        assert result_all["python_str"] == np.dtype(str)
+        assert result_all["python_int"] == np.dtype(int)
+        assert result_all["python_float"] == np.dtype(float)
+        assert result_all["python_bool"] == np.dtype(bool)
         assert isinstance(result_all["pandas_string"], pd.StringDtype)
         assert isinstance(result_all["pandas_int"], pd.Int32Dtype)
         assert isinstance(result_all["pandas_float"], pd.Float32Dtype)
@@ -453,7 +453,7 @@ def test_get_dtypes_edge_cases():
     result = get_dtypes(mixed_nullable_schema, required_only=False)
 
     assert len(result) == 4
-    assert result["regular_int"] == int
+    assert result["regular_int"] == np.dtype(int)
     assert isinstance(result["nullable_int"], pd.Int64Dtype)
-    assert result["regular_float"] == float
+    assert result["regular_float"] == np.dtype(float)
     assert isinstance(result["nullable_float"], pd.Float64Dtype)
