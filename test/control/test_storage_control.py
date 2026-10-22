@@ -81,6 +81,12 @@ def test_charge_writes_power_and_advances_soc():
     assert net.storage.at[0, "soc_percent"] == pytest.approx(12.5)
 
 
+def test_extra_keyword_arguments_are_set_as_attributes():
+    net = make_net()
+    ctrl = StorageController(net, 0, max_charge_mw=1.0, max_discharge_mw=1.0, name="battery")
+    assert ctrl.name == "battery"
+
+
 def test_discharge_advances_soc_down():
     net = make_net(soc=50.0)
     ctrl = StorageController(net, 0, max_charge_mw=1.0, max_discharge_mw=1.0, p_request_mw=-0.5)
