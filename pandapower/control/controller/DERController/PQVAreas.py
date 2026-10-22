@@ -417,20 +417,24 @@ class PQVArea4130V3(PQVArea4130Base):
 
 
 class PQArea4110(PQAreaPOLYGON):
+    """This class models the P(Q) area of flexible Q for medium-voltage plants according to
+    VDE AR-N-4110 (Figure 6; identical in the 2018 and 2023 revisions).
+    """
     def __init__(self):
-        p_points_pu = (-1e-7,  0.05, 0.05       , 1.       , 1.      , 0.05      , 0.05, 1e-7, -1e-7)
-        q_points_pu = (-1e-7, -1e-7, -0.01961505, -0.484322, 0.484322, 0.01961505, 0.  , 1e-7, -1e-7)
+        p_points_pu = (1,    0.2,  0.1, 0.099,  0,     0,    0.099,   0.1,   0.2,    1)
+        q_points_pu = (0.33, 0.33, 0.1, 0.02, 0.02, -0.05, -0.05, -0.1, -0.33, -0.33)
         super().__init__(p_points_pu, q_points_pu)
 
 
 class QVArea4110(QVAreaPOLYGON):
     """
-    This class models the QV area of flexible Q for medium-voltage plants according to
-    VDE AR-N-4110.
+    This class models the Q(V) area of flexible Q for medium-voltage plants according to
+    VDE AR-N-4110 (Figure 5; identical in the 2018 and 2023 revisions).
     """
     def __init__(self):
-        q_points_pu =  (0. , -0.484322, -0.484322, 0. , 0.484322, 0.484322, 0. )
-        vm_points_pu = (0.9, 0.95     , 1.1      , 1.1, 1.05    , 0.9     , 0.9)
+        q_points_pu =  (0.33, 0,    -0.33, -0.33, 0,   0.33)
+        vm_points_pu = (0.9,  0.9,  0.925,  1.1, 1.1, 1.075)
+
         super().__init__(q_points_pu, vm_points_pu)
 
 

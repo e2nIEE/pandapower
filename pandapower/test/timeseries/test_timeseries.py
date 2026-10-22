@@ -287,6 +287,29 @@ def test_time_steps(simple_test_net):
     run_timeseries(net, time_steps=(0, 10), verbose=False)
 
 
+@pytest.mark.parametrize('time_steps, expected_steps', [
+    ((1, 3), [1, 2, 3]),
+    ((2, 2), [2]),
+    ([1, 3], [1, 3]),
+    (range(1, 4), [1, 2, 3]),
+])
+def test_time_step_selection_records_controlled_results(simple_test_net, time_steps, expected_steps):
+    net = simple_test_net
+    profile = pd.DataFrame({'load': [10.0, 20.0, 30.0, 40.0]})
+    ConstControl(net, 'load', 'p_mw', element_index=0, data_source=DFData(profile), profile_name='load')
+    ow = OutputWriter(net, output_path=tempfile.gettempdir())
+    ow.log_variable('load', 'p_mw')
+
+    run_timeseries(net, time_steps=time_steps, verbose=False)
+
+    recorded = ow.output['load.p_mw']
+    assert recorded.index.tolist() == expected_steps
+    np.testing.assert_allclose(recorded[0], profile.loc[expected_steps, 'load'])
+    voltage = ow.output['res_bus.vm_pu']
+    assert voltage.index.tolist() == expected_steps
+    assert np.isfinite(voltage.to_numpy()).all()
+
+
 def test_output_dump_after_time(simple_test_net):
     net = simple_test_net
 
