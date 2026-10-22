@@ -58,7 +58,7 @@ def test_lp_scipy_lav():
     net, ppc, eppci = pp2eppci(net)
     estimation_ortools_lp = LPAlgorithm(1e-3, 5)
 
-    estimation_ortools = estimation_ortools_lp.estimate(eppci, with_ortools=False)
+    estimation_ortools_lp.estimate(eppci, with_ortools=False)
 
     net = eppci2pp(net, ppc, eppci)
 
@@ -81,7 +81,7 @@ def test_lp_ortools_lav():
     net, ppc, eppci = pp2eppci(net)
     estimation_ortools_lp = LPAlgorithm(1e-3, 5)
 
-    estimation_ortools = estimation_ortools_lp.estimate(eppci, with_ortools=True)
+    estimation_ortools_lp.estimate(eppci, with_ortools=True)
 
     net = eppci2pp(net, ppc, eppci)
 
