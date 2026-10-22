@@ -1,8 +1,10 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
 import os
 import pickle
+from importlib.util import find_spec
 
 import numpy as np
 import pandas as pd
@@ -19,20 +21,14 @@ from pandapower.pypower.idx_gen import PG, QG
 from pandapower.run import runopp, runpp, set_user_pf_options
 from pandapower.toolbox.comparison import nets_equal
 from pandapower.toolbox.data_modification import reindex_buses
+from test import test_path
 
-try:
+if find_spec("pypower"):
     import pypower.case24_ieee_rts as c24
 
     pypower_installed = True
-except ImportError:
+else:
     pypower_installed = False
-
-try:
-    import pandaplan.core.pplog as logging
-except:
-    import logging
-
-from test import test_path
 
 logger = logging.getLogger(__name__)
 max_diff_values1 = {
@@ -66,8 +62,8 @@ def test_from_ppc_simple_against_target():
     set_user_pf_options(net_by_code)  # for assertion of nets_equal
     runpp(net_by_ppc, trafo_model="pi")
     runpp(net_by_code, trafo_model="pi")
-
-    assert type(net_by_ppc) == type(net_by_code)
+    
+    assert type(net_by_ppc) is type(net_by_code)
     assert net_by_ppc.converged
     assert len(net_by_ppc.bus) == len(net_by_code.bus)
     assert len(net_by_ppc.impedance) == len(
