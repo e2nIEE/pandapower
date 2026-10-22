@@ -21,7 +21,7 @@ from .pypower.idx_svc import svc_cols, SVC_BUS, SVC_SET_VM_PU, SVC_MIN_FIRING_AN
 from .pypower.idx_vsc import vsc_cols, VSC_BUS, VSC_INTERNAL_BUS, VSC_R, VSC_X, VSC_STATUS, VSC_CONTROLLABLE, \
     VSC_BUS_DC, VSC_MODE_AC, VSC_VALUE_AC, VSC_MODE_DC, VSC_VALUE_DC, VSC_MODE_AC_V, VSC_MODE_AC_Q, VSC_MODE_AC_SL, \
     VSC_MODE_DC_V, VSC_MODE_DC_P, VSC_INTERNAL_BUS_DC, VSC_R_DC, VSC_PL_DC, VSC_DIFF_REF_BUS, VSC_MODE_DC_DP, \
-    VSC_MODE_DC_DM
+    VSC_MODE_DC_DM, VSC_BUS_DC_MINUS
 from .pypower.idx_source_dc import SOURCE_DC_BUS, SOURCE_DC_STATUS, SOURCE_DC_VG, source_dc_cols
 from pandapower.build_gen import _calculate_qmin_qmax_from_q_capability_characteristics
 
@@ -550,13 +550,15 @@ def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux, bus_ta
         ppc[bus_table][aux_idx, vmin] = ppc[bus_table][element_bus_idx, vmin]
         ppc[bus_table][aux_idx, vmax] = ppc[bus_table][element_bus_idx, vmax]
 
+    # elements without results (e.g. auxiliary elements) are initialized with the voltage of the connection bus
     if net._options["init_vm_pu"] == "results":
-        ppc[bus_table][aux_idx, vm] = net["res_%s" % element][
-            "vm_internal_pu" if bus_table == "bus" else "vm_internal_dc_pu"].values
+        res_vm = net["res_%s" % element]["vm_internal_pu" if bus_table == "bus" else "vm_internal_dc_pu"].values
+        ppc[bus_table][aux_idx, vm] = np.where(np.isnan(res_vm), ppc[bus_table][element_bus_idx, vm], res_vm)
     else:
         ppc[bus_table][aux_idx, vm] = ppc[bus_table][element_bus_idx, vm]
     if net._options["init_va_degree"] == "results" and bus_table == "bus":
-        ppc[bus_table][aux_idx, VA] = net["res_%s" % element]["va_internal_degree"].values
+        res_va = net["res_%s" % element]["va_internal_degree"].values
+        ppc[bus_table][aux_idx, VA] = np.where(np.isnan(res_va), ppc[bus_table][element_bus_idx, VA], res_va)
     elif bus_table == "bus":
         ppc[bus_table][aux_idx, VA] = ppc[bus_table][element_bus_idx, VA]
 
@@ -951,6 +953,14 @@ def _build_vsc_ppc(net, ppc, mode):
         ref_bus_values = net["vsc"]["ref_bus"].fillna(0).values.astype(int)
         vsc[f:t, VSC_DIFF_REF_BUS] = bus_lookup_dc[ref_bus_values]
 
+    # minus terminal of bipolar VSC (only set for the auxiliary vsc entries created for net.vsc_bipolar),
+    # -1 means that the VSC is connected between bus_dc and ground
+    vsc[f:t, VSC_BUS_DC_MINUS] = -1
+    if 'bus_dc_minus' in net['vsc']:
+        bus_dc_minus = net["vsc"]["bus_dc_minus"].values
+        has_minus = pd.notna(bus_dc_minus)
+        vsc[f:t, VSC_BUS_DC_MINUS][has_minus] = bus_lookup_dc[bus_dc_minus[has_minus].astype(np.int64)]
+
     vsc[f:t, VSC_R] = net["vsc"]["r_ohm"].values / baseZ
     vsc[f:t, VSC_X] = net["vsc"]["x_ohm"].values / baseZ
     vsc[f:t, VSC_R_DC] = net["vsc"]["r_dc_ohm"].values / baseR
@@ -985,7 +995,8 @@ def _build_vsc_ppc(net, ppc, mode):
     if mode != "dc":
         ppc["bus"][aux["vsc"][~controllable], BUS_TYPE] = PV
     # it has a role of REF but internally it is PQ and we set the behavior of REF with the Jacobian and mismatch:
-    ppc["bus"][bus[(mode_ac_code == VSC_MODE_AC_SL) & (ppc["bus"][bus, BUS_TYPE] != NONE)], BUS_TYPE] = REF
+    ppc["bus"][bus[(mode_ac_code == VSC_MODE_AC_SL) & (ppc["bus"][bus, BUS_TYPE] != NONE) &
+                   net._is_elements["vsc"]], BUS_TYPE] = REF
     # maybe we add this in the future
     # ppc["bus"][aux["vsc"][~controllable], VM] = net["vsc"].loc[~controllable, "vm_internal_pu"].values
 

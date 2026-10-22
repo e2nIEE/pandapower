@@ -12,7 +12,8 @@ from pandapower.pypower.idx_gen import PG, QG
 from pandapower.build_bus import _get_motor_pq, _get_symmetric_pq_of_unsymetric_element
 from pandapower.pypower.idx_ssc import SSC_Q, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_svc import SVC_THYRISTOR_FIRING_ANGLE, SVC_Q, SVC_X_PU
-from pandapower.pypower.idx_vsc import VSC_Q, VSC_P, VSC_P_DC, VSC_BUS_DC, VSC_INTERNAL_BUS_DC, VSC_INTERNAL_BUS
+from pandapower.pypower.idx_vsc import VSC_Q, VSC_P, VSC_P_DC, VSC_BUS_DC, VSC_INTERNAL_BUS_DC, VSC_INTERNAL_BUS, \
+    VSC_P_DC_MINUS
 
 import logging
 
@@ -507,6 +508,12 @@ def _get_p_dc_results(net, ppc, bus_lookup_aranged):
             #     p = np.hstack([p, p_el])
             p = np.hstack([p, p_el])
             b = np.hstack([b, bus_el])
+            if element == "vsc" and "bus_dc_minus" in net.vsc.columns:
+                # bipolar VSC: the current returns into the minus terminal bus
+                bus_minus = net.vsc["bus_dc_minus"].values
+                has_minus = pd.notna(bus_minus)
+                p = np.hstack([p, ppc["vsc"][has_minus, VSC_P_DC_MINUS]])
+                b = np.hstack([b, bus_minus[has_minus]])
 
     # sum pq results from every element to be written to net['bus'] later on
     b_pp, vp, _ = _sum_by_group(b.astype(np.int64), p, p)

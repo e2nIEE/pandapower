@@ -6,6 +6,10 @@ Stacked Voltage Source Converter (VSC Stacked)
 
 The stacked VSC is implemented as the name suggests by using two VSC, which are connected on the AC side.
 
+.. warning::
+	The stacked VSC is deprecated. Use the :ref:`bipolar VSC <vsc_bipolar>` instead, which supports bipolar systems
+	with metallic return (DMR) without a workaround.
+
 .. seealso::
 	:ref:`Voltage Source Converter (VSC) <vsc>`
 
@@ -57,13 +61,10 @@ for high power electronic applications, such as IGBTs.
 Limitations
 =================
 
-Since the powerflow equations are modelled that every component is connected to the same ground, topologies employing a lifted
-or virtual ground are not currently supported. For example, one could attach two stacked VSC on the minus and plus side,
-and therefore "lift" one of the VSC to create a virtual ground for a metallic return line scenario. But in this case,
-the first lower VSC will be shorted by second upper VSC. Currently a workaround is employed by creating the topology,
-but setting the corresponding metallic return line out of service. Then a specialized controller needs to be employed,
-which calculates the resulting currents and updates the out-of-service line.
-See test_facts_vsc_stacked.py: test_hvdc_interconnect_with_dmr() for an example.
+Both VSC of the stacked VSC are referenced to ground, so no current can flow through a metallic return line. The
+deprecated workaround was to set the metallic return line out of service and to calculate its current with the
+DmrControl controller. Use the :ref:`bipolar VSC <vsc_bipolar>` instead, then the metallic return line is part of
+the power flow.
 
 
 Result Parameters

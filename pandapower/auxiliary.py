@@ -57,7 +57,8 @@ from pandapower.pypower.idx_bus_dc import DC_VMAX, DC_VMIN, DC_BUS_I, DC_BUS_TYP
 from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
 from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
 from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
-from pandapower.pypower.idx_vsc import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS, VSC_BUS_DC, VSC_INTERNAL_BUS_DC
+from pandapower.pypower.idx_vsc import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS, VSC_BUS_DC, VSC_INTERNAL_BUS_DC, \
+    VSC_BUS_DC_MINUS
 
 try:
     from lightsim2grid.newtonpf import newtonpf_new as newtonpf_ls
@@ -1170,9 +1171,14 @@ def _check_connectivity(ppc: PyPowerNetwork) -> tuple[NDArray[bool], int, int, N
         bus_from_dc = ppc['branch_dc'][br_dc_status, DC_F_BUS].real.astype(np.int64)
         bus_to_dc = ppc['branch_dc'][br_dc_status, DC_T_BUS].real.astype(np.int64)
 
-        bus_from_dc = np.hstack([bus_from_dc, bus_from_vsc_dc, slacks_dc])
-        bus_to_dc = np.hstack([bus_to_dc, bus_to_vsc_dc, np.ones(len(slacks_dc)) * nobus_dc])
-        nolinks_dc = nobranch_dc + novsc + len(slacks_dc)
+        # minus terminal of bipolar VSC (-1 for VSC connected to ground):
+        vsc_minus_dc = ppc["vsc"][vsc_status, VSC_BUS_DC_MINUS].real.astype(np.int64)
+        bus_from_vsc_minus_dc = bus_from_vsc_dc[vsc_minus_dc >= 0]
+        bus_to_vsc_minus_dc = vsc_minus_dc[vsc_minus_dc >= 0]
+
+        bus_from_dc = np.hstack([bus_from_dc, bus_from_vsc_dc, bus_from_vsc_minus_dc, slacks_dc])
+        bus_to_dc = np.hstack([bus_to_dc, bus_to_vsc_dc, bus_to_vsc_minus_dc, np.ones(len(slacks_dc)) * nobus_dc])
+        nolinks_dc = nobranch_dc + novsc + len(bus_to_vsc_minus_dc) + len(slacks_dc)
 
         adj_matrix_dc = sp.sparse.coo_matrix((np.ones(nolinks_dc), (bus_from_dc, bus_to_dc)),
                                              shape=(nobus_dc + 1, nobus_dc + 1))
@@ -1593,6 +1599,22 @@ def _clean_up(net: pandapowerNet, res: bool = True) -> None:
         # drop the vsc's
         net.vsc.drop(vsc_idx.index, axis=0, inplace=True)
 
+    _remove_vsc_bipolar_aux(net)
+
+
+def _remove_vsc_bipolar_aux(net: pandapowerNet) -> None:
+    """
+    Removes the auxiliary net.vsc entries of the bipolar VSC (see _add_vsc_bipolar). Can be called several times.
+    """
+    aux = net.pop("_vsc_bipolar_aux", None)
+    if aux is None:
+        return
+    net.vsc.drop(aux["vsc_index"], axis=0, inplace=True)
+    if "res_vsc" in net:
+        net.res_vsc.drop(net.res_vsc.index.intersection(aux["vsc_index"]), axis=0, inplace=True)
+    if aux["drop_column"] and "bus_dc_minus" in net.vsc.columns:
+        net.vsc.drop(columns="bus_dc_minus", inplace=True)
+
 
 def _set_isolated_buses_out_of_service(net: pandapowerNet, ppc: PyPowerNetwork) -> None:
     # set disconnected buses out of service
@@ -1608,10 +1630,12 @@ def _set_isolated_buses_out_of_service(net: pandapowerNet, ppc: PyPowerNetwork) 
     ppc["bus"][net._isolated_buses, BUS_TYPE] = NONE
 
     # check DC buses - not connected to DC lines and not connected to VSC DC side
+    # (VSC_BUS_DC_MINUS is -1 for VSC connected to ground)
+    vsc_dc_buses = ppc["vsc"][ppc["vsc"][:, VSC_STATUS] == 1][:, [VSC_BUS_DC, VSC_BUS_DC_MINUS]].real.astype(np.int64)
     disco_dc = np.setxor1d(ppc["bus_dc"][:, DC_BUS_I].astype(np.int64),
                            np.union1d(ppc["branch_dc"][ppc["branch_dc"][:, DC_BR_STATUS] == 1, :][:,
                                       [DC_F_BUS, DC_T_BUS]].real.astype(np.int64).flatten(),
-                                      ppc["vsc"][ppc["vsc"][:, VSC_STATUS] == 1, VSC_BUS_DC].real.astype(np.int64)))
+                                      vsc_dc_buses[vsc_dc_buses >= 0]))
 
     # but also check if they may be the only connection to an ext_grid
     net._isolated_buses_dc = np.setdiff1d(disco_dc, ppc['bus_dc'][ppc['bus_dc'][:, DC_BUS_TYPE] == REF, DC_BUS_I].real.astype(np.int64))
@@ -2055,6 +2079,25 @@ def _add_vsc_stacked(net: pandapowerNet):
         )
 
 
+def _add_vsc_bipolar(net: pandapowerNet):
+    """
+    Adds one auxiliary net.vsc entry for every net.vsc_bipolar entry. The auxiliary VSC is connected between
+    bus_dc (= bus_dc_plus) and bus_dc_minus instead of between bus_dc and ground. The indices of the auxiliary
+    entries are stored in net["_vsc_bipolar_aux"] and the entries are removed in _clean_up.
+    """
+    from pandapower.create import create_vsc
+    _remove_vsc_bipolar_aux(net)
+    drop_column = "bus_dc_minus" not in net.vsc.columns
+    vsc_index = []
+    for _, vb in net.vsc_bipolar.iterrows():
+        vsc_index.append(create_vsc(
+            net, vb.bus, vb.bus_dc_plus, vb.r_ohm, vb.x_ohm, vb.r_dc_ohm, pl_dc_mw=vb.pl_dc_mw,
+            control_mode_ac=vb.control_mode_ac, control_value_ac=vb.control_value_ac,
+            control_mode_dc=vb.control_mode_dc, control_value_dc=vb.control_value_dc, name=vb["name"],
+            controllable=vb.controllable, in_service=vb.in_service, bus_dc_minus=vb.bus_dc_minus))
+    net["_vsc_bipolar_aux"] = {"vsc_index": np.array(vsc_index, dtype=np.int64), "drop_column": drop_column}
+
+
 def _add_auxiliary_elements(net: pandapowerNet):
     """
     Add auxiliary elements to net, convert the HVDC links to a gen pair and
@@ -2070,6 +2113,9 @@ def _add_auxiliary_elements(net: pandapowerNet):
 
     if len(net.vsc_stacked) > 0:
         _add_vsc_stacked(net)
+
+    if len(net.vsc_bipolar) > 0:
+        _add_vsc_bipolar(net)
 
 
 def _replace_nans_with_default_limits(net: pandapowerNet, ppc: PyPowerNetwork) -> None:
