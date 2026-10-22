@@ -3,6 +3,7 @@
 
 import copy
 import logging
+from importlib.util import find_spec
 
 import numpy as np
 import pandas as pd
@@ -38,12 +39,7 @@ from pandapower.timeseries.run_time_series import run_timeseries
 from pandapower.toolbox.data_modification import create_continuous_bus_index, reindex_elements
 from pandapower.toolbox.grid_modification import replace_ext_grid_by_gen
 
-try:
-    import lightsim2grid
-
-    lightsim2grid_installed = True
-except ImportError:
-    lightsim2grid_installed = False
+lightsim2grid_installed = find_spec("lightsim2grid")
 
 logger = logging.getLogger(__name__)
 
