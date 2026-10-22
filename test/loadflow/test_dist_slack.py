@@ -1,8 +1,9 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
 import copy
+import logging
+from importlib.util import find_spec
 
 import numpy as np
 import pandas as pd
@@ -25,17 +26,11 @@ from pandapower.networks.power_system_test_cases import case9, case2848rte
 from pandapower.pypower.idx_brch import PF
 from pandapower.pypower.idx_bus import PD, VM
 from pandapower.run import runpp, set_user_pf_options
-from test.helper_functions import assert_res_equal
 from pandapower.toolbox.element_selection import get_connected_elements_dict
+from test.helper_functions import assert_res_equal
 
-try:
-    import numba
+numba_installed = find_spec("numba") is not None
 
-    numba_installed = True
-except ImportError:
-    numba_installed = False
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +77,6 @@ def _get_xward_result(net):
         )
         for e, idx in connected.items():
             # first, count the total slack weights per bus, and obtain the variable part of the active power
-            total_weight = 0
             if e in ["xward", "ext_grid"]:
                 continue
             p_bus -= net[e].loc[idx, "p_mw"].values.sum()
