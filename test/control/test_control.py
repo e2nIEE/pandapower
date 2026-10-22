@@ -5,11 +5,6 @@ import copy
 
 import pytest
 
-try:
-    from pandaplan.core import pplog
-except:
-    import logging as pplog
-
 from pandapower import runpp
 from pandapower.control import ControllerNotConverged
 from pandapower.control.basic_controller import Controller
@@ -20,10 +15,6 @@ from pandapower.create import create_sgen
 from pandapower.networks import create_kerber_vorstadtnetz_kabel_1
 from pandapower.timeseries.output_writer import OutputWriter
 from pandapower.timeseries.run_time_series import run_timeseries
-
-logger = pplog.getLogger(__name__)
-ctrl_logger = pplog.getLogger("hp.control.control_handler")
-logger.setLevel(pplog.CRITICAL)
 
 
 class DummyController(Controller):

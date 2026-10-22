@@ -31,7 +31,7 @@ def test_to_ppc_and_mpc(pandapower_function):
     # convert pandapower grids to ppc
     ppc = to_ppc(net)
     # convert pandapower grids to mpc (no result validation)
-    mpc = to_mpc(net)
+    to_mpc(net)
 
     # validate voltage results of pandapower-to-ppc-converted grids vs. original pypower results
     net["_options"]["ac"] = True
