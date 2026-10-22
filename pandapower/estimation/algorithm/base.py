@@ -15,7 +15,6 @@ from pandapower.estimation.ppc_conversion import ExtendedPPCI
 from pandapower.pypower.idx_bus import bus_cols
 
 std_logger = logging.getLogger(__name__)
-std_logger.setLevel(logging.DEBUG)
 
 __all__ = ["IRWLSAlgorithm", "WLSAlgorithm", "WLSZeroInjectionConstraintsAlgorithm"]
 

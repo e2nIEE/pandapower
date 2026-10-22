@@ -1,19 +1,16 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import numpy as np
+import logging
 
-try:
-    from pandaplan.core import pplog
-except ImportError:
-    import logging as pplog
+import numpy as np
 
 from pandapower.auxiliary import ControllerNotConverged, NetCalculationNotConverged
 from pandapower.control.util.auxiliary import asarray
 from pandapower.optimal_powerflow import OPFNotConverged
 from pandapower.powerflow import LoadflowNotConverged
 
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 from pandapower.run import runpp
 
@@ -47,7 +44,7 @@ def get_controller_order(nets, controller):
         controller_order.append([*zip(rel_controller[order.argsort()], nets[to_add][order.argsort()])])
         # controller_order.append(net.controller[to_add].sort_values(["order"]).object.values)
 
-    if logger.level <= pplog.DEBUG:
+    if logger.level <= logging.DEBUG:
         logger.debug("levellist: " + str(level_list))
         logger.debug("order: " + str(controller_order))  # Note: creates a long string if many controllers are present
 
