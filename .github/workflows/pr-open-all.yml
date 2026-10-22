@@ -267,7 +267,7 @@ jobs:
           uv pip list
       - name: Test with pytest
         run: |
-          uv run pytest -W error --splits 2 --group ${{ matrix.group }}
+          uv run pytest -W error --splits 4 --group ${{ matrix.group }}
 
   relying: # packages that rely on pandapower
     needs: build
