@@ -384,7 +384,7 @@ def test_pf_options(simple_test_net, output_setup):
     net = simple_test_net
     _, ds = create_data_source()
     time_steps = range(3)
-    ow = output_setup(net, time_steps)
+    output_setup(net, time_steps)
 
     ConstControl(net, "load", "p_mw", element_index=0, data_source=ds, profile_name="load1", scale_factor=0.85)
 
@@ -398,7 +398,7 @@ def test_user_pf_options(simple_test_net, output_setup):
     net = simple_test_net
     _, ds = create_data_source()
     time_steps = range(3)
-    ow = output_setup(net, time_steps)
+    output_setup(net, time_steps)
 
     ConstControl(net, "load", "p_mw", element_index=0, data_source=ds, profile_name="load1", scale_factor=0.85)
 
@@ -418,7 +418,7 @@ def test_user_pf_options_init_run(simple_test_net, output_setup):
     net = simple_test_net
     _, ds = create_data_source()
     time_steps = range(3)
-    ow = output_setup(net, time_steps)
+    output_setup(net, time_steps)
 
     ConstControl(net, "load", "p_mw", element_index=0, data_source=ds, profile_name="load1", scale_factor=0.85)
 
@@ -435,7 +435,7 @@ def test_user_pf_options_recycle_manual(simple_test_net, output_setup):
     net = simple_test_net
     _, ds = create_data_source()
     time_steps = range(3)
-    ow = output_setup(net, time_steps)
+    output_setup(net, time_steps)
 
     ConstControl(net, "load", "p_mw", element_index=0, data_source=ds, profile_name="load1", scale_factor=0.85)
 

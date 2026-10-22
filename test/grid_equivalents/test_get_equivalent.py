@@ -733,8 +733,8 @@ def test_sgen_bswitch():
     assert net_eq.sgen["col_same_str"][0] == "str_test"
     assert net_eq.sgen["col_different_str"][0] == "str_3//str_1"
     assert net_eq.sgen["col_different_str"][1] == "str_2"
-    assert net_eq.sgen["bool"][0] == False
-    assert net_eq.sgen["bool"][1] == True
+    assert not net_eq.sgen["bool"][0]
+    assert net_eq.sgen["bool"][1]
     assert net_eq.sgen["voltLvl"].values.tolist() == [1, 1]
 
 

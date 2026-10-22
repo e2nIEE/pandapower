@@ -1,14 +1,10 @@
 import copy
+import logging
 
 from pandapower.auxiliary import get_free_id
 from pandapower.io_utils import JSONSerializableClass
 
-try:
-    from pandaplan.core import pplog
-except ImportError:
-    import logging as pplog
-
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class ProtectionDevice(JSONSerializableClass):

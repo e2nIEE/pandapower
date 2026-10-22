@@ -48,7 +48,6 @@ def test_ssc_controllable():
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
     create_line_from_parameters(net, 0, 2, 30, 0.0487, 0.13823, 160, 0.664)
 
-    z_base = np.square(110) / net.sn_mva
     x = 5
     # both not controllable
     net1 = copy.deepcopy(net)
@@ -81,7 +80,6 @@ def test_2_sscs():
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
     create_line_from_parameters(net, 0, 2, 30, 0.0487, 0.13823, 160, 0.664)
 
-    z_base = np.square(110) / net.sn_mva
     x = 5
     # both not controllable
     net1 = copy.deepcopy(net)
