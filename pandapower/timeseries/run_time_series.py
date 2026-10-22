@@ -1,6 +1,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
 import tempfile
 from collections.abc import Iterable
 
@@ -12,13 +13,7 @@ from pandapower.control.util.diagnostic import control_diagnostic
 from pandapower.run import runpp
 from pandapower.timeseries.output_writer import OutputWriter
 
-try:
-    from pandaplan.core import pplog
-except ImportError:
-    import logging as pplog
-
-logger = pplog.getLogger(__name__)
-logger.setLevel(level=pplog.WARNING)
+logger = logging.getLogger(__name__)
 
 
 def init_default_outputwriter(net, time_steps, **kwargs):
@@ -297,7 +292,7 @@ def print_progress(i, time_step, time_steps, verbose, **kwargs):
         kwargs["ts_variables"]["progress_bar"].update(1)
 
     # print debug info
-    if logger.level == pplog.DEBUG and verbose:
+    if logger.level == logging.DEBUG and verbose:
         logger.debug("run time step %i" % time_step)
 
     # call a custom progress function
