@@ -47,10 +47,32 @@ jobs:
     timeout-minutes: 20
     strategy:
       matrix:
-        python-version: [ '3.11', '3.12', '3.13', '3.14' ]
         # Reminder: when removing the support of an old python version here, then don't forget to
         # remove it also in pyproject.toml 'requires-python' and the release pipelines
-        group: [ 1, 2 ]
+        #
+        # The suite is sharded into 2 groups on 3.12 (the coverage version) and on 3.14 (the newest
+        # version). 3.11 and 3.13 run the suite unsharded in a single job: version-specific breakage
+        # is rare and additionally covered by the 'typing' and 'relying' jobs. This keeps the job
+        # count at 6 instead of 8, which matters because the concurrency limit is account-wide.
+        include:
+          - python-version: '3.11'
+            splits: 1
+            group: 1
+          - python-version: '3.12'
+            splits: 2
+            group: 1
+          - python-version: '3.12'
+            splits: 2
+            group: 2
+          - python-version: '3.13'
+            splits: 1
+            group: 1
+          - python-version: '3.14'
+            splits: 2
+            group: 1
+          - python-version: '3.14'
+            splits: 2
+            group: 2
     steps:
 #      - uses: julia-actions/setup-julia # Update version when using this by adding commit sha!
       - name: Checkout
@@ -79,12 +101,12 @@ jobs:
       - name: Test with pytest
         if: ${{ matrix.python-version != '3.12' }}
         run: |
-          uv run pytest --splits 2 --group ${{ matrix.group }} $IGNORES
+          uv run pytest --splits ${{ matrix.splits }} --group ${{ matrix.group }} $IGNORES
       - name: Test with pytest, Codecov and Coverage
         if: ${{ matrix.python-version == '3.12' }} # collecting on 3.12 (oldest version where pgm is included)
         run: |
           uv pip install pytest-cov numpy~=1.26
-          uv run pytest --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }} $IGNORES
+          uv run pytest --cov=./ --cov-report=xml --splits ${{ matrix.splits }} --group ${{ matrix.group }} $IGNORES
           cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
       - name: Upload coverage as artifact
         if: ${{ matrix.python-version == '3.12' }}
@@ -247,7 +269,7 @@ jobs:
     strategy:
       matrix:
         python-version: ['3.14']
-        group: [ 1, 2, 3, 4 ]
+        group: [ 1, 2 ]
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -266,8 +288,9 @@ jobs:
         run: |
           uv pip list
       - name: Test with pytest
+        # $IGNORES: opf and network_schema have their own jobs, no need to repeat them here
         run: |
-          uv run pytest -W error --splits 4 --group ${{ matrix.group }}
+          uv run pytest -W error --splits 2 --group ${{ matrix.group }} $IGNORES
 
   relying: # packages that rely on pandapower
     needs: build
