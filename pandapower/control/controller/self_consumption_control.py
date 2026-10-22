@@ -45,10 +45,7 @@ class SelfConsumptionController(StorageController):
         super().__init__(net, element_index, max_charge_mw, max_discharge_mw, **kwargs)
 
     def initialize_control(self, net):
-        """Set the request to the negative site power.
-
-        Called at the start of each control run, after ConstControl has written the values of the time step.
-        """
+        """Set the request to the negative site power, after ConstControl has written the time step values."""
         loads = net.load.loc[self.load_indices]
         sgens = net.sgen.loc[self.sgen_indices]
         p_site = (loads.p_mw * loads.scaling * loads.in_service).sum() - (
@@ -57,10 +54,7 @@ class SelfConsumptionController(StorageController):
         self.p_request_mw = -p_site
 
     def finalize_step(self, net, time):
-        """Commit the time step like StorageController and log a warning if the battery is full or empty.
-
-        Returns True if the step was committed.
-        """
+        """Commit the time step like StorageController and warn if the battery is full or empty."""
         if not super().finalize_step(net, time):
             return False
         if self.energy_not_charged_mwh > 1e-9 and self.e_mwh >= self.max_e_mwh - 1e-9:

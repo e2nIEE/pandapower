@@ -102,20 +102,14 @@ class StorageController(Controller):
         self._last_time = time
 
     def _p_mw_feasible(self, net):
-        """Return the value for net.storage.p_mw [MW] that is allowed by the power and energy limits.
-
-        Called by is_converged and control_step. Divides the grid-side power by the scaling factor.
-        """
+        """Return the net.storage.p_mw [MW] allowed by the limits (grid-side power divided by scaling)."""
         charge_max = min(self.max_charge_mw, (self.max_e_mwh - self.e_mwh) / (self.eta_charge * self.delta_t_h))
         discharge_max = min(self.max_discharge_mw, (self.e_mwh - self.min_e_mwh) * self.eta_discharge / self.delta_t_h)
         p_grid = min(max(self.p_request_mw, -discharge_max), charge_max)
         return p_grid / net.storage.at[self.element_index, "scaling"]
 
     def is_converged(self, net):
-        """Return True if net.storage.p_mw already has the allowed value, or if the storage is out of service.
-
-        Called in the control loop of each time step.
-        """
+        """Return True if net.storage.p_mw has the allowed value or the storage is out of service."""
         if not net.storage.at[self.element_index, "in_service"]:
             return True
         return bool(np.isclose(net.storage.at[self.element_index, "p_mw"], self._p_mw_feasible(net)))
@@ -126,12 +120,7 @@ class StorageController(Controller):
             net.storage.at[self.element_index, "p_mw"] = self._p_mw_feasible(net)
 
     def finalize_step(self, net, time):
-        """Advance the state of charge by one time step and write soc_percent.
-
-        Called once per time step after the output writer, so the output shows the state at the start of the step.
-        Skipped if the power flow did not converge, the storage is out of service, or the step is already committed.
-        Returns True if the step was committed.
-        """
+        """Advance the state of charge once per converged time step (after the output writer); True if committed."""
         idx = self.element_index
         if time == self.last_committed_time or not net.get("converged", False):
             return False
