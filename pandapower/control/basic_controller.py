@@ -2,17 +2,13 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
+import logging
 
 from pandapower.auxiliary import get_free_id
 from pandapower.control.util.auxiliary import drop_same_type_existing_controllers, log_same_type_existing_controllers
 from pandapower.io_utils import JSONSerializableClass
 
-try:
-    from pandaplan.core import pplog
-except:
-    import logging as pplog
-
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class BasicCtrl(JSONSerializableClass):

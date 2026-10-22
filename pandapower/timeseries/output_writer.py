@@ -2,6 +2,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import copy
 import functools
+import logging
 import os
 from collections.abc import Iterable
 from time import perf_counter
@@ -22,11 +23,7 @@ from pandapower.timeseries.read_batch_results import (
     v_to_i_s,
 )
 
-try:
-    from pandaplan.core import pplog
-except ImportError:
-    import logging as pplog
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class OutputWriter(JSONSerializableClass):
