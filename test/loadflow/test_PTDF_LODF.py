@@ -65,12 +65,10 @@ def test_LODF():
 def test_OTDF():
     net = case9()
     mg = create_nxgraph(net, respect_switches=True)
-    # roots = np.r_[net.ext_grid.bus.values, net.gen.bus.values]
-    # stubs = determine_stubs(net, roots=roots, mg=mg, respect_switches=True)  # no lines are stubs here?
-    # stubs = toolbox.get_connected_elements(net, "line", roots)  # because not n-1 lines here are those
+
     c = find_graph_characteristics(g=mg, roots=net.ext_grid.bus.values, characteristics=["bridges"])
     bridges = np.array([lines_on_path(mg, p) for p in c["bridges"]]).flatten()
-    # outage_lines = [i for i in net.line.index.values if i not in stubs and i not in bridges]
+
     outage_lines = np.array([i for i in net.line.index.values if i not in bridges])
     rundcpp(net)
     _, ppci = _pd2ppc(net)
@@ -78,7 +76,6 @@ def test_OTDF():
     lodf = makeLODF(ppci["branch"], ptdf)
     OTDF = makeOTDF(ptdf, lodf, outage_lines)
     Pbus = -net.res_bus.p_mw.values  # must be in generation reference frame
-    nminus1_otdf = (OTDF @ Pbus.reshape(-1, 1)).reshape(outage_lines.shape[0], -1)
 
     # Test selected outages
     n_lines = len(net.line)

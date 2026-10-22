@@ -1,77 +1,33 @@
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import json
+import logging
 import os
+from importlib.util import find_spec
 
 import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower.pf.runpp_3ph import runpp_3ph
+from pandapower.converter.powerfactory.pf_export_functions import run_load_flow as run_powerfactory_load_flow
+from pandapower.converter.powerfactory.validate import _get_pf_results_unbalanced, _set_pf_results_unbalanced
 from pandapower.file_io import from_json
-
-try:
-    from pandaplan.core import pplog as logging
-except ImportError:
-    import logging
+from pandapower.pf.runpp_3ph import runpp_3ph
+from test import test_path
 
 
 logger = logging.getLogger(__name__)
 
-try:
+if find_spec("powerfactory"):
     import powerfactory as pf
 
     PF_INSTALLED = True
-except ImportError:
+else:
     PF_INSTALLED = False
-    logger.info("could not import powerfactory, unbalanced load flow comparsion between pf and pp not possible")
-
-
-from pandapower.converter.powerfactory.pf_export_functions import run_load_flow as run_powerfactory_load_flow
-from pandapower.converter.powerfactory.validate import _get_pf_results_unbalanced, _set_pf_results_unbalanced
-
-from test import test_path
+    logger.info("could not import powerfactory, unbalanced load flow comparison between pf and pp not possible")
 
 testfiles_path = os.path.join(test_path, "converter", "testfiles")
-
-# @pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
-# def test_trafo_asym():
-#     if not PF_INSTALLED:
-#         return
-#     # Only works with PowerFactory installed and configured
-#     # and Yyn needs to be corrected, so there will be xfail atm
-#     prj_name= "\\e2n049.IntUser\\Transformer 2 bus_trafo_11.03.20.IntPrj"
-#     app = initialize_powerfactory(prj_name)
-#     net = from_json(os.path.join(this_file_path, "test_trafo_3ph.json"))
-#     for loadtype in ["delta", "wye", "bal_wye"]:
-#         for vector_group in [ "Dyn", "YNyn","Yzn"]:
-#             print(loadtype, vector_group)
-#             analyse_3ph_loadtypes_and_vectorgroups(app, net, loadtype, vector_group)
-
-# @pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
-# def test_line_asym():
-#     if not PF_INSTALLED:
-#         return
-#     # Only works with PowerFactory installed and configured atm
-#     prj_name= "\\e2n049.IntUser\\2 bus_line_load_25.02.20.IntPrj"
-#     app = initialize_powerfactory(prj_name)
-#     net = from_json(os.path.join(this_file_path, "test_line_3ph.json"))
-#     runpp_3ph(net)
-#     get_pf_results(app, net)
-#     compare_3ph_pp_pf_results(net)
-#     return net
-
-# @pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
-# def test_net_asym():
-#     if not PF_INSTALLED:
-#         return
-#     # Only works with PowerFactory installed and configured
-#     # and Yyn needs to be corrected, so there will be xfail atm
-#     prj_name= "\\e2n049.IntUser\\3 bus_trafo_line_load_22.06.20.IntPrj"
-#     app = initialize_powerfactory(prj_name)
-#     net = from_json(os.path.join(this_file_path, "test_net_3ph.json"))
-#     for loadtype in ["delta", "wye", "bal_wye"]:
-#         for vector_group in [ "Dyn", "YNyn","Yzn"]:
-#             print(loadtype, vector_group)
-#             analyse_3ph_loadtypes_and_vectorgroups(app, net, loadtype, vector_group)
 
 
 def test_trafo_asym():
