@@ -2,6 +2,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
+from importlib.util import find_spec
 import logging
 import os
 import re
@@ -10,7 +11,12 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower.auxiliary import _add_ppc_options, _check_connectivity, lightsim2grid_available
+from pandapower.auxiliary import (
+    _add_ppc_options,
+    _check_connectivity,
+    lightsim2grid_available,
+    _check_if_numba_is_installed,
+)
 from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
 from pandapower.create import (
     create_bus,
@@ -52,6 +58,9 @@ from pandapower.pypower.idx_brch import BR_B, BR_G, BR_R, BR_X
 from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
 from pandapower.results import reset_results
 from pandapower.run import runopp, runpp, set_user_pf_options
+from pandapower.toolbox.comparison import nets_equal
+from pandapower.toolbox.grid_modification import drop_elements
+from test import test_path
 from test.consistency_checks import runpp_with_consistency_checks
 from test.control.test_shunt_control import simple_test_net_shunt_control
 from test.helper_functions import add_grid_connection, assert_net_equal, assert_res_equal, create_test_line
@@ -63,46 +72,14 @@ from test.loadflow.result_test_network_generator import (
     add_test_xward,
     result_test_network_generator,
 )
-from pandapower.toolbox.comparison import nets_equal
-from pandapower.toolbox.grid_modification import drop_elements
-
-logger = logging.getLogger(__name__)
-
-from pandapower.auxiliary import _check_if_numba_is_installed
 
 numba_installed = _check_if_numba_is_installed()
 if numba_installed:
     from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
 
-try:
-    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
+helmpy_available = find_spec("helmpy") is not None
 
-    helmpy_available = True
-except ImportError:
-    helmpy_available = False
-
-try:
-    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
-
-    helmpy_available = True
-except ImportError:
-    helmpy_available = False
-
-try:
-    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
-
-    helmpy_available = True
-except ImportError:
-    helmpy_available = False
-
-try:
-    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
-
-    helmpy_available = True
-except ImportError:
-    helmpy_available = False
-
-from test import test_path
+logger = logging.getLogger(__name__)
 
 
 def test_minimal_net(**kwargs):
@@ -522,8 +499,8 @@ def test_isolated_in_service_bus_at_oos_line():
     net = pandapowerNet(name="test_isolated_in_service_bus_at_oos_line")
     _, b2, _ = add_grid_connection(net)
     b = create_bus(net, vn_kv=135)
-    l = create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
-    net.line.loc[l, "in_service"] = False
+    line_idx = create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
+    net.line.loc[line_idx, "in_service"] = False
     assert runpp_with_consistency_checks(net, init="flat")
 
 
@@ -570,7 +547,7 @@ def test_test_sn_mva():
         runpp(net2)
         try:
             assert_net_equal(net1, net2, exclude_elms=["sn_mva"])
-        except:
+        except AssertionError:
             raise UserWarning("Result difference due to sn_mva after adding %s" % net1.last_added_case)
 
 
@@ -1732,7 +1709,7 @@ def test_tap_table_order():
 
     tol = 0.001
 
-    assert net.converged == True
+    assert net.converged
     assert np.isclose(net.res_bus.at[4, "va_degree"], -1 * (150 - 2 + 0.03717), 0, tol, False)
     assert np.isclose(net.res_bus.at[5, "va_degree"], -1 * (150 - 0 + 0.03810), 0, tol, False)
     assert np.isclose(net.res_bus.at[4, "vm_pu"], 1.03144595, tol, False)
