@@ -62,7 +62,7 @@ def test_from_ppc_simple_against_target():
     set_user_pf_options(net_by_code)  # for assertion of nets_equal
     runpp(net_by_ppc, trafo_model="pi")
     runpp(net_by_code, trafo_model="pi")
-    
+
     assert type(net_by_ppc) is type(net_by_code)
     assert net_by_ppc.converged
     assert len(net_by_ppc.bus) == len(net_by_code.bus)
