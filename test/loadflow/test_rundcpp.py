@@ -86,7 +86,7 @@ def test_test_sn_mva():
         rundcpp(net2)
         try:
             assert_net_equal(net1, net2, exclude_elms=["sn_mva"])
-        except:
+        except AssertionError:
             raise UserWarning("Result difference due to sn_mva after adding %s" % net1.last_added_case)
 
 
@@ -136,7 +136,6 @@ def test_dc_after_ac():
     # then I run an AC powerflow, q_mvar is finite for all, which is again correct
     runpp(net)
     assert np.isfinite(net.res_load["q_mvar"]).all()
-    res_load = 1.0 * net.res_load["q_mvar"]
 
     # I run a second DC powerflow after the AC one, results from AC are kept
     rundcpp(net)
