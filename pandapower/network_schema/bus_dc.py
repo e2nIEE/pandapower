@@ -5,7 +5,7 @@ from pandapower.network_schema.tools.validation.column_condition import create_l
 
 _bus_dc_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the dc bus"),
-    "vn_kv": pa.Column(float, description="reference voltage of the dc bus [kV]"),
+    "vn_kv": pa.Column(float, pa.Check.gt(0), description="reference voltage of the dc bus [kV]"),
     "type": pa.Column(
         pd.StringDtype,
         nullable=True,
@@ -23,16 +23,16 @@ _bus_dc_columns = {
     "geo": pa.Column(pd.StringDtype, nullable=True, required=False, description="geojson.Point as object or string"),
     "max_vm_pu": pa.Column(
         float,
-        pa.Check.le(2),
-        nullable=True,
+        checks=[pa.Check.gt(0), pa.Check.le(2)],
+        nullable=False,
         required=False,
         description="Maximum dc bus voltage in p.u. - necessary for OPF",
         metadata={"opf": True, "default": 2.0},
     ),
     "min_vm_pu": pa.Column(
         float,
-        pa.Check.ge(0),
-        nullable=True,
+        checks=[pa.Check.ge(0), pa.Check.le(2)],
+        nullable=False,
         required=False,
         description="Minimum dc bus voltage in p.u. - necessary for OPF",
         metadata={"opf": True, "default": 0.0},
