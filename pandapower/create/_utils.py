@@ -12,9 +12,9 @@ import numpy.typing as npt
 import pandas as pd
 from numpy import all as np_all
 from numpy import any as np_any
-from numpy import arange, c_, intersect1d, isin, isnan, issubdtype
+from numpy import arange, c_, intersect1d, isin, issubdtype
 from numpy import unique as uni
-from pandas import isnull
+from pandas import isna, isnull
 from pandas.api.types import is_object_dtype
 
 from pandapower.auxiliary import (
@@ -271,11 +271,11 @@ def _not_nan(value, all_=True):
         if all_:
             if is_object_dtype(value):
                 return not all(isnull(value))
-            return not all(isnan(value))
+            return not all(isna(value))
         else:
             if is_object_dtype(value):
                 return not any(isnull(value))
-            return not any(isnan(value))
+            return not any(isna(value))
     else:
         try:
             return pd.notna(value)
@@ -344,7 +344,7 @@ def _add_to_entries_if_not_nan(
     dtype = get_structure_dict(required_only=False)[element_type][column]
     col_info = get_column_info(element_type, column)
     # if dtype is not from pandas (pandas dtypes are pd.NA capable) check if subdtype of float and default_val is pd.NA
-    if getattr(dtype, "__module__", None) != "pandas" and issubdtype(dtype, float) and pd.isna(default_val):
+    if not getattr(dtype, "__module__", "").startswith("pandas") and issubdtype(dtype, float) and pd.isna(default_val):
         default_val = float("nan")
     if col_info is not None and pd.isna(default_val) and not col_info["nullable"]:
         if col_info["default"] is not None:

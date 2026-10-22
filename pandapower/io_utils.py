@@ -79,7 +79,6 @@ except (ImportError, OSError):
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def coords_to_df(value, geotype="line"):

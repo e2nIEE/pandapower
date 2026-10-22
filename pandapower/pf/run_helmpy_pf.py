@@ -13,10 +13,7 @@ from pandapower.pypower.idx_bus import BS, BUS_I, BUS_TYPE, GS, PD, QD, VA, VM
 from pandapower.pypower.idx_bus import SL_FAC as SL_FAC_BUS
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, MBASE, PG, QMAX, QMIN, SL_FAC, VG
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

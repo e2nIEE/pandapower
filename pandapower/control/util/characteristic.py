@@ -1,18 +1,15 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
+
 import numpy as np
 from numpy import interp
 from scipy.interpolate import PchipInterpolator, interp1d
 
 from pandapower.io_utils import JSONSerializableClass
 
-try:
-    from pandaplan.core import pplog
-except ImportError:
-    import logging as pplog
-
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def _make_hashable(obj):
