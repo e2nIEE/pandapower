@@ -44,3 +44,4 @@ information about the definition and interpretation of the parameters in the fol
     elements/ssc
     elements/vsc
     elements/vsc_stacked
+    elements/vsc_bipolar

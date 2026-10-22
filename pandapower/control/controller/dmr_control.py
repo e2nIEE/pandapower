@@ -2,6 +2,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import logging
+import warnings
 
 import numpy as np
 
@@ -15,6 +16,8 @@ class DmrControl(Controller):
     """
     Class to calculate dmr currents. It will take the i_ka from the dc_plus_line, subtract the i_ka from the dc_minus_line
     and write the result in the dmr_line. This is a workaround since pp is not able to calculate the dmr current out-of-the-box.
+
+    Deprecated: model the poles with create_vsc_bipolar instead, then the DMR line is part of the power flow.
     """
 
     def __init__(
@@ -30,6 +33,12 @@ class DmrControl(Controller):
         matching_params=None,
         **kwargs,
     ):
+        warnings.warn(
+            "DmrControl is deprecated and will be removed in a future release. Model the poles with "
+            "create_vsc_bipolar instead, then the current of the DMR line is calculated by the power flow.",
+            DeprecationWarning,
+            stacklevel=2,
+        )
         if matching_params is None:
             matching_params = {"dmr_line": dmr_line, "dc_plus_line": dc_plus_line, "dc_minus_line": dc_minus_line}
 
