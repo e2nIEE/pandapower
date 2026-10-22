@@ -47,13 +47,13 @@ def test_create_load():
     assert net.load.at[idx2, "name"] == "test_load"
     assert np.isclose(net.load.at[idx2, "sn_mva"], 6.0)
     assert np.isclose(net.load.at[idx2, "scaling"], 0.8)
-    assert net.load.at[idx2, "in_service"] == False
+    assert not net.load.at[idx2, "in_service"]
     assert net.load.at[idx2, "type"] == "delta"
     assert np.isclose(net.load.at[idx2, "max_p_mw"], 6.0)
     assert np.isclose(net.load.at[idx2, "min_p_mw"], 4.0)
     assert np.isclose(net.load.at[idx2, "max_q_mvar"], 1.5)
     assert np.isclose(net.load.at[idx2, "min_q_mvar"], 0.5)
-    assert net.load.at[idx2, "controllable"] == True
+    assert net.load.at[idx2, "controllable"]
 
     # Test load with const_z/const_i percent
     idx3 = create_load(
@@ -134,7 +134,7 @@ def test_create_loads_raise_errorexcept():
             max_q_mvar=0.2,
             min_q_mvar=[0, 0.1, 0],
         )
-    l = create_loads(
+    load_idx = create_loads(
         net,
         buses=[b1, b2, b3],
         p_mw=[0, 0, 1],
@@ -156,7 +156,7 @@ def test_create_loads_raise_errorexcept():
             min_p_mw=[0, 0.1, 0],
             max_q_mvar=0.2,
             min_q_mvar=[0, 0.1, 0],
-            index=l,
+            index=load_idx,
         )
 
     validate_network(net)
@@ -207,7 +207,7 @@ def test_create_asymmetric_load():
     assert np.isclose(net.asymmetric_load.at[idx2, "sn_mva"], 7.5)
     assert net.asymmetric_load.at[idx2, "name"] == "asym_test"
     assert np.isclose(net.asymmetric_load.at[idx2, "scaling"], 0.9)
-    assert net.asymmetric_load.at[idx2, "in_service"] == False
+    assert not net.asymmetric_load.at[idx2, "in_service"]
     assert net.asymmetric_load.at[idx2, "type"] == "delta"
 
     validate_network(net)
@@ -261,8 +261,8 @@ def test_create_load_dc():
     )
     assert net.load_dc.at[idx2, "name"] == "dc_load_test"
     assert np.isclose(net.load_dc.at[idx2, "scaling"], 0.75)
-    assert net.load_dc.at[idx2, "in_service"] == False
+    assert not net.load_dc.at[idx2, "in_service"]
     assert net.load_dc.at[idx2, "type"] == "resistive"
-    assert net.load_dc.at[idx2, "controllable"] == True
+    assert net.load_dc.at[idx2, "controllable"]
 
     validate_network(net)

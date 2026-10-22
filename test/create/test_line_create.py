@@ -40,9 +40,9 @@ def test_create_line_conductance():
         "test_conductance",
     )
 
-    l = create_line(net, 0, 1, 1.0, "test_conductance", test_kwargs="dummy_string")
-    assert net.line.g_us_per_km.at[l] == 1
-    assert net.line.test_kwargs.at[l] == "dummy_string"
+    line_id = create_line(net, 0, 1, 1.0, "test_conductance", test_kwargs="dummy_string")
+    assert net.line.g_us_per_km.at[line_id] == 1
+    assert net.line.test_kwargs.at[line_id] == "dummy_string"
 
     validate_network(net)
 
@@ -141,7 +141,7 @@ def test_create_lines():
     # with geodata
     net = pandapowerNet(name="test_create_lines2")
     b1, b2 = create_buses(net, 2, 10)
-    l = create_lines(
+    line_ids = create_lines(
         net,
         [b1, b1],
         [b2, b2],
@@ -151,15 +151,17 @@ def test_create_lines():
     )
 
     assert len(net.line) == 2
-    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (2, 2), (3, 3)]), sort_keys=True)
-    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
+    assert net.line.at[line_ids[0], "geo"] == geojson.dumps(
+        geojson.LineString([(1, 1), (2, 2), (3, 3)]), sort_keys=True
+    )
+    assert net.line.at[line_ids[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
 
     validate_network(net)
 
     # setting params as single value
     net = pandapowerNet(name="test_create_lines3")
     b1, b2 = create_buses(net, 2, 10)
-    l = create_lines(
+    line_ids = create_lines(
         net,
         [b1, b1],
         [b2, b2],
@@ -174,26 +176,26 @@ def test_create_lines():
     )
 
     assert len(net.line) == 2
-    assert net.line.length_km.at[l[0]] == 5
-    assert net.line.length_km.at[l[1]] == 5
+    assert net.line.length_km.at[line_ids[0]] == 5
+    assert net.line.length_km.at[line_ids[1]] == 5
     assert net.line.in_service.dtype == bool
-    assert not net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
-    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
-    assert net.line.at[l[0], "name"] == "test"
-    assert net.line.at[l[1], "name"] == "test"
-    assert net.line.at[l[0], "max_loading_percent"] == 90
-    assert net.line.at[l[1], "max_loading_percent"] == 90
-    assert net.line.at[l[0], "parallel"] == 1
-    assert net.line.at[l[1], "parallel"] == 1
+    assert not net.line.at[line_ids[0], "in_service"]  # is actually <class 'numpy.bool_'>
+    assert not net.line.at[line_ids[1], "in_service"]  # is actually <class 'numpy.bool_'>
+    assert net.line.at[line_ids[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[line_ids[1], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[line_ids[0], "name"] == "test"
+    assert net.line.at[line_ids[1], "name"] == "test"
+    assert net.line.at[line_ids[0], "max_loading_percent"] == 90
+    assert net.line.at[line_ids[1], "max_loading_percent"] == 90
+    assert net.line.at[line_ids[0], "parallel"] == 1
+    assert net.line.at[line_ids[1], "parallel"] == 1
 
     validate_network(net)
 
     # setting params as array
     net = pandapowerNet(name="test_create_lines4")
     b1, b2 = create_buses(net, 2, 10)
-    l = create_lines(
+    line_ids = create_lines(
         net,
         [b1, b1],
         [b2, b2],
@@ -208,19 +210,19 @@ def test_create_lines():
     )
 
     assert len(net.line) == 2
-    assert net.line.at[l[0], "length_km"] == 1
-    assert net.line.at[l[1], "length_km"] == 5
+    assert net.line.at[line_ids[0], "length_km"] == 1
+    assert net.line.at[line_ids[1], "length_km"] == 5
     assert net.line.in_service.dtype == bool
-    assert net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
-    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(100, 10), (200, 20)]), sort_keys=True)
-    assert net.line.at[l[0], "name"] == "test1"
-    assert net.line.at[l[1], "name"] == "test2"
-    assert net.line.at[l[0], "max_loading_percent"] == 80
-    assert net.line.at[l[1], "max_loading_percent"] == 90
-    assert net.line.at[l[0], "parallel"] == 2
-    assert net.line.at[l[1], "parallel"] == 1
+    assert net.line.at[line_ids[0], "in_service"]  # is actually <class 'numpy.bool_'>
+    assert not net.line.at[line_ids[1], "in_service"]  # is actually <class 'numpy.bool_'>
+    assert net.line.at[line_ids[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[line_ids[1], "geo"] == geojson.dumps(geojson.LineString([(100, 10), (200, 20)]), sort_keys=True)
+    assert net.line.at[line_ids[0], "name"] == "test1"
+    assert net.line.at[line_ids[1], "name"] == "test2"
+    assert net.line.at[line_ids[0], "max_loading_percent"] == 80
+    assert net.line.at[line_ids[1], "max_loading_percent"] == 90
+    assert net.line.at[line_ids[0], "parallel"] == 2
+    assert net.line.at[line_ids[1], "parallel"] == 1
 
     validate_network(net)
 
@@ -350,7 +352,7 @@ def test_create_lines_from_parameters():
     # standard
     net = pandapowerNet(name="test_create_lines_from_parameters0")
     b1, b2 = create_buses(net, 2, 10)
-    l = create_lines_from_parameters(
+    line_ids = create_lines_from_parameters(
         net,
         [b1, b1],
         [b2, b2],
@@ -367,12 +369,12 @@ def test_create_lines_from_parameters():
     assert len(net.line.c_nf_per_km) == 2
     assert len(net.line.max_i_ka) == 2
     assert len(net.line.df) == 2
-    assert net.line.test_kwargs.at[l[0]] == "dummy_string"
+    assert net.line.test_kwargs.at[line_ids[0]] == "dummy_string"
 
     # with geodata
     net = pandapowerNet(name="test_create_lines_from_parameters1")
     b1, b2 = create_buses(net, 2, 10)
-    l = create_lines_from_parameters(
+    line_ids = create_lines_from_parameters(
         net,
         [b1, b1],
         [b2, b2],
@@ -385,15 +387,17 @@ def test_create_lines_from_parameters():
     )
 
     assert len(net.line) == 2
-    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (2, 2), (3, 3)]), sort_keys=True)
-    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
+    assert net.line.at[line_ids[0], "geo"] == geojson.dumps(
+        geojson.LineString([(1, 1), (2, 2), (3, 3)]), sort_keys=True
+    )
+    assert net.line.at[line_ids[1], "geo"] == geojson.dumps(geojson.LineString([(1, 1), (1, 2)]), sort_keys=True)
 
     validate_network(net)
 
     # setting params as single value
     net = pandapowerNet(name="test_create_lines_from_parameters2")
     b1, b2 = create_buses(net, 2, 10)
-    l = create_lines_from_parameters(
+    line_ids = create_lines_from_parameters(
         net,
         [b1, b1],
         [b2, b2],
@@ -424,10 +428,14 @@ def test_create_lines_from_parameters():
     assert all(net.line["g0_us_per_km"].values == 0)
     assert all(net.line["c0_nf_per_km"].values == 0)
     assert net.line.in_service.dtype == np.dtype(bool)
-    assert not net.line.at[l[0], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert not net.line.at[l[1], "in_service"]  # is actually <class 'numpy.bool_'>
-    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10.0, 10.0), (20.0, 20.0)]), sort_keys=True)
-    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(10.0, 10.0), (20.0, 20.0)]), sort_keys=True)
+    assert not net.line.at[line_ids[0], "in_service"]  # is actually <class 'numpy.bool_'>
+    assert not net.line.at[line_ids[1], "in_service"]  # is actually <class 'numpy.bool_'>
+    assert net.line.at[line_ids[0], "geo"] == geojson.dumps(
+        geojson.LineString([(10.0, 10.0), (20.0, 20.0)]), sort_keys=True
+    )
+    assert net.line.at[line_ids[1], "geo"] == geojson.dumps(
+        geojson.LineString([(10.0, 10.0), (20.0, 20.0)]), sort_keys=True
+    )
     assert all(net.line["name"].values == "test")
     assert all(net.line["max_loading_percent"].values == 90)
     assert all(net.line["parallel"].values == 1)
@@ -440,7 +448,7 @@ def test_create_lines_from_parameters():
     # setting params as array
     net = pandapowerNet(name="test_create_lines_from_parameters3")
     b1, b2 = create_buses(net, 2, 10)
-    l = create_lines_from_parameters(
+    line_ids = create_lines_from_parameters(
         net,
         [b1, b1],
         [b2, b2],
@@ -462,33 +470,33 @@ def test_create_lines_from_parameters():
     )
 
     assert len(net.line) == 2
-    assert net.line.at[l[0], "length_km"] == 1
-    assert net.line.at[l[1], "length_km"] == 5
-    assert net.line.at[l[0], "r_ohm_per_km"] == 1
-    assert net.line.at[l[1], "r_ohm_per_km"] == 2
-    assert np.isclose(net.line.at[l[0], "x_ohm_per_km"], 0.3)
-    assert np.isclose(net.line.at[l[1], "x_ohm_per_km"], 0.5)
-    assert np.isclose(net.line.at[l[0], "c_nf_per_km"], 0.0)
-    assert np.isclose(net.line.at[l[1], "c_nf_per_km"], 0.1)
-    assert np.isclose(net.line.at[l[0], "r0_ohm_per_km"], 0.1)
-    assert np.isclose(net.line.at[l[1], "r0_ohm_per_km"], 0.15)
-    assert np.isclose(net.line.at[l[0], "x0_ohm_per_km"], 0.2)
-    assert np.isclose(net.line.at[l[1], "x0_ohm_per_km"], 0.25)
+    assert net.line.at[line_ids[0], "length_km"] == 1
+    assert net.line.at[line_ids[1], "length_km"] == 5
+    assert net.line.at[line_ids[0], "r_ohm_per_km"] == 1
+    assert net.line.at[line_ids[1], "r_ohm_per_km"] == 2
+    assert np.isclose(net.line.at[line_ids[0], "x_ohm_per_km"], 0.3)
+    assert np.isclose(net.line.at[line_ids[1], "x_ohm_per_km"], 0.5)
+    assert np.isclose(net.line.at[line_ids[0], "c_nf_per_km"], 0.0)
+    assert np.isclose(net.line.at[line_ids[1], "c_nf_per_km"], 0.1)
+    assert np.isclose(net.line.at[line_ids[0], "r0_ohm_per_km"], 0.1)
+    assert np.isclose(net.line.at[line_ids[1], "r0_ohm_per_km"], 0.15)
+    assert np.isclose(net.line.at[line_ids[0], "x0_ohm_per_km"], 0.2)
+    assert np.isclose(net.line.at[line_ids[1], "x0_ohm_per_km"], 0.25)
     assert all(net.line["g0_us_per_km"].values == 0)
     assert all(net.line["c0_nf_per_km"].values == 0)
     assert net.line.in_service.dtype == np.dtype(bool)
-    assert net.line.at[l[0], "in_service"]
-    assert not net.line.at[l[1], "in_service"]
-    assert net.line.at[l[0], "name"] == "test1"
-    assert net.line.at[l[1], "name"] == "test2"
-    assert net.line.at[l[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
-    assert net.line.at[l[1], "geo"] == geojson.dumps(geojson.LineString([(100, 10), (200, 20)]), sort_keys=True)
-    assert net.line.at[l[0], "max_loading_percent"] == 80
-    assert net.line.at[l[1], "max_loading_percent"] == 90
-    assert net.line.at[l[0], "parallel"] == 2
-    assert net.line.at[l[1], "parallel"] == 1
-    assert net.line.at[l[0], "max_i_ka"] == 100
-    assert net.line.at[l[1], "max_i_ka"] == 200
+    assert net.line.at[line_ids[0], "in_service"]
+    assert not net.line.at[line_ids[1], "in_service"]
+    assert net.line.at[line_ids[0], "name"] == "test1"
+    assert net.line.at[line_ids[1], "name"] == "test2"
+    assert net.line.at[line_ids[0], "geo"] == geojson.dumps(geojson.LineString([(10, 10), (20, 20)]), sort_keys=True)
+    assert net.line.at[line_ids[1], "geo"] == geojson.dumps(geojson.LineString([(100, 10), (200, 20)]), sort_keys=True)
+    assert net.line.at[line_ids[0], "max_loading_percent"] == 80
+    assert net.line.at[line_ids[1], "max_loading_percent"] == 90
+    assert net.line.at[line_ids[0], "parallel"] == 2
+    assert net.line.at[line_ids[1], "parallel"] == 1
+    assert net.line.at[line_ids[0], "max_i_ka"] == 100
+    assert net.line.at[line_ids[1], "max_i_ka"] == 200
 
     validate_network(net)
 
@@ -497,52 +505,60 @@ def test_create_lines_raise_errorexcept():
     # standard
     net = pandapowerNet(name="test_create_lines_raise_errorexcept")
     b1, b2 = create_buses(net, 2, 10)
-    create_lines_from_parameters(
+    create_lines(
         net,
         [b1, b1],
         [b2, b2],
         length_km=[10.0, 5.0],
-        x_ohm_per_km=[1.0, 1.0],
-        r_ohm_per_km=[0.2, 0.2],
-        c_nf_per_km=[0, 0],
-        max_i_ka=[100, 100],
+        line_params={
+            "x_ohm_per_km": 1.0,
+            "r_ohm_per_km": 0.2,
+            "c_nf_per_km": 0,
+            "max_i_ka": 100,
+        },
     )
 
     with pytest.raises(UserWarning, match="Lines trying to attach .*"):
-        create_lines_from_parameters(
+        create_lines(
             net,
             [b1, 2],
             [2, b2],
             length_km=[10.0, 5.0],
-            x_ohm_per_km=[1.0, 1.0],
-            r_ohm_per_km=[0.2, 0.2],
-            c_nf_per_km=[0, 0],
-            max_i_ka=[100, 100],
+            line_params={
+                "x_ohm_per_km": 1.0,
+                "r_ohm_per_km": 0.2,
+                "c_nf_per_km": 0,
+                "max_i_ka": 100,
+            },
         )
     with pytest.raises(UserWarning, match="Lines with indexes .*"):
-        create_lines_from_parameters(
+        create_lines(
             net,
             [b1, b1],
             [b2, b2],
             index=[0, 1],
             length_km=[10.0, 5.0],
-            x_ohm_per_km=[1.0, 1.0],
-            r_ohm_per_km=[0.2, 0.2],
-            c_nf_per_km=[0, 0],
-            max_i_ka=[100, 100],
+            line_params={
+                "x_ohm_per_km": 1.0,
+                "r_ohm_per_km": 0.2,
+                "c_nf_per_km": 0,
+                "max_i_ka": 100,
+            },
         )
 
     with pytest.raises(UserWarning, match="Passed indexes"):
-        create_lines_from_parameters(
+        create_lines(
             net,
             [b1, b1],
             [b2, b2],
             index=[2, 2],
             length_km=[10.0, 5.0],
-            x_ohm_per_km=[1.0, 1.0],
-            r_ohm_per_km=[0.2, 0.2],
-            c_nf_per_km=[0, 0],
-            max_i_ka=[100, 100],
+            line_params={
+                "x_ohm_per_km": 1.0,
+                "r_ohm_per_km": 0.2,
+                "c_nf_per_km": 0,
+                "max_i_ka": 100,
+            },
         )
 
     validate_network(net)
