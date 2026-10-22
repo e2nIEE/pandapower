@@ -3,6 +3,7 @@
 
 import copy
 from collections.abc import Callable
+from importlib.util import find_spec
 
 import numpy as np
 import pandas as pd
@@ -38,12 +39,7 @@ from pandapower.network import pandapowerNet
 from pandapower.networks import example_multivoltage, example_simple
 from pandapower.toolbox.grid_modification import change_std_type, drop_trafos
 
-try:
-    import numba
-
-    numba_installed = True
-except ImportError:
-    numba_installed = False
+numba_installed = find_spec("numba")
 
 pytestmark = pytest.mark.filterwarnings("ignore")
 
