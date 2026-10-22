@@ -14,7 +14,7 @@ from pandapower.create import (
     create_transformer3w,
 )
 from pandapower.estimation.idx_brch import P_TO, P_TO_STD
-from pandapower.estimation.idx_bus import P, P_IDX, Q, Q_IDX, ZERO_INJ_FLAG
+from pandapower.estimation.idx_bus import P_IDX, Q_IDX, ZERO_INJ_FLAG, P, Q
 from pandapower.estimation.ppc_conversion import pp2eppci
 from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_brch import branch_cols
@@ -63,7 +63,7 @@ def test_zero_injection_element_indices(zero_injection_net, create_elements, bus
             np.testing.assert_array_equal(eppci["bus"][row, [bus_cols + P, bus_cols + Q]], [0, 0])
             np.testing.assert_array_equal(eppci["bus"][row, [bus_cols + P_IDX, bus_cols + Q_IDX]], [-1, -1])
         else:
-            assert np.isnan(eppci["bus"][row, [bus_cols + P, bus_cols + Q]]).all()
+            np.testing.assert_array_equal(np.isnan(eppci["bus"][row, [bus_cols + P, bus_cols + Q]]), [True, True])
 
 
 def test_zero_injection_fused_bus(zero_injection_net):
@@ -73,7 +73,7 @@ def test_zero_injection_fused_bus(zero_injection_net):
 
     _, _, eppci = pp2eppci(net, zero_injection="no_inj_bus")
     rows = net._pd2ppc_lookups["bus"][[20, 30]]
-    assert rows[0] == rows[1]
+    np.testing.assert_equal(rows[0], rows[1])
     np.testing.assert_array_equal(eppci["bus"][rows, bus_cols + ZERO_INJ_FLAG], [False, False])
 
 
