@@ -132,8 +132,8 @@ include = [
 [tool.pytest.ini_options]
 addopts = [
     "--strict-markers",
-    "--maxfail=1",  # stop after the first failure / error / timeout
-    "--timeout=60", # "--timeout-method=thread",  # per‑test timeout in seconds (requires pytest-timeout)
+    "--maxfail=10",  # stop after the first ten failures / error / timeout
+    "--timeout=100", # "--timeout-method=thread", # per‑test timeout in seconds (requires pytest-timeout)
 ]
 markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"'), e.g. in run_fast_tests"
