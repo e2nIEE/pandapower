@@ -9,10 +9,8 @@ from packaging import version
 from pandapower.plotting.plotly.mapbox_plot import _on_map_test
 from pandapower.plotting.plotly.traces import _in_ipynb
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
+
 logger = logging.getLogger(__name__)
 
 try:
