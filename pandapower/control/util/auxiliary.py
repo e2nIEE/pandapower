@@ -2,6 +2,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import sys
 import time
+from importlib.util import find_spec
 from typing import overload
 
 import numpy as np
@@ -13,19 +14,16 @@ from pandapower.auxiliary import ensure_iterability, soft_dependency_error
 from pandapower.control.util.characteristic import Characteristic, SplineCharacteristic
 from pandapower.create._utils import add_column_to_df
 
-try:
+if find_spec("matplotlib"):
     import matplotlib.pyplot as plt
 
     MATPLOTLIB_INSTALLED = True
-except ImportError:
+else:
     MATPLOTLIB_INSTALLED = False
 
-try:
-    from pandaplan.core import pplog
-except ImportError:
-    import logging as pplog
+import logging
 
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def asarray(val, dtype=np.float64):
