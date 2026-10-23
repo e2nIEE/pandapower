@@ -3,6 +3,12 @@
 
 from __future__ import annotations
 
+__all__ = [
+    "add_column_to_df",
+    "add_tag_group",
+    "add_tag_group_to_df",
+]
+
 import logging
 import warnings
 from collections.abc import Collection, Iterable
@@ -427,7 +433,7 @@ def _set_entries(net, table, index, preserve_dtypes=True, entries: dict | None =
             if col in dtype_dict:
                 dtype = dtype_dict[col]
                 # default value for bool entries
-                if dtype == bool and net[table][col].isna().any():  # TODO: check if wanted behaviour
+                if dtype is bool and net[table][col].isna().any():  # TODO: check if wanted behaviour
                     net[table][col] = net[table][col].astype(pd.BooleanDtype()).fillna(False)
                 net[table][col] = net[table][col].astype(dtype)
 
@@ -518,7 +524,7 @@ def _set_const_percent_values(const_percent_values_list, kwargs_input):
         return const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs_input
     elif (
         ("const_z_percent" in kwargs_input or "const_i_percent" in kwargs_input)
-        and (const_percent_values_default_initials == False)
+        and not const_percent_values_default_initials
         or ("const_z_percent" in kwargs_input or "const_i_percent" not in kwargs_input)
         or ("const_z_percent" not in kwargs_input or "const_i_percent" in kwargs_input)
     ):
