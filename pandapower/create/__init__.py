@@ -81,6 +81,7 @@ __all__ = [
     "create_ward",
     "create_wards",
     "create_xward",
+    "LineParams",
 ]
 
 from pandapower.create._utils import (
@@ -126,6 +127,7 @@ from pandapower.create.line_create import (
     create_lines_dc,
     create_lines_dc_from_parameters,
     create_lines_from_parameters,
+    LineParams,
 )
 from pandapower.create.load_create import (
     create_asymmetric_load,
