@@ -716,29 +716,28 @@ def test_log_characteristic_json_roundtrip_finite_positive_endpoints(caplog):
 
 def test_geo_accessor_geojson():
     net = pandapowerNet(name="test_geo_accessor_geojson")
-    b1 = create_bus(net, 10, geodata=(1, 1))
-    b2 = create_bus(net, 10, geodata=(2, 2))
-    l = create_lines(
+    b1, b2 = create_buses(net, 2, 10, geodata=[(1, 1), (2, 2)])
+    line0, line1 = create_lines(
         net,
         [b1, b1],
         [b2, b2],
         [1.5, 3],
-        std_type="48-AL1/8-ST1A 10.0",
+        line_params="48-AL1/8-ST1A 10.0",
         geodata=[[(1, 1), (2, 2), (3, 3)], [(1, 1), (1, 2)]],
     )
-    create_line(net, b1, b2, 1.5, std_type="48-AL1/8-ST1A 10.0")
+    create_lines(net, b1, b2, 1.5, line_params="48-AL1/8-ST1A 10.0")
 
     assert len(net.line.geo.geojson._coords) == 2
-    assert np.array_equal(net.line.geo.geojson._coords.at[l[0]], [[1, 1], [2, 2], [3, 3]])
-    assert np.array_equal(net.line.geo.geojson._coords.at[l[1]], [[1, 1], [1, 2]])
+    assert np.array_equal(net.line.geo.geojson._coords.at[line0], [[1, 1], [2, 2], [3, 3]])
+    assert np.array_equal(net.line.geo.geojson._coords.at[line1], [[1, 1], [1, 2]])
     assert np.array_equal(net.bus.geo.geojson._coords.at[b1], [1, 1])
     assert np.array_equal(net.bus.geo.geojson._coords.at[b2], [2, 2])
     assert net.bus.geo.geojson.type.at[b1] == "Point"
     assert net.bus.geo.geojson.type.at[b2] == "Point"
-    assert net.line.geo.geojson.type.at[l[0]] == "LineString"
-    assert net.line.geo.geojson.type.at[l[1]] == "LineString"
-    assert set(net.line.geo.geojson.as_geo_obj.at[l[0]].keys()) == {"coordinates", "type"}
-    assert set(net.line.geo.geojson.as_geo_obj.at[l[1]].keys()) == {"coordinates", "type"}
+    assert net.line.geo.geojson.type.at[line0] == "LineString"
+    assert net.line.geo.geojson.type.at[line1] == "LineString"
+    assert set(net.line.geo.geojson.as_geo_obj.at[line0].keys()) == {"coordinates", "type"}
+    assert set(net.line.geo.geojson.as_geo_obj.at[line1].keys()) == {"coordinates", "type"}
     assert set(net.bus.geo.geojson.as_geo_obj.at[b1].keys()) == {"coordinates", "type"}
     assert set(net.bus.geo.geojson.as_geo_obj.at[b2].keys()) == {"coordinates", "type"}
 
