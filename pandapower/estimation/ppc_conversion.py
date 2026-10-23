@@ -577,10 +577,12 @@ def _add_zero_injection(net, ppci, bus_append, zero_injection):
                         tab = net[element]
                         if len(tab) == 0:
                             continue
-                        in_service = (tab["in_service"]) & (net.bus["in_service"][tab["bus"].values])
+                        in_service = tab["in_service"].to_numpy() & net.bus.loc[tab["bus"], "in_service"].to_numpy()
                         b = np.hstack([b, tab["bus"][in_service]])
                     active_buses = np.unique(b)
                     active_buses = bus_lookup[active_buses]
+                    # Disconnected buses are excluded from ppci.
+                    active_buses = active_buses[active_buses < ppci["bus"].shape[0]]
                     bus_append[active_buses, ZERO_INJ_FLAG] = False
             elif zero_injection != "aux_bus":
                 raise UserWarning("zero injection parameter is not correctly initialized")
