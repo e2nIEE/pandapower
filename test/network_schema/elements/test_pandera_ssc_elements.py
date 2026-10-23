@@ -34,7 +34,7 @@ class TestSscRequiredFields:
             itertools.chain(
                 itertools.product(["bus"], positiv_ints_plus_zero),
                 itertools.product(["r_ohm"], positiv_floats_plus_zero),
-                itertools.product(["x_ohm"], positiv_floats_plus_zero),
+                itertools.product(["x_ohm"], all_allowed_floats),
                 itertools.product(["set_vm_pu"], all_allowed_floats),
                 itertools.product(["vm_internal_pu"], all_allowed_floats),
                 itertools.product(["va_internal_degree"], all_allowed_floats),
@@ -69,7 +69,7 @@ class TestSscRequiredFields:
             itertools.chain(
                 itertools.product(["bus"], [float(np.nan), pd.NA, *negativ_ints, *not_ints_list]),
                 itertools.product(["r_ohm"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
-                itertools.product(["x_ohm"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
+                itertools.product(["x_ohm"], [float(np.nan), pd.NA, *not_floats_list]),
                 itertools.product(["set_vm_pu"], [float(np.nan), pd.NA, *not_floats_list]),
                 itertools.product(["vm_internal_pu"], [float(np.nan), pd.NA, *not_floats_list]),
                 itertools.product(["va_internal_degree"], [float(np.nan), pd.NA, *not_floats_list]),
