@@ -747,18 +747,16 @@ class FromSerializableRegistry:
             if "interpolator_kind" in dt:
                 interpolator_kind = dt["interpolator_kind"]
 
-            lsc = LogSplineCharacteristic(
-                net=None,
-                x_values=x_vals,
-                y_values=y_vals,
-                interpolator_kind=interpolator_kind,
-                table="characteristic",
-                **kwarg,
+            return LogSplineCharacteristic.from_dict(
+                {
+                    "_x_vals": x_vals,
+                    "_y_vals": y_vals,
+                    "index": index,
+                    "kwargs": kwarg,
+                    "interpolator_kind": interpolator_kind,
+                    "_interpolator": None,
+                }
             )
-            lsc._x_vals = x_vals
-            lsc._y_vals = y_vals
-            lsc.index = index
-            return lsc
 
     @from_serializable.register(class_name="method")
     def method(self):

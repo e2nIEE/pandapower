@@ -3,6 +3,8 @@
 
 import copy
 import gc
+import logging
+import warnings
 from math import isclose
 
 import geojson
@@ -616,6 +618,100 @@ def test_log_characteristic_property():
     )
     c._x_vals
     c([2])
+
+
+@pytest.mark.parametrize(
+    ("interpolator_kind", "kwargs", "diagnostic_mode"),
+    [
+        ("Pchip", {"extrapolate": False}, "warnings"),
+        ("Pchip", {"extrapolate": False}, "strict"),
+        ("interp1d", {"kind": "linear", "bounds_error": False, "fill_value": "extrapolate"}, "warnings"),
+        ("interp1d", {"kind": "linear", "bounds_error": False, "fill_value": "extrapolate"}, "strict"),
+    ],
+)
+def test_log_characteristic_json_roundtrip_positive_values(interpolator_kind, kwargs, diagnostic_mode, caplog):
+    net = pandapowerNet(name="test_log_characteristic_json_roundtrip")
+    first = LogSplineCharacteristic(net, [1, 2], [1, 4], interpolator_kind=interpolator_kind, **kwargs)
+    original = LogSplineCharacteristic(net, [0.1, 1, 10], [0.01, 1, 100], interpolator_kind=interpolator_kind, **kwargs)
+    assert original.index != first.index
+    assert original.index != 0
+    original([0.2, 0.5, 2, 5])
+    serialized = to_json(net)
+
+    if diagnostic_mode == "warnings":
+        caplog.clear()
+        with warnings.catch_warnings(record=True) as caught_warnings:
+            warnings.simplefilter("always")
+            with caplog.at_level(logging.WARNING, logger="pandapower.control.util.characteristic"):
+                restored_net = from_json_string(serialized)
+        assert not [
+            warning
+            for warning in caught_warnings
+            if issubclass(warning.category, RuntimeWarning)
+            and warning.filename.replace("\\", "/").endswith("/pandapower/control/util/characteristic.py")
+            and "log10" in str(warning.message)
+        ]
+        characteristic_records = [
+            record for record in caplog.records if record.name == "pandapower.control.util.characteristic"
+        ]
+        assert not [record for record in characteristic_records if "zero-values not supported" in record.getMessage()]
+    else:
+        with np.errstate(divide="raise", invalid="raise"):
+            restored_net = from_json_string(serialized)
+
+    assert list(restored_net.characteristic.index) == list(net.characteristic.index)
+    assert len(restored_net.characteristic.object) == 2
+    for index in net.characteristic.index:
+        assert restored_net.characteristic.object.at[index].index == index
+    restored = restored_net.characteristic.object.at[original.index]
+    assert type(restored) is LogSplineCharacteristic
+    assert restored._interpolator is None
+    assert restored.index == original.index
+    assert restored.kwargs == original.kwargs
+    assert restored.interpolator_kind == original.interpolator_kind
+    assert np.array_equal(restored._x_vals, original._x_vals)
+    assert np.array_equal(restored._y_vals, original._y_vals)
+
+    expected = np.array([0.04, 0.25, 4, 25])
+    assert np.allclose(restored([0.2, 0.5, 2, 5]), expected, rtol=1e-12, atol=0)
+    assert restored._interpolator is not None
+
+
+def test_log_characteristic_json_roundtrip_finite_positive_endpoints(caplog):
+    endpoints = np.array([np.nextafter(0.0, 1.0), 1.0, np.finfo(np.float64).max])
+    net = pandapowerNet(name="test_log_characteristic_json_endpoints")
+    original = LogSplineCharacteristic(net, endpoints, endpoints, interpolator_kind="Pchip", extrapolate=False)
+    serialized = to_json(net)
+
+    caplog.clear()
+    with warnings.catch_warnings(record=True) as caught_warnings:
+        warnings.simplefilter("always")
+        with caplog.at_level(logging.WARNING, logger="pandapower.control.util.characteristic"):
+            restored_net = from_json_string(serialized)
+
+    restored = restored_net.characteristic.object.at[original.index]
+    assert restored._interpolator is None
+    assert np.array_equal(restored._x_vals, original._x_vals)
+    assert np.array_equal(restored._y_vals, original._y_vals)
+    assert not [
+        warning
+        for warning in caught_warnings
+        if issubclass(warning.category, RuntimeWarning)
+        and (
+            (
+                warning.filename.replace("\\", "/").endswith("/pandapower/control/util/characteristic.py")
+                and "log10" in str(warning.message)
+            )
+            or (
+                warning.filename.replace("\\", "/").endswith("/pandapower/io_utils.py")
+                and "power" in str(warning.message)
+            )
+        )
+    ]
+    characteristic_records = [
+        record for record in caplog.records if record.name == "pandapower.control.util.characteristic"
+    ]
+    assert not [record for record in characteristic_records if "zero-values not supported" in record.getMessage()]
 
 
 def test_geo_accessor_geojson():

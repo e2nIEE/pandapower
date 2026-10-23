@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from pandapower.converter.pandamodels.from_pm import read_tnep_results
 from pandapower.converter.pandamodels.to_pm import convert_pp_to_pm, init_ne_line
 from pandapower.create import create_poly_cost
 from pandapower.networks.cigre_networks import create_cigre_network_mv
@@ -44,6 +45,54 @@ def define_possible_new_lines(net):
     init_ne_line(net, new_lines, construction_costs=np.ones(len(new_lines)))
 
     return net
+
+
+def test_tnep_built_result_uses_boolean_dtype():
+    net = cigre_grid()
+    candidate_labels = [23, 7, 41]
+    net["line"] = net["line"].iloc[: len(candidate_labels)].copy()
+    net["line"].index = candidate_labels
+    net["line"].loc[:, "in_service"] = False
+    line_before = net["line"].copy(deep=True)
+
+    init_ne_line(net, candidate_labels, construction_costs=np.ones(len(candidate_labels)))
+
+    pd.testing.assert_frame_equal(net["line"], line_before)
+    assert list(net["res_ne_line"].index) == candidate_labels
+    built_lines = net["res_ne_line"].loc[net["res_ne_line"]["built"]]
+    assert built_lines.empty
+    assert net["res_ne_line"]["built"].dtype == bool
+
+    net._pm_result = {
+        "ne_branch": {
+            "3": {"built": 0.75},
+            "1": {"built": 0.25},
+            "2": {"built": 0.5},
+        }
+    }
+    read_tnep_results(net)
+
+    pd.testing.assert_frame_equal(net["line"], line_before)
+    built_lines = net["res_ne_line"].loc[net["res_ne_line"]["built"]]
+    assert list(built_lines.index) == [41]
+    expected_built = pd.Series(False, index=candidate_labels, name="built", dtype=bool)
+    expected_built.loc[41] = True
+    pd.testing.assert_series_equal(net["res_ne_line"]["built"], expected_built)
+    assert net["res_ne_line"]["built"].dtype == bool
+    net["line"].loc[built_lines.index, "in_service"] = True
+    assert net["line"].loc[[23, 7], "in_service"].eq(False).all()
+    assert net["line"].loc[41, "in_service"]
+
+
+def test_tnep_empty_candidate_result_is_boolean_mask():
+    net = cigre_grid()
+    line_before = net["line"].copy(deep=True)
+
+    init_ne_line(net, [], construction_costs=[])
+
+    pd.testing.assert_frame_equal(net["line"], line_before)
+    assert net["res_ne_line"].loc[net["res_ne_line"]["built"]].empty
+    assert net["res_ne_line"]["built"].dtype == bool
 
 
 @pytest.mark.slow

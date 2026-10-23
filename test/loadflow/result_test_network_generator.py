@@ -6,11 +6,10 @@ import copy
 from pandapower import create_buses
 from pandapower.auxiliary import get_free_id
 from pandapower.create import (
-    create_bus,
     create_ext_grid,
     create_gen,
     create_impedance,
-    create_line_from_parameters,
+    create_lines,
     create_load,
     create_sgen,
     create_shunt,
@@ -119,11 +118,11 @@ def add_test_ext_grid(net):
 def add_test_ext_grid_gen_switch(net):
     zone = "test_ext_grid_gen_switch"
     vn_kv = 20.0
-    b1 = create_bus(net, vn_kv=vn_kv, zone=zone)
-    b2 = create_bus(net, vn_kv=vn_kv, zone=zone)
-    b3 = create_bus(net, vn_kv=vn_kv, zone=zone)
-    b4 = create_bus(net, vn_kv=vn_kv, zone=zone)
-    b5 = create_bus(net, vn_kv=vn_kv, zone=zone)
+    (b1,) = create_buses(net, 1, vn_kv=vn_kv, zone=zone)
+    (b2,) = create_buses(net, 1, vn_kv=vn_kv, zone=zone)
+    (b3,) = create_buses(net, 1, vn_kv=vn_kv, zone=zone)
+    (b4,) = create_buses(net, 1, vn_kv=vn_kv, zone=zone)
+    (b5,) = create_buses(net, 1, vn_kv=vn_kv, zone=zone)
 
     create_switch(net, bus=b1, element=b2, et="b")
     create_test_line(net, b2, b3)
@@ -323,9 +322,20 @@ def add_test_gen(net):
     ps = 0.500
     vm_set_pu = 1.0
 
-    b3 = create_bus(net, zone="test_gen", vn_kv=0.4)
-    create_line_from_parameters(
-        net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    (b3,) = create_buses(net, 1, zone="test_gen", vn_kv=0.4)
+    create_lines(
+        net,
+        b2,
+        b3,
+        12.2,
+        {
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
 
     create_load(net, b3, p_mw=pl, q_mvar=ql)
@@ -345,9 +355,20 @@ def add_test_enforce_qlims(net):
     qmin = -0.200
     vm_set_pu = 1.0
 
-    b3 = create_bus(net, zone="test_enforce_qlims", vn_kv=0.4)
-    create_line_from_parameters(
-        net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    (b3,) = create_buses(net, 1, zone="test_enforce_qlims", vn_kv=0.4)
+    create_lines(
+        net,
+        b2,
+        b3,
+        12.2,
+        {
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
 
     create_load(net, b3, p_mw=pl, q_mvar=ql)
@@ -365,9 +386,20 @@ def add_test_enforce_plims(net):
     pmin = 0.500
     vm_set_pu = 1.0
 
-    b3 = create_bus(net, zone="test_enforce_plims", vn_kv=0.4)
-    create_line_from_parameters(
-        net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    (b3,) = create_buses(net, 1, zone="test_enforce_plims", vn_kv=0.4)
+    create_lines(
+        net,
+        b2,
+        b3,
+        12.2,
+        {
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
     create_load(net, b3, p_mw=pl, q_mvar=ql)
     create_gen(net, b3, p_mw=ps, vm_pu=vm_set_pu, min_p_mw=pmin)
@@ -384,9 +416,20 @@ def add_test_enforce_qlims_sgen(net):
     qs = 0.500
     qmax = 0.200
 
-    b3 = create_bus(net, zone="test_enforce_qlims_sgen", vn_kv=0.4)
-    create_line_from_parameters(
-        net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    (b3,) = create_buses(net, 1, zone="test_enforce_qlims_sgen", vn_kv=0.4)
+    create_lines(
+        net,
+        b2,
+        b3,
+        12.2,
+        {
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
     create_load(net, b3, p_mw=pl, q_mvar=ql)
     create_sgen(net, b3, p_mw=ps, q_mvar=qs, max_q_mvar=qmax)
@@ -403,9 +446,20 @@ def add_test_enforce_plims_sgen(net):
     qs = 0.500
     pmax = 0.200
 
-    b3 = create_bus(net, zone="test_enforce_plims_sgen", vn_kv=0.4)
-    create_line_from_parameters(
-        net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    (b3,) = create_buses(net, 1, zone="test_enforce_plims_sgen", vn_kv=0.4)
+    create_lines(
+        net,
+        b2,
+        b3,
+        12.2,
+        {
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
     create_load(net, b3, p_mw=pl, q_mvar=ql)
     create_sgen(net, b3, p_mw=ps, q_mvar=qs, max_p_mw=pmax)
@@ -416,9 +470,9 @@ def add_test_enforce_plims_sgen(net):
 
 def add_test_trafo3w(net):
     _, b2, _ = add_grid_connection(net, zone="test_trafo3w")
-    b3 = create_bus(net, vn_kv=0.6, zone="test_trafo3w")
+    (b3,) = create_buses(net, 1, vn_kv=0.6, zone="test_trafo3w")
     create_load(net, b3, p_mw=0.2, q_mvar=0)
-    b4 = create_bus(net, vn_kv=0.4, zone="test_trafo3w")
+    (b4,) = create_buses(net, 1, vn_kv=0.4, zone="test_trafo3w")
     create_load(net, b4, p_mw=0.1, q_mvar=0)
 
     create_transformer3w_from_parameters(
@@ -480,7 +534,7 @@ def add_test_trafo3w(net):
 
 def add_test_impedance(net):
     _, b2, _ = add_grid_connection(net, zone="test_impedance")
-    b3 = create_bus(net, vn_kv=220.0, zone="test_impedance")
+    (b3,) = create_buses(net, 1, vn_kv=220.0, zone="test_impedance")
     rij = 0.02
     xij = 0.01
     rji = 0.03
@@ -512,7 +566,7 @@ def add_test_impedance(net):
 
 def add_test_bus_bus_switch(net):
     _, b2, _ = add_grid_connection(net, zone="test_bus_bus_switch")
-    b3 = create_bus(net, vn_kv=20.0, zone="test_bus_bus_switch")
+    (b3,) = create_buses(net, 1, vn_kv=20.0, zone="test_bus_bus_switch")
     create_switch(net, b2, b3, et="b")
 
     pl = 1
@@ -572,18 +626,51 @@ def add_test_oos_bus_with_is_element(net):
     x_ohm = 70
 
     # OOS buses
-    b3 = create_bus(net, zone="test_oos_bus_with_is_element", vn_kv=0.4, in_service=False)
-    b4 = create_bus(net, zone="test_oos_bus_with_is_element", vn_kv=0.4, in_service=False)
-    b5 = create_bus(net, zone="test_oos_bus_with_is_element", vn_kv=0.4, in_service=False)
+    (b3,) = create_buses(net, 1, zone="test_oos_bus_with_is_element", vn_kv=0.4, in_service=False)
+    (b4,) = create_buses(net, 1, zone="test_oos_bus_with_is_element", vn_kv=0.4, in_service=False)
+    (b5,) = create_buses(net, 1, zone="test_oos_bus_with_is_element", vn_kv=0.4, in_service=False)
 
-    create_line_from_parameters(
-        net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    create_lines(
+        net,
+        b2,
+        b3,
+        12.2,
+        {
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
-    create_line_from_parameters(
-        net, b2, b4, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    create_lines(
+        net,
+        b2,
+        b4,
+        12.2,
+        {
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
-    create_line_from_parameters(
-        net, b2, b5, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    create_lines(
+        net,
+        b2,
+        b5,
+        12.2,
+        {
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
 
     # in service elements
@@ -633,7 +720,7 @@ def add_test_shunt_split(net):
 
 def add_test_two_open_switches_on_deactive_line(net):
     b1, b2, _ = add_grid_connection(net, zone="two_open_switches_on_deactive_line")
-    b3 = create_bus(net, vn_kv=20.0, zone="two_open_switches_on_deactive_line")
+    (b3,) = create_buses(net, 1, vn_kv=20.0, zone="two_open_switches_on_deactive_line")
     l2 = create_test_line(net, b2, b3, in_service=False)
     create_test_line(net, b3, b1)
     create_switch(net, b2, l2, et="l", closed=False)

@@ -71,7 +71,7 @@ def result_test_network():
 
 def pytest_generate_tests(metafunc):
     if "result_test_networks" in metafunc.fixturenames:
-        net = result_test_network_generator()
+        net = list(result_test_network_generator())
         metafunc.parametrize("result_test_networks", net, ids=lambda n: n.last_added_case)
 
 
