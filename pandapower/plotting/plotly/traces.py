@@ -9,6 +9,7 @@ __all__ = [
     "create_edge_center_trace",
     "create_line_trace",
     "create_scale_trace",
+    "create_trafo_trace",
     "create_weighted_marker_trace",
     "draw_traces",
     "get_line_neutral",
