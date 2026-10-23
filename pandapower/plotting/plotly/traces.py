@@ -1,11 +1,25 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 from __future__ import annotations
+
+__all__ = [
+    "create_bus_trace",
+    "create_dcline_trace",
+    "create_edge_center_trace",
+    "create_line_trace",
+    "create_scale_trace",
+    "create_weighted_marker_trace",
+    "draw_traces",
+    "get_line_neutral",
+    "sum_line_length",
+]
 
 import logging
 import math
 import sys
 from collections.abc import Callable, Iterable
+from importlib.util import find_spec
 from typing import Any
 
 import geojson
@@ -17,9 +31,7 @@ from pandapower.network import ADict
 from pandapower.plotting.plotly.get_colors import get_plotly_cmap, get_plotly_color
 from pandapower.plotting.plotly.mapbox_plot import _on_map_test
 
-logger = logging.getLogger(__name__)
-
-try:
+if find_spec("plotly"):
     from plotly.graph_objs import Figure, Layout
     from plotly.graph_objs.layout import XAxis, YAxis
     from plotly.graph_objs.scatter import Line, Marker
@@ -28,8 +40,10 @@ try:
     from plotly.graph_objs.scattermap import Marker as scmMarker
 
     PLOTLY_INSTALLED = True
-except ImportError:
+else:
     PLOTLY_INSTALLED = False
+
+logger = logging.getLogger(__name__)
 
 
 def _in_ipynb():
@@ -45,7 +59,9 @@ def _in_ipynb():
 
 
 def sum_line_length(pts):
-    pt_diff = lambda p: (p[0][0] - p[1][0], p[0][1] - p[1][1])
+    def pt_diff(p):
+        return (p[0][0] - p[1][0], p[0][1] - p[1][1])
+
     diffs = map(pt_diff, zip(pts[:-1], pts[1:]))
     line_length = sum(math.hypot(d1, d2) for d1, d2 in diffs)
     return line_length
@@ -713,7 +729,7 @@ def _create_branch_trace(
             branches_cbar["marker"]["colorbar"]["title"]["side"] = "right"
 
             branch_traces.append(branches_cbar)
-        except:
+        except Exception:
             pass
     if len(no_go_branches) > 0:
         ng_traces = []

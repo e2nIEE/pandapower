@@ -1,6 +1,36 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "add_cmap_to_collection",
+    "add_collections_to_axes",
+    "add_single_collection",
+    "create_annotation_collection",
+    "create_bus_bus_switch_collection",
+    "create_bus_collection",
+    "create_busbar_collection",
+    "create_dcline_collection",
+    "create_ext_grid_collection",
+    "create_gen_collection",
+    "create_impedance_collection",
+    "create_line_collection",
+    "create_line_switch_collection",
+    "create_load_collection",
+    "create_sgen_collection",
+    "create_storage_collection",
+    "create_trafo3w_collection",
+    "create_trafo3w_connection_collection",
+    "create_trafo_collection",
+    "create_trafo_connection_collection",
+    "create_vsc_collection",
+    "create_vsc_connection_collection",
+    "create_ward_collection",
+    "create_xward_collection",
+    "CustomTextPath",
+    "draw_collections",
+    "TextPath",
+]
+
 import ast
 import copy
 import inspect
@@ -1849,7 +1879,7 @@ def draw_collections(
 
     try:
         ax.set_facecolor("white")
-    except:
+    except Exception:
         ax.set_axis_bgcolor("white")
     ax.xaxis.set_visible(axes_visible[0])
     ax.yaxis.set_visible(axes_visible[1])
