@@ -488,7 +488,7 @@ class PyPowSyBlConverter(
         """
         base_sn_mva = self._to_float(getattr(self.pyp_net, "nominal_apparent_power", np.nan), np.nan)
         base_sn_mva = base_sn_mva / 1000.0 if np.isfinite(base_sn_mva) and base_sn_mva > 0 else self.default_base_sn_mva
-        
+
         self.pandap_net = pandapowerNet(name="powsybl net", f_hz=self.default_frequency_hz, sn_mva=base_sn_mva)
 
     # ======================================================
