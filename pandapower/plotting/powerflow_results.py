@@ -1,6 +1,12 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "plot_loading",
+    "plot_voltage_profile",
+    "voltage_profile_to_bus_geodata",
+]
+
 import sys
 from itertools import combinations
 
@@ -101,7 +107,7 @@ def plot_voltage_profile(
                 x = [x0 + d.at[from_bus], x0 + d.at[to_bus]]
                 try:
                     y = [net.res_bus.vm_pu.at[from_bus], net.res_bus.vm_pu.at[to_bus]]
-                except:
+                except Exception:
                     raise UserWarning
                 if "linewidth" in kwargs or not line_loading_weight:
                     ax.plot(x, y, color=line_color, **kwargs)
@@ -185,14 +191,14 @@ def plot_loading(
         net["res_%s" % element_type].index.isin(index_subset)
     ]
     boxplot = ax.boxplot(loadings[~np.isnan(loadings)], whis=[0, 100])
-    for l in list(boxplot.keys()):
-        plt.setp(boxplot[l], lw=3)
-        if l == "medians":
-            plt.setp(boxplot[l], color=median_color)
-        elif l == "boxes" or l == "whiskers":
-            plt.setp(boxplot[l], color=box_color)
+    for key in boxplot.keys():
+        plt.setp(boxplot[key], lw=3)
+        if key == "medians":
+            plt.setp(boxplot[key], color=median_color)
+        elif key == "boxes" or key == "whiskers":
+            plt.setp(boxplot[key], color=box_color)
         else:
-            plt.setp(boxplot[l], color=whisker_color)
+            plt.setp(boxplot[key], color=whisker_color)
     ax.set_ylabel(f"{element_type.capitalize()} Loading [%]", fontweight="bold", color=(0.4, 0.4, 0.4))
     ax.set_xticks([1], [""])
     return ax
