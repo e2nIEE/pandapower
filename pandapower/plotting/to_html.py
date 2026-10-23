@@ -1,7 +1,11 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-# File created my Massimo Di Pierro
+__all__ = [
+    "Raw",
+    "Tag",
+    "to_html",
+]
 
 from itertools import combinations
 

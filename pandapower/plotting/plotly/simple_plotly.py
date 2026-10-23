@@ -1,13 +1,17 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "get_hoverinfo",
+    "simple_plotly",
+]
+
 import logging
 
 import numpy as np
 import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
-from pandapower.plotting.plotly.mapbox_plot import *
 from pandapower.plotting.plotly.traces import (
     _create_node_trace,
     create_bus_trace,
