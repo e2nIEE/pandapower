@@ -4,6 +4,7 @@
 import copy
 import json
 import os
+from importlib.util import find_spec
 
 import geojson
 import numpy as np
@@ -29,40 +30,20 @@ from pandapower.sql_io import from_sqlite, to_sqlite
 from pandapower.timeseries import DFData
 from pandapower.toolbox.comparison import dataframes_equal, nets_equal
 from pandapower.topology.create_graph import create_nxgraph
+from test import test_path
 from test.helper_functions import assert_net_equal, create_test_network, create_test_network2
 
-try:
+if find_spec("cryptography"):
     import cryptography.fernet  # type: ignore
 
     cryptography_INSTALLED = True
-except ImportError:
+else:
     cryptography_INSTALLED = False
-try:
-    import openpyxl
 
-    openpyxl_INSTALLED = True
-except ImportError:
-    openpyxl_INSTALLED = False
-try:
-    import xlsxwriter
-
-    xlsxwriter_INSTALLED = True
-except ImportError:
-    xlsxwriter_INSTALLED = False
-try:
-    import geopandas as gpd
-
-    GEOPANDAS_INSTALLED = True
-except ImportError:
-    GEOPANDAS_INSTALLED = False
-try:
-    import shapely
-
-    SHAPELY_INSTALLED = True
-except ImportError:
-    SHAPELY_INSTALLED = False
-
-from test import test_path
+openpyxl_INSTALLED = find_spec("openpyxl") is not None
+xlsxwriter_INSTALLED = find_spec("xlsxwriter") is not None
+GEOPANDAS_INSTALLED = find_spec("geopandas") is not None
+SHAPELY_INSTALLED = find_spec("shapely") is not None
 
 
 @pytest.fixture(params=[1])
@@ -315,7 +296,7 @@ def test_json_tuple_in_pandas():
     s["test"] = [(1, 2), (3, 4)]
     json_string = json.dumps(s, cls=PPJSONEncoder)
     s1 = json.loads(json_string, cls=PPJSONDecoder)
-    assert type(s["test"][0]) == type(s1["test"][0])
+    assert type(s["test"][0]) is type(s1["test"][0])
 
 
 def test_new_pp_object_io():

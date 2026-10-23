@@ -1,5 +1,6 @@
 import logging
 import os
+from importlib.util import find_spec
 
 import numpy as np
 import pandas as pd
@@ -10,18 +11,17 @@ from packaging.version import Version
 from pandapower.converter.powerfactory.export_pfd_to_pp import import_project, from_pfd
 from pandapower.converter.powerfactory.validate import validate_pf_conversion
 from pandapower.file_io import from_json
+from test import test_path
 
 logger = logging.getLogger(__name__)
 
-try:
+if find_spec("powerfactory"):
     import powerfactory as pf
 
     PF_INSTALLED = True
-except ImportError:
+else:
     PF_INSTALLED = False
     logger.info("could not import powerfactory, converter test pf2pp not possible")
-
-from test import test_path
 
 
 def get_tol():

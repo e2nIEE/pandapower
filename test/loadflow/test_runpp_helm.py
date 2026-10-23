@@ -9,6 +9,8 @@ All tests are skipped (not failed) when HELMpy is not installed, so HELM stays o
 The HELM results are compared against Newton-Raphson, which is treated as the reference.
 """
 
+from importlib.util import find_spec
+
 import numpy as np
 import pytest
 
@@ -16,12 +18,7 @@ import pandapower as pp
 import pandapower.networks as nw
 from pandapower.powerflow import LoadflowNotConverged
 
-try:
-    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
-
-    helmpy_available = True
-except ImportError:
-    helmpy_available = False
+helmpy_available = find_spec("helmpy") is not None
 
 pytestmark = pytest.mark.skipif(not helmpy_available, reason="HELMpy is not installed")
 
