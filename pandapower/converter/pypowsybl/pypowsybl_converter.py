@@ -23,18 +23,6 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from pandapower import (
-    create_buses,
-    create_empty_network,
-    create_gen,
-    create_impedance,
-    create_line_from_parameters,
-    create_load,
-    create_switch,
-    create_transformer3w_from_parameters,
-    create_transformer_from_parameters,
-    to_json,
-)
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.converter.pypowsybl.pypowsybl_comparison_utils import (
     PyPowSyBlComparisonUtilsMixin,
@@ -45,6 +33,18 @@ from pandapower.converter.pypowsybl.pypowsybl_loadflow_comparison import (
 from pandapower.converter.pypowsybl.pypowsybl_static_comparison import (
     PyPowSyBlStaticComparisonMixin,
 )
+from pandapower.create import (
+    create_buses,
+    create_gen,
+    create_impedance,
+    create_line_from_parameters,
+    create_load,
+    create_switch,
+    create_transformer3w_from_parameters,
+    create_transformer_from_parameters,
+)
+from pandapower.file_io import to_json
+from pandapower.network import pandapowerNet
 from pandapower.pp_types import SwitchType
 
 logger = logging.getLogger(__name__)
@@ -488,8 +488,8 @@ class PyPowSyBlConverter(
         """
         base_sn_mva = self._to_float(getattr(self.pyp_net, "nominal_apparent_power", np.nan), np.nan)
         base_sn_mva = base_sn_mva / 1000.0 if np.isfinite(base_sn_mva) and base_sn_mva > 0 else self.default_base_sn_mva
-
-        self.pandap_net = create_empty_network(f_hz=self.default_frequency_hz, sn_mva=base_sn_mva)
+        
+        self.pandap_net = pandapowerNet(name="powsybl net", f_hz=self.default_frequency_hz, sn_mva=base_sn_mva)
 
     # ======================================================
     # Collect base data
