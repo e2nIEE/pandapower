@@ -196,7 +196,7 @@ def _get_vsc_bipolar_results(net, ppc):
     res["vm_internal_dc_pu"] = res_vsc["vm_internal_dc_pu"].values
     res["vm_dc_pu_p"] = res_vsc["vm_dc_pu"].values
     res["vm_dc_pu_m"] = np.where(in_service, vm_dc_m, np.nan)
-    res.loc[~in_service, ["p_dc_mw", "p_dc_mw_p", "p_dc_mw_m", "i_dc_ka"]] = 0.
+    res.loc[~in_service, ["p_dc_mw", "p_dc_mw_p", "p_dc_mw_m", "i_dc_ka"]] = 0.0
     net.res_vsc_bipolar = res
 
 

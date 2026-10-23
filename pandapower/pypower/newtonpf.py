@@ -448,13 +448,28 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         V_sl_dc = np.array([], dtype=np.int64)
 
     # DC grid model with VSC, see pandapower.pf.dc_vsc
-    dc_model = dict(Ybus_dc=Ybus_hvdc, P_dc=P_dc, dc_ref=dc_ref, dc_p=dc_p, V_sl_dc=V_sl_dc, f=vsc_dc_fb,
-                    t=vsc_dc_tb, m=vsc_dc_mb, g=vsc_g_pu, gl=vsc_gl_pu, ctrl_p=vsc_dc_ctrl_p, ctrl_v=vsc_dc_ctrl_v,
-                    ctrl_sl=vsc_dc_ctrl_sl, value_dc=vsc_value_dc_all, vsc_tb_ac=vsc_tb)
+    dc_model = dict(
+        Ybus_dc=Ybus_hvdc,
+        P_dc=P_dc,
+        dc_ref=dc_ref,
+        dc_p=dc_p,
+        V_sl_dc=V_sl_dc,
+        f=vsc_dc_fb,
+        t=vsc_dc_tb,
+        m=vsc_dc_mb,
+        g=vsc_g_pu,
+        gl=vsc_gl_pu,
+        ctrl_p=vsc_dc_ctrl_p,
+        ctrl_v=vsc_dc_ctrl_v,
+        ctrl_sl=vsc_dc_ctrl_sl,
+        value_dc=vsc_value_dc_all,
+        vsc_tb_ac=vsc_tb,
+    )
     if any_vsc_bipolar:
         # the poles of bipolar VSC need a sensible start (negative voltages for negative poles, ~0 for neutrals):
-        init_V_dc(V_dc, Ybus_hvdc, dc_ref, V_sl_dc, vsc_dc_fb, vsc_dc_tb, vsc_dc_mb, vsc_g_pu, vsc_dc_ctrl_v,
-                  vsc_value_dc_all)
+        init_V_dc(
+            V_dc, Ybus_hvdc, dc_ref, V_sl_dc, vsc_dc_fb, vsc_dc_tb, vsc_dc_mb, vsc_g_pu, vsc_dc_ctrl_v, vsc_value_dc_all
+        )
 
     # get jacobian function
     createJ = get_fastest_jacobian_function(pvpq, pq, numba, dist_slack)
@@ -727,8 +742,21 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
             )
             J = J + J_m_vsc
         if any_branch_dc:
-            J_dc = create_J_dc(V_dc, Ybus_hvdc, P_dc, dc_ref, dc_p, vsc_dc_fb, vsc_dc_tb, vsc_dc_mb, vsc_g_pu,
-                               vsc_gl_pu, vsc_dc_ctrl_p, vsc_dc_ctrl_v, vsc_dc_ctrl_sl).tocoo()
+            J_dc = create_J_dc(
+                V_dc,
+                Ybus_hvdc,
+                P_dc,
+                dc_ref,
+                dc_p,
+                vsc_dc_fb,
+                vsc_dc_tb,
+                vsc_dc_mb,
+                vsc_g_pu,
+                vsc_gl_pu,
+                vsc_dc_ctrl_p,
+                vsc_dc_ctrl_v,
+                vsc_dc_ctrl_sl,
+            ).tocoo()
             # the DC variables (V_dc of dc_ref and dc_p buses) are located at j6c:j6e
             J = J + csr_matrix((J_dc.data, (J_dc.row + j6c, J_dc.col + j6c)), shape=J.shape)
 
@@ -885,8 +913,9 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         vsc[vsc_branches, VSC_Q] = s_vsc_f.imag
 
         # DC power flowing from the plus terminal bus and from the minus terminal bus into the VSC:
-        _, i_vsc_dc_f, _, _, v_vsc_dc_m = calc_vsc_dc_quantities(V_dc, vsc_dc_fb, vsc_dc_tb, vsc_dc_mb, vsc_g_pu,
-                                                                  vsc_gl_pu)
+        _, i_vsc_dc_f, _, _, v_vsc_dc_m = calc_vsc_dc_quantities(
+            V_dc, vsc_dc_fb, vsc_dc_tb, vsc_dc_mb, vsc_g_pu, vsc_gl_pu
+        )
         vsc[vsc_branches, VSC_P_DC] = i_vsc_dc_f * V_dc[vsc_dc_fb] * baseMVA
         vsc[vsc_branches, VSC_P_DC_MINUS] = -i_vsc_dc_f * v_vsc_dc_m * baseMVA
         vsc[vsc_branches, VSC_I_DC] = i_vsc_dc_f
@@ -1029,9 +1058,24 @@ def _evaluate_Fx_facts(
         dc = dc_model
         # power flowing from the AC side into the VSC, relevant for VSC in AC slack mode:
         p_ac_sl = -(V * conj(Ybus_vsc * V))[dc["vsc_tb_ac"]].real
-        mis_hvdc = evaluate_Fx_dc(V_dc, dc["Ybus_dc"], dc["P_dc"], dc["dc_ref"], dc["dc_p"], dc["V_sl_dc"], dc["f"],
-                                  dc["t"], dc["m"], dc["g"], dc["gl"], dc["ctrl_p"], dc["ctrl_v"], dc["ctrl_sl"],
-                                  dc["value_dc"], p_ac_sl)
+        mis_hvdc = evaluate_Fx_dc(
+            V_dc,
+            dc["Ybus_dc"],
+            dc["P_dc"],
+            dc["dc_ref"],
+            dc["dc_p"],
+            dc["V_sl_dc"],
+            dc["f"],
+            dc["t"],
+            dc["m"],
+            dc["g"],
+            dc["gl"],
+            dc["ctrl_p"],
+            dc["ctrl_v"],
+            dc["ctrl_sl"],
+            dc["value_dc"],
+            p_ac_sl,
+        )
         mis_facts = np.r_[mis_facts, mis_hvdc]
         # power delivered by the converter into the DC side (between internal node and minus terminal):
         i_k, _, _, v_tm, _ = calc_vsc_dc_quantities(V_dc, dc["f"], dc["t"], dc["m"], dc["g"], dc["gl"])

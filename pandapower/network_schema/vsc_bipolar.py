@@ -21,7 +21,9 @@ vsc_bipolar_schema = pa.DataFrameSchema(
         ),
         "r_ohm": pa.Column(float, description="resistance of the coupling transformer component of VSC"),
         "x_ohm": pa.Column(float, description="reactance of the coupling transformer component of VSC"),
-        "r_dc_ohm": pa.Column(float, pa.Check.gt(0), description="resistance of the internal dc resistance component of VSC"),
+        "r_dc_ohm": pa.Column(
+            float, pa.Check.gt(0), description="resistance of the internal dc resistance component of VSC"
+        ),
         "pl_dc_mw": pa.Column(
             float,
             description="no-load losses of the VSC on the DC side, modelled as conductance between the DC terminals",
@@ -69,15 +71,21 @@ res_vsc_bipolar_schema = pa.DataFrameSchema(
         "p_mw": pa.Column(float, nullable=True, description="active power at the AC bus [MW]"),
         "q_mvar": pa.Column(float, nullable=True, description="reactive power at the AC bus [MVAr]"),
         "p_dc_mw": pa.Column(
-            float, nullable=True, description="DC power flowing from the DC grid into the VSC (p_dc_mw_p + p_dc_mw_m) [MW]"
+            float,
+            nullable=True,
+            description="DC power flowing from the DC grid into the VSC (p_dc_mw_p + p_dc_mw_m) [MW]",
         ),
         "p_dc_mw_p": pa.Column(float, nullable=True, description="DC power at the plus terminal bus [MW]"),
         "p_dc_mw_m": pa.Column(float, nullable=True, description="DC power at the minus terminal bus [MW]"),
         "i_dc_ka": pa.Column(
             float, nullable=True, description="DC current flowing from the plus terminal bus into the VSC [kA]"
         ),
-        "vm_internal_pu": pa.Column(float, nullable=True, description="voltage magnitude of the internal AC bus [p.u.]"),
-        "va_internal_degree": pa.Column(float, nullable=True, description="voltage angle of the internal AC bus [degree]"),
+        "vm_internal_pu": pa.Column(
+            float, nullable=True, description="voltage magnitude of the internal AC bus [p.u.]"
+        ),
+        "va_internal_degree": pa.Column(
+            float, nullable=True, description="voltage angle of the internal AC bus [degree]"
+        ),
         "vm_pu": pa.Column(float, nullable=True, description="voltage magnitude at the AC bus [p.u.]"),
         "va_degree": pa.Column(float, nullable=True, description="voltage angle at the AC bus [degree]"),
         "vm_internal_dc_pu": pa.Column(float, nullable=True, description="voltage of the internal DC bus [p.u.]"),
