@@ -59,6 +59,7 @@ __all__ = [
     "dump_to_geojson",
     "dump_to_geojson_node_branch",
     "set_line_geodata_from_bus_geodata",
+    "get_collection_sizes",
     "plot_loading",
     "plot_voltage_profile",
     "voltage_profile_to_bus_geodata",
@@ -139,7 +140,7 @@ from pandapower.plotting.plotly import (
     sum_line_length,
     vlevel_plotly,
 )
-from pandapower.plotting.plotting_toolbox import set_line_geodata_from_bus_geodata
+from pandapower.plotting.plotting_toolbox import set_line_geodata_from_bus_geodata, get_collection_sizes
 from pandapower.plotting.powerflow_results import plot_loading, plot_voltage_profile, voltage_profile_to_bus_geodata
 from pandapower.plotting.simple_plot import (
     bus_info,
