@@ -79,12 +79,12 @@ jobs:
       - name: Test with pytest
         if: ${{ matrix.python-version != '3.12' }}
         run: |
-          uv run pytest --splits ${{ matrix.splits }} --group ${{ matrix.group }} $IGNORES
+          uv run pytest --splits 2 --group ${{ matrix.group }} $IGNORES
       - name: Test with pytest, Codecov and Coverage
         if: ${{ matrix.python-version == '3.12' }} # collecting on 3.12 (oldest version where pgm is included)
         run: |
           uv pip install pytest-cov numpy~=1.26
-          uv run pytest --cov=./ --cov-report=xml --splits ${{ matrix.splits }} --group ${{ matrix.group }} $IGNORES
+          uv run pytest --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }} $IGNORES
           cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
       - name: Upload coverage as artifact
         if: ${{ matrix.python-version == '3.12' }}
