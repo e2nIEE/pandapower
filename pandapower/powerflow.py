@@ -5,7 +5,13 @@ import logging
 
 from numpy import allclose, array, concatenate, int64, nan_to_num
 
-from pandapower.auxiliary import AlgorithmUnknown, LoadflowNotConverged, _add_auxiliary_elements, _clean_up
+from pandapower.auxiliary import (
+    AlgorithmUnknown,
+    LoadflowNotConverged,
+    _add_auxiliary_elements,
+    _clean_up,
+    _remove_vsc_bipolar_aux,
+)
 from pandapower.build_branch import _calc_trafo3w_parameter, _calc_trafo_parameter
 from pandapower.build_gen import _build_gen_ppc
 from pandapower.pd2ppc import _calc_pq_elements_and_add_on_ppc, _pd2ppc, _ppc2ppci
@@ -35,14 +41,21 @@ def _powerflow(net, **kwargs):
     """
     Gets called by runpp or rundcpp with different arguments.
     """
-
-    # get infos from options
-    ac = net["_options"]["ac"]
-    algorithm = net["_options"]["algorithm"]
-
     net["converged"] = False
     net["OPF_converged"] = False
     _add_auxiliary_elements(net)  # create gen elements for start and end buses of dcline
+    try:
+        _powerflow_with_auxiliary_elements(net, **kwargs)
+    except Exception:
+        # the auxiliary VSC of bipolar VSC must not stay in net.vsc if the power flow fails
+        _remove_vsc_bipolar_aux(net)
+        raise
+
+
+def _powerflow_with_auxiliary_elements(net, **kwargs):
+    # get infos from options
+    ac = net["_options"]["ac"]
+    algorithm = net["_options"]["algorithm"]
 
     if not ac or net["_options"]["init_results"]:
         verify_results(net, mode="pf" if ac else "dc")

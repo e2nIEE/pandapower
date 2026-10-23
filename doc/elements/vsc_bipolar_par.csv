@@ -1,0 +1,15 @@
+**Parameter**;**Datatype**;**Value Range**;**Explanation**
+name;string;;name of the bipolar VSC
+bus*;integer;;index of the AC bus of the VSC
+bus_dc_plus*;integer;;index of the DC bus of the plus terminal
+bus_dc_minus*;integer;;index of the DC bus of the minus terminal
+r_ohm*;float;:math:`\geq` 0;resistance of the coupling transformer
+x_ohm*;float;:math:`\geq` 0;reactance of the coupling transformer
+r_dc_ohm*;float;:math:`>` 0;resistance of the internal dc resistance component of VSC
+pl_dc_mw;float;:math:`\geq` 0;no-load losses of the VSC, modelled as conductance between plus and minus terminal
+control_mode_ac*;string;"""vm_pu"", ""q_mvar"", ""slack""";the control mode of the AC side of the VSC
+control_value_ac*;float;;the value of the controlled parameter at the AC bus in p.u. or MVAr
+control_mode_dc*;string;"""vm_pu"", ""p_mw""";the control mode of the DC side: voltage difference between plus and minus terminal or DC power flowing into the VSC
+control_value_dc*;float;;the value of the controlled parameter at the DC side in p.u. or MW
+controllable*;boolean;True / False;whether the element is considered as actively controlling
+in_service*;boolean;True / False;specifies if the VSC is in service

@@ -15,7 +15,7 @@ from pandapower.create import create_poly_cost
 from pandapower.create._utils import add_column_to_df
 from pandapower.create.trafo_characteristic_create import create_trafo_characteristic
 from pandapower.network import pandapowerNet
-from pandapower.network_structure import get_structure_dict
+from pandapower.network_structure import get_default_value, get_structure_dict
 from pandapower.plotting.geo import _is_valid_number, convert_geodata_to_geojson
 from pandapower.results import reset_results
 
@@ -382,6 +382,19 @@ def _rename_columns(net, elements_to_deserialize):
         )
     if _check_elements_to_deserialize("gen", elements_to_deserialize):
         net.gen = net.gen.rename(columns={"qmin_mvar": "min_q_mvar", "qmax_mvar": "max_q_mvar"})
+    if _check_elements_to_deserialize("vsc_bipolar", elements_to_deserialize) and "vsc_bipolar" in net:
+        # the single control_mode was split into an AC and a DC control mode (same as in vsc)
+        net.vsc_bipolar = net.vsc_bipolar.rename(
+            columns={"control_value_1": "control_value_ac", "control_value_2": "control_value_dc"}
+        )
+        if "control_mode" in net.vsc_bipolar.columns:
+            net.vsc_bipolar = net.vsc_bipolar.rename(columns={"control_mode": "control_mode_ac"})
+            net.vsc_bipolar.insert(
+                net.vsc_bipolar.columns.get_loc("control_value_ac") + 1,
+                "control_mode_dc",
+                get_default_value("vsc_bipolar", "control_mode_dc"),
+            )
+            net.vsc_bipolar["control_mode_ac"] = get_default_value("vsc_bipolar", "control_mode_ac")
     for typ, data in net.std_types["line"].items():
         if "imax_ka" in data:
             net.std_types["line"][typ]["max_i_ka"] = net.std_types["line"][typ].pop("imax_ka")
