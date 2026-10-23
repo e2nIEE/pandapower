@@ -13,7 +13,7 @@ from pandapower.pd2ppc import _pd2ppc, _ppc2ppci
 from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS, T_BUS
 from pandapower.pypower.idx_brch_sc import K_ST, K_T
 from pandapower.pypower.idx_bus import BASE_KV, BS, GS
-from pandapower.pypower.idx_bus_sc import BS_GEN, BS_P, C_MAX, GS_GEN, GS_P, K_G, K_SG, KAPPA, PS_TRAFO_IX, V_G
+from pandapower.pypower.idx_bus_sc import BS_GEN, BS_P, C_MAX, GS_GEN, GS_P, K_G, K_SG, PS_TRAFO_IX, V_G
 
 logger = logging.getLogger(__name__)
 
@@ -126,9 +126,6 @@ def _add_sgen_sc_z(net, ppc):
         bus_idx, sgen_gs, sgen_bs = _sum_by_group(sgen_buses_ppc, y_wd_pu.real, y_wd_pu.imag)
         ppc["bus"][bus_idx, GS] = sgen_gs
         ppc["bus"][bus_idx, BS] = sgen_bs
-
-        # add kappa for peak current
-        ppc["bus"][sgen_buses_ppc, KAPPA] = sgen_wd.kappa.values
 
     sgen_g = net.sgen.loc[net.sgen.in_service & (net.sgen.generator_type == "async")]
     if len(sgen_g) > 0:

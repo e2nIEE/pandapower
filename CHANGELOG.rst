@@ -13,6 +13,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] short-circuit: the manufacturer ``kappa`` of a doubly fed asynchronous generator (``async_doubly_fed`` sgen) no longer overrides kappa for the whole bus; it only enters Z_WD (IEC 60909-0:2016, 6.8.3) and ``ip`` is calculated from the network R/X. Peak currents now match IEC TR 60909-4:2021 Tables 12 and 18
 - [FIXED] ``create_load_dc`` now allocates and validates indexes against ``load_dc``, preventing overwrites and false ``source_dc`` conflicts.
 - [FIXED] OPF cleaned up in case of non convergence
 - [FIXED] ``create_continuous_bus_index`` (and other toolbox functions relying on ``element_bus_tuples``) now also update the ``bus`` column of the ``ssc`` element table; it was previously missing from the list of bus-referencing elements

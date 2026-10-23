@@ -115,7 +115,9 @@ def create_sgen(
         max_ik_ka: the highest instantaneous short-circuit value in case of a three-phase short-circuit
             (provided by the manufacturer). Relevant if the generator_type is "async_doubly_fed".
         kappa: the factor for the calculation of the peak short-circuit current, referred to the high-voltage side
-            (provided by the manufacturer). Relevant if the generator_type is "async_doubly_fed". If the superposition method is used (use_pre_fault_voltage=True), this parameter is used to pass through the max. current limit of the machine in p.u.
+            (provided by the manufacturer). Relevant if the generator_type is "async_doubly_fed", where it is used
+            for the impedance Z_WD (IEC 60909-0:2016, 6.8.3). The peak current at the fault location is calculated
+            from the network R/X. If the superposition method is used (use_pre_fault_voltage=True), this parameter is used to pass through the max. current limit of the machine in p.u.
         current_source: Model this sgen as a current source during short-circuit calculations; useful in some cases,
             for example the simulation of fullsize converters per IEC 60909-0:2016.
 
@@ -240,7 +242,7 @@ def create_sgens(
         generator_type: can be one of "current_source" (full size converter), "async" (asynchronous generator), or "async_doubly_fed" (doubly fed asynchronous generator, DFIG). Represents the type of the static generator in the context of the short-circuit calculations of wind power station units
         lrc_pu: locked rotor current in relation to the rated generator current. Relevant if the generator_type is "async".
         max_ik_ka: the highest instantaneous short-circuit value in case of a three-phase short-circuit (provided by the manufacturer). Relevant if the generator_type is "async_doubly_fed".
-        kappa: the factor for the calculation of the peak short-circuit current, referred to the high-voltage side (provided by the manufacturer). Relevant if the generator_type is "async_doubly_fed".
+        kappa: the factor for the calculation of the peak short-circuit current, referred to the high-voltage side (provided by the manufacturer). Relevant if the generator_type is "async_doubly_fed", where it is used for the impedance Z_WD (IEC 60909-0:2016, 6.8.3). The peak current at the fault location is calculated from the network R/X.
         current_source: Model this sgen as a current source during shortcircuit calculations; useful in some cases, for example the simulation of fullsize converters per IEC 60909-0:2016.
 
     Returns:

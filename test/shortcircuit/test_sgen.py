@@ -323,6 +323,47 @@ def test_wind_park_1():
     assert np.allclose(net.res_bus_sc.ikss_ka, ikss_ka, atol=1e-3, rtol=0)
 
 
+def test_wind_park_1_peak_current():
+    # IEC TR 60909-4:2021, Table 12: ip50 from method B without the factor 1.15, ip20 from method C.
+    # The manufacturer's kappa of the doubly fed generators only enters Z_WD; ip uses the network R/X.
+    ip_method_b_ka = [
+        26.503,
+        23.085,
+        15.403,
+        12.883,
+        11.852,
+        13.604,
+        13.250,
+        12.441,
+        12.162,
+        13.402,
+        12.950,
+        12.411,
+        11.540,
+        12.648,
+    ]
+    ip_method_c_ka = [
+        26.504,
+        23.129,
+        15.469,
+        12.974,
+        11.945,
+        13.698,
+        13.348,
+        12.540,
+        12.262,
+        13.517,
+        13.075,
+        12.542,
+        11.670,
+        12.773,
+    ]
+    for kappa_method, ip_expected_ka in (("B", ip_method_b_ka), ("C", ip_method_c_ka)):
+        net = wind_park_grid("all_async_doubly_fed")
+        calc_sc(net, ip=True, kappa_method=kappa_method)
+        assert np.allclose(net.res_bus_sc.ip_ka, ip_expected_ka, atol=0, rtol=1e-4)
+
+
 def test_wind_park_2():
     # example from IEC 60909-4 section 8.6
     net = wind_park_grid("all_full_size_converter")
@@ -339,6 +380,46 @@ def test_wind_park_3():
     assert np.allclose(net.res_bus_sc.ikss_ka, ikss_ka, atol=1e-3, rtol=0)
 
 
+def test_wind_park_3_peak_current():
+    # IEC TR 60909-4:2021, Table 18: ip50 from method B without the factor 1.15, ip20 from method C
+    ip_method_b_ka = [
+        26.364,
+        22.061,
+        13.954,
+        12.008,
+        11.174,
+        12.585,
+        12.307,
+        11.659,
+        11.433,
+        12.082,
+        11.684,
+        11.234,
+        10.536,
+        11.446,
+    ]
+    ip_method_c_ka = [
+        26.365,
+        22.075,
+        13.992,
+        12.073,
+        11.244,
+        12.654,
+        12.380,
+        11.734,
+        11.510,
+        12.115,
+        11.715,
+        11.264,
+        10.563,
+        11.476,
+    ]
+    for kappa_method, ip_expected_ka in (("B", ip_method_b_ka), ("C", ip_method_c_ka)):
+        net = wind_park_grid("mixed")
+        calc_sc(net, ip=True, kappa_method=kappa_method)
+        assert np.allclose(net.res_bus_sc.ip_ka, ip_expected_ka, atol=0, rtol=1e-4)
+
+
 def test_wind_power_station_unit():
     # full size converter (current source)
     net = simplest_test_grid("current_source")
@@ -353,7 +434,8 @@ def test_wind_power_station_unit():
     assert np.isclose(net.res_bus_sc.at[0, "ip_ka"], ikss_ka * np.sqrt(2), rtol=0, atol=1e-12)
     assert np.isclose(net.res_bus_sc.at[0, "skss_mw"], skss_mw, rtol=0, atol=1e-9)
 
-    # doubly fed asynchronous generator (DFIG), kappa not calculated but provided by manufacturer
+    # doubly fed asynchronous generator (DFIG): the manufacturer's kappa defines Z_WD,
+    # the peak current uses the R/X of the short-circuit impedance
     net = simplest_test_grid("async_doubly_fed")
     calc_sc(net, ip=True)
 
@@ -364,8 +446,9 @@ def test_wind_power_station_unit():
     c = 1.1
     ikss_ka = c * net.bus.vn_kv.at[0] / (np.sqrt(3) * z_wd)
     skss_mw = ikss_ka * vn_kv * np.sqrt(3)
+    kappa_network = 1.02 + 0.98 * np.exp(-3 * net.sgen.rx.at[0])
     assert np.isclose(net.res_bus_sc.at[0, "ikss_ka"], ikss_ka, rtol=0, atol=1e-12)
-    assert np.isclose(net.res_bus_sc.at[0, "ip_ka"], ikss_ka * kappa * np.sqrt(2), rtol=0, atol=1e-12)
+    assert np.isclose(net.res_bus_sc.at[0, "ip_ka"], ikss_ka * kappa_network * np.sqrt(2), rtol=0, atol=1e-9)
     assert np.isclose(net.res_bus_sc.at[0, "skss_mw"], skss_mw, rtol=0, atol=1e-9)
 
     # asynchronous generator (also with a step-up trafo)

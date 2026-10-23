@@ -26,9 +26,9 @@ def _add_kappa_to_ppc(net, ppc):
         kappa = _kappa_method_b(net, ppc)
     else:
         raise ValueError("Unknown kappa method %s - specify B or C" % kappa_method)
-    # ppc["bus"][:, KAPPA] = kappa
-    # if kappa is already defined in a previous step (e.g. for sgen DFIG kappa is provided by the manufacturer)
-    ppc["bus"][:, KAPPA] = np.where(np.isnan(ppc["bus"][:, KAPPA]), kappa, ppc["bus"][:, KAPPA])
+    # the manufacturer's kappa of a doubly fed asynchronous generator only enters its impedance Z_WD
+    # (IEC 60909-0:2016, 6.8.3); the peak current at the fault location uses the network R/X like any other source
+    ppc["bus"][:, KAPPA] = kappa
 
 
 def _kappa(rx):
