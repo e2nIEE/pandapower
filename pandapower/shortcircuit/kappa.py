@@ -51,15 +51,13 @@ def _kappa_method_c(net, ppc):
         np.ix_(~np.isnan(ppc_c["bus"][:, GS_P]), [BS_P, GS_P])
     ]
 
-    # # TODO: Check this
-    # zero_conductance = np.where(ppc["bus"][:,GS] == 0)
-    # ppc_c["bus"][zero_conductance, BS] *= net.f_hz / fc
-
-    conductance = np.nonzero(ppc["bus"][:, GS])
-    z_shunt = 1 / (ppc_c["bus"][conductance, GS] + 1j * ppc_c["bus"][conductance, BS])
+    # every shunt impedance is evaluated at fc, including purely reactive ones (GS = 0), e.g. a network feeder
+    # with R/X = 0
+    shunt = np.nonzero((ppc_c["bus"][:, GS] != 0) | (ppc_c["bus"][:, BS] != 0))
+    z_shunt = 1 / (ppc_c["bus"][shunt, GS] + 1j * ppc_c["bus"][shunt, BS])
     y_shunt = 1 / (z_shunt.real + 1j * z_shunt.imag * fc / net.f_hz)
-    ppc_c["bus"][conductance, GS] = y_shunt.real[0]
-    ppc_c["bus"][conductance, BS] = y_shunt.imag[0]
+    ppc_c["bus"][shunt, GS] = y_shunt.real[0]
+    ppc_c["bus"][shunt, BS] = y_shunt.imag[0]
     _calc_ybus(ppc_c)
 
     if net["_options"]["inverse_y"]:
@@ -70,7 +68,8 @@ def _kappa_method_c(net, ppc):
 
     _calc_rx(net, ppc_c, np.arange(ppc_c["bus"].shape[0]))
     rx_equiv_c = ppc_c["bus"][:, R_EQUIV] / ppc_c["bus"][:, X_EQUIV] * fc / net.f_hz
-    return _kappa(rx_equiv_c)
+    # a negative equivalent resistance (e.g. a three-winding transformer star branch) must not take kappa above 2
+    return np.clip(_kappa(rx_equiv_c), 1.0, 2.0)
 
 
 def _kappa_method_b(net, ppc):
