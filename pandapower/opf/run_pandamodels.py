@@ -1,10 +1,10 @@
-import os
-from pandapower.converter.pandamodels.to_pm import convert_to_pm_structure, dump_pm_json
-from pandapower.converter.pandamodels.from_pm import read_pm_results_to_net
-from pandapower.optimal_powerflow import OPFNotConverged
-from pandapower.auxiliary import pandapowerNet
-
 import logging
+import os
+
+from pandapower.auxiliary import pandapowerNet
+from pandapower.converter.pandamodels.from_pm import read_pm_results_to_net
+from pandapower.converter.pandamodels.to_pm import convert_to_pm_structure, dump_pm_json
+from pandapower.optimal_powerflow import OPFNotConverged
 
 logger = logging.getLogger(__name__)
 
@@ -64,10 +64,10 @@ def _runpm(
 
 def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
     try:
-        from juliacall import Main, Base, Pkg  # type: ignore  # pre juliacall 0.9.34 Pkg could be imported directly
+        from juliacall import Base, Main, Pkg  # type: ignore  # pre juliacall 0.9.34 Pkg could be imported directly
     except ImportError:
         try:
-            from juliacall import Main, Base  # type: ignore
+            from juliacall import Base, Main  # type: ignore
 
             Main.seval("using Pkg")
             Pkg = Main.Pkg

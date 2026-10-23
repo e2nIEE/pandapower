@@ -3,18 +3,24 @@
 
 from __future__ import annotations
 
+__all__ = [
+    "add_column_to_df",
+    "add_tag_group",
+    "add_tag_group_to_df",
+]
+
 import logging
 import warnings
-from collections.abc import Iterable, Collection
+from collections.abc import Collection, Iterable
 from typing import Any
 
 import numpy.typing as npt
 import pandas as pd
 from numpy import all as np_all
 from numpy import any as np_any
-from numpy import arange, c_, intersect1d, isin, isnan, issubdtype
+from numpy import arange, c_, intersect1d, isin, issubdtype
 from numpy import unique as uni
-from pandas import isnull
+from pandas import isna, isnull
 from pandas.api.types import is_object_dtype
 
 from pandapower.auxiliary import (
@@ -271,11 +277,11 @@ def _not_nan(value, all_=True):
         if all_:
             if is_object_dtype(value):
                 return not all(isnull(value))
-            return not all(isnan(value))
+            return not all(isna(value))
         else:
             if is_object_dtype(value):
                 return not any(isnull(value))
-            return not any(isnan(value))
+            return not any(isna(value))
     else:
         try:
             return pd.notna(value)
@@ -344,7 +350,7 @@ def _add_to_entries_if_not_nan(
     dtype = get_structure_dict(required_only=False)[element_type][column]
     col_info = get_column_info(element_type, column)
     # if dtype is not from pandas (pandas dtypes are pd.NA capable) check if subdtype of float and default_val is pd.NA
-    if getattr(dtype, "__module__", None) != "pandas" and issubdtype(dtype, float) and pd.isna(default_val):
+    if not getattr(dtype, "__module__", "").startswith("pandas") and issubdtype(dtype, float) and pd.isna(default_val):
         default_val = float("nan")
     if col_info is not None and pd.isna(default_val) and not col_info["nullable"]:
         if col_info["default"] is not None:
@@ -427,7 +433,7 @@ def _set_entries(net, table, index, preserve_dtypes=True, entries: dict | None =
             if col in dtype_dict:
                 dtype = dtype_dict[col]
                 # default value for bool entries
-                if dtype == bool and net[table][col].isna().any():  # TODO: check if wanted behaviour
+                if dtype is bool and net[table][col].isna().any():  # TODO: check if wanted behaviour
                     net[table][col] = net[table][col].astype(pd.BooleanDtype()).fillna(False)
                 net[table][col] = net[table][col].astype(dtype)
 
@@ -516,11 +522,10 @@ def _set_const_percent_values(const_percent_values_list, kwargs_input):
         )
         warnings.warn(msg, DeprecationWarning)
         return const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs_input
-    elif ("const_z_percent" in kwargs_input or "const_i_percent" in kwargs_input) and (
-        const_percent_values_default_initials == False
-    ):
-        raise UserWarning("Definition of voltage dependecies is faulty, please check the parameters again.")
-    elif ("const_z_percent" in kwargs_input or "const_i_percent" not in kwargs_input) or (
-        "const_z_percent" not in kwargs_input or "const_i_percent" in kwargs_input
+    elif (
+        ("const_z_percent" in kwargs_input or "const_i_percent" in kwargs_input)
+        and not const_percent_values_default_initials
+        or ("const_z_percent" in kwargs_input or "const_i_percent" not in kwargs_input)
+        or ("const_z_percent" not in kwargs_input or "const_i_percent" in kwargs_input)
     ):
         raise UserWarning("Definition of voltage dependecies is faulty, please check the parameters again.")

@@ -5,30 +5,30 @@
 from time import perf_counter
 
 import numpy as np
-from numpy import pi, zeros, real, bincount, int64
+from numpy import bincount, int64, pi, real, zeros
 
+from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
+from pandapower.pypower.dcpf import dcpf
 from pandapower.pypower.idx_brch import PF, PT, QF, QT, SHIFT, TAP
-from pandapower.pypower.idx_brch_dc import DC_PF, DC_PT, DC_IF, DC_IT
-from pandapower.pypower.idx_bus import VA, GS
+from pandapower.pypower.idx_brch_dc import DC_IF, DC_IT, DC_PF, DC_PT
+from pandapower.pypower.idx_bus import GS, VA
 from pandapower.pypower.idx_bus_dc import DC_BUS_I, DC_PD
-from pandapower.pypower.idx_gen import PG, GEN_BUS
+from pandapower.pypower.idx_gen import GEN_BUS, PG
 from pandapower.pypower.idx_source_dc import SOURCE_DC_BUS
 from pandapower.pypower.idx_vsc import (
     VSC_BUS,
     VSC_BUS_DC,
-    VSC_MODE_DC,
-    VSC_MODE_DC_P,
-    VSC_VALUE_DC,
     VSC_MODE_AC,
     VSC_MODE_AC_SL,
-    VSC_Q,
+    VSC_MODE_DC,
+    VSC_MODE_DC_P,
     VSC_P,
     VSC_P_DC,
+    VSC_Q,
+    VSC_VALUE_DC,
 )
-from pandapower.pypower.dcpf import dcpf
-from pandapower.pypower.makeBdc import makeBdc, phase_shift_injection, calc_b_from_branch
+from pandapower.pypower.makeBdc import calc_b_from_branch, makeBdc, phase_shift_injection
 from pandapower.pypower.makeSbus import makeSbus
-from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 
 
 def _run_dc_pf(ppci, recycle: dict | bool = False):

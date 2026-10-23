@@ -6,64 +6,62 @@
 
 from sys import stdout
 
-from numpy import ones, zeros, r_, sort, exp, pi, diff, arange, min, argmin, argmax, logical_or, real, imag, any, int64
-
+from numpy import any, arange, argmax, argmin, diff, exp, imag, int64, logical_or, min, ones, pi, r_, real, sort, zeros
 from numpy import flatnonzero as find
 
+from pandapower.pypower.idx_brch import (
+    BR_B,
+    BR_G,
+    BR_R,
+    BR_STATUS,
+    BR_X,
+    F_BUS,
+    MU_SF,
+    MU_ST,
+    PF,
+    PT,
+    QF,
+    QT,
+    RATE_A,
+    SHIFT,
+    T_BUS,
+    TAP,
+)
 from pandapower.pypower.idx_bus import (
-    BUS_I,
-    BUS_TYPE,
-    PD,
-    QD,
-    GS,
     BS,
     BUS_AREA,
-    VM,
-    VA,
-    VMAX,
-    VMIN,
+    BUS_I,
+    BUS_TYPE,
+    GS,
     LAM_P,
     LAM_Q,
     MU_VMAX,
     MU_VMIN,
+    PD,
+    QD,
     REF,
+    VA,
+    VM,
+    VMAX,
+    VMIN,
 )
 from pandapower.pypower.idx_gen import (
     GEN_BUS,
-    PG,
-    QG,
-    QMAX,
-    QMIN,
     GEN_STATUS,
-    PMAX,
-    PMIN,
     MU_PMAX,
     MU_PMIN,
     MU_QMAX,
     MU_QMIN,
+    PG,
+    PMAX,
+    PMIN,
+    QG,
+    QMAX,
+    QMIN,
 )
-from pandapower.pypower.idx_brch import (
-    F_BUS,
-    T_BUS,
-    BR_R,
-    BR_X,
-    BR_B,
-    BR_G,
-    RATE_A,
-    TAP,
-    SHIFT,
-    BR_STATUS,
-    PF,
-    QF,
-    PT,
-    QT,
-    MU_SF,
-    MU_ST,
-)
-
 from pandapower.pypower.isload import isload
-from pandapower.pypower.run_userfcn import run_userfcn
 from pandapower.pypower.ppoption import ppoption
+from pandapower.pypower.run_userfcn import run_userfcn
 
 
 def printpf(

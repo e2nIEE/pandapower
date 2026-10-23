@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 def wye_patch(node_geo, offset, size, r_triangle, angle, facecolor, edgecolor) -> tuple[list["Patch"], list]:
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-    polys: list["Patch"] = []
+    polys: list[Patch] = []
     lines = []
     mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
     circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angle)
@@ -103,7 +103,7 @@ def wp_patch(
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-    polys: list["Patch"] = []
+    polys: list[Patch] = []
     lines = []
     mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
     circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angle)
@@ -178,7 +178,7 @@ def pv_patch(node_geo, offset, size, angle, pv_rect_size, pv_tri_size, facecolor
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-    polys: list["Patch"] = []
+    polys: list[Patch] = []
     lines = []
     mid_rect = node_geo + _rotate_dim2(np.array([0, 2 * size]), angle)
     rect_lbottom = (mid_rect[0] - (pv_rect_size / 4), mid_rect[1])
@@ -458,7 +458,7 @@ def sgen_patches(node_coords, size, angles, patch_type, draw_by_type: bool = Tru
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
     lines = []
-    polys: list["Patch"] = []
+    polys: list[Patch] = []
     offset = kwargs.get("offset", 2 * size)
     r_triangle = kwargs.get("r_triangles", size * 0.4)
     hub_size = size * 0.15  # Hub size

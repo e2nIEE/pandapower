@@ -3,11 +3,11 @@
 
 import numpy as np
 
-from pandapower.pypower.idx_bus import PD, QD
-from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
-from pandapower.pf.pfsoln_numba import pfsoln
-from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_se, init_results
 from pandapower.auxiliary import get_values
+from pandapower.pf.pfsoln_numba import pfsoln
+from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
+from pandapower.pypower.idx_bus import PD, QD
+from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_se, init_results
 
 
 def _calc_power_flow(ppci, V):

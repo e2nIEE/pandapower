@@ -3,9 +3,11 @@
 
 
 import numpy as np
-from scipy.sparse import csr_matrix as sparse, eye, vstack, hstack
+from scipy.sparse import csr_matrix as sparse
+from scipy.sparse import eye, hstack, vstack
+
+from pandapower.pypower.idx_brch import BR_STATUS, F_BUS, T_BUS
 from pandapower.pypower.idx_bus import BASE_KV
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
 
 SIGMA = 5.670374419e-8
 # ALPHA = 4.03e-3

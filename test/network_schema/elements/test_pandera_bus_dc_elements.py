@@ -1,0 +1,190 @@
+# test_pandera_bus_dc_elements.py
+
+import itertools
+from cmath import isnan
+
+import numpy as np
+import pandas as pd
+import pandera as pa
+import pytest
+
+from pandapower.create import create_buses_dc
+from pandapower.create._utils import add_tag_group_to_df
+from pandapower.network import pandapowerNet
+from pandapower.network_schema.tools.validation.network_validation import validate_network
+from test.network_schema.elements.helper import (
+    bools,
+    negativ_floats,
+    not_allowed_floats,
+    not_boolean_list,
+    not_floats_list,
+    not_strings_list,
+    positiv_floats,
+    strings,
+    zero_float,
+)
+
+
+class TestBusDCRequiredFields:
+    """Tests for required dc bus fields"""
+
+    @pytest.mark.parametrize(
+        "parameter,valid_value",
+        list(
+            itertools.chain(
+                itertools.product(["vn_kv"], positiv_floats),
+                itertools.product(["in_service"], bools),
+            )
+        ),
+    )
+    def test_valid_required_values(self, parameter, valid_value):
+        """Test: valid required values are accepted"""
+        net = pandapowerNet(name="test_valid_required_values")
+
+        # A minimal valid bus_dc
+        create_buses_dc(net, 1, vn_kv=1.0, in_service=True)
+
+        # Modify the tested parameter
+        net.bus_dc.at[0, parameter] = valid_value
+
+        validate_network(net)
+
+    @pytest.mark.parametrize(
+        "parameter,invalid_value",
+        list(
+            itertools.chain(
+                itertools.product(["vn_kv"], [float(np.nan), pd.NA, *not_floats_list, *negativ_floats, *zero_float]),
+                itertools.product(["in_service"], [float(np.nan), pd.NA, *not_boolean_list]),
+            )
+        ),
+    )
+    def test_invalid_required_values(self, parameter, invalid_value):
+        """Test: invalid required values are rejected"""
+        net = pandapowerNet(name="test_invalid_required_values")
+        create_buses_dc(net, 1, vn_kv=1.0, in_service=True)
+
+        net.bus_dc[parameter] = invalid_value
+
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+
+class TestBusDCOptionalFields:
+    """Tests for optional dc bus fields"""
+
+    def test_bus_dc_with_optional_fields(self):
+        net = pandapowerNet(name="test_bus_dc_with_optional_fields")
+        create_buses_dc(
+            net,
+            1,
+            vn_kv=1.0,
+            in_service=True,
+            name="my_dc_bus",
+            type="n",
+            zone="europe",
+            geo="POINT(0 0)",
+            max_vm_pu=1.1,
+            min_vm_pu=0.9,
+        )
+        validate_network(net)
+
+    def test_bus_dc_with_optional_fields_including_nulls(self):
+        net = pandapowerNet(name="test_bus_dc_with_optional_fields_including_nulls")
+        create_buses_dc(net, 1, vn_kv=1.0, in_service=True, name="bye world")
+        create_buses_dc(net, 1, vn_kv=1.0, in_service=True, type="b")
+        create_buses_dc(net, 1, vn_kv=1.0, in_service=True, zone="somewhere")
+        create_buses_dc(net, 1, vn_kv=1.0, in_service=True, geo="pd.NA")
+        create_buses_dc(net, 1, vn_kv=1.0, in_service=True, max_vm_pu=1.4)
+        create_buses_dc(net, 1, vn_kv=1.0, in_service=True, min_vm_pu=1.1)
+
+        validate_network(net)
+
+    @pytest.mark.parametrize(
+        "parameter,valid_value",
+        list(
+            itertools.chain(
+                itertools.product(["name", "type", "zone", "geo"], [pd.NA, *strings]),
+                itertools.product(["min_vm_pu", "max_vm_pu"], [*positiv_floats]),
+            )
+        ),
+    )
+    def test_valid_optional_values(self, parameter, valid_value):
+        net = pandapowerNet(name="test_valid_optional_values")
+        create_buses_dc(net, 1, vn_kv=1.0, in_service=True, **{parameter: valid_value})
+        if parameter in "min_vm_pu" and not isnan(valid_value):
+            net.bus_dc.at[0, "max_vm_pu"] = 2.0
+        if parameter in "max_vm_pu" and not isnan(valid_value):
+            net.bus_dc.at[0, "min_vm_pu"] = 0.0
+
+        validate_network(net)
+
+    @pytest.mark.parametrize(
+        "parameter,invalid_value",
+        list(
+            itertools.chain(
+                itertools.product(["name"], [np.nan, *not_strings_list]),
+                itertools.product(["type"], [np.nan, *not_strings_list]),
+                itertools.product(["zone"], [np.nan, *not_strings_list]),
+                itertools.product(["geo"], [np.nan, *not_strings_list]),
+                itertools.product(["min_vm_pu"], [*not_floats_list, *not_allowed_floats, -3.0, 3.0]),
+                itertools.product(["max_vm_pu"], [*not_floats_list, *not_allowed_floats, -3.0, 3.0]),
+            )
+        ),
+    )
+    def test_invalid_optional_values(self, parameter, invalid_value):
+        net = pandapowerNet(name="test_invalid_optional_values")
+        create_buses_dc(net, 1, vn_kv=1.0, in_service=True)
+
+        # for OPF columns, add group dependency so only target parameter triggers failure
+        #  otherwise the "min < max" check will fail.
+        if parameter in ["min_vm_pu", "max_vm_pu"]:
+            add_tag_group_to_df(net, "bus_dc", "opf")
+
+        net.bus_dc[parameter] = invalid_value
+
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+
+class TestBusDCCrossFieldConstraints:
+    """Tests for cross-field constraints"""
+
+    def test_min_vm_pu_greater_than_max_vm_pu_rejected(self):
+        """Test: min_vm_pu must be <= max_vm_pu"""
+        net = pandapowerNet(name="test_min_max_constraint")
+        create_buses_dc(net, 1, vn_kv=1.0, in_service=True, min_vm_pu=1.5, max_vm_pu=1.0)
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_max_vm_pu_valid_upper_bound(self):
+        """Test: max_vm_pu = 2 is valid (boundary)"""
+        net = pandapowerNet(name="test_max_vm_pu_valid_upper_bound")
+        create_buses_dc(net, 1, vn_kv=1.0, in_service=True, min_vm_pu=0.0, max_vm_pu=2.0)
+        validate_network(net)
+
+    def test_min_vm_pu_valid_zero(self):
+        """Test: min_vm_pu = 0 is valid (boundary)"""
+        net = pandapowerNet(name="test_min_vm_pu_valid_zero")
+        create_buses_dc(net, 1, vn_kv=1.0, in_service=True, min_vm_pu=0.0, max_vm_pu=1.0)
+        validate_network(net)
+
+    @pytest.mark.parametrize("invalid_value", [2.1, 3.0, 100.0])
+    def test_max_vm_pu_upper_bound(self, invalid_value):
+        """Test: max_vm_pu must be <= 2"""
+        net = pandapowerNet(name="test_max_vm_pu_upper_bound")
+        create_buses_dc(net, 1, vn_kv=1.0, in_service=True, min_vm_pu=0.0)
+        net.bus_dc["max_vm_pu"] = invalid_value
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+
+class TestBusDCResults:
+    """Tests for bus_dc results after calculations"""
+
+    @pytest.mark.skip(reason="Not yet implemented")
+    def test_bus_dc_voltage_results(self):
+        pass
+
+    @pytest.mark.skip(reason="Not yet implemented")
+    def test_bus_dc_power_results(self):
+        pass

@@ -8,8 +8,10 @@
 
 """Evaluates Hessian of Lagrangian for AC OPF."""
 
-from numpy import array, zeros, ones, exp, arange, r_, int64, flatnonzero as find
-from scipy.sparse import vstack, hstack, issparse, csr_matrix as sparse
+from numpy import arange, array, exp, int64, ones, r_, zeros
+from numpy import flatnonzero as find
+from scipy.sparse import csr_matrix as sparse
+from scipy.sparse import hstack, issparse, vstack
 
 from pandapower.pypower.d2AIbr_dV2 import d2AIbr_dV2
 from pandapower.pypower.d2ASbr_dV2 import d2ASbr_dV2

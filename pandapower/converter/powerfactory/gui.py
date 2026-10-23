@@ -1,12 +1,11 @@
-import os
 import logging
-from typing_extensions import deprecated
-
+import os
 import tkinter as tk
 
-from pandapower.network import ADict
-from pandapower.converter.powerfactory.main_pf import exit_gracefully
+from typing_extensions import deprecated
 
+from pandapower.converter.powerfactory.main_pf import exit_gracefully
+from pandapower.network import ADict
 
 logger = logging.getLogger(__name__)
 

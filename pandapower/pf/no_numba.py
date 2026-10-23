@@ -1,14 +1,14 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from typing import Any, Callable, ParamSpec, TypeVar, Union
-
+from collections.abc import Callable
+from typing import Any, ParamSpec, TypeVar
 
 P = ParamSpec("P")
 R = TypeVar("R")
 
 
-def jit(*args: Any, **kwargs: Any) -> Union[Callable[[Callable[P, R]], Callable[P, R]], Callable[..., Callable[P, R]]]:
+def jit(*args: Any, **kwargs: Any) -> Callable[[Callable[P, R]], Callable[P, R]] | Callable[..., Callable[P, R]]:
     def wrapper(f: Callable[P, R]) -> Callable[P, R]:
         return f
 

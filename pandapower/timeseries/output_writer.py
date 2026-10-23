@@ -2,31 +2,28 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import copy
 import functools
+import logging
 import os
+from collections.abc import Iterable
 from time import perf_counter
 from types import FunctionType
 
 import numpy as np
 import pandas as pd
-from collections.abc import Iterable
-from pandapower.io_utils import JSONSerializableClass
-from pandapower.io_utils import mkdirs_if_not_existent
+
+from pandapower.io_utils import JSONSerializableClass, mkdirs_if_not_existent
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.pypower.idx_bus import VM, VA, NONE, BUS_TYPE
+from pandapower.pypower.idx_bus import BUS_TYPE, NONE, VA, VM
 from pandapower.run import _init_runpp_options
 from pandapower.timeseries.read_batch_results import (
-    v_to_i_s,
+    get_batch_bus_results,
     get_batch_line_results,
     get_batch_trafo3w_results,
     get_batch_trafo_results,
-    get_batch_bus_results,
+    v_to_i_s,
 )
 
-try:
-    import pandaplan.core.pplog as pplog
-except ImportError:
-    import logging as pplog
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class OutputWriter(JSONSerializableClass):
@@ -256,9 +253,9 @@ class OutputWriter(JSONSerializableClass):
             try:
                 if save_single and self.output_file_type in [".xls", ".xlsx"]:
                     self._save_single_xls_sheet(append)
-                elif self.output_file_type in [".xls", ".xlsx", ".json", ".p"]:
-                    self._save_separate(append, net=net)
-                elif "csv" in self.output_file_type.split("."):
+                elif self.output_file_type in [".xls", ".xlsx", ".json", ".p"] or "csv" in self.output_file_type.split(
+                    "."
+                ):
                     self._save_separate(append, net=net)
                 else:
                     raise UserWarning("Specify output file with .csv, .csv.*, .xls, .xlsx, .p or .json ending")
@@ -366,9 +363,9 @@ class OutputWriter(JSONSerializableClass):
         for log_args in self.log_variables:
             if len(log_args) > 4 and eval_name is not None and log_args[4] == eval_name:
                 logger.warning(
-                    "eval_name '{}' already exists for table '{}' and variable '{}'. "
+                    f"eval_name '{eval_name}' already exists for table '{log_args[0]}' and variable '{log_args[1]}'. "
                     "Please choose a unique eval_name. "
-                    "I'll use the default instead.".format(eval_name, log_args[0], log_args[1])
+                    "I'll use the default instead."
                 )
                 eval_name = None
                 break
@@ -399,9 +396,11 @@ class OutputWriter(JSONSerializableClass):
                         existing_entry[2] if isinstance(existing_entry[2], list) else list(existing_entry[2])
                     )
                     # Handle scalar index (single integer) vs iterable
-                    if isinstance(index, (list, tuple, np.ndarray)):
-                        new_index = list(index)
-                    elif hasattr(index, "__iter__") and not isinstance(index, str):
+                    if (
+                        isinstance(index, (list, tuple, np.ndarray))
+                        or hasattr(index, "__iter__")
+                        and not isinstance(index, str)
+                    ):
                         new_index = list(index)
                     else:
                         new_index = [index]  # single scalar value

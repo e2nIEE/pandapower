@@ -1,6 +1,8 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = ["create_buses", "create_buses_dc"]
+
 import logging
 from collections.abc import Iterable
 
@@ -340,7 +342,11 @@ def create_buses_dc(
 
     min_vm_pu_exists: bool = pd.notna(min_vm_pu) if pd.api.types.is_scalar(min_vm_pu) else pd.notna(min_vm_pu).any()  # type: ignore[attr-defined,arg-type]
     max_vm_pu_exists: bool = pd.notna(max_vm_pu) if pd.api.types.is_scalar(max_vm_pu) else pd.notna(max_vm_pu).any()  # type: ignore[attr-defined,arg-type]
-    if min_vm_pu_exists or max_vm_pu_exists or "min_vm_pu" in net.bus.columns:
+    if min_vm_pu_exists or max_vm_pu_exists or "min_vm_pu" in net.bus_dc.columns or "max_vm_pu" in net.bus_dc.columns:
+        if "min_vm_pu" not in net.bus_dc.columns:
+            net.bus_dc["min_vm_pu"] = get_default_value("bus_dc", "min_vm_pu")
+        if "max_vm_pu" not in net.bus_dc.columns:
+            net.bus_dc["max_vm_pu"] = get_default_value("bus_dc", "max_vm_pu")
         _add_to_entries_if_not_nan(
             net,
             "bus_dc",

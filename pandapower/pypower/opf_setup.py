@@ -8,23 +8,26 @@
 
 """Constructs an OPF model object from a PYPOWER case dict."""
 
-from sys import stdout, stderr
+from sys import stderr, stdout
 
-from numpy import array, any, delete, unique, arange, nonzero, pi, r_, ones, inf, flatnonzero as find, int64, full
-from scipy.sparse import hstack, csr_matrix as sparse
+from numpy import any, arange, array, delete, full, inf, int64, nonzero, ones, pi, r_, unique
+from numpy import flatnonzero as find
+from scipy.sparse import csr_matrix as sparse
+from scipy.sparse import hstack
+
 from pandapower.pypower.idx_brch import RATE_A
-from pandapower.pypower.idx_bus import BUS_TYPE, REF, VA, VM, PD, GS, VMAX, VMIN
-from pandapower.pypower.idx_cost import MODEL, NCOST, PW_LINEAR, COST, POLYNOMIAL
-from pandapower.pypower.idx_gen import GEN_BUS, VG, PG, QG, PMAX, PMIN, QMAX, QMIN
+from pandapower.pypower.idx_bus import BUS_TYPE, GS, PD, REF, VA, VM, VMAX, VMIN
+from pandapower.pypower.idx_cost import COST, MODEL, NCOST, POLYNOMIAL, PW_LINEAR
+from pandapower.pypower.idx_gen import GEN_BUS, PG, PMAX, PMIN, QG, QMAX, QMIN, VG
 from pandapower.pypower.makeAang import makeAang
 from pandapower.pypower.makeApq import makeApq
 from pandapower.pypower.makeAvl import makeAvl
 from pandapower.pypower.makeAy import makeAy
 from pandapower.pypower.makeBdc import makeBdc
 from pandapower.pypower.opf_args import opf_args
+from pandapower.pypower.opf_model import opf_model
 from pandapower.pypower.pqcost import pqcost
 from pandapower.pypower.run_userfcn import run_userfcn
-from pandapower.pypower.opf_model import opf_model
 
 
 def opf_setup(ppc, ppopt):

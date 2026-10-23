@@ -8,11 +8,11 @@ problem formulation.
 
 from sys import stderr
 
-from numpy import array, zeros, ones, inf, r_, full
+from numpy import array, full, inf, ones, r_, zeros
 from scipy.sparse import lil_matrix
 
 
-class opf_model(object):
+class opf_model:
     """This class implements the OPF model object used to encapsulate
     a given OPF problem formulation. It allows for access to optimization
     variables, constraints and costs in named blocks, keeping track of the

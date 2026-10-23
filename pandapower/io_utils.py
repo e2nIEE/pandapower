@@ -3,33 +3,34 @@
 
 import copy
 import importlib
+import io
 import json
 import numbers
 import os
-import io
 import sys
 import types
 import weakref
 from ast import literal_eval
+from enum import Enum
 from functools import partial
-from inspect import isclass, _findclass  # type: ignore[attr-defined]
+from inspect import _findclass, isclass  # type: ignore[attr-defined]
 from warnings import warn
-import numpy as np
-import pandas.errors
-from deepdiff.diff import DeepDiff
 
+import geojson
 import networkx
 import numpy
-import geojson
+import numpy as np
 import pandas as pd
-from enum import Enum
+import pandas.errors
+from deepdiff.diff import DeepDiff
 from networkx.readwrite import json_graph
-from numpy import ndarray, generic, equal, isnan, allclose, any as anynp
+from numpy import allclose, equal, generic, isnan, ndarray
+from numpy import any as anynp
 
 try:
-    from pandas.testing import assert_series_equal, assert_frame_equal
+    from pandas.testing import assert_frame_equal, assert_series_equal
 except ImportError:
-    from pandas.util.testing import assert_series_equal, assert_frame_equal  # type: ignore[no-redef,import-not-found]
+    from pandas.util.testing import assert_frame_equal, assert_series_equal  # type: ignore[no-redef,import-not-found]
 try:
     from cryptography.fernet import Fernet  # type: ignore
 
@@ -55,11 +56,11 @@ try:
 except ImportError:
     zlib_INSTALLED = False
 
-from pandapower.auxiliary import get_free_id, soft_dependency_error, _preserve_dtypes
+from functools import singledispatch
+
+from pandapower.auxiliary import _preserve_dtypes, get_free_id, soft_dependency_error
 from pandapower.network import pandapowerNet
 from pandapower.network_structure import get_std_type_structure_dict
-
-from functools import singledispatch
 
 try:
     import geopandas
@@ -78,7 +79,6 @@ except (ImportError, OSError):
 import logging
 
 logger = logging.getLogger(__name__)
-logger.setLevel(logging.INFO)
 
 
 def coords_to_df(value, geotype="line"):
@@ -139,7 +139,7 @@ def to_dict_of_dfs(
             continue
         elif isinstance(value, (int, float, bool, str, numbers.Number)):
             # attributes of primitive types are just stored in a DataFrame "parameters"
-            parameters[item] = net[item]
+            parameters[item] = value
             continue
         elif not isinstance(value, pd.DataFrame):
             logger.warning("Could not serialize net.%s" % item)
@@ -996,7 +996,7 @@ def decrypt_string(s, key):
     return s
 
 
-class JSONSerializableClass(object):
+class JSONSerializableClass:
     json_excludes = ["self", "__class__"]
 
     def __init__(self, **kwargs):

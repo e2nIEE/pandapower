@@ -1,13 +1,14 @@
-import numpy as np
+import logging
 import numbers
 from collections.abc import Sequence
-import logging
+from enum import Enum
 
-from pandapower.control.basic_controller import Controller
+import numpy as np
+
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
+from pandapower.control.basic_controller import Controller
 from pandapower.control.util.auxiliary import get_min_max_q_mvar_from_characteristics_object
 from pandapower.create._utils import add_column_to_df
-from enum import Enum
 
 logger = logging.getLogger(__name__)
 
@@ -549,7 +550,7 @@ class BinarySearchControl(Controller):
                 if (
                     self.input_element != "res_bus"
                 ):  # and not any(getattr(net.controller.at[x, 'object'], 'controller_idx', False) ==
-                    if hasattr(self, "bus_idx") and getattr(self, "bus_idx") is not None:  # legacy
+                    if hasattr(self, "bus_idx") and self.bus_idx is not None:  # legacy
                         self.diff_old = self.diff
                         if not any(self.output_adjustable):
                             logging.info(

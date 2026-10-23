@@ -6,16 +6,14 @@ from time import perf_counter
 import numpy as np
 import pandas as pd
 
-from pandapower.pypower.idx_bus import PD, QD, BUS_TYPE, GS, BS, BUS_I, VM, VA, SL_FAC as SL_FAC_BUS
-from pandapower.pypower.idx_brch import F_BUS, T_BUS
-from pandapower.pypower.idx_gen import PG, QMAX, QMIN, GEN_BUS, VG, MBASE, GEN_STATUS, SL_FAC
-from pandapower.pf.run_newton_raphson_pf import ppci_to_pfsoln, _get_numba_functions, _get_Y_bus
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
+from pandapower.pf.run_newton_raphson_pf import _get_numba_functions, _get_Y_bus, ppci_to_pfsoln
+from pandapower.pypower.idx_brch import F_BUS, T_BUS
+from pandapower.pypower.idx_bus import BS, BUS_I, BUS_TYPE, GS, PD, QD, VA, VM
+from pandapower.pypower.idx_bus import SL_FAC as SL_FAC_BUS
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, MBASE, PG, QMAX, QMIN, SL_FAC, VG
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
+import logging
 
 logger = logging.getLogger(__name__)
 

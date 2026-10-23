@@ -1,12 +1,12 @@
-import pandas as pd
-import numpy as np
-
-from pandapower.run import runpp
-from pandapower.results import init_element
-from pandapower.pf.runpp_3ph import runpp_3ph
-from pandapower.toolbox.grid_modification import replace_zero_branches_with_switches
-
 import logging
+
+import numpy as np
+import pandas as pd
+
+from pandapower.pf.runpp_3ph import runpp_3ph
+from pandapower.results import init_element
+from pandapower.run import runpp
+from pandapower.toolbox.grid_modification import replace_zero_branches_with_switches
 
 logger = logging.getLogger(__name__)
 
@@ -215,7 +215,7 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
 
     default_run_control = hasattr(net, "controller") and len(net.controller) > 0
     run_control = kwargs.pop("run_control", default_run_control)
-    for arg in "trafo_model check_connectivity".split():
+    for arg in ["trafo_model", "check_connectivity"]:
         if arg in kwargs:
             kwargs.pop(arg)
     if is_unbalanced:

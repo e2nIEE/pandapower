@@ -1,47 +1,54 @@
 import bisect
+import json
+import logging
 import math
 import numbers
 import re
 from itertools import combinations
-from typing import Literal, Optional, Union
-import logging
+from typing import Literal
 
 import geojson
-import json
 import networkx as nx
 import numpy as np
 from pandas import DataFrame, Series, concat, isna
 
 from pandapower.auxiliary import get_free_id
 from pandapower.control import (
+    BinarySearchControl,
     ContinuousTapControl,
     DiscreteTapControl,
-    BinarySearchControl,
     DroopControl,
     VDroopControl_local,
 )
+from pandapower.control.util.auxiliary import (
+    create_q_capability_characteristics_object,
+    get_min_max_q_mvar_from_characteristics_object,
+)
+from pandapower.control.util.characteristic import SplineCharacteristic
 from pandapower.create import (
+    create_asymmetric_load,
+    create_asymmetric_sgen,
     create_bus,
     create_bus_dc,
-    create_load,
-    create_switch,
-    create_shunt,
-    create_line,
-    create_line_from_parameters,
-    create_line_dc,
-    create_sgen,
-    create_gen,
     create_ext_grid,
-    create_asymmetric_sgen,
-    create_line_dc_from_parameters,
-    create_asymmetric_load,
-    create_transformer,
-    create_transformer_from_parameters,
-    create_transformer3w_from_parameters,
+    create_gen,
     create_impedance,
-    create_xward,
-    create_ward,
+    create_line,
+    create_line_dc,
+    create_line_dc_from_parameters,
+    create_line_from_parameters,
+    create_load,
     create_series_reactor_as_impedance,
+    create_sgen,
+    create_shunt,
+    create_switch,
+    create_transformer,
+    create_transformer3w_from_parameters,
+    create_transformer_from_parameters,
+    create_ward,
+    create_xward,
+)
+from pandapower.create import (
     create_vsc as _create_vsc,
 )
 from pandapower.network import ADict, pandapowerNet
@@ -49,18 +56,13 @@ from pandapower.results import reset_results
 from pandapower.run import set_user_pf_options
 from pandapower.std_types import (
     add_zero_impedance_parameters,
-    std_type_exists,
-    create_std_type,
     available_std_types,
+    create_std_type,
     load_std_type,
+    std_type_exists,
 )
-from pandapower.toolbox.grid_modification import set_isolated_areas_out_of_service, drop_inactive_elements, drop_buses
+from pandapower.toolbox.grid_modification import drop_buses, drop_inactive_elements, set_isolated_areas_out_of_service
 from pandapower.topology import create_nxgraph
-from pandapower.control.util.auxiliary import (
-    create_q_capability_characteristics_object,
-    get_min_max_q_mvar_from_characteristics_object,
-)
-from pandapower.control.util.characteristic import SplineCharacteristic
 
 logger = logging.getLogger(__name__)
 
@@ -868,8 +870,8 @@ def create_connection_switches(net, item, number_switches, et, buses, elements):
 
 def get_coords_from_buses(net, from_bus, to_bus, **kwargs):
     coords: list[list[float, float]] = []
-    from_geo: Optional[str] = None
-    to_geo: Optional[str] = None
+    from_geo: str | None = None
+    to_geo: str | None = None
     if from_bus in net.bus.index:
         from_geo: str = net.bus.loc[from_bus, "geo"]
 
@@ -1006,7 +1008,7 @@ def create_pp_line(net, item, flag_graphics, create_sections, is_unbalanced):
     logger.debug("line <%s> created" % params["name"])
 
 
-def point_len(p1: list[Union[float, int]], p2: list[Union[float, int]]) -> float:
+def point_len(p1: list[float | int], p2: list[float | int]) -> float:
     """
     Calculate distance between p1 and p2
     """
@@ -1015,7 +1017,7 @@ def point_len(p1: list[Union[float, int]], p2: list[Union[float, int]]) -> float
     return ((x1 - x2) ** 2 + (y1 - y2) ** 2) ** 0.5
 
 
-def calc_len_coords(coords: list[list[Union[float, int]]]) -> float:
+def calc_len_coords(coords: list[list[float | int]]) -> float:
     """
     Calculate the sum of point distances in list of coords
     """
@@ -1157,8 +1159,7 @@ def segment_buses(net, bus1, bus2, num_sections, line_name):  # , sec_len, start
         yield bus
         yield bus
         m += 1
-    else:
-        yield bus2
+    yield bus2
 
 
 def create_line_sections(net, item_list, line, bus1, bus2, coords, parallel, is_unbalanced, **kwargs):
@@ -1825,7 +1826,6 @@ def split_line_add_bus(net, split_dict):
             # change old line
             net.line.at[lix, "to_bus"] = bus
             net.line.at[lix, "length_km"] = net.line.at[lix, "length_km"] - len_sections[i]
-            pass
 
 
 def split_line_add_bus_old(net, item, parent):
@@ -2622,13 +2622,7 @@ def create_sgen_sym(net, item, pv_as_slack, pf_variable_p_gen, dict_net, export_
                 av_mode = "constq"
             else:
                 i_ctrl = pstac.i_ctrl
-                if i_ctrl == 0:
-                    av_mode = "constq"
-                elif i_ctrl == 1:
-                    av_mode = "constq"
-                elif i_ctrl == 2:
-                    av_mode = "constq"
-                elif i_ctrl == 3:
+                if i_ctrl == 0 or i_ctrl == 1 or i_ctrl == 2 or i_ctrl == 3:
                     av_mode = "constq"
 
         logger.debug("av_mode: %s" % av_mode)
@@ -2806,9 +2800,7 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net, export_ctrl):
             av_mode = "constq"
         else:
             i_ctrl = pstac.i_ctrl
-            if i_ctrl == 0:
-                av_mode = "constq"
-            elif i_ctrl == 1:
+            if i_ctrl == 0 or i_ctrl == 1:
                 av_mode = "constq"
             elif i_ctrl == 2:
                 av_mode = "constq"  # cosphi
@@ -2995,7 +2987,7 @@ def create_trafo_type(net, item):
                 "side %s. Results will differ." % (item.loc_name, type_data["tap2_side"])
             )
 
-    if "tap_side" in type_data.keys() and (type_data.get("tap_side") == "ext" or type_data.get("tap_side") == "ext"):
+    if "tap_side" in type_data and (type_data.get("tap_side") == "ext" or type_data.get("tap_side") == "ext"):
         logger.warning('controlled node of trafo "EXT" not implemented (type <%s>)' % name)
     create_std_type(net, type_data, name, "trafo")
     logger.debug("created trafo type <%s> with params: %s" % (name, type_data))
@@ -3252,9 +3244,7 @@ def add_tap_dependent_impedance_for_trafo(item, net, pf_type, tid):
     direction = -1 if pf_type.tap_side else 1
     tap_step_percent = (pf_type.dutap if pf_type.tapchtype != 1 else 0,)
     tap_step_degree = pf_type.dphitap if pf_type.tapchtype == 1 else pf_type.phitr
-    index = (
-        int(net.trafo_characteristic_table.iat[-1, 0] + 1) if not net["trafo_characteristic_table"].empty else int(0)
-    )
+    index = int(net.trafo_characteristic_table.iat[-1, 0] + 1) if not net["trafo_characteristic_table"].empty else 0
 
     if pf_type.tapchtype == 1:  # if tapchanger is Ideal
         angle_deg = tap_diff * tap_step_degree * direction
@@ -3850,7 +3840,7 @@ def create_pp_shunt(net, item):
 
         new_tap_table = DataFrame(item.GetAttribute("mTaps"), columns=["q_mvar", "p_mw"])
 
-        steps = list(range(0, item.GetAttribute("ncapx") + 1))
+        steps = list(range(item.GetAttribute("ncapx") + 1))
         if len(new_tap_table) == len(steps):
             new_tap_table["step"] = steps[: len(new_tap_table)]
         else:
@@ -4506,9 +4496,7 @@ def create_stactrl(net, item, top, top_all, **kwargs):
             else:
                 gt = "other"
         else:
-            if s.ip_ctrl == 1:
-                gt = "other"
-            elif not hasattr(s, "av_mode"):
+            if s.ip_ctrl == 1 or not hasattr(s, "av_mode"):
                 gt = "other"
             elif s.av_mode == "constq":
                 gt = "sgen"
@@ -4532,16 +4520,7 @@ def create_stactrl(net, item, top, top_all, **kwargs):
             for i in range(len(gen_types)):
                 gen_types[i] = "sgen"
         else:
-            if control_mode == 0:  # V_ctrl
-                for i in range(len(gen_types)):
-                    gen_types[i] = "sgen"
-            elif control_mode == 1:  # Q_ctrl
-                for i in range(len(gen_types)):
-                    gen_types[i] = "sgen"
-            elif control_mode == 2:  # PF
-                for i in range(len(gen_types)):
-                    gen_types[i] = "sgen"
-            elif control_mode == 3:  # tan(phi)
+            if control_mode == 0 or control_mode == 1 or control_mode == 2 or control_mode == 3:  # V_ctrl
                 for i in range(len(gen_types)):
                     gen_types[i] = "sgen"
             else:
@@ -5009,7 +4988,6 @@ def GetBranchElementFromSwitch(net, q_control_element, graph):
                     t3w_buses = {row.hv_bus, row.mv_bus, row.lv_bus}
                     if set(neighbors).issubset(t3w_buses - {current}):
                         valid_t3w_neighbors = True
-                        pass
                     else:
                         return None
                 else:

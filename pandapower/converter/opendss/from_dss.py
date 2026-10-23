@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -26,16 +24,16 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from pandapower.network import pandapowerNet
 from pandapower.create import (
     create_bus,
     create_ext_grid,
+    create_line_from_parameters,
     create_load,
     create_shunt,
     create_switch,
-    create_line_from_parameters,
     create_transformer_from_parameters,
 )
+from pandapower.network import pandapowerNet
 
 try:
     # On Windows, OpenDSSDirect.py's native backend (dss_python_backend) raises an

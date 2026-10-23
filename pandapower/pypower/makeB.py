@@ -4,10 +4,10 @@
 
 """Builds the FDPF matrices, B prime and B double prime."""
 
-from numpy import ones, zeros, copy
+from numpy import copy, ones, zeros
 
+from pandapower.pypower.idx_brch import BR_B, BR_R, SHIFT, TAP
 from pandapower.pypower.idx_bus import BS
-from pandapower.pypower.idx_brch import BR_B, BR_R, TAP, SHIFT
 from pandapower.pypower.makeYbus import makeYbus
 
 

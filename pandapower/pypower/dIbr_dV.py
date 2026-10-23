@@ -4,8 +4,9 @@
 
 """Computes partial derivatives of branch currents w.r.t. voltage."""
 
-from numpy import diag, asmatrix, asarray, conj
-from scipy.sparse import issparse, csr_matrix as sparse
+from numpy import asarray, asmatrix, conj, diag
+from scipy.sparse import csr_matrix as sparse
+from scipy.sparse import issparse
 
 
 def dIbr_dV(branch, Yf, Yt, V):

@@ -14,7 +14,7 @@ import pandas as pd
 from lxml import etree
 
 from .cim_tools import get_cim_schema
-from .other_classes import ReportContainer, Report, LogLevel, ReportCode
+from .other_classes import LogLevel, Report, ReportCode, ReportContainer
 
 
 class CimParser:
@@ -123,8 +123,7 @@ class CimParser:
                         continue
                     if (
                         col in cim_schema[profile][cim_element_type]["fields"]
-                            and "data_type_prim"
-                            in cim_schema[profile][cim_element_type]["fields"][col]  # type: ignore[index]
+                        and "data_type_prim" in cim_schema[profile][cim_element_type]["fields"][col]  # type: ignore[index]
                     ):
                         data_type_col_str = cim_schema[profile][cim_element_type]["fields"][col]["data_type_prim"]  # type: ignore[index]
                         if data_type_col_str in data_types_map:
@@ -918,7 +917,7 @@ class CimParser:
                         ]  # type: ignore[index]
                         # remove the namespace from the literal
                         prf_content[element_type_c][col] = prf_content[element_type_c][col].str[
-                            name_space.rfind(".") + 1:  # type: ignore[union-attr]
+                            name_space.rfind(".") + 1 :  # type: ignore[union-attr]
                         ]
                 elif col_new.endswith("-about"):
                     col_new = "rdfId"
@@ -932,9 +931,9 @@ class CimParser:
         else:
             for ele, df in prf_content.items():  # type: ignore[assignment]
                 if ele not in output[prf]:
-                    concat_list = [prf_content[ele]]  # type: ignore[index]
+                    concat_list = [df]  # type: ignore[index]
                 else:
-                    concat_list = [output[prf][ele], prf_content[ele]]  # type: ignore[index]
+                    concat_list = [output[prf][ele], df]  # type: ignore[index]
                 output[prf][ele] = pd.concat(concat_list, ignore_index=True, sort=False)  # type: ignore[index]
 
     def _check_file(self, file: str) -> bool:

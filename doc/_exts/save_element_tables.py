@@ -2,10 +2,10 @@
 Sphinx extension for generating the element csv's for pandapower use.
 """
 
+import json
 import os
 import shutil
 
-import json
 import pandas as pd
 from pandera.api.pandas.container import DataFrameSchema
 

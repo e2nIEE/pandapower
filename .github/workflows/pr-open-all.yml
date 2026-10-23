@@ -17,10 +17,31 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  IGNORES: "--ignore=pandapower/test/opf --ignore=pandapower/test/network_schema"
+  IGNORES: "--ignore=test/opf --ignore=test/network_schema"
   TUTORIAL_IGNORES: "--ignore=tutorials/uk_power_networks"
 
 jobs:
+  ruff-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          python-version: '3.14'
+          enable-cache: true
+          cache-dependency-glob: 'pyproject.toml'
+      - name: Install dependencies
+        run: |
+          uv sync --all-extras
+          uv pip install ruff
+      - name: Ruff Format Check
+        run: uv run ruff format --check
+  #      - name: Ruff Check
+  #        run: uv run ruff check
+
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 20
@@ -103,7 +124,7 @@ jobs:
           uv pip list
       - name: Test with pytest, Codecov and Coverage
         run: |
-          uv run pytest --cov=./ --cov-report=xml --splits 4 --group ${{ matrix.group }} pandapower/test/network_schema
+          uv run pytest --cov=./ --cov-report=xml --splits 4 --group ${{ matrix.group }} test/network_schema
           cp ./coverage.xml ./coverage-net-schema-${{ matrix.group }}.xml
       - name: Upload coverage as artifact
         uses: actions/upload-artifact@v7
@@ -152,33 +173,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+      - name: Install dependencies
+        run: |
+          uv sync --extra pandamodels --extra test
+          uv pip install pytest-cov pytest-split
       - name: Setup Julia
         uses: julia-actions/setup-julia@5c9647d97b78a5debe5164e9eec09d653d29bd71 #v2
         with:
           version: ${{ matrix.julia-version }}
           arch: 'x64'
-      #      - name: Install uv
-      #        uses: astral-sh/setup-uv@v10.2.0
-      #        with:
-      #          python-version: ${{ matrix.python-version }}
-      #          enable-cache: true
-      #          cache-dependency-glob: "pyproject.toml"
-      - name: Install dependencies
-        run: |
-          python -m pip install pypower pytest-split pytest-cov juliacall julia
-          python -m pip install .[pandamodels,test]
-      - name: Install PandaModels.jl
-        run: |
-          julia -e 'using Pkg; Pkg.add("PandaModels")'
-          julia -e 'using Pkg; ENV["PYTHON"] = "/home/runner/work/pandapower/pandapower/.venv/bin/python3"; Pkg.add("PyCall")'
-          python -c "import julia; julia.install(color=True)"
       - name: List of installed packages
         run: |
-          pip list
+          uv pip list
           julia -e 'using Pkg; Pkg.status()'
       - name: Test with pytest, Codecov and Coverage
         run: |
-          pytest --cov=./ --cov-report=xml pandapower/test/opf
+          uv run pytest --cov=./ --cov-report=xml test/opf
           cp ./coverage.xml ./coverage-opf.xml
       - name: Upload coverage as artifact
         uses: actions/upload-artifact@v7
@@ -385,19 +401,19 @@ jobs:
           DSN: 'postgresql://test_user:secret@localhost:55432/sandbox'
           SCHEMA: 'test_schema'
         run: |
-          uv run python -c "import sys; from pandapower.test.api.test_sql_io import POSTGRESQL_AVAILABLE; sys.exit(not POSTGRESQL_AVAILABLE);"
+          uv run python -c "import sys; from test.api.test_sql_io import POSTGRESQL_AVAILABLE; sys.exit(not POSTGRESQL_AVAILABLE);"
       - name: Test pandapower File I/O
         env:
           DSN: 'postgresql://test_user:secret@localhost/sandbox'
           SCHEMA: 'test_schema'
         run: |
-          uv run pytest pandapower/test/api/test_sql_io.py
+          uv run pytest test/api/test_sql_io.py
       - name: Test pandapower File I/O against alternative port
         env:
           DSN: 'postgresql://test_user:secret@localhost:55432/sandbox'
           SCHEMA: 'test_schema'
         run: |
-          uv run pytest pandapower/test/api/test_sql_io.py
+          uv run pytest test/api/test_sql_io.py
 
   tutorial_tests:
     needs: build
@@ -422,31 +438,6 @@ jobs:
           uv pip list
       - name: Test with pytest
         # Careful when copying this command. The PYTHONPATH setup is Linux specific syntax.
-        run: |
-          uv run pytest --splits 3 --group ${{ matrix.group }} --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials" $TUTORIAL_IGNORES
-
-  tutorial_warnings_tests:
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        group: [ 1, 2, 3 ]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7.0.1
-      - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
-        with:
-          python-version: '3.14'
-          enable-cache: true
-          cache-dependency-glob: "pyproject.toml"
-      - name: Install dependencies
-        run: |
-          uv sync --extra all --extra tutorials --extra test --extra pgm
-      - name: List all installed packages
-        run: |
-          uv pip list
-      - name: Test with pytest
         run: |
           uv run pytest -W error --splits 3 --group ${{ matrix.group }} --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials" $TUTORIAL_IGNORES
 

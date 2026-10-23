@@ -2,19 +2,17 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import logging
 import traceback
-from typing import Dict, List
 
 import pandas as pd
 
-from pandapower.toolbox.grid_modification import fuse_buses
-from pandapower.run import runpp
-from pandapower.network import pandapowerNet
-from .convert_measurements import CreateMeasurements
-from .. import cim_classes
-from .. import cim_tools
-from .. import pp_tools
-from ..other_classes import ReportContainer, Report, LogLevel, ReportCode
 from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
+from pandapower.network import pandapowerNet
+from pandapower.run import runpp
+from pandapower.toolbox.grid_modification import fuse_buses
+
+from .. import cim_classes, cim_tools, pp_tools
+from ..other_classes import LogLevel, Report, ReportCode, ReportContainer
+from .convert_measurements import CreateMeasurements
 
 logger = logging.getLogger("cim.cim2pp.build_pp_net")
 
@@ -23,16 +21,15 @@ sc = cim_tools.get_pp_net_special_columns_dict()
 
 class CimConverter:
     def __init__(
-        self, cim_parser: cim_classes.CimParser, converter_classes: Dict, cim_version: str | None = None, **kwargs
+        self, cim_parser: cim_classes.CimParser, converter_classes: dict, cim_version: str | None = None, **kwargs
     ):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.cim_parser: cim_classes.CimParser = cim_parser
         self.cim_version = cim_version.lower() if cim_version is not None else "2.4.15"
         self.kwargs = kwargs
-        self.cim: Dict[str, Dict[str, pd.DataFrame]] = self.cim_parser.get_cim_dict()
+        self.cim: dict[str, dict[str, pd.DataFrame]] = self.cim_parser.get_cim_dict()
         name = self.cim_parser.file_names.get("eq", "CimConverter")
-        if name.endswith("_eq"):
-            name = name[:-3]
+        name = name.removesuffix("_eq")
         self.net: pandapowerNet = pandapowerNet(name=name, metadata=["cim"])
         self.bus_merge: pd.DataFrame = pd.DataFrame()
         self.power_trafo2w: pd.DataFrame = pd.DataFrame()
@@ -48,7 +45,7 @@ class CimConverter:
         return self.merge_eq_other_profiles(["sc"], cim_type, add_cim_type_column)
 
     def merge_eq_other_profiles(
-        self, other_profiles: List[str], cim_type: str, add_cim_type_column: bool = False
+        self, other_profiles: list[str], cim_type: str, add_cim_type_column: bool = False
     ) -> pd.DataFrame:
         df = self.cim["eq"][cim_type]
         for other_profile in other_profiles:

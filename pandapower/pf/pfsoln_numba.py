@@ -8,18 +8,18 @@
 
 """Updates bus, gen, branch data structures to match power flow soln."""
 
-from numpy import conj, zeros, complex128, abs, float64, sqrt, real, isin, arange
-from numpy import finfo, c_, flatnonzero as find, setdiff1d, int64
+from numpy import abs, arange, c_, complex128, conj, finfo, float64, int64, isin, real, setdiff1d, sqrt, zeros
+from numpy import flatnonzero as find
 
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, PF, PT, QF, QT
+from pandapower.auxiliary import version_check
+from pandapower.pypower.idx_brch import F_BUS, PF, PT, QF, QT, T_BUS
 from pandapower.pypower.idx_bus import PD, QD
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG
 from pandapower.pypower.idx_ssc import SSC_Q
 from pandapower.pypower.idx_svc import SVC_Q
+from pandapower.pypower.idx_tcsc import TCSC_PF, TCSC_PT, TCSC_QF, TCSC_QT
 from pandapower.pypower.idx_vsc import VSC_P, VSC_Q
-from pandapower.pypower.idx_tcsc import TCSC_QF, TCSC_QT, TCSC_PF, TCSC_PT
-from pandapower.pypower.pfsoln import _update_v, _update_q, _update_p
-from pandapower.auxiliary import version_check
+from pandapower.pypower.pfsoln import _update_p, _update_q, _update_v
 
 try:
     from numba import jit
