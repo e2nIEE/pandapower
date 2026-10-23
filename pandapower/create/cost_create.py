@@ -3,6 +3,13 @@
 
 from __future__ import annotations
 
+__all__ = [
+    "create_poly_cost",
+    "create_poly_costs",
+    "create_pwl_cost",
+    "create_pwl_costs",
+]
+
 import logging
 from collections.abc import Iterable, Sequence
 
