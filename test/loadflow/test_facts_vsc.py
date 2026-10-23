@@ -58,7 +58,6 @@ def xtcsc(x, x_l, x_c):
 def copy_with_impedance(net):
     baseMVA = net.sn_mva  # MVA
     baseV = net.bus.vn_kv.values  # kV
-    baseI = baseMVA / (baseV * np.sqrt(3))
     baseZ = baseV**2 / baseMVA
 
     net_ref = copy.deepcopy(net)

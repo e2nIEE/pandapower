@@ -3,6 +3,7 @@
 
 import os
 import logging
+from importlib.util import find_spec
 
 import pytest
 
@@ -11,15 +12,9 @@ from pandapower.networks import case24_ieee_rts
 from pandapower.results import reset_results
 from pandapower.run import runpp, set_user_pf_options
 from pandapower.toolbox.comparison import nets_equal
-
-try:
-    import matpowercaseframes
-
-    matpowercaseframes_imported = True
-except ImportError:
-    matpowercaseframes_imported = False
-
 from test import test_path
+
+matpowercaseframes_imported = find_spec("matpowercaseframes") is not None
 
 logger = logging.getLogger(__name__)
 
