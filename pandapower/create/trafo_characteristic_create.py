@@ -1,6 +1,8 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = ["create_trafo_characteristic"]
+
 import pandas as pd
 
 from pandapower.create._utils import _get_index_with_check
