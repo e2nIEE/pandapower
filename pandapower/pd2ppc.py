@@ -52,6 +52,7 @@ from pandapower.pypower.idx_tcsc import TCSC_F_BUS, TCSC_STATUS, TCSC_T_BUS
 from pandapower.pypower.idx_vsc import (
     VSC_BUS,
     VSC_BUS_DC,
+    VSC_BUS_DC_MINUS,
     VSC_INTERNAL_BUS,
     VSC_INTERNAL_BUS_DC,
     VSC_MODE_AC,
@@ -387,6 +388,10 @@ def _ppc2ppci(ppc, net, ppci=None):
     ppc["vsc"][:, VSC_INTERNAL_BUS] = e2i[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS]).astype(np.int64)].copy()
     ppc["vsc"][:, VSC_BUS_DC] = e2i_dc[np.real(ppc["vsc"][:, VSC_BUS_DC]).astype(np.int64)].copy()
     ppc["vsc"][:, VSC_INTERNAL_BUS_DC] = e2i_dc[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS_DC]).astype(np.int64)].copy()
+    vsc_has_minus = np.real(ppc["vsc"][:, VSC_BUS_DC_MINUS]) >= 0  # -1: minus terminal is ground
+    ppc["vsc"][vsc_has_minus, VSC_BUS_DC_MINUS] = e2i_dc[
+        np.real(ppc["vsc"][vsc_has_minus, VSC_BUS_DC_MINUS]).astype(np.int64)
+    ].copy()
     ppc["branch"][:, F_BUS] = e2i[np.real(ppc["branch"][:, F_BUS]).astype(np.int64)].copy()
     ppc["branch"][:, T_BUS] = e2i[np.real(ppc["branch"][:, T_BUS]).astype(np.int64)].copy()
     ppc["branch_dc"][:, DC_F_BUS] = e2i_dc[np.real(ppc["branch_dc"][:, DC_F_BUS]).astype(np.int64)].copy()
@@ -441,6 +446,8 @@ def _ppc2ppci(ppc, net, ppci=None):
         & bus_status_dc[n2i_dc[np.real(ppc["vsc"][:, VSC_BUS_DC]).astype(np.int64)]]
         & bus_status_dc[n2i_dc[np.real(ppc["vsc"][:, VSC_INTERNAL_BUS_DC]).astype(np.int64)]]
     )
+    vsc_has_minus = np.real(ppc["vsc"][:, VSC_BUS_DC_MINUS]) >= 0
+    vscs[vsc_has_minus] &= bus_status_dc[n2i_dc[np.real(ppc["vsc"][vsc_has_minus, VSC_BUS_DC_MINUS]).astype(np.int64)]]
     ppci["internal"]["vsc_is"] = vscs
 
     brs = (
