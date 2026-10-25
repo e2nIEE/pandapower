@@ -717,6 +717,77 @@ def test_json_multiindex_and_index_names():
         )
 
 
+def test_json_dataframe_object_and_string_columns():
+    index = pd.Index([23, 7, 91], name="record_id")
+    frame = pd.DataFrame(
+        {
+            "nested_object": pd.array([{"items": [1, None]}, None, {"items": []}], dtype=object),
+            "object_text": pd.Series(["alpha", None, "null"], index=index, dtype=object),
+            "default_text": ["beta", None, "NaN"],
+            "nullable_text": pd.array(["gamma", pd.NA, "delta"], dtype="string"),
+            "integer_value": np.array([42, 0, -5], dtype=np.int64),
+            "float_value": np.array([2.25, np.nan, -3.5], dtype=np.float64),
+        },
+        index=index,
+    )
+    frame_before = copy.deepcopy(frame)
+    nested_object_before = copy.deepcopy(frame["nested_object"].tolist())
+    expected_nullable_text = pd.Series(["gamma", pd.NA, "delta"], index=index, dtype="string", name="nullable_text")
+    expected_columns = [
+        "nested_object",
+        "object_text",
+        "default_text",
+        "nullable_text",
+        "integer_value",
+        "float_value",
+    ]
+    expected_source_dtypes = {
+        "nested_object": "object",
+        "object_text": "object",
+        "default_text": "str",
+        "nullable_text": "string",
+        "integer_value": "int64",
+        "float_value": "float64",
+    }
+    expected_decoded_dtypes = {
+        "nested_object": "object",
+        "object_text": "object",
+        "default_text": "object",
+        "nullable_text": "string",
+        "integer_value": "int64",
+        "float_value": "float64",
+    }
+
+    assert frame.columns.tolist() == expected_columns
+    assert frame.index.tolist() == [23, 7, 91]
+    assert frame.index.name == "record_id"
+    assert frame["object_text"].tolist() == ["alpha", None, "null"]
+    assert frame["object_text"].isna().tolist() == [False, True, False]
+    assert {column: str(frame[column].dtype) for column in expected_columns} == expected_source_dtypes
+
+    decoded = from_json_string(to_json({"frame": frame}), convert=False)["frame"]
+
+    assert decoded.columns.tolist() == expected_columns
+    assert decoded.index.tolist() == [23, 7, 91]
+    assert decoded.index.name == "record_id"
+    assert decoded["nested_object"].tolist() == [{"items": [1, None]}, None, {"items": []}]
+    assert decoded["object_text"].tolist() == ["alpha", None, "null"]
+    assert decoded["default_text"].tolist() == ["beta", None, "NaN"]
+    assert_series_equal(decoded["nullable_text"], expected_nullable_text)
+    assert decoded["nullable_text"].iloc[1] is pd.NA
+    assert decoded["nested_object"].isna().tolist() == [False, True, False]
+    assert decoded["object_text"].isna().tolist() == [False, True, False]
+    assert decoded["default_text"].isna().tolist() == [False, True, False]
+    assert decoded["nullable_text"].isna().tolist() == [False, True, False]
+    assert decoded["integer_value"].tolist() == [42, 0, -5]
+    assert decoded["float_value"].tolist()[0] == 2.25
+    assert np.isnan(decoded["float_value"].tolist()[1])
+    assert decoded["float_value"].tolist()[2] == -3.5
+    assert {column: str(decoded[column].dtype) for column in expected_columns} == expected_decoded_dtypes
+    assert frame["nested_object"].tolist() == nested_object_before
+    assert_frame_equal(frame, frame_before)
+
+
 def test_json_dict_of_stuff():
     net1 = case9()
     net2 = case14()
@@ -840,6 +911,58 @@ def test_json_deserialization_hardening():
         _ = from_json(tmp_path)
 
     os.remove(tmp_path)
+
+
+def test_json_object_column_selector_preserves_positions_and_duplicate_labels():
+    from pandapower.io_utils import _select_json_object_columns
+
+    index = pd.Index([23, 7], name="record_id")
+    frame = pd.concat(
+        [
+            pd.Series(["left-a", None], index=index, dtype=object),
+            pd.Series(
+                ["default-a", None],
+                index=index,
+                dtype=pd.StringDtype(storage="python", na_value=np.nan),
+            ),
+            pd.Series([41, 42], index=index, dtype=np.int64),
+            pd.Series(["nullable-a", pd.NA], index=index, dtype="string"),
+            pd.Series(["right-a", "right-b"], index=index, dtype=object),
+        ],
+        axis=1,
+    )
+    frame.columns = ["duplicate", "default_text", "duplicate", "nullable_text", "duplicate"]
+    frame_before = copy.deepcopy(frame)
+
+    selected = _select_json_object_columns(frame)
+
+    assert selected.columns.tolist() == ["duplicate", "default_text", "duplicate"]
+    assert selected.index.tolist() == [23, 7]
+    assert selected.index.name == "record_id"
+    assert selected.iloc[:, 0].tolist() == ["left-a", None]
+    assert selected.iloc[:, 1].dropna().tolist() == ["default-a"]
+    assert selected.iloc[:, 1].isna().tolist() == [False, True]
+    assert selected.iloc[:, 2].tolist() == ["right-a", "right-b"]
+    assert [str(dtype) for dtype in selected.dtypes] == ["object", "str", "object"]
+    assert_frame_equal(frame, frame_before)
+
+
+def test_json_object_column_selector_arrow_dtypes():
+    pa = pytest.importorskip("pyarrow", reason="Arrow selector coverage requires the optional pyarrow dependency")
+    from pandapower.io_utils import _select_json_object_columns
+
+    index = pd.Index([23, 7], name="record_id")
+    arrow_string = pd.Series(["arrow-a", "arrow-b"], index=index, dtype=pd.ArrowDtype(pa.string()))
+    arrow_list = pd.Series([[1, 2], [3]], index=index, dtype=pd.ArrowDtype(pa.list_(pa.int64())))
+    object_values = pd.Series([{"value": 1}, {"value": 2}], index=index, dtype=object)
+    frame = pd.concat([arrow_string, arrow_list, object_values], axis=1)
+    frame.columns = ["arrow_string", "arrow_list", "object_values"]
+
+    selected = _select_json_object_columns(frame)
+
+    assert selected.columns.tolist() == ["arrow_list", "object_values"]
+    assert selected.iloc[:, 0].tolist() == [[1, 2], [3]]
+    assert selected.iloc[:, 1].tolist() == [{"value": 1}, {"value": 2}]
 
 
 if __name__ == "__main__":
