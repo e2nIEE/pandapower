@@ -1,15 +1,22 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "cmap_continuous",
+    "cmap_discrete",
+    "cmap_logarithmic",
+]
 
-try:
+from importlib.util import find_spec
+
+import numpy as np
+
+if find_spec("matplotlib"):
     from matplotlib.colors import BoundaryNorm, LinearSegmentedColormap, ListedColormap, LogNorm, Normalize
 
     MATPLOTLIB_INSTALLED = True
-except ImportError:
+else:
     MATPLOTLIB_INSTALLED = False
-
-import numpy as np
 
 
 def cmap_discrete(cmap_list):
