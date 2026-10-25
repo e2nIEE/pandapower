@@ -1,6 +1,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = ["draw_layers", "version_check"]
 
 import numpy as np
 import pandas as pd
@@ -18,7 +19,6 @@ try:
     from plotly.graph_objs import Figure, Layout
     from plotly.graph_objs.layout import XAxis, YAxis
     from plotly.graph_objs.scatter import Line, Marker
-    from plotly.graph_objs.scatter.marker import ColorBar
     from plotly.graph_objs.scattermapbox import Line as scmLine
     from plotly.graph_objs.scattermapbox import Marker as scmMarker
 except ImportError:
@@ -91,7 +91,7 @@ def draw_layers(
     if on_map:
         try:
             on_map = _on_map_test(traces[0]["x"][0], traces[0]["y"][0])
-        except:
+        except Exception:
             logger.warning(
                 "Test if geo-data are in lat/long cannot be performed using geopy -> eventual plot errors are possible."
             )
