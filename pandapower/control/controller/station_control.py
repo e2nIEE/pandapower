@@ -359,10 +359,13 @@ class BinarySearchControl(Controller):
                     f' at index {np.array(self.output_element_index)}'
                     f' will provide 100% of the reactive power in Controller {self.index}.\n')
             else:
+                in_service_mask = np.array(self.output_element_in_service, dtype=bool)
+                all_idx = np.atleast_1d(self.output_element_index)
+                active_idx = all_idx[in_service_mask].tolist()
                 logger.warning(
                     f'Reactive Power Distribution for one output element cannot be modified. The active '
-                    f'{self.output_element[np.array(self.output_element_in_service)]} at index '
-                    f'{self.output_element_index[np.array(self.output_element_in_service)]} will provide 100% of the'
+                    f'{self.output_element} at index '
+                    f'{active_idx} will provide 100% of the'
                     f' reactive power in Controller {self.index}.\n')
 
         # read input values
@@ -558,13 +561,12 @@ class BinarySearchControl(Controller):
         if not self.in_service:
             return
         if self.output_values_old is None:  # first step
-            # is ok that values are set for all stations even though they are out of service or not adjustable --> following step will correct this
             self.output_values_old, self.output_values = (
-                np.atleast_1d(self.output_values)[self.output_element_in_service],
-                np.atleast_1d(self.output_values)[self.output_element_in_service] + 1e-3)
+                np.atleast_1d(self.output_values).astype(np.float64),
+                np.atleast_1d(self.output_values).astype(np.float64) + 1e-3)
             positions_not_adjustable = [i for i, val in enumerate(self.output_adjustable) if not val]
             for i in positions_not_adjustable:
-                if self.output_values_distribution[i]==0 or not self.output_element_in_service[i] :
+                if self.output_values_distribution[i] == 0 or not np.atleast_1d(self.output_element_in_service)[i]:
                     self.output_values[i] = 0
                 else:
                     continue
@@ -675,11 +677,33 @@ class BinarySearchControl(Controller):
             else:
                 self.output_values_old, self.output_values = self.output_values, x
         ### write new set of Q values to output elements###
-        output_element_index = (list(np.atleast_1d(self.output_element_index)[self.output_element_in_service])[0] if self.write_flag
-            == 'single_index' else list(np.array(self.output_element_index)[self.output_element_in_service])) #ruggedizing code
-        output_values = (list(self.output_values)[0] if self.write_flag
-            == 'single_index' else list(self.output_values))  # ruggedizing code
-        write_to_net(net, self.output_element, output_element_index, self.output_variable, output_values, self.write_flag)
+        in_service_mask = np.asarray(np.atleast_1d(self.output_element_in_service), dtype=bool)
+        all_idx = np.atleast_1d(self.output_element_index)
+        all_values = np.atleast_1d(self.output_values)
+
+        if not in_service_mask.any():
+            return
+
+        if len(all_idx) == len(in_service_mask) and len(all_values) == len(in_service_mask):
+            sel_idx = all_idx[in_service_mask]
+            sel_values = all_values[in_service_mask]
+        else:
+            logger.warning(
+                f"Controller {self.index}: length mismatch (idx={len(all_idx)}, "
+                f"values={len(all_values)}, in_service={len(in_service_mask)}). "
+                f"Writing without in-service filtering.")
+            n_min = min(len(all_idx), len(all_values))
+            sel_idx, sel_values = all_idx[:n_min], all_values[:n_min]
+
+        if self.write_flag == 'single_index':
+            output_element_index = sel_idx.tolist()[0]
+            output_values = sel_values.tolist()[0]
+        else:
+            output_element_index = sel_idx.tolist()
+            output_values = sel_values.tolist()
+
+        write_to_net(net, self.output_element, output_element_index, self.output_variable,
+                     output_values, self.write_flag)
 
     def _normalize_distribution_in_service(self, initial_pf_distribution=None):
         # normalize distribution depending on in service of stations
