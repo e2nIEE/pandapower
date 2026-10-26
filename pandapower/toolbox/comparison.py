@@ -1,3 +1,13 @@
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
+__all__ = [
+    "compare_arrays",
+    "dataframes_equal",
+    "nets_equal",
+    "nets_equal_keys",
+]
+
 from io import StringIO
 
 import networkx as nx
@@ -253,6 +263,6 @@ def nets_equal_keys(
                 is_eq = net1[key] == net2[key]
                 if not is_eq:
                     not_equal.append(key)
-            except:
+            except Exception:
                 not_checked_keys.append(key)
     return not_equal, not_checked_keys

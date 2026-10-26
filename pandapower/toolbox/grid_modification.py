@@ -335,7 +335,7 @@ def set_element_status(net, buses, in_service):
             try:
                 idx = get_connected_elements(net, element, buses)
                 net[element].loc[list(idx), "in_service"] = in_service
-            except:
+            except Exception:
                 pass
 
 
@@ -1349,21 +1349,21 @@ def replace_line_by_impedance(
         vn: float = net.bus.vn_kv.at[line_.from_bus]  # type: ignore[assignment]
         Zni = vn**2 / sn_mva[i]
         p = parallel[idx]
-        l = length_km[idx]
+        line_len = length_km[idx]
         new_index.append(
             create_impedance(
                 net,
                 line_.from_bus,
                 line_.to_bus,
-                rft_pu=line_.r_ohm_per_km * l / p / Zni,
-                xft_pu=line_.x_ohm_per_km * l / p / Zni,
-                gf_pu=line_.g_us_per_km * 1e-6 * Zni * l * p,
-                bf_pu=2 * net.f_hz * np.pi * line_.c_nf_per_km * 1e-9 * Zni * l * p,
+                rft_pu=line_.r_ohm_per_km * line_len / p / Zni,
+                xft_pu=line_.x_ohm_per_km * line_len / p / Zni,
+                gf_pu=line_.g_us_per_km * 1e-6 * Zni * line_len * p,
+                bf_pu=2 * net.f_hz * np.pi * line_.c_nf_per_km * 1e-9 * Zni * line_len * p,
                 sn_mva=sn_mva[i],
-                rft0_pu=line_.r0_ohm_per_km * l / p / Zni if "r0_ohm_per_km" in cols else None,
-                xft0_pu=line_.x0_ohm_per_km * l / p / Zni if "x0_ohm_per_km" in cols else None,
-                gf0_pu=line_.g0_us_per_km * 1e-6 * Zni * l * p if "g0_us_per_km" in cols else None,
-                bf0_pu=2 * net.f_hz * np.pi * line_.c0_nf_per_km * 1e-9 * Zni * l * p
+                rft0_pu=line_.r0_ohm_per_km * line_len / p / Zni if "r0_ohm_per_km" in cols else None,
+                xft0_pu=line_.x0_ohm_per_km * line_len / p / Zni if "x0_ohm_per_km" in cols else None,
+                gf0_pu=line_.g0_us_per_km * 1e-6 * Zni * line_len * p if "g0_us_per_km" in cols else None,
+                bf0_pu=2 * net.f_hz * np.pi * line_.c0_nf_per_km * 1e-9 * Zni * line_len * p
                 if "c0_nf_per_km" in cols
                 else None,
                 name=line_["name"],  # TODO: should this be line_.name (line index) or line_["name"]
