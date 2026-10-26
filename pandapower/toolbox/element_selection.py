@@ -13,6 +13,7 @@ __all__ = [
     "get_connected_buses_at_switches",
     "get_connected_elements",
     "get_connected_elements_dict",
+    "get_connected_switches",
     "get_connecting_branches",
     "get_element_index",
     "get_element_indices",
