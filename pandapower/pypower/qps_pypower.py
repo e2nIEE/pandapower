@@ -12,7 +12,7 @@ from pandapower.pypower.qps_pips import qps_pips
 # from pandapower.pypower.qps_gurobi import qps_gurobi
 
 
-def qps_pypower(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None, x0=None, opt=None):
+def qps_pypower(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None, x0=None, opt=None):  # noqa: E741
     """Quadratic Program Solver for PYPOWER.
 
     A common wrapper function for various QP solvers.
@@ -109,12 +109,6 @@ def qps_pypower(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None, x0=None
     """
     if opt is None:
         opt = {}
-    #    if x0 is None:
-    #        x0 = array([])
-    #    if xmax is None:
-    #        xmax = array([])
-    #    if xmin is None:
-    #        xmin = array([])
 
     ## default options
     if "alg" in opt:
@@ -146,23 +140,9 @@ def qps_pypower(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None, x0=None
     pips_opt["verbose"] = verbose
 
     ## call solver
-    x, f, eflag, output, lmbda = qps_pips(H, c, A, l, u, xmin, xmax, x0, pips_opt)
-    #    elif alg == 400:                    ## use IPOPT
-    #        x, f, eflag, output, lmbda = \
-    #            qps_ipopt(H, c, A, l, u, xmin, xmax, x0, opt)
-    #    elif alg == 500:                    ## use CPLEX
-    #        x, f, eflag, output, lmbda = \
-    #            qps_cplex(H, c, A, l, u, xmin, xmax, x0, opt)
-    #    elif alg == 600:                    ## use MOSEK
-    #        x, f, eflag, output, lmbda = \
-    #            qps_mosek(H, c, A, l, u, xmin, xmax, x0, opt)
-    #    elif 700:                           ## use Gurobi
-    #        x, f, eflag, output, lmbda = \
-    #            qps_gurobi(H, c, A, l, u, xmin, xmax, x0, opt)
-    #     else:
-    #         print('qps_pypower: {} is not a valid algorithm code\n'.format(alg))
+    x, f, eflag, output, lambda_ = qps_pips(H, c, A, l, u, xmin, xmax, x0, pips_opt)
 
     if "alg" not in output:
         output["alg"] = alg
 
-    return x, f, eflag, output, lmbda
+    return x, f, eflag, output, lambda_
