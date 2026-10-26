@@ -85,7 +85,9 @@ def _select_json_object_columns(df):
     def selected(dtype):
         if isinstance(dtype, pd.ArrowDtype):
             dtype = dtype.numpy_dtype
-        return pd.api.types.is_object_dtype(dtype) or (isinstance(dtype, pd.StringDtype) and dtype.na_value is np.nan)
+        return pd.api.types.is_object_dtype(dtype) or (
+            isinstance(dtype, pd.StringDtype) and dtype.na_value is not pd.NA
+        )
 
     return df.iloc[:, [selected(dtype) for dtype in df.dtypes]]
 
