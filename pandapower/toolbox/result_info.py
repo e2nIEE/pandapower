@@ -1,6 +1,17 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "clear_result_tables",
+    "compute_switch_flows",
+    "lf_info",
+    "opf_task",
+    "overloaded_lines",
+    "res_power_columns",
+    "switch_info",
+    "violated_buses",
+]
+
 import copy
 import logging
 from collections.abc import Collection
@@ -629,7 +640,6 @@ def compute_switch_flows(net):
             subtree_p[bus] = sp
             subtree_q[bus] = sq
             if parent_sw is not None:
-                sw_bus_col = int(net.switch.at[parent_sw, "bus"])
                 sw_elem_col = int(net.switch.at[parent_sw, "element"])
                 if bus == sw_elem_col:
                     p_from, q_from = sp, sq
