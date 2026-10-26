@@ -46,7 +46,7 @@ def _get_gen_index(net, et, element):
     lookup = "%s_controllable" % et if et in ["load", "sgen", "storage"] else et
     try:
         return int(net._pd2ppc_lookups[lookup][int(element)])
-    except:
+    except Exception:
         return None
 
 
