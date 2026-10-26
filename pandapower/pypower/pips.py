@@ -8,7 +8,7 @@
 
 """Python Interior Point Solver (PIPS)."""
 
-from numpy import absolute, any, array, dot, finfo, full, inf, isnan, log, ones, r_, zeros
+from numpy import absolute, any, array, dot, finfo, full, inf, isnan, ones, r_, zeros
 from numpy import flatnonzero as find
 from numpy.linalg import norm
 from scipy.sparse import csr_matrix as sparse
@@ -20,7 +20,18 @@ from pandapower.pypower.pipsver import pipsver
 EPS = finfo(float).eps  # type: ignore[var-annotated]
 
 
-def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None, gh_fcn=None, hess_fcn=None, opt=None):
+def pips(
+    f_fcn,
+    x0=None,
+    A=None,
+    l=None,
+    u=None,
+    xmin=None,
+    xmax=None,
+    gh_fcn=None,
+    hess_fcn=None,
+    opt=None,  # noqa: E741
+):
     """Primal-dual interior point method for NLP (nonlinear programming).
     Minimize a function F(X) beginning from a starting point M{x0}, subject to
     optional linear and nonlinear constraints and variable bounds::
@@ -187,7 +198,7 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None, gh_fcn=No
         if "u" in p:
             u = p["u"]
         if "l" in p:
-            l = p["l"]
+            l = p["l"]  # noqa: E741
         if "A" in p:
             A = p["A"]
 
@@ -196,7 +207,7 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None, gh_fcn=No
 
     # default argument values
     if l is None or len(l) == 0:
-        l = full(nA, -inf)
+        l = full(nA, -inf)  # noqa: E741
     if u is None or len(u) == 0:
         u = full(nA, inf)
     if xmin is None or len(xmin) == 0:
@@ -240,8 +251,8 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None, gh_fcn=No
     sigma = 0.1
     z0 = 1
     alpha_min = 1e-8
-    rho_min = 0.95
-    rho_max = 1.05
+    # rho_min = 0.95
+    # rho_max = 1.05
     mu_threshold = 1e-5
 
     # initialize
@@ -334,8 +345,6 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None, gh_fcn=No
 
     # check tolerance
     f0 = f
-    if opt["step_control"]:
-        L = f + dot(lam, g) + dot(mu, h + z) - gamma * sum(log(z))
 
     Lx = df.copy()
     Lx = Lx + dg * lam if dg is not None else Lx
@@ -540,9 +549,6 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None, gh_fcn=No
                 break
             f0 = f
 
-            if opt["step_control"]:
-                L = f + dot(lam, g) + dot(mu, (h + z)) - gamma * sum(log(z))
-
     if opt["verbose"]:
         if not converged:
             print("Did not converge in %d iterations." % i)
@@ -586,17 +592,13 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None, gh_fcn=No
     mu_u[ilt] = mu_lin[:nlt]
     mu_u[ibx] = mu_lin[nlt + ngt : nlt + ngt + nbx]
 
-    lmbda = {"mu_l": mu_l[nx:], "mu_u": mu_u[nx:], "lower": mu_l[:nx], "upper": mu_u[:nx]}
+    lambda_ = {"mu_l": mu_l[nx:], "mu_u": mu_u[nx:], "lower": mu_l[:nx], "upper": mu_u[:nx]}
 
     if niqnln > 0:
-        lmbda["ineqnonlin"] = mu[:niqnln]
+        lambda_["ineqnonlin"] = mu[:niqnln]
     if neqnln > 0:
-        lmbda["eqnonlin"] = lam[:neqnln]
+        lambda_["eqnonlin"] = lam[:neqnln]
 
-    #    lmbda = {"eqnonlin": lam[:neqnln], 'ineqnonlin': mu[:niqnln],
-    #             "mu_l": mu_l[nx:], "mu_u": mu_u[nx:],
-    #             "lower": mu_l[:nx], "upper": mu_u[:nx]}
-
-    solution = {"x": x, "f": f, "eflag": converged, "output": output, "lmbda": lmbda}
+    solution = {"x": x, "f": f, "eflag": converged, "output": output, "lmbda": lambda_}
 
     return solution

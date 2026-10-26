@@ -222,7 +222,7 @@ def ppoption(ppopt=None, **kw_args):
     for name, default, _ in options:
         default_ppopt[name.upper()] = default
 
-    ppopt = default_ppopt if ppopt == None else ppopt.copy()
+    ppopt = default_ppopt if ppopt is None else ppopt.copy()
 
     ppopt.update(kw_args)
 
