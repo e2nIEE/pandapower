@@ -1,19 +1,21 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "cosphi_from_pos",
+    "cosphi_from_pq",
+    "cosphi_pos_neg_from_pq",
+    "cosphi_to_pos",
+    "pq_from_cosphi",
+    "signing_system_value",
+]
+
+import logging
+
 import numpy as np
 
 from pandapower.auxiliary import ensure_iterability
 from pandapower.toolbox.element_selection import pp_elements
-
-try:
-    from networkx.utils.misc import graphs_equal
-
-    GRAPHS_EQUAL_POSSIBLE = True
-except ImportError:
-    GRAPHS_EQUAL_POSSIBLE = False
-
-import logging
 
 logger = logging.getLogger(__name__)
 
