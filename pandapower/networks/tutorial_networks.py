@@ -233,13 +233,4 @@ def vde_232():
         net, 1, 150, 1, 150, vn_kv=21, xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, power_station_trafo=0, pg_percent=5
     )
 
-    # z_q
-    u_nq = 110
-    i_kqss = 13.61213
-    z_q = 1.1 * u_nq / (np.sqrt(3) * i_kqss)
-    rx_max = 0.20328
-    x_q = z_q / np.sqrt(1 + rx_max**2)
-    x_0q = x_q * 3.47927
-    r_0q = x_0q * 3.03361 * 0.20328 / 3.47927
-    z_0q = r_0q + 1j * x_0q
     return net
