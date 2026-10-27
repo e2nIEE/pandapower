@@ -1526,7 +1526,7 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced, multiplier, is_definit
 
     vm_set_pu = item.usetp
     phi = item.phiini
-    
+
     if item.HasAttribute("bustp") and (not is_definite_ext_grid):
         node_type = item.bustp
     elif item.HasAttribute("bustp") and is_definite_ext_grid:
@@ -1820,9 +1820,7 @@ def split_line_add_bus(net, split_dict):
             to_bus = net.line.at[lix, "to_bus"]
             std_type = net.line.at[lix, "std_type"]
             name = net.line.at[lix, "name"]
-            create_line(
-                net, from_bus=from_bus, to_bus=to_bus, length_km=len_sections[i], std_type=std_type, name=name
-            )
+            create_line(net, from_bus=from_bus, to_bus=to_bus, length_km=len_sections[i], std_type=std_type, name=name)
             # change old line
             net.line.at[lix, "to_bus"] = bus
             net.line.at[lix, "length_km"] = net.line.at[lix, "length_km"] - len_sections[i]
@@ -3229,13 +3227,13 @@ def add_tap_dependent_impedance_for_trafo(item, net, pf_type, tid):
     # Calculate angle and voltage ratio for each step
     def cos(x):
         return np.cos(np.deg2rad(x))
-    
+
     def sin(x):
         return np.sin(np.deg2rad(x))
-    
+
     def arctan(x):
         return np.rad2deg(np.arctan(x))
-    
+
     direction = -1 if pf_type.tap_side else 1
     tap_step_percent = (pf_type.dutap if pf_type.tapchtype != 1 else 0,)
     tap_step_degree = pf_type.dphitap if pf_type.tapchtype == 1 else pf_type.phitr
@@ -3701,16 +3699,16 @@ def add_tap_dependant_impedance_for_trafo3W(net, pf_type, tid):
     tap_diff = steps - tap_neutral
 
     index = int(net.trafo_characteristic_table.iat[-1, 0] + 1) if not net["trafo_characteristic_table"].empty else 0
-    
+
     def cos(x):
         return np.cos(np.deg2rad(x))
-    
+
     def sin(x):
         return np.sin(np.deg2rad(x))
-    
+
     def arctan(x):
         return np.rad2deg(np.arctan(x))
-    
+
     direction = -1 if pf_type.itapzside else 1
 
     # Calculate voltage ratio and phase shift for each tap

@@ -23,6 +23,7 @@ pandas.set_option("display.max_columns", 100)
 logger = logging.getLogger(__name__)
 root_logger = logging.getLogger()
 
+
 def browse_dst(input_panel, entry_path_dst):
     logger.debug("browsing directory")
     path = askdirectory(
