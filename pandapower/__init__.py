@@ -195,6 +195,13 @@ __all__ = [
     "rename_std_type",
     "required_std_type_parameters",
     "std_type_exists",
+    "empty_res_element",
+    "EmptyResults",
+    "get_relevant_elements",
+    "get_result_tables",
+    "init_results",
+    "reset_results",
+    "verify_results",
 ]
 
 import os
@@ -320,14 +327,7 @@ from pandapower.create import (
     LineParams,
 )
 from pandapower.diagnostic import diagnostic, Diagnostic, DiagnosticFunction
-from pandapower.file_io import (
-    from_excel,
-    from_json,
-    from_pickle,
-    to_excel,
-    to_json,
-    to_pickle
-)
+from pandapower.file_io import from_excel, from_json, from_pickle, to_excel, to_json, to_pickle
 from pandapower.groups import (
     attach_to_group,
     attach_to_groups,
@@ -360,6 +360,15 @@ from pandapower.groups import (
 )
 from pandapower.network import ADict, pandapowerNet
 from pandapower.pf.runpp_3ph import runpp_3ph
+from pandapower.results import (
+    empty_res_element,
+    EmptyResults,
+    get_relevant_elements,
+    get_result_tables,
+    init_results,
+    reset_results,
+    verify_results,
+)
 from pandapower.run import (
     rundcopp,
     rundcpp,
