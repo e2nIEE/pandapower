@@ -122,7 +122,7 @@ def create_docu_csv_from_schema(schema: pa.DataFrameSchema):
     def _get_metadata(schema: pa.DataFrameSchema, name: str, kind: str):
         try:
             return schema.columns[name].metadata[kind]
-        except:
+        except Exception:
             return False
 
     for col_name, col_details in schema_dict["columns"].items():
