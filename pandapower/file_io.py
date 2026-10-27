@@ -17,17 +17,12 @@ import sys
 from typing import TextIO
 from typing import overload as function_overload
 from warnings import warn
-
 import importlib.util
+import logging
 
 import numpy
 import pandas as pd
 from packaging.version import Version
-
-xlsxwriter_INSTALLED = importlib.util.find_spec("xlsxwriter") is not None
-openpyxl_INSTALLED = importlib.util.find_spec("openpyxl") is not None
-
-import logging
 
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.convert_format import convert_format
@@ -44,6 +39,9 @@ from pandapower.io_utils import (
 )
 from pandapower.network import pandapowerNet
 from pandapower.std_types import basic_std_types
+
+xlsxwriter_INSTALLED = importlib.util.find_spec("xlsxwriter") is not None
+openpyxl_INSTALLED = importlib.util.find_spec("openpyxl") is not None
 
 logger = logging.getLogger(__name__)
 
