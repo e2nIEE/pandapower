@@ -3,6 +3,7 @@
 
 __all__ = [
     "check_elements_within_limits",
+    "get_element_limits",
     "pp_to_ls2g",
     "report_contingency_results",
     "run_contingency",
@@ -11,6 +12,7 @@ __all__ = [
 
 from pandapower.contingency.contingency import (
     check_elements_within_limits,
+    get_element_limits,
     pp_to_ls2g,
     report_contingency_results,
     run_contingency,
