@@ -45,7 +45,7 @@ def pfsoln(
     gbus = gen[on, GEN_BUS].astype(int64)  # what buses are they at?
 
     # xward: add ref buses that are not at the generators
-    xbus = setdiff1d(ref, gbus)
+    setdiff1d(ref, gbus)
 
     # compute total injected bus powers
     Ibus = zeros(len(V)) if Ibus is None else Ibus

@@ -300,7 +300,7 @@ class OutputWriter(JSONSerializableClass):
         for of in self.output_list:
             try:
                 of()
-            except:
+            except Exception:
                 import traceback
 
                 traceback.print_exc()

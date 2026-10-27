@@ -1,6 +1,17 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
+__all__ = [
+    "add_edges",
+    "create_nxgraph",
+    "get_baseR",
+    "get_edge_table",
+    "get_nx_ppc",
+    "init_par",
+]
+
 import logging
+from importlib.util import find_spec
 from itertools import combinations
 
 import networkx as nx
@@ -17,11 +28,11 @@ from pandapower.pd2ppc import _init_ppc
 from pandapower.pf.makeYbus_facts import calc_y_svc_pu
 from pandapower.pypower.idx_bus import BASE_KV
 
-try:
+if find_spec("graph_tool"):
     from pandapower.topology.graph_tool_interface import GraphToolInterface
 
     graph_tool_available = True
-except:
+else:
     graph_tool_available = False
 
 INDEX = 0
@@ -287,7 +298,7 @@ def create_nxgraph(
             for i in list(mg[b].keys()):
                 try:
                     del mg[b][i]  # networkx versions < 2.0
-                except:
+                except Exception:
                     del mg._adj[b][i]  # networkx versions 2.0
 
     # remove out of service buses

@@ -169,12 +169,12 @@ class OCRelay(ProtectionDevice):
         # protection function
         net_sc = copy.deepcopy(net)
 
-        if (net.switch.closed.at[self.switch_index] == True) and (net.switch.et.at[self.switch_index] == "l"):
+        if (net.switch.closed.at[self.switch_index]) and (net.switch.et.at[self.switch_index] == "l"):
             line_idx = int(net.switch.element.at[self.switch_index])
             net_sc = create_sc_bus(net_sc, line_idx, self.sc_fraction)
             bus_idx = max(net_sc.bus.index)
 
-        elif (net.switch.closed.at[self.switch_index] == True) and (net.switch.et.at[self.switch_index] == "t" or "b"):
+        elif (net.switch.closed.at[self.switch_index]) and (net.switch.et.at[self.switch_index] == "t" or "b"):
             bus_idx = net.switch.bus.at[self.switch_index]
             line_idx = None
         else:
@@ -475,8 +475,8 @@ def time_grading(net, time_settings):
         # Assign time setting to switches
         time_switches = {}
         tg_sw_setting = []
-        for switch in net.switch[net.switch.closed == True].index:
-            line_id = net.switch[net.switch.closed == True].element.at[switch]
+        for switch in net.switch[net.switch.closed].index:
+            line_id = net.switch[net.switch.closed].element.at[switch]
 
             tg = line_time[line_id]
             time_switches[switch] = tg

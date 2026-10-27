@@ -20,7 +20,7 @@ from pandapower.create import (
     create_ward,
     create_xward,
 )
-from pandapower.networks import pandapowerNet
+from pandapower.network import pandapowerNet
 from test.helper_functions import add_grid_connection, create_test_line
 
 

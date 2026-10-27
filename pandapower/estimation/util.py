@@ -217,7 +217,7 @@ def remove_shunt_injection_from_meas(net, type):
                 net.measurement.loc[idxq, "value"] -= (
                     net.res_ward.loc[index[k], "q_mvar"] - net.ward.loc[index[k], "qs_mvar"]
                 )
-        except:
+        except Exception:
             continue
 
 
@@ -245,8 +245,8 @@ def add_virtual_pmu_meas_from_loadflow(
                 )
                 S = p + q * 1j
                 V = vm * np.exp(np.deg2rad(va) * 1j)
-                I = np.conj(S / V)
-                net["res_" + br_type]["ia_%s_degree" % side] = np.rad2deg(np.angle(I))
+                i = np.conj(S / V)
+                net["res_" + br_type]["ia_%s_degree" % side] = np.rad2deg(np.angle(i))
 
     for bus_ix, bus_res in net.res_bus.iterrows():
         for meas_type in bus_meas_types:

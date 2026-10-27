@@ -1,6 +1,8 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = []
+
 import logging
 
 from numpy import allclose, array, concatenate, int64, nan_to_num
