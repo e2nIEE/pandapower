@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
-from pandapower import io_utils, pandapowerNet
+from pandapower.network import pandapowerNet
+from pandapower.io_utils import from_dict_of_dfs, to_dict_of_dfs
 
 try:
     import psycopg
@@ -322,8 +323,8 @@ def from_sql(
             tab.geo = tab.geo.replace({"NaN": None})
 
         d[element] = tab
-
-    net = io_utils.from_dict_of_dfs(d, net=empty_dict_like_object)
+    
+    net = from_dict_of_dfs(d, net=empty_dict_like_object)
 
     return net
 
@@ -369,7 +370,7 @@ def to_sql(
     """
     cursor = conn.cursor()
     catalogue_table_name = grid_catalogue_name if schema is None else f"{schema}.{grid_catalogue_name}"
-    d = io_utils.to_dict_of_dfs(net, include_results=include_results, include_empty_tables=False)
+    d = to_dict_of_dfs(net, include_results=include_results, include_empty_tables=False)
     written_grid_id = create_postgresql_catalogue_entry(conn, cursor, grid_id, grid_id_column, catalogue_table_name)
     id_columns = {grid_id_column: written_grid_id}
     d["grid_tables"] = pd.DataFrame(d.keys(), columns=["table"])
@@ -400,7 +401,7 @@ def to_sqlite(net, filename, include_results=False):
     if not SQLITE_INSTALLED:
         raise UserWarning("sqlite3 is not installed, install sqlite3 to use from_sqlite()")
     with sqlite3.connect(filename) as conn:
-        dodfs = io_utils.to_dict_of_dfs(net, include_results=include_results)
+        dodfs = to_dict_of_dfs(net, include_results=include_results)
         for name, data in dodfs.items():
             data.to_sql(name, conn)
 
@@ -428,7 +429,7 @@ def from_sqlite(filename):
             table = pd.read_sql_query('SELECT * FROM "{}"'.format(t.replace('"', '""')), conn, index_col="index")
             table.index.name = None
             dodfs[t] = table
-        net = io_utils.from_dict_of_dfs(dodfs)
+        net = from_dict_of_dfs(dodfs)
     return net
 
 

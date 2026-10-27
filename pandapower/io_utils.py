@@ -58,7 +58,6 @@ from numpy import any as anynp
 from functools import singledispatch
 
 from pandapower.auxiliary import _preserve_dtypes, get_free_id, soft_dependency_error
-from pandapower.file_io import from_json
 from pandapower.network import pandapowerNet
 from pandapower.network_structure import get_std_type_structure_dict
 
@@ -687,6 +686,7 @@ class FromSerializableRegistry:
     @from_serializable.register(class_name="pandapowerNet", module_name="pandapower.network")
     @from_serializable.register(class_name="pandapowerNet", module_name="pandapower.auxiliary")
     def to_pandapower_net(self):
+        from pandapower.file_io import from_json
         if isinstance(self.obj, str):  # backwards compatibility
             return from_json(self.obj)
         else:

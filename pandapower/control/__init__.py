@@ -26,11 +26,8 @@ __all__ = [
     "trafo_characteristic_table_diagnostic",
 ]
 
-import pandapower.control.basic_controller
-import pandapower.control.controller
-from pandapower.control.controller.characteristic_control import CharacteristicControl
-
 # --- Controller ---
+from pandapower.control.controller.characteristic_control import CharacteristicControl
 from pandapower.control.controller.const_control import ConstControl
 from pandapower.control.controller.DERController.der_control import DERController
 from pandapower.control.controller.dmr_control import DmrControl

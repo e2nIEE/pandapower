@@ -54,7 +54,7 @@ def to_pickle(net, filename) -> None:
     :param str filename: The absolute or relative path to the output file or an writable file-like objects
 
     :example:
-        >>> from pandapower import to_pickle
+        >>> from pandapower.file_io import to_pickle
         >>> to_pickle(net, os.path.join("C:", "example_folder", "example1.p"))  # absolute path
         >>> to_pickle(net, "example2.p")  # relative path
     """
@@ -79,7 +79,7 @@ def to_excel(net, filename, include_empty_tables=False, include_results=True):
     :param bool include_results: results are included in the Excel sheet, default True
 
     :example:
-        >>> from pandapower import to_excel
+        >>> from pandapower.file_io import to_excel
         >>> to_excel(net, os.path.join("C:", "example_folder", "example1.xlsx"))  # absolute path
         >>> to_excel(net, "example2.xlsx")  # relative path
     """
@@ -172,7 +172,7 @@ def from_pickle(filename, convert=True, drop_invalid_geodata=False, ignore_versi
     :rtype: pandapowerNet
 
     :example:
-        >>> from pandapower import from_pickle
+        >>> from pandapower.file_io import from_pickle
         >>> net1 = from_pickle(os.path.join("C:", "example_folder", "example1.p")) #absolute path
         >>> net2 = from_pickle("example2.p") #relative path
     """
@@ -207,7 +207,7 @@ def from_excel(
     :rtype: pandapowerNet
 
     :example:
-        >>> from pandapower import from_excel
+        >>> from pandapower.file_io import from_excel
         >>> net1 = from_excel(os.path.join("C:", "example_folder", "example1.xlsx"))
         >>> net2 = from_excel("example2.xlsx") #relative path
     """
@@ -397,7 +397,7 @@ def from_json_string(
         The pandapower network
 
     Example:
-        >>> from pandapower import from_json_string
+        >>> from pandapower.file_io import from_json_string
         >>> net = from_json_string("{…}")
     """
     if replace_elements is not None:
@@ -489,7 +489,7 @@ def from_json_dict(json_dict):
     :rtype: pandapowerNet
 
     :example:
-        >>> from pandapower import from_json_dict
+        >>> from pandapower.file_io import from_json_dict
         >>> net = from_json_dict(json.loads(json_str))
     """
     name = json_dict["name"] if "name" in json_dict else None
