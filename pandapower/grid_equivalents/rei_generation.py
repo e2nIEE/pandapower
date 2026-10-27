@@ -1,3 +1,6 @@
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import logging
 import operator
 import re
@@ -371,9 +374,9 @@ def _create_net_zpbn(
                     other_cols_mixed |= {c}
                 elif value_types[0] in (float, int):
                     other_cols_number |= {c}
-                elif value_types[0] == bool:
+                elif value_types[0] is bool:
                     other_cols_bool |= {c}
-                elif value_types[0] == str:
+                elif value_types[0] is str:
                     other_cols_str |= {c}
                 else:  # value_types[0] is None:
                     other_cols_none |= {c}

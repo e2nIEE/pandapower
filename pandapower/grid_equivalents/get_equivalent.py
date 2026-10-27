@@ -1,3 +1,12 @@
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
+__all__ = [
+    "drop_repeated_characteristic",
+    "get_equivalent",
+    "merge_internal_net_and_equivalent_external_net",
+]
+
 import logging
 import time
 from copy import deepcopy
@@ -438,7 +447,7 @@ def merge_internal_net_and_equivalent_external_net(
     for bus in boundary_buses_inclusive_bswitch:
         try:
             name = merged_net.bus[fuse_bus_column].loc[bus]
-        except:
+        except Exception:
             logger.info("fuse_bus_column")
             logger.info("merged_net.bus.columns")
             logger.info("")
