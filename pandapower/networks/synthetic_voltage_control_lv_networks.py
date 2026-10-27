@@ -1,6 +1,10 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "create_synthetic_voltage_control_lv_network",
+]
+
 import pandas as pd
 from geojson import Point, dumps
 from numpy import append, nan
