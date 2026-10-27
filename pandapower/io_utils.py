@@ -687,6 +687,7 @@ class FromSerializableRegistry:
     @from_serializable.register(class_name="pandapowerNet", module_name="pandapower.auxiliary")
     def to_pandapower_net(self):
         from pandapower.file_io import from_json
+
         if isinstance(self.obj, str):  # backwards compatibility
             return from_json(self.obj)
         else:

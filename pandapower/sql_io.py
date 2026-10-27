@@ -323,7 +323,7 @@ def from_sql(
             tab.geo = tab.geo.replace({"NaN": None})
 
         d[element] = tab
-    
+
     net = from_dict_of_dfs(d, net=empty_dict_like_object)
 
     return net
