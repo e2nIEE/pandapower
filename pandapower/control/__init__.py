@@ -34,6 +34,8 @@ from pandapower.control.controller.dmr_control import DmrControl
 from pandapower.control.controller.pq_control import PQController
 from pandapower.control.controller.shunt_control import DiscreteShuntController
 from pandapower.control.controller.station_control import BinarySearchControl, DroopControl, VDroopControl_local
+from pandapower.control.controller.self_consumption_control import SelfConsumptionController
+from pandapower.control.controller.storage_control import StorageController
 from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
 from pandapower.control.controller.trafo.DiscreteTapControl import DiscreteTapControl
 from pandapower.control.controller.trafo.TapDependentImpedance import TapDependentImpedance
