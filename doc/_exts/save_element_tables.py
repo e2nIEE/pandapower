@@ -82,7 +82,7 @@ def create_docu_csv_from_schema(schema: DataFrameSchema, path: str, filename: st
     # Create CSV with column metadata
     df = pd.DataFrame(columns_info)
     # Drop rows that should not appear in documentation and the doc column:
-    df = df[df.doc == True]
+    df = df[df.doc]
     df = df.drop(columns=["doc"])
     # Drop empty columns
     df = df.dropna(how="all", axis=1)
