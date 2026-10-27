@@ -1,6 +1,33 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "controller_to_serializable",
+    "coords_to_df",
+    "decrypt_string",
+    "DeserializationNotAllowed",
+    "df_to_coords",
+    "dicts_to_pandas",
+    "encrypt_string",
+    "from_dict_of_dfs",
+    "FromSerializable",
+    "FromSerializableRegistry",
+    "get_raw_data_from_pickle",
+    "isinstance_partial",
+    "JSONSerializableClass",
+    "mkdirs_if_not_existent",
+    "pp_hook",
+    "PPJSONDecoder",
+    "PPJSONEncoder",
+    "restore_all_dtypes",
+    "to_dict_of_dfs",
+    "to_dict_with_coord_transform",
+    "to_serializable",
+    "transform_net_with_df_and_geo",
+    "with_signature",
+]
+
+import logging
 import copy
 import importlib
 import io
@@ -13,6 +40,7 @@ import weakref
 from ast import literal_eval
 from enum import Enum
 from functools import partial
+from importlib.util import find_spec
 from inspect import _findclass, isclass  # type: ignore[attr-defined]
 from warnings import warn
 
@@ -27,56 +55,59 @@ from networkx.readwrite import json_graph
 from numpy import allclose, equal, generic, isnan, ndarray
 from numpy import any as anynp
 
-try:
-    from pandas.testing import assert_frame_equal, assert_series_equal
-except ImportError:
-    from pandas.util.testing import assert_frame_equal, assert_series_equal  # type: ignore[no-redef,import-not-found]
-try:
-    from cryptography.fernet import Fernet  # type: ignore
-
-    cryptography_INSTALLED = True
-except ImportError:
-    cryptography_INSTALLED = False
-try:
-    import hashlib
-
-    hashlib_INSTALLED = True
-except ImportError:
-    hashlib_INSTALLED = False
-try:
-    import base64
-
-    base64_INSTALLED = True
-except ImportError:
-    base64_INSTALLED = False
-try:
-    import zlib
-
-    zlib_INSTALLED = True
-except ImportError:
-    zlib_INSTALLED = False
-
 from functools import singledispatch
 
 from pandapower.auxiliary import _preserve_dtypes, get_free_id, soft_dependency_error
+from pandapower.file_io import from_json
 from pandapower.network import pandapowerNet
 from pandapower.network_structure import get_std_type_structure_dict
 
-try:
+if find_spec("pandas") and find_spec("pandas.testing"):
+    from pandas.testing import assert_frame_equal, assert_series_equal
+else:
+    from pandas.util.testing import assert_frame_equal, assert_series_equal  # type: ignore[no-redef,import-not-found]
+
+if find_spec("cryptography"):
+    from cryptography.fernet import Fernet  # type: ignore
+
+    cryptography_INSTALLED = True
+else:
+    cryptography_INSTALLED = False
+
+if find_spec("hashlib"):
+    import hashlib
+
+    hashlib_INSTALLED = True
+else:
+    hashlib_INSTALLED = False
+
+if find_spec("base64"):
+    import base64
+
+    base64_INSTALLED = True
+else:
+    base64_INSTALLED = False
+
+if find_spec("zlib"):
+    import zlib
+
+    zlib_INSTALLED = True
+else:
+    zlib_INSTALLED = False
+
+if find_spec("geopandas"):
     import geopandas
 
     GEOPANDAS_INSTALLED = True
-except ImportError:
+else:
     GEOPANDAS_INSTALLED = False
 
-try:
+if find_spec("shapely"):
     import shapely.geometry
 
     SHAPELY_INSTALLED = True
-except (ImportError, OSError):
+else:
     SHAPELY_INSTALLED = False
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -657,9 +688,7 @@ class FromSerializableRegistry:
     @from_serializable.register(class_name="pandapowerNet", module_name="pandapower.auxiliary")
     def to_pandapower_net(self):
         if isinstance(self.obj, str):  # backwards compatibility
-            from pandapower import from_json_string
-
-            return from_json_string(self.obj)
+            return from_json(self.obj)
         else:
             if self.empty_dict_like_object is None:
                 net = pandapowerNet(name="from_serializable")
