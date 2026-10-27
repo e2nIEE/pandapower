@@ -238,7 +238,7 @@ def get_lowest_impedance_line(net: pandapowerNet, lines):
 def check_for_closed_bus_switches(net_copy):
     # closed switches
     net = copy.deepcopy(net_copy)
-    closed_bus_switches = net.switch.loc[(net.switch.et == "b") & (net.switch.closed == True)]
+    closed_bus_switches = net.switch.loc[(net.switch.et == "b") & (net.switch.closed)]
 
     if len(closed_bus_switches) > 0:
         net = fuse_bus_switches(net, closed_bus_switches)
@@ -346,7 +346,7 @@ def plot_tripped_grid(net, trip_decisions, sc_location, bus_size=0.055, plot_ann
         if trip_time == min(tripping_times):
             inst_trip_switches.append(switch_id)
 
-        if trip_time in backup_tripping_times and trip == True:
+        if trip_time in backup_tripping_times and trip:
             backup_trip_switches.append(switch_id)
 
     dist_to_bus = bus_size * 3.25
@@ -544,7 +544,7 @@ def plot_tripped_grid_protection_device(
         if trip_time == min(tripping_times):
             inst_trip_switches.append(switch_id)
 
-        if trip_time in backup_tripping_times and trip == True:
+        if trip_time in backup_tripping_times and trip:
             backup_trip_switches.append(switch_id)
 
     dist_to_bus = bus_size * 3.25
@@ -576,7 +576,7 @@ def plot_tripped_grid_protection_device(
         instant_sc_backup = create_line_switch_collection(
             net, size=bus_size, distance_to_bus=dist_to_bus, color="orange", switches=inst_backup_switches
         )
-        instant_bb_backup = create_bus_bus_switch_collection(net, size=bus_size, helper_line_color="orange")
+        create_bus_bus_switch_collection(net, size=bus_size, helper_line_color="orange")
         collection.append(instant_sc_backup)
 
     len_sc = len(set(net.switch.index) - set(inst_trip_switches) - set(backup_trip_switches))
@@ -660,8 +660,6 @@ def plot_tripped_grid_protection_device(
 
         bus_annotate = create_annotation_collection(texts=bus_text, coords=bus_geodata, size=0.06, prop=None)
         collection.append(bus_annotate)
-
-        max_bus_idx = max(net.bus.dropna(subset=["geo"]).index)
 
         # Short circuit annotations
         collection.append(get_fault_annotation(net, fault_current))
