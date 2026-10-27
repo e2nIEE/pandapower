@@ -16,7 +16,8 @@ import pandas as pd
 from packaging.version import Version
 
 from pandapower._version import __format_version__, __version__
-from pandapower.control import BinarySearchControl, DroopControl, TrafoController
+from pandapower.control.controller.station_control import BinarySearchControl, DroopControl
+from pandapower.control.controller.trafo_control import TrafoController
 from pandapower.create import create_poly_cost
 from pandapower.create._utils import add_column_to_df
 from pandapower.create.trafo_characteristic_create import create_trafo_characteristic
