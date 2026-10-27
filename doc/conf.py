@@ -11,6 +11,7 @@
 
 import os
 import sys
+from importlib.metadata import version as metaversion
 
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
@@ -66,8 +67,6 @@ copyright = "2016-2026 by Fraunhofer IEE and University of Kassel"
 # built documents.
 #
 # The full version, including alpha/beta/rc tags.
-from importlib.metadata import version as metaversion
-
 release = metaversion("pandapower")
 # The short X.Y version. for example take major/minor
 version = ".".join(release.split(".")[:2])
