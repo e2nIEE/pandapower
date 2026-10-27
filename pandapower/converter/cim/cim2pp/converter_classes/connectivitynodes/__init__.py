@@ -1,5 +1,3 @@
-__all__ = [
-    "connectivityNodesCim16"
-]
+__all__ = ["connectivityNodesCim16"]
 
 from . import connectivityNodesCim16
