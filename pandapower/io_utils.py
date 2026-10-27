@@ -377,7 +377,7 @@ def transform_net_with_df_and_geo(net, point_geo_columns, line_geo_columns):
                     try:
                         # only works with pandas 0.19 or newer
                         net[key] = net[key].astype(item["dtypes"])
-                    except:
+                    except Exception:
                         # works with pandas <0.19
                         for column in net[key].columns:
                             net[key][column] = net[key][column].astype(item["dtypes"][column])
@@ -570,7 +570,7 @@ class FromSerializableRegistry:
                     ser.index = pd.MultiIndex.from_tuples([], names=index_names, dtype=np.int64)
                 else:
                     ser.index = pd.MultiIndex.from_tuples(pd.Series(ser.index).apply(literal_eval).tolist())
-            except:
+            except Exception:
                 logger.warning("Converting index to multiindex failed.")
             else:
                 if index_names is not None:
@@ -618,7 +618,7 @@ class FromSerializableRegistry:
                     df.index = pd.MultiIndex.from_tuples(pd.Series(df.index).apply(literal_eval).tolist())
                 # slower alternative code:
                 # df.index = pd.MultiIndex.from_tuples([literal_eval(idx) for idx in df.index])
-            except:
+            except Exception:
                 logger.warning("Converting index to multiindex failed.")
             else:
                 if index_names is not None:
@@ -629,7 +629,7 @@ class FromSerializableRegistry:
                     df.columns = pd.MultiIndex.from_frame(pd.DataFrame(columns=column_names, dtype=np.int64))
                 else:
                     df.columns = pd.MultiIndex.from_tuples(pd.Series(df.columns).apply(literal_eval).tolist())
-            except:
+            except Exception:
                 logger.warning("Converting columns to multiindex failed.")
             else:
                 if column_names is not None:
@@ -1089,13 +1089,13 @@ class JSONSerializableClass:
                 if len(obj1) > 0:
                     try:
                         assert_frame_equal(obj1, obj2)
-                    except:
+                    except Exception:
                         raise UnequalityFound
             elif isinstance(obj2, pd.Series):
                 if len(obj1) > 0:
                     try:
                         assert_series_equal(obj1, obj2)
-                    except:
+                    except Exception:
                         raise UnequalityFound
             elif isinstance(obj1, dict):
                 check_dictionary_equality(obj1, obj2)
@@ -1106,7 +1106,7 @@ class JSONSerializableClass:
                     try:
                         if not (isnan(obj1) and isnan(obj2)):
                             raise UnequalityFound
-                    except:
+                    except Exception:
                         raise UnequalityFound
 
         def check_dictionary_equality(obj1, obj2):

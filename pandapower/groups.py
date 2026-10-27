@@ -1,11 +1,42 @@
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 """
 Notes:
     Using different reference_columns for the same group and element_type is not supported.
     See check_unique_group_rows()
 """
 
-# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
-# and Energy System Technology (IEE), Kassel. All rights reserved.
+__all__ = [
+    "attach_to_group",
+    "attach_to_groups",
+    "check_unique_group_rows",
+    "compare_group_elements",
+    "count_group_elements",
+    "detach_from_groups",
+    "drop_group",
+    "drop_group_and_elements",
+    "element_associated_groups",
+    "elements_connected_to_group",
+    "ensure_lists_in_group_element_column",
+    "group_element_index",
+    "group_element_lists",
+    "group_entries_exist_in_element_table",
+    "group_index",
+    "group_name",
+    "group_res_p_mw",
+    "group_res_power_per_bus",
+    "group_res_q_mvar",
+    "group_row",
+    "groups_equal",
+    "isin_group",
+    "remove_not_existing_group_members",
+    "return_group_as_net",
+    "set_group_in_service",
+    "set_group_out_of_service",
+    "set_group_reference_column",
+    "set_value_to_group",
+]
 
 import copy
 import logging

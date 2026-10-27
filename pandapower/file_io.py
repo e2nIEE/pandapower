@@ -1,6 +1,14 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "from_excel",
+    "from_json",
+    "from_pickle",
+    "to_excel",
+    "to_json",
+    "to_pickle",
+]
 
 import json
 import os
@@ -214,7 +222,7 @@ def from_excel(
 
     try:
         net = from_dict_of_dfs(xls, add_basic_std_types=add_basic_std_types)
-    except:
+    except Exception:
         net = _from_excel_old(xls, add_basic_std_types=add_basic_std_types)
     if convert:
         convert_format(net, drop_invalid_geodata=drop_invalid_geodata, donot_open_newer=not ignore_version_conflicts)

@@ -555,9 +555,7 @@ def _build_bus_dc_ppc(net, ppc):
     """
     Generates the ppc["bus_dc"] array and the lookup pandapower indices -> ppc indices
     """
-    init_vm_pu = net["_options"]["init_vm_pu"]
     mode = net["_options"]["mode"]
-    numba = net["_options"]["numba"] if "numba" in net["_options"] else False
 
     # get bus indices
     bus_index = net["bus_dc"].index.values
@@ -894,12 +892,12 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
 
         if "step_dependency_table" in s:
             # TODO: remove step_dependency_table and infer from id_characterists_table if it exists
-            if np.any(vl & (s.step_dependency_table == True) & (pd.isna(s.id_characteristic_table))):
+            if np.any(vl & (s.step_dependency_table) & (pd.isna(s.id_characteristic_table))):
                 raise UserWarning(
                     "Shunts with step_dependency_table True and id_characteristic_table NA detected.\n"
                     "Please set an id_characteristic_table or set step_dependency_table to False."
                 )
-            elif np.any(vl & (s.step_dependency_table == False) & (~pd.isna(s.id_characteristic_table))):
+            elif np.any(vl & (~s.step_dependency_table) & (~pd.isna(s.id_characteristic_table))):
                 warnings.warn(
                     "Shunts with step_dependency_table False but id_characteristic_table detected.",
                     category=UserWarning,
