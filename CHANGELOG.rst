@@ -23,6 +23,7 @@ Change Log
 - [ADDED] OpenDSS converter: series (bus-to-bus) ``Reactor`` elements are now imported as a fixed-impedance ``line``, the pattern some feeder libraries (e.g. EPRI's Ckt5/Ckt7) use to model the substation's Thevenin-equivalent source impedance instead of a ``Transformer``.
 - [FIXED] impedance element docs: the ``z_tf`` equation used ``rft_pu`` instead of ``rtf_pu``, and the ``gt_pu``/``bt_pu``/``gt0_pu``/``bt0_pu`` shunt parameters were described as being at the ``from_bus`` instead of the ``to_bus``.
 - [FIXED] fixed tutorial for plotting with pyqt
+- [FIXED] ``PPJSONEncoder.default`` passed ``self`` twice to ``json.JSONEncoder.default``, so unserializable objects raised ``TypeError: JSONEncoder.default() takes 2 positional arguments but 3 were given`` instead of ``Object of type X is not JSON serializable``
 
 [3.5.4] - 2026-07-08
 -------------------------------
