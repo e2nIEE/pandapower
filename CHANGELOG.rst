@@ -3,6 +3,7 @@ Change Log
 
 [upcoming 4.0.0] - 2026-..-..
 -------------------------------
+- [FIXED] docstrings of detect_power_station_unit and elements_on_path now match their parameters
 - [CHANGED] ran ruff format for whole project
 - [CHANGED] moved test module to top level
 - [ADDED] pandera network validation
