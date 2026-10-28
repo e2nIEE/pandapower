@@ -179,9 +179,9 @@ class TestLineOptionalFields:
             line_params=STD_TYPE,
         )
 
-        net.line["name"].iat[0] = pd.NA
-        net.line["std_type"].iat[1] = pd.NA
-        net.line["geo"].iat[2] = pd.NA
+        net.line.iat[0, net.line.columns.get_loc("name")] = pd.NA
+        net.line.iat[1, net.line.columns.get_loc("std_type")] = pd.NA
+        net.line.iat[2, net.line.columns.get_loc("geo")] = pd.NA
 
         validate_network(net)
 
