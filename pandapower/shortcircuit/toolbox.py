@@ -35,7 +35,7 @@ def detect_power_station_unit(net, mode="auto", max_gen_voltage_kv=80, max_dista
 
         **mode** (str, ("auto", trafo""))
 
-        **max_gen_voltage_level** (float)
+        **max_gen_voltage_kv** (float)
 
         **max_distance_km** (float)
     """
