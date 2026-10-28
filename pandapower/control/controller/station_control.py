@@ -213,13 +213,13 @@ class BinarySearchControl(Controller):
                         "Use 'control_modus' ('Q_ctrl', 'V_ctrl', etc.) instead."
                     )
                     self._deprecation_warned = True
-        if isinstance(control_modus, bool) and control_modus == True:  # Only functions written out!?!
+        if isinstance(control_modus, bool) and control_modus:  # Only functions written out!?!
             self.control_modus = ControlModusEnum.v_ctrl
             logger.warning(
                 f"Deprecated Controller control_modus for Controller {self.index}, using 'V_ctrl' from available"
                 f" types 'Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl'\n"
             )
-        elif isinstance(control_modus, bool) and control_modus == False:  # Only functions written out!?!
+        elif isinstance(control_modus, bool) and not control_modus:  # Only functions written out!?!
             self.control_modus = ControlModusEnum.q_ctrl
             logger.warning(
                 f"Deprecated Controller control_modus for Controller {self.index}, using Q_ctrl from available"
@@ -523,19 +523,15 @@ class BinarySearchControl(Controller):
             self.converged = np.all(np.abs(self.diff) < self.tol)
         else:
             ###catching deprecated modi from old imports
-            if (
-                isinstance(self.control_modus, bool)
-                and self.control_modus == True
-                and self.input_element_index is not None
-            ):
+            if isinstance(self.control_modus, bool) and self.control_modus and self.input_element_index is not None:
                 self.control_modus = ControlModusEnum.v_ctrl  # catching old implementation
                 logger.warning(
                     f"Deprecated Control Modus in Controller {self.index}, using V_ctrl from available types\n"
                 )
-            elif (isinstance(self.control_modus, bool) and self.control_modus == False) or (
-                isinstance(self.control_modus, bool) and self.control_modus == True and self.input_element_index is None
+            elif (isinstance(self.control_modus, bool) and not self.control_modus) or (
+                isinstance(self.control_modus, bool) and self.control_modus and self.input_element_index is None
             ):
-                if self.control_modus is True:
+                if self.control_modus:
                     logger.warning(
                         f'Deprecated Control Modus in Controller {self.index}, attempted to use "V_ctrl" but '
                         f"missing attribute input_element_index, defaulting to Q_ctrl\n"
@@ -1206,7 +1202,6 @@ class VDroopControl_local(Controller):
             self.control_modus = ControlModusEnum.v_ctrl_q_droop_local
         self.tol = tol
         self.applied = False
-        gen_idx = net.controller.at[self.controller_idx, "object"].input_element_index[0]
         self.read_flag, self.input_variable = _detect_read_write_flag(net, "res_bus", bus_idx, "vm_pu")
         self.diff = None
         self.converged = False
