@@ -1,6 +1,8 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = ["from_mpc"]
+
 import os
 
 import numpy as np
@@ -130,7 +132,7 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
 
         try:
             ppc["gencost"] = mpc[casename_mpc_file].gencost
-        except:
+        except Exception:
             logger.info("gencost is not in mpc")
 
         for k in mpc[casename_mpc_file]._fieldnames:
