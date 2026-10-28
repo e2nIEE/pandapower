@@ -307,6 +307,7 @@ jobs:
 
   linting:
     # run flake8 and check for errors
+    needs: build
     runs-on: ubuntu-latest
     continue-on-error: true
     strategy:
@@ -341,6 +342,7 @@ jobs:
 
   postgresql:
     # for the one test to cover postgresql
+    needs: build
     runs-on: ubuntu-latest
     services:
       postgres:
