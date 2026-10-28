@@ -49,7 +49,7 @@ def test_runpp_pgm__internal_pgm_error(mock_logger: MagicMock):
     net = pandapowerNet(name="test_runpp_pgm__internal_pgm_error")
     b1, b2 = create_buses(net, 2, [110, 50])
     create_ext_grid(net, b1, vm_pu=1)
-    create_lines(net, b1, b2, 1, std_type="NAYY 4x50 SE")
+    create_lines(net, b1, b2, 1, line_params="NAYY 4x50 SE")
     runpp_pgm(net)
 
     assert net["converged"] is False

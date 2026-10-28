@@ -147,7 +147,7 @@ def oc_relay_net():
         from_buses=[0, 1, 2, 1, 4, 5],
         to_buses=[1, 2, 3, 4, 5, 6],
         length_km=[2, 5, 4, 4, 0.5, 0.5],
-        std_type="NAYY 4x50 SE",
+        line_params="NAYY 4x50 SE",
         name=None,
         index=[0, 1, 2, 3, 4, 5],
         df=1.0,

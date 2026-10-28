@@ -113,7 +113,7 @@ def test_create_lines():
         [b1, b1],
         [b2, b2],
         4,
-        std_type="48-AL1/8-ST1A 10.0",
+        line_params="48-AL1/8-ST1A 10.0",
         test_kwargs="dummy_string",
     )
     assert len(net.line) == 2
@@ -130,7 +130,7 @@ def test_create_lines():
         [b1, b1],
         [b2, b2],
         4,
-        std_type=["48-AL1/8-ST1A 10.0", "NA2XS2Y 1x240 RM/25 6/10 kV"],
+        line_params=["48-AL1/8-ST1A 10.0", "NA2XS2Y 1x240 RM/25 6/10 kV"],
     )
     assert len(net.line) == 2
     assert sum(net.line.std_type == "48-AL1/8-ST1A 10.0") == 1
@@ -146,7 +146,7 @@ def test_create_lines():
         [b1, b1],
         [b2, b2],
         [1.5, 3],
-        std_type="48-AL1/8-ST1A 10.0",
+        line_params="48-AL1/8-ST1A 10.0",
         geodata=[[(1, 1), (2, 2), (3, 3)], [(1, 1), (1, 2)]],
     )
 
@@ -172,7 +172,7 @@ def test_create_lines():
         parallel=1,
         max_loading_percent=90,
         name="test",
-        std_type="48-AL1/8-ST1A 10.0",
+        line_params="48-AL1/8-ST1A 10.0",
     )
 
     assert len(net.line) == 2
@@ -206,7 +206,7 @@ def test_create_lines():
         parallel=[2, 1],
         max_loading_percent=[80, 90],
         name=["test1", "test2"],
-        std_type="48-AL1/8-ST1A 10.0",
+        line_params="48-AL1/8-ST1A 10.0",
     )
 
     assert len(net.line) == 2

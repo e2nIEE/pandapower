@@ -81,7 +81,7 @@ def test_get_connected_lines_at_bus():
     bus0, bus1 = create_buses(net, 2, 0.4)
 
     line0, line1, line2, line3 = create_lines(
-        net, [bus0] * 4, [bus1] * 4, length_km=1.0, std_type="NAYY 4x50 SE", in_service=[True, True, False, True]
+        net, [bus0] * 4, [bus1] * 4, length_km=1.0, line_params="NAYY 4x50 SE", in_service=[True, True, False, True]
     )
 
     create_switch(net, bus0, line0, "l")

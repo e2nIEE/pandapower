@@ -69,7 +69,7 @@ def meshed_network():
 
     # create some more lines between b6-b1 and b1-b4
     create_lines(
-        net, [b[1], b[6]], [b[4], b[1]], length_km=100.0, std_type="149-AL1/24-ST1A 110.0", name=["line6", "line7"]
+        net, [b[1], b[6]], [b[4], b[1]], length_km=100.0, line_params="149-AL1/24-ST1A 110.0", name=["line6", "line7"]
     )
     return net
 
@@ -78,7 +78,7 @@ def meshed_network():
 def mixed_network():
     net = pandapowerNet(name="mixed_network")
     create_buses(net, nr_buses=5, vn_kv=20.0)
-    create_lines(net, [0, 1, 2, 2], [1, 2, 3, 4], length_km=1, std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
+    create_lines(net, [0, 1, 2, 2], [1, 2, 3, 4], length_km=1, line_params="NA2XS2Y 1x185 RM/25 12/20 kV")
     for b in [1, 4, 3]:
         create_ext_grid(net, b)
     return net
@@ -96,7 +96,7 @@ def test_connected_components(feeder_network):
 def test_determine_stubs(feeder_network):
     net = feeder_network
     (sec_bus,) = create_buses(net, 1, vn_kv=20.0)
-    (sec_line,) = create_lines(net, 3, sec_bus, length_km=3, std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
+    (sec_line,) = create_lines(net, 3, sec_bus, length_km=3, line_params="NA2XS2Y 1x185 RM/25 12/20 kV")
     determine_stubs(net)
     assert not np.any(net.bus.on_stub.loc[list(set(net.bus.index) - {sec_bus})].values)
     assert not np.any(net.line.is_stub.loc[list(set(net.line.index) - {sec_line})].values)
@@ -230,7 +230,7 @@ def test_graph_characteristics(feeder_network):
         (bus8, bus9),
         (bus9, bus7),
     ]
-    create_lines(net, *zip(*new_connections), length_km=1.0, std_type="NA2XS2Y 1x185 RM/25 12/20 kV")
+    create_lines(net, *zip(*new_connections), length_km=1.0, line_params="NA2XS2Y 1x185 RM/25 12/20 kV")
 
     # get characteristics
     mg = create_nxgraph(net, respect_switches=False)

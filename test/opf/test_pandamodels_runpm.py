@@ -562,7 +562,7 @@ def tnep_grid():
         [bus1, bus2, bus3, bus3],
         [bus4] * 4,
         [10.0, 20.0, 30.0, 40.0],
-        std_type="149-AL1/24-ST1A 110.0",
+        line_params="149-AL1/24-ST1A 110.0",
         name=["new_line1", "new_line2", "new_line3", "new_line4"],
         max_loading_percent=20.0,
         in_service=False,
@@ -1004,7 +1004,7 @@ def _create_redispatch_net():
     create_ext_grid(net, b0, min_p_mw=-100.0, max_p_mw=100.0, min_q_mvar=-100.0, max_q_mvar=100.0)  # ext_grid at b0
 
     # weakly rated line from the cheap-gen side to the load; a strong line elsewhere
-    l_weak, _ = create_lines(net, [b1, b0], [b2, b1], length_km=10.0, std_type="149-AL1/24-ST1A 110.0")
+    l_weak, _ = create_lines(net, [b1, b0], [b2, b1], length_km=10.0, line_params="149-AL1/24-ST1A 110.0")
     net.line.loc[:, "max_loading_percent"] = 100.0
     net.line.loc[l_weak, "max_loading_percent"] = 25.0
 
