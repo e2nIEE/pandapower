@@ -18,6 +18,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] Kerber network creation now passes branch-out line parameters through ``line_params``.
 - [CHANGED] Legacy JSON fixture tests now assert the expected format warning.
 - [FIXED] ``create_load_dc`` now allocates and validates indexes against ``load_dc``, preventing overwrites and false ``source_dc`` conflicts.
 - [FIXED] OPF cleaned up in case of non convergence

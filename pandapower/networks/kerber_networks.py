@@ -222,7 +222,7 @@ def _add_lines_with_branched_loads(
             loadbusnr,
             length_km=length_branchout_line,
             name=f"branchout_line_{branchnr:d}_{linecounter:d}",
-            std_type=std_type_branchout_line,
+            line_params=std_type_branchout_line,
         )
 
         if p_load_mw or q_load_mvar:
