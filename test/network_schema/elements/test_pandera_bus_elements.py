@@ -20,7 +20,6 @@ from test.network_schema.elements.helper import (
     not_floats_list,
     not_strings_list,
     positiv_floats,
-    positiv_floats_plus_zero,
     strings,
     zero_float,
 )

@@ -20,7 +20,7 @@ from pandapower.control.util.auxiliary import (
     get_min_max_q_mvar_from_characteristics_object,
 )
 from pandapower.control.util.characteristic import LogSplineCharacteristic, SplineCharacteristic
-from pandapower.create import create_bus, create_buses, create_line, create_lines, create_shunt
+from pandapower.create import create_buses, create_lines, create_shunt
 from pandapower.create._utils import add_column_to_df
 from pandapower.file_io import from_json_string, to_json
 from pandapower.network import pandapowerNet
