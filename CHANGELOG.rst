@@ -22,6 +22,8 @@ Change Log
 - [ADDED] OpenDSS converter: series (bus-to-bus) ``Reactor`` elements are now imported as a fixed-impedance ``line``, the pattern some feeder libraries (e.g. EPRI's Ckt5/Ckt7) use to model the substation's Thevenin-equivalent source impedance instead of a ``Transformer``.
 - [FIXED] impedance element docs: the ``z_tf`` equation used ``rft_pu`` instead of ``rtf_pu``, and the ``gt_pu``/``bt_pu``/``gt0_pu``/``bt0_pu`` shunt parameters were described as being at the ``from_bus`` instead of the ``to_bus``.
 - [FIXED] fixed tutorial for plotting with pyqt
+- [FIXED] short circuit: ``calc_sc(..., fault="1ph", ip=True, ith=True)`` accepted ``ip``/``ith`` but never calculated them, so ``res_bus_sc.ip_ka`` and ``ith_ka`` came back all ``NaN`` without any warning
+- [ADDED] short circuit: neutral earthing impedance of a three winding transformer in the zero sequence, per winding via the optional columns ``xn_hv_ohm``/``rn_hv_ohm``, ``xn_mv_ohm``/``rn_mv_ohm``, ``xn_lv_ohm``/``rn_lv_ohm`` (the ``trafo3w`` counterpart of ``net.trafo.xn_ohm``/``rn_ohm``)
 
 [3.5.4] - 2026-07-08
 -------------------------------
