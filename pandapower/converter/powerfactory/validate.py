@@ -474,11 +474,6 @@ def _validate_pf_conversion_balanced(net, in_both, all_diffs):
             all_diffs["bus_dc_diff"] = bus_dc_diff
 
     if len(net.line[net.line.in_service]) > 0:
-        section_loadings = pd.concat(
-            [net.line[["name", "line_idx"]], net.res_line[["loading_percent", "pf_loading"]]], axis=1
-        )
-        # line_loadings = section_loadings.groupby("line_idx").max() #TODO is this groupby needed here?
-
         line_loadings_pp, line_loadings_pf, _, _, line_diff, _ = calculate_element_diff_with_is_element_results(
             net, "line", "pf_loading", "loading_percent"
         )
