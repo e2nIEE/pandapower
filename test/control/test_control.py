@@ -6,7 +6,7 @@ import copy
 import pytest
 
 from pandapower import runpp
-from pandapower.control import ControllerNotConverged
+from pandapower.auxiliary import ControllerNotConverged
 from pandapower.control.basic_controller import Controller
 from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
 from pandapower.control.controller.trafo_control import TrafoController

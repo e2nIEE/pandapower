@@ -24,7 +24,7 @@ def pips(
     f_fcn,
     x0=None,
     A=None,
-    l=None,
+    l=None,  # noqa: E741
     u=None,
     xmin=None,
     xmax=None,
