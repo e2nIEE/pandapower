@@ -5,7 +5,7 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_buses, create_transformer
+from pandapower.create import create_buses
 from pandapower.create._utils import add_column_to_df
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
@@ -13,9 +13,7 @@ from test.network_schema.elements.helper import (
     all_allowed_floats,
     bools,
     negativ_floats,
-    negativ_floats_plus_zero,
     negativ_ints,
-    negativ_ints_plus_zero,
     not_boolean_list,
     not_floats_list,
     not_ints_list,
