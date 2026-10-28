@@ -51,15 +51,16 @@ def test_convert_format(version):
                 match=rf"\A{re.escape(LEGACY_FORMAT_WARNING)}\Z",
             ) as record:
                 net = from_json(filename, convert=False)
-            assert len(record) == 1
-            assert record[0].category is DeprecationWarning
-            assert str(record[0].message) == LEGACY_FORMAT_WARNING
         else:
             net = from_json(filename, convert=False)
         if "version" in net and vs.parse(str(net.version)) > vs.parse("2.0.1"):
             _ = from_json(filename, elements_to_deserialize=["bus", "load"])
     except Exception:
         raise UserWarning(f"Can not load network saved in pandapower version {version}")
+    if version in LEGACY_FORMAT_VERSIONS:
+        assert len(record) == 1
+        assert record[0].category is DeprecationWarning
+        assert str(record[0].message) == LEGACY_FORMAT_WARNING
     vm_pu_old = net.res_bus["vm_pu"].copy()
     convert_format(net)
     try:
