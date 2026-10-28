@@ -24,6 +24,14 @@ __all__ = [
     "SplineCharacteristic",
     "control_diagnostic",
     "trafo_characteristic_table_diagnostic",
+    "check_final_convergence",
+    "check_for_initial_run",
+    "ctrl_variables_default",
+    "get_controller_order",
+    "get_recycle",
+    "net_initialization",
+    "prepare_run_ctrl",
+    "run_control",
 ]
 
 # --- Controller ---
@@ -41,9 +49,17 @@ from pandapower.control.controller.trafo.VmSetTapControl import VmSetTapControl
 from pandapower.control.controller.trafo_control import TrafoController
 
 # --- Other ---
-from pandapower.control.run_control import *
+from pandapower.control.run_control import (
+    check_final_convergence,
+    check_for_initial_run,
+    ctrl_variables_default,
+    get_controller_order,
+    get_recycle,
+    net_initialization,
+    prepare_run_ctrl,
+    run_control,
+)
 from pandapower.control.util.auxiliary import (
-    _create_trafo_characteristics,
     create_q_capability_characteristics_object,
     create_trafo_characteristic_object,
     get_controller_index,

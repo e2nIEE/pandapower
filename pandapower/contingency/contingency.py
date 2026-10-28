@@ -1,17 +1,32 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "check_elements_within_limits",
+    "get_element_limits",
+    "pp_to_ls2g",
+    "report_contingency_results",
+    "run_contingency",
+    "run_contingency_ls2g",
+]
+
 import logging
 import warnings
 from collections.abc import Callable
+from importlib.util import find_spec
 
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 from packaging.version import Version
 
+from pandapower.create._utils import add_column_to_df
+from pandapower.network import pandapowerNet
+from pandapower.run import runpp
+
 logger = logging.getLogger(__name__)
-try:
+
+if find_spec("lightsim2grid"):
     import lightsim2grid
 
     ls2g_version = Version(lightsim2grid.__version__)
@@ -28,7 +43,7 @@ try:
         from lightsim2grid.lightsim2grid_cpp import GridModel, SolverType
 
     lightsim2grid_installed = True
-except ImportError:
+else:
     lightsim2grid_installed = False
 
 try:
@@ -36,17 +51,13 @@ try:
         raise ImportError
     ls2g_version = Version(lightsim2grid.__version__)
     if ls2g_version < Version("0.13.0"):
-        from lightsim2grid_cpp import KLUSolver, KLUSolverSingleSlack
+        from lightsim2grid_cpp import KLUSolver, KLUSolverSingleSlack  # noqa: F401
     else:
-        from lightsim2grid.lightsim2grid_cpp import KLUSolver, KLUSolverSingleSlack
+        from lightsim2grid.lightsim2grid_cpp import KLUSolver, KLUSolverSingleSlack  # noqa: F401
 
     KLU_solver_available = True
 except ImportError:
     KLU_solver_available = False
-
-from pandapower.create._utils import add_column_to_df
-from pandapower.network import pandapowerNet
-from pandapower.run import runpp
 
 
 def pp_to_ls2g(net: pandapowerNet) -> "GridModel":

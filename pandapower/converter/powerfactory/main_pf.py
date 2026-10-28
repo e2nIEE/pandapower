@@ -7,9 +7,6 @@ from tkinter.filedialog import askdirectory
 import numpy as np
 import pandas
 
-logger = logging.getLogger(__name__)
-root_logger = logging.getLogger()
-
 from pandapower.converter.powerfactory import gui
 from pandapower.converter.powerfactory import logger_setup as pflog
 from pandapower.converter.powerfactory import pf_export_functions as pef
@@ -22,6 +19,9 @@ from pandapower.toolbox.grid_modification import create_replacement_switch_for_b
 
 pandas.set_option("display.width", 1000)
 pandas.set_option("display.max_columns", 100)
+
+logger = logging.getLogger(__name__)
+root_logger = logging.getLogger()
 
 
 def browse_dst(input_panel, entry_path_dst):
@@ -344,7 +344,7 @@ def calc(
 if __name__ == "__main__":
     try:
         import powerfactory as pf
-    except:
+    except Exception:
         pass
     else:
         # power factory app

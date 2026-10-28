@@ -220,7 +220,7 @@ class UCTE2pandapower:
         # get the lines
         # status 9 & 1 stands for equivalent line that can be interpreted as impedance
         # status 7 & 2 stands for busbar coupler that can be interpreted as switches
-        lines = self.u_d["L"].loc[self.u_d["L"].status.isin([9, 1, 7, 2]) == False, :]
+        lines = self.u_d["L"].loc[~self.u_d["L"].status.isin([9, 1, 7, 2]), :]
         # definition of busbar coupler is if r, x, b are all zero, but some statuses are wrong, check for those
         lines = lines.drop(lines.loc[(lines.r == 0) & (lines.x == 0) & (lines.b == 0)].index)
         # also drop lines with x < 0 as they will be modeled as impedances

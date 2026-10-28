@@ -407,10 +407,7 @@ def elements_on_path(mg, path, element="line"):
 
        **path** (list) - List of connected buses.
 
-       **element** (string, "l") - element type
-
-       **multi** (boolean, True) - True: Applied on a NetworkX MultiGraph
-                                   False: Applied on a NetworkX Graph
+       **element** (string, "line") - element type
 
     OUTPUT:
        **elements** (list) - Returns a list of all lines on the path.
