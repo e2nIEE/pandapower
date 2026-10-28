@@ -965,7 +965,7 @@ class SlackGenPlacement(DiagnosticFunction[pandapowerNet, dict[str, float]]):
         orig_gen = copy.copy(net.gen)
 
         def _calculate_losses(net):
-            idx = net.gen.loc[net.gen.slack == True].index
+            idx = net.gen.loc[net.gen.slack].index
             res = np.linalg.norm(net.res_gen.loc[idx].p_mw + net.res_gen.loc[idx].q_mvar * 1j)
             res += np.linalg.norm(net.res_ext_grid.p_mw + net.res_ext_grid.q_mvar * 1j)
             return res
