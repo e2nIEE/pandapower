@@ -456,4 +456,3 @@ class TestLineDcResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_line_dc_result_totals(self):
         """Test: aggregated p_mw results are consistent"""
-        pass

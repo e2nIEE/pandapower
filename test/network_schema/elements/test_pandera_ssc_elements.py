@@ -280,4 +280,3 @@ class TestSscResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_ssc_result_totals(self):
         """Test: aggregated reactive power results are consistent"""
-        pass

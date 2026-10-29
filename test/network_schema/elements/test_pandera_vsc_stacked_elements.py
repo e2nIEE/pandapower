@@ -578,9 +578,7 @@ class TestVCSSTACKEDResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_vsc_stacked_result_totals(self):
         """Test: aggregated p_mw / q_mvar results are consistent"""
-        pass
 
     @pytest.mark.skip(reason="Not yet implemented")
     def test_vsc_stacked_internal_results(self):
         """Test: internal vm/va and dc quantities are within expected ranges"""
-        pass
