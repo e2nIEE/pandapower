@@ -427,12 +427,12 @@ def elements_on_path(mg, path, element="line"):
         raise ValueError(f"Invalid element type {element}")
     if isinstance(mg, nx.MultiGraph):
         return [
-            edge[1] for b1, b2 in pairwise(path, path[1:]) for edge in mg.get_edge_data(b1, b2) if edge[0] == element
+            edge[1] for b1, b2 in pairwise((path, path[1:])) for edge in mg.get_edge_data(b1, b2) if edge[0] == element
         ]
     else:
         return [
             mg.get_edge_data(b1, b2)["key"][1]
-            for b1, b2 in pairwise(path, path[1:])
+            for b1, b2 in pairwise((path, path[1:]))
             if mg.get_edge_data(b1, b2)["key"][0] == element
         ]
 
