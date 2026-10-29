@@ -2,7 +2,6 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
-import sys
 
 import numpy as np
 import pytest
@@ -128,10 +127,6 @@ def test_opt_lav():
         raise AssertionError("Estimation failed!")
 
 
-@pytest.mark.skipif(
-    (sys.version_info[0] == 3) & (sys.version_info[1] <= 7),
-    reason="This test can fail under Python 3.7 dependingon the processing power of the hardware used.",
-)
 def test_ql_qc():
     net = case9()
     net.sn_mva = 1.0
