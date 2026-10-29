@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 import numpy as np
 import pandas as pd
 
-from pandapower.network import pandapowerNet
 from pandapower.io_utils import from_dict_of_dfs, to_dict_of_dfs
+from pandapower.network import pandapowerNet
 
 try:
     import psycopg
