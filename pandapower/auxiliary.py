@@ -3,41 +3,41 @@
 
 __all__ = [
     "AlgorithmUnknown",
-    "combine_X012",
     "ControllerNotConverged",
-    "element_types_to_ets",
-    "empty_defaults_per_dtype",
-    "ensure_iterability",
-    "ets_to_element_types",
     "GeoAccessor",
-    "get_free_id",
-    "get_indices",
-    "get_vsc_stacked_names",
     "I0_from_V012",
     "I1_from_V012",
     "I2_from_V012",
     "I_from_SV_elementwise",
     "I_from_V",
     "LoadflowNotConverged",
-    "log_to_level",
     "NetCalculationNotConverged",
     "OPFNotConverged",
+    "SVabc_from_SV012",
+    "S_from_VI_elementwise",
+    "V1_from_ppc",
+    "V_from_I",
+    "X012_to_X0",
+    "X012_to_X1",
+    "X012_to_X2",
+    "combine_X012",
+    "element_types_to_ets",
+    "empty_defaults_per_dtype",
+    "ensure_iterability",
+    "ets_to_element_types",
+    "get_free_id",
+    "get_indices",
+    "get_vsc_stacked_names",
+    "log_to_level",
     "phase_shift_unit_operator",
     "phase_to_sequence",
     "ppException",
     "read_from_net",
-    "S_from_VI_elementwise",
     "sequence_to_phase",
     "soft_dependency_error",
-    "SVabc_from_SV012",
-    "V1_from_ppc",
-    "V_from_I",
     "version_check",
     "warn_and_fix_parameter_renaming",
     "write_to_net",
-    "X012_to_X0",
-    "X012_to_X1",
-    "X012_to_X2",
 ]
 
 import numbers
@@ -1604,7 +1604,7 @@ def V1_from_ppc(ppc: PyPowerNetwork) -> NDArray[NumpyDType_co]:
     return np.transpose(np.array(ppc["bus"][:, VM] * np.exp(1j * np.deg2rad(ppc["bus"][:, VA]))))
 
 
-def V_from_I(Y: NDArray[NumpyDType_co], I: NDArray[NumpyDType_co]) -> NDArray[NumpyDType_co]:  # noqa: E741
+def V_from_I(Y: NDArray[NumpyDType_co], I: NDArray[NumpyDType_co]) -> NDArray[NumpyDType_co]:
     return np.transpose(np.array(sp.sparse.linalg.spsolve(Y, I)))
 
 
@@ -1620,7 +1620,7 @@ def I_from_V(Y: Any, V: NDArray[NumpyDType_co]) -> NDArray[NumpyDType_co]:
 # =============================================================================
 
 
-def S_from_VI_elementwise(V: NDArray[NumpyDType_co], I: NDArray[NumpyDType_co]) -> NDArray[NumpyDType_co]:  # noqa: E741
+def S_from_VI_elementwise(V: NDArray[NumpyDType_co], I: NDArray[NumpyDType_co]) -> NDArray[NumpyDType_co]:
     return np.multiply(V, I.conjugate())
 
 

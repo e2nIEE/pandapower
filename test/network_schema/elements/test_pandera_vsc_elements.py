@@ -280,9 +280,7 @@ class TestVscResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_vsc_power_results(self):
         """Test: Power results are consistent"""
-        pass
 
     @pytest.mark.skip(reason="Not yet implemented")
     def test_vsc_voltages(self):
         """Test: AC/DC voltages are within valid ranges"""
-        pass
