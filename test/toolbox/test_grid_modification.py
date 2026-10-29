@@ -10,25 +10,25 @@ from pandas._testing import assert_series_equal
 
 from pandapower.create import (
     create_buses,
+    create_ext_grid,
+    create_gen,
     create_group,
     create_group_from_dict,
+    create_impedance,
+    create_lines,
+    create_load,
     create_loads,
     create_measurement,
     create_poly_cost,
     create_pwl_cost,
+    create_sgen,
+    create_switch,
     create_transformer,
     create_transformer3w,
     create_transformer3w_from_parameters,
     create_transformer_from_parameters,
-    create_xward,
-    create_ext_grid,
-    create_gen,
-    create_impedance,
-    create_lines,
-    create_load,
-    create_sgen,
-    create_switch,
     create_ward,
+    create_xward,
 )
 from pandapower.groups import count_group_elements, group_element_index
 from pandapower.network import pandapowerNet
@@ -42,7 +42,7 @@ from pandapower.run import runpp
 from pandapower.std_types import change_std_type
 from pandapower.toolbox.comparison import dataframes_equal, nets_equal
 from pandapower.toolbox.data_modification import add_zones_to_elements, reindex_buses
-from pandapower.toolbox.element_selection import count_elements, pp_elements, get_connected_elements_dict
+from pandapower.toolbox.element_selection import count_elements, get_connected_elements_dict, pp_elements
 from pandapower.toolbox.grid_modification import (
     close_switch_at_line_with_two_open_switches,
     create_replacement_switch_for_branch,
@@ -139,7 +139,7 @@ def test_drop_inactive_elements_with_empty_net():
     net = pandapowerNet(name="test_drop_inactive_elements_with_empty_net")
     try:
         drop_inactive_elements(net)
-    except Exception:
+    except Exception:  # noqa: BLE001
         pytest.fail("Unexpected Exception.")
 
 
