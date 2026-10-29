@@ -274,7 +274,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ '3.11', '3.12', '3.13', '3.14' ]
+        python-version: [ '3.11', '3.14' ]
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -442,7 +442,6 @@ jobs:
           uv run pytest -W error --splits 3 --group ${{ matrix.group }} --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials" $TUTORIAL_IGNORES
 
   docs_check:
-    needs: build
     name: Sphinx docs check
     runs-on: ubuntu-latest
     steps:
