@@ -861,6 +861,61 @@ def test_trafo_neutral_earthing_impedance(inverse_y):
     assert with_rn.ikss_ka < base.ikss_ka
 
 
+@pytest.mark.parametrize("vector_group", ("Dyn", "Yyn", "Yzn"))
+def test_trafo_lv_zero_sequence_independent_of_sn_mva(vector_group):
+    # On the LV side of these vector groups the zero-sequence network consists of
+    # the transformer shunt only (the HV side is a delta or an unearthed star), so
+    # the zero-sequence impedance at the LV bus must not depend on the per-unit
+    # base net.sn_mva, and a neutral earthing impedance Z_N must add exactly 3*Z_N.
+    zn = 0.01 + 0.02j
+
+    def lv_z0(sn_mva, rn_ohm=0.0, xn_ohm=0.0):
+        net = pandapowerNet(name="test_trafo_lv_zero_sequence_independent_of_sn_mva", sn_mva=sn_mva)
+        b_hv, b_lv = create_buses(net, 2, vn_kv=[20.0, 0.4])
+        create_ext_grid(
+            net,
+            b_hv,
+            s_sc_max_mva=1000.0,
+            s_sc_min_mva=1000.0,
+            rx_max=0.1,
+            rx_min=0.1,
+            x0x_max=1.0,
+            x0x_min=1.0,
+            r0x0_max=0.1,
+            r0x0_min=0.1,
+        )
+        create_transformer_from_parameters(
+            net,
+            b_hv,
+            b_lv,
+            sn_mva=0.63,
+            vn_hv_kv=20.0,
+            vn_lv_kv=0.4,
+            vk_percent=6.0,
+            vkr_percent=1.0,
+            pfe_kw=0.0,
+            i0_percent=0.0,
+            vector_group=vector_group,
+            shift_degree=0.0,
+            vk0_percent=6.0,
+            vkr0_percent=1.0,
+            mag0_percent=100.0,
+            mag0_rx=0.0,
+            si0_hv_partial=0.9,
+            rn_ohm=rn_ohm,
+            xn_ohm=xn_ohm,
+        )
+        calc_sc(net, fault="1ph", case="max", bus=b_lv)
+        return complex(net.res_bus_sc.at[b_lv, "rk0_ohm"], net.res_bus_sc.at[b_lv, "xk0_ohm"])
+
+    z0_ref = lv_z0(1.0)
+    for sn_mva in (1.0, 10.0, 100.0):
+        z0 = lv_z0(sn_mva)
+        z0_zn = lv_z0(sn_mva, rn_ohm=zn.real, xn_ohm=zn.imag)
+        assert np.isclose(z0, z0_ref, rtol=1e-9, atol=0)
+        assert np.isclose(z0_zn - z0, 3 * zn, rtol=1e-9, atol=0)
+
+
 @pytest.mark.parametrize("inverse_y", (True, False))
 def test_zigzag_earthing_transformer(inverse_y):
     # A zigzag earthing transformer (ZNyn / ZNd) provides the earth reference on

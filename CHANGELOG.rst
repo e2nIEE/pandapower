@@ -14,6 +14,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] zero-sequence model of ``Yzn`` transformers: the LV zero-sequence shunt is now the zigzag zero-sequence impedance (``vk0_percent``) plus ``3*(rn_ohm + j*xn_ohm)``; it previously included the magnetising branch, was scaled by ``1.1547 * net.sn_mva`` and therefore depended on ``net.sn_mva`` (results now match the PowerFactory references in the test suite for any ``net.sn_mva``). For ``Dyn`` the neutral earthing impedance is added in series with the LV shunt after the T/pi conversion, and in ``runpp_3ph`` it is referred to the per-phase base ``3*net.sn_mva``, so the earthed winding sees the full ``3*Z_N``.
 - [FIXED] ``create_load_dc`` now allocates and validates indexes against ``load_dc``, preventing overwrites and false ``source_dc`` conflicts.
 - [FIXED] OPF cleaned up in case of non convergence
 - [FIXED] ``create_continuous_bus_index`` (and other toolbox functions relying on ``element_bus_tuples``) now also update the ``bus`` column of the ``ssc`` element table; it was previously missing from the list of bus-referencing elements
