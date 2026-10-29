@@ -1936,83 +1936,45 @@ def SVabc_from_SV012(
 
 
 def _add_dcline_gens(net: pandapowerNet) -> None:
-    dcline = net.dcline.copy()
-    dcline["scaling"] = 1.0
-    dcline["slack"] = False
-    dcline["controllable"] = None
-    dcline["reactive_capability_curve"] = False
-    dcline["vn_kv"] = net.bus.loc[net.dcline.from_bus, "vn_kv"].values
+    n_dcline: int = len(net.dcline)
 
-    p_mw = np.abs(dcline.p_mw)
-    p_loss = p_mw * (1 - dcline.loss_percent / 100) - dcline.loss_mw
-    max_p_mw = dcline.max_p_mw.values
+    dcline = net.dcline
+    p_mw: NDArray[np.float64] = np.abs(dcline.p_mw.values)
+    p_loss: NDArray[np.float64] = p_mw * (1.0 - dcline.loss_percent.values / 100.0) - dcline.loss_mw.values
+    max_p_mw: NDArray[np.float64] = dcline.max_p_mw.values
+    mask_positive: NDArray[np.bool_] = dcline.p_mw.values > 0
 
-    mask_positive = dcline.p_mw.values > 0
+    # p limits and the nominal voltage are identical for the from- and the to-bus generator
+    min_p_mw: NDArray[np.float64] = np.where(mask_positive, 0.0, -max_p_mw)
+    max_p_mw_gen: NDArray[np.float64] = np.where(mask_positive, max_p_mw, 0.0)
+    vn_kv: NDArray[np.float64] = net.bus.loc[dcline.from_bus.values, "vn_kv"].values
+    in_service: NDArray[np.bool_] = dcline.in_service.values.astype(bool)
 
-    n_gen = len(dcline) * 2
+    n_gen: int = 2 * n_dcline
+    new_columns: dict[str, NDArray[Any]] = {
+        "bus": np.concatenate((dcline.to_bus.values, dcline.from_bus.values)).astype(np.int64),
+        "p_mw": np.concatenate((np.where(mask_positive, p_loss, -p_mw),
+                                np.where(mask_positive, -p_mw, p_loss))).astype(np.float64),
+        "vm_pu": np.concatenate((dcline.vm_to_pu.values, dcline.vm_from_pu.values)).astype(np.float64),
+        "min_p_mw": np.concatenate((min_p_mw, min_p_mw)).astype(np.float64),
+        "max_p_mw": np.concatenate((max_p_mw_gen, max_p_mw_gen)).astype(np.float64),
+        "max_q_mvar": np.concatenate((dcline.max_q_to_mvar.values,
+                                      dcline.max_q_from_mvar.values)).astype(np.float64),
+        "min_q_mvar": np.concatenate((dcline.min_q_to_mvar.values,
+                                      dcline.min_q_from_mvar.values)).astype(np.float64),
+        "in_service": np.concatenate((in_service, in_service)),
+        "scaling": np.ones(n_gen, dtype=np.float64),
+        "slack": np.zeros(n_gen, dtype=bool),
+        "controllable": np.zeros(n_gen, dtype=bool),
+        "reactive_capability_curve": np.zeros(n_gen, dtype=bool),
+        "vn_kv": np.concatenate((vn_kv, vn_kv)).astype(np.float64),
+    }
 
-    # Neue DataFrame-Zeilen vorbereiten
-    new_gens = pd.DataFrame(index=range(n_gen), columns=net.gen.columns)
-
-    # to_bus Generatoren
-    new_gens.iloc[:len(dcline), new_gens.columns.get_indexer([
-        'bus', 'p_mw', 'vm_pu', 'min_p_mw', 'max_p_mw',
-        'max_q_mvar', 'min_q_mvar', 'in_service',
-        'scaling', 'slack', 'controllable', 'reactive_capability_curve', 'vn_kv'
-    ])] = list(zip(
-        dcline["to_bus"],
-        np.where(mask_positive, p_loss, -p_mw),
-        dcline["vm_to_pu"],
-        np.where(mask_positive, 0, -max_p_mw),
-        np.where(mask_positive, max_p_mw, 0),
-        dcline["max_q_to_mvar"],
-        dcline["min_q_to_mvar"],
-        dcline["in_service"],
-        dcline["scaling"],
-        dcline["slack"],
-        dcline["controllable"],
-        dcline["reactive_capability_curve"],
-        dcline["vn_kv"]
-    ))
-
-    # from_bus Generatoren
-    new_gens.iloc[len(dcline):, new_gens.columns.get_indexer([
-        'bus', 'p_mw', 'vm_pu', 'min_p_mw', 'max_p_mw',
-        'max_q_mvar', 'min_q_mvar', 'in_service',
-        'scaling', 'slack', 'controllable', 'reactive_capability_curve', 'vn_kv'
-    ])] = list(zip(
-        dcline["from_bus"],
-        np.where(mask_positive, -p_mw, p_loss),
-        dcline["vm_from_pu"],
-        np.where(mask_positive, 0, -max_p_mw),
-        np.where(mask_positive, max_p_mw, 0),
-        dcline["max_q_from_mvar"],
-        dcline["min_q_from_mvar"],
-        dcline["in_service"],
-        dcline["scaling"],
-        dcline["slack"],
-        dcline["controllable"],
-        dcline["reactive_capability_curve"],
-        dcline["vn_kv"]
-    ))
-
-    new_gens = new_gens.astype({
-        "bus": "int",
-        "p_mw": "float",
-        "vm_pu": "float",
-        "min_p_mw": "float",
-        "max_p_mw": "float",
-        "max_q_mvar": "float",
-        "min_q_mvar": "float",
-        "in_service": "bool",
-        "scaling": "float",
-        "slack": "bool",
-        "controllable": "bool",
-        "reactive_capability_curve": "bool",
-        "vn_kv": "float"
-    })
-    new_gens.index += net.gen.index.max()+1
-    net.gen = pd.concat([net.gen, new_gens.dropna(axis=1, how="all")])
+    # only add columns that also exist in net.gen and keep the column order of net.gen
+    columns = [col for col in net.gen.columns if col in new_columns]
+    new_gens = pd.DataFrame({col: new_columns[col] for col in columns}, index=range(n_gen))
+    new_gens.index += net.gen.index.max() + 1
+    net.gen = pd.concat([net.gen, new_gens])
 
 
 def _add_dcline_gens_old(net: pandapowerNet) -> None:
