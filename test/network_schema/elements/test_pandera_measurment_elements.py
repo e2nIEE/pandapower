@@ -115,10 +115,12 @@ class TestMeasurementRequiredFields:
 
     @pytest.mark.parametrize(
         "element_type, side",
-        itertools.chain(
-            itertools.product(["line"], ["from", "to"]),
-            itertools.product(["trafo"], ["hv", "lv"]),
-            itertools.product(["trafo3w"], ["hv", "mv", "lv"]),
+        list(
+            itertools.chain(
+                itertools.product(["line"], ["from", "to"]),
+                itertools.product(["trafo"], ["hv", "lv"]),
+                itertools.product(["trafo3w"], ["hv", "mv", "lv"]),
+            )
         ),
     )
     def test_valid_et_side_combinations(self, element_type, side):
@@ -153,10 +155,12 @@ class TestMeasurementRequiredFields:
 
     @pytest.mark.parametrize(
         "element_type, side",
-        itertools.chain(
-            itertools.product(["line"], ["hv", "mv", "lv"]),
-            itertools.product(["trafo"], ["from", "to", "mv"]),
-            itertools.product(["trafo3w"], ["from", "to"]),
+        list(
+            itertools.chain(
+                itertools.product(["line"], ["hv", "mv", "lv"]),
+                itertools.product(["trafo"], ["from", "to", "mv"]),
+                itertools.product(["trafo3w"], ["from", "to"]),
+            )
         ),
     )
     def test_invalid_et_side_combiantions(self, element_type, side):

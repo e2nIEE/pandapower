@@ -111,6 +111,17 @@ else:
 logger = logging.getLogger(__name__)
 
 
+def _select_json_object_columns(df):
+    def selected(dtype):
+        if isinstance(dtype, pd.ArrowDtype):
+            dtype = dtype.numpy_dtype
+        return pd.api.types.is_object_dtype(dtype) or (
+            isinstance(dtype, pd.StringDtype) and dtype.na_value is not pd.NA
+        )
+
+    return df.iloc[:, [selected(dtype) for dtype in df.dtypes]]
+
+
 def coords_to_df(value, geotype="line"):
     columns = ["x", "y", "coords"] if geotype == "bus" else ["coords"]
     geo = pd.DataFrame(columns=columns, index=value.index)
@@ -668,7 +679,7 @@ class FromSerializableRegistry:
         if "geo" in df.columns:
             df["geo"] = df["geo"].dropna().apply(json.dumps).apply(geojson.loads)
 
-        df_obj = df.select_dtypes(include=["object"])
+        df_obj = _select_json_object_columns(df)
         for col in df_obj:
             df[col] = df[col].apply(
                 partial(
@@ -777,18 +788,16 @@ class FromSerializableRegistry:
             if "interpolator_kind" in dt:
                 interpolator_kind = dt["interpolator_kind"]
 
-            lsc = LogSplineCharacteristic(
-                net=None,
-                x_values=x_vals,
-                y_values=y_vals,
-                interpolator_kind=interpolator_kind,
-                table="characteristic",
-                **kwarg,
+            return LogSplineCharacteristic.from_dict(
+                {
+                    "_x_vals": x_vals,
+                    "_y_vals": y_vals,
+                    "index": index,
+                    "kwargs": kwarg,
+                    "interpolator_kind": interpolator_kind,
+                    "_interpolator": None,
+                }
             )
-            lsc._x_vals = x_vals
-            lsc._y_vals = y_vals
-            lsc.index = index
-            return lsc
 
     @from_serializable.register(class_name="method")
     def method(self):

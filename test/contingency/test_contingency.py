@@ -25,7 +25,6 @@ from pandapower.create import (
     create_ext_grid,
     create_gen,
     create_lines,
-    create_lines_from_parameters,
     create_load,
     create_transformer_from_parameters,
     create_transformers_from_parameters,
@@ -556,15 +555,23 @@ def get_net(request):
     add_parallel = True
 
     if add_parallel:
-        create_lines_from_parameters(
+        create_lines(
             net,
             net.line.from_bus.values,
             net.line.to_bus.values,
             net.line.length_km.values,
-            net.line.r_ohm_per_km.values,
-            net.line.x_ohm_per_km.values,
-            net.line.c_nf_per_km.values,
-            net.line.max_i_ka.values,
+            line_params={
+                "r_ohm_per_km": net.line.r_ohm_per_km.values,
+                "x_ohm_per_km": net.line.x_ohm_per_km.values,
+                "c_nf_per_km": net.line.c_nf_per_km.values,
+                "max_i_ka": net.line.max_i_ka.values,
+                "g_us_per_km": 0.0,
+                "r0_ohm_per_km": np.nan,
+                "x0_ohm_per_km": np.nan,
+                "c0_nf_per_km": np.nan,
+                "g0_us_per_km": np.nan,
+                "endtemp_degree": np.nan,
+            },
             max_loading_percent=net.line.max_loading_percent.values,
         )
 

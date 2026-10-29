@@ -2,6 +2,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import os
+import re
 
 import numpy as np
 import pandas as pd
@@ -15,6 +16,26 @@ from test import test_path
 
 folder = os.path.join(test_path, "test_files", "old_versions")
 found_versions = [file.split("_")[1].split(".json")[0] for _, _, files in os.walk(folder) for file in files]
+LEGACY_FORMAT_VERSIONS = {
+    "1.2.0",
+    "1.2.2",
+    "1.3.0",
+    "1.3.1",
+    "1.4.0",
+    "1.4.1",
+    "1.4.2",
+    "1.4.3",
+    "1.5.0",
+    "1.5.1",
+    "1.6.0",
+    "1.6.1",
+    "2.0.0",
+    "2.0.1",
+}
+LEGACY_FORMAT_WARNING = (
+    "This net is saved in older format, which will not be supported in future.\r\n"
+    "Please resave your grid using the current pandapower version."
+)
 
 
 @pytest.mark.slow
@@ -24,11 +45,22 @@ def test_convert_format(version):
     if not os.path.isfile(filename):
         raise ValueError(f"File for version {version} does not exist")
     try:
-        net = from_json(filename, convert=False)
+        if version in LEGACY_FORMAT_VERSIONS:
+            with pytest.warns(
+                DeprecationWarning,
+                match=rf"\A{re.escape(LEGACY_FORMAT_WARNING)}\Z",
+            ) as record:
+                net = from_json(filename, convert=False)
+        else:
+            net = from_json(filename, convert=False)
         if "version" in net and vs.parse(str(net.version)) > vs.parse("2.0.1"):
             _ = from_json(filename, elements_to_deserialize=["bus", "load"])
     except Exception:
         raise UserWarning(f"Can not load network saved in pandapower version {version}")
+    if version in LEGACY_FORMAT_VERSIONS:
+        assert len(record) == 1
+        assert record[0].category is DeprecationWarning
+        assert str(record[0].message) == LEGACY_FORMAT_WARNING
     vm_pu_old = net.res_bus["vm_pu"].copy()
     convert_format(net)
     try:

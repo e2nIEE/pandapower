@@ -545,7 +545,7 @@ def fuse_test_net4():
         from_buses=[1, 2, 3, 1, 5, 6, 7, 6],
         to_buses=[2, 3, 4, 5, 6, 7, 8, 4],
         length_km=[0.2, 0.2, 0.2, 0.1, 0.1, 0.1, 0.1, 0.1],
-        std_type="94-AL1/15-ST1A 0.4",
+        line_params="94-AL1/15-ST1A 0.4",
     )
 
     net.line["endtemp_degree"] = 250

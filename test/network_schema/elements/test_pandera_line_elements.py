@@ -71,7 +71,7 @@ class TestLineRequiredFields:
         create_buses(net, 2, 0.4)
         create_buses(net, 1, 0.4, index=42)  # ensure FK-positive for 42
 
-        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, line_params=STD_TYPE)
 
         net.line[parameter] = valid_value
         validate_network(net)
@@ -99,7 +99,7 @@ class TestLineRequiredFields:
         net = pandapowerNet(name="test_invalid_required_values")
         create_buses(net, 2, 0.4)
 
-        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, line_params=STD_TYPE)
 
         net.line[parameter] = invalid_value
         with pytest.raises(pa.errors.SchemaError):
@@ -114,7 +114,7 @@ class TestLineOptionalFields:
         net = pandapowerNet(name="test_all_optional_fields_valid")
         create_buses(net, 2, 0.4)
 
-        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, line_params=STD_TYPE)
 
         # Optional text fields
         net.line["name"] = pd.Series(["Line A"], dtype=pd.StringDtype())
@@ -176,12 +176,12 @@ class TestLineOptionalFields:
             x0_ohm_per_km=[np.nan, np.nan, 0.2],
             c0_nf_per_km=[np.nan, np.nan, 1.0],
             g0_us_per_km=[np.nan, np.nan, 0.0],
-            std_type=STD_TYPE,
+            line_params=STD_TYPE,
         )
 
-        net.line["name"].iat[0] = pd.NA
-        net.line["std_type"].iat[1] = pd.NA
-        net.line["geo"].iat[2] = pd.NA
+        net.line.iat[0, net.line.columns.get_loc("name")] = pd.NA
+        net.line.iat[1, net.line.columns.get_loc("std_type")] = pd.NA
+        net.line.iat[2, net.line.columns.get_loc("geo")] = pd.NA
 
         validate_network(net)
 
@@ -230,7 +230,7 @@ class TestLineOptionalFields:
         net = pandapowerNet(name="test_valid_optional_values")
         create_buses(net, 2, 0.4)
 
-        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, line_params=STD_TYPE)
 
         # Satisfy tdpf group to avoid dependency failures when setting tdpf-related columns
         net.line["tdpf"] = pd.Series([True], dtype="boolean")
@@ -317,7 +317,7 @@ class TestLineOptionalFields:
         net = pandapowerNet(name="test_invalid_optional_values")
         create_buses(net, 2, 0.4)
 
-        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, line_params=STD_TYPE)
 
         # Provide complete tdpf group so only the target parameter triggers failure
         net.line["tdpf"] = pd.Series([True], dtype=pd.BooleanDtype())
@@ -346,7 +346,7 @@ class TestLineForeignKey:
         net = pandapowerNet(name="test_invalid_bus_index")
         create_buses(net, 2, 0.4)
 
-        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, line_params=STD_TYPE)
 
         net.line["from_bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
@@ -357,7 +357,7 @@ class TestLineForeignKey:
         net = pandapowerNet(name="test_invalid_to_bus_index")
         create_buses(net, 2, 0.4)
 
-        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, line_params=STD_TYPE)
 
         net.line["to_bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
@@ -374,7 +374,7 @@ class TestLineForeignKey:
             to_buses=[42, 100, 10],
             length_km=[1.0, 2.0, 1.5],
             in_service=[True, True, False],
-            std_type=STD_TYPE,
+            line_params=STD_TYPE,
         )
 
         validate_network(net)

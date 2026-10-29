@@ -11,9 +11,17 @@ Change Log
 - [ADDED] create function for trafo characteristic entries
 - [ADDED] converter for trafo characteristics
 - [FIXED] create_gen and create_gens now use connected bus voltage limits as generator voltage-limit defaults.
+- [FIXED] three-phase power flow now rejects unsupported two-winding transformer vector groups consistently.
+- [FIXED] SQLite network I/O now closes connections after transaction completion.
+- [FIXED] PowerModels storage results now preserve each storage label across time steps.
+- [FIXED] PowerModels TNEP built-line results now use Boolean masks.
+- [FIXED] LogSpline characteristics now restore serialized logarithmic values without reapplying the logarithm.
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] Direct ``create_lines`` callers now use the current ``line_params`` keyword.
+- [FIXED] Kerber network creation now passes branch-out line parameters through ``line_params``.
+- [CHANGED] Legacy JSON fixture tests now assert the expected format warning.
 - [FIXED] ``create_load_dc`` now allocates and validates indexes against ``load_dc``, preventing overwrites and false ``source_dc`` conflicts.
 - [FIXED] OPF cleaned up in case of non convergence
 - [FIXED] ``create_continuous_bus_index`` (and other toolbox functions relying on ``element_bus_tuples``) now also update the ``bus`` column of the ``ssc`` element table; it was previously missing from the list of bus-referencing elements

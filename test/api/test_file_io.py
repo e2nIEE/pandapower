@@ -4,6 +4,8 @@
 import copy
 import json
 import os
+import sqlite3
+from contextlib import closing
 from importlib.util import find_spec
 
 import geojson
@@ -12,7 +14,7 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal, assert_series_equal
 
-from pandapower import pandapowerNet
+from pandapower import pandapowerNet, sql_io
 from pandapower.control import (
     Characteristic,
     ConstControl,
@@ -220,6 +222,153 @@ def test_sqlite_workaround(net_in, tmp_path):
     to_sqlite(net_in, filename)
     net_out = from_sqlite(filename)
     assert_net_equal(net_in, net_out, exclude_elms=["std_types"])
+
+
+class _RecordingSQLiteConnection(sqlite3.Connection):
+    def __exit__(self, *args):
+        result = super().__exit__(*args)
+        self.events.append("exit")
+        return result
+
+    def close(self):
+        self.events.append("close")
+        return super().close()
+
+
+def _recording_sqlite_connect(original_connect, events, connections=None):
+    def connect(*args, **kwargs):
+        connection = original_connect(*args, factory=_RecordingSQLiteConnection, **kwargs)
+        connection.events = events
+        if connections is not None:
+            connections.append(connection)
+        return connection
+
+    return connect
+
+
+@pytest.mark.parametrize("public_function", ["writer", "reader"])
+def test_sqlite_public_functions_close_connections(net_in, tmp_path, monkeypatch, public_function):
+    original_connect = sqlite3.connect
+    events = []
+    connections = []
+    filename = tmp_path / "testfile.db"
+
+    if public_function == "writer":
+        monkeypatch.setattr(sql_io.sqlite3, "connect", _recording_sqlite_connect(original_connect, events, connections))
+        to_sqlite(net_in, filename)
+        assert len(connections) == 1
+        assert events == ["exit", "close"]
+        with pytest.raises(sqlite3.ProgrammingError):
+            connections[0].execute("SELECT 1")
+        with closing(original_connect(filename)) as connection:
+            assert connection.execute("SELECT COUNT(*) FROM bus").fetchone()[0] == len(net_in.bus)
+    else:
+        with closing(original_connect(filename)) as opened_connection, opened_connection as connection:
+            for name, table in sql_io.to_dict_of_dfs(net_in, include_results=False).items():
+                table.to_sql(name, connection)
+        monkeypatch.setattr(sql_io.sqlite3, "connect", _recording_sqlite_connect(original_connect, events, connections))
+        net_out = from_sqlite(filename)
+        assert len(connections) == 1
+        assert_net_equal(net_in, net_out, exclude_elms=["std_types"])
+        assert events == ["exit", "close"]
+        with pytest.raises(sqlite3.ProgrammingError):
+            connections[0].execute("SELECT 1")
+
+
+@pytest.mark.parametrize("failure", ["writer_conversion", "reader_conversion"])
+def test_sqlite_public_functions_close_after_error(net_in, tmp_path, monkeypatch, failure):
+    original_connect = sqlite3.connect
+    events = []
+    connections = []
+    connect = _recording_sqlite_connect(original_connect, events, connections)
+    monkeypatch.setattr(sql_io.sqlite3, "connect", connect)
+    filename = tmp_path / "testfile.db"
+
+    if failure == "writer_conversion":
+        injected = RuntimeError("injected serialization failure")
+        monkeypatch.setattr(sql_io, "to_dict_of_dfs", lambda *args, **kwargs: (_ for _ in ()).throw(injected))
+        with pytest.raises(RuntimeError) as exc_info:
+            to_sqlite(net_in, filename)
+    else:
+        injected = ValueError("injected reader failure")
+        monkeypatch.setattr(sql_io, "from_dict_of_dfs", lambda *args, **kwargs: (_ for _ in ()).throw(injected))
+        with closing(original_connect(filename)) as opened_connection, opened_connection as connection:
+            connection.execute('CREATE TABLE marker ("index" INTEGER)')
+        with pytest.raises(ValueError) as exc_info:
+            from_sqlite(filename)
+
+    assert exc_info.value is injected
+    assert events == ["exit", "close"]
+    with pytest.raises(sqlite3.ProgrammingError):
+        connections[0].execute("SELECT 1")
+
+
+def test_sqlite_transaction_completes_before_close(net_in, tmp_path, monkeypatch):
+    original_connect = sqlite3.connect
+    events = []
+    connections = []
+    monkeypatch.setattr(sql_io.sqlite3, "connect", _recording_sqlite_connect(original_connect, events, connections))
+    filename = tmp_path / "testfile.db"
+    with closing(original_connect(filename)) as opened_connection, opened_connection as connection:
+        connection.execute("CREATE TABLE sentinel (value TEXT)")
+        connection.execute("INSERT INTO sentinel VALUES ('committed')")
+
+    injected = RuntimeError("injected pending write failure")
+
+    class PendingWrite:
+        def to_sql(self, name, connection):
+            connection.execute("INSERT INTO sentinel VALUES ('pending')")
+            raise injected
+
+    monkeypatch.setattr(sql_io, "to_dict_of_dfs", lambda *args, **kwargs: {"pending": PendingWrite()})
+    with pytest.raises(RuntimeError) as exc_info:
+        to_sqlite(net_in, filename)
+    assert exc_info.value is injected
+    assert events == ["exit", "close"]
+
+    with pytest.raises(sqlite3.ProgrammingError):
+        connections[0].execute("SELECT 1")
+    with closing(original_connect(filename)) as connection:
+        assert connection.execute("SELECT value FROM sentinel").fetchall() == [("committed",)]
+
+
+def test_sqlite_transaction_commits_successful_pending_write(net_in, tmp_path, monkeypatch):
+    original_connect = sqlite3.connect
+    events = []
+    connections = []
+    monkeypatch.setattr(sql_io.sqlite3, "connect", _recording_sqlite_connect(original_connect, events, connections))
+    filename = tmp_path / "testfile.db"
+    with closing(original_connect(filename)) as opened_connection, opened_connection as connection:
+        connection.execute("CREATE TABLE sentinel (value TEXT)")
+        connection.execute("INSERT INTO sentinel VALUES ('committed')")
+
+    class SuccessfulPendingWrite:
+        def to_sql(self, name, connection):
+            connection.execute("INSERT INTO sentinel VALUES ('pending')")
+
+    monkeypatch.setattr(sql_io, "to_dict_of_dfs", lambda *args, **kwargs: {"pending": SuccessfulPendingWrite()})
+    to_sqlite(net_in, filename)
+    assert events == ["exit", "close"]
+    with pytest.raises(sqlite3.ProgrammingError):
+        connections[0].execute("SELECT 1")
+    with closing(original_connect(filename)) as connection:
+        assert connection.execute("SELECT value FROM sentinel").fetchall() == [("committed",), ("pending",)]
+
+
+@pytest.mark.parametrize("public_function", ["writer", "reader"])
+def test_sqlite_connection_open_failure_propagates(net_in, tmp_path, monkeypatch, public_function):
+    connection_error = OSError("injected connection failure")
+
+    def fail_connect(*args, **kwargs):
+        raise connection_error
+
+    monkeypatch.setattr(sql_io.sqlite3, "connect", fail_connect)
+    filename = tmp_path / "testfile.db"
+    operation = to_sqlite if public_function == "writer" else from_sqlite
+    arguments = (net_in, filename) if public_function == "writer" else (filename,)
+    with pytest.raises(OSError) as exc_info:
+        operation(*arguments)
+    assert exc_info.value is connection_error
 
 
 def test_convert_format():  # TODO what is this thing testing ?
@@ -564,6 +713,77 @@ def test_json_multiindex_and_index_names():
         )
 
 
+def test_json_dataframe_object_and_string_columns():
+    index = pd.Index([23, 7, 91], name="record_id")
+    frame = pd.DataFrame(
+        {
+            "nested_object": pd.array([{"items": [1, None]}, None, {"items": []}], dtype=object),
+            "object_text": pd.Series(["alpha", None, "null"], index=index, dtype=object),
+            "default_text": ["beta", None, "NaN"],
+            "nullable_text": pd.array(["gamma", pd.NA, "delta"], dtype="string"),
+            "integer_value": np.array([42, 0, -5], dtype=np.int64),
+            "float_value": np.array([2.25, np.nan, -3.5], dtype=np.float64),
+        },
+        index=index,
+    )
+    frame_before = copy.deepcopy(frame)
+    nested_object_before = copy.deepcopy(frame["nested_object"].tolist())
+    expected_nullable_text = pd.Series(["gamma", pd.NA, "delta"], index=index, dtype="string", name="nullable_text")
+    expected_columns = [
+        "nested_object",
+        "object_text",
+        "default_text",
+        "nullable_text",
+        "integer_value",
+        "float_value",
+    ]
+    expected_source_dtypes = {
+        "nested_object": "object",
+        "object_text": "object",
+        "default_text": "str",
+        "nullable_text": "string",
+        "integer_value": "int64",
+        "float_value": "float64",
+    }
+    expected_decoded_dtypes = {
+        "nested_object": "object",
+        "object_text": "object",
+        "default_text": "object",
+        "nullable_text": "string",
+        "integer_value": "int64",
+        "float_value": "float64",
+    }
+
+    assert frame.columns.tolist() == expected_columns
+    assert frame.index.tolist() == [23, 7, 91]
+    assert frame.index.name == "record_id"
+    assert frame["object_text"].tolist() == ["alpha", None, "null"]
+    assert frame["object_text"].isna().tolist() == [False, True, False]
+    assert {column: str(frame[column].dtype) for column in expected_columns} == expected_source_dtypes
+
+    decoded = from_json_string(to_json({"frame": frame}), convert=False)["frame"]
+
+    assert decoded.columns.tolist() == expected_columns
+    assert decoded.index.tolist() == [23, 7, 91]
+    assert decoded.index.name == "record_id"
+    assert decoded["nested_object"].tolist() == [{"items": [1, None]}, None, {"items": []}]
+    assert decoded["object_text"].tolist() == ["alpha", None, "null"]
+    assert decoded["default_text"].tolist() == ["beta", None, "NaN"]
+    assert_series_equal(decoded["nullable_text"], expected_nullable_text)
+    assert decoded["nullable_text"].iloc[1] is pd.NA
+    assert decoded["nested_object"].isna().tolist() == [False, True, False]
+    assert decoded["object_text"].isna().tolist() == [False, True, False]
+    assert decoded["default_text"].isna().tolist() == [False, True, False]
+    assert decoded["nullable_text"].isna().tolist() == [False, True, False]
+    assert decoded["integer_value"].tolist() == [42, 0, -5]
+    assert decoded["float_value"].tolist()[0] == 2.25
+    assert np.isnan(decoded["float_value"].tolist()[1])
+    assert decoded["float_value"].tolist()[2] == -3.5
+    assert {column: str(decoded[column].dtype) for column in expected_columns} == expected_decoded_dtypes
+    assert frame["nested_object"].tolist() == nested_object_before
+    assert_frame_equal(frame, frame_before)
+
+
 def test_json_dict_of_stuff():
     net1 = case9()
     net2 = case14()
@@ -687,6 +907,58 @@ def test_json_deserialization_hardening():
         _ = from_json(tmp_path)
 
     os.remove(tmp_path)
+
+
+def test_json_object_column_selector_preserves_positions_and_duplicate_labels():
+    from pandapower.io_utils import _select_json_object_columns
+
+    index = pd.Index([23, 7], name="record_id")
+    frame = pd.concat(
+        [
+            pd.Series(["left-a", None], index=index, dtype=object),
+            pd.Series(
+                ["default-a", None],
+                index=index,
+                dtype=pd.StringDtype(storage="python", na_value=np.nan),
+            ),
+            pd.Series([41, 42], index=index, dtype=np.int64),
+            pd.Series(["nullable-a", pd.NA], index=index, dtype="string"),
+            pd.Series(["right-a", "right-b"], index=index, dtype=object),
+        ],
+        axis=1,
+    )
+    frame.columns = ["duplicate", "default_text", "duplicate", "nullable_text", "duplicate"]
+    frame_before = copy.deepcopy(frame)
+
+    selected = _select_json_object_columns(frame)
+
+    assert selected.columns.tolist() == ["duplicate", "default_text", "duplicate"]
+    assert selected.index.tolist() == [23, 7]
+    assert selected.index.name == "record_id"
+    assert selected.iloc[:, 0].tolist() == ["left-a", None]
+    assert selected.iloc[:, 1].dropna().tolist() == ["default-a"]
+    assert selected.iloc[:, 1].isna().tolist() == [False, True]
+    assert selected.iloc[:, 2].tolist() == ["right-a", "right-b"]
+    assert [str(dtype) for dtype in selected.dtypes] == ["object", "str", "object"]
+    assert_frame_equal(frame, frame_before)
+
+
+def test_json_object_column_selector_arrow_dtypes():
+    pa = pytest.importorskip("pyarrow", reason="Arrow selector coverage requires the optional pyarrow dependency")
+    from pandapower.io_utils import _select_json_object_columns
+
+    index = pd.Index([23, 7], name="record_id")
+    arrow_string = pd.Series(["arrow-a", "arrow-b"], index=index, dtype=pd.ArrowDtype(pa.string()))
+    arrow_list = pd.Series([[1, 2], [3]], index=index, dtype=pd.ArrowDtype(pa.list_(pa.int64())))
+    object_values = pd.Series([{"value": 1}, {"value": 2}], index=index, dtype=object)
+    frame = pd.concat([arrow_string, arrow_list, object_values], axis=1)
+    frame.columns = ["arrow_string", "arrow_list", "object_values"]
+
+    selected = _select_json_object_columns(frame)
+
+    assert selected.columns.tolist() == ["arrow_list", "object_values"]
+    assert selected.iloc[:, 0].tolist() == [[1, 2], [3]]
+    assert selected.iloc[:, 1].tolist() == [{"value": 1}, {"value": 2}]
 
 
 if __name__ == "__main__":

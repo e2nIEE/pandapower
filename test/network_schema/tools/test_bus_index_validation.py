@@ -158,7 +158,7 @@ class TestBusIndexValidation:
         """
         net = pandapowerNet(name="test_validates_switch_with_element_column")
         b1, b2 = create_buses(net, 2, vn_kv=0.4)
-        (l1,) = create_lines(net, from_buses=b1, to_buses=b2, length_km=0.1, std_type="NAYY 4x50 SE")
+        (l1,) = create_lines(net, from_buses=b1, to_buses=b2, length_km=0.1, line_params="NAYY 4x50 SE")
         # Create switch from bus to line
         create_switch(net, bus=b1, element=l1, et="l")
 

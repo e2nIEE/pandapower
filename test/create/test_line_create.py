@@ -40,7 +40,11 @@ def test_create_line_conductance():
         "test_conductance",
     )
 
-    line_id = create_line(net, 0, 1, 1.0, "test_conductance", test_kwargs="dummy_string")
+    with pytest.warns(DeprecationWarning) as recorded:
+        line_id = create_line(net, 0, 1, 1.0, "test_conductance", test_kwargs="dummy_string")
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines instead.")
+    ]
     assert net.line.g_us_per_km.at[line_id] == 1
     assert net.line.test_kwargs.at[line_id] == "dummy_string"
 
@@ -52,7 +56,11 @@ def test_create_line():
     b1, b2 = create_buses(net, 2, 110)
 
     # Test basic creation with required parameters
-    line_id = create_line(net, b1, b2, length_km=10.0, std_type="48-AL1/8-ST1A 10.0")
+    with pytest.warns(DeprecationWarning) as recorded:
+        line_id = create_line(net, b1, b2, length_km=10.0, std_type="48-AL1/8-ST1A 10.0")
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines instead.")
+    ]
 
     assert line_id == 0
     assert net.line.at[line_id, "from_bus"] == b1
@@ -65,19 +73,23 @@ def test_create_line():
 
     # Test with all optional parameters
     b3, b4 = create_buses(net, 2, 110)
-    line_id2 = create_line(
-        net,
-        b3,
-        b4,
-        length_km=5.0,
-        std_type="48-AL1/8-ST1A 10.0",
-        name="test_line",
-        in_service=False,
-        df=0.8,
-        parallel=2,
-        max_loading_percent=100.0,
-        geodata=[(1, 1), (2, 2)],
-    )
+    with pytest.warns(DeprecationWarning) as recorded:
+        line_id2 = create_line(
+            net,
+            b3,
+            b4,
+            length_km=5.0,
+            std_type="48-AL1/8-ST1A 10.0",
+            name="test_line",
+            in_service=False,
+            df=0.8,
+            parallel=2,
+            max_loading_percent=100.0,
+            geodata=[(1, 1), (2, 2)],
+        )
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines instead.")
+    ]
 
     assert line_id2 == 1
     assert net.line.at[line_id2, "from_bus"] == b3
@@ -91,13 +103,23 @@ def test_create_line():
 
     # Test with custom index
     b5, b6 = create_buses(net, 2, 110)
-    line_id3 = create_line(net, b5, b6, length_km=3.0, std_type="48-AL1/8-ST1A 10.0", index=5)
+    with pytest.warns(DeprecationWarning) as recorded:
+        line_id3 = create_line(net, b5, b6, length_km=3.0, std_type="48-AL1/8-ST1A 10.0", index=5)
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines instead.")
+    ]
 
     assert line_id3 == 5
 
     # Test with kwargs
     b7, b8 = create_buses(net, 2, 110)
-    line_id4 = create_line(net, b7, b8, length_km=2.0, std_type="48-AL1/8-ST1A 10.0", test_custom_attr="custom_value")
+    with pytest.warns(DeprecationWarning) as recorded:
+        line_id4 = create_line(
+            net, b7, b8, length_km=2.0, std_type="48-AL1/8-ST1A 10.0", test_custom_attr="custom_value"
+        )
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines instead.")
+    ]
 
     assert net.line.at[line_id4, "test_custom_attr"] == "custom_value"
 
@@ -113,7 +135,7 @@ def test_create_lines():
         [b1, b1],
         [b2, b2],
         4,
-        std_type="48-AL1/8-ST1A 10.0",
+        line_params="48-AL1/8-ST1A 10.0",
         test_kwargs="dummy_string",
     )
     assert len(net.line) == 2
@@ -130,7 +152,7 @@ def test_create_lines():
         [b1, b1],
         [b2, b2],
         4,
-        std_type=["48-AL1/8-ST1A 10.0", "NA2XS2Y 1x240 RM/25 6/10 kV"],
+        line_params=["48-AL1/8-ST1A 10.0", "NA2XS2Y 1x240 RM/25 6/10 kV"],
     )
     assert len(net.line) == 2
     assert sum(net.line.std_type == "48-AL1/8-ST1A 10.0") == 1
@@ -146,7 +168,7 @@ def test_create_lines():
         [b1, b1],
         [b2, b2],
         [1.5, 3],
-        std_type="48-AL1/8-ST1A 10.0",
+        line_params="48-AL1/8-ST1A 10.0",
         geodata=[[(1, 1), (2, 2), (3, 3)], [(1, 1), (1, 2)]],
     )
 
@@ -172,7 +194,7 @@ def test_create_lines():
         parallel=1,
         max_loading_percent=90,
         name="test",
-        std_type="48-AL1/8-ST1A 10.0",
+        line_params="48-AL1/8-ST1A 10.0",
     )
 
     assert len(net.line) == 2
@@ -206,7 +228,7 @@ def test_create_lines():
         parallel=[2, 1],
         max_loading_percent=[80, 90],
         name=["test1", "test2"],
-        std_type="48-AL1/8-ST1A 10.0",
+        line_params="48-AL1/8-ST1A 10.0",
     )
 
     assert len(net.line) == 2
@@ -232,9 +254,13 @@ def test_create_line_form_parameters():
     b1, b2 = create_buses(net, 2, 110)
 
     # Test basic creation with required parameters
-    line_id = create_line_from_parameters(
-        net, b1, b2, length_km=10.0, r_ohm_per_km=0.1, x_ohm_per_km=0.05, c_nf_per_km=10.0, max_i_ka=0.5
-    )
+    with pytest.warns(DeprecationWarning) as recorded:
+        line_id = create_line_from_parameters(
+            net, b1, b2, length_km=10.0, r_ohm_per_km=0.1, x_ohm_per_km=0.05, c_nf_per_km=10.0, max_i_ka=0.5
+        )
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines with a LineParams dict instead.")
+    ]
 
     assert line_id == 0
     assert net.line.at[line_id, "from_bus"] == b1
@@ -266,30 +292,34 @@ def test_create_line_form_parameters():
         "mc_joule_per_m_k": 11.0,
     }
     b3, b4 = create_buses(net, 2, 110)
-    line_id2 = create_line_from_parameters(
-        net,
-        b3,
-        b4,
-        length_km=5.0,
-        r_ohm_per_km=0.2,
-        x_ohm_per_km=0.1,
-        c_nf_per_km=20.0,
-        max_i_ka=0.3,
-        name="test_line_params",
-        in_service=False,
-        df=0.8,
-        parallel=2,
-        type="cs",
-        g_us_per_km=0.0,
-        max_loading_percent=100.0,
-        alpha=0.004,
-        temperature_degree_celsius=80,
-        r0_ohm_per_km=0.15,
-        x0_ohm_per_km=0.08,
-        c0_nf_per_km=5.0,
-        g0_us_per_km=0.0,
-        **tdpf_args,
-    )
+    with pytest.warns(DeprecationWarning) as recorded:
+        line_id2 = create_line_from_parameters(
+            net,
+            b3,
+            b4,
+            length_km=5.0,
+            r_ohm_per_km=0.2,
+            x_ohm_per_km=0.1,
+            c_nf_per_km=20.0,
+            max_i_ka=0.3,
+            name="test_line_params",
+            in_service=False,
+            df=0.8,
+            parallel=2,
+            type="cs",
+            g_us_per_km=0.0,
+            max_loading_percent=100.0,
+            alpha=0.004,
+            temperature_degree_celsius=80,
+            r0_ohm_per_km=0.15,
+            x0_ohm_per_km=0.08,
+            c0_nf_per_km=5.0,
+            g0_us_per_km=0.0,
+            **tdpf_args,
+        )
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines with a LineParams dict instead.")
+    ]
 
     assert line_id2 == 1
     assert net.line.at[line_id2, "from_bus"] == b3
@@ -314,34 +344,42 @@ def test_create_line_form_parameters():
 
     # Test with geodata
     b5, b6 = create_buses(net, 2, 110)
-    line_id3 = create_line_from_parameters(
-        net,
-        b5,
-        b6,
-        length_km=3.0,
-        r_ohm_per_km=0.3,
-        x_ohm_per_km=0.15,
-        c_nf_per_km=5.0,
-        max_i_ka=0.2,
-        geodata=[(1, 1), (2, 2), (3, 3)],
-    )
+    with pytest.warns(DeprecationWarning) as recorded:
+        line_id3 = create_line_from_parameters(
+            net,
+            b5,
+            b6,
+            length_km=3.0,
+            r_ohm_per_km=0.3,
+            x_ohm_per_km=0.15,
+            c_nf_per_km=5.0,
+            max_i_ka=0.2,
+            geodata=[(1, 1), (2, 2), (3, 3)],
+        )
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines with a LineParams dict instead.")
+    ]
 
     assert line_id3 == 2
     assert "geo" in net.line.columns
 
     # Test with custom kwargs
     b7, b8 = create_buses(net, 2, 110)
-    line_id4 = create_line_from_parameters(
-        net,
-        b7,
-        b8,
-        length_km=2.0,
-        r_ohm_per_km=0.4,
-        x_ohm_per_km=0.2,
-        c_nf_per_km=2.0,
-        max_i_ka=0.1,
-        custom_attr="test_value",
-    )
+    with pytest.warns(DeprecationWarning) as recorded:
+        line_id4 = create_line_from_parameters(
+            net,
+            b7,
+            b8,
+            length_km=2.0,
+            r_ohm_per_km=0.4,
+            x_ohm_per_km=0.2,
+            c_nf_per_km=2.0,
+            max_i_ka=0.1,
+            custom_attr="test_value",
+        )
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines with a LineParams dict instead.")
+    ]
 
     assert net.line.at[line_id4, "custom_attr"] == "test_value"
 
@@ -352,17 +390,21 @@ def test_create_lines_from_parameters():
     # standard
     net = pandapowerNet(name="test_create_lines_from_parameters0")
     b1, b2 = create_buses(net, 2, 10)
-    line_ids = create_lines_from_parameters(
-        net,
-        [b1, b1],
-        [b2, b2],
-        length_km=[10.0, 5.0],
-        x_ohm_per_km=[1.0, 1.0],
-        r_ohm_per_km=[0.2, 0.2],
-        c_nf_per_km=[0, 0],
-        max_i_ka=[100, 100],
-        test_kwargs=["dummy_string", "dummy_string"],
-    )
+    with pytest.warns(DeprecationWarning) as recorded:
+        line_ids = create_lines_from_parameters(
+            net,
+            [b1, b1],
+            [b2, b2],
+            length_km=[10.0, 5.0],
+            x_ohm_per_km=[1.0, 1.0],
+            r_ohm_per_km=[0.2, 0.2],
+            c_nf_per_km=[0, 0],
+            max_i_ka=[100, 100],
+            test_kwargs=["dummy_string", "dummy_string"],
+        )
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "use create_lines with a LineParams")
+    ]
     assert len(net.line) == 2
     assert len(net.line.x_ohm_per_km) == 2
     assert len(net.line.r_ohm_per_km) == 2
@@ -374,17 +416,21 @@ def test_create_lines_from_parameters():
     # with geodata
     net = pandapowerNet(name="test_create_lines_from_parameters1")
     b1, b2 = create_buses(net, 2, 10)
-    line_ids = create_lines_from_parameters(
-        net,
-        [b1, b1],
-        [b2, b2],
-        length_km=[10.0, 5.0],
-        x_ohm_per_km=[1.0, 1.0],
-        r_ohm_per_km=[0.2, 0.2],
-        c_nf_per_km=[0, 0],
-        max_i_ka=[100, 100],
-        geodata=[[(1, 1), (2, 2), (3, 3)], [(1, 1), (1, 2)]],
-    )
+    with pytest.warns(DeprecationWarning) as recorded:
+        line_ids = create_lines_from_parameters(
+            net,
+            [b1, b1],
+            [b2, b2],
+            length_km=[10.0, 5.0],
+            x_ohm_per_km=[1.0, 1.0],
+            r_ohm_per_km=[0.2, 0.2],
+            c_nf_per_km=[0, 0],
+            max_i_ka=[100, 100],
+            geodata=[[(1, 1), (2, 2), (3, 3)], [(1, 1), (1, 2)]],
+        )
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "use create_lines with a LineParams")
+    ]
 
     assert len(net.line) == 2
     assert net.line.at[line_ids[0], "geo"] == geojson.dumps(
@@ -397,28 +443,32 @@ def test_create_lines_from_parameters():
     # setting params as single value
     net = pandapowerNet(name="test_create_lines_from_parameters2")
     b1, b2 = create_buses(net, 2, 10)
-    line_ids = create_lines_from_parameters(
-        net,
-        [b1, b1],
-        [b2, b2],
-        length_km=5,
-        x_ohm_per_km=1,
-        r_ohm_per_km=0.2,
-        c_nf_per_km=0,
-        max_i_ka=100,
-        df=0.8,
-        in_service=False,
-        geodata=[(10.0, 10.0), (20.0, 20.0)],
-        parallel=1,
-        max_loading_percent=90,
-        name="test",
-        r0_ohm_per_km=0.1,
-        g0_us_per_km=0.0,
-        c0_nf_per_km=0.0,
-        temperature_degree_celsius=20,
-        alpha=0.04,
-        test_kwargs="dummy_string",
-    )
+    with pytest.warns(DeprecationWarning) as recorded:
+        line_ids = create_lines_from_parameters(
+            net,
+            [b1, b1],
+            [b2, b2],
+            length_km=5,
+            x_ohm_per_km=1,
+            r_ohm_per_km=0.2,
+            c_nf_per_km=0,
+            max_i_ka=100,
+            df=0.8,
+            in_service=False,
+            geodata=[(10.0, 10.0), (20.0, 20.0)],
+            parallel=1,
+            max_loading_percent=90,
+            name="test",
+            r0_ohm_per_km=0.1,
+            g0_us_per_km=0.0,
+            c0_nf_per_km=0.0,
+            temperature_degree_celsius=20,
+            alpha=0.04,
+            test_kwargs="dummy_string",
+        )
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "use create_lines with a LineParams")
+    ]
 
     assert len(net.line) == 2
     assert all(net.line["length_km"].values == 5)
@@ -448,26 +498,30 @@ def test_create_lines_from_parameters():
     # setting params as array
     net = pandapowerNet(name="test_create_lines_from_parameters3")
     b1, b2 = create_buses(net, 2, 10)
-    line_ids = create_lines_from_parameters(
-        net,
-        [b1, b1],
-        [b2, b2],
-        length_km=[1, 5],
-        r_ohm_per_km=[1, 2],
-        x_ohm_per_km=[0.3, 0.5],
-        c_nf_per_km=[0.0, 0.1],
-        r0_ohm_per_km=[0.1, 0.15],
-        x0_ohm_per_km=[0.2, 0.25],
-        g0_us_per_km=[0.0, 0.0],
-        c0_nf_per_km=[0.0, 0.0],
-        df=[0.8, 0.7],
-        in_service=[True, False],
-        geodata=[[(10, 10), (20, 20)], [(100, 10), (200, 20)]],
-        parallel=[2, 1],
-        max_loading_percent=[80, 90],
-        name=["test1", "test2"],
-        max_i_ka=[100, 200],
-    )
+    with pytest.warns(DeprecationWarning) as recorded:
+        line_ids = create_lines_from_parameters(
+            net,
+            [b1, b1],
+            [b2, b2],
+            length_km=[1, 5],
+            r_ohm_per_km=[1, 2],
+            x_ohm_per_km=[0.3, 0.5],
+            c_nf_per_km=[0.0, 0.1],
+            r0_ohm_per_km=[0.1, 0.15],
+            x0_ohm_per_km=[0.2, 0.25],
+            g0_us_per_km=[0.0, 0.0],
+            c0_nf_per_km=[0.0, 0.0],
+            df=[0.8, 0.7],
+            in_service=[True, False],
+            geodata=[[(10, 10), (20, 20)], [(100, 10), (200, 20)]],
+            parallel=[2, 1],
+            max_loading_percent=[80, 90],
+            name=["test1", "test2"],
+            max_i_ka=[100, 200],
+        )
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "use create_lines with a LineParams")
+    ]
 
     assert len(net.line) == 2
     assert net.line.at[line_ids[0], "length_km"] == 1
@@ -567,15 +621,35 @@ def test_create_lines_raise_errorexcept():
 def test_create_lines_optional_columns():
     net = pandapowerNet(name="test_create_lines_optional_columns")
     create_buses(net, 5, 110)
-    create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0")
-    create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100)
+    with pytest.warns(DeprecationWarning) as recorded:
+        create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0")
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines instead.")
+    ]
+    with pytest.warns(DeprecationWarning) as recorded:
+        create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100)
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines with a LineParams dict instead.")
+    ]
     create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0")
-    create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100)
+    with pytest.warns(DeprecationWarning) as recorded:
+        create_lines_from_parameters(net, [3, 4], [4, 3], [10, 11], 1, 1, 1, 100)
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "use create_lines with a LineParams")
+    ]
     assert "max_loading_percent" not in net.line.columns
 
     v = np.nan
-    create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
-    create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, max_loading_percent=v)
+    with pytest.warns(DeprecationWarning) as recorded:
+        create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines instead.")
+    ]
+    with pytest.warns(DeprecationWarning) as recorded:
+        create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, max_loading_percent=v)
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines with a LineParams dict instead.")
+    ]
     # np.nan is not None:
     # create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=v)
     # create_lines(net, [0, 1], [1, 0], 10, "48-AL1/8-ST1A 10.0", max_loading_percent=[v, v])  # would be added
@@ -590,19 +664,39 @@ def test_create_line_alpha_temperature():
     net = pandapowerNet(name="test_create_line_alpha_temperature")
     create_buses(net, 5, 110)
 
-    l1 = create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0")
-    l2 = create_line(
-        net,
-        1,
-        2,
-        10,
-        "48-AL1/8-ST1A 10.0",
-        alpha=4.03e-3,
-        temperature_degree_celsius=80,
-    )
-    l3 = create_line(net, 2, 3, 10, "48-AL1/8-ST1A 10.0")
-    l4 = create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100)
-    l5 = create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, alpha=4.03e-3)
+    with pytest.warns(DeprecationWarning) as recorded:
+        l1 = create_line(net, 0, 1, 10, "48-AL1/8-ST1A 10.0")
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines instead.")
+    ]
+    with pytest.warns(DeprecationWarning) as recorded:
+        l2 = create_line(
+            net,
+            1,
+            2,
+            10,
+            "48-AL1/8-ST1A 10.0",
+            alpha=4.03e-3,
+            temperature_degree_celsius=80,
+        )
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines instead.")
+    ]
+    with pytest.warns(DeprecationWarning) as recorded:
+        l3 = create_line(net, 2, 3, 10, "48-AL1/8-ST1A 10.0")
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines instead.")
+    ]
+    with pytest.warns(DeprecationWarning) as recorded:
+        l4 = create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100)
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines with a LineParams dict instead.")
+    ]
+    with pytest.warns(DeprecationWarning) as recorded:
+        l5 = create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, alpha=4.03e-3)
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines with a LineParams dict instead.")
+    ]
 
     assert "alpha" in net.line.columns
     assert np.allclose(net.line.loc[[l2, l3, l5], "alpha"], 4.03e-3)
@@ -611,10 +705,22 @@ def test_create_line_alpha_temperature():
     assert all(net.line.loc[[l1, l3, l4, l5], "temperature_degree_celsius"].isnull())
 
     # make sure optional columns are not created if None or np.nan:
-    create_line(net, 2, 3, 10, "48-AL1/8-ST1A 10.0", wind_speed_m_per_s=None)
+    with pytest.warns(DeprecationWarning) as recorded:
+        create_line(net, 2, 3, 10, "48-AL1/8-ST1A 10.0", wind_speed_m_per_s=None)
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines instead.")
+    ]
     create_lines(net, [2], [3], 10, "48-AL1/8-ST1A 10.0", wind_speed_m_per_s=None)
-    create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, wind_speed_m_per_s=None)
-    create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, alpha=4.03e-3, wind_speed_m_per_s=np.nan)
+    with pytest.warns(DeprecationWarning) as recorded:
+        create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, wind_speed_m_per_s=None)
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines with a LineParams dict instead.")
+    ]
+    with pytest.warns(DeprecationWarning) as recorded:
+        create_line_from_parameters(net, 3, 4, 10, 1, 1, 1, 100, alpha=4.03e-3, wind_speed_m_per_s=np.nan)
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines with a LineParams dict instead.")
+    ]
     assert "wind_speed_m_per_s" not in net.line.columns
 
     validate_network(net)
@@ -625,7 +731,11 @@ def test_create_line_dc():
     b1, b2 = create_buses_dc(net, 2, 110)
 
     # Test basic creation with required parameters
-    line_id = create_line_dc(net, b1, b2, length_km=10.0, std_type="95-CU")
+    with pytest.warns(DeprecationWarning) as recorded:
+        line_id = create_line_dc(net, b1, b2, length_km=10.0, std_type="95-CU")
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines_dc instead.")
+    ]
 
     assert line_id == 0
     assert net.line_dc.at[line_id, "from_bus_dc"] == b1
@@ -638,19 +748,23 @@ def test_create_line_dc():
 
     # Test with all optional parameters
     b3, b4 = create_buses(net, 2, 110, bus_type="dc")
-    line_id2 = create_line_dc(
-        net,
-        b3,
-        b4,
-        length_km=5.0,
-        std_type="95-CU",
-        name="test_line_dc",
-        in_service=False,
-        df=0.8,
-        parallel=2,
-        max_loading_percent=100.0,
-        geodata=[(1, 1), (2, 2)],
-    )
+    with pytest.warns(DeprecationWarning) as recorded:
+        line_id2 = create_line_dc(
+            net,
+            b3,
+            b4,
+            length_km=5.0,
+            std_type="95-CU",
+            name="test_line_dc",
+            in_service=False,
+            df=0.8,
+            parallel=2,
+            max_loading_percent=100.0,
+            geodata=[(1, 1), (2, 2)],
+        )
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "Use create_lines_dc instead.")
+    ]
 
     assert line_id2 == 1
     assert net.line_dc.at[line_id2, "from_bus_dc"] == b3
@@ -711,7 +825,11 @@ def test_create_line_dc_from_parameters():
     b1, b2 = create_buses_dc(net, 2, 110)
 
     # Test basic creation with required parameters
-    line_id = create_line_dc_from_parameters(net, b1, b2, length_km=10.0, r_ohm_per_km=0.1, max_i_ka=0.5)
+    with pytest.warns(DeprecationWarning) as recorded:
+        line_id = create_line_dc_from_parameters(net, b1, b2, length_km=10.0, r_ohm_per_km=0.1, max_i_ka=0.5)
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "use create_lines_dc_from_parameters instead")
+    ]
 
     assert line_id == 0
     assert net.line_dc.at[line_id, "from_bus_dc"] == b1
@@ -725,21 +843,25 @@ def test_create_line_dc_from_parameters():
 
     # Test with all optional parameters
     b3, b4 = create_buses_dc(net, 2, 110)
-    line_id2 = create_line_dc_from_parameters(
-        net,
-        b3,
-        b4,
-        length_km=5.0,
-        r_ohm_per_km=0.2,
-        max_i_ka=0.3,
-        name="test_line_dc_params",
-        in_service=False,
-        df=0.8,
-        parallel=2,
-        type="ol",
-        max_loading_percent=100.0,
-        g_us_per_km=0.0,
-    )
+    with pytest.warns(DeprecationWarning) as recorded:
+        line_id2 = create_line_dc_from_parameters(
+            net,
+            b3,
+            b4,
+            length_km=5.0,
+            r_ohm_per_km=0.2,
+            max_i_ka=0.3,
+            name="test_line_dc_params",
+            in_service=False,
+            df=0.8,
+            parallel=2,
+            type="ol",
+            max_loading_percent=100.0,
+            g_us_per_km=0.0,
+        )
+    assert [(item.category, str(item.message)) for item in recorded] == [
+        (DeprecationWarning, "use create_lines_dc_from_parameters instead")
+    ]
 
     assert line_id2 == 1
     assert net.line_dc.at[line_id2, "from_bus_dc"] == b3
