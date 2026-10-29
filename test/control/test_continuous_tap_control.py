@@ -48,7 +48,7 @@ def test_continuous_tap_control_lv():
     logger.info("case1: low voltage")
     logger.info(
         f"before control: trafo voltage at low voltage bus is {net.res_trafo.vm_lv_pu.at[tid]:f}, "
-        f"tap position is {net.trafo.tap_pos.at[tid]:u}"
+        f"tap position is {net.trafo.tap_pos.at[tid]:.2f}"
     )
 
     # run control
@@ -70,7 +70,7 @@ def test_continuous_tap_control_lv():
     logger.info("case2: high voltage")
     logger.info(
         f"before control: trafo voltage at low voltage bus is {net.res_trafo.vm_lv_pu.at[tid]:f}, "
-        f"tap position is {net.trafo.tap_pos.at[tid]:u}"
+        f"tap position is {net.trafo.tap_pos.at[tid]:.2f}"
     )
 
     # run control
@@ -78,7 +78,7 @@ def test_continuous_tap_control_lv():
     runpp(net)
     logger.info(
         f"after ContinuousTapControl: trafo voltage at low voltage bus is {net.res_trafo.vm_lv_pu.at[tid]:f}, "
-        f"tap position is {net.trafo.tap_pos.at[tid]:f}"
+        f"tap position is {net.trafo.tap_pos.at[tid]:.2f}"
     )
 
     assert np.isclose(net.trafo.tap_pos.values, -2)
@@ -91,7 +91,7 @@ def test_continuous_tap_control_lv():
     logger.info("case2: high voltage")
     logger.info(
         f"before control: trafo voltage at low voltage bus is {net.res_trafo.vm_lv_pu.at[tid]:f}, "
-        f"tap position is {net.trafo.tap_pos.at[tid]:u}"
+        f"tap position is {net.trafo.tap_pos.at[tid]:.2f}"
     )
 
     # run control
@@ -124,7 +124,7 @@ def test_continuous_tap_control_hv():
     logger.info("case1: low voltage")
     logger.info(
         f"before control: trafo voltage at low voltage bus is {net.res_trafo.vm_lv_pu.at[tid]:f}, "
-        f"tap position is {net.trafo.tap_pos.at[tid]:u}"
+        f"tap position is {net.trafo.tap_pos.at[tid]:.2f}"
     )
 
     # run control
@@ -147,7 +147,7 @@ def test_continuous_tap_control_hv():
     logger.info("case2: high voltage")
     logger.info(
         f"before control: trafo voltage at low voltage bus is {net.res_trafo.vm_lv_pu.at[tid]:f}, "
-        f"tap position is {net.trafo.tap_pos.at[tid]:u}"
+        f"tap position is {net.trafo.tap_pos.at[tid]:.2f}"
     )
 
     # run control
@@ -168,7 +168,7 @@ def test_continuous_tap_control_hv():
     logger.info("case2: high voltage")
     logger.info(
         f"before control: trafo voltage at low voltage bus is {net.res_trafo.vm_lv_pu.at[tid]:f}, "
-        f"tap position is {net.trafo.tap_pos.at[tid]:u}"
+        f"tap position is {net.trafo.tap_pos.at[tid]:.2f}"
     )
 
     # run control
