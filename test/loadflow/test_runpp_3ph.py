@@ -33,18 +33,17 @@ from pandapower.networks import create_cigre_network_mv
 from pandapower.pf.runpp_3ph import runpp_3ph
 from pandapower.run import runpp
 from pandapower.std_types import add_zero_impedance_parameters, create_std_type
+from pandapower.toolbox.comparison import dataframes_equal
+from pandapower.toolbox.grid_modification import replace_line_by_impedance
+from test import test_path
 from test.consistency_checks import (
     runpp_3ph_with_consistency_checks,
     runpp_with_consistency_checks,
     trafo_currents_consistent_3ph,
 )
 from test.helper_functions import add_grid_connection
-from test.loadflow.PF_Results import get_PF_Results
+from test.loadflow.pf_results import get_pf_results
 from test.loadflow.test_runpp import get_isolated
-from pandapower.toolbox.comparison import dataframes_equal
-from pandapower.toolbox.grid_modification import replace_line_by_impedance
-
-from test import test_path
 
 
 @pytest.fixture
@@ -658,7 +657,7 @@ def check_line_currents(net, result, trafo_vector_group):
 
     assert np.allclose(result, res_line_i_ka, atol=tolerances[trafo_vector_group])
     if not np.allclose(result, res_line_i_ka, atol=tolerances[trafo_vector_group]):
-        raise ValueError("Incorrect results for vector group %s" % trafo_vector_group, res_line_i_ka, result)
+        raise ValueError(f"Incorrect results for vector group {trafo_vector_group}", res_line_i_ka, result)
 
 
 def check_trafo_currents(net, result, trafo_vector_group):
@@ -683,7 +682,7 @@ def check_trafo_currents(net, result, trafo_vector_group):
 
     assert np.allclose(result, res_trafo_i_ka, atol=tolerances[trafo_vector_group])
     if not np.allclose(result, res_trafo_i_ka, atol=tolerances[trafo_vector_group]):
-        raise ValueError("Incorrect results for vector group %s" % trafo_vector_group, res_trafo_i_ka, result)
+        raise ValueError(f"Incorrect results for vector group {trafo_vector_group}", res_trafo_i_ka, result)
 
 
 def check_results(_net, trafo_vector_group, results):
@@ -791,7 +790,7 @@ def test_trafo_asym():
         net["trafo"].vector_group = trafo_vector_group
         runpp_3ph_with_consistency_checks(net)
         assert net["converged"]
-        check_results(net, trafo_vector_group, get_PF_Results(trafo_vector_group))
+        check_results(net, trafo_vector_group, get_pf_results(trafo_vector_group))
 
 
 def _test_trafo_shifts(net, rtol):
