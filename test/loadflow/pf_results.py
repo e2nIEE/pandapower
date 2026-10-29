@@ -1,4 +1,8 @@
-def get_PF_Results(trafo_vector_group):
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
+
+def get_pf_results(trafo_vector_group):
     """
     Returns the PF loadflow results of the validation network for the given
     trafo vector groups. For info about the test network see runpp_3ph Validation.pfd
