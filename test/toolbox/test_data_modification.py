@@ -21,7 +21,6 @@ from pandapower.network import pandapowerNet
 from pandapower.networks.cigre_networks import create_cigre_network_mv
 from pandapower.networks.create_examples import example_multivoltage, example_simple
 from pandapower.run import runpp
-from test.helper_functions import assert_net_equal
 from pandapower.toolbox.comparison import compare_arrays
 from pandapower.toolbox.data_modification import (
     add_column_from_element_to_elements,
@@ -33,11 +32,12 @@ from pandapower.toolbox.data_modification import (
     set_scaling_by_type,
 )
 from pandapower.toolbox.element_selection import pp_elements
+from test.helper_functions import assert_net_equal
 
 
 def test_add_column_from_node_to_elements():
     net = create_cigre_network_mv("pv_wind")
-    net.bus["subnet"] = ["subnet_%i" % i for i in range(net.bus.shape[0])]
+    net.bus["subnet"] = [f"subnet_{i}" for i in range(net.bus.shape[0])]
     net.sgen["subnet"] = "already_given"
     net.switch["subnet"] = None
     net_orig = copy.deepcopy(net)
