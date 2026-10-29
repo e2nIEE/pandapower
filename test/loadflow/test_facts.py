@@ -18,7 +18,7 @@ from pandapower.create import (
 )
 from pandapower.create._utils import add_column_to_df
 from pandapower.network import pandapowerNet
-from pandapower.networks.tutorial_networks import facts_case_study_grid as facts_case_study_grid
+from pandapower.networks.tutorial_networks import facts_case_study_grid
 from pandapower.run import runpp
 from test.consistency_checks import runpp_with_consistency_checks
 

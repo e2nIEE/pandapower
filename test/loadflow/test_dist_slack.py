@@ -496,8 +496,8 @@ def test_multivoltage_example_with_controller():
     assert_results_correct(net)
 
     if do_output:
-        logger.info("grid losses: %.6f" % -net.res_bus.p_mw.sum())
-        logger.info("slack generator p results: %.6f    %.6f" % (net.res_ext_grid.p_mw.at[0], net.res_gen.p_mw.at[0]))
+        logger.info(f"grid losses: {-net.res_bus.p_mw.sum():.6f}")
+        logger.info(f"slack generator p results: {net.res_ext_grid.p_mw.at[0]:.6f}    {net.res_gen.p_mw.at[0]:.6f}")
         net.res_bus.vm_pu.plot()
 
     assert np.isclose(net.res_ext_grid.p_mw.at[0], net.res_gen.p_mw.at[0] - gen_p_disp)
@@ -519,8 +519,8 @@ def test_multivoltage_example_with_controller():
     assert np.isclose(net.res_gen.p_mw.at[0], expected_slack_power / 2 + gen_p_disp, atol=1e-5)
 
     if do_output:
-        logger.info("grid losses: %.6f" % -net.res_bus.p_mw.sum())
-        logger.info("slack generator p results: %.6f    %.6f" % (net.res_ext_grid.p_mw.at[0], net.res_gen.p_mw.at[0]))
+        logger.info(f"grid losses: {-net.res_bus.p_mw.sum():.6f}")
+        logger.info(f"slack generator p results: {net.res_ext_grid.p_mw.at[0]:.6f}    {net.res_gen.p_mw.at[0]: .6f}")
         net.res_bus.vm_pu.plot()
 
 
