@@ -588,18 +588,15 @@ def test_get_min_max_q_capability():
 @pytest.mark.parametrize("file_io", (False, True), ids=("Without JSON I/O", "With JSON I/O"))
 def test_characteristic(file_io):
     net = pandapowerNet(name="test_characteristic")
+    c1 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], fill_value=(0, 4))
+    SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
+    c3 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="hello")
     with pytest.warns(RuntimeWarning, match="divide by zero encountered in log10"):  # FIXME: should this be required?
-        c1 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], fill_value=(0, 4))
-    with pytest.warns(RuntimeWarning, match="divide by zero encountered in log10"):
-        _c2 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
-    with pytest.warns(RuntimeWarning, match="divide by zero encountered in log10"):
-        c3 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="hello")
-    with pytest.warns(RuntimeWarning, match="divide by zero encountered in log10"):
-        _c4 = LogSplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
+        LogSplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
 
     if file_io:
         net_copy = from_json_string(to_json(net))
-        c1, _c2, c3, _c4 = net_copy.characteristic.object.values
+        c1, _, c3, _ = net_copy.characteristic.object.values
 
     assert np.allclose(c1([-1]), [0], rtol=0, atol=1e-6)
 
