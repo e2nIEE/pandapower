@@ -114,7 +114,7 @@ def test_create_motor_nonexistent_bus():
     # Test that creating a motor with non-existent bus raises an error
     net = pandapowerNet(name="test_create_motor_nonexistent_bus")
 
-    with pytest.raises(Exception):
+    with pytest.raises(UserWarning, match="Cannot attach to bus 0, 0 does not exist"):
         create_motor(
             net,
             bus=0,  # Bus doesn't exist

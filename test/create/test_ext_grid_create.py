@@ -110,7 +110,7 @@ def test_create_ext_grid_nonexistent_bus():
     """Test that creating an external grid with non-existent bus raises an error."""
     net = pandapowerNet(name="test_create_ext_grid_nonexistent_bus")
 
-    with pytest.raises(Exception):
+    with pytest.raises(UserWarning, match="Cannot attach to bus 0, 0 does not exist"):
         create_ext_grid(net, bus=0)  # Bus doesn't exist
 
 
