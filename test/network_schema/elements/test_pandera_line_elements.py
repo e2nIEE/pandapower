@@ -386,14 +386,11 @@ class TestLineResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_line_result_totals(self):
         """Test: aggregated p_mw / q_mvar results are consistent"""
-        pass
 
     @pytest.mark.skip(reason="Not yet implemented")
     def test_line_3ph_results(self):
         """Test: 3-phase results contain valid values per phase"""
-        pass
 
     @pytest.mark.skip(reason="Not yet implemented")
     def test_line_sc_results(self):
         """Test: short-circuit results contain valid values"""
-        pass

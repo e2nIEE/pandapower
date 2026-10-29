@@ -1,6 +1,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
 from time import perf_counter
 
 import numpy as np
@@ -12,8 +13,6 @@ from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pypower.idx_bus import BS, BUS_I, BUS_TYPE, GS, PD, QD, VA, VM
 from pandapower.pypower.idx_bus import SL_FAC as SL_FAC_BUS
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, MBASE, PG, QMAX, QMIN, SL_FAC, VG
-
-import logging
 
 logger = logging.getLogger(__name__)
 

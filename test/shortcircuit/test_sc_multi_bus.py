@@ -13,10 +13,8 @@ from pandapower.create import (
 )
 from pandapower.network import pandapowerNet
 from pandapower.shortcircuit.calc_sc import calc_sc
-
-# reexported with "as" to prevent ruff removing it as unused
 from test.shortcircuit.test_meshing_detection import (
-    meshed_grid as meshed_grid,
+    meshed_grid,  # noqa: F401
 )
 
 

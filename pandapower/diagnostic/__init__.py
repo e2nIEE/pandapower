@@ -1,7 +1,7 @@
 __all__ = [
-    "diagnostic",
     "Diagnostic",
     "DiagnosticFunction",
+    "diagnostic",
 ]
 
 from pandapower.diagnostic.diagnostic import Diagnostic
