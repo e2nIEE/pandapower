@@ -2,6 +2,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 __all__ = [
+    "CustomTextPath",
+    "TextPath",
     "add_cmap_to_collection",
     "add_collections_to_axes",
     "add_single_collection",
@@ -26,9 +28,7 @@ __all__ = [
     "create_vsc_connection_collection",
     "create_ward_collection",
     "create_xward_collection",
-    "CustomTextPath",
     "draw_collections",
-    "TextPath",
 ]
 
 import ast

@@ -16,8 +16,8 @@ from pandapower.converter.pandamodels.to_pm import init_ne_line
 from pandapower.create import (
     create_buses,
     create_ext_grid,
-    create_lines,
     create_gen,
+    create_lines,
     create_load,
     create_poly_cost,
     create_pwl_cost,
@@ -59,11 +59,10 @@ from pandapower.runpm import (
     runpm_vstab,
 )
 from pandapower.timeseries import DFData, run_timeseries
+from test import test_path
 from test.consistency_checks import consistency_checks
 from test.helper_functions import add_grid_connection, create_test_line
-
 from test.opf.test_basic import net_3w_trafo_opf as _net_3w_trafo_opf  # noqa: F401
-from test import test_path
 
 julia_installed = find_spec("juliacall") is not None
 
@@ -950,7 +949,7 @@ def test_runpm_redispatch_cost():
 @pytest.mark.slow
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_runpm_redispatch_dc():
-    net, l_weak = _create_redispatch_net()
+    net, _l_weak = _create_redispatch_net()
     runpp(net)
 
     create_poly_cost(net, 0, "gen", cp1_eur_per_mw=1.0, redispatch_up_eur_per_mw=1.0, redispatch_down_eur_per_mw=1.0)
@@ -966,7 +965,7 @@ def test_runpm_redispatch_dc():
 def test_runpm_redispatch_unpriced_gen_stays_fixed():
     # a controllable gen without redispatch costs must keep its base dispatch (pg == pg0),
     # only the priced gen participates in the redispatch
-    net, l_weak = _create_redispatch_net()
+    net, _l_weak = _create_redispatch_net()
     # add a third controllable gen at the load bus that we do NOT price for redispatch
     b2 = net.load.bus.iloc[0]
     g_unpriced = create_gen(

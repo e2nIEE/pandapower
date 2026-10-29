@@ -15,10 +15,10 @@ from pandapower.converter.pandamodels.from_pm import read_pm_results_to_net
 from pandapower.create import create_poly_cost
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.run import runopp
-
-# reexported with "as" to prevent ruff removing it as unused
-from test.opf.test_basic import net_3w_trafo_opf as net_3w_trafo_opf
-from test.opf.test_basic import simple_opf_test_net as simple_opf_test_net
+from test.opf.test_basic import (
+    net_3w_trafo_opf,  # noqa: F401
+    simple_opf_test_net,  # noqa: F401
+)
 
 julia_installed = find_spec("juliacall") is not None
 

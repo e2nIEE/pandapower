@@ -13,7 +13,7 @@ from pandapower.create import (
     create_transformer_from_parameters,
 )
 from pandapower.network import pandapowerNet
-from pandapower.networks.tutorial_networks import simplest_test_grid as simplest_test_grid
+from pandapower.networks.tutorial_networks import simplest_test_grid
 from pandapower.pypower.idx_brch import BR_R, BR_X
 from pandapower.shortcircuit.calc_sc import calc_sc
 
