@@ -329,9 +329,8 @@ class TestForeignKeyMultipleColumns:
     def test_trafo_hv_lv_bus(self):
         """Test: trafo has hv_bus and lv_bus validated"""
         net = pandapowerNet(name="test_trafo_fk")
-        b0, b1 = create_buses(net, 2, [110.0, 20.0])
+        create_buses(net, 2, [110.0, 20.0])
 
-        # create_std_type call removed - test incomplete, needs actual trafo creation
-        # (Note: may need actual trafo creation - simplified for test structure)
-
-        # Would need actual trafo creation in integration test
+        # FIXME: create_std_type call removed - test incomplete, needs actual trafo creation
+        #  (Note: may need actual trafo creation - simplified for test structure)
+        #  Would need actual trafo creation in integration test
