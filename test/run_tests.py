@@ -2,13 +2,13 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 __all__ = [
-    "test_path",
-    "tutorials_path",
     "run_all_tests",
     "run_fast_tests",
     "run_slow_tests",
     "run_tutorials",
     "start_tests",
+    "test_path",
+    "tutorials_path",
 ]
 
 import argparse
@@ -16,8 +16,8 @@ import logging
 import os
 import shutil
 import tempfile
-from multiprocessing import cpu_count
 from importlib.util import find_spec
+from multiprocessing import cpu_count
 
 import pytest
 
@@ -125,7 +125,7 @@ def get_command_line_args():
 
 def start_tests(**settings):
     n_cpu = settings["n_cpu"]
-    parallel = False if n_cpu < 2 else True
+    parallel = not n_cpu < 2
     # run either fast or all tests
     _remove_logger()
     if settings["which"] == "fast":
