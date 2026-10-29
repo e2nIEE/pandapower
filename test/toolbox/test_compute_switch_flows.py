@@ -45,7 +45,7 @@ class TestComputeSwitchFlowsBasic:
 
     def test_single_coupler_power_balance(self):
         """The switch must carry the entire load since it's the only path."""
-        net, _b0, _b1, _b2 = _make_two_bus_coupler_net()
+        net, _ = _make_two_bus_coupler_net()
         runpp(net)
         assert np.isnan(net.res_switch.at[0, "p_from_mw"])
 
@@ -75,7 +75,7 @@ class TestComputeSwitchFlowsBasic:
 
     def test_open_switch_zero_flow(self):
         """An open bus-bus switch must have zero flow (set by runpp already)."""
-        net, _b0, b1, b2 = _make_two_bus_coupler_net()
+        net, _, b1, b2 = _make_two_bus_coupler_net()
         net.switch.at[0, "closed"] = False
         # Add line so bus 2 is still connected (otherwise non-convergence)
         create_lines(
@@ -93,7 +93,7 @@ class TestComputeSwitchFlowsBasic:
 
     def test_not_converged_raises(self):
         """Must raise when load flow has not converged."""
-        net, _, _, _ = _make_two_bus_coupler_net()
+        net, _ = _make_two_bus_coupler_net()
         # Don't run load flow
         net.converged = False
         with pytest.raises(UserWarning, match="did not converge"):
@@ -117,7 +117,7 @@ class TestComputeSwitchFlowsBasic:
 
     def test_impedance_switch_not_overwritten(self):
         """Switches with z_ohm > 0 already have results; they must not change."""
-        net, _b0, _b1, _b2 = _make_two_bus_coupler_net()
+        net, _ = _make_two_bus_coupler_net()
         net.switch.at[0, "z_ohm"] = 0.001
         runpp(net)
 
