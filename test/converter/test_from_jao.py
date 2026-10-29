@@ -8,7 +8,6 @@ import pytest
 
 from pandapower.converter.jao import from_jao
 from pandapower.toolbox.comparison import nets_equal
-
 from test import test_path
 
 

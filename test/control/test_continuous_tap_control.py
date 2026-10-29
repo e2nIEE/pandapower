@@ -47,16 +47,16 @@ def test_continuous_tap_control_lv():
 
     logger.info("case1: low voltage")
     logger.info(
-        "before control: trafo voltage at low voltage bus is %f, tap position is %u"
-        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.at[tid])
+        f"before control: trafo voltage at low voltage bus is {net.res_trafo.vm_lv_pu.at[tid]:f}, "
+        f"tap position is {net.trafo.tap_pos.at[tid]:u}"
     )
 
     # run control
     runpp(net, run_control=True)
     runpp(net)
     logger.info(
-        "after ContinuousTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.at[tid])
+        f"after ContinuousTapControl: trafo voltage at low voltage bus is {net.res_trafo.vm_lv_pu.at[tid]:f}, "
+        f"tap position is {net.trafo.tap_pos.at[tid]:f}"
     )
 
     assert np.isclose(net.res_trafo.vm_lv_pu.at[tid], 0.99, atol=1e-3)
@@ -69,16 +69,16 @@ def test_continuous_tap_control_lv():
 
     logger.info("case2: high voltage")
     logger.info(
-        "before control: trafo voltage at low voltage bus is %f, tap position is %u"
-        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.at[tid])
+        f"before control: trafo voltage at low voltage bus is {net.res_trafo.vm_lv_pu.at[tid]:f}, "
+        f"tap position is {net.trafo.tap_pos.at[tid]:u}"
     )
 
     # run control
     runpp(net, run_control=True)
     runpp(net)
     logger.info(
-        "after ContinuousTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.at[tid])
+        f"after ContinuousTapControl: trafo voltage at low voltage bus is {net.res_trafo.vm_lv_pu.at[tid]:f}, "
+        f"tap position is {net.trafo.tap_pos.at[tid]:f}"
     )
 
     assert np.isclose(net.trafo.tap_pos.values, -2)
@@ -90,16 +90,16 @@ def test_continuous_tap_control_lv():
 
     logger.info("case2: high voltage")
     logger.info(
-        "before control: trafo voltage at low voltage bus is %f, tap position is %u"
-        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.at[tid])
+        f"before control: trafo voltage at low voltage bus is {net.res_trafo.vm_lv_pu.at[tid]:f}, "
+        f"tap position is {net.trafo.tap_pos.at[tid]:u}"
     )
 
     # run control
     runpp(net, run_control=True)
     runpp(net)
     logger.info(
-        "after ContinuousTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.at[tid])
+        f"after ContinuousTapControl: trafo voltage at low voltage bus is {net.res_trafo.vm_lv_pu.at[tid]:f}, "
+        f"tap position is {net.trafo.tap_pos.at[tid]:f}"
     )
     assert np.isclose(net.res_trafo.vm_lv_pu.at[tid], 0.99, atol=1e-3)
     assert np.isclose(net.trafo.tap_pos.at[tid], 1.077656)
@@ -123,16 +123,16 @@ def test_continuous_tap_control_hv():
 
     logger.info("case1: low voltage")
     logger.info(
-        "before control: trafo voltage at low voltage bus is %f, tap position is %u"
-        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.at[tid])
+        f"before control: trafo voltage at low voltage bus is {net.res_trafo.vm_lv_pu.at[tid]:f}, "
+        f"tap position is {net.trafo.tap_pos.at[tid]:u}"
     )
 
     # run control
     runpp(net, run_control=True)
     runpp(net)
     logger.info(
-        "after ContinuousTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.at[tid])
+        f"after ContinuousTapControl: trafo voltage at low voltage bus is {net.res_trafo.vm_lv_pu.at[tid]:f}, "
+        f"tap position is {net.trafo.tap_pos.at[tid]:f}"
     )
 
     assert np.isclose(net.res_trafo.vm_lv_pu.at[tid], 0.99, atol=1e-3)
@@ -146,16 +146,16 @@ def test_continuous_tap_control_hv():
 
     logger.info("case2: high voltage")
     logger.info(
-        "before control: trafo voltage at low voltage bus is %f, tap position is %u"
-        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.at[tid])
+        f"before control: trafo voltage at low voltage bus is {net.res_trafo.vm_lv_pu.at[tid]:f}, "
+        f"tap position is {net.trafo.tap_pos.at[tid]:u}"
     )
 
     # run control
     runpp(net, run_control=True)
     runpp(net)
     logger.info(
-        "after ContinuousTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.at[tid])
+        f"after ContinuousTapControl: trafo voltage at low voltage bus is {net.res_trafo.vm_lv_pu.at[tid]:f}, "
+        f"tap position is {net.trafo.tap_pos.at[tid]:f}"
     )
     assert np.isclose(net.trafo.tap_pos.at[tid], 2)
 
@@ -167,16 +167,16 @@ def test_continuous_tap_control_hv():
 
     logger.info("case2: high voltage")
     logger.info(
-        "before control: trafo voltage at low voltage bus is %f, tap position is %u"
-        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.at[tid])
+        f"before control: trafo voltage at low voltage bus is {net.res_trafo.vm_lv_pu.at[tid]:f}, "
+        f"tap position is {net.trafo.tap_pos.at[tid]:u}"
     )
 
     # run control
     runpp(net, run_control=True)
     runpp(net)
     logger.info(
-        "after ContinuousTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_trafo.vm_lv_pu.at[tid], net.trafo.tap_pos.at[tid])
+        f"after ContinuousTapControl: trafo voltage at low voltage bus is {net.res_trafo.vm_lv_pu.at[tid]:f}, "
+        f"tap position is {net.trafo.tap_pos.at[tid]:f}"
     )
     assert np.isclose(net.res_trafo.vm_lv_pu.at[tid], 0.99, atol=1e-3)
     assert np.isclose(net.trafo.tap_pos.at[tid], -1.07765621)
