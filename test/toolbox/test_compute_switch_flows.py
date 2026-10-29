@@ -45,7 +45,7 @@ class TestComputeSwitchFlowsBasic:
 
     def test_single_coupler_power_balance(self):
         """The switch must carry the entire load since it's the only path."""
-        net, _ = _make_two_bus_coupler_net()
+        net, *_ = _make_two_bus_coupler_net()
         runpp(net)
         assert np.isnan(net.res_switch.at[0, "p_from_mw"])
 
@@ -93,7 +93,7 @@ class TestComputeSwitchFlowsBasic:
 
     def test_not_converged_raises(self):
         """Must raise when load flow has not converged."""
-        net, _ = _make_two_bus_coupler_net()
+        net, *_ = _make_two_bus_coupler_net()
         # Don't run load flow
         net.converged = False
         with pytest.raises(UserWarning, match="did not converge"):
@@ -117,7 +117,7 @@ class TestComputeSwitchFlowsBasic:
 
     def test_impedance_switch_not_overwritten(self):
         """Switches with z_ohm > 0 already have results; they must not change."""
-        net, _ = _make_two_bus_coupler_net()
+        net, *_ = _make_two_bus_coupler_net()
         net.switch.at[0, "z_ohm"] = 0.001
         runpp(net)
 
@@ -385,7 +385,7 @@ class TestComputeSwitchFlowsSignConvention:
 
     def test_sign_convention(self):
         """Power flows from bus column toward element column when load is on element side."""
-        net, _b0, _b1, _b2 = _make_two_bus_coupler_net()
+        net, *_ = _make_two_bus_coupler_net()
         runpp(net)
         compute_switch_flows(net)
 
@@ -474,7 +474,7 @@ class TestComputeSwitchFlowsLoadingPercent:
     """Loading percent computation when in_ka is available."""
 
     def test_loading_percent(self):
-        net, _b0, _b1, _b2 = _make_two_bus_coupler_net()
+        net, *_ = _make_two_bus_coupler_net()
         in_ka = 0.1
         net.switch.at[0, "in_ka"] = in_ka
         runpp(net)
