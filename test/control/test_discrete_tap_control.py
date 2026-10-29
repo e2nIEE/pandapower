@@ -54,7 +54,7 @@ def test_discrete_tap_control_lv():
     logger.info("case1: low voltage")
     logger.info(
         f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
-        f"tap position is {net.trafo.tap_pos.values.item():u}"
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
@@ -74,7 +74,7 @@ def test_discrete_tap_control_lv():
     logger.info("case2: high voltage")
     logger.info(
         f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
-        f"tap position is {net.trafo.tap_pos.values.item():u}"
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
@@ -93,7 +93,7 @@ def test_discrete_tap_control_lv():
     logger.info("case2: high voltage")
     logger.info(
         f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
-        f"tap position is {net.trafo.tap_pos.values.item():u}"
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
@@ -124,7 +124,7 @@ def test_discrete_tap_control_hv():
     logger.info("case1: low voltage")
     logger.info(
         f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
-        f"tap position is {net.trafo.tap_pos.values.item():u}"
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
@@ -143,7 +143,7 @@ def test_discrete_tap_control_hv():
     logger.info("case2: high voltage")
     logger.info(
         f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
-        f"tap position is {net.trafo.tap_pos.values.item():u}"
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
@@ -162,7 +162,7 @@ def test_discrete_tap_control_hv():
     logger.info("case2: high voltage")
     logger.info(
         f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
-        f"tap position is {net.trafo.tap_pos.values.item():u}"
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
@@ -193,7 +193,7 @@ def test_discrete_tap_control_lv_from_tap_step_percent():
     logger.info("case1: low voltage")
     logger.info(
         f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
-        f"tap position is {net.trafo.tap_pos.values.item():u}"
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
@@ -223,7 +223,7 @@ def test_discrete_tap_control_lv_from_tap_step_percent():
     logger.info("case2: high voltage")
     logger.info(
         f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
-        f"tap position is {net.trafo.tap_pos.values.item():u}"
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
@@ -242,7 +242,7 @@ def test_discrete_tap_control_lv_from_tap_step_percent():
     logger.info("case2: high voltage")
     logger.info(
         f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
-        f"tap position is {net.trafo.tap_pos.values.item():u}"
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
@@ -275,7 +275,7 @@ def test_discrete_tap_control_hv_from_tap_step_percent(tap_step_percent):
     logger.info("case1: low voltage")
     logger.info(
         f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
-        f"tap position is {net.trafo.tap_pos.values.item():u}"
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
@@ -305,7 +305,7 @@ def test_discrete_tap_control_hv_from_tap_step_percent(tap_step_percent):
     logger.info("case2: high voltage")
     logger.info(
         f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
-        f"tap position is {net.trafo.tap_pos.values.item():u}"
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
@@ -324,7 +324,7 @@ def test_discrete_tap_control_hv_from_tap_step_percent(tap_step_percent):
     logger.info("case2: high voltage")
     logger.info(
         f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
-        f"tap position is {net.trafo.tap_pos.values.item():u}"
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
