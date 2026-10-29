@@ -361,4 +361,3 @@ class TestXWardResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_xward_result_pq(self):
         """Test: p_mw / q_mvar results are present and numeric"""
-        pass

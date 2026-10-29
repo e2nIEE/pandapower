@@ -15,7 +15,6 @@ from test.network_schema.elements.helper import (
     all_allowed_floats,
     bools,
     negativ_floats,
-    negativ_floats_plus_zero,
     negativ_ints,
     not_boolean_list,
     not_floats_list,

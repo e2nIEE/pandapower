@@ -4,16 +4,13 @@
 __all__ = ["calc_sc_on_line", "detect_power_station_unit"]
 
 import logging
-
-from pandapower.auxiliary import _preserve_dtypes
-
-
 from copy import deepcopy
 
 import networkx as nx
 import numpy as np
 import pandas as pd
 
+from pandapower.auxiliary import _preserve_dtypes
 from pandapower.create import _get_index_with_check, create_buses
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, TAP
 from pandapower.pypower.idx_bus import BUS_I
