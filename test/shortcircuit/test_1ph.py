@@ -653,7 +653,7 @@ def test_1ph_sn_mva_ext_grid():
         "rk_ohm": 1.3243945001694957,
         "xk_ohm": 13.243945001694957,
     }
-    
+
     for var, val in res.items():
         assert np.allclose(net1.res_bus_sc[var], net2.res_bus_sc[var], atol=1e-6, rtol=0)
         assert np.allclose(net1.res_bus_sc[var], val, atol=1e-6, rtol=0)
