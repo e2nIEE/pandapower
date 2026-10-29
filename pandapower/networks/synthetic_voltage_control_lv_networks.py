@@ -13,7 +13,7 @@ from pandapower.create import (
     create_ext_grid,
     create_transformer,
     create_buses,
-    create_line,
+    create_lines,
     create_load,
     create_sgen,
 )
@@ -240,7 +240,7 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
         ] * n_feeder[network_class][i]
 
         for _, lines in lines.iterrows():
-            create_line(net, lines.from_bus, lines.to_bus, length_km=lines.length, std_type=lines.std_type)
+            create_lines(net, lines.from_bus, lines.to_bus, length_km=lines.length, line_params=lines.std_type)
         # load
         for i in house_buses[i]:
             create_load(net, i, p_mw=5.1e-3)
