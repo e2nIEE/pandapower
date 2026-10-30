@@ -131,11 +131,10 @@ class OutputWriter(JSONSerializableClass):
         return self.__repr__()
 
     def __repr__(self):
-        s = "%s: writes output to '%s'" % (self.__class__.__name__, self.output_path)
-        s += " and logs:"
+        s = f"{self.__class__.__name__}: writes output to '{self.output_path}' and logs:"
         for output in self.log_variables:
             table, variable = output[0], output[1]
-            s += "\n'" + str(table) + "." + str(variable) + "'"
+            s += f"\n'{table}.{variable}'"
         return s
 
     def _monkey_patch(self, method, new):
@@ -250,23 +249,19 @@ class OutputWriter(JSONSerializableClass):
         if recycle_options not in [None, False] and recycle_options["batch_read"]:
             self.get_batch_outputs(net, recycle_options)
         if self.output_path is not None:
-            try:
-                if save_single and self.output_file_type in [".xls", ".xlsx"]:
-                    self._save_single_xls_sheet(append)
-                elif self.output_file_type in [".xls", ".xlsx", ".json", ".p"] or "csv" in self.output_file_type.split(
+            if save_single and self.output_file_type in [".xls", ".xlsx"]:
+                self._save_single_xls_sheet(append)
+            elif self.output_file_type in [".xls", ".xlsx", ".json", ".p"] or "csv" in self.output_file_type.split(
                     "."
-                ):
-                    self._save_separate(append, net=net)
-                else:
-                    raise UserWarning("Specify output file with .csv, .csv.*, .xls, .xlsx, .p or .json ending")
-                if append:
-                    self._init_output()
-
-            except Exception:
-                raise
+            ):
+                self._save_separate(append, net=net)
+            else:
+                raise UserWarning("Specify output file with .csv, .csv.*, .xls, .xlsx, .p or .json ending")
+            if append:
+                self._init_output()
 
     def dump(self, net, recycle_options=None):
-        append = False if self.time_step == self.time_steps[-1] else True
+        append = self.time_step != self.time_steps[-1]
         self.dump_to_file(net, append=append, recycle_options=recycle_options)
         self.cur_realtime = perf_counter()  # reset real time counter for next period
 
@@ -287,9 +282,8 @@ class OutputWriter(JSONSerializableClass):
             self.save_to_parameters()
 
         # if write time is exceeded or it is the last time step, data is written
-        if self.write_time is not None:
-            if perf_counter() - self.cur_realtime > self.write_time:
-                self.dump(net)
+        if self.write_time is not None and perf_counter() - self.cur_realtime > self.write_time:
+            self.dump(net)
         if self.time_step == self.time_steps[-1]:
             self.dump(net, recycle_options)
 
@@ -300,13 +294,11 @@ class OutputWriter(JSONSerializableClass):
         for of in self.output_list:
             try:
                 of()
-            except Exception:
+            except Exception:  # noqa: BLE001
                 import traceback
 
                 traceback.print_exc()
-                logger.error(
-                    "Error in output function! Stored NaN for '%s' in time-step %i" % (of.__name__, self.time_step)
-                )
+                logger.error(f"Error in output function! Stored NaN for '{of.__name__}' in time-step {self.time_step}")
                 self.save_nans_to_parameters()
 
     def save_nans_to_parameters(self):
@@ -373,11 +365,15 @@ class OutputWriter(JSONSerializableClass):
         # Find if this table/variable combination already exists in log_variables
         existing_entry_idx = None
         for i, log_args in enumerate(self.log_variables):
-            if log_args[0] == table and log_args[1] == variable:
+            if (log_args[0] == table
+                    and log_args[1] == variable
+                    and eval_function is None
+                    and eval_name is None
+                    and (len(log_args) <= 4 or log_args[4] is None)
+            ):
                 # Check if both entries have no eval_function/eval_name
-                if eval_function is None and eval_name is None and (len(log_args) <= 4 or log_args[4] is None):
-                    existing_entry_idx = i
-                    break
+                existing_entry_idx = i
+                break
 
         if existing_entry_idx is not None:
             # A matching entry exists without eval_function/eval_name
@@ -388,7 +384,7 @@ class OutputWriter(JSONSerializableClass):
                 if index is not None:
                     # Replace generic entry with specific indices
                     self.log_variables[existing_entry_idx] = (table, variable, index, None, None)
-            elif len(existing_entry) >= 3 and existing_entry[2] is not None:
+            elif len(existing_entry) >= 3 and existing_entry[2] is not None:  # noqa: SIM102
                 # Existing entry has specific indices
                 if index is not None:
                     # Merge indices
@@ -451,23 +447,24 @@ class OutputWriter(JSONSerializableClass):
         if isinstance(index, (np.ndarray, pd.Index, pd.Series)):
             index = index.tolist()
         if eval_function is not None and eval_name is None:
-            eval_name = "%s.%s.%s.%s" % (table, variable, str(index), eval_function.__name__)
+            eval_name = f"{table}.{variable}.{index}.{eval_function.__name__}"
         if eval_function is None and eval_name is not None:
             logger.info(
-                "'eval_name' is to give a name in case of evaluation functions. Since "
-                + "no function is given for eval_name '%s', " % eval_name
-                + "eval_name is neglected."
+                f"'eval_name' is to give a name in case of evaluation functions. Since no function is given for "
+                f"eval_name '{eval_name}', eval_name is neglected."
             )
             eval_name = None
-        if eval_name is not None and eval_function is not None:
-            if isinstance(eval_function, FunctionType):
-                if "n_columns" in eval_function.__code__.co_varnames:
-                    logger.info(
-                        "'eval_name' is to give a name in case of single value evaluation functions. Since "
-                        + "n_columns is given as a parameter of the evaluation function, the given for eval_name "
-                        "'%s', " % eval_name + "eval_name is neglected."
-                    )
-                    eval_name = None
+        if (eval_name is not None
+                and eval_function is not None
+                and isinstance(eval_function, FunctionType)
+                and "n_columns" in eval_function.__code__.co_varnames
+        ):
+            logger.info(
+                f"'eval_name' is to give a name in case of single value evaluation functions. Since n_columns is given "
+                f"as a parameter of the evaluation function, the given for eval_name '{eval_name}', "
+                f"eval_name is neglected."
+            )
+            eval_name = None
 
         var_name = self._get_output_name(table, variable)
         idx = self._get_same_log_variable_partial_func_idx(table, variable, eval_function, eval_name)
@@ -519,9 +516,9 @@ class OutputWriter(JSONSerializableClass):
             time_step_idx = self.time_step_lookup[self.time_step]
             hash_name = self._get_np_name((table, variable, net, index, eval_function, eval_name))
             self.np_results[hash_name][time_step_idx, :] = result
-
-        except Exception as e:
-            logger.error("Error at index %s for %s[%s]: %s" % (index, table, variable, e))
+        
+        except Exception as e:  # noqa: BLE001
+            logger.error(f"Error at index {index} for {table}[{variable}]: {e}")
 
     def _log_ppc(self, table, variable, net, index, eval_function=None, eval_name=None):
         # custom log function fo ppc results
@@ -546,7 +543,7 @@ class OutputWriter(JSONSerializableClass):
         # intended use: At the end of time series simulation write results to pandas
 
         for partial_func in self.output_list:
-            (table, variable, net, index, eval_func, eval_name) = partial_func.args
+            table, variable, _, index, eval_func, eval_name = partial_func.args
             res_name = self._get_output_name(table, variable)
             np_name = self._get_np_name(partial_func.args)
             columns = index
@@ -569,7 +566,7 @@ class OutputWriter(JSONSerializableClass):
                 self.output[res_name] = res_df
 
     def _get_output_name(self, table, variable):
-        return "%s.%s" % (table, variable)
+        return f"{table}.{variable}"
 
     def _get_np_name(self, partial_args):
         eval_name = partial_args[5]
@@ -578,7 +575,7 @@ class OutputWriter(JSONSerializableClass):
         else:
             table = partial_args[0]
             variable = partial_args[1]
-            return "%s.%s" % (table, variable)
+            return f"{table}.{variable}"
 
     def _save_single_xls_sheet(self, append):
         # ToDo: implement save to a single sheet
@@ -589,14 +586,13 @@ class OutputWriter(JSONSerializableClass):
         self.time_step_lookup = {t: idx for idx, t in enumerate(time_steps)}
 
     def _init_np_array(self, partial_func):
-        (table, variable, net, index, eval_function, eval_name) = partial_func.args
+        *_, index, eval_function, _ = partial_func.args
         hash_name = self._get_np_name(partial_func.args)
         n_columns = len(index)
         if eval_function is not None:
             n_columns = 1
-            if isinstance(eval_function, FunctionType):
-                if "n_columns" in eval_function.__code__.co_varnames:
-                    n_columns = eval_function.__defaults__[0]
+            if isinstance(eval_function, FunctionType) and "n_columns" in eval_function.__code__.co_varnames:
+                n_columns = eval_function.__defaults__[0]
         self.np_results[hash_name] = np.zeros((len(self.time_steps), n_columns))
 
     def get_batch_outputs(self, net, recycle_options):
@@ -633,7 +629,7 @@ class OutputWriter(JSONSerializableClass):
                     results["res_bus"] = {"vm_pu": vm_full, "va_degree": va_full}
                 else:
                     raise ValueError("Something went wrong")
-                output_name = "%s.%s" % (table, variable)
+                output_name = f"{table}.{variable}"
                 # convert to dataframe
                 self.output[output_name] = pd.DataFrame(data=results[table][variable], index=self.time_steps)
                 new_output_list.append((table, variable))
