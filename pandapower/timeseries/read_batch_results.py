@@ -58,7 +58,7 @@ def get_batch_trafo_results(net, i_abs, s_abs):
         # get loading percent from rated power
         ld_trafo = s_mva / sn_mva * 100.0
     else:
-        raise ValueError("Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
+        raise ValueError(f"Unknown transformer loading parameter {trafo_loading} - choose 'current' or 'power'")
 
     loading_percent = ld_trafo / net["trafo"]["parallel"].values / net["trafo"]["df"].values
     i_hv_ka = i_abs[0][:, f:t]
@@ -88,7 +88,7 @@ def get_batch_trafo3w_results(net, i_abs, s_abs):
         ld_l = s_abs[1][:, mv:lv] / t3["sn_lv_mva"].values * 100.0
         ld_trafo = maximum(maximum(ld_h, ld_m), ld_l)
     else:
-        raise ValueError("Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
+        raise ValueError(f"Unknown transformer loading parameter {trafo_loading} - choose 'current' or 'power'")
 
     return i_h, i_m, i_l, ld_trafo
 
