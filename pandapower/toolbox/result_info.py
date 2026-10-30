@@ -351,19 +351,19 @@ def _log_opf_task_overview(opf_task_overview):
                 # --- logging information
                 len_idx = len(list(chain(*df["index"])))
                 if df.shape[0] > 1:
-                    s += f"\n    {len_idx:i}x {key}"
+                    s += f"\n    {len_idx}x {key}"
                 else:
                     if not len(set(df.columns).symmetric_difference({"index", "min", "max"})):
-                        s += f"\n    {df.loc[0, 'min']} <= {len_idx:i}x {key} (all) <= {df.loc[0, 'max']:g}"
+                        s += f"\n    {df.loc[0, 'min']} <= {len_idx}x {key} (all) <= {df.loc[0, 'max']:g}"
                     else:
-                        s += f"\n    {len_idx:i}x {key} (all) with these constraints:"
+                        s += f"\n    {len_idx}x {key} (all) with these constraints:"
                         for col in set(df.columns) - {"index"}:
                             s += f" {col}={df.loc[0, col]:g}"
             elif dict_key == "flexibilities_without_costs":
                 if not heading_logged:
                     s += f"\n\n{dict_key}:"
                     heading_logged = True
-                s += f"\n{len(df):i}x {key}"
+                s += f"\n{len(df)}x {key}"
             else:
                 raise NotImplementedError(f"Key {dict_key} is unknown to this code.")
     logger.info(s + "\n")

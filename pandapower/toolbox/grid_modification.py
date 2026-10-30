@@ -1683,7 +1683,7 @@ def replace_sgen_by_gen(
     elif len(gen_indices) != len(sgens):
         raise ValueError(
             f"The length of 'gen_indices' must be the same as 'sgens' but is "
-            f"{len(gen_indices):i} instead of {len(sgens):i}"
+            f"{len(gen_indices)} instead of {len(sgens)}"
         )
 
     # --- determine which columns should be kept while replacing
