@@ -56,9 +56,9 @@ def _calc_zbus(net, ppci):
                 ppci["internal"]["Zbus"] = inv_sparse(Ybus).toarray()
         else:
             ppci["internal"]["Zbus"] = inv(Ybus.toarray())
-    except Exception as e:
+    except Exception:
         _clean_up(net, res=False)
-        raise e
+        raise
 
 
 def _calc_zbus_diag(net, ppci, bus_idx=None):
