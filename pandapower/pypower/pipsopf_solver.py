@@ -15,7 +15,7 @@ from pandapower.pypower.idx_brch import F_BUS, MU_SF, MU_ST, PF, PT, QF, QT, RAT
 from pandapower.pypower.idx_bus import BUS_TYPE, LAM_P, LAM_Q, MU_VMAX, MU_VMIN, REF, VA, VM
 from pandapower.pypower.idx_cost import MODEL, NCOST, PW_LINEAR
 from pandapower.pypower.idx_gen import GEN_BUS, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN, PG, QG, VG
-from pandapower.pypower.makeYbus import makeYbus
+from pandapower.pypower.make_y_bus import makeYbus
 from pandapower.pypower.opf_consfcn import opf_consfcn
 from pandapower.pypower.opf_costfcn import opf_costfcn
 from pandapower.pypower.opf_hessfcn import opf_hessfcn

@@ -13,11 +13,11 @@ from numpy import flatnonzero as find
 from scipy.sparse import csr_matrix as sparse
 from scipy.sparse import hstack, issparse, vstack
 
-from pandapower.pypower.d2AIbr_dV2 import d2AIbr_dV2
-from pandapower.pypower.d2ASbr_dV2 import d2ASbr_dV2
-from pandapower.pypower.d2Sbus_dV2 import d2Sbus_dV2
-from pandapower.pypower.dIbr_dV import dIbr_dV
-from pandapower.pypower.dSbr_dV import dSbr_dV
+from pandapower.pypower.d2_a_i_br_d_v2 import d2AIbr_dV2
+from pandapower.pypower.d2_a_s_br_d_v2 import d2ASbr_dV2
+from pandapower.pypower.d2_s_bus_d_v2 import d2Sbus_dV2
+from pandapower.pypower.d_i_br_d_v import dIbr_dV
+from pandapower.pypower.d_s_br_d_v import dSbr_dV
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pypower.idx_cost import MODEL, POLYNOMIAL
 from pandapower.pypower.idx_gen import PG, QG

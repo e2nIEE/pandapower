@@ -101,7 +101,7 @@ def gausspf(Ybus, Sbus, V0, ref, pv, pq, ppopt=None):
             converged = 1
             if verbose:
                 sys.stdout.write(f"\nGauss-Seidel power flow converged in {i} iterations.\n")
-    
+
     if verbose and not converged:
         sys.stdout.write(f"Gauss-Seidel power did not converge in {i} iterations.")
 

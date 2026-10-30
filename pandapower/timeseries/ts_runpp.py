@@ -16,7 +16,7 @@ from pandapower.pf.run_newton_raphson_pf import _get_pf_variables_from_ppci, _ge
 from pandapower.powerflow import LoadflowNotConverged, _add_auxiliary_elements
 from pandapower.pypower.idx_bus import PD, QD
 from pandapower.pypower.idx_bus_dc import DC_PD
-from pandapower.pypower.makeSbus import makeSbus
+from pandapower.pypower.make_s_bus import makeSbus
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results, _get_aranged_lookup
 from pandapower.results_branch import _get_branch_flows, _get_line_results, _get_trafo3w_results, _get_trafo_results
 from pandapower.results_bus import _get_bus_dc_results, _get_bus_results

@@ -151,7 +151,7 @@ from pandapower.pypower.idx_vsc import (
     VSC_VALUE_DC,
     VSC_X,
 )
-from pandapower.pypower.makeSbus import makeSbus
+from pandapower.pypower.make_s_bus import makeSbus
 
 logger = logging.getLogger(__name__)
 

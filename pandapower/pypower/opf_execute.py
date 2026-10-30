@@ -18,7 +18,7 @@ from pandapower.pypower.idx_bus import VM
 from pandapower.pypower.idx_gen import GEN_BUS, VG
 
 # from pandapower.pypower.ipoptopf_solver import ipoptopf_solver
-from pandapower.pypower.makeYbus import makeYbus
+from pandapower.pypower.make_y_bus import makeYbus
 from pandapower.pypower.opf_consfcn import opf_consfcn
 from pandapower.pypower.opf_costfcn import opf_costfcn
 from pandapower.pypower.pipsopf_solver import pipsopf_solver  # temporary changed import to match bugfix path

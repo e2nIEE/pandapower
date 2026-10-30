@@ -109,9 +109,10 @@ class opf_model:
             for k in range(self.var["NS"]):
                 name = self.var["order"][k]
                 idx = self.var["idx"]
-                s += "{:15d}:{:12s} {:8d} {:8d} {:8d}\n".format(k, name, idx["i1"][name], idx["iN"][name],
-                                                                idx["N"][name])
-            
+                s += "{:15d}:{:12s} {:8d} {:8d} {:8d}\n".format(
+                    k, name, idx["i1"][name], idx["iN"][name], idx["N"][name]
+                )
+
             s += "{:15s}{:31s}\n".format(f"var['NS'] = {self.var['NS']:d}", f"var['N'] = {self.var['N']:d}")
             s += "\n"
         else:
@@ -123,9 +124,10 @@ class opf_model:
             for k in range(self.nln["NS"]):
                 name = self.nln["order"][k]
                 idx = self.nln["idx"]
-                s += "{:15d}:{:12s} {:8d} {:8d} {:8d}\n".format(k, name, idx["i1"][name], idx["iN"][name],
-                                                                idx["N"][name])
-            
+                s += "{:15d}:{:12s} {:8d} {:8d} {:8d}\n".format(
+                    k, name, idx["i1"][name], idx["iN"][name], idx["N"][name]
+                )
+
             s += "{:15s}{:31s}\n".format(f"nln.NS = {self.nln['NS']:d}", f"nln.N = {self.nln['N']:d}")
             s += "\n"
         else:
@@ -137,9 +139,10 @@ class opf_model:
             for k in range(self.lin["NS"]):
                 name = self.lin["order"][k]
                 idx = self.lin["idx"]
-                s += "{:15d}:{:12s} {:8d} {:8d} {:8d}\n".format(k, name, idx["i1"][name], idx["iN"][name],
-                                                                idx["N"][name])
-            
+                s += "{:15d}:{:12s} {:8d} {:8d} {:8d}\n".format(
+                    k, name, idx["i1"][name], idx["iN"][name], idx["N"][name]
+                )
+
             s += "{:15s}{:31s}\n".fromat(f"lin.NS = {self.lin['NS']:d}", f"lin.N = {self.lin['N']:d}")
             s += "\n"
         else:
@@ -151,9 +154,10 @@ class opf_model:
             for k in range(self.cost["NS"]):
                 name = self.cost["order"][k]
                 idx = self.cost["idx"]
-                s += "{:15d}:{:12s} {:8d} {:8d} {:8d}\n".format(k, name, idx["i1"][name], idx["iN"][name],
-                                                                idx["N"][name])
-            
+                s += "{:15d}:{:12s} {:8d} {:8d} {:8d}\n".format(
+                    k, name, idx["i1"][name], idx["iN"][name], idx["N"][name]
+                )
+
             s += "{:15s}{:31s}\n".format(f"cost.NS = {self.cost['NS']}", f"cost.N = {self.cost['N']}")
             s += "\n"
         else:
@@ -166,7 +170,7 @@ class opf_model:
         s += str(self.user_data)
 
         return s
-    
+
     def add_constraints(self, name, AorN, l, u=None, varsets=None):
         """Adds a set of constraints to the model.
 

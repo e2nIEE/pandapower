@@ -24,13 +24,13 @@ def pips(
     f_fcn,
     x0=None,
     A=None,
-        l=None,
+    l=None,
     u=None,
     xmin=None,
     xmax=None,
     gh_fcn=None,
     hess_fcn=None,
-        opt=None,
+    opt=None,
 ):
     """Primal-dual interior point method for NLP (nonlinear programming).
     Minimize a function F(X) beginning from a starting point M{x0}, subject to
@@ -384,8 +384,9 @@ def pips(
             print(" it    objective   step size   feascond     gradcond     compcond     costcond  ")
             print("----  ------------ --------- ------------ ------------ ------------ ------------")
             print(
-                "{:3d}  {:12.8g} {:10s} {:12g} {:12g} {:12g} {:12g}".format(i, (f / opt["cost_mult"]), "", feascond,
-                                                                            gradcond, compcond, costcond)
+                "{:3d}  {:12.8g} {:10s} {:12g} {:12g} {:12g} {:12g}".format(
+                    i, (f / opt["cost_mult"]), "", feascond, gradcond, compcond, costcond
+                )
             )
 
     if (
@@ -528,8 +529,9 @@ def pips(
 
         if opt["verbose"] > 1:
             print(
-                "{:3d}  {:12.8g} {:10.5g} {:12g} {:12g} {:12g} {:12g}".format(i, (f / opt["cost_mult"]), norm(dx),
-                                                                              feascond, gradcond, compcond, costcond)
+                "{:3d}  {:12.8g} {:10.5g} {:12g} {:12g} {:12g} {:12g}".format(
+                    i, (f / opt["cost_mult"]), norm(dx), feascond, gradcond, compcond, costcond
+                )
             )
 
         if (
@@ -548,14 +550,14 @@ def pips(
                 eflag = -1
                 break
             f0 = f
-    
+
     if opt["verbose"] and not converged:
         print(f"Did not converge in {i} iterations.")
 
     # package results
     if eflag != -1:
         eflag = converged
-    
+
     match eflag:
         case 0:
             message = "Did not converge"

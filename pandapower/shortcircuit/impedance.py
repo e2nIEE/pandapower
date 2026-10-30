@@ -14,7 +14,7 @@ from pandapower.pypower.idx_bus_sc import R_EQUIV, X_EQUIV
 try:
     from pandapower.pf.makeYbus_numba import makeYbus
 except ImportError:
-    from pandapower.pypower.makeYbus import makeYbus
+    from pandapower.pypower.make_y_bus import makeYbus
 
 
 def _calc_rx(net, ppci, bus_idx):

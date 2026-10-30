@@ -462,7 +462,7 @@ def printpf(
         if isOPF:
             genlamP = bus[e2i[gen[:, GEN_BUS].astype(int64)], LAM_P]
             genlamQ = bus[e2i[gen[:, GEN_BUS].astype(int64)], LAM_Q]
-        
+
         fd.write(f"\n{'':=^80}")
         fd.write(f"\n|     {'Generator Data':<73}|")
         fd.write(f"\n{'':=^80}")
@@ -484,7 +484,7 @@ def printpf(
                 fd.write("       -         -  ")
             if isOPF:
                 fd.write(f"{genlamP[i]:10.2f}{genlamQ[i]:10.2f}")
-        
+
         fd.write("\n{'--------  --------':>39}")
         fd.write(f"\n            Total: {sum(gen[ong, PG]):9.2f}{sum(gen[ong, QG]):10.2f}")
         fd.write("\n")
@@ -618,7 +618,7 @@ def printpf(
                         fd.write(f"{bus[i, MU_VMIN]:10.3f}")
                     else:
                         fd.write("      -   ")
-                    
+
                     fd.write("{:8.3f}{:7.3f}{:7.3f}".format(*bus[i, [VMIN, VM, VMAX]]))
                     if (bus[i, VM] > bus[i, VMAX] - ctol) | (bus[i, MU_VMAX] > ptol):
                         fd.write(f"{bus[i, MU_VMAX]:10.3f}")
@@ -892,7 +892,7 @@ def printpf(
                         fd.write(f"{branch[i, MU_SF].real:10.3f}")
                     else:
                         fd.write("      -   ")
-                    
+
                     fd.write(f"{Ff[i]:9.2f}{branch[i, RATE_A].real:10.2f}{Ft[i]:10.2f}")
                     if (Ft[i] > branch[i, RATE_A] - ctol) | (branch[i, MU_ST] > ptol):
                         fd.write(f"{branch[i, MU_ST].real:10.3f}")
