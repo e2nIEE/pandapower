@@ -131,9 +131,8 @@ def opf_args(ppc, ppopt):
             stderr.write("opf_args.m: dimension mismatch between N and fparm in generalized cost parameters\n")
         if (H is not None) and (H.shape[0] != nw | H.shape[0] != nw):
             stderr.write("opf_args.m: dimension mismatch between N and H in generalized cost parameters\n")
-        if Au is not None:
-            if Au.shape[0] > 0 and N.shape[1] != Au.shape[1]:
-                stderr.write("opf_args.m: A and N must have the same number of columns\n")
+        if Au is not None and Au.shape[0] > 0 and N.shape[1] != Au.shape[1]:
+            stderr.write("opf_args.m: A and N must have the same number of columns\n")
         ## make sure N and H are sparse
         if not issparse(N):
             stderr.write("opf_args.m: N must be sparse in generalized cost parameters\n")

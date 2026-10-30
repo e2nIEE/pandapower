@@ -259,7 +259,7 @@ def printpf(
         )
         fd.write(
             f"\n  Dispatchable {len(onld):5d}       Dispatchable       {-sum(gen[onld, PG]):7.1f} of "
-            f"{-sum(gen[onld, PMIN]):-7.1f}{-sum(gen[onld, QG]):7.1f}"
+            f"{-sum(gen[onld, PMIN]):7.1f}{-sum(gen[onld, QG]):7.1f}"
         )
         fd.write(
             f"\nShunts         {len(nzsh):5d}     Shunt (inj)          {-sum(bus[nzsh, VM] ** 2 * bus[nzsh, GS]):7.1f}"
@@ -285,16 +285,16 @@ def printpf(
         maxv = max(bus[:, VM])
         maxi = argmax(bus[:, VM])
         fd.write(
-            f"\nVoltage Magnitude {minv:7.3f} p.u. @ bus {bus[mini, BUS_I]:-4d}     "
-            f"{maxv:7.3f} p.u. @ bus {bus[maxi, BUS_I]:-4d}"
+            f"\nVoltage Magnitude {minv:7.3f} p.u. @ bus {bus[mini, BUS_I]:4d}     "
+            f"{maxv:7.3f} p.u. @ bus {bus[maxi, BUS_I]:4d}"
         )
         minv = min(bus[:, VA])
         mini = argmin(bus[:, VA])
         maxv = max(bus[:, VA])
         maxi = argmax(bus[:, VA])
         fd.write(
-            f"\nVoltage Angle   {minv:8.2f} deg   @ bus {bus[mini, BUS_I]:-4d}   "
-            f"{maxv:8.2f} deg   @ bus {bus[maxi, BUS_I]:-4d}"
+            f"\nVoltage Angle   {minv:8.2f} deg   @ bus {bus[mini, BUS_I]:4d}   "
+            f"{maxv:8.2f} deg   @ bus {bus[maxi, BUS_I]:4d}"
         )
         if not isDC:
             maxv = max(loss.real)
@@ -315,16 +315,16 @@ def printpf(
             maxv = max(bus[:, LAM_P])
             maxi = argmax(bus[:, LAM_P])
             fd.write(
-                f"\nLambda P        {minv:8.2f} $/MWh @ bus {bus[mini, BUS_I]:-4d}   {maxv:8.2f} $/MWh @ bus "
-                f"{bus[maxi, BUS_I]:-4d}"
+                f"\nLambda P        {minv:8.2f} $/MWh @ bus {bus[mini, BUS_I]:4d}   {maxv:8.2f} $/MWh @ bus "
+                f"{bus[maxi, BUS_I]:4d}"
             )
             minv = min(bus[:, LAM_Q])
             mini = argmin(bus[:, LAM_Q])
             maxv = max(bus[:, LAM_Q])
             maxi = argmax(bus[:, LAM_Q])
             fd.write(
-                f"\nLambda Q        {minv:8.2f} $/MWh @ bus {bus[mini, BUS_I]:-4d}   {maxv:8.2f} $/MWh @ bus "
-                f"{bus[maxi, BUS_I]:-4d}"
+                f"\nLambda Q        {minv:8.2f} $/MWh @ bus {bus[mini, BUS_I]:4d}   {maxv:8.2f} $/MWh @ bus "
+                f"{bus[maxi, BUS_I]:4d}"
             )
         fd.write("\n")
 
@@ -389,8 +389,8 @@ def printpf(
                 (bus[e2i[gen[:, GEN_BUS].astype(int64)], BUS_AREA] == a) & (gen[:, GEN_STATUS] > 0) & ~isload(gen)
             )
             fd.write(
-                f"\n{a:3d}   {sum(gen[ig, PMAX]):7.1f}  {sum(gen[ig, QMIN]):7.1f} to {sum(gen[ig, QMAX]):-.1f}  "
-                f"{sum(gen[igon, PMAX]):7.1f}  {sum(gen[igon, QMIN]):7.1f} to {sum(gen[igon, QMAX]):-7.1f}   "
+                f"\n{a:3d}   {sum(gen[ig, PMAX]):7.1f}  {sum(gen[ig, QMIN]):7.1f} to {sum(gen[ig, QMAX]):.1f}  "
+                f"{sum(gen[igon, PMAX]):7.1f}  {sum(gen[igon, QMIN]):7.1f} to {sum(gen[igon, QMAX]):7.1f}   "
                 f"{sum(gen[igon, PG]):7.1f} {sum(gen[igon, QG]):7.1f}"
             )
 

@@ -104,7 +104,7 @@ def pipsopf_solver(om, ppopt, out_opt=None):
     ny = om.getN("var", "y")  ## number of piece-wise linear costs
 
     ## linear constraints
-    A, l, u = om.linear_constraints()  # noqa: E741
+    A, l, u = om.linear_constraints()
 
     ## bounds on optimization vars
     x0, xmin, xmax = om.getv()

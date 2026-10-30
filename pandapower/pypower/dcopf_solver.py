@@ -87,7 +87,7 @@ def dcopf_solver(om, ppopt, out_opt=None):
             # Todo: Fix Gurobi and activate 700 again. ATM: Fallback on 200
             # alg = 700
             alg = 200
-            UserWarning("Gurobi not working with pypower 5.1.4")
+            raise UserWarning("Gurobi not working with pypower 5.1.4")
         else:  ## otherwise PIPS
             alg = 200
 
@@ -111,7 +111,7 @@ def dcopf_solver(om, ppopt, out_opt=None):
     nxyz = om.getN("var")  ## total number of control vars of all types
 
     ## linear constraints & variable bounds
-    A, l, u = om.linear_constraints()  # noqa: E741
+    A, l, u = om.linear_constraints()
     x0, xmin, xmax = om.getv()
 
     ## set up objective function of the form: f = 1/2 * X'*HH*X + CC'*X

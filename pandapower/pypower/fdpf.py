@@ -65,7 +65,7 @@ def fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt=None):
         sys.stdout.write("\niteration     max mismatch (p.u.)  ")
         sys.stdout.write("\ntype   #        P            Q     ")
         sys.stdout.write("\n---- ----  -----------  -----------")
-        sys.stdout.write("\n  -  %3d   %10.3e   %10.3e" % (i, normP, normQ))
+        sys.stdout.write(f"\n  -  {i:3d}   {normP:10.3e}   {normQ:10.3e}")
     if normP < tol and normQ < tol:
         converged = 1
         if verbose > 1:
@@ -100,12 +100,12 @@ def fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt=None):
         normP = linalg.norm(P, inf)
         normQ = linalg.norm(Q, inf)
         if verbose > 1:
-            sys.stdout.write("\n  %s  %3d   %10.3e   %10.3e" % (type, i, normP, normQ))
+            sys.stdout.write(f"\n  {type}  {i:3d}   {normP:10.3e}   {normQ:10.3e}")
         if normP < tol and normQ < tol:
             converged = 1
             if verbose:
                 sys.stdout.write(
-                    "\nFast-decoupled power flow converged in %d P-iterations and %d Q-iterations.\n" % (i, i - 1)
+                    f"\nFast-decoupled power flow converged in {i:d} P-iterations and {i - 1:d} Q-iterations.\n"
                 )
             break
 
@@ -125,17 +125,16 @@ def fdpf(Ybus, Sbus, V0, Bp, Bpp, ref, pv, pq, ppopt=None):
         normP = linalg.norm(P, inf)
         normQ = linalg.norm(Q, inf)
         if verbose > 1:
-            sys.stdout.write("\n  Q  %3d   %10.3e   %10.3e" % (i, normP, normQ))
+            sys.stdout.write(f"\n  Q  {i:3d}   {normP:10.3e}   {normQ:10.3e}")
         if normP < tol and normQ < tol:
             converged = 1
             if verbose:
                 sys.stdout.write(
-                    "\nFast-decoupled power flow converged in %d P-iterations and %d Q-iterations.\n" % (i, i)
+                    f"\nFast-decoupled power flow converged in {i} P-iterations and {i} Q-iterations.\n"
                 )
             break
-
-    if verbose:
-        if not converged:
-            sys.stdout.write("\nFast-decoupled power flow did not converge in %d iterations." % i)
+    
+    if verbose and not converged:
+        sys.stdout.write(f"\nFast-decoupled power flow did not converge in {i} iterations.")
 
     return V, converged, i
