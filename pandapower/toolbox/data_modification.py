@@ -74,7 +74,7 @@ def add_column_from_node_to_elements(net, column, replace, elements=None, branch
             crossing = sum(~compare_arrays(net[element][column].values, to_validate[element]))
             if crossing > 0:
                 msg = (
-                    f"There have been {crossing:i} {element}s with different {column} data at from-/hv- and to-/lv-bus"
+                    f"There have been {crossing:d} {element}s with different {column} data at from-/hv- and to-/lv-bus"
                 )
                 if verbose:
                     logger.warning(msg)
