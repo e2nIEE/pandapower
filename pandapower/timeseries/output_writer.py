@@ -251,9 +251,7 @@ class OutputWriter(JSONSerializableClass):
         if self.output_path is not None:
             if save_single and self.output_file_type in [".xls", ".xlsx"]:
                 self._save_single_xls_sheet(append)
-            elif self.output_file_type in [".xls", ".xlsx", ".json", ".p"] or "csv" in self.output_file_type.split(
-                    "."
-            ):
+            elif self.output_file_type in [".xls", ".xlsx", ".json", ".p"] or "csv" in self.output_file_type.split("."):
                 self._save_separate(append, net=net)
             else:
                 raise UserWarning("Specify output file with .csv, .csv.*, .xls, .xlsx, .p or .json ending")
@@ -365,11 +363,12 @@ class OutputWriter(JSONSerializableClass):
         # Find if this table/variable combination already exists in log_variables
         existing_entry_idx = None
         for i, log_args in enumerate(self.log_variables):
-            if (log_args[0] == table
-                    and log_args[1] == variable
-                    and eval_function is None
-                    and eval_name is None
-                    and (len(log_args) <= 4 or log_args[4] is None)
+            if (
+                log_args[0] == table
+                and log_args[1] == variable
+                and eval_function is None
+                and eval_name is None
+                and (len(log_args) <= 4 or log_args[4] is None)
             ):
                 # Check if both entries have no eval_function/eval_name
                 existing_entry_idx = i
@@ -454,10 +453,11 @@ class OutputWriter(JSONSerializableClass):
                 f"eval_name '{eval_name}', eval_name is neglected."
             )
             eval_name = None
-        if (eval_name is not None
-                and eval_function is not None
-                and isinstance(eval_function, FunctionType)
-                and "n_columns" in eval_function.__code__.co_varnames
+        if (
+            eval_name is not None
+            and eval_function is not None
+            and isinstance(eval_function, FunctionType)
+            and "n_columns" in eval_function.__code__.co_varnames
         ):
             logger.info(
                 f"'eval_name' is to give a name in case of single value evaluation functions. Since n_columns is given "
@@ -516,7 +516,7 @@ class OutputWriter(JSONSerializableClass):
             time_step_idx = self.time_step_lookup[self.time_step]
             hash_name = self._get_np_name((table, variable, net, index, eval_function, eval_name))
             self.np_results[hash_name][time_step_idx, :] = result
-        
+
         except Exception as e:  # noqa: BLE001
             logger.error(f"Error at index {index} for {table}[{variable}]: {e}")
 

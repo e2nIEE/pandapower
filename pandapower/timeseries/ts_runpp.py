@@ -166,7 +166,7 @@ class TimeSeriesRunpp:
         _add_auxiliary_elements(net)
         self.ppc, self.ppci = _pd2ppc(net)
         net["_ppc"] = self.ppc
-        
+
         self.baseMVA, bus, _, branch, self.ref, self.pv, self.pq, _, _, self.V, self.ref_gens = (
             _get_pf_variables_from_ppci(self.ppci)
         )
@@ -252,7 +252,7 @@ class TimeSeriesRunpp:
 
         # update Ybus based on this
         options = net._options
-        baseMVA, bus, _, branch, *_, = _get_pf_variables_from_ppci(ppci)
+        baseMVA, bus, _, branch, *_ = _get_pf_variables_from_ppci(ppci)
         self.ppci, self.Ybus, self.Yf, self.Yt = _get_Y_bus(ppci, options, makeYbus_numba, baseMVA, bus, branch)
 
     def get_update_ctrl(self):
