@@ -387,20 +387,7 @@ def test_all_currents_with_oos_elements():
     assert np.allclose(
         net.res_line_sc.ikss_ka.loc[[(0, 0), (0, 1)]].values, np.array([0, 0.3989686]), atol=1e-5
     )  # sgen does not contribute in case == "min"
-    # np.array([0.01259673, 0.3989686]), atol=1e-5)  # <- old
     assert np.allclose(net.res_line_sc.ikss_ka.loc[[(0, 2), (1, 0), (1, 1), (1, 2)]].values, 0, atol=1e-10)
-
-
-# TODO: This example should not work anymore
-# def test_branch_all_currents_gen():
-#     net = gen_three_bus_example()
-#     calc_sc(net, case="max", branch_results=True, return_all_currents=True)
-#     assert np.allclose(net.res_line_sc.ikss_ka.values,
-#                        np.array([0.76204252, 0.57040645, 0.55786693, 0., 0., 1.28698045]))
-
-#     calc_sc(net, case="min", branch_results=True, return_all_currents=True)
-#     assert np.allclose(net.res_line_sc.ikss_ka.values,
-#                        np.array([0.69255026, 0.45574755, 0.44487882, 0., 0., 1.10747517]))
 
 
 def test_branch_all_currents_trafo_simple():
