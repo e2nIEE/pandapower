@@ -26,7 +26,6 @@ from pandapower.networks.cigre_networks import create_cigre_network_mv
 from pandapower.networks.power_system_test_cases import case9
 from pandapower.run import runpp
 from pandapower.std_types import create_std_type
-
 from test import test_path
 
 

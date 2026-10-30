@@ -41,7 +41,6 @@ from pandapower.toolbox.comparison import compare_arrays, dataframes_equal, nets
 from pandapower.toolbox.data_modification import reindex_buses
 from pandapower.toolbox.element_selection import pp_elements
 from pandapower.toolbox.grid_modification import replace_ext_grid_by_gen, replace_gen_by_sgen, select_subnet
-
 from test import test_path
 
 
@@ -121,10 +120,10 @@ def run_basic_usecases(eq_type, net=None):
 
 def check_elements_amount(net, elms_dict, check_all_pp_elements=True):
     if check_all_pp_elements:
-        elms_dict.update({elm: 0 for elm in pp_elements() if elm not in elms_dict.keys()})
+        elms_dict.update({elm: 0 for elm in pp_elements() if elm not in elms_dict})
     for key, val in elms_dict.items():
         if net[key].shape[0] != val:
-            raise ValueError("The net has %i %ss but %i are expected." % (net[key].shape[0], key, int(val)))
+            raise ValueError(f"The net has {net[key].shape[0]:i} {key}s but {val:i} are expected.")
 
 
 def check_res_bus(net_orig, net_eq):
@@ -144,7 +143,7 @@ def check_res_bus(net_orig, net_eq):
 def check_results_without_order(eq_net2, eq_net3):
     for elm in pp_elements():
         res_table = "res_" + elm
-        if res_table in eq_net2.keys() and eq_net2[res_table].shape[0]:
+        if res_table in eq_net2 and eq_net2[res_table].shape[0]:
             idxs3 = list(eq_net3[res_table].index)
             for idx2 in eq_net2[res_table].index:
                 same_values_found = False
@@ -414,7 +413,7 @@ def test_adopt_columns_to_separated_eq_elms():
     # --- sgen_separate0
     net = case9()
     replace_gen_by_sgen(net)
-    net.sgen["origin_id"] = ["sgen_%i" % i for i in range(net.sgen.shape[0])]
+    net.sgen["origin_id"] = [f"sgen_{i}" for i in range(net.sgen.shape[0])]
 
     eq_net = get_equivalent(net, "rei", boundary_buses={4, 8}, internal_buses={0, 3}, sgen_separate=True)
     columns_to_check = [

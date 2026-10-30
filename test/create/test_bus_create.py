@@ -1,6 +1,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+from collections.abc import Callable
 from functools import partial
 
 import geojson
@@ -34,7 +35,7 @@ from pandapower.network_schema.tools.validation.network_validation import valida
 
 def test_nonexistent_bus():
     net = pandapowerNet(name="test_nonexistent_bus")
-    create_functions = [
+    create_functions: list[Callable] = [
         partial(create_load, net=net, p_mw=0, q_mvar=0, bus=0, index=0),
         partial(create_sgen, net=net, p_mw=0, q_mvar=0, bus=0, index=0),
         partial(
@@ -141,14 +142,18 @@ def test_nonexistent_bus():
         partial(create_switch, net, bus=0, element=1, et="b", index=0),
     ]
     for func in create_functions:
-        with pytest.raises(Exception):  # exception has to be raised since bus doesn't exist
+        # TODO: check that all functions raise same Exception
+        #  some use 'Cannot attach to bus 0, 0 does not exist'
+        #  Trafo uses 'Trafo tries to attach to bus 0'
+        with pytest.raises(UserWarning):  # exception has to be raised since bus doesn't exist
             func()
     create_bus(net, 0.4)
     create_bus(net, 0.4)
     create_bus(net, 0.4)
     for func in create_functions:
         func()  # buses exist, element can be created
-        with pytest.raises(Exception):  # exception is raised because index already exists
+        # TODO: check that all functions raise same Exception
+        with pytest.raises(UserWarning):  # exception is raised because index already exists
             func()
 
     validate_network(net)
