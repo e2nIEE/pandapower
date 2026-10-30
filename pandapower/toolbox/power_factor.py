@@ -76,8 +76,8 @@ def _pq_from_cosphi(s, cosphi, qmode, pmode):
         qsign = -1
     else:
         raise ValueError(
-            'Unknown mode %s - specify "underexcited" (Q absorption, decreases voltage'
-            ') or "overexcited" (Q injection, increases voltage)' % qmode
+            f'Unknown mode {qmode} - specify "underexcited" (Q absorption, decreases voltage) or '
+            f'"overexcited" (Q injection, increases voltage)'
         )
 
     if pmode == "load":
@@ -85,7 +85,7 @@ def _pq_from_cosphi(s, cosphi, qmode, pmode):
     elif pmode == "gen":
         psign = -1
     else:
-        raise ValueError('Unknown mode %s - specify "load" or "gen"' % pmode)
+        raise ValueError(f'Unknown mode {pmode} - specify "load" or "gen"')
 
     p = s * cosphi
     q = psign * qsign * np.sqrt(s**2 - p**2)
@@ -251,7 +251,7 @@ def cosphi_to_pos(cosphi):
     pandapower.toolbox.cosphi_from_pos
     pandapower.toolbox.cosphi_pos_neg_from_pq
     """
-    multiple = not (isinstance(cosphi, float) or isinstance(cosphi, int))
+    multiple = not isinstance(cosphi, (float, int))
     cosphi = np.array(ensure_iterability(cosphi))
     cosphi[cosphi < 0] += 2
     if multiple:
@@ -279,7 +279,7 @@ def cosphi_from_pos(cosphi):
     pandapower.toolbox.cosphi_to_pos
     pandapower.toolbox.cosphi_pos_neg_from_pq
     """
-    multiple = not (isinstance(cosphi, float) or isinstance(cosphi, int))
+    multiple = not isinstance(cosphi, (float, int))
     cosphi = np.array(ensure_iterability(cosphi))
     cosphi[cosphi > 1] -= 2
     if multiple:

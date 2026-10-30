@@ -276,12 +276,15 @@ def merge_nets(
                 old_indices = pd.Series(old_indices).loc[~pd.Series(old_indices).duplicated()].tolist()
             new_indices = range(start, start + len(old_indices))
             reindex_lookup[elm_type] = dict(zip(old_indices, new_indices))
-            if "trafo_characteristic_table" in net and "id_characteristic" in net["trafo_characteristic_table"]:
-                if elm_type == "trafo_characteristic_table":
-                    id_start = net1[elm_type].id_characteristic.max() + 1
-                    id_max = net2[elm_type].id_characteristic.max() + id_start
-                    combined_ids = net2[elm_type].id_characteristic.dropna().unique()
-                    reindex_lookup[elm_type] = dict(zip(sorted(combined_ids), range(id_start, id_max + 1)))
+            if (
+                "trafo_characteristic_table" in net
+                and "id_characteristic" in net["trafo_characteristic_table"]
+                and elm_type == "trafo_characteristic_table"
+            ):
+                id_start = net1[elm_type].id_characteristic.max() + 1
+                id_max = net2[elm_type].id_characteristic.max() + id_start
+                combined_ids = net2[elm_type].id_characteristic.dropna().unique()
+                reindex_lookup[elm_type] = dict(zip(sorted(combined_ids), range(id_start, id_max + 1)))
             reindex_elements(net2, elm_type, lookup=reindex_lookup[elm_type])
     if len(reindex_lookup):
         log_to_level(
@@ -316,7 +319,7 @@ def merge_nets(
         dev1 = max(abs(net.res_bus.loc[net1.bus.index].vm_pu.values - net1_res_bus.vm_pu.values))
         dev2 = max(abs(net.res_bus.iloc[len(net1.bus.index) :].vm_pu.values - net2.res_bus.vm_pu.values))
         if dev1 > tol or dev2 > tol:
-            raise UserWarning("Deviation in bus voltages after merging: %.10f" % max(dev1, dev2))
+            raise UserWarning(f"Deviation in bus voltages after merging: {max(dev1, dev2):.10f}")
 
     if return_net2_reindex_lookup:
         return net, reindex_lookup
@@ -335,7 +338,7 @@ def set_element_status(net, buses, in_service):
             try:
                 idx = get_connected_elements(net, element, buses)
                 net[element].loc[list(idx), "in_service"] = in_service
-            except Exception:
+            except Exception:  # noqa: BLE001, S110
                 pass
 
 
@@ -606,7 +609,7 @@ def merge_same_bus_generation_plants(
     for bus in gen_df["bus"].loc[gen_df["bus"].duplicated()].unique():
         idxs = gen_df.index[gen_df.bus == bus]
         if "vm_pu" in gen_df.columns and len(gen_df.vm_pu.loc[idxs].dropna().unique()) > 1:
-            message = "Generation plants connected to bus %i have different vm_pu." % bus
+            message = f"Generation plants connected to bus {bus} have different vm_pu."
             if error:
                 raise ValueError(message)
             else:
@@ -623,11 +626,11 @@ def merge_same_bus_generation_plants(
 
         if "profiles" in net and col == "p_mw":
             elm = "gen" if "gen" in gen_df["elm_type"].loc[idxs[1:]].unique() else "sgen"
-            elm_p = "%s.p_mw" % elm
+            elm_p = f"{elm}.p_mw"
             net.profiles[elm_p].loc[:, uniq_idx] = net.profiles[elm_p].loc[:, gen_df["index"].loc[idxs]].sum(axis=1)
             net.profiles[elm_p] = net.profiles[elm_p].drop(columns=gen_df["index"].loc[idxs[1:]])
             if elm == "gen":
-                net.profiles["%s.vm_pu" % elm].drop(columns=gen_df["index"].loc[idxs[1:]], inplace=True)
+                net.profiles[f"{elm}.vm_pu"].drop(columns=gen_df["index"].loc[idxs[1:]], inplace=True)
 
         # sum q_mvar (if available)
         if "q_mvar" in net[uniq_et].columns:
@@ -664,7 +667,7 @@ def close_switch_at_line_with_two_open_switches(net):
             closed_switches.add(switch.index[0])
     if len(closed_switches) > 0:
         logger.info(
-            "closed %d switches at line with 2 open switches (switches: %s)" % (len(closed_switches), closed_switches)
+            f"closed {len(closed_switches)} switches at line with 2 open switches (switches: {closed_switches})"
         )
 
 
@@ -850,7 +853,7 @@ def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True, 
                     res_eid = net[res_element_type].index.intersection(eid)
                     net[res_element_type] = net[res_element_type].drop(res_eid)
                 if net[element_type].shape[0] < n_el:
-                    logger.debug("Dropped %d %s elements" % (n_el - net[element_type].shape[0], element_type))
+                    logger.debug(f"Dropped {n_el - net[element_type].shape[0]} {element_type} elements")
                 # drop costs for the affected elements
                 for cost_elm in ["poly_cost", "pwl_cost"]:
                     net[cost_elm] = net[cost_elm].drop(
@@ -865,7 +868,7 @@ def drop_switches_at_buses(net, buses):
         (net["switch"]["bus"].isin(buses)) | ((net["switch"]["element"].isin(buses)) & (net["switch"]["et"] == "b"))
     ].index
     net["switch"] = net["switch"].drop(i)
-    logger.debug("Dropped %d switches" % len(i))
+    logger.debug(f"Dropped {len(i)} switches")
 
 
 def drop_measurements_at_elements(net, element_type, idx=None, side=None):
@@ -994,7 +997,7 @@ def _inner_branches(net, buses, task, branch_elements=None):
             elif task == "get":
                 inner_branches[elm] = net[elm].index[inner]
             else:
-                raise NotImplementedError("task '%s' is unknown." % str(task))
+                raise NotImplementedError(f"task '{task}' is unknown.")
     return inner_branches
 
 
@@ -1130,13 +1133,13 @@ def create_replacement_switch_for_branch(net, element_type, element_index):
     else:
         is_closed = in_service
 
-    switch_name = "REPLACEMENT_%s_%d" % (element_type, element_index)
+    switch_name = f"REPLACEMENT_{element_type}_{element_index}"
     sid = create_switch(net, name=switch_name, bus=bus_i, element=bus_j, et="b", closed=is_closed, type="CB")
     # to enable unproblematic validation for the pf converter
     for col in ("pf_closed", "pf_in_service"):
         if "res_switch" in net and col in net.res_switch:
             net.res_switch.loc[sid, col] = is_closed
-    logger.debug("created switch %s (%d) as replacement for %s %s" % (switch_name, sid, element_type, element_index))
+    logger.debug(f"created switch {switch_name} ({sid}) as replacement for {element_type} {element_index}")
     return sid
 
 
@@ -1231,9 +1234,9 @@ def replace_zero_branches_with_switches(
             else:
                 net[elm] = net[elm].drop(affected_elements)
 
-            logger.info("replaced %d %ss by switches" % (len(affected_elements), elm))
+            logger.info(f"replaced {len(affected_elements)} {elm}s by switches")
         else:
-            logger.info("set %d %ss out of service" % (len(affected_elements), elm))
+            logger.info(f"set {len(affected_elements)} {elm}s out of service")
 
     return replaced
 
@@ -1424,7 +1427,7 @@ def replace_ext_grid_by_gen(
     if isinstance(add_cols_to_keep, list) and len(add_cols_to_keep):
         cols_to_keep += add_cols_to_keep
     elif add_cols_to_keep is not None:
-        raise ValueError("'add_cols_to_keep' must be a list or None but is a %s" % str(type(add_cols_to_keep)))
+        raise ValueError(f"'add_cols_to_keep' must be a list or None but is a {type(add_cols_to_keep)}")
     cols_to_keep = list(set(cols_to_keep) - {"bus", "vm_pu", "p_mw", "name", "in_service", "controllable"})
 
     existing_cols_to_keep = net.ext_grid.loc[ext_grids].dropna(axis=1).columns.intersection(cols_to_keep)
@@ -1519,7 +1522,7 @@ def replace_gen_by_ext_grid(
     if isinstance(add_cols_to_keep, list) and len(add_cols_to_keep):
         cols_to_keep += add_cols_to_keep
     elif add_cols_to_keep is not None:
-        raise ValueError("'add_cols_to_keep' must be a list or None but is a %s" % str(type(add_cols_to_keep)))
+        raise ValueError(f"'add_cols_to_keep' must be a list or None but is a {type(add_cols_to_keep)}")
     cols_to_keep = list(set(cols_to_keep) - {"bus", "vm_pu", "va_degree", "name", "in_service"})
     existing_cols_to_keep = net.gen.loc[gens].dropna(axis=1).columns.intersection(cols_to_keep)
     # add missing columns to net.ext_grid
@@ -1600,7 +1603,7 @@ def replace_gen_by_sgen(
     if isinstance(add_cols_to_keep, list) and len(add_cols_to_keep):
         cols_to_keep += add_cols_to_keep
     elif add_cols_to_keep is not None:
-        raise ValueError("'add_cols_to_keep' must be a list or None but is a %s" % str(type(add_cols_to_keep)))
+        raise ValueError(f"'add_cols_to_keep' must be a list or None but is a {type(add_cols_to_keep)}")
     cols_to_keep = list(set(cols_to_keep) - {"bus", "p_mw", "q_mvar", "name", "in_service", "controllable"})
     existing_cols_to_keep = net.gen.loc[gens].dropna(axis=1).columns.intersection(cols_to_keep)
     # add missing columns to net.gen which should be kept
@@ -1679,8 +1682,7 @@ def replace_sgen_by_gen(
         gen_indices = [None] * len(sgens)
     elif len(gen_indices) != len(sgens):
         raise ValueError(
-            "The length of 'gen_indices' must be the same as 'sgens' but is "
-            + "%i instead of %i" % (len(gen_indices), len(sgens))
+            f"The length of 'gen_indices' must be the same as 'sgens' but is {len(gen_indices)} instead of {len(sgens)}"
         )
 
     # --- determine which columns should be kept while replacing
@@ -1688,7 +1690,7 @@ def replace_sgen_by_gen(
     if isinstance(add_cols_to_keep, list) and len(add_cols_to_keep):
         cols_to_keep += add_cols_to_keep
     elif add_cols_to_keep is not None:
-        raise ValueError("'add_cols_to_keep' must be a list or None but is a %s" % str(type(add_cols_to_keep)))
+        raise ValueError(f"'add_cols_to_keep' must be a list or None but is a {type(add_cols_to_keep)}")
     cols_to_keep = list(set(cols_to_keep) - {"bus", "vm_pu", "p_mw", "name", "in_service", "controllable"})
 
     existing_cols_to_keep = net.sgen.loc[sgens].dropna(axis=1).columns.intersection(cols_to_keep)
@@ -1809,7 +1811,7 @@ def replace_pq_elmtype(
     if isinstance(add_cols_to_keep, list) and len(add_cols_to_keep):
         cols_to_keep += add_cols_to_keep
     elif add_cols_to_keep is not None:
-        raise ValueError("'add_cols_to_keep' must be a list or None but is a %s" % str(type(add_cols_to_keep)))
+        raise ValueError(f"'add_cols_to_keep' must be a list or None but is a {type(add_cols_to_keep)}")
     cols_to_keep = list(set(cols_to_keep) - {"bus", "vm_pu", "p_mw", "name", "in_service", "controllable"})
 
     existing_cols_to_keep = net[old_element_type].loc[old_indices].dropna(axis=1).columns.intersection(cols_to_keep)
@@ -2090,7 +2092,7 @@ def _replace_group_member_element_type(
     net, old_elements, old_element_type, new_elements, new_element_type, detach_from_gr=True
 ):
     if isinstance(old_element_type, set) or isinstance(new_element_type, set):
-        raise AssertionError("either element_type is a set")
+        raise TypeError("either element_type is a set")
     old_elements = pd.Series(old_elements)
     new_elements = pd.Series(new_elements)
 
@@ -2132,7 +2134,7 @@ def _adapt_profiles_in_replace_functions(net, element_type_old, element_index_ol
     et_old, et_new = element_type_old, element_type_new
     idx_old, idx_new = pd.Index(element_index_old), pd.Index(element_index_new)
 
-    keys_old = [key for key in net.profiles if (key.startswith(f"{et_old}.") or key.startswith(f"res_{et_old}."))]
+    keys_old = [key for key in net.profiles if (key.startswith((f"{et_old}.", f"res_{et_old}.")))]
     for key_old in keys_old:
         key_new = key_old.replace(et_old, et_new)
         in_prof = pd.Series(idx_old).isin(net.profiles[key_old].columns).values

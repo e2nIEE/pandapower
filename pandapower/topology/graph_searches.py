@@ -16,7 +16,7 @@ __all__ = [
 ]
 
 from collections import deque
-from itertools import combinations
+from itertools import combinations, pairwise
 
 import networkx as nx
 import pandas as pd
@@ -24,7 +24,7 @@ import pandas as pd
 from pandapower.topology.create_graph import create_nxgraph
 
 
-def connected_component(mg, bus, notravbuses=[]):
+def connected_component(mg, bus, notravbuses=None):
     """
     Finds all buses in a NetworkX graph that are connected to a certain bus.
 
@@ -43,6 +43,8 @@ def connected_component(mg, bus, notravbuses=[]):
         >>> mg = create_nxgraph(net)
         >>> cc = connected_component(mg, 5)
     """
+    if notravbuses is None:
+        notravbuses = set()
     yield bus
     visited = {bus}
     stack = deque([iter(mg[bus])])
@@ -55,7 +57,7 @@ def connected_component(mg, bus, notravbuses=[]):
                     stack.append(iter(mg[child]))
 
 
-def connected_components(mg, notravbuses=set()):
+def connected_components(mg, notravbuses=None):
     """
     Clusters all buses in a NetworkX graph that are connected to each other.
 
@@ -73,6 +75,8 @@ def connected_components(mg, notravbuses=set()):
         >>> mg = create_nxgraph(net)
         >>> cc = connected_components(mg, 5)
     """
+    if notravbuses is None:
+        notravbuses = set()
 
     nodes = set(mg.nodes()) - notravbuses
     while nodes:
@@ -420,15 +424,13 @@ def elements_on_path(mg, path, element="line"):
 
     """
     if element not in ["line", "switch", "trafo", "trafo3w"]:
-        raise ValueError("Invalid element type %s" % element)
+        raise ValueError(f"Invalid element type {element}")
     if isinstance(mg, nx.MultiGraph):
-        return [
-            edge[1] for b1, b2 in zip(path, path[1:]) for edge in mg.get_edge_data(b1, b2).keys() if edge[0] == element
-        ]
+        return [edge[1] for b1, b2 in pairwise(path) for edge in mg.get_edge_data(b1, b2) if edge[0] == element]
     else:
         return [
             mg.get_edge_data(b1, b2)["key"][1]
-            for b1, b2 in zip(path, path[1:])
+            for b1, b2 in pairwise(path)
             if mg.get_edge_data(b1, b2)["key"][0] == element
         ]
 
