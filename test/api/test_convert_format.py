@@ -10,7 +10,6 @@ from packaging import version as vs
 from packaging.version import Version
 
 from pandapower import __format_version__, convert_format, from_json, runpp
-
 from test import test_path
 
 folder = os.path.join(test_path, "test_files", "old_versions")
@@ -27,13 +26,13 @@ def test_convert_format(version):
         net = from_json(filename, convert=False)
         if "version" in net and vs.parse(str(net.version)) > vs.parse("2.0.1"):
             _ = from_json(filename, elements_to_deserialize=["bus", "load"])
-    except Exception:
+    except Exception:  # noqa: BLE001
         raise UserWarning(f"Can not load network saved in pandapower version {version}")
     vm_pu_old = net.res_bus["vm_pu"].copy()
     convert_format(net)
     try:
         runpp(net, run_control="controller" in net and len(net.controller) > 0)
-    except Exception:
+    except Exception:  # noqa: BLE001
         raise UserWarning(f"Can not run power flow in network saved with pandapower version {version}")
     if not np.allclose(vm_pu_old.values, net.res_bus.vm_pu.values):
         raise UserWarning(f"Power flow results mismatch with pandapower version {version}")
@@ -107,10 +106,10 @@ def test_convert_format_renaming_characteristic_table():
 
 
 def test_convert_format_newer_format_version():
-    version = sorted(found_versions, key=lambda k: Version(k))[-1]
-    filename = os.path.join(folder, "example_%s.json" % version)
+    version = max(found_versions, key=lambda k: Version(k))
+    filename = os.path.join(folder, f"example_{version}.json")
     if not os.path.isfile(filename):
-        raise ValueError("File for version %s does not exist" % version)
+        raise ValueError(f"File for version {version} does not exist")
     net = from_json(filename, convert=False)
     net.format_version = ".".join([str(int(__format_version__.split(".")[0]) + 1)] + __format_version__.split(".")[1:])
     with pytest.raises(ValueError, match="is newer than the current pandapower version"):

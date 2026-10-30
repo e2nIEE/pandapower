@@ -112,7 +112,7 @@ def test_excel_characteristics(net_charactistics, tmp_path):
         net_1_ch = net_charactistics["q_capability_characteristic"].loc[0, minmax].to_dict()
         net_2_ch = net_out["q_capability_characteristic"].loc[0, minmax].to_dict()
         for key in net_1_ch:
-            if isinstance(net_1_ch[key], list) or isinstance(net_1_ch[key], np.ndarray):
+            if isinstance(net_1_ch[key], (list, np.ndarray)):
                 assert (net_1_ch[key] == net_2_ch[key]).all()
             else:
                 assert net_1_ch[key] == net_2_ch[key]
@@ -448,7 +448,7 @@ def test_json_io_with_characteristics(net_in):
 
     net_out = from_json_string(to_json(net_in))
     assert_net_equal(net_in, net_out)
-    assert "characteristic" in net_out.keys()
+    assert "characteristic" in net_out
     assert isinstance(net_out.characteristic.object.at[c1.index], Characteristic)
     assert isinstance(net_out.characteristic.object.at[c2.index], SplineCharacteristic)
     assert np.isclose(net_out.characteristic.object.at[c1.index](0.5), c1(0.5), rtol=0, atol=1e-12)

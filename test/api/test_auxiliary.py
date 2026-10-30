@@ -20,7 +20,7 @@ from pandapower.control.util.auxiliary import (
     get_min_max_q_mvar_from_characteristics_object,
 )
 from pandapower.control.util.characteristic import LogSplineCharacteristic, SplineCharacteristic
-from pandapower.create import create_bus, create_buses, create_line, create_lines, create_shunt
+from pandapower.create import create_buses, create_lines, create_shunt
 from pandapower.create._utils import add_column_to_df
 from pandapower.file_io import from_json_string, to_json
 from pandapower.network import pandapowerNet
@@ -588,21 +588,17 @@ def test_get_min_max_q_capability():
 @pytest.mark.parametrize("file_io", (False, True), ids=("Without JSON I/O", "With JSON I/O"))
 def test_characteristic(file_io):
     net = pandapowerNet(name="test_characteristic")
+    c1 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], fill_value=(0, 4))
+    SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
+    c3 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="hello")
     with pytest.warns(RuntimeWarning, match="divide by zero encountered in log10"):  # FIXME: should this be required?
-        c1 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], fill_value=(0, 4))
-        c2 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
-        c3 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="hello")
-        c4 = LogSplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
+        LogSplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
 
     if file_io:
         net_copy = from_json_string(to_json(net))
-        c1, c2, c3, c4 = net_copy.characteristic.object.values
+        c1, _, c3, _ = net_copy.characteristic.object.values
 
     assert np.allclose(c1([-1]), [0], rtol=0, atol=1e-6)
-    # assert c1(3) == 4
-    # assert c1(1) == 1
-    # assert c1(2) == 4
-    # assert c1(1.5) == 2.25
 
     # test that unknown kind causes error:
     with pytest.raises(NotImplementedError):
@@ -614,8 +610,7 @@ def test_log_characteristic_property():
     c = LogSplineCharacteristic(
         net, [10, 1000, 10000], [1000, 0.1, 0.001], interpolator_kind="Pchip", extrapolate=False
     )
-    c._x_vals
-    c([2])
+    c(2.0)
 
 
 def test_geo_accessor_geojson():

@@ -26,7 +26,6 @@ from pandapower.create._utils import add_column_to_df
 from pandapower.file_io import from_json
 from pandapower.network import pandapowerNet
 from pandapower.run import runpp
-
 from test import test_path
 
 logger = logging.getLogger(__name__)

@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower.control.util.auxiliary import create_trafo_characteristic_object, create_shunt_characteristic_object
+from pandapower.control.util.auxiliary import create_shunt_characteristic_object, create_trafo_characteristic_object
 from pandapower.converter.cim.cim2pp.from_cim import from_cim, from_cim_dict
 from pandapower.converter.cim.cim_classes import CimParser
 from pandapower.run import runpp
@@ -1537,7 +1537,7 @@ def test_acline_segment_with_only_rdf_id_should_not_empty_all_lines():
     # and should produce a net with the valid line preserved
     try:
         net = from_cim_dict(cim_parser, ignore_errors=True)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         # If we get here, the conversion crashed - which is also a bug manifestation
         pytest.fail(
             f"Conversion crashed with exception: {e}\n"

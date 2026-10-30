@@ -8,7 +8,7 @@ import pytest
 from numpy.ma.testutils import assert_array_equal
 from packaging.version import Version
 
-from pandapower.converter.powerfactory.export_pfd_to_pp import import_project, from_pfd
+from pandapower.converter.powerfactory.export_pfd_to_pp import from_pfd, import_project
 from pandapower.converter.powerfactory.validate import validate_pf_conversion
 from pandapower.file_io import from_json
 from test import test_path
@@ -71,7 +71,7 @@ def test_pf_export():
             delta = diff.abs().max()
         else:
             raise (UserWarning, "Diff variable has wrong type!")
-        assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+        assert delta < tol[key], f"{key} has too high difference: {delta:f} > {tol[key]:f}"
 
 
 @pytest.mark.skipif(not PF_INSTALLED, reason="powerfactory must be installed")
@@ -96,7 +96,7 @@ def test_pf_export_trafo3w():
             delta = diff.abs().max()
         else:
             raise (UserWarning, "Diff variable has wrong type!")
-        assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+        assert delta < tol[key], f"{key} has too high difference: {delta:f} > {tol[key]:f}"
 
 
 @pytest.mark.skipif(not PF_INSTALLED, reason="powerfactory must be installed")
@@ -110,7 +110,7 @@ def test_trafo_tap2_results():
             delta = diff.abs().max()
         else:
             delta = diff["diff"].abs().max()
-        assert delta < tol, "%s has too high difference: %f > %f" % (key, delta, tol)
+        assert delta < tol, f"{key} has too high difference: {delta:f} > {tol[key]:f}"
 
 
 @pytest.mark.skipif(not PF_INSTALLED, reason="powerfactory must be installed")
@@ -142,7 +142,7 @@ def test_trafo3w_tap_dependent_imp_with_tc():
             delta = diff.abs().max()
         else:
             delta = diff["diff"].abs().max()
-        assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+        assert delta < tol[key], f"{key} has too high difference: {delta:f} > {tol[key]:f}"
 
 
 @pytest.mark.skipif(not PF_INSTALLED, reason="powerfactory must be installed")
@@ -175,7 +175,7 @@ def test_pf_export_tap_changer():
             delta = diff.abs().max()
         else:
             delta = diff["diff"].abs().max()
-        assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+        assert delta < tol[key], f"{key} has too high difference: {delta:f} > {tol[key]:f}"
 
 
 @pytest.mark.skipif(not PF_INSTALLED, reason="powerfactory must be installed")
@@ -218,7 +218,7 @@ def test_pf_export_partial_loads():
                 delta = diff.abs().max()
         else:
             raise UserWarning("Diff variable has wrong type!")
-        assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+        assert delta < tol[key], f"{key} has too high difference: {delta:f} > {tol[key]:f}"
 
 
 @pytest.mark.skipif(not PF_INSTALLED, reason="powerfactory must be installed")
@@ -258,7 +258,7 @@ def test_pf_SC_meas_relocate():
             delta = diff.abs().max()
         else:
             delta = diff["diff"].abs().max()
-        assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+        assert delta < tol[key], f"{key} has too high difference: {delta:f} > {tol[key]:f}"
 
 
 @pytest.mark.skipif(not PF_INSTALLED, reason="powerfactory must be installed")
@@ -339,7 +339,7 @@ def test_pf_export_q_capability_curve():
             delta = diff.abs().max()
         else:
             delta = diff["diff"].abs().max()
-        assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+        assert delta < tol[key], f"{key} has too high difference: {delta:f} > {tol[key]:f}"
 
 
 @pytest.mark.skipif(not PF_INSTALLED, reason="powerfactory must be installed")
@@ -371,7 +371,7 @@ def test_shunt_tables():
             delta = diff.abs().max()
         else:
             delta = diff["diff"].abs().max()
-        assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+        assert delta < tol[key], f"{key} has too high difference: {delta:f} > {tol[key]:f}"
 
 
 @pytest.mark.skipif(not PF_INSTALLED, reason="powerfactory must be installed")
@@ -394,7 +394,7 @@ def test_mixed_zip_loads_import():
             delta = diff.abs().max()
         else:
             delta = diff["diff"].abs().max()
-        assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+        assert delta < tol[key], f"{key} has too high difference: {delta:f} > {tol[key]:f}"
 
 
 @pytest.mark.skipif(not PF_INSTALLED, reason="powerfactory must be installed")
@@ -426,7 +426,7 @@ def test_vdroop_ctrl_local():
             delta = diff.abs().max()
         else:
             delta = diff["diff"].abs().max()
-        assert delta < tol[key], "%s has too high difference: %f > %f" % (key, delta, tol[key])
+        assert delta < tol[key], f"{key} has too high difference: {delta:f} > {tol[key]:f}"
 
 
 if __name__ == "__main__":
