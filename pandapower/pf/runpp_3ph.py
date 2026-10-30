@@ -33,7 +33,7 @@ from pandapower.powerflow import LoadflowNotConverged
 from pandapower.pypower.bustypes import bustypes
 from pandapower.pypower.idx_bus import BS, GS, PD, QD, VA, VM
 from pandapower.pypower.idx_gen import GEN_BUS, PG, QG
-from pandapower.pypower.makeYbus import makeYbus
+from pandapower.pypower.make_y_bus import makeYbus
 from pandapower.pypower.pfsoln import pfsoln
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results_3ph, init_results
 from pandapower.run import _passed_runpp_parameters

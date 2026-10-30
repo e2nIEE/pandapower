@@ -14,7 +14,7 @@ from pandapower.pypower.idx_bus_sc import R_EQUIV, X_EQUIV
 try:
     from pandapower.pf.makeYbus_numba import makeYbus
 except ImportError:
-    from pandapower.pypower.makeYbus import makeYbus
+    from pandapower.pypower.make_y_bus import makeYbus
 
 
 def _calc_rx(net, ppci, bus_idx):
@@ -56,9 +56,9 @@ def _calc_zbus(net, ppci):
                 ppci["internal"]["Zbus"] = inv_sparse(Ybus).toarray()
         else:
             ppci["internal"]["Zbus"] = inv(Ybus.toarray())
-    except Exception as e:
+    except Exception:
         _clean_up(net, res=False)
-        raise e
+        raise
 
 
 def _calc_zbus_diag(net, ppci, bus_idx=None):

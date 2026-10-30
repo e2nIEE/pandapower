@@ -151,7 +151,7 @@ from pandapower.pypower.idx_vsc import (
     VSC_VALUE_DC,
     VSC_X,
 )
-from pandapower.pypower.makeSbus import makeSbus
+from pandapower.pypower.make_s_bus import makeSbus
 
 logger = logging.getLogger(__name__)
 
@@ -282,7 +282,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     p_set_point_index = vsc_controllable & (vsc_mode_dc == VSC_MODE_DC_P) & (vsc_mode_ac != VSC_MODE_AC_SL)
     # P_dc[vsc[p_set_point_index, VSC_BUS_DC].astype(np.int64)] = -vsc_value_dc[vsc_mode_dc == 1]  # todo sum by group
     # todo vsc
-    vsc_group_buses_p, P_dc_sum, vsc_group_buses_p_number = _sum_by_group(
+    _vsc_group_buses_p, _P_dc_sum, _vsc_group_buses_p_number = _sum_by_group(
         vsc_dc_tb[p_set_point_index], -vsc_value_dc[p_set_point_index], np.ones(sum(p_set_point_index))
     )
     # P_dc[vsc_group_buses_p] = P_dc_sum
@@ -334,11 +334,11 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     Ybus_tcsc = make_Ybus_facts(tcsc_fb, tcsc_tb, y_tcsc_pu, Ybus.shape[0])
     # Ybus_tcsc = makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tcsc_tb)
     # SSC
-    Ybus_ssc_not_controllable, Ybus_ssc_controllable, Ybus_ssc = makeYbus_ssc_vsc(
+    Ybus_ssc_not_controllable, _Ybus_ssc_controllable, Ybus_ssc = makeYbus_ssc_vsc(
         Ybus, ssc_y_pu, ssc_fb, ssc_tb, ssc_controllable
     )
     # VSC
-    Ybus_vsc_not_controllable, Ybus_vsc_controllable, Ybus_vsc = makeYbus_ssc_vsc(
+    Ybus_vsc_not_controllable, _Ybus_vsc_controllable, Ybus_vsc = makeYbus_ssc_vsc(
         Ybus, vsc_y_pu, vsc_fb, vsc_tb, vsc_controllable
     )
     # HVDC
@@ -532,7 +532,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
         x = branch[tdpf_lines, BR_X].real
 
         # calculate parameters for J:
-        Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
+        Ybus, _, _ = makeYbus(baseMVA, bus, branch)
         # todo: add parameters to the create function
         a0, a1, a2, tau = calc_a0_a1_a2_tau(
             t_air_pu=t_air_pu,
@@ -578,7 +578,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
                 1 + alpha_pu * np.clip(np.nan_to_num(T - t_ref_pu), -50, 250 / T_base)
             )
             # todo expansion with SSC and VSC (that are not controllable)
-            Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
+            Ybus, _Yf, _Yt = makeYbus(baseMVA, bus, branch)
             g, b = calc_g_b(r, x)
 
         # todo: adjust the SSC J function to take care about the Ybus_ssc_not_controllable instead
@@ -849,7 +849,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     # todo: move to pf.run_newton_raphson_pf.ppci_to_pfsoln
     if any_ssc:
         # todo use make_Ybus_facts, make_Yft_facts
-        Yf_ssc, Yt_ssc = make_Yft_facts(ssc_fb, ssc_tb, ssc_y_pu, Ybus_ssc.shape[0])
+        Yf_ssc, _Yt_ssc = make_Yft_facts(ssc_fb, ssc_tb, ssc_y_pu, Ybus_ssc.shape[0])
         s_ssc_f = conj(Yf_ssc.dot(V)) * V[ssc_fb] * baseMVA
         ssc[ssc_branches, SSC_Q] = s_ssc_f.imag
 

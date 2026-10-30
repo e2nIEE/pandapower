@@ -16,7 +16,7 @@ from pandapower.pypower.bustypes import bustypes
 from pandapower.pypower.idx_brch import BR_B, BR_G, BR_R, BR_STATUS, BR_X, F_BUS, SHIFT, T_BUS, TAP
 from pandapower.pypower.idx_bus import BS, BUS_I, BUS_TYPE, GS
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, QG, QMAX, QMIN, VG
-from pandapower.pypower.makeSbus import makeSbus
+from pandapower.pypower.make_s_bus import makeSbus
 from pandapower.pypower.newtonpf import _check_for_convergence, _evaluate_Fx
 from pandapower.pypower.pfsoln import pfsoln
 

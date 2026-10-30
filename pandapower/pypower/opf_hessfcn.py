@@ -13,11 +13,11 @@ from numpy import flatnonzero as find
 from scipy.sparse import csr_matrix as sparse
 from scipy.sparse import hstack, issparse, vstack
 
-from pandapower.pypower.d2AIbr_dV2 import d2AIbr_dV2
-from pandapower.pypower.d2ASbr_dV2 import d2ASbr_dV2
-from pandapower.pypower.d2Sbus_dV2 import d2Sbus_dV2
-from pandapower.pypower.dIbr_dV import dIbr_dV
-from pandapower.pypower.dSbr_dV import dSbr_dV
+from pandapower.pypower.d2_a_i_br_d_v2 import d2AIbr_dV2
+from pandapower.pypower.d2_a_s_br_d_v2 import d2ASbr_dV2
+from pandapower.pypower.d2_s_bus_d_v2 import d2Sbus_dV2
+from pandapower.pypower.d_i_br_d_v import dIbr_dV
+from pandapower.pypower.d_s_br_d_v import dSbr_dV
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pypower.idx_cost import MODEL, POLYNOMIAL
 from pandapower.pypower.idx_gen import PG, QG
@@ -227,10 +227,10 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
         d2G_err = max(max(abs(d2G - num_d2G)))
         d2H_err = max(max(abs(d2H - num_d2H)))
         if d2f_err > 1e-6:
-            print("Max difference in d2f: %g" % d2f_err)
+            print(f"Max difference in d2f: {d2f_err:g}")
         if d2G_err > 1e-5:
-            print("Max difference in d2G: %g" % d2G_err)
+            print(f"Max difference in d2G: {d2G_err:g}")
         if d2H_err > 1e-6:
-            print("Max difference in d2H: %g" % d2H_err)
+            print(f"Max difference in d2H: {d2H_err:g}")
 
     return d2f + d2G + d2H

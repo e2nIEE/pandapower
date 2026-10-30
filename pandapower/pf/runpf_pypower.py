@@ -22,8 +22,8 @@ from pandapower.pypower.fdpf import fdpf
 from pandapower.pypower.gausspf import gausspf
 from pandapower.pypower.idx_bus import BUS_TYPE, PD, PQ, QD, REF
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMAX, QMIN
-from pandapower.pypower.makeB import makeB
-from pandapower.pypower.makeSbus import makeSbus
+from pandapower.pypower.make_b import makeB
+from pandapower.pypower.make_s_bus import makeSbus
 from pandapower.pypower.pfsoln import pfsoln
 from pandapower.pypower.ppoption import ppoption
 
@@ -97,7 +97,7 @@ def _import_numba_extensions_if_flag_is_true(numba):
     if numba:
         from pandapower.pf.makeYbus_numba import makeYbus
     else:
-        from pandapower.pypower.makeYbus import makeYbus
+        from pandapower.pypower.make_y_bus import makeYbus
 
     return numba, makeYbus
 

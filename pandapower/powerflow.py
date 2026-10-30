@@ -19,7 +19,7 @@ from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.pf.runpf_pypower import _runpf_pypower
 from pandapower.pypower.bustypes import bustypes
 from pandapower.pypower.idx_bus import VM
-from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
+from pandapower.pypower.make_y_bus import makeYbus as makeYbus_pypower
 from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
 from pandapower.results import (
     _copy_results_ppci_to_ppc,

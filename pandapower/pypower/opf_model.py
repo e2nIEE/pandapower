@@ -104,62 +104,64 @@ class opf_model:
         """String representation of the object."""
         s = ""
         if self.var["NS"]:
-            s += "\n%-22s %5s %8s %8s %8s\n" % ("VARIABLES", "name", "i1", "iN", "N")
-            s += "%-22s %5s %8s %8s %8s\n" % ("=========", "------", "-----", "-----", "------")
+            s += f"\n{'VARIABLES':<22} {'name':>5} {'i1':>8} {'iN':>8} {'N':>8}\n"
+            s += f"{'=========':<22} {'------':>5} {'-----':>8} {'-----':>8} {'------':>8}\n"
             for k in range(self.var["NS"]):
                 name = self.var["order"][k]
                 idx = self.var["idx"]
-                s += "%15d:%12s %8d %8d %8d\n" % (k, name, idx["i1"][name], idx["iN"][name], idx["N"][name])
+                s += "{:15d}:{:12s} {:8d} {:8d} {:8d}\n".format(
+                    k, name, idx["i1"][name], idx["iN"][name], idx["N"][name]
+                )
 
-            s += "%15s%31s\n" % (("var['NS'] = %d" % self.var["NS"]), ("var['N'] = %d" % self.var["N"]))
+            s += "{:15s}{:31s}\n".format(f"var['NS'] = {self.var['NS']:d}", f"var['N'] = {self.var['N']:d}")
             s += "\n"
         else:
             s += "%s  :  <none>\n", "VARIABLES"
 
         if self.nln["NS"]:
-            s += "\n%-22s %5s %8s %8s %8s\n" % ("NON-LINEAR CONSTRAINTS", "name", "i1", "iN", "N")
-            s += "%-22s %5s %8s %8s %8s\n" % ("======================", "------", "-----", "-----", "------")
+            s += f"\n{'NON-LINEAR CONSTRAINTS':<22} {'name':>5} {'i1':>8} {'iN':>8} {'N':>8}\n"
+            s += f"{'======================':<22} {'------':>5} {'-----':>8} {'-----':>8} {'------':>8}\n"
             for k in range(self.nln["NS"]):
                 name = self.nln["order"][k]
                 idx = self.nln["idx"]
-                s += "%15d:%12s %8d %8d %8d\n" % (k, name, idx["i1"][name], idx["iN"][name], idx["N"][name])
+                s += "{:15d}:{:12s} {:8d} {:8d} {:8d}\n".format(
+                    k, name, idx["i1"][name], idx["iN"][name], idx["N"][name]
+                )
 
-            s += "%15s%31s\n" % (("nln.NS = %d" % self.nln["NS"]), ("nln.N = %d" % self.nln["N"]))
+            s += "{:15s}{:31s}\n".format(f"nln.NS = {self.nln['NS']:d}", f"nln.N = {self.nln['N']:d}")
             s += "\n"
         else:
             s += "%s  :  <none>\n", "NON-LINEAR CONSTRAINTS"
 
         if self.lin["NS"]:
-            s += "\n%-22s %5s %8s %8s %8s\n" % ("LINEAR CONSTRAINTS", "name", "i1", "iN", "N")
-            s += "%-22s %5s %8s %8s %8s\n" % ("==================", "------", "-----", "-----", "------")
+            s += f"\n{'LINEAR CONSTRAINTS':<22s} {'name':>5} {'i1':>8} {'iN':>8} {'N':>8}\n"
+            s += f"{'==================':<22} {'------':>5} {'-----':>8} {'-----':>8} {'------':>8}\n"
             for k in range(self.lin["NS"]):
                 name = self.lin["order"][k]
                 idx = self.lin["idx"]
-                s += "%15d:%12s %8d %8d %8d\n" % (k, name, idx["i1"][name], idx["iN"][name], idx["N"][name])
+                s += "{:15d}:{:12s} {:8d} {:8d} {:8d}\n".format(
+                    k, name, idx["i1"][name], idx["iN"][name], idx["N"][name]
+                )
 
-            s += "%15s%31s\n" % (("lin.NS = %d" % self.lin["NS"]), ("lin.N = %d" % self.lin["N"]))
+            s += "{:15s}{:31s}\n".fromat(f"lin.NS = {self.lin['NS']:d}", f"lin.N = {self.lin['N']:d}")
             s += "\n"
         else:
             s += "%s  :  <none>\n", "LINEAR CONSTRAINTS"
 
         if self.cost["NS"]:
-            s += "\n%-22s %5s %8s %8s %8s\n" % ("COSTS", "name", "i1", "iN", "N")
-            s += "%-22s %5s %8s %8s %8s\n" % ("=====", "------", "-----", "-----", "------")
+            s += f"\n{'COSTS':<22s} {'name':>5} {'i1':>8} {'iN':>8} {'N':>8}\n"
+            s += f"{'=====':<22} {'------':>5} {'-----':>8} {'-----':>8} {'------':>8}\n"
             for k in range(self.cost["NS"]):
                 name = self.cost["order"][k]
                 idx = self.cost["idx"]
-                s += "%15d:%12s %8d %8d %8d\n" % (k, name, idx["i1"][name], idx["iN"][name], idx["N"][name])
+                s += "{:15d}:{:12s} {:8d} {:8d} {:8d}\n".format(
+                    k, name, idx["i1"][name], idx["iN"][name], idx["N"][name]
+                )
 
-            s += "%15s%31s\n" % (("cost.NS = %d" % self.cost["NS"]), ("cost.N = %d" % self.cost["N"]))
+            s += "{:15s}{:31s}\n".format(f"cost.NS = {self.cost['NS']}", f"cost.N = {self.cost['N']}")
             s += "\n"
         else:
-            s += "%s  :  <none>\n" % "COSTS"
-
-        # s += '  ppc = '
-        # if len(self.ppc):
-        #    s += '\n'
-        #
-        # s += str(self.ppc) + '\n'
+            s += "{}  :  <none>\n".format("COSTS")
 
         s += "  userdata = "
         if len(self.user_data):
@@ -169,7 +171,7 @@ class opf_model:
 
         return s
 
-    def add_constraints(self, name, AorN, l, u=None, varsets=None):  # noqa: E741
+    def add_constraints(self, name, AorN, l, u=None, varsets=None):
         """Adds a set of constraints to the model.
 
         Linear constraints are of the form C{l <= A * x <= u}, where
@@ -189,7 +191,7 @@ class opf_model:
         if u is None:  ## nonlinear
             ## prevent duplicate named constraint sets
             if name in self.nln["idx"]["N"]:
-                stderr.write("opf_model.add_constraints: nonlinear constraint set named '%s' already exists\n" % name)
+                stderr.write(f"opf_model.add_constraints: nonlinear constraint set named '{name}' already exists\n")
 
             ## add info about this nonlinear constraint set
             self.nln["idx"]["i1"][name] = self.nln["N"]  # + 1    ## starting index
@@ -206,14 +208,14 @@ class opf_model:
         else:  ## linear
             ## prevent duplicate named constraint sets
             if name in self.lin["idx"]["N"]:
-                stderr.write("opf_model.add_constraints: linear constraint set named %s already exists\n" % name)
+                stderr.write(f"opf_model.add_constraints: linear constraint set named {name} already exists\n")
 
             if varsets is None:
                 varsets = []
 
             N, M = AorN.shape
             if len(l) == 0:  ## default l is -Inf
-                l = full(N, -inf)  # noqa: E741
+                l = full(N, -inf)
 
             if len(u) == 0:  ## default u is Inf
                 u = full(N, inf)
@@ -231,8 +233,7 @@ class opf_model:
 
             if M != nv:
                 stderr.write(
-                    "opf_model.add_constraints: number of columns of A does not match\nnumber of variables, A is %d x %d, nv = %d\n"
-                    % (N, M, nv)
+                    f"opf_model.add_constraints: number of columns of A does not match\nnumber of variables, A is {N:d} x {M:d}, nv = {nv:d}\n"
                 )
 
             ## add info about this linear constraint set
@@ -264,7 +265,7 @@ class opf_model:
         """
         ## prevent duplicate named var sets
         if name in self.var["idx"]["N"]:
-            stderr.write("opf_model.add_vars: variable set named %s already exists\n" % name)
+            stderr.write(f"opf_model.add_vars: variable set named {name} already exists\n")
 
         if v0 is None or len(v0) == 0:
             v0 = zeros(N)  ## init to zero by default
@@ -449,7 +450,7 @@ class opf_model:
         if self.lin["N"]:
             A = lil_matrix((self.lin["N"], self.var["N"]))
             u = full(self.lin["N"], inf)
-            l = -u  # noqa: E741
+            l = -u
         else:
             return None, array([]), array([])
 

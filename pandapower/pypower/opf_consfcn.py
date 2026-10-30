@@ -8,13 +8,13 @@ from numpy import arange, conj, exp, inf, int64, ones, r_, zeros
 from scipy.sparse import csr_matrix as sparse
 from scipy.sparse import hstack, lil_matrix, vstack
 
-from pandapower.pypower.dAbr_dV import dAbr_dV
-from pandapower.pypower.dIbr_dV import dIbr_dV
-from pandapower.pypower.dSbr_dV import dSbr_dV
-from pandapower.pypower.dSbus_dV import dSbus_dV
+from pandapower.pypower.d_a_br_d_v import dAbr_dV
+from pandapower.pypower.d_i_br_d_v import dIbr_dV
+from pandapower.pypower.d_s_br_d_v import dSbr_dV
+from pandapower.pypower.d_s_bus_d_v import dSbus_dV
 from pandapower.pypower.idx_brch import F_BUS, RATE_A, T_BUS
 from pandapower.pypower.idx_gen import GEN_BUS, PG, QG
-from pandapower.pypower.makeSbus import makeSbus
+from pandapower.pypower.make_s_bus import makeSbus
 
 
 def opf_consfcn(x, om, Ybus, Yf, Yt, ppopt, il=None, *args):
