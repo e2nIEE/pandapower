@@ -40,5 +40,16 @@ def test_write_to_object_attribute():
         assert net.controller.object.at[0].vm_set_pu == ds.df.at[t, 0]
 
 
+def test_missing_element_index():
+    net = simple_four_bus_system()
+    ds = DFData(pd.DataFrame(data=[[0.0, 1.0], [2.0, 3.0]]))
+    with pytest.raises(ValueError, match=r"element_index \[5\] not found in net.sgen"):
+        ConstControl(net, "sgen", "p_mw", element_index=5, profile_name=0, data_source=ds)
+    with pytest.raises(ValueError, match=r"element_index \[5\] not found in net.sgen"):
+        ConstControl(net, "sgen", "p_mw", element_index=[0, 5], profile_name=[0, 1], data_source=ds)
+    # the failed controllers are not added to the net
+    assert len(net.controller) == 0
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])
