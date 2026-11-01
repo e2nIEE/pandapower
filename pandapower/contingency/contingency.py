@@ -515,16 +515,22 @@ def get_element_limits(net):
         d = {element: {"index": element_index}}
 
         if "max_loading_percent" in net[element].columns:
+            # run_contingency uses "max_loading_percent_nminus1"; the older spelling is kept as a fallback
+            nminus1_col = next(
+                (
+                    c
+                    for c in ("max_loading_percent_nminus1", "max_loading_nminus1_percent")
+                    if c in net[element].columns
+                ),
+                "max_loading_percent",
+            )
+            nminus1_limit = net[element].loc[element_index, nminus1_col].values
             d[element].update(
                 {
                     "max_limit": net[element].loc[element_index, "max_loading_percent"].values,
                     "min_limit": -net[element].loc[element_index, "max_loading_percent"].values,
-                    "max_limit_nminus1": net[element].loc[element_index, "max_loading_nminus1_percent"].values
-                    if "max_loading_nminus1_percent" in net[element].columns
-                    else net[element].loc[element_index, "max_loading_percent"].values,
-                    "min_limit_nminus1": -net[element].loc[element_index, "max_loading_nminus1_percent"].values
-                    if "max_loading_nminus1_percent" in net[element].columns
-                    else -net[element].loc[element_index, "max_loading_percent"].values,
+                    "max_limit_nminus1": nminus1_limit,
+                    "min_limit_nminus1": -nminus1_limit,
                 }
             )
 
