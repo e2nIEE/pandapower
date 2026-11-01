@@ -3,9 +3,9 @@ import pytest
 
 from pandapower.contingency import check_elements_within_limits, get_element_limits, run_contingency
 from pandapower.create import (
-    create_bus,
+    create_buses,
     create_ext_grid,
-    create_line_from_parameters,
+    create_lines,
     create_load,
 )
 from pandapower.network import pandapowerNet
@@ -23,21 +23,23 @@ from pandapower.network import pandapowerNet
 )
 def test_partial_loading_limits_ac(count, partial, low_capacity, expected, nminus1):
     net = pandapowerNet(name="partial_contingency_limits")
-    a = create_bus(net, vn_kv=110, min_vm_pu=0.9, max_vm_pu=1.1, index=10)
-    b = create_bus(net, vn_kv=110, min_vm_pu=0.9, max_vm_pu=1.1, index=30)
+    a = create_buses(net, nr_buses=1, vn_kv=110, min_vm_pu=0.9, max_vm_pu=1.1, index=[10])[0]
+    b = create_buses(net, nr_buses=1, vn_kv=110, min_vm_pu=0.9, max_vm_pu=1.1, index=[30])[0]
     create_ext_grid(net, a)
     for k in range(count):
-        create_line_from_parameters(
+        create_lines(
             net,
-            a,
-            b,
+            from_buses=[a],
+            to_buses=[b],
             length_km=1,
-            r_ohm_per_km=0.1,
-            x_ohm_per_km=0.2,
-            c_nf_per_km=0,
-            max_i_ka=0.1 if k == 0 and low_capacity else 0.6,
+            line_params={
+                "r_ohm_per_km": 0.1,
+                "x_ohm_per_km": 0.2,
+                "c_nf_per_km": 0,
+                "max_i_ka": 0.1 if k == 0 and low_capacity else 0.6,
+            },
             max_loading_percent=np.nan if k == 0 and partial else 100.0,
-            index=5 + 10 * k,
+            index=[5 + 10 * k],
         )
     create_load(net, b, p_mw=100, q_mvar=20)
     results = run_contingency(net, {"line": {"index": net.line.index.values}}, numba=False, raise_errors=True)
