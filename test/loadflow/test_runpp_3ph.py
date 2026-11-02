@@ -23,6 +23,7 @@ from pandapower.create import (
     create_lines,
     create_load,
     create_sgen,
+    create_sgens,
     create_shunt,
     create_switch,
     create_transformer_from_parameters,
@@ -962,6 +963,46 @@ def test_balanced_power_flow_with_unbalanced_loads_and_sgens():
     )
     runpp_with_consistency_checks(net)
     assert net.res_bus.vm_pu.equals(vm_pu)
+
+
+@pytest.mark.parametrize(
+    "add_element",
+    [
+        lambda net, bus: create_sgen(net, bus, p_mw=1.0),
+        lambda net, bus: (create_sgen(net, bus, p_mw=0.5), create_sgens(net, [bus], [0.5])),
+        lambda net, bus: create_sgen(net, bus, p_mw=1.0, type="motor"),
+        lambda net, bus: create_load(net, bus, p_mw=-1.0, type=None),
+    ],
+    ids=["sgen_without_type_column", "sgen_type_na_and_wye", "sgen_type_motor", "load_type_none"],
+)
+def test_3ph_loads_and_sgens_without_wye_type(add_element):
+    """Loads and sgens whose type is not "delta" are wye elements in runpp_3ph, as they are in runpp."""
+    net = pandapowerNet(name="test_3ph_loads_and_sgens_without_wye_type")
+    b1 = create_bus(net, 20.0)
+    b2 = create_bus(net, 20.0)
+    create_ext_grid(net, b1, s_sc_max_mva=1000, rx_max=0.1, x0x_max=1.0, r0x0_max=0.1)
+    create_line_from_parameters(
+        net,
+        b1,
+        b2,
+        length_km=1,
+        r_ohm_per_km=1,
+        x_ohm_per_km=1,
+        c_nf_per_km=1,
+        r0_ohm_per_km=1,
+        x0_ohm_per_km=1,
+        c0_nf_per_km=1,
+        max_i_ka=1,
+    )
+    add_element(net, b2)
+
+    runpp_with_consistency_checks(net)
+    runpp_3ph_with_consistency_checks(net)
+
+    p_3ph = net.res_ext_grid_3ph[["p_a_mw", "p_b_mw", "p_c_mw"]].sum(axis=1)
+    assert np.allclose(p_3ph, net.res_ext_grid.p_mw)
+    for phase in "abc":
+        assert np.allclose(net.res_bus_3ph[f"vm_{phase}_pu"], net.res_bus.vm_pu)
 
 
 def test_3ph_with_impedance():

@@ -66,9 +66,13 @@ def _get_elements(params, net, element, phase, typ):
     #   # Trying to find the column no for using numpy filters for active loads
     scaling = net[element].columns.get_loc("scaling")
     if "type" in net[element]:
-        typ_col = net[element].columns.get_loc("type")  # Type = Delta or Wye load
-        # active wye or active delta row selection
-        active = (net["_is_elements"][element]) & (elm[:, typ_col] == typ)
+        # active wye or active delta row selection. Every element that is not "delta", also one
+        # without a type, is a wye element: runpp takes all of them into account as well
+        is_delta = (net[element]["type"] == "delta").fillna(False).to_numpy(dtype=bool)
+        active = net["_is_elements"][element] & (is_delta if typ == "delta" else ~is_delta)
+    elif typ == "wye":
+        # no type column, e.g. sgens created by create_sgen without a type
+        active = net["_is_elements"][element]
     else:
         active = []
     bus = [net[element].columns.get_loc("bus")]
