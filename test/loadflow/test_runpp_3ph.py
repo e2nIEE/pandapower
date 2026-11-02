@@ -219,7 +219,7 @@ def test_2bus_network_one_of_two_ext_grids_oos(test_net):
 
 
 def test_2bus_network_first_of_two_ext_grids_oos(test_net):
-    """The results of an in-service ext_grid must not be assigned to an out-of-service ext_grid before it"""
+    """The results of an in-service ext_grid must not be assigned to an out-of-service ext_grid before it."""
     add_zero_impedance_parameters(test_net)
     runpp_3ph(test_net)
     expected = test_net.res_ext_grid_3ph.loc[0].values
@@ -1126,7 +1126,7 @@ def test_gen_3ph_loadflow():
 
 
 def test_gen_3ph_loadflow_non_continuous_index():
-    """gen results must not depend on the index of net.gen (#1474)"""
+    """The gen results must not depend on the index of net.gen (#1474)."""
     net = _create_gen_3ph_net()
     runpp_3ph(net)
 
