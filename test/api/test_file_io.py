@@ -23,7 +23,7 @@ from pandapower.control import (
 from pandapower.convert_format import convert_format
 from pandapower.create import create_transformer
 from pandapower.file_io import from_excel, from_json, from_json_string, from_pickle, to_excel, to_json, to_pickle
-from pandapower.io_utils import PPJSONDecoder, PPJSONEncoder
+from pandapower.io_utils import PPJSONDecoder, PPJSONEncoder, to_serializable
 from pandapower.networks import case9, case14, create_kerber_dorfnetz, mv_oberrhein, simple_four_bus_system
 from pandapower.run import runpp, set_user_pf_options
 from pandapower.sql_io import from_sqlite, to_sqlite
@@ -275,6 +275,18 @@ def test_dataframes_with_integer_columns():
     json_string = json.dumps(obj, cls=PPJSONEncoder)
     obj_loaded = json.loads(json_string, cls=PPJSONDecoder)
     assert all(obj.columns == obj_loaded.columns)
+
+
+def test_encoder_unserializable_object_error_message():
+    class Unserializable:
+        pass
+
+    @to_serializable.register(Unserializable)
+    def _raise(obj):
+        raise TypeError
+
+    with pytest.raises(TypeError, match="Object of type Unserializable is not JSON serializable"):
+        json.dumps(Unserializable(), cls=PPJSONEncoder)
 
 
 def assert_graphs_equal(mg1, mg2):

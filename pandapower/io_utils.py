@@ -529,7 +529,7 @@ class PPJSONEncoder(json.JSONEncoder):
         else:
             return s
         # Let the base class default method raise the TypeError
-        return super().default(self, o)
+        return super().default(o)
 
 
 class FromSerializable:
