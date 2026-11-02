@@ -1100,7 +1100,7 @@ def test_shunt_3ph():
 
 @pytest.mark.parametrize("element", ["ward", "storage"])
 def test_3ph_constant_power_of_ward_and_storage(element):
-    """runpp_3ph must include the constant power of wards and storages like runpp does (#1919)"""
+    """The 3ph power flow must include the constant power of wards and storages like runpp does (#1919)."""
     net = pandapowerNet(name="test_3ph_constant_power_of_ward_and_storage")
     b1 = create_bus(net, 20.0)
     b2 = create_bus(net, 20.0)
