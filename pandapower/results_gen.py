@@ -180,7 +180,7 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
     eg_bus_idx_ppc = np.real(ppc1["gen"][eg_idx_ppc, GEN_BUS]).astype(np.int64)
     # read results from ppc for these buses
     V012 = np.array(np.zeros((3, n_res_eg)), dtype=np.complex128)
-    V012[:, eg_idx_ppc] = np.array(
+    V012[:, eg_is_mask] = np.array(
         [
             ppc["bus"][eg_bus_idx_ppc, VM]
             * ppc["bus"][eg_bus_idx_ppc, BASE_KV]
@@ -190,11 +190,11 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
     )
 
     S012 = np.array(np.zeros((3, n_res_eg)), dtype=np.complex128)
-    S012[:, eg_idx_ppc] = np.array(
+    S012[:, eg_is_mask] = np.array(
         [(ppc["gen"][eg_idx_ppc, PG] + 1j * ppc["gen"][eg_idx_ppc, QG]) for ppc in [ppc0, ppc1, ppc2]]
     )
 
-    Sabc, _ = SVabc_from_SV012(S012, V012 / np.sqrt(3), n_res=n_res_eg, idx=eg_idx_ppc)
+    Sabc, _ = SVabc_from_SV012(S012, V012 / np.sqrt(3), n_res=n_res_eg, idx=eg_is_mask)
 
     pA, pB, pC = map(lambda x: x.flatten(), np.real(Sabc))
     qA, qB, qC = map(lambda x: x.flatten(), np.imag(Sabc))
@@ -252,7 +252,7 @@ def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
     gen_bus_idx_ppc = np.real(ppc1["gen"][gen_idx_ppc, GEN_BUS]).astype(np.int64)
 
     V012 = np.array(np.zeros((3, n_res_gen), dtype=complex))
-    V012[:, gen_is_idx] = np.array(
+    V012[:, gen_is_mask] = np.array(
         [
             ppc["bus"][gen_bus_idx_ppc, VM] * np.exp(1j * np.deg2rad(ppc["bus"][gen_bus_idx_ppc, VA]))
             for ppc in [ppc0, ppc1, ppc2]
@@ -260,11 +260,11 @@ def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
     )
 
     S012 = np.array(np.zeros((3, n_res_gen), dtype=complex))
-    S012[:, gen_is_idx] = np.array(
+    S012[:, gen_is_mask] = np.array(
         [-(ppc["gen"][gen_idx_ppc, PG] + 1j * ppc["gen"][gen_idx_ppc, QG]) for ppc in [ppc0, ppc1, ppc2]]
     )
     I012 = np.array(np.zeros((3, n_res_gen), dtype=complex))
-    I012[:, gen_is_idx] = I_from_SV_elementwise(S012[:, gen_is_idx] * 1e3, V012[:, gen_is_idx])
+    I012[:, gen_is_mask] = I_from_SV_elementwise(S012[:, gen_is_mask] * 1e3, V012[:, gen_is_mask])
 
     Vabc = sequence_to_phase(V012)
     Iabc = sequence_to_phase(I012)
@@ -328,15 +328,15 @@ def _get_v_gen_results_3ph(net, ppc0, ppc1, ppc2):
 
     # voltage magnitudes
     vA_pu, vB_pu, vC_pu = np.copy((np.zeros(n_res_gen),) * 3)
-    vA_pu[gen_is_idx] = np.abs(VABC[0, gen_is_idx])
-    vB_pu[gen_is_idx] = np.abs(VABC[1, gen_is_idx])
-    vC_pu[gen_is_idx] = np.abs(VABC[2, gen_is_idx])
+    vA_pu[gen_is_mask] = np.abs(VABC[0, gen_is_mask])
+    vB_pu[gen_is_mask] = np.abs(VABC[1, gen_is_mask])
+    vC_pu[gen_is_mask] = np.abs(VABC[2, gen_is_mask])
 
     # voltage angles
     vA_a, vB_a, vC_a = np.copy((np.zeros(n_res_gen),) * 3)
-    vA_a[gen_is_idx] = np.rad2deg(np.angle(VABC[0, gen_is_idx]))
-    vB_a[gen_is_idx] = np.rad2deg(np.angle(VABC[1, gen_is_idx]))
-    vC_a[gen_is_idx] = np.rad2deg(np.angle(VABC[2, gen_is_idx]))
+    vA_a[gen_is_mask] = np.rad2deg(np.angle(VABC[0, gen_is_mask]))
+    vB_a[gen_is_mask] = np.rad2deg(np.angle(VABC[1, gen_is_mask]))
+    vC_a[gen_is_mask] = np.rad2deg(np.angle(VABC[2, gen_is_mask]))
 
     net["res_gen_3ph"]["vm_a_pu"] = vA_pu
     net["res_gen_3ph"]["vm_b_pu"] = vB_pu

@@ -3,6 +3,9 @@
 
 import logging
 
+import numpy as np
+import pandas as pd
+
 from pandapower.auxiliary import _detect_read_write_flag, write_to_net
 from pandapower.control.basic_controller import Controller
 
@@ -59,6 +62,11 @@ class ConstControl(Controller):
         initial_run=False,
         **kwargs,
     ):
+        # writing to a missing index would silently add a row to the element table
+        missing = pd.Index(np.atleast_1d(element_index)).difference(net[element].index)
+        if len(missing):
+            raise ValueError(f"element_index {list(missing)} not found in net.{element}")
+
         # just calling init of the parent
         if matching_params is None:
             matching_params = {"element": element, "variable": variable, "element_index": element_index}
