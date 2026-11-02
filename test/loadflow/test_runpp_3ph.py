@@ -218,6 +218,21 @@ def test_2bus_network_one_of_two_ext_grids_oos(test_net):
     assert test_net["converged"]
 
 
+def test_2bus_network_first_of_two_ext_grids_oos(test_net):
+    """The results of an in-service ext_grid must not be assigned to an out-of-service ext_grid before it"""
+    add_zero_impedance_parameters(test_net)
+    runpp_3ph(test_net)
+    expected = test_net.res_ext_grid_3ph.loc[0].values
+
+    test_net.ext_grid.loc[0, "in_service"] = False
+    create_ext_grid(test_net, bus=1, vm_pu=1.0, s_sc_max_mva=5000, rx_max=0.1, r0x0_max=0.1, x0x_max=1.0)
+    runpp_3ph_with_consistency_checks(test_net)
+    assert test_net["converged"]
+    check_it(test_net)
+    assert np.allclose(test_net.res_ext_grid_3ph.loc[0].values, 0.0)
+    assert np.allclose(test_net.res_ext_grid_3ph.loc[1].values, expected)
+
+
 @pytest.mark.parametrize("init", ["auto", "results", "flat", "dc"])
 @pytest.mark.parametrize("recycle", [None, {"bus_pq": True, "Ybus": True}, {"bus_pq": True, "Ybus": False}])
 def test_4bus_network(init, recycle):
@@ -1064,7 +1079,7 @@ def test_3ph_enforce_q_lims(result_test_network):
     assert abs(_net.res_gen.q_mvar.at[g1] - _net.gen.min_q_mvar.at[g1]) < s_tol
 
 
-def test_gen_3ph_loadflow():
+def _create_gen_3ph_net(gen_index=None):
     net = pandapowerNet(name="test_gen_3ph_loadflow", f_hz=50, add_stdtypes=False)
     add_zero_impedance_parameters(net)
 
@@ -1078,7 +1093,7 @@ def test_gen_3ph_loadflow():
 
     create_ext_grid(net, bus=2, vm_pu=1.018182, s_sc_max_mva=1e34)
 
-    create_gen(net, bus=1, p_mw=70, q_mvar=0, vm_pu=1.027273)
+    create_gen(net, bus=1, p_mw=70, q_mvar=0, vm_pu=1.027273, index=gen_index)
 
     create_load(net, bus=0, p_mw=100, q_mvar=30)
 
@@ -1088,6 +1103,11 @@ def test_gen_3ph_loadflow():
     net.line.r0_ohm_per_km = 3 * net.line.r_ohm_per_km
     net.line.x0_ohm_per_km = 3 * net.line.x_ohm_per_km
     net.line.c0_nf_per_km = net.line.c_nf_per_km
+    return net
+
+
+def test_gen_3ph_loadflow():
+    net = _create_gen_3ph_net()
 
     runpp_3ph(net)
 
@@ -1103,6 +1123,18 @@ def test_gen_3ph_loadflow():
 
     assert np.isclose(net.res_gen_3ph.loc[0, ["p_a_mw", "p_b_mw", "p_c_mw"]].sum(), 70.0)
     assert np.isclose(net.res_gen_3ph.loc[0, ["q_a_mvar", "q_b_mvar", "q_c_mvar"]].sum(), 33.165882)
+
+
+def test_gen_3ph_loadflow_non_continuous_index():
+    """gen results must not depend on the index of net.gen (#1474)"""
+    net = _create_gen_3ph_net()
+    runpp_3ph(net)
+
+    net_idx = _create_gen_3ph_net(gen_index=5)
+    runpp_3ph(net_idx)
+
+    assert net_idx.res_gen_3ph.index.tolist() == [5]
+    assert np.allclose(net_idx.res_gen_3ph.loc[5].values, net.res_gen_3ph.loc[0].values)
 
 
 @pytest.mark.xfail
