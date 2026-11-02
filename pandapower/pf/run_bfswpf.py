@@ -226,7 +226,7 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
 
     # tolerance for the inner loop for PV nodes
     tol_mva_inner = kwargs.get("tolerance_mva_pv", 1.0e-2)
-    
+
     max_iter_pv = kwargs.get("max_iter_pv", 20)
 
     nobus = bus.shape[0]
