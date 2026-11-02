@@ -1272,7 +1272,8 @@ def _calc_xward_parameter(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     f, t = net["_pd2ppc_lookups"]["branch"]["xward"]
     branch = ppc["branch"]
-    baseR = np.square(get_values(ppc["bus"][:, BASE_KV], net["xward"]["bus"].values, bus_lookup)) / net.sn_mva
+    sn_mva = 3 * net.sn_mva if net["_options"]["mode"] == "pf_3ph" else net.sn_mva
+    baseR = np.square(get_values(ppc["bus"][:, BASE_KV], net["xward"]["bus"].values, bus_lookup)) / sn_mva
     xw_is = net["_is_elements"]["xward"]
     branch[f:t, F_BUS] = bus_lookup[net["xward"]["bus"].values]
     branch[f:t, T_BUS] = bus_lookup[net._pd2ppc_lookups["aux"]["xward"]]
