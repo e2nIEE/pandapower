@@ -341,11 +341,7 @@ class OCRelay(ProtectionDevice):
         plt.grid(True, which="both", ls="-")
 
     def __str__(self):
-        return "Protection Device: %s \nType: %s \nIndex: %s" % (
-            self.__class__.__name__,
-            self.oc_relay_type,
-            self.switch_index,
-        )
+        return f"Protection Device: {self.__class__.__name__} \nType: {self.oc_relay_type} \nIndex: {self.switch_index}"
 
     def __hash__(self):
         return hash(
@@ -407,10 +403,8 @@ class OCRelay(ProtectionDevice):
 def time_grading(net, time_settings):
     # Automated time grading calculation
     if isinstance(time_settings, list):
-        if len(time_settings) == 3:
-            time_settings = time_settings
         if len(time_settings) == 2:
-            time_settings = [time_settings[0], time_settings[1], time_settings[1]]
+            time_settings.append(time_settings[1])
 
         # Get the bus path to each lines from all the ext buses
         bus_paths = bus_path_multiple_ext_bus(net)
@@ -434,9 +428,9 @@ def time_grading(net, time_settings):
         line_time = {}
         for line in sorted_line_path:
             line_length = len(line)
-            for length in line_length_time:
+            for length, time in line_length_time.items():
                 if line_length == length:
-                    line_time[line[-1]] = line_length_time[length]
+                    line_time[line[-1]] = time
         parallel_line = parallel_lines(net)
 
         # find the missing lines in line time (due to parallel lines)
