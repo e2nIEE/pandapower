@@ -72,7 +72,7 @@ def mv_oberrhein(
         net.sgen.scaling = 0.8
         net.trafo.loc[hv_trafos, "tap_pos"] = [0, 0]
     else:
-        raise ValueError("Unknown scenario %s - chose 'load' or 'generation'" % scenario)
+        raise ValueError(f"Unknown scenario {scenario} - chose 'load' or 'generation'")
 
     if separation_by_sub:
         # creating multigraph
