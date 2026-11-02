@@ -65,7 +65,7 @@ def validate_network(net: pandapowerNet, groups_to_validate: str | set[str] | No
         }
     else:
         groups_set = groups_to_validate
-    
+
     for element in net:
         schema = copy.deepcopy(get_element_schema(element))
         if schema is None:

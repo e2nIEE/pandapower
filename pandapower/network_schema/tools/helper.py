@@ -80,7 +80,7 @@ def get_dtypes(schema: pa.DataFrameSchema, required_only: bool = True, metadata:
         When metadata parameter is provided, columns with matching metadata keys
         having truthy values will be included regardless of required_only setting.
     """
-    
+
     if metadata is None:
         metadata = []
     return {
