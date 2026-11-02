@@ -25,7 +25,7 @@ from pandapower.build_branch import (
 )
 from pandapower.build_bus import _build_bus_ppc
 from pandapower.pd2ppc import _init_ppc
-from pandapower.pf.makeYbus_facts import calc_y_svc_pu
+from pandapower.pf.make_y_bus_facts import calc_y_svc_pu
 from pandapower.pypower.idx_bus import BASE_KV
 
 if find_spec("graph_tool"):
