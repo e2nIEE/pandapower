@@ -165,7 +165,7 @@ def test_memory_leaks_no_copy():
     num = 3
     for _ in range(num):
         net = pandapowerNet(name="test_memory_leaks_no_copy")
-        create_sgen(net, create_bus(net, 0.4), 0)
+        create_sgen(net, create_buses(net, 1, 0.4)[0], 0)
         # In each net copy it has only one controller
         ConstControl(net, "sgen", "p_mw", 0)
 
