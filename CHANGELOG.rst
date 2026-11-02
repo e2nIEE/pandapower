@@ -3,6 +3,7 @@ Change Log
 
 [upcoming 4.0.0] - 2026-..-..
 -------------------------------
+- [FIXED] short-circuit tutorial and docs: explain why meshed and radial results are equal with kappa method C in the example ring, show method B, complete the method C description and document ``kappa_method`` in ``calc_sc`` (#2621)
 - [FIXED] ``runpp_3ph``: ``gen`` results failed with an ``IndexError`` if the ``gen`` index was not ``0, 1, 2, ...``, and the results of an in-service ``ext_grid`` were written to an out-of-service ``ext_grid`` listed before it (#1474)
 - [FIXED] docstrings of detect_power_station_unit and elements_on_path now match their parameters
 - [CHANGED] ran ruff format for whole project

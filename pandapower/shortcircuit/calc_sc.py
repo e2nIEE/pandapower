@@ -88,6 +88,11 @@ def calc_sc(
         ip: if True, calculate aperiodic short-circuit current
         ith: if True, calculate equivalent thermical short-circuit current Ith
         tk_s: failure clearing time in seconds (only relevant for ith)
+        kappa_method: method for the peak factor kappa at meshed buses (only relevant for ip and ith)
+
+            - "C" - equivalent frequency (method C of IEC 60909-0)
+            - "B" - R/X ratio at the short-circuit location with factor 1.15 (method B of IEC 60909-0)
+
         r_fault_ohm: fault resistance in Ohm
         x_fault_ohm: fault reactance in Ohm
         branch_results: defines if short-circuit results should also be generated for branches
