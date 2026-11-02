@@ -18,7 +18,7 @@ from pandapower.create import (
 )
 from pandapower.network import pandapowerNet
 from pandapower.networks.power_system_test_cases import case9, case30
-from pandapower.networks.tutorial_networks import simple_test_grid as simple_test_grid
+from pandapower.networks.tutorial_networks import simple_test_grid
 from pandapower.pf.create_jacobian_tdpf import (
     ALPHA_TDPF,
     calc_a0_a1_a2_tau,

@@ -2,6 +2,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 __all__ = [
+    "NumpyEncoder",
     "add_params_to_pm",
     "add_pm_gen_start_values_from_results",
     "add_pm_options",
@@ -15,18 +16,17 @@ __all__ = [
     "dump_pm_json",
     "get_branch_angles",
     "init_ne_line",
-    "NumpyEncoder",
     "ppc_to_pm",
 ]
 
 import json
+import logging
 import math
 import os
 import tempfile
 from collections import OrderedDict
 from os import remove
 from os.path import isfile
-import logging
 
 import numpy as np
 import pandas as pd

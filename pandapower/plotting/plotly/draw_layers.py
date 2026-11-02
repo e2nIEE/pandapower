@@ -3,14 +3,14 @@
 
 __all__ = ["draw_layers", "version_check"]
 
+import logging
+
 import numpy as np
 import pandas as pd
 from packaging import version
 
 from pandapower.plotting.plotly.mapbox_plot import _on_map_test
 from pandapower.plotting.plotly.traces import _in_ipynb
-
-import logging
 
 logger = logging.getLogger(__name__)
 

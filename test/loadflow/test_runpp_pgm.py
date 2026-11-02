@@ -14,7 +14,7 @@ pytest.importorskip("power_grid_model_io")
 
 @pytest.mark.parametrize("consistency_fn", [runpp_pgm_with_consistency_checks, runpp_pgm_3ph_with_consistency_checks])
 @pytest.mark.skipif(
-    sys.version_info.minor < 12,
+    sys.version_info < (3, 12),
     reason=(
         "power-grid-model-io pandapower converter can not be tested due to bug, update python version to fix this issue"
     ),

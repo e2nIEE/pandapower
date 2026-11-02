@@ -350,4 +350,3 @@ class TestSvcResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_svc_result_totals(self):
         """Test: reactive power and impedance results are consistent"""
-        pass

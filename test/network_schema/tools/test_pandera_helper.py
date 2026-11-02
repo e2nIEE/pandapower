@@ -292,7 +292,7 @@ class TestGetDtypes:
     def test_get_dtypes_keys_are_strings(self):
         """Test that all keys in the returned dictionary are strings."""
         result = get_dtypes(self.mixed_schema, required_only=False)
-        for key in result.keys():
+        for key in result:
             assert isinstance(key, str)
 
     def test_get_dtypes_comprehensive_mixed_schema(self):

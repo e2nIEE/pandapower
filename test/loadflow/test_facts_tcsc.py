@@ -15,7 +15,7 @@ from pandapower.create import (
 from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 from test.consistency_checks import runpp_with_consistency_checks
-from test.loadflow.test_facts import copy_with_impedance, facts_case_study_grid, compare_tcsc_impedance
+from test.loadflow.test_facts import compare_tcsc_impedance, copy_with_impedance, facts_case_study_grid
 
 
 def add_tcsc_to_line(net, xl, xc, set_p_mw, from_bus, line, side="from_bus"):

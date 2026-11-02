@@ -2,8 +2,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 __all__ = [
-    "empty_res_element",
     "EmptyResults",
+    "empty_res_element",
     "get_relevant_elements",
     "get_result_tables",
     "init_results",

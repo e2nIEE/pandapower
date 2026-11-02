@@ -2,8 +2,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 __all__ = [
-    "from_cim",
     "__version__",
+    "from_cim",
 ]
 
 from pandapower.converter.cim.cim2pp import from_cim

@@ -2,23 +2,23 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 __all__ = [
+    "DeserializationNotAllowed",
+    "FromSerializable",
+    "FromSerializableRegistry",
+    "JSONSerializableClass",
+    "PPJSONDecoder",
+    "PPJSONEncoder",
     "controller_to_serializable",
     "coords_to_df",
     "decrypt_string",
-    "DeserializationNotAllowed",
     "df_to_coords",
     "dicts_to_pandas",
     "encrypt_string",
     "from_dict_of_dfs",
-    "FromSerializable",
-    "FromSerializableRegistry",
     "get_raw_data_from_pickle",
     "isinstance_partial",
-    "JSONSerializableClass",
     "mkdirs_if_not_existent",
     "pp_hook",
-    "PPJSONDecoder",
-    "PPJSONEncoder",
     "restore_all_dtypes",
     "to_dict_of_dfs",
     "to_dict_with_coord_transform",
@@ -27,11 +27,11 @@ __all__ = [
     "with_signature",
 ]
 
-import logging
 import copy
 import importlib
 import io
 import json
+import logging
 import numbers
 import os
 import sys
@@ -39,7 +39,7 @@ import types
 import weakref
 from ast import literal_eval
 from enum import Enum
-from functools import partial
+from functools import partial, singledispatch
 from importlib.util import find_spec
 from inspect import _findclass, isclass  # type: ignore[attr-defined]
 from warnings import warn
@@ -54,8 +54,6 @@ from deepdiff.diff import DeepDiff
 from networkx.readwrite import json_graph
 from numpy import allclose, equal, generic, isnan, ndarray
 from numpy import any as anynp
-
-from functools import singledispatch
 
 from pandapower.auxiliary import _preserve_dtypes, get_free_id, soft_dependency_error
 from pandapower.network import pandapowerNet

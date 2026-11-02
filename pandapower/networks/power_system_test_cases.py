@@ -2,6 +2,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 __all__ = [
+    "GBnetwork",
+    "GBreducednetwork",
     "case4gs",
     "case5",
     "case6ww",
@@ -28,8 +30,6 @@ __all__ = [
     "case9241pegase",
     "case_ieee30",
     "case_illinois200",
-    "GBnetwork",
-    "GBreducednetwork",
     "iceland",
     "sorted_from_json",
 ]

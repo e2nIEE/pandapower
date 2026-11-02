@@ -2,10 +2,10 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
-from importlib.util import find_spec
 import logging
 import os
 import re
+from importlib.util import find_spec
 
 import numpy as np
 import pandas as pd
@@ -14,8 +14,8 @@ import pytest
 from pandapower.auxiliary import (
     _add_ppc_options,
     _check_connectivity,
-    lightsim2grid_available,
     _check_if_numba_is_installed,
+    lightsim2grid_available,
 )
 from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
 from pandapower.create import (
@@ -116,7 +116,7 @@ def test_set_user_pf_options():
 
     # check if 'hello' is added to net._options, but other options are untouched
     runpp(net)
-    assert "hello" in net._options.keys() and net._options["hello"] == "world"
+    assert "hello" in net._options and net._options["hello"] == "world"
     net._options.pop("hello")
     assert net._options == old_options
 
@@ -125,7 +125,7 @@ def test_set_user_pf_options():
     set_user_pf_options(net, overwrite=True)
     assert net.user_pf_options == {}
     runpp(net)
-    assert "hello" not in net._options.keys()
+    assert "hello" not in net._options
 
     # see if user arguments overrule user_pf_options, but other user_pf_options still have the
     # priority
@@ -548,7 +548,7 @@ def test_test_sn_mva():
         try:
             assert_net_equal(net1, net2, exclude_elms=["sn_mva"])
         except AssertionError:
-            raise UserWarning("Result difference due to sn_mva after adding %s" % net1.last_added_case)
+            raise UserWarning(f"Result difference due to sn_mva after adding {net1.last_added_case}")
 
 
 def test_bsfw_algorithm():
@@ -677,9 +677,9 @@ def test_pypower_algorithms_iter():
                 runpp_with_consistency_checks(net, enforce_q_lims=True, algorithm=alg, calculate_voltage_angles="auto")
                 runpp_with_consistency_checks(net, enforce_q_lims=False, algorithm=alg, calculate_voltage_angles="auto")
             except AssertionError:
-                raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
+                raise UserWarning(f"Consistency Error after adding {net.last_added_case}")
             except LoadflowNotConverged:
-                raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
+                raise UserWarning(f"Power flow did not converge after adding {net.last_added_case}")
 
 
 @pytest.mark.xfail
@@ -1744,9 +1744,9 @@ def test_lightsim2grid():
             runpp_with_consistency_checks(net, lightsim2grid=True, voltage_depend_loads=False)
             assert_res_equal(net, net_ref)
         except AssertionError:
-            raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
+            raise UserWarning(f"Consistency Error after adding {net.last_added_case}")
         except LoadflowNotConverged:
-            raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
+            raise UserWarning(f"Power flow did not converge after adding {net.last_added_case}")
         except NotImplementedError as err:
             assert len(net.ext_grid) > 1
             assert "multiple ext_grids are found" in str(err)
@@ -2021,15 +2021,15 @@ def test_q_capability_curve_for_sgen():
     assert net.res_sgen.q_mvar.loc[0] < 255
     assert net.res_sgen.q_mvar.loc[0] > -255
     logger.info("------------general limit------------------")
-    logger.info("res_sgen:\n%s" % net.res_sgen)
-    logger.info("res_bus.vm_pu: \n%s" % net.res_bus)
+    logger.info(f"res_sgen:\n{net.res_sgen}")
+    logger.info(f"res_bus.vm_pu: \n{net.res_bus}")
 
     logger.info("------------given maximum limit------------------\n")
     net.sgen.loc[0, "max_q_mvar"] = 261.01001
     net.sgen.loc[0, "min_q_mvar"] = -323.01001
     runopp(net, init="pf", calculate_voltage_angles=False)
-    logger.info("res_sgen:\n%s" % net.res_sgen)
-    logger.info("res_bus.vm_pu: \n%s" % net.res_bus)
+    logger.info(f"res_sgen:\n{net.res_sgen}")
+    logger.info(f"res_bus.vm_pu: \n{net.res_bus}")
     assert max(net.res_bus.vm_pu) < 1.02
     assert min(net.res_bus.vm_pu) > 0.96
     assert net.res_sgen.q_mvar.loc[0] < 261.01001
@@ -2076,8 +2076,8 @@ def test_q_capability_curve_for_sgen():
     create_q_capability_characteristics_object(net)
 
     runopp(net, init="pf", calculate_voltage_angles=False)
-    logger.info("res_sgen:\n%s" % net.res_sgen)
-    logger.info("res_bus.vm_pu: \n%s" % net.res_bus)
+    logger.info(f"res_sgen:\n{net.res_sgen}")
+    logger.info(f"res_bus.vm_pu: \n{net.res_bus}")
     assert max(net.res_bus.vm_pu) < 1.02
     assert min(net.res_bus.vm_pu) > 0.96
     assert net.res_sgen.q_mvar.loc[0] < 218.0099945068

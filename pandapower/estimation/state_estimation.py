@@ -4,10 +4,10 @@
 __all__ = [
     "ALGORITHM_MAPPING",
     "ALLOWED_OPT_VAR",
+    "StateEstimation",
     "chi2_analysis",
     "estimate",
     "remove_bad_data",
-    "StateEstimation",
 ]
 
 import logging
