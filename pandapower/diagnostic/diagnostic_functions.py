@@ -1163,9 +1163,7 @@ class MissingBusIndices(DiagnosticFunction[pandapowerNet, dict]):
                 for bus_name in columns:
                     if not (
                         row[bus_name] in bus_indices
-                        and (element == "switch")
-                        and (bus_name == "element")
-                        and (row.et in ["l", "t", "t3"])
+                        or ((element == "switch") and (bus_name == "element") and (row.et in ["l", "t", "t3"]))
                     ):
                         element_check.append((i, bus_name, row[bus_name]))
             if element_check:
