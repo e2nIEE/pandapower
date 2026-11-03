@@ -467,9 +467,10 @@ def test_create_vsc_bipolar():
         x_ohm=5.0,
         r_dc_ohm=0.2,
         pl_dc_mw=0.1,
-        control_mode="Vac_phi",
-        control_value_1=1.02,
-        control_value_2=5.0,
+        control_mode_ac="vm_pu",
+        control_value_ac=1.02,
+        control_mode_dc="p_mw",
+        control_value_dc=5.0,
         name="test_vsc_bipolar",
         controllable=False,
         in_service=False,
@@ -480,9 +481,10 @@ def test_create_vsc_bipolar():
     assert np.isclose(net.vsc_bipolar.at[idx2, "x_ohm"], 5.0)
     assert np.isclose(net.vsc_bipolar.at[idx2, "r_dc_ohm"], 0.2)
     assert np.isclose(net.vsc_bipolar.at[idx2, "pl_dc_mw"], 0.1)
-    assert net.vsc_bipolar.at[idx2, "control_mode"] == "Vac_phi"
-    assert np.isclose(net.vsc_bipolar.at[idx2, "control_value_1"], 1.02)
-    assert np.isclose(net.vsc_bipolar.at[idx2, "control_value_2"], 5.0)
+    assert net.vsc_bipolar.at[idx2, "control_mode_ac"] == "vm_pu"
+    assert np.isclose(net.vsc_bipolar.at[idx2, "control_value_ac"], 1.02)
+    assert net.vsc_bipolar.at[idx2, "control_mode_dc"] == "p_mw"
+    assert np.isclose(net.vsc_bipolar.at[idx2, "control_value_dc"], 5.0)
     assert net.vsc_bipolar.at[idx2, "name"] == "test_vsc_bipolar"
     assert not net.vsc_bipolar.at[idx2, "controllable"]
     assert not net.vsc_bipolar.at[idx2, "in_service"]
@@ -494,9 +496,10 @@ def test_create_vsc_bipolar():
         net, bus=b3, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus, r_ohm=0.1, x_ohm=2.0, r_dc_ohm=0.1
     )
     assert np.isclose(net.vsc_bipolar.at[idx3, "pl_dc_mw"], 0.0)  # default
-    assert net.vsc_bipolar.at[idx3, "control_mode"] == "Vac_phi"  # default
-    assert np.isclose(net.vsc_bipolar.at[idx3, "control_value_1"], 1.0)  # default
-    assert np.isclose(net.vsc_bipolar.at[idx3, "control_value_2"], 0.0)  # default
+    assert net.vsc_bipolar.at[idx3, "control_mode_ac"] == "vm_pu"  # default
+    assert np.isclose(net.vsc_bipolar.at[idx3, "control_value_ac"], 1.0)  # default
+    assert net.vsc_bipolar.at[idx3, "control_mode_dc"] == "p_mw"  # default
+    assert np.isclose(net.vsc_bipolar.at[idx3, "control_value_dc"], 0.0)  # default
     assert net.vsc_bipolar.at[idx3, "controllable"]  # default
     assert net.vsc_bipolar.at[idx3, "in_service"]  # default
 
