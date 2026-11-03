@@ -328,7 +328,8 @@ def _bool_arr_to_positional_column_vector(arr):
 def overwrite_results_data_of_ppc_pickle(file_name, grid_names):
     folder = os.path.join(test_path, "converter")
     file = os.path.join(folder, file_name)
-    ppcs = pickle.load(open(file, "rb"))
+    with open(file, "rb") as f:
+        ppcs = pickle.load(f)
 
     for i in grid_names:
         ppc = ppcs[i]
