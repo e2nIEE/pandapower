@@ -359,9 +359,9 @@ def runpp_3ph(
     # pandapower settings
     # =============================================================================
     overrule_options = {}
-    if "user_pf_options" in net.keys() and len(net.user_pf_options) > 0:
+    if "user_pf_options" in net and len(net.user_pf_options) > 0:
         passed_parameters = _passed_runpp_parameters(locals())
-        overrule_options = {key: val for key, val in net.user_pf_options.items() if key not in passed_parameters.keys()}
+        overrule_options = {key: val for key, val in net.user_pf_options.items() if key not in passed_parameters}
     if numba:
         numba = _check_if_numba_is_installed()
 
@@ -650,7 +650,7 @@ def runpp_3ph(
     if not ppci0["success"]:
         net["converged"] = False
         _clean_up(net, res=False)
-        raise LoadflowNotConverged("Power Flow {0} did not converge after {1} iterations!".format("nr", count))
+        raise LoadflowNotConverged(f"Power Flow newton-raphson did not converge after {count} iterations!")
     else:
         net["converged"] = True
 
