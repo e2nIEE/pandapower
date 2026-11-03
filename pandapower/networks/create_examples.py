@@ -69,7 +69,7 @@ def example_simple():
         "NA2XS2Y 1x240 RM/25 12/20 kV",
     ]
     length_km = [10, 2.0, 3.5, 2.5]
-    line1, line2, line3, line4 = create_lines(
+    _, line2, line3, line4 = create_lines(
         net,
         [bus1, bus5, bus6, bus7],
         [bus2, bus6, bus7, bus5],
@@ -157,7 +157,7 @@ def example_multivoltage():
 
     # HV
     hv_lines = pd.DataFrame()
-    hv_lines["line_name"] = ["HV Line%s" % i for i in range(1, 7)]
+    hv_lines["line_name"] = [f"HV Line{i}" for i in range(1, 7)]
     hv_lines["from_bus"] = ["Bus SB 2", "Bus HV1", "Bus HV2", "Bus HV1", "Bus HV3", "Bus SB 3"]
     hv_lines["to_bus"] = ["Bus HV1", "Bus HV2", "Bus HV4", "Bus HV4", "Bus HV4", "Bus HV3"]
     hv_lines["std_type"] = "184-AL1/30-ST1A 110.0"
@@ -179,9 +179,9 @@ def example_multivoltage():
 
     # MV
     mv_lines = pd.DataFrame()
-    mv_lines["line_name"] = ["MV Line%s" % i for i in range(1, 9)]
-    mv_lines["from_bus"] = ["Bus MV%s" % i for i in list(range(7)) + [0]]
-    mv_lines["to_bus"] = ["Bus MV%s" % i for i in list(range(1, 8)) + [7]]
+    mv_lines["line_name"] = [f"MV Line{i}" for i in range(1, 9)]
+    mv_lines["from_bus"] = [f"Bus MV{i}" for i in list(range(7)) + [0]]
+    mv_lines["to_bus"] = [f"Bus MV{i}" for i in list(range(1, 8)) + [7]]
     mv_lines["length"] = 1.5
     mv_lines["std_type"] = "NA2XS2Y 1x185 RM/25 12/20 kV"
 
@@ -195,11 +195,11 @@ def example_multivoltage():
     # LV
     lv_lines = pd.DataFrame()
     lv_line_idx = ["1.1", "1.2", "1.3", "1.4", "1.6", "2.1", "2.2", "2.3", "2.4", "2.2.1", "2.2.2"]
-    lv_lines["line_name"] = ["LV Line%s" % i for i in lv_line_idx]
+    lv_lines["line_name"] = [f"LV Line{i}" for i in lv_line_idx]
     lv_line_idx = ["0", "1.1", "1.2", "1.3", "1.4", "0", "2.1", "2.2", "2.3", "2.2", "2.2.1"]
-    lv_lines["from_bus"] = ["Bus LV%s" % i for i in lv_line_idx]
+    lv_lines["from_bus"] = [f"Bus LV{i}" for i in lv_line_idx]
     lv_line_idx = ["1.1", "1.2", "1.3", "1.4", "1.5", "2.1", "2.2", "2.3", "2.4", "2.2.1", "2.2.2"]
-    lv_lines["to_bus"] = ["Bus LV%s" % i for i in lv_line_idx]
+    lv_lines["to_bus"] = [f"Bus LV{i}" for i in lv_line_idx]
     lv_lines["length"] = [0.08] * 5 + [0.12] * 6
     lv_lines["std_type"] = ["NAYY 4x120 SE"] * 7 + ["15-AL1/3-ST1A 0.4"] * 4
 
@@ -311,8 +311,8 @@ def example_multivoltage():
 
     # LV
     lv_sgens = pd.DataFrame()
-    lv_sgens["sgen_name"] = ["PV"] + ["PV(%s)" % i for i in range(1, 6)]
-    lv_sgens["bus"] = ["Bus LV%s" % i for i in ["1.1", "1.3", "2.3", "2.4", "2.2.1", "2.2.2"]]
+    lv_sgens["sgen_name"] = ["PV"] + [f"PV({i})" for i in range(1, 6)]
+    lv_sgens["bus"] = [f"Bus LV{i}" for i in ["1.1", "1.3", "2.3", "2.4", "2.2.1", "2.2.2"]]
     lv_sgens["p"] = [0.006, 0.005, 0.005, 0.005, 0.005, 0.005]
     lv_sgens["q"] = 0
     lv_sgens["sn"] = [0.012, 0.01, 0.01, 0.01, 0.01, 0.01]
@@ -326,7 +326,7 @@ def example_multivoltage():
 
     # HV
     hv_loads = pd.DataFrame()
-    hv_loads["load_name"] = ["MV Net %s" % i for i in range(5)]
+    hv_loads["load_name"] = [f"MV Net {i}" for i in range(5)]
     hv_loads["bus"] = ["Bus SB 4", "Bus HV1", "Bus HV2", "Bus HV3", "Bus HV4"]
     hv_loads["p"] = 38
     hv_loads["q"] = 6
@@ -337,8 +337,8 @@ def example_multivoltage():
 
     # MV
     mv_loads = pd.DataFrame()
-    mv_loads["load_name"] = ["Further MV-Rings", "Industry Load"] + ["LV Net %s" % i for i in [1, 2, 3, 5, 6, 7]]
-    mv_loads["bus"] = ["Bus MV0", "Bus MV0 20kV"] + ["Bus MV%s" % i for i in [1, 2, 3, 5, 6, 7]]
+    mv_loads["load_name"] = ["Further MV-Rings", "Industry Load"] + [f"LV Net {i}" for i in [1, 2, 3, 5, 6, 7]]
+    mv_loads["bus"] = ["Bus MV0", "Bus MV0 20kV"] + [f"Bus MV{i}" for i in [1, 2, 3, 5, 6, 7]]
     mv_loads["p"] = [6, 18, 0.4, 0.4, 0.4, 0.4, 0.4, 0.4]
     mv_loads["q"] = [2, 4, 0.1, 0.06, 0.06, 0.06, 0.06, 0.06]
 
@@ -350,12 +350,10 @@ def example_multivoltage():
     lv_loads = pd.DataFrame()
     idx = ["", "(1)", "(2)", "(3)", "(4)", "(5)"]
     lv_loads["load_name"] = (
-        ["Further LV-Feeders Load"]
-        + ["Residential Load%s" % i for i in idx[0:5]]
-        + ["Rural Load%s" % i for i in idx[0:6]]
+        ["Further LV-Feeders Load"] + [f"Residential Load{i}" for i in idx[0:5]] + [f"Rural Load{i}" for i in idx[0:6]]
     )
     lv_loads["bus"] = [
-        "Bus LV%s" % i for i in ["0", "1.1", "1.2", "1.3", "1.4", "1.5", "2.1", "2.2", "2.3", "2.4", "2.2.1", "2.2.2"]
+        f"Bus LV{i}" for i in ["0", "1.1", "1.2", "1.3", "1.4", "1.5", "2.1", "2.2", "2.3", "2.4", "2.2.1", "2.2.2"]
     ]
     lv_loads["p"] = [0.1] + [0.01] * 11
     lv_loads["q"] = [0.01] + [0.03] * 11
@@ -426,14 +424,14 @@ def example_multivoltage():
     # Bus-bus switches
     hv_bus_sw = pd.DataFrame()
     hv_bus_sw["bus_name"] = (
-        ["DB DS%s" % i for i in range(14)]
-        + ["DB CB%s" % i for i in range(5)]
-        + ["SB DS%s.%s" % (i, j) for i in range(1, 6) for j in range(1, 3)]
-        + ["SB CB%s" % i for i in range(1, 6)]
+        [f"DB DS{i}" for i in range(14)]
+        + [f"DB CB{i}" for i in range(5)]
+        + [f"SB DS{i}.{j}" for i in range(1, 6) for j in range(1, 3)]
+        + [f"SB CB{i}" for i in range(1, 6)]
     )
     hv_bus_sw["from_bus"] = (
-        ["Double Busbar %s" % i for i in [2, 1, 2, 1, 2, 1, 2, 1, 2, 1]]
-        + ["Bus DB T%s" % i for i in [2, 4, 6, 8, 0, 3, 5, 7, 9]]
+        [f"Double Busbar {i}" for i in [2, 1, 2, 1, 2, 1, 2, 1, 2, 1]]
+        + [f"Bus DB T{i}" for i in [2, 4, 6, 8, 0, 3, 5, 7, 9]]
         + [
             "Bus SB T1.1",
             "Single Busbar",
@@ -446,11 +444,11 @@ def example_multivoltage():
             "Bus SB T5.1",
             "Single Busbar",
         ]
-        + ["Bus SB T%s.2" % i for i in range(1, 6)]
+        + [f"Bus SB T{i}.2" for i in range(1, 6)]
     )
     hv_bus_sw["to_bus"] = (
         [
-            "Bus DB %s" % i
+            f"Bus DB {i}"
             for i in [
                 "T0",
                 "T1",
@@ -473,8 +471,8 @@ def example_multivoltage():
                 "T8",
             ]
         ]
-        + ["Bus SB %s" % i for i in ["1", "T1.2", "2", "T2.2", "3", "T3.2", "4", "T4.2", "5", "T5.2"]]
-        + ["Bus SB T%s.1" % i for i in range(1, 6)]
+        + [f"Bus SB {i}" for i in ["1", "T1.2", "2", "T2.2", "3", "T3.2", "4", "T4.2", "5", "T5.2"]]
+        + [f"Bus SB T{i}.1" for i in range(1, 6)]
     )
     hv_bus_sw["type"] = ["DS"] * 14 + ["CB"] * 5 + ["DS"] * 10 + ["CB"] * 5
     hv_bus_sw["et"] = "b"
@@ -497,7 +495,7 @@ def example_multivoltage():
                 et="l",
                 closed=True,
                 type="LBS",
-                name="Switch %s - %s" % (net.bus.name.at[bus], line["name"]),
+                name=f"Switch {net.bus.name.at[bus]} - {line['name']}",
             )
 
     # MV
@@ -513,7 +511,7 @@ def example_multivoltage():
                 et="l",
                 closed=True,
                 type="LBS",
-                name="Switch %s - %s" % (net.bus.name.at[bus], line["name"]),
+                name=f"Switch {net.bus.name.at[bus]} - {line['name']}",
             )
 
     open_switch_id = net.switch[(net.switch.name == "Switch Bus MV5 - MV Line5")].index
@@ -532,7 +530,7 @@ def example_multivoltage():
                 et="l",
                 closed=True,
                 type="LBS",
-                name="Switch %s - %s" % (net.bus.name.at[bus], line["name"]),
+                name=f"Switch {net.bus.name.at[bus]} - {line['name']}",
             )
 
     # Trafoswitches

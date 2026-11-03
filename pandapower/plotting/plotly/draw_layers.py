@@ -91,7 +91,7 @@ def draw_layers(
     if on_map:
         try:
             on_map = _on_map_test(traces[0]["x"][0], traces[0]["y"][0])
-        except Exception:
+        except Exception:  # noqa: BLE001
             logger.warning(
                 "Test if geo-data are in lat/long cannot be performed using geopy -> eventual plot errors are possible."
             )
@@ -107,9 +107,9 @@ def draw_layers(
         # change traces for mapbox
         # change trace_type to scattermapbox and rename x to lat and y to lon
         for trace in traces:
-            if "x" in trace.keys():
+            if "x" in trace:
                 trace["lon"] = trace.pop("x")
-            if "y" in trace.keys():
+            if "y" in trace:
                 trace["lat"] = trace.pop("y")
             trace["type"] = "scattermapbox"
             if "line" in trace and isinstance(trace["line"], Line):
@@ -189,7 +189,7 @@ def draw_layers(
         else:
             plot(fig, filename=f"Layers_{num_layers}.html")
     else:
-        from plotly.offline import plot as plot
+        from plotly.offline import plot
 
         if filename is not None:
             plot(fig, filename=filename, auto_open=auto_open)

@@ -366,7 +366,7 @@ def get_equivalent(
                     ]
                 else:
                     buses = net_eq[elm].bus
-                    new_idx = net_eq[elm].index[names.str.startswith("eq_%s" % elm) & buses.isin(be_buses_after_merge)]
+                    new_idx = net_eq[elm].index[names.str.startswith(f"eq_{elm}") & buses.isin(be_buses_after_merge)]
 
                 # don't include eq elements to this Group if these are already included to other
                 # groups
@@ -447,16 +447,15 @@ def merge_internal_net_and_equivalent_external_net(
     for bus in boundary_buses_inclusive_bswitch:
         try:
             name = merged_net.bus[fuse_bus_column].loc[bus]
-        except Exception:
+        except Exception:  # noqa: BLE001
             logger.info("fuse_bus_column")
             logger.info("merged_net.bus.columns")
             logger.info("")
         target_buses = merged_net.bus.index[merged_net.bus[fuse_bus_column] == name]
         if len(target_buses) != 2:
             raise ValueError(
-                "The code expects all boundary buses to occur double. One because "
-                "of net_eq and one because of net_internal. However target_buses is "
-                "'%s'." % str(target_buses)
+                f"The code expects all boundary buses to occur double. One because of net_eq and one because of "
+                f"net_internal. However target_buses is '{target_buses}'."
             )
         fuse_buses(merged_net, target_buses[0], target_buses[1])
 
@@ -480,7 +479,7 @@ def merge_internal_net_and_equivalent_external_net(
 
     t_end = time.perf_counter()
     if show_computing_time:
-        logger.info("'merge_int_and_eq_net' finished in %s seconds." % round((t_end - t_start), 2))
+        logger.info(f"'merge_int_and_eq_net' finished in {round((t_end - t_start), 2)} seconds.")
 
     return merged_net
 
@@ -566,11 +565,9 @@ def _determine_bus_groups(net, boundary_buses, internal_buses, show_computing_ti
         boundary_buses_inclusive_bswitch |= set(connected_component(mg_sw, bbus))
     if len(boundary_buses_inclusive_bswitch) > len(boundary_buses):
         logger.info(
-            "There are some buses connected to the boundary buses via "
-            + "bus-bus-switches. They could be the nodes on the same bus bar "
-            + "of the boundary buses. It is suggested to consider all these "
-            + "buses (the connected buses and the given boundary buses) "
-            + "as the boundary. They are: %s." % boundary_buses_inclusive_bswitch
+            f"There are some buses connected to the boundary buses via bus-bus-switches. They could be the nodes on "
+            f"the same bus bar of the boundary buses. It is suggested to consider all these buses (the connected buses "
+            f"and the given boundary buses) as the boundary. They are: {boundary_buses_inclusive_bswitch}"
         )
 
     # --- determine all internal buses
@@ -609,7 +606,7 @@ def _determine_bus_groups(net, boundary_buses, internal_buses, show_computing_ti
     _check_bus_groups(all_internal_buses, all_external_buses, internal_buses, boundary_buses)
     t_end = time.perf_counter()
     if show_computing_time:
-        logger.info('"determine_bus_groups" finished in %s seconds.' % round((t_end - t_start), 2))
+        logger.info(f'"determine_bus_groups" finished in {round((t_end - t_start), 2)} seconds.')
 
     return (
         sorted(all_internal_buses),

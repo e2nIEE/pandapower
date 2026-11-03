@@ -5,6 +5,7 @@ __all__ = [
     "create_synthetic_voltage_control_lv_network",
 ]
 
+import numpy as np
 import pandas as pd
 from geojson import Point, dumps
 from numpy import append, nan
@@ -224,7 +225,7 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
         lines = pd.DataFrame()
         lines["from_bus"] = append(bb, append(lv_buses[i][:-1], lv_buses[i]))
         lines["to_bus"] = append(lv_buses[i], house_buses[i])
-        if line_type_change_at[network_class][i] is nan:
+        if np.isnan(line_type_change_at[network_class][i]):
             lines["std_type"] = [line_types[network_class][i]] * n_feeder[network_class][i] + [
                 house_connection_type[network_class]
             ] * n_feeder[network_class][i]
@@ -239,11 +240,11 @@ def create_synthetic_voltage_control_lv_network(network_class="rural_1"):
             house_connection_length[network_class]
         ] * n_feeder[network_class][i]
 
-        for _, lines in lines.iterrows():
-            create_line(net, lines.from_bus, lines.to_bus, length_km=lines.length, std_type=lines.std_type)
+        for _, line in lines.iterrows():
+            create_line(net, line.from_bus, line.to_bus, length_km=line.length, std_type=line.std_type)
         # load
-        for i in house_buses[i]:
-            create_load(net, i, p_mw=5.1e-3)
+        for j in house_buses[i]:
+            create_load(net, j, p_mw=5.1e-3)
 
     # direct loads and DEA
     if network_class == "rural_1":

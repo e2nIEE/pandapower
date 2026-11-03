@@ -66,7 +66,7 @@ def validate_network(net: pandapowerNet, groups_to_validate: str | set[str] | No
     else:
         groups_set = groups_to_validate
 
-    for element in net.keys():
+    for element in net:
         schema = copy.deepcopy(get_element_schema(element))
         if schema is None:
             continue
@@ -88,7 +88,7 @@ def validate_network(net: pandapowerNet, groups_to_validate: str | set[str] | No
                         reset_required.add(col_name)
                         schema.columns[col_name].required = True
             schema.validate(df)
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             msg = f"Validation failed for {element}"
             if groups_set is not None:
                 msg += f" (groups: {groups_set})"

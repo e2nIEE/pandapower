@@ -32,10 +32,9 @@ class DFData(DataSource):
             self.df.columns = self.df.columns.astype(np.int64)
 
     def __repr__(self):
-        s = "%s with %d rows and %d columns" % (self.__class__.__name__, len(self.df), len(self.df.columns))
-
+        s = f"{self.__class__.__name__} with {len(self.df)} rows and {len(self.df.columns)} columns"
         if len(self.df.columns) <= 10:
-            s += ": %s" % self.df.columns.values.__str__()
+            s += f": {self.df.columns.values.__str__()}"
         return s
 
     def get_time_step_value(self, time_step, profile_name, scale_factor=1.0):

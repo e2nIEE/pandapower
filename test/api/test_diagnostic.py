@@ -94,7 +94,7 @@ diag_functions: list[Callable] = [
 def check_report_function(func: DiagnosticFunction, error, result):
     try:
         func.report(error, result)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise AssertionError(f"Report function '{func.__class__.__name__}' failed: {e}")
 
 
