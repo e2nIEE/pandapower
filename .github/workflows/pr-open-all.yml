@@ -28,7 +28,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           python-version: '3.14'
           enable-cache: true
@@ -56,7 +56,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -108,7 +108,7 @@ jobs:
 #      - uses: julia-actions/setup-julia # Update version when using this by adding commit sha!
       - uses: actions/checkout@v6
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           #python-version: ${{ matrix.python-version }}
           python-version: '3.14'
@@ -142,7 +142,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           python-version: "3.14"
           enable-cache: true
@@ -174,7 +174,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -252,7 +252,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -279,7 +279,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -318,7 +318,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -384,7 +384,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -425,7 +425,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           python-version: '3.14'
           enable-cache: true
@@ -467,7 +467,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
