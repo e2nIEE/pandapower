@@ -133,11 +133,11 @@ def create_load(
     return index
 
 
-_q_mvar: float | Iterable[float] = (get_default_value("load", "q_mvar"),)
-_const_z_p_percent: float | Iterable[float] = (get_default_value("load", "const_z_p_percent"),)
-_const_i_p_percent: float | Iterable[float] = (get_default_value("load", "const_i_p_percent"),)
-_const_z_q_percent: float | Iterable[float] = (get_default_value("load", "const_z_q_percent"),)
-_const_i_q_percent: float | Iterable[float] = (get_default_value("load", "const_i_q_percent"),)
+_q_mvar: float | Iterable[float] = get_default_value("load", "q_mvar")
+_const_z_p_percent: float | Iterable[float] = get_default_value("load", "const_z_p_percent")
+_const_i_p_percent: float | Iterable[float] = get_default_value("load", "const_i_p_percent")
+_const_z_q_percent: float | Iterable[float] = get_default_value("load", "const_z_q_percent")
+_const_i_q_percent: float | Iterable[float] = get_default_value("load", "const_i_q_percent")
 _scaling: float | Iterable[float] = get_default_value("load", "scaling")
 _in_service: bool | Iterable[bool] = get_default_value("load", "in_service")
 _type: WyeDeltaType = get_default_value("load", "type")
