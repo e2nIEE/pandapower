@@ -285,16 +285,16 @@ def printpf(
         maxv = max(bus[:, VM])
         maxi = argmax(bus[:, VM])
         fd.write(
-            f"\nVoltage Magnitude {minv:7.3f} p.u. @ bus {bus[mini, BUS_I]:4d}     "
-            f"{maxv:7.3f} p.u. @ bus {bus[maxi, BUS_I]:4d}"
+            f"\nVoltage Magnitude {minv:7.3f} p.u. @ bus {int(bus[mini, BUS_I]):<4d}     "
+            f"{maxv:7.3f} p.u. @ bus {int(bus[maxi, BUS_I]):<4d}"
         )
         minv = min(bus[:, VA])
         mini = argmin(bus[:, VA])
         maxv = max(bus[:, VA])
         maxi = argmax(bus[:, VA])
         fd.write(
-            f"\nVoltage Angle   {minv:8.2f} deg   @ bus {bus[mini, BUS_I]:4d}   "
-            f"{maxv:8.2f} deg   @ bus {bus[maxi, BUS_I]:4d}"
+            f"\nVoltage Angle   {minv:8.2f} deg   @ bus {int(bus[mini, BUS_I]):<4d}   "
+            f"{maxv:8.2f} deg   @ bus {int(bus[maxi, BUS_I]):<4d}"
         )
         if not isDC:
             maxv = max(loss.real)
@@ -315,16 +315,16 @@ def printpf(
             maxv = max(bus[:, LAM_P])
             maxi = argmax(bus[:, LAM_P])
             fd.write(
-                f"\nLambda P        {minv:8.2f} $/MWh @ bus {bus[mini, BUS_I]:4d}   {maxv:8.2f} $/MWh @ bus "
-                f"{bus[maxi, BUS_I]:4d}"
+                f"\nLambda P        {minv:8.2f} $/MWh @ bus {int(bus[mini, BUS_I]):<4d}   {maxv:8.2f} $/MWh @ bus "
+                f"{int(bus[maxi, BUS_I]):<4d}"
             )
             minv = min(bus[:, LAM_Q])
             mini = argmin(bus[:, LAM_Q])
             maxv = max(bus[:, LAM_Q])
             maxi = argmax(bus[:, LAM_Q])
             fd.write(
-                f"\nLambda Q        {minv:8.2f} $/MWh @ bus {bus[mini, BUS_I]:4d}   {maxv:8.2f} $/MWh @ bus "
-                f"{bus[maxi, BUS_I]:4d}"
+                f"\nLambda Q        {minv:8.2f} $/MWh @ bus {int(bus[mini, BUS_I]):<4d}   {maxv:8.2f} $/MWh @ bus "
+                f"{int(bus[maxi, BUS_I]):<4d}"
             )
         fd.write("\n")
 
