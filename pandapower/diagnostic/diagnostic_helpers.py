@@ -181,9 +181,8 @@ def check_greater_zero(element, element_index, column):
 
 
 def check_greater_zero_less_equal_one(element, element_index, column):
-    if check_number(element, element_index, column) is None:
-        if not (0 < element[column] <= 1):
-            return element_index
+    if check_number(element, element_index, column) is None and not (0 < element[column] <= 1):
+        return element_index
 
 
 def check_less_15(element, element_index, column):

@@ -32,7 +32,7 @@ from pandapower.pypower.pfsoln import _update_v
 from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
 
 try:
-    from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
+    from pandapower.pf.make_y_bus_numba import makeYbus as makeYbus_numba
     from pandapower.pf.pfsoln_numba import pf_solution_single_slack
     from pandapower.pf.pfsoln_numba import pfsoln as pfsoln_numba
 

@@ -75,7 +75,7 @@ from test.loadflow.result_test_network_generator import (
 
 numba_installed = _check_if_numba_is_installed()
 if numba_installed:
-    from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
+    from pandapower.pf.make_y_bus_numba import makeYbus as makeYbus_numba
 
 helmpy_available = find_spec("helmpy") is not None
 

@@ -446,7 +446,7 @@ def _add_measurements_to_ppci(net, ppci, zero_injection, algorithm):
     """
     meas = net.measurement.copy(deep=True)
     if meas.empty:
-        raise Exception("No measurements are available in pandapower Network! Abort estimation!")
+        raise ValueError("No measurements are available in pandapower Network! Abort estimation!")
 
     # Convert power measurements (p, q) to per unit (p.u.)
     meas.loc[meas.measurement_type == "p", ["value", "std_dev"]] /= ppci["baseMVA"]

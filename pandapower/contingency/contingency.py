@@ -51,7 +51,7 @@ try:
         raise ImportError
     ls2g_version = Version(lightsim2grid.__version__)
     if ls2g_version < Version("0.13.0"):
-        from lightsim2grid_cpp import KLUSolver, KLUSolverSingleSlack  # noqa: F401
+        from lightsim2grid_cpp import KLUSolver, KLUSolverSingleSlack
     else:
         from lightsim2grid.lightsim2grid_cpp import KLUSolver, KLUSolverSingleSlack  # noqa: F401
 
@@ -76,10 +76,9 @@ def pp_to_ls2g(net: pandapowerNet) -> "GridModel":
     try:
         ls2g_model = init_ls2g(net)
         return ls2g_model
-    except Exception as e:
-        logger.error(f"Failed to create lightsim2grid model for network: {net.name}")
-        logger.exception(e)
-        raise e
+    except Exception:
+        logger.exception(f"Failed to create lightsim2grid model for network: {net.name}")
+        raise
 
 
 def run_contingency(
@@ -141,10 +140,10 @@ def run_contingency(
         for element in ("bus", "line", "trafo", "trafo3w")
         if len(net[element]) > 0
     }
-    for element in contingency_results:
+    for element, results in contingency_results.items():
         if element == "bus":
             continue
-        contingency_results[element].update(
+        results.update(
             {
                 "causes_overloading": np.zeros_like(net[element].index.values, dtype=bool),
                 "cause_element": np.empty_like(net[element].index.values, dtype=object),
@@ -176,7 +175,7 @@ def run_contingency(
             except Exception as err:
                 logger.error(f"{element} {i} causes {err}")
                 if raise_errors:
-                    raise err
+                    raise
             finally:
                 net[element].at[i, "in_service"] = True
 
@@ -249,23 +248,20 @@ def run_contingency_ls2g(
 
     tps_flag = False
     tps, tps_tap_pos, tps_shift_degree = None, None, None
-    if "tap_phase_shifter" in net.trafo.columns:
-        if np.any(net.trafo.tap_phase_shifter):
-            tps_flag = True
-            tps, tps_tap_pos, tps_shift_degree = _convert_trafo_phase_shifter(net, "trafo", "tap_phase_shifter")
+    if "tap_phase_shifter" in net.trafo.columns and np.any(net.trafo.tap_phase_shifter):
+        tps_flag = True
+        tps, tps_tap_pos, tps_shift_degree = _convert_trafo_phase_shifter(net, "trafo", "tap_phase_shifter")
 
     tct2w_flag = False
     tct2w, tct2w_tap_pos, tct2w_shift_degree = None, None, None
     tct3w_flag = False
     tct3w, tct3w_tap_pos, tct3w_shift_degree = None, None, None
-    if "tap_changer_type" in net.trafo.columns:
-        if np.any(net.trafo.tap_changer_type == "Ideal"):
-            tct2w_flag = True
-            tct2w, tct2w_tap_pos, tct2w_shift_degree = _convert_trafo_phase_shifter(net, "trafo", "tap_changer_type")
-    if "tap_changer_type" in net.trafo3w.columns:
-        if np.any(net.trafo3w.tap_changer_type == "Ideal"):
-            tct3w_flag = True
-            tct3w, tct3w_tap_pos, tct3w_shift_degree = _convert_trafo_phase_shifter(net, "trafo3w", "tap_changer_type")
+    if "tap_changer_type" in net.trafo.columns and np.any(net.trafo.tap_changer_type == "Ideal"):
+        tct2w_flag = True
+        tct2w, tct2w_tap_pos, tct2w_shift_degree = _convert_trafo_phase_shifter(net, "trafo", "tap_changer_type")
+    if "tap_changer_type" in net.trafo3w.columns and np.any(net.trafo3w.tap_changer_type == "Ideal"):
+        tct3w_flag = True
+        tct3w, tct3w_tap_pos, tct3w_shift_degree = _convert_trafo_phase_shifter(net, "trafo3w", "tap_changer_type")
 
     # setting "slack" back-and-forth is due to the difference in interpretation of generators as "distributed slack"
     if net._options.get("distributed_slack", False):

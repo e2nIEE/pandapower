@@ -68,7 +68,7 @@ def dSbus_dV_numba_sparse(Yx, Yp, Yj, V, Vnorm, Ibus):  # pragma: no cover
     return dS_dVm, dS_dVa
 
 
-def dSbus_dV(Ybus, V, I=None):  # noqa: E741
+def dSbus_dV(Ybus, V, I=None):
     """
     Calls functions to calculate dS/dV depending on whether Ybus is sparse or not
     """
@@ -76,11 +76,11 @@ def dSbus_dV(Ybus, V, I=None):  # noqa: E741
     if issparse(Ybus):
         # I is subtracted from Y*V,
         # therefore it must be negative for numba version of dSbus_dV if it is not zeros anyway
-        I = zeros(len(V), dtype=complex128) if I is None else -I  # noqa: E741
+        I = zeros(len(V), dtype=complex128) if I is None else -I
         # calculates sparse data
         dS_dVm, dS_dVa = dSbus_dV_numba_sparse(Ybus.data, Ybus.indptr, Ybus.indices, V, V / abs(V), I)
         # generate sparse CSR matrices with computed data and return them
         return sparse((dS_dVm, Ybus.indices, Ybus.indptr)), sparse((dS_dVa, Ybus.indices, Ybus.indptr))
     else:
-        I = zeros(len(V), dtype=complex128) if I is None else I  # noqa: E741
+        I = zeros(len(V), dtype=complex128) if I is None else I
         return dSbus_dV_dense(Ybus, V, I)

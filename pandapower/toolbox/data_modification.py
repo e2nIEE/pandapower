@@ -73,16 +73,13 @@ def add_column_from_node_to_elements(net, column, replace, elements=None, branch
             already_validated += [element]
             crossing = sum(~compare_arrays(net[element][column].values, to_validate[element]))
             if crossing > 0:
+                msg = (
+                    f"There have been {crossing:d} {element}s with different {column} data at from-/hv- and to-/lv-bus"
+                )
                 if verbose:
-                    logger.warning(
-                        "There have been %i %ss with different " % (crossing, element)
-                        + "%s data at from-/hv- and to-/lv-bus" % column
-                    )
+                    logger.warning(msg)
                 else:
-                    logger.debug(
-                        "There have been %i %ss with different " % (crossing, element)
-                        + "%s data at from-/hv- and to-/lv-bus" % column
-                    )
+                    logger.debug(msg)
 
 
 def add_column_from_element_to_elements(net, column, replace, elements=None, continue_on_missing_column=True):
@@ -137,7 +134,7 @@ def add_column_from_element_to_elements(net, column, replace, elements=None, con
         net[el][et_col] = element_type  # update element_type with the modified element types
         element_types_without_column = [et for et in set(element_type) if column not in net[et].columns]
         if len(element_types_without_column):
-            message = "%s is not in net[et].columns with et in " % column + str(element_types_without_column)
+            message = f"{column}{element_types_without_column} is not in net[et].columns with et in "
             if not continue_on_missing_column:
                 raise KeyError(message)
             else:
@@ -356,26 +353,29 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
             )
 
     # --- adapt tap_characteristic
-    if "trafo_characteristic_table" in net and "id_characteristic" in net["trafo_characteristic_table"]:
-        if element_type == "trafo_characteristic_table":
-            net["trafo_characteristic_table"]["id_characteristic"] = net["trafo_characteristic_table"][
-                "id_characteristic"
-            ].map(lookup)
-            if "id_characteristic_table" not in net["trafo"]:
-                net["trafo"]["id_characteristic_table"] = pd.Series(
-                    data=[pd.NA] * net["trafo"].shape[0],
-                    dtype=get_structure_dict(required_only=False)["trafo"]["id_characteristic_table"],
-                )
-            net["trafo"]["id_characteristic_table"] = net["trafo"]["id_characteristic_table"].map(lookup)
-            if "id_characteristic_table" not in net["trafo3w"]:
-                net["trafo3w"]["id_characteristic_table"] = pd.Series(
-                    data=[pd.NA] * net["trafo3w"].shape[0],
-                    dtype=get_structure_dict(required_only=False)["trafo3w"]["id_characteristic_table"],
-                )
-            net["trafo3w"]["id_characteristic_table"] = net["trafo3w"]["id_characteristic_table"].map(lookup)
+    if (
+        "trafo_characteristic_table" in net
+        and "id_characteristic" in net["trafo_characteristic_table"]
+        and element_type == "trafo_characteristic_table"
+    ):
+        net["trafo_characteristic_table"]["id_characteristic"] = net["trafo_characteristic_table"][
+            "id_characteristic"
+        ].map(lookup)
+        if "id_characteristic_table" not in net["trafo"]:
+            net["trafo"]["id_characteristic_table"] = pd.Series(
+                data=[pd.NA] * net["trafo"].shape[0],
+                dtype=get_structure_dict(required_only=False)["trafo"]["id_characteristic_table"],
+            )
+        net["trafo"]["id_characteristic_table"] = net["trafo"]["id_characteristic_table"].map(lookup)
+        if "id_characteristic_table" not in net["trafo3w"]:
+            net["trafo3w"]["id_characteristic_table"] = pd.Series(
+                data=[pd.NA] * net["trafo3w"].shape[0],
+                dtype=get_structure_dict(required_only=False)["trafo3w"]["id_characteristic_table"],
+            )
+        net["trafo3w"]["id_characteristic_table"] = net["trafo3w"]["id_characteristic_table"].map(lookup)
 
 
-def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
+def create_continuous_elements_index(net, start=0, add_df_to_reindex=None):
     """
     Creating a continuous index for all the elements, starting at zero and replaces all references
     of old indices by the new ones.
@@ -389,6 +389,9 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
     Returns:
       net: pandapower network with ordered and continuous indices
     """
+    if add_df_to_reindex is None:
+        add_df_to_reindex = set()
+
     element_types = pp_elements(res_elements=True)
 
     # create continuous bus index
@@ -419,7 +422,7 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=set()):
                 else:
                     reindex_elements(net, et, new_index)
             else:
-                logger.debug("No indices could be changed for element '%s'." % et)
+                logger.debug(f"No indices could be changed for element '{et}'.")
 
 
 def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
