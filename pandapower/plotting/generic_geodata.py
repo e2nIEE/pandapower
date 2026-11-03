@@ -10,8 +10,10 @@ __all__ = [
 ]
 
 import copy
+import logging
 import sys
 from collections.abc import Iterable
+from importlib.util import find_spec
 from typing import TYPE_CHECKING
 
 import geojson
@@ -26,17 +28,15 @@ from pandapower.plotting.plotting_toolbox import safe_geojson_loads
 from pandapower.topology.create_graph import create_nxgraph
 from pandapower.topology.graph_searches import connected_components
 
-try:
+if find_spec("igraph"):
     import igraph
 
     IGRAPH_INSTALLED = True
-except ImportError:
+else:
     IGRAPH_INSTALLED = False
 
-import logging
-
-if TYPE_CHECKING:
-    import igraph
+if TYPE_CHECKING and not IGRAPH_INSTALLED:
+    raise ImportError("igraph is not installed")
 
 logger = logging.getLogger(__name__)
 
@@ -244,11 +244,9 @@ def create_generic_coordinates(
             nxg = copy.deepcopy(mg)
         coords = coords_from_nxgraph(nxg, layout_engine=layout_engine)
     else:
-        raise ValueError("Unknown library %s - chose 'igraph' or 'networkx'" % library)
+        raise ValueError(f"Unknown library {library} - chose 'igraph' or 'networkx'")
     if len(coords):
-        geojson_strings: list[str] = list(
-            map(lambda x: geojson.dumps(geojson.Point((x[1], x[0])), sort_keys=True), zip(*coords))
-        )
+        geojson_strings: list[str] = [geojson.dumps(geojson.Point((x[1], x[0])), sort_keys=True) for x in zip(*coords)]
         net[geodata_table].loc[buses, "geo"] = pd.Series(data=geojson_strings, index=buses)
     return net
 
@@ -269,9 +267,9 @@ def _prepare_geodata_table(
         elements = net[geodata_table].index.tolist()
     try:
         net[geodata_table].loc[elements]
-    except KeyError as e:
+    except KeyError:
         logger.error(f"While preparing geodata table for {geodata_table} a nonexistent bus was passed!")
-        raise e
+        raise
     if net[geodata_table].loc[elements, "geo"].dropna().shape[0]:
         if overwrite:
             net[geodata_table].loc[elements, "geo"] = pd.NA

@@ -3,6 +3,8 @@ Change Log
 
 [upcoming 4.0.0] - 2026-..-..
 -------------------------------
+- [FIXED] matpower/pypower converter: transformers without a tap changer (tap ratio 1) were converted to impedance elements by a to_mpc/from_mpc (and to_ppc/from_ppc) round trip, since a tap ratio of 1 was not recognized as a transformer when importing. The converters now follow the matpower convention (a tap ratio of 0 denotes "no transformer", any other ratio denotes a transformer): ``to_mpc`` keeps the tap ratio of transformer branches, ``from_mpc`` no longer rewrites tap ratios of 0, ``to_ppc`` marks branches of impedance elements with a tap ratio of 0, and ``from_ppc`` only imports branches without a tap ratio and without a phase shift that connect different voltage levels as impedances. The tap ratio marking also stays correct when branches are filtered out of the internal ppc (out-of-service or disconnected branches). A transformer with a tap ratio of 1 between buses of the same voltage level still cannot be distinguished from a line in the ppc/matpower format and keeps being converted to a line on the way back, as before (#2620)
+- [FIXED] short-circuit tutorial and docs: explain why meshed and radial results are equal with kappa method C in the example ring, show method B, complete the method C description and document ``kappa_method`` in ``calc_sc`` (#2621)
 - [FIXED] ``runpp_3ph``: ``gen`` results failed with an ``IndexError`` if the ``gen`` index was not ``0, 1, 2, ...``, and the results of an in-service ``ext_grid`` were written to an out-of-service ``ext_grid`` listed before it (#1474)
 - [FIXED] ``runpp_3ph`` ignored loads and sgens whose ``type`` is not "wye" or "delta", such as an sgen created by ``create_sgen`` without a type, and failed when the ``type`` column had missing values; they are now wye elements, as in ``runpp``
 - [FIXED] docstrings of detect_power_station_unit and elements_on_path now match their parameters
@@ -16,6 +18,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] ``ConstControl`` now raises a ``ValueError`` if ``element_index`` contains indices that are not in the element table. Previously a missing single index silently added a row with NaN values, and the time series failed later with an unclear numba error (#1857)
 - [FIXED] ``create_load_dc`` now allocates and validates indexes against ``load_dc``, preventing overwrites and false ``source_dc`` conflicts.
 - [FIXED] OPF cleaned up in case of non convergence
 - [FIXED] ``create_continuous_bus_index`` (and other toolbox functions relying on ``element_bus_tuples``) now also update the ``bus`` column of the ``ssc`` element table; it was previously missing from the list of bus-referencing elements
@@ -25,6 +28,7 @@ Change Log
 - [ADDED] OpenDSS converter: series (bus-to-bus) ``Reactor`` elements are now imported as a fixed-impedance ``line``, the pattern some feeder libraries (e.g. EPRI's Ckt5/Ckt7) use to model the substation's Thevenin-equivalent source impedance instead of a ``Transformer``.
 - [FIXED] impedance element docs: the ``z_tf`` equation used ``rft_pu`` instead of ``rtf_pu``, and the ``gt_pu``/``bt_pu``/``gt0_pu``/``bt0_pu`` shunt parameters were described as being at the ``from_bus`` instead of the ``to_bus``.
 - [FIXED] fixed tutorial for plotting with pyqt
+- [FIXED] ``PPJSONEncoder.default`` passed ``self`` twice to ``json.JSONEncoder.default``, so unserializable objects raised ``TypeError: JSONEncoder.default() takes 2 positional arguments but 3 were given`` instead of ``Object of type X is not JSON serializable``
 
 [3.5.4] - 2026-07-08
 -------------------------------

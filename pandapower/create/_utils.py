@@ -126,7 +126,7 @@ def _geodata_to_geo_series(data: Iterable[tuple[float, float]] | tuple[int, int]
                 x, y = g
                 geo.append(f'{{"coordinates": [{x}, {y}], "type": "Point"}}')
         else:
-            raise ValueError("geodata must be iterable of tuples of (x, y) coordinates")
+            raise TypeError("geodata must be iterable of tuples of (x, y) coordinates")
     if len(geo) == 1:
         geo = [geo[0]] * nr_buses
     if len(geo) != nr_buses:

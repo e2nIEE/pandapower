@@ -21,6 +21,7 @@ import math
 import sys
 from collections.abc import Callable, Iterable
 from importlib.util import find_spec
+from itertools import pairwise
 from typing import Any
 
 import geojson
@@ -63,7 +64,7 @@ def sum_line_length(pts):
     def pt_diff(p):
         return (p[0][0] - p[1][0], p[0][1] - p[1][1])
 
-    diffs = map(pt_diff, zip(pts[:-1], pts[1:]))
+    diffs = map(pt_diff, pairwise(pts))
     line_length = sum(math.hypot(d1, d2) for d1, d2 in diffs)
     return line_length
 
@@ -315,9 +316,8 @@ def _create_node_trace(
                     )
                 else:
                     logger.error(
-                        "There are no simulation results which are default for %s colormap coloring..."
-                        "set cmap_vals input argument if you want colormap according to some "
-                        "specific values..." % node_element
+                        f"There are no simulation results which are default for {node_element} colormap coloring..."
+                        f"set cmap_vals input argument if you want colormap according to some specific values..."
                     )
             cmap_vals = net["res_" + node_element].loc[node_plot_index, colormap_column].values
 
@@ -730,7 +730,7 @@ def _create_branch_trace(
             branches_cbar["marker"]["colorbar"]["title"]["side"] = "right"
 
             branch_traces.append(branches_cbar)
-        except Exception:
+        except Exception:  # noqa: BLE001, S110
             pass
     if len(no_go_branches) > 0:
         ng_traces = []
@@ -1186,9 +1186,9 @@ def draw_traces(
         # change traces for mapLibre
         # change trace_type to scattermap and rename x to lat and y to lon
         for trace in traces:
-            if "x" in trace.keys():
+            if "x" in trace:
                 trace["lon"] = trace.pop("x")
-            if "y" in trace.keys():
+            if "y" in trace:
                 trace["lat"] = trace.pop("y")
             trace["type"] = "scattermap"
             if "line" in trace and isinstance(trace["line"], Line):
@@ -1278,7 +1278,7 @@ def draw_traces(
         init_notebook_mode()
         plot(fig, filename=filename)
     elif filename is not None:
-        from plotly.offline import plot as plot
+        from plotly.offline import plot
 
         plot(fig, filename=filename, auto_open=auto_open)
     return fig

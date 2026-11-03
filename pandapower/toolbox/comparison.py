@@ -159,10 +159,10 @@ def nets_equal(
         **kwargs,
     )
     if len(not_checked_keys) > 0:
-        logger.warning("These keys were ignored by the comparison of the networks: %s" % (", ".join(not_checked_keys)))
+        logger.warning(f"These keys were ignored by the comparison of the networks: {', '.join(not_checked_keys)}")
 
     if len(not_equal) > 0:
-        logger.warning("Networks do not match in DataFrame(s): %s" % (", ".join(not_equal)))
+        logger.warning(f"Networks do not match in DataFrame(s): {', '.join(not_equal)}")
         return False
     else:
         return True
@@ -241,7 +241,7 @@ def nets_equal_keys(
                 if not np.array_equal(net1[key], net2[key], equal_nan=True):
                     not_equal.append(key)
 
-        elif isinstance(net1[key], int) or isinstance(net1[key], float) or isinstance(net1[key], complex):
+        elif isinstance(net1[key], (int, float, complex)):
             if not np.isclose(net1[key], net2[key]):
                 not_equal.append(key)
 
@@ -263,6 +263,6 @@ def nets_equal_keys(
                 is_eq = net1[key] == net2[key]
                 if not is_eq:
                     not_equal.append(key)
-            except Exception:
+            except Exception:  # noqa: BLE001
                 not_checked_keys.append(key)
     return not_equal, not_checked_keys
