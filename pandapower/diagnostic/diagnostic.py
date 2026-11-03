@@ -150,7 +150,7 @@ class Diagnostic:
                 diag_result = diag_class.diagnostic(net, **args)
                 if diag_result is not None:
                     self.diag_results[name] = diag_result
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 self.diag_errors[name] = e
 
         if report_style is not None:
