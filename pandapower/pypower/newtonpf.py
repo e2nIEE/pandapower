@@ -96,8 +96,6 @@ from pandapower.pypower.idx_ssc import (
 from pandapower.pypower.idx_svc import (
     SVC_BUS,
     SVC_CONTROLLABLE,
-    SVC_MAX_FIRING_ANGLE,
-    SVC_MIN_FIRING_ANGLE,
     SVC_Q,
     SVC_SET_VM_PU,
     SVC_STATUS,
@@ -111,8 +109,6 @@ from pandapower.pypower.idx_tcsc import (
     TCSC_F_BUS,
     TCSC_IF,
     TCSC_IT,
-    TCSC_MAX_FIRING_ANGLE,
-    TCSC_MIN_FIRING_ANGLE,
     TCSC_PF,
     TCSC_PT,
     TCSC_QF,
@@ -208,8 +204,6 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     svc_controllable = svc[svc_idx, SVC_CONTROLLABLE].astype(bool)
     svc_x_l_pu = svc[svc_idx, SVC_X_L]
     svc_x_cvar_pu = svc[svc_idx, SVC_X_CVAR]
-    svc_min_x = svc[svc_idx[svc_controllable], SVC_MIN_FIRING_ANGLE].real
-    svc_max_x = svc[svc_idx[svc_controllable], SVC_MAX_FIRING_ANGLE].real
     num_svc_controllable = len(x_control_svc[svc_controllable])
     num_svc = len(x_control_svc)
     any_svc = num_svc > 0
@@ -221,8 +215,6 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     tcsc_tb = tcsc[tcsc_branches, [TCSC_T_BUS]].real.astype(np.int64)
     tcsc_controllable = tcsc[tcsc_branches, TCSC_CONTROLLABLE].real.astype(bool)
     tcsc_set_p_pu = tcsc[tcsc_branches[tcsc_controllable], TCSC_SET_P].real
-    tcsc_min_x = tcsc[tcsc_branches[tcsc_controllable], TCSC_MIN_FIRING_ANGLE].real
-    tcsc_max_x = tcsc[tcsc_branches[tcsc_controllable], TCSC_MAX_FIRING_ANGLE].real
     x_control_tcsc = tcsc[tcsc_branches, TCSC_THYRISTOR_FIRING_ANGLE].real
     tcsc_x_l_pu = tcsc[tcsc_branches, TCSC_X_L].real  #### should not this be imag ?
     tcsc_x_cvar_pu = tcsc[tcsc_branches, TCSC_X_CVAR].real
