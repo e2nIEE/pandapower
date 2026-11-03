@@ -104,6 +104,10 @@ def _m2ppc(mpc_file, load_case_engine=None):
     for k, v in ppc.items():
         if isinstance(v, list):
             ppc[k] = np.array(v)
+    # matpowercaseframes returns the names as (n, 1) arrays, but from_ppc expects them 1-dimensional
+    for key in ("bus_name", "gen_name", "branch_name"):
+        if key in ppc:
+            ppc[key] = np.asarray(ppc[key]).ravel()
     _adjust_ppc_indices(ppc)
     return ppc
 
