@@ -27,7 +27,7 @@ def get_estimator(base_class, estimator_name):
         estm_cls.__name__.split("Estimator")[0].lower(): estm_cls for estm_cls in base_class.__subclasses__()
     }
     if estimator_name.lower() not in available_estimators:
-        raise Exception("Estimator not available! Try another one!")
+        raise AttributeError("Estimator not available! Try another one!")
     else:
         return available_estimators[estimator_name.lower()]
 

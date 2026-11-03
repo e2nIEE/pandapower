@@ -36,15 +36,12 @@ def _runpm(
         net._options["pp_to_pm_callback"](net, ppci, pm)
     # writes pm json to disk, which is loaded afterwards in julia
     buffer_file = dump_pm_json(pm, pm_file_path)
-    logger.debug("the json file for converted net is stored in: %s" % buffer_file)
+    logger.debug(f"the json file for converted net is stored in: {buffer_file}")
     # run power models optimization in julia
     result_pm = _call_pandamodels(buffer_file, net._options["julia_file"], pdm_dev_mode)
 
     logger.info(
-        "Optimization ('"
-        + net._options["julia_file"]
-        + "') "
-        + "is finished in %s seconds:" % round(result_pm["solve_time"], 2)
+        f"Optimization ('{net._options['julia_file']}') is finished in {round(result_pm['solve_time'], 2)} seconds:"
     )
     # read results and write back to net
     try:
@@ -52,14 +49,14 @@ def _runpm(
         if pm_file_path is None and delete_buffer_file:
             # delete buffer file after calculation
             os.remove(buffer_file)
-            logger.debug("the json file for converted net is deleted from %s" % buffer_file)
-    except OPFNotConverged as e:
+            logger.debug(f"the json file for converted net is deleted from {buffer_file}")
+    except OPFNotConverged:
         if pm_file_path is None and delete_buffer_file:
             os.remove(buffer_file)
-            logger.debug("the json file for converted net is deleted from %s" % buffer_file)
-        raise e
-    except Exception as e:
-        raise e
+            logger.debug(f"the json file for converted net is deleted from {buffer_file}")
+        raise
+    except Exception:
+        raise
 
 
 def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
