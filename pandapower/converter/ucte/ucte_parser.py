@@ -42,11 +42,7 @@ class UCTEParser:
             return False
         self.logger.info(f"Start parsing the file {self.path_ucte_file}.")
         # parse the date, if its given by the configuration, parse it from there, otherwise from the file string
-        if (
-            "custom" in self.config
-            and isinstance(self.config["custom"], dict)
-            and "date" in self.config["custom"]
-        ):
+        if "custom" in self.config and isinstance(self.config["custom"], dict) and "date" in self.config["custom"]:
             self._parse_date_str(self.config["custom"]["date"])
         else:
             self._parse_date_str(os.path.basename(self.path_ucte_file)[:13])

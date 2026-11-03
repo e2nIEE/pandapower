@@ -344,8 +344,8 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
         gen_q_diff_is["q_mvar_pf"] = gen_q_pf_res_is
         max_diff_idx = abs(gen_q_diff_is["diff"]).idxmax()
         logger.info(
-            "Maximum gen reactive power difference between pandapower and powerfactory: %.1f "
-            "Mvar at gen %d (%s)" % (max(abs(gen_diff_is)), max_diff_idx, net.gen.at[max_diff_idx, "name"])
+            f"Maximum gen reactive power difference between pandapower and powerfactory: "
+            f"{max(abs(gen_diff_is)):.1f} Mvar at gen {max_diff_idx} ({net.gen.at[max_diff_idx, 'name']})"
         )
 
         all_diffs["gen_p_diff_is"] = gen_p_diff_is
@@ -365,8 +365,8 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
         ward_p_diff_is["p_mw_pf"] = ward_p_pf_res_is
         max_diff_idx = abs(ward_p_diff_is["diff"]).idxmax()
         logger.info(
-            "Maximum ward active power difference between pandapower and powerfactory: %.1f "
-            "MW at ward %d (%s)" % (max(abs(ward_diff_is)), max_diff_idx, net.ward.at[max_diff_idx, "name"])
+            f"Maximum ward active power difference between pandapower and powerfactory: "
+            f"{max(abs(ward_diff_is)):.1f} MW at ward {max_diff_idx} ({net.ward.at[max_diff_idx, 'name']})"
         )
 
         ward_q_diff_is = pd.DataFrame(
@@ -381,8 +381,8 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
         ward_q_diff_is["q_mvar_pf"] = ward_q_pf_res_is
         max_diff_idx = abs(ward_q_diff_is["diff"]).idxmax()
         logger.info(
-            "Maximum ward reactive power difference between pandapower and powerfactory: %.1f "
-            "Mvar at ward %d (%s)" % (max(abs(ward_diff_is)), max_diff_idx, net.ward.at[max_diff_idx, "name"])
+            f"Maximum ward reactive power difference between pandapower and powerfactory: "
+            f"{max(abs(ward_diff_is)):.1f} Mvar at ward {max_diff_idx} ({net.ward.at[max_diff_idx, 'name']})"
         )
 
         all_diffs["ward_p_diff_is"] = ward_p_diff_is
@@ -433,15 +433,15 @@ def _validate_pf_conversion_balanced(net, in_both, all_diffs):
     diff_vm = diff_vm[(pd.notnull(pfu) & pd.notnull(ppu))]
     bus_id = abs(diff_vm).idxmax().astype("int64")
     logger.info(
-        "Maximum voltage magnitude difference between pandapower and powerfactory: "
-        "%f pu at bus %d (%s)" % (max(abs(diff_vm)), bus_id, net.bus.at[bus_id, "name"])
+        f"Maximum voltage magnitude difference between pandapower and powerfactory: "
+        f"{max(abs(diff_vm)):f} pu at bus {bus_id} ({net.bus.at[bus_id, 'name']})"
     )
 
     diff_va = diff_va[(pd.notnull(pfa) & pd.notnull(ppa))]
     bus_id = abs(diff_va).idxmax().astype(np.int64)
     logger.info(
-        "Maximum voltage angle difference between pandapower and powerfactory: "
-        "%.2f degrees at bus %d (%s)" % (max(abs(diff_va)), bus_id, net.bus.at[bus_id, "name"])
+        f"Maximum voltage angle difference between pandapower and powerfactory: "
+        f"{max(abs(diff_va)):.2f} degrees at bus {bus_id} ({net.bus.at[bus_id, 'name']})"
     )
 
     diff_vm_df = pd.DataFrame(index=diff_va.index, columns=["diff", "vm_pu_pp", "vm_pu_pf"])
@@ -468,8 +468,8 @@ def _validate_pf_conversion_balanced(net, in_both, all_diffs):
         else:
             bus_dc_id = abs(bus_dc_diff).abs().idxmax().astype("int64")
             logger.info(
-                "Maximum bus_dc vm_pu difference between pandapower and powerfactory: %.6f "
-                "p.u. at bus_dc %d (%s)" % (max(abs(bus_dc_diff)), bus_dc_id, net.bus_dc.at[bus_dc_id, "name"])
+                f"Maximum bus_dc vm_pu difference between pandapower and powerfactory: "
+                f"{max(abs(bus_dc_diff)):.6f} p.u. at bus_dc {bus_dc_id} ({net.bus_dc.at[bus_dc_id, 'name']})"
             )
             all_diffs["bus_dc_diff"] = bus_dc_diff
 
@@ -484,8 +484,8 @@ def _validate_pf_conversion_balanced(net, in_both, all_diffs):
         if len(line_diff):
             line_id = int(abs(line_diff).idxmax())
             logger.info(
-                "Maximum line loading difference between pandapower and powerfactory: %.1f "
-                "percent at line %d (%s)" % (max(abs(line_diff)), line_id, net.line.at[line_id, "name"])
+                f"Maximum line loading difference between pandapower and powerfactory: "
+                f"{max(abs(line_diff)):.1f} percent at line {line_id} ({net.line.at[line_id, 'name']})"
             )
         line_diff_df = pd.DataFrame(columns=["diff", "loading_percent_pp", "loading_percent_pf"])
         line_diff_df["diff"] = line_diff
@@ -651,8 +651,7 @@ def _validate_pf_conversion_unbalanced(net, in_both, all_diffs):
                 )
                 line_currents = section_currents.groupby("line_idx").max()
                 line_currents_diff = (
-                    line_currents[f"i_{phase}_{direction}_ka"]
-                    - line_currents[f"pf_i_{phase}_{direction}_ka"]
+                    line_currents[f"i_{phase}_{direction}_ka"] - line_currents[f"pf_i_{phase}_{direction}_ka"]
                 )
                 if sum(np.isnan(line_currents_diff.values)):
                     logger.info(f"Some line current values are NaN for phase {phase}, direction {direction}.")
@@ -745,8 +744,7 @@ def _validate_pf_conversion_unbalanced(net, in_both, all_diffs):
                     net.res_ext_grid_3ph[f"pf_p_{phase}"].replace(np.nan, 0) - net.res_ext_grid_3ph[f"p_{phase}_mw"]
                 )
                 ext_grid_q_diff = (
-                    net.res_ext_grid_3ph[f"pf_q_{phase}"].replace(np.nan, 0)
-                    - net.res_ext_grid_3ph[f"q_{phase}_mvar"]
+                    net.res_ext_grid_3ph[f"pf_q_{phase}"].replace(np.nan, 0) - net.res_ext_grid_3ph[f"q_{phase}_mvar"]
                 )
                 ext_grid_p_diff_is = (
                     net.res_ext_grid_3ph[f"pf_p_{phase}"].replace(np.nan, 0)
