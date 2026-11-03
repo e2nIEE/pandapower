@@ -95,7 +95,7 @@ def _import_numba_extensions_if_flag_is_true(numba):
         numba = _check_if_numba_is_installed(level=None)
 
     if numba:
-        from pandapower.pf.makeYbus_numba import makeYbus
+        from pandapower.pf.make_y_bus_numba import makeYbus
     else:
         from pandapower.pypower.makeYbus import makeYbus
 
