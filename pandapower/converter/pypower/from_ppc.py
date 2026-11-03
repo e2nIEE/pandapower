@@ -229,7 +229,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
              - obtain the values for rft, rtf, xft, xtf
              - calculate ratios for HV portion of r and x
              - write the ratios in trafo columns leakage_resistance_ratio_hv, leakage_reactance_ratio_hv
-        * for branches that are not transformers but connect different voltage levels:
+        * for branches that are not transformers (tap ratio 0 and no phase shift) but connect different
+          voltage levels:
              - import them as impedance instead
     """
     n_bra = ppc["branch"].shape[0]
@@ -459,7 +460,11 @@ def _branch_to_which(ppc, from_vn_kv=None, to_vn_kv=None, flattened=True):
         & ((ppc["branch"][:, TAP] == 0) | (ppc["branch"][:, TAP] == 1))
         & (ppc["branch"][:, SHIFT] == 0)
     )
-    is_trafo = (ppc["branch"][:, TAP] != 0) & (ppc["branch"][:, TAP] != 1) | (ppc["branch"][:, SHIFT] != 0)
+    # In the matpower format, a tap ratio of 0 denotes "no transformer", while any other ratio denotes a
+    # transformer (a ratio of 1 is a transformer without a tap changer). Therefore, branches with a tap
+    # ratio or a phase shift are transformers, and only the remaining branches that connect different
+    # voltage levels (tap ratio 0 and no phase shift) are impedances.
+    is_trafo = ((ppc["branch"][:, TAP] != 0) | (ppc["branch"][:, SHIFT] != 0)) & ~is_line
     is_impedance = ~is_line & ~is_trafo
     to_vn_is_leq = to_vn_kv[is_trafo] <= from_vn_kv[is_trafo]
     return is_line, is_trafo, is_impedance, to_vn_is_leq

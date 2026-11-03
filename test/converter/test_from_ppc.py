@@ -53,7 +53,6 @@ def get_testgrids(foldername, filename):
     return ppcs
 
 
-@pytest.mark.xfail
 def test_from_ppc_simple_against_target():
     ppc = get_testgrids("ppc_testgrids", "case2_2.json")
     net_by_ppc = from_ppc(ppc)
