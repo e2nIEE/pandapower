@@ -369,7 +369,7 @@ def printpf(
                     )
                 )
             fd.write(
-                f"\n{a:3d}  {len(ib):6d}   {len(ig):5d}  {len(igon):5d}   {len(inzld) + len(ildon):5d}  {len(inzld):5d}"
+                f"\n{int(a):3d}  {len(ib):6d}   {len(ig):5d}  {len(igon):5d}   {len(inzld) + len(ildon):5d}  {len(inzld):5d}"
                 f"  {len(ildon):5d}   {len(inzsh):5d}   {len(ibrch):5d}  {nxfmr:5d}  {len(in_tie) + len(out_tie):5d}"
             )
 
@@ -389,7 +389,7 @@ def printpf(
                 (bus[e2i[gen[:, GEN_BUS].astype(int64)], BUS_AREA] == a) & (gen[:, GEN_STATUS] > 0) & ~isload(gen)
             )
             fd.write(
-                f"\n{a:3d}   {sum(gen[ig, PMAX]):7.1f}  {sum(gen[ig, QMIN]):7.1f} to {sum(gen[ig, QMAX]):.1f}  "
+                f"\n{int(a):3d}   {sum(gen[ig, PMAX]):7.1f}  {sum(gen[ig, QMIN]):7.1f} to {sum(gen[ig, QMAX]):.1f}  "
                 f"{sum(gen[igon, PMAX]):7.1f}  {sum(gen[igon, QMIN]):7.1f} to {sum(gen[igon, QMAX]):7.1f}   "
                 f"{sum(gen[igon, PG]):7.1f} {sum(gen[igon, QG]):7.1f}"
             )
@@ -407,9 +407,10 @@ def printpf(
             )
             inzld = find((bus[:, BUS_AREA] == a) & logical_or(bus[:, PD], bus[:, QD]))
             fd.write(
-                f"\n{a:3d}    {-sum(gen[ildon, PMIN]):7.1f} {-sum(Qlim[ildon]):7.1f}   {-sum(gen[ildon, PG]):7.1f} "
-                f"{-sum(gen[ildon, QG]):7.1f}   {sum(bus[inzld, PD]):7.1f} {sum(bus[inzld, QD]):7.1f}   "
-                f"{-sum(gen[ildon, PG]) + sum(bus[inzld, PD]):7.1f} {-sum(gen[ildon, QG]) + sum(bus[inzld, QD]):7.1f}"
+                f"\n{int(a):3d}    {-sum(gen[ildon, PMIN]):7.1f} {-sum(Qlim[ildon]):7.1f}   "
+                f"{-sum(gen[ildon, PG]):7.1f} {-sum(gen[ildon, QG]):7.1f}   {sum(bus[inzld, PD]):7.1f} "
+                f"{sum(bus[inzld, QD]):7.1f}   {-sum(gen[ildon, PG]) + sum(bus[inzld, PD]):7.1f} "
+                f"{-sum(gen[ildon, QG]) + sum(bus[inzld, QD]):7.1f}"
             )
 
         fd.write("\n----    ------  ------    ------  ------    ------  ------    ------  ------")
@@ -441,7 +442,7 @@ def printpf(
                 & branch[:, BR_STATUS].astype(bool)
             )
             fd.write(
-                f"\n{a:3d}    {-sum(bus[inzsh, VM] ** 2 * bus[inzsh, GS]):7.1f}"
+                f"\n{int(a):3d}    {-sum(bus[inzsh, VM] ** 2 * bus[inzsh, GS]):7.1f}"
                 f" {sum(bus[inzsh, VM] ** 2 * bus[inzsh, BS]):7.1f}"
                 f"    {sum(fchg[ibrch]) + sum(tchg[ibrch]) + sum(fchg[out_tie]) + sum(tchg[in_tie]):7.1f}"
                 f"    {sum(real(loss[ibrch])) + sum(real(loss[r_[in_tie, out_tie]])) / 2:7.2f}"
@@ -477,7 +478,7 @@ def printpf(
             fd.write("  --------  --------")
         for k in range(len(ong)):
             i = ong[k]
-            fd.write(f"\n{i:3d} {gen[i, GEN_BUS]:6d}     {gen[i, GEN_STATUS]:2d} ")
+            fd.write(f"\n{int(i):3d} {int(gen[i, GEN_BUS]):6d}     {int(gen[i, GEN_STATUS]):2d} ")
             if (gen[i, GEN_STATUS] > 0) & logical_or(gen[i, PG], gen[i, QG]):
                 fd.write(f"{gen[i, PG]:10.2f}{gen[i, QG]:10.2f}")
             else:
@@ -530,7 +531,8 @@ def printpf(
         if isOPF:
             fd.write("  -------  -------")
         for i in range(nb):
-            fd.write("\n{:5d}{:7.3f}{:9.3f}".format(*bus[i, [BUS_I, VM, VA]]))
+            b = bus[i, [BUS_I, VM, VA]]
+            fd.write(f"\n{int(b[0]):5d}{b[1]:7.3f}{b[2]:9.3f}")
             if bus[i, BUS_TYPE] == REF:
                 fd.write("*")
             else:
@@ -571,7 +573,7 @@ def printpf(
         fd.write("\n-----  -----  -----  --------  --------  --------  --------  --------  --------")
         for i in range(nl):
             fd.write(
-                f"\n{i:4d}{branch[i, F_BUS].real:7d}{branch[i, T_BUS].real:7d}{branch[i, PF].real:10.2f}"
+                f"\n{int(i):4d}{int(branch[i, F_BUS].real):7d}{int(branch[i, T_BUS].real):7d}{branch[i, PF].real:10.2f}"
                 f"{branch[i, QF].real:10.2f}{branch[i, PT].real:10.2f}{branch[i, QT].real:10.2f}{loss[i].real:10.3f}"
                 f"{loss[i].imag:10.2f}"
             )
@@ -681,7 +683,7 @@ def printpf(
                         | (gen[i, MU_PMAX] > ptol)
                     )
                 ):
-                    fd.write(f"\n{i:4d}{gen[i, GEN_BUS]:6d} ")
+                    fd.write(f"\n{int(i):4d}{int(gen[i, GEN_BUS]):6d} ")
                     if (gen[i, PG] < gen[i, PMIN] + ctol) | (gen[i, MU_PMIN] > ptol):
                         fd.write(f"{gen[i, MU_PMIN]:8.3f}")
                     else:
@@ -887,7 +889,7 @@ def printpf(
                         | (branch[i, MU_ST] > ptol)
                     )
                 ):
-                    fd.write(f"\n{i:4d}{branch[i, F_BUS].real:7d}")
+                    fd.write(f"\n{int(i):4d}{int(branch[i, F_BUS].real):7d}")
                     if (Ff[i] > branch[i, RATE_A] - ctol) | (branch[i, MU_SF] > ptol):
                         fd.write(f"{branch[i, MU_SF].real:10.3f}")
                     else:
@@ -898,11 +900,11 @@ def printpf(
                         fd.write(f"{branch[i, MU_ST].real:10.3f}")
                     else:
                         fd.write("      -   ")
-                    fd.write(f"{branch[i, T_BUS].real:6d}")
+                    fd.write(f"{int(branch[i, T_BUS].real):6d}")
             fd.write("\n")
 
-    ## execute userfcn callbacks for 'printpf' stage
+    # execute userfcn callbacks for 'printpf' stage
     if have_results_struct and "userfcn" in results:
-        if not isOPF:  ## turn off option for all constraints if it isn't an OPF
+        if not isOPF:  # turn off option for all constraints if it isn't an OPF
             ppopt = ppoption(ppopt, "OUT_ALL_LIM", 0)
         run_userfcn(results["userfcn"], "printpf", results, fd, ppopt)
