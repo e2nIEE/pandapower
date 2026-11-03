@@ -34,7 +34,7 @@ def to_html(net, filename, respect_switches=True, include_lines=True, include_tr
         show_tables (bool, True): shows pandapower element tables
     """
     if not filename.endswith(".html"):
-        raise Exception("Please use .html to save pandapower networks!")
+        raise AttributeError("Please use .html to save pandapower networks!")
     with open(filename, "w") as f:
         html_str = _net_to_html(net, respect_switches, include_lines, include_trafos, show_tables)
         f.write(html_str)
@@ -51,9 +51,9 @@ class Tag:
         self.name = name
 
     def __call__(self, *args, **kwargs):
-        attr = " " + " ".join('%s="%s"' % (k, escape(v)) for k, v in kwargs.items())
+        attr = " " + " ".join(f'{k}="{escape(v)}"' for k, v in kwargs.items())
         contents = "".join(a.html if isinstance(a, Raw) else escape(str(a)) for a in args)
-        return Raw("<%s%s>%s</%s>" % (self.name, attr.rstrip(), contents, self.name))
+        return Raw(f"<{self.name}{attr.rstrip()}>{contents}</{self.name}>")
 
 
 def _net_to_graphjs(net, respect_switches=True, include_lines=True, include_trafos=True, images=None):
@@ -99,7 +99,7 @@ def _net_to_graphjs(net, respect_switches=True, include_lines=True, include_traf
         )
 
         edges += [
-            {"from": int(fb), "to": int(tb), "label": "%.2f kA %.2f Km" % (imax, length)}
+            {"from": int(fb), "to": int(tb), "label": f"{imax:.2f} kA {length:.2f} Km"}
             for fb, tb, length, idx, inservice, imax in zip(
                 net.line.from_bus,
                 net.line.to_bus,
@@ -120,7 +120,7 @@ def _net_to_graphjs(net, respect_switches=True, include_lines=True, include_traf
         ]
 
         edges += [
-            {"from": int(fb), "to": int(tb), "dashes": "true", "label": "%.2f kA %.2f Km" % (imax, length)}
+            {"from": int(fb), "to": int(tb), "dashes": "true", "label": f"{imax:.2f} kA {length:.2f} Km"}
             for fb, tb, length, idx, inservice, imax in zip(
                 net.line.from_bus,
                 net.line.to_bus,
@@ -160,10 +160,7 @@ def _net_to_graphjs(net, respect_switches=True, include_lines=True, include_traf
     bs = net.switch[(net.switch.et == "b") & ((net.switch.closed == 1) | (not respect_switches))]
     edges += [{"from": int(b), "to": int(e), "label": "switch"} for b, e, i in zip(bs.bus, bs.element, bs.index)]
 
-    script = "var data = {nodes: new vis.DataSet(%s), edges: new vis.DataSet(%s)};" % (
-        json.dumps(nodes),
-        json.dumps(edges),
-    )
+    script = f"var data = {{nodes: new vis.DataSet({json.dumps(nodes)}), edges: new vis.DataSet({json.dumps(edges)})}};"
     script += "var container = document.getElementById('net');"
     script += "var network = new vis.Network(container, data);"
     script += "network.setOptions({interaction: {zoomView: true}});"
