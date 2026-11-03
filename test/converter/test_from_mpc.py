@@ -106,12 +106,31 @@ mpc.bus_name = {
 \t'PV bus';
 \t'Load bus';
 };
+
+%% generator names
+mpc.gen_name = {
+\t'Slack gen';
+\t'PV gen';
+};
+
+%% branch names
+mpc.branch_name = {
+\t'Branch 1-2';
+\t'Branch 1-3';
+\t'Branch 2-3';
+};
 """
     m_file = tmp_path / "case_without_base_kv.m"
     m_file.write_text(m_file_content)
 
     net = from_mpc(str(m_file), f_hz=50, casename_mpc_file="mpc", validate_conversion=False)
     assert list(net.bus.name) == ["Slack", "PV bus", "Load bus"]
+    # the generator and branch names must end up at the elements they belong to
+    # (the slack generator becomes the ext_grid, the branch with a tap ratio the trafo)
+    assert list(net.ext_grid.name) == ["Slack gen"]
+    assert list(net.gen.name) == ["PV gen"]
+    assert list(net.line.name) == ["Branch 1-2", "Branch 1-3"]
+    assert list(net.trafo.name) == ["Branch 2-3"]
     assert (net.bus.vn_kv == 1.0).all()
     runpp(net)
     assert net.converged
