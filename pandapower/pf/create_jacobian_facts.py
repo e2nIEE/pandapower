@@ -5,7 +5,7 @@
 import numpy as np
 from scipy.sparse import csr_matrix, diags, lil_matrix
 
-from pandapower.pf.makeYbus_facts import calc_y_svc_pu
+from pandapower.pf.make_y_bus_facts import calc_y_svc_pu
 
 SMALL_NUMBER = 1e-9
 

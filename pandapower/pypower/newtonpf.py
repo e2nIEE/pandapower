@@ -51,7 +51,7 @@ from pandapower.pf.create_jacobian_tdpf import (
     create_J_tdpf,
 )
 from pandapower.pf.iwamoto_multiplier import _iwamoto_step
-from pandapower.pf.makeYbus_facts import (
+from pandapower.pf.make_y_bus_facts import (
     calc_y_svc_pu,
     make_Ybus_facts,
     make_Yft_facts,
