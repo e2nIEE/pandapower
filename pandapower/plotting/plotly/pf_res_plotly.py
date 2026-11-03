@@ -200,7 +200,7 @@ def pf_res_plotly(
     # if bus geodata is available, but no line geodata
     cmap_lines = "jet" if cmap == "Jet" else cmap
     if use_line_geo is None:
-        use_line_geo = False if any(net.line.geo.isna()) else True
+        use_line_geo = not any(net.line.geo.isna())
     elif use_line_geo and any(net.line.geo.isna()):
         logger.warning("No or insufficient line geodata available --> only bus geodata will be used.")
         use_line_geo = False

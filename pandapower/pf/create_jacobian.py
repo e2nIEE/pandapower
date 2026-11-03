@@ -15,7 +15,7 @@ from pandapower.pypower.dSbus_dV import dSbus_dV
 try:
     # numba functions
     from pandapower.pf.create_jacobian_numba import create_J, create_J2, create_J_ds
-    from pandapower.pf.dSbus_dV_numba import dSbus_dV_numba_sparse
+    from pandapower.pf.d_s_bus_d_v_numba import dSbus_dV_numba_sparse
 except ImportError:
     pass
 
