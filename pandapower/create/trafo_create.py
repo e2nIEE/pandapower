@@ -159,9 +159,9 @@ def create_transformer(
         ):
             if tp in ti:
                 entries[tp] = ti[tp]
-        if (f"tap{s}_neutral" in entries) and (tap_pos_var is nan):
+        if (f"tap{s}_neutral" in entries) and pd.isna(tap_pos_var):
             entries[f"tap{s}_pos"] = entries[f"tap{s}_neutral"]
-        elif tap_pos_var is not nan:
+        elif pd.notna(tap_pos_var):
             entries[f"tap{s}_pos"] = tap_pos_var
             if isinstance(tap_pos_var, float):
                 net.trafo[f"tap{s}_pos"] = net.trafo.get(f"tap{s}_pos", full(len(net.trafo), nan)).astype(float64)
@@ -450,9 +450,9 @@ def create_transformer_from_parameters(
     index = _get_index_with_check(net, "trafo", index, name="transformer")
 
     if df <= 0:
-        raise UserWarning("derating factor df must be positive: df = %.3f" % df)
+        raise UserWarning(f"derating factor df must be positive: df = {df:.3f}")
 
-    if tap_pos is nan:
+    if pd.isna(tap_pos):
         tap_pos = tap_neutral
         # store dtypes
 
@@ -481,7 +481,7 @@ def create_transformer_from_parameters(
         **kwargs,
     }
 
-    if ("tap_neutral" in entries) and (tap_pos is nan):
+    if ("tap_neutral" in entries) and pd.isna(tap_pos):
         entries["tap_pos"] = entries["tap_neutral"]
     else:
         entries["tap_pos"] = tap_pos
@@ -810,7 +810,7 @@ def create_transformer3w(
     # Check if bus exist to attach the trafo to
     for b in [hv_bus, mv_bus, lv_bus]:
         if b not in net["bus"].index.values:
-            raise UserWarning("Trafo tries to attach to bus %s" % b)
+            raise UserWarning(f"Trafo tries to attach to bus {b}")
 
     entries: dict[str, str | None | Int | bool | float | NAType] = {
         "name": name,
@@ -857,7 +857,7 @@ def create_transformer3w(
         if tp in ti:
             entries.update({tp: ti[tp]})
 
-    if ("tap_neutral" in entries) and (tap_pos is nan):
+    if ("tap_neutral" in entries) and (pd.isna(tap_pos)):
         entries["tap_pos"] = entries["tap_neutral"]
     else:
         entries["tap_pos"] = tap_pos
@@ -1114,11 +1114,11 @@ def create_transformer3w_from_parameters(
     # Check if bus exist to attach the trafo to
     for b in [hv_bus, mv_bus, lv_bus]:
         if b not in net["bus"].index.values:
-            raise UserWarning("Trafo tries to attach to non-existent bus %s" % b)
+            raise UserWarning(f"Trafo tries to attach to non-existent bus {b}")
 
     index = _get_index_with_check(net, "trafo3w", index, "three winding transformer")
 
-    if tap_pos is nan:
+    if pd.isna(tap_pos):
         tap_pos = tap_neutral
 
     for key in [
