@@ -33,7 +33,7 @@ finally:
     if faulthandler_was_enabled:
         faulthandler.enable()
 
-from pandapower.converter.opendss import from_opendss  # noqa: E402
+from pandapower.converter.opendss import from_opendss
 
 INLINE_FEEDER = """
 clear

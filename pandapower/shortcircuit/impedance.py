@@ -12,7 +12,7 @@ from pandapower.pypower.idx_bus import BASE_KV
 from pandapower.pypower.idx_bus_sc import R_EQUIV, X_EQUIV
 
 try:
-    from pandapower.pf.makeYbus_numba import makeYbus
+    from pandapower.pf.make_y_bus_numba import makeYbus
 except ImportError:
     from pandapower.pypower.makeYbus import makeYbus
 
