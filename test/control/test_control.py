@@ -82,7 +82,7 @@ def test_ctrl_unconverged(net):
             super().__init__(net)
 
         def time_step(self, net, time):
-            self.convergent = True if time % 2 == 0 else False
+            self.convergent = time % 2 == 0
 
         def is_converged(self, net):
             return self.convergent
