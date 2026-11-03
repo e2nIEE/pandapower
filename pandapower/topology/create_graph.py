@@ -247,8 +247,8 @@ def create_nxgraph(
             open_trafo3w = (open_trafo3w_index + open_trafo3w_buses * 1j).flatten()
         for f, t in combinations(sides, 2):
             indices, parameter, in_service = init_par(trafo3w, calc_branch_impedances, include_out_of_service)
-            indices[:, F_BUS] = trafo3w["%s_bus" % f].values
-            indices[:, T_BUS] = trafo3w["%s_bus" % t].values
+            indices[:, F_BUS] = trafo3w[f"{f}_bus"].values
+            indices[:, T_BUS] = trafo3w[f"{t}_bus"].values
 
             if trafo_length_km is not None:
                 parameter[:, WEIGHT] = trafo_length_km
@@ -298,7 +298,7 @@ def create_nxgraph(
             for i in list(mg[b].keys()):
                 try:
                     del mg[b][i]  # networkx versions < 2.0
-                except Exception:
+                except Exception:  # noqa: BLE001
                     del mg._adj[b][i]  # networkx versions 2.0
 
     # remove out of service buses

@@ -138,7 +138,7 @@ def next_bus(
         # Raises error if switch is not a bus-bus switch
         bc = ["bus", "element"]
     else:
-        raise Exception("unknown element type")
+        raise TypeError("unknown element type")
     nb = list(net[et].loc[element_id, bc].values)
     nb.remove(bus)
     return nb[0]
@@ -462,7 +462,7 @@ def get_connected_switches(
     else:
         switch_selection = np.full(len(net.switch), True, dtype=bool)
         if status != "all":
-            logger.warning('Unknown switch status "%s" selected! Selecting all switches by default.' % status)
+            logger.warning(f'Unknown switch status "{status}" selected! Selecting all switches by default.')
 
     branch_buses = None
     if include_element_connections:
