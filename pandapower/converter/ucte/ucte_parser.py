@@ -40,12 +40,12 @@ class UCTEParser:
         if self.path_ucte_file is None:
             self.logger.error("The variable 'path_ucte_file' is None, set it before parsing it!")
             return False
-        self.logger.info("Start parsing the file %s." % self.path_ucte_file)
+        self.logger.info(f"Start parsing the file {self.path_ucte_file}.")
         # parse the date, if its given by the configuration, parse it from there, otherwise from the file string
         if (
-            "custom" in self.config.keys()
+            "custom" in self.config
             and isinstance(self.config["custom"], dict)
-            and "date" in self.config["custom"].keys()
+            and "date" in self.config["custom"]
         ):
             self._parse_date_str(self.config["custom"]["date"])
         else:
@@ -77,20 +77,20 @@ class UCTEParser:
                     current_element = "##C"
                     raw_input_dict[current_element].append(row)
                 elif row.startswith("##"):
-                    self.logger.debug("Skipping row %s" % row)
+                    self.logger.debug(f"Skipping row {row}")
                     ucte_country = row[3:] if row[2] == "Z" else row[2:]  # usually country zones are marked by ##Z
                 else:
                     if is_in_N:
                         self.bus_ucte_countries.append(ucte_country)
                     raw_input_dict[current_element].append(row)
         self._create_df_from_raw(raw_input_dict)
-        self.logger.info("Finished parsing file %s in %ss." % (self.path_ucte_file, time.time() - time_start))
+        self.logger.info(f"Finished parsing file {self.path_ucte_file} in {time.time() - time_start}s.")
         return True
 
     def _parse_date_str(self, date_str: str):
         try:
             self.date = datetime.strptime(date_str, "%Y%m%d_%H%M")
-        except Exception:
+        except Exception:  # noqa: BLE001
             self.logger.info(f"The given {date_str=} couldn't be parsed as '%Y%m%d_%H%M'.")
             self.date = datetime.now(UTC)
 
@@ -182,7 +182,7 @@ class UCTEParser:
 
     def _split_nodes_from_raw(self):
         element_type = "##N"
-        if element_type not in self.data.keys():
+        if element_type not in self.data:
             self.logger.warning("No nodes in 'self.data' available! Didn't split them.")
             return
         df = self.data[element_type]
@@ -213,7 +213,7 @@ class UCTEParser:
 
     def _split_lines_from_raw(self):
         element_type = "##L"
-        if element_type not in self.data.keys():
+        if element_type not in self.data:
             self.logger.warning("No lines in 'self.data' available! Didn't split them.")
             return
         df = self.data[element_type]
@@ -230,7 +230,7 @@ class UCTEParser:
 
     def _split_trafos_from_raw(self):
         element_type = "##T"
-        if element_type not in self.data.keys():
+        if element_type not in self.data:
             self.logger.warning("No transformers in 'self.data' available! Didn't split them.")
             return
         df = self.data[element_type]
@@ -251,7 +251,7 @@ class UCTEParser:
 
     def _split_trafos_regulation_from_raw(self):
         element_type = "##R"
-        if element_type not in self.data.keys():
+        if element_type not in self.data:
             self.logger.warning("No tap changers in 'self.data' available! Didn't split them.")
             return
         df = self.data[element_type]
@@ -272,7 +272,7 @@ class UCTEParser:
 
     def _split_trafos_specified_parameters_from_raw(self):
         element_type = "##TT"
-        if element_type not in self.data.keys():
+        if element_type not in self.data:
             self.logger.warning("No specified transformer parameters in 'self.data' available! Didn't split them.")
             return
         df = self.data[element_type]
@@ -288,7 +288,7 @@ class UCTEParser:
 
     def _split_exchange_powers_from_raw(self):
         element_type = "##E"
-        if element_type not in self.data.keys():
+        if element_type not in self.data:
             self.logger.warning("No exchange powers in 'self.data' available! Didn't split them.")
             return
         df = self.data[element_type]

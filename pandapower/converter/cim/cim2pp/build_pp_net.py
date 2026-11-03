@@ -58,14 +58,14 @@ class CimConverter:
         return df
 
     def copy_to_pp(self, pp_type: str, input_df: pd.DataFrame):
-        self.logger.debug("Copy %s datasets to pandapower network with type %s" % (input_df.index.size, pp_type))
+        self.logger.debug(f"Copy {input_df.index.size} datasets to pandapower network with type {pp_type}")
         if pp_type not in self.net:
-            self.logger.warning("Missing pandapower type %s in the pandapower network!" % pp_type)
+            self.logger.warning(f"Missing pandapower type {pp_type} in the pandapower network!")
             self.report_container.add_log(
                 Report(
                     level=LogLevel.WARNING,
                     code=ReportCode.WARNING_CONVERTING,
-                    message="Missing pandapower type %s in the pandapower network!" % pp_type,
+                    message=f"Missing pandapower type {pp_type} in the pandapower network!",
                 )
             )
             return
@@ -154,9 +154,8 @@ class CimConverter:
         if self.cim["gl"]["Location"].index.size > 0 and self.cim["gl"]["PositionPoint"].index.size > 0:
             try:
                 self.classes_dict["geoCoordinatesFromGLCim16"](cimConverter=self).add_geo_coordinates_from_gl_cim16()
-            except Exception as e:
-                self.logger.warning("Creating the geo coordinates failed, returning the net without geo coordinates!")
-                self.logger.exception(e)
+            except Exception:
+                self.logger.exception("Creating the geo coordinates failed, returning the net without geo coordinates!")
                 self.report_container.add_log(
                     Report(
                         level=LogLevel.WARNING,

@@ -226,7 +226,7 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
         runpp(net, trafo_model="t", check_connectivity=True, run_control=run_control, **kwargs)
 
     all_diffs = {}
-    logger.info("pandapower net converged: %s" % net.converged)
+    logger.info(f"pandapower net converged: {net.converged}")
     _set_pf_results(net, pf_results, is_unbalanced=is_unbalanced)
 
     net.bus.name = net.bus.name.fillna("")
@@ -417,18 +417,18 @@ def calculate_element_diff_with_specific_index(net, element, pf_variable, pp_var
 
 
 def _validate_pf_conversion_balanced(net, in_both, all_diffs):
-    logger.debug("res_bus:\n%s" % net.res_bus)
-    logger.debug("res_line:\n%s" % net.res_line)
-    logger.debug("res_load:\n%s" % net.res_load)
+    logger.debug(f"res_bus:\n{net.res_bus}")
+    logger.debug(f"res_line:\n{net.res_line}")
+    logger.debug(f"res_load:\n{net.res_load}")
 
     ppu, pfu, diff_vm = calculate_element_diff_with_specific_index(net, "bus", "pf_vm_pu", "vm_pu", in_both)
     ppa, pfa, diff_va = calculate_element_diff_with_specific_index(net, "bus", "pf_va_degree", "va_degree", in_both)
 
     pp_nans = diff_vm[(pd.notnull(pfu) & pd.isnull(ppu))]
-    logger.info("%s buses are unsupplied in pandapower but supplied in powerfactory" % len(pp_nans))
+    logger.info(f"{len(pp_nans)} buses are unsupplied in pandapower but supplied in powerfactory")
 
     pf_nans = diff_vm[(pd.isnull(pfu) & pd.notnull(ppu))]
-    logger.info("%s buses are unsupplied in powerfactory but supplied in pandapower" % len(pf_nans))
+    logger.info(f"{len(pf_nans)} buses are unsupplied in powerfactory but supplied in pandapower")
 
     diff_vm = diff_vm[(pd.notnull(pfu) & pd.notnull(ppu))]
     bus_id = abs(diff_vm).idxmax().astype("int64")
@@ -499,8 +499,8 @@ def _validate_pf_conversion_balanced(net, in_both, all_diffs):
         line_dc_diff = net.res_line_dc.loc[line_dc_idx].pf_loading - net.res_line_dc.loc[line_dc_idx].loading_percent
         line_dc_id = abs(line_dc_diff).idxmax().astype("int64")
         logger.info(
-            "Maximum line_dc loading difference between pandapower and powerfactory: %.1f "
-            "percent at line_dc %d (%s)" % (max(abs(line_dc_diff)), line_dc_id, net.line_dc.at[line_dc_id, "name"])
+            f"Maximum line_dc loading difference between pandapower and powerfactory: "
+            f"{max(abs(line_dc_diff)):.1f} percent at line_dc {line_dc_id} ({net.line_dc.at[line_dc_id, 'name']})"
         )
         all_diffs["line_dc_diff"] = line_dc_diff
 
@@ -509,8 +509,8 @@ def _validate_pf_conversion_balanced(net, in_both, all_diffs):
         trafo_diff = net.res_trafo.loc[trafo_idx].pf_loading - net.res_trafo.loc[trafo_idx].loading_percent
         trafo_id = abs(trafo_diff).idxmax().astype("int64")
         logger.info(
-            "Maximum trafo loading difference between pandapower and powerfactory: %.1f "
-            "percent at trafo %d (%s)" % (max(abs(trafo_diff)), trafo_id, net.trafo.at[trafo_id, "name"])
+            f"Maximum trafo loading difference between pandapower and powerfactory: "
+            f"{max(abs(trafo_diff)):.1f} percent at trafo {trafo_id} ({net.trafo.at[trafo_id, 'name']})"
         )
         all_diffs["trafo_diff"] = trafo_diff
 
@@ -525,12 +525,12 @@ def _validate_pf_conversion_balanced(net, in_both, all_diffs):
             net.res_load.pf_q.replace(np.nan, 0) * net.load.loc[net.res_load.index, "in_service"] - net.res_load.q_mvar
         )
         logger.info(
-            "Maximum load active power difference between pandapower and powerfactory: "
-            "%.1f MW, in service only: %.1f MW" % (max(abs(load_p_diff)), max(abs(load_p_diff_is)))
+            f"Maximum load active power difference between pandapower and powerfactory: "
+            f"{max(abs(load_p_diff)):.1f} MW, in service only: {max(abs(load_p_diff_is)):.1f} MW"
         )
         logger.info(
-            "Maximum load reactive power difference between pandapower and powerfactory: "
-            "%.1f Mvar, in service only: %.1f Mvar" % (max(abs(load_q_diff)), max(abs(load_q_diff_is)))
+            f"Maximum load reactive power difference between pandapower and powerfactory: "
+            f"{max(abs(load_q_diff)):.1f} Mvar, in service only: {max(abs(load_q_diff_is)):.1f} Mvar"
         )
         all_diffs["load_p_diff_is"] = load_p_diff_is
         all_diffs["load_q_diff_is"] = load_q_diff_is
@@ -551,16 +551,16 @@ def _validate_pf_conversion_balanced(net, in_both, all_diffs):
             - net.res_vsc.p_dc_mw
         )
         logger.info(
-            "Maximum vsc AC reactive power difference between pandapower and powerfactory: "
-            "%.1f Mvar, in service only: %.1f Mvar" % (max(abs(vsc_q_diff)), max(abs(vsc_q_diff_is)))
+            f"Maximum vsc AC reactive power difference between pandapower and powerfactory: "
+            f"{max(abs(vsc_q_diff)):.1f} Mvar, in service only: {max(abs(vsc_q_diff_is)):.1f} Mvar"
         )
         logger.info(
-            "Maximum vsc AC active power difference between pandapower and powerfactory: "
-            "%.1f MW, in service only: %.1f MW" % (max(abs(vsc_p_diff)), max(abs(vsc_p_diff_is)))
+            f"Maximum vsc AC active power difference between pandapower and powerfactory: "
+            f"{max(abs(vsc_p_diff)):.1f} MW, in service only: {max(abs(vsc_p_diff_is)):.1f} MW"
         )
         logger.info(
-            "Maximum vsc DC active power difference between pandapower and powerfactory: "
-            "%.1f MW, in service only: %.1f MW" % (max(abs(vsc_p_dc_diff)), max(abs(vsc_p_dc_diff_is)))
+            f"Maximum vsc DC active power difference between pandapower and powerfactory: "
+            f"{max(abs(vsc_p_dc_diff)):.1f} MW, in service only: {max(abs(vsc_p_dc_diff_is)):.1f} MW"
         )
         all_diffs["vsc_p_diff_is"] = vsc_p_diff_is
         all_diffs["vsc_q_diff_is"] = vsc_q_diff_is
@@ -573,12 +573,12 @@ def _validate_pf_conversion_balanced(net, in_both, all_diffs):
     if len(ext_grid_p_diff):
         logger.info(
             "Maximum ext_grid active power difference between pandapower and powerfactory: "
-            "%.1f MW" % max(abs(ext_grid_p_diff))
+            f"{max(abs(ext_grid_p_diff)):.1f} MW"
         )
     if len(ext_grid_q_diff):
         logger.info(
-            "Maximum ext_grid reactive power difference between pandapower and powerfactory: "
-            "%.1f Mvar" % max(abs(ext_grid_q_diff))
+            f"Maximum ext_grid reactive power difference between pandapower and powerfactory: "
+            f"{max(abs(ext_grid_q_diff)):.1f} Mvar"
         )
     all_diffs["ext_grid_p_diff"] = ext_grid_p_diff
     all_diffs["ext_grid_q_diff"] = ext_grid_q_diff
@@ -587,40 +587,40 @@ def _validate_pf_conversion_balanced(net, in_both, all_diffs):
 
 
 def _validate_pf_conversion_unbalanced(net, in_both, all_diffs):
-    logger.debug("res_bus_3ph:\n%s" % net.res_bus_3ph)
-    logger.debug("res_line_3ph:\n%s" % net.res_line_3ph)
-    logger.debug("res_asymmetric_load_3ph:\n%s" % net.res_asymmetric_load_3ph)
+    logger.debug(f"res_bus_3ph:\n{net.res_bus_3ph}")
+    logger.debug(f"res_line_3ph:\n{net.res_line_3ph}")
+    logger.debug(f"res_asymmetric_load_3ph:\n{net.res_asymmetric_load_3ph}")
 
     for phase in ["a", "b", "c"]:
-        pfu = net.res_bus_3ph["pf_vm_%s_pu" % phase].loc[in_both].replace(0, np.nan)
-        ppu = net.res_bus_3ph["vm_%s_pu" % phase].loc[in_both]
+        pfu = net.res_bus_3ph[f"pf_vm_{phase}_pu"].loc[in_both].replace(0, np.nan)
+        ppu = net.res_bus_3ph[f"vm_{phase}_pu"].loc[in_both]
         diff_vm = pfu - ppu
 
-        pfa = net.res_bus_3ph["pf_va_%s_degree" % phase].loc[in_both].replace(0, np.nan)
-        ppa = net.res_bus_3ph["va_%s_degree" % phase].loc[in_both]
+        pfa = net.res_bus_3ph[f"pf_va_{phase}_degree"].loc[in_both].replace(0, np.nan)
+        ppa = net.res_bus_3ph[f"va_{phase}_degree"].loc[in_both]
         diff_va = pfa - ppa
 
-        all_diffs["diff_vm_%s" % phase] = diff_vm
-        all_diffs["diff_va_%s" % phase] = diff_va
+        all_diffs[f"diff_vm_{phase}"] = diff_vm
+        all_diffs[f"diff_va_{phase}"] = diff_va
 
         if phase == "a":
             pp_nans = diff_vm[(pd.notnull(pfu) & pd.isnull(ppu))]
-            logger.info("%s buses are unsupplied in pandapower but supplied in powerfactory" % len(pp_nans))
+            logger.info(f"{len(pp_nans)} buses are unsupplied in pandapower but supplied in powerfactory")
             pf_nans = diff_vm[(pd.isnull(pfu) & pd.notnull(ppu))]
-            logger.info("%s buses are unsupplied in powerfactory but supplied in pandapower" % len(pf_nans))
+            logger.info(f"{len(pf_nans)} buses are unsupplied in powerfactory but supplied in pandapower")
 
         diff_vm = diff_vm[(pd.notnull(pfu) & pd.notnull(ppu))]
         bus_id = abs(diff_vm).idxmax().astype("int64")
         logger.info(
-            "Maximum voltage magnitude difference of phase '%s' between pandapower and powerfactory: "
-            "%f pu at bus %d (%s)" % (phase, max(abs(diff_vm)), bus_id, net.bus.at[bus_id, "name"])
+            f"Maximum voltage magnitude difference of phase '{phase}' between pandapower and powerfactory: "
+            f"{max(abs(diff_vm))} pu at bus {bus_id} ({net.bus.at[bus_id, 'name']})"
         )
 
         diff_va = diff_va[(pd.notnull(pfa) & pd.notnull(ppa))]
         bus_id = abs(diff_va).idxmax().astype(np.int64)
         logger.info(
-            "Maximum voltage angle difference of phase '%s' between pandapower and powerfactory: "
-            "%.2f degrees at bus %d (%s)" % (phase, max(abs(diff_va)), bus_id, net.bus.at[bus_id, "name"])
+            f"Maximum voltage angle difference of phase '{phase}' between pandapower and powerfactory: "
+            f"{max(abs(diff_va)):.2f} degrees at bus {bus_id} ({net.bus.at[bus_id, 'name']})"
         )
 
     if len(net.line[net.line.in_service]) > 0:
@@ -635,8 +635,8 @@ def _validate_pf_conversion_unbalanced(net, in_both, all_diffs):
         if len(line_loading_diff):
             line_id = int(abs(line_loading_diff).idxmax())
             logger.info(
-                "Maximum line loading difference between pandapower and powerfactory: %.1f "
-                "percent at line %d (%s)" % (max(abs(line_loading_diff)), line_id, net.line.at[line_id, "name"])
+                f"Maximum line loading difference between pandapower and powerfactory: "
+                f"{max(abs(line_loading_diff)):.1f} percent at line {line_id} ({net.line.at[line_id, 'name']})"
             )
         all_diffs["line_loading_diff"] = line_loading_diff
 
@@ -645,26 +645,26 @@ def _validate_pf_conversion_unbalanced(net, in_both, all_diffs):
                 section_currents = pd.concat(
                     [
                         net.line[["name", "line_idx"]],
-                        net.res_line_3ph[["i_%s_%s_ka" % (phase, direction), "pf_i_%s_%s_ka" % (phase, direction)]],
+                        net.res_line_3ph[[f"i_{phase}_{direction}_ka", "pf_i_{phase}_{direction}_ka"]],
                     ],
                     axis=1,
                 )
                 line_currents = section_currents.groupby("line_idx").max()
                 line_currents_diff = (
-                    line_currents["i_%s_%s_ka" % (phase, direction)]
-                    - line_currents["pf_i_%s_%s_ka" % (phase, direction)]
+                    line_currents[f"i_{phase}_{direction}_ka"]
+                    - line_currents[f"pf_i_{phase}_{direction}_ka"]
                 )
                 if sum(np.isnan(line_currents_diff.values)):
-                    logger.info("Some line current values are NaN for phase %s, direction %s." % (phase, direction))
+                    logger.info(f"Some line current values are NaN for phase {phase}, direction {direction}.")
                     line_currents_diff = line_currents_diff.dropna()
                 if len(line_currents_diff):
                     line_id = int(abs(line_currents_diff).idxmax())
                     logger.info(
-                        "Maximum line current difference between pandapower and powerfactory: %.4f "
-                        "current at phase %s, direction %s of line %d (%s)"
-                        % (max(abs(line_currents_diff)), phase, direction, line_id, net.line.at[line_id, "name"])
+                        f"Maximum line current difference between pandapower and powerfactory: "
+                        f"{max(abs(line_currents_diff)):.4f} current at phase {phase}, direction {direction} of line "
+                        f"{line_id} ({net.line.at[line_id, 'name']})"
                     )
-                all_diffs["line_currents_%s_%s_diff" % (phase, direction)] = line_currents_diff
+                all_diffs[f"line_currents_{phase}_{direction}_diff"] = line_currents_diff
 
     if len(net.trafo[net.trafo.in_service]) > 0:
         trafo_idx = net.trafo.query("in_service").index
@@ -677,8 +677,8 @@ def _validate_pf_conversion_unbalanced(net, in_both, all_diffs):
         if len(trafo_loading_diff):
             trafo_id = int(abs(trafo_loading_diff).idxmax())
             logger.info(
-                "Maximum trafo loading difference between pandapower and powerfactory: %.1f "
-                "percent at trafo %d (%s)" % (max(abs(trafo_loading_diff)), trafo_id, net.trafo.at[trafo_id, "name"])
+                f"Maximum trafo loading difference between pandapower and powerfactory: "
+                f"{max(abs(trafo_loading_diff)):.1f} percent at trafo {trafo_id} ({net.trafo.at[trafo_id, 'name']})"
             )
         all_diffs["trafo_loading_diff"] = trafo_loading_diff
 
@@ -686,53 +686,53 @@ def _validate_pf_conversion_unbalanced(net, in_both, all_diffs):
             for side in ["hv", "lv"]:
                 trafo_idx = net.trafo.query("in_service").index
                 trafo_currents_diff = (
-                    net.res_trafo_3ph.loc[trafo_idx]["i_%s_%s_ka" % (phase, side)]
-                    - net.res_trafo_3ph.loc[trafo_idx]["pf_i_%s_%s_ka" % (phase, side)]
+                    net.res_trafo_3ph.loc[trafo_idx][f"i_{phase}_{side}_ka"]
+                    - net.res_trafo_3ph.loc[trafo_idx][f"pf_i_{phase}_{side}_ka"]
                 )
                 if sum(np.isnan(trafo_currents_diff.values)):
-                    logger.info("Some trafo current values are NaN for phase %s, side %s." % (phase, side))
+                    logger.info(f"Some trafo current values are NaN for phase {phase}, side {side}.")
                     trafo_currents_diff = trafo_currents_diff.dropna()
                 if len(trafo_currents_diff):
                     trafo_id = int(abs(trafo_currents_diff).idxmax())
                     logger.info(
-                        "Maximum trafo current difference between pandapower and powerfactory: %.4f "
-                        "current at phase %s, side %s of line %d (%s)"
-                        % (max(abs(trafo_currents_diff)), phase, side, trafo_id, net.trafo.at[trafo_id, "name"])
+                        f"Maximum trafo current difference between pandapower and powerfactory: "
+                        f"{max(abs(trafo_currents_diff)):.4f} "
+                        f"current at phase {phase}, side {side} of line {trafo_id} ({net.trafo.at[trafo_id, 'name']})"
                     )
-                all_diffs["trafo_currents_%s_%s_diff" % (phase, side)] = trafo_currents_diff
+                all_diffs[f"trafo_currents_{phase}_{side}_diff"] = trafo_currents_diff
 
     if len(net.asymmetric_load[net.asymmetric_load.in_service]) > 0:
         logger.debug("verifying asymmetric load")
 
         for phase in ["a", "b", "c"]:
             asymmetric_load_p_diff = (
-                net.res_asymmetric_load_3ph["pf_p_%s" % phase].replace(np.nan, 0)
-                - net.res_asymmetric_load_3ph["p_%s_mw" % phase]
+                net.res_asymmetric_load_3ph[f"pf_p_{phase}"].replace(np.nan, 0)
+                - net.res_asymmetric_load_3ph[f"p_{phase}_mw"]
             )
             asymmetric_load_q_diff = (
-                net.res_asymmetric_load_3ph["pf_q_%s" % phase].replace(np.nan, 0)
-                - net.res_asymmetric_load_3ph["q_%s_mvar" % phase]
+                net.res_asymmetric_load_3ph[f"pf_q_{phase}"].replace(np.nan, 0)
+                - net.res_asymmetric_load_3ph[f"q_{phase}_mvar"]
             )
             asymmetric_load_p_diff_is = (
-                net.res_asymmetric_load_3ph["pf_p_%s" % phase].replace(np.nan, 0)
-                * net.asymmetric_load.loc[net.res_asymmetric_load_3ph["pf_p_%s" % phase].index, "in_service"]
-                - net.res_asymmetric_load_3ph["p_%s_mw" % phase]
+                net.res_asymmetric_load_3ph[f"pf_p_{phase}"].replace(np.nan, 0)
+                * net.asymmetric_load.loc[net.res_asymmetric_load_3ph[f"pf_p_{phase}"].index, "in_service"]
+                - net.res_asymmetric_load_3ph[f"p_{phase}_mw"]
             )
             asymmetric_load_q_diff_is = (
-                net.res_asymmetric_load_3ph["pf_q_%s" % phase].replace(np.nan, 0)
-                * net.asymmetric_load.loc[net.res_asymmetric_load_3ph["pf_q_%s" % phase].index, "in_service"]
-                - net.res_asymmetric_load_3ph["q_%s_mvar" % phase]
+                net.res_asymmetric_load_3ph[f"pf_q_{phase}"].replace(np.nan, 0)
+                * net.asymmetric_load.loc[net.res_asymmetric_load_3ph[f"pf_q_{phase}"].index, "in_service"]
+                - net.res_asymmetric_load_3ph[f"q_{phase}_mvar"]
             )
 
             logger.info(
-                "Maximum asymmetric load active power difference between pandapower and powerfactory: "
-                "%.1f MW, in service only: %.1f MW"
-                % (max(abs(asymmetric_load_p_diff)), max(abs(asymmetric_load_p_diff_is)))
+                f"Maximum asymmetric load active power difference between pandapower and powerfactory: "
+                f"{max(abs(asymmetric_load_p_diff)):.1f} MW, in service only: "
+                f"{max(abs(asymmetric_load_p_diff_is)):.1f} MW"
             )
             logger.info(
-                "Maximum asymmetric load reactive power difference between pandapower and powerfactory: "
-                "%.1f Mvar, in service only: %.1f Mvar"
-                % (max(abs(asymmetric_load_q_diff)), max(abs(asymmetric_load_q_diff_is)))
+                f"Maximum asymmetric load reactive power difference between pandapower and powerfactory: "
+                f"{max(abs(asymmetric_load_q_diff)):.1f} Mvar, in service only: "
+                f"{max(abs(asymmetric_load_q_diff_is)):.1f} Mvar"
             )
             all_diffs["asymmetric_load_p_diff_is"] = asymmetric_load_p_diff_is
             all_diffs["asymmetric_load_q_diff_is"] = asymmetric_load_q_diff_is
@@ -742,30 +742,30 @@ def _validate_pf_conversion_unbalanced(net, in_both, all_diffs):
 
             for phase in ["a", "b", "c"]:
                 ext_grid_p_diff = (
-                    net.res_ext_grid_3ph["pf_p_%s" % phase].replace(np.nan, 0) - net.res_ext_grid_3ph["p_%s_mw" % phase]
+                    net.res_ext_grid_3ph[f"pf_p_{phase}"].replace(np.nan, 0) - net.res_ext_grid_3ph[f"p_{phase}_mw"]
                 )
                 ext_grid_q_diff = (
-                    net.res_ext_grid_3ph["pf_q_%s" % phase].replace(np.nan, 0)
-                    - net.res_ext_grid_3ph["q_%s_mvar" % phase]
+                    net.res_ext_grid_3ph[f"pf_q_{phase}"].replace(np.nan, 0)
+                    - net.res_ext_grid_3ph[f"q_{phase}_mvar"]
                 )
                 ext_grid_p_diff_is = (
-                    net.res_ext_grid_3ph["pf_p_%s" % phase].replace(np.nan, 0)
-                    * net.ext_grid.loc[net.res_ext_grid_3ph["pf_p_%s" % phase].index, "in_service"]
-                    - net.res_ext_grid_3ph["p_%s_mw" % phase]
+                    net.res_ext_grid_3ph[f"pf_p_{phase}"].replace(np.nan, 0)
+                    * net.ext_grid.loc[net.res_ext_grid_3ph[f"pf_p_{phase}"].index, "in_service"]
+                    - net.res_ext_grid_3ph[f"p_{phase}_mw"]
                 )
                 ext_grid_q_diff_is = (
-                    net.res_ext_grid_3ph["pf_q_%s" % phase].replace(np.nan, 0)
-                    * net.ext_grid.loc[net.res_ext_grid_3ph["pf_q_%s" % phase].index, "in_service"]
-                    - net.res_ext_grid_3ph["q_%s_mvar" % phase]
+                    net.res_ext_grid_3ph[f"pf_q_{phase}"].replace(np.nan, 0)
+                    * net.ext_grid.loc[net.res_ext_grid_3ph[f"pf_q_{phase}"].index, "in_service"]
+                    - net.res_ext_grid_3ph[f"q_{phase}_mvar"]
                 )
 
                 logger.info(
-                    "Maximum ext_grid active power difference between pandapower and powerfactory: "
-                    "%.1f MW, in service only: %.1f MW" % (max(abs(ext_grid_p_diff)), max(abs(ext_grid_p_diff_is)))
+                    f"Maximum ext_grid active power difference between pandapower and powerfactory: "
+                    f"{max(abs(ext_grid_p_diff)):.1f} MW, in service only: {max(abs(ext_grid_p_diff_is)):.1f} MW"
                 )
                 logger.info(
-                    "Maximum ext_grid reactive power difference between pandapower and powerfactory: "
-                    "%.1f Mvar, in service only: %.1f Mvar" % (max(abs(ext_grid_q_diff)), max(abs(ext_grid_q_diff_is)))
+                    f"Maximum ext_grid reactive power difference between pandapower and powerfactory: "
+                    f"{max(abs(ext_grid_q_diff)):.1f} Mvar, in service only: {max(abs(ext_grid_q_diff_is)):.1f} Mvar"
                 )
                 all_diffs["ext_grid_p_diff"] = ext_grid_p_diff_is
                 all_diffs["ext_grid_q_diff"] = ext_grid_q_diff_is
@@ -775,33 +775,33 @@ def _validate_pf_conversion_unbalanced(net, in_both, all_diffs):
 
         for phase in ["a", "b", "c"]:
             asymmetric_sgen_p_diff = (
-                net.res_asymmetric_sgen_3ph["pf_p_%s" % phase].replace(np.nan, 0)
-                - net.res_asymmetric_sgen_3ph["p_%s_mw" % phase]
+                net.res_asymmetric_sgen_3ph[f"pf_p_{phase}"].replace(np.nan, 0)
+                - net.res_asymmetric_sgen_3ph[f"p_{phase}_mw"]
             )
             asymmetric_sgen_q_diff = (
-                net.res_asymmetric_sgen_3ph["pf_q_%s" % phase].replace(np.nan, 0)
-                - net.res_asymmetric_sgen_3ph["q_%s_mvar" % phase]
+                net.res_asymmetric_sgen_3ph[f"pf_q_{phase}"].replace(np.nan, 0)
+                - net.res_asymmetric_sgen_3ph[f"q_{phase}_mvar"]
             )
             asymmetric_sgen_p_diff_is = (
-                net.res_asymmetric_sgen_3ph["pf_p_%s" % phase].replace(np.nan, 0)
-                * net.asymmetric_sgen.loc[net.res_asymmetric_sgen_3ph["pf_p_%s" % phase].index, "in_service"]
-                - net.res_asymmetric_sgen_3ph["p_%s_mw" % phase]
+                net.res_asymmetric_sgen_3ph[f"pf_p_{phase}"].replace(np.nan, 0)
+                * net.asymmetric_sgen.loc[net.res_asymmetric_sgen_3ph[f"pf_p_{phase}"].index, "in_service"]
+                - net.res_asymmetric_sgen_3ph[f"p_{phase}_mw"]
             )
             asymmetric_sgen_q_diff_is = (
-                net.res_asymmetric_sgen_3ph["pf_q_%s" % phase].replace(np.nan, 0)
-                * net.asymmetric_sgen.loc[net.res_asymmetric_sgen_3ph["pf_q_%s" % phase].index, "in_service"]
-                - net.res_asymmetric_sgen_3ph["q_%s_mvar" % phase]
+                net.res_asymmetric_sgen_3ph[f"pf_q_{phase}"].replace(np.nan, 0)
+                * net.asymmetric_sgen.loc[net.res_asymmetric_sgen_3ph[f"pf_q_{phase}"].index, "in_service"]
+                - net.res_asymmetric_sgen_3ph[f"q_{phase}_mvar"]
             )
 
             logger.info(
-                "Maximum asymmetric sgen active power difference between pandapower and powerfactory: "
-                "%.1f MW, in service only: %.1f MW"
-                % (max(abs(asymmetric_sgen_p_diff)), max(abs(asymmetric_sgen_p_diff_is)))
+                f"Maximum asymmetric sgen active power difference between pandapower and powerfactory: "
+                f"{max(abs(asymmetric_sgen_p_diff)):.1f} MW, in service only: "
+                f"{max(abs(asymmetric_sgen_p_diff_is)):.1f} MW"
             )
             logger.info(
-                "Maximum asymmetric sgen reactive power difference between pandapower and powerfactory: "
-                "%.1f Mvar, in service only: %.1f Mvar"
-                % (max(abs(asymmetric_sgen_q_diff)), max(abs(asymmetric_sgen_q_diff_is)))
+                f"Maximum asymmetric sgen reactive power difference between pandapower and powerfactory: "
+                f"{max(abs(asymmetric_sgen_q_diff)):.1f} Mvar, in service only: "
+                f"{max(abs(asymmetric_sgen_q_diff_is)):.1f} Mvar"
             )
             all_diffs["asymmetric_sgen_p_diff_is"] = asymmetric_sgen_p_diff_is
             all_diffs["asymmetric_sgen_q_diff_is"] = asymmetric_sgen_q_diff_is

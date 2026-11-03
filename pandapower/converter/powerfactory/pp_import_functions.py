@@ -1964,7 +1964,7 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
     bus_is_known = False
     params.name = item.loc_name
     load_class = item.GetClassName()
-    logger.debug(">> creating load <%s.%s>" % (params.name, load_class))
+    logger.debug(f">> creating load <{params.name}.{load_class}>")
 
     is_unbalanced = item.i_sym
 
