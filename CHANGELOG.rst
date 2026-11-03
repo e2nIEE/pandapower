@@ -18,6 +18,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] ``res_bus`` and ``res_bus_3ph``: the power injection of buses coupled by a closed bus-bus switch with zero impedance was only written to the bus the elements are connected to, leaving the coupled buses at zero. The total injection of the fused buses is now split equally between them, so the coupled buses show consistent values and their sum equals the actual injection (#2702)
 - [FIXED] ``ConstControl`` now raises a ``ValueError`` if ``element_index`` contains indices that are not in the element table. Previously a missing single index silently added a row with NaN values, and the time series failed later with an unclear numba error (#1857)
 - [FIXED] ``create_load_dc`` now allocates and validates indexes against ``load_dc``, preventing overwrites and false ``source_dc`` conflicts.
 - [FIXED] OPF cleaned up in case of non convergence

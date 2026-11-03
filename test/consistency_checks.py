@@ -161,9 +161,30 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
     for idx, tab in net.ssc.iterrows():
         bus_q.at[tab.bus] += net.res_ssc.q_mvar.at[idx]
 
-    assert allclose(net.res_bus.p_mw.values, bus_p.values, equal_nan=True, rtol=rtol)
+    # Buses coupled by closed bus-bus switches with zero impedance are fused to a single
+    # bus in the power flow, and their total injection is split equally between them in
+    # res_bus (see issue #2702). The feed-in of fused buses is therefore checked for the
+    # group as a whole: the sum over each group must match the element feed-ins and all
+    # buses of a group must show the same value.
+    fused_groups = {}
+    bus_lookup = net.get("_pd2ppc_lookups", {}).get("bus")
+    if bus_lookup is not None:
+        for bus, ppc_bus in zip(net.bus.index.values, bus_lookup[net.bus.index.values]):
+            if ppc_bus >= 0:
+                fused_groups.setdefault(ppc_bus, []).append(bus)
+    fused_groups = [members for members in fused_groups.values() if len(members) > 1]
+    fused_buses = [bus for members in fused_groups for bus in members]
+
+    unfused = net.bus.index.difference(fused_buses)
+    assert allclose(net.res_bus.p_mw.loc[unfused].values, bus_p.loc[unfused].values, equal_nan=True, rtol=rtol)
     if test_q:
-        assert allclose(net.res_bus.q_mvar.values, bus_q.values, equal_nan=True, rtol=rtol)
+        assert allclose(net.res_bus.q_mvar.loc[unfused].values, bus_q.loc[unfused].values, equal_nan=True, rtol=rtol)
+    for members in fused_groups:
+        assert isclose(net.res_bus.p_mw.loc[members].sum(), bus_p.loc[members].sum(), rtol=rtol)
+        assert allclose(net.res_bus.p_mw.loc[members].values, net.res_bus.p_mw.at[members[0]], rtol=rtol)
+        if test_q:
+            assert isclose(net.res_bus.q_mvar.loc[members].sum(), bus_q.loc[members].sum(), rtol=rtol)
+            assert allclose(net.res_bus.q_mvar.loc[members].values, net.res_bus.q_mvar.at[members[0]], rtol=rtol)
 
     if "bus_dc" in net and net.bus_dc.shape[0] > 0:
         bus_p_dc = pd.Series(data=0.0, index=net.bus_dc.index)

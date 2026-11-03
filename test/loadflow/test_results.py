@@ -12,8 +12,10 @@ from pandapower.create import (
     create_bus,
     create_ext_grid,
     create_impedance,
+    create_line,
     create_line_from_parameters,
     create_load,
+    create_switch,
     create_transformer,
     create_transformer3w_from_parameters,
     create_transformer_from_parameters,
@@ -691,6 +693,45 @@ def test_bus_bus_switch(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3,
     runpp(net)
 
     assert isnan(net.res_switch.p_from_mw[2])
+
+
+def test_fused_buses_split_pq_results():
+    # Buses coupled by a closed bus-bus switch with zero impedance are fused to a single
+    # bus for the power flow, so only their total injection is defined. It is split equally
+    # between the fused buses: the coupled buses show consistent values and their sum
+    # equals the actual injection (see issue #2702).
+    net = pandapowerNet(name="test_fused_buses_split_pq_results")
+    b1 = create_bus(net, vn_kv=20.0)
+    b2 = create_bus(net, vn_kv=20.0)
+    b3 = create_bus(net, vn_kv=20.0)
+    create_ext_grid(net, b1, vm_pu=1.0)
+    create_line(net, b1, b2, length_km=1.0, std_type="NAYY 4x50 SE")
+    create_line(net, b1, b3, length_km=1.0, std_type="NAYY 4x50 SE")
+    create_switch(net, bus=b2, element=b3, et="b", closed=True)
+    load = create_load(net, b2, p_mw=90.0, q_mvar=30.0)
+
+    runpp(net)
+    for b in (b2, b3):
+        assert isclose(net.res_bus.p_mw.at[b], 45.0)
+        assert isclose(net.res_bus.q_mvar.at[b], 15.0)
+    assert isclose(net.res_bus.p_mw.loc[[b2, b3]].sum(), 90.0)
+    assert isclose(net.res_bus.q_mvar.loc[[b2, b3]].sum(), 30.0)
+
+    # moving the load to the other busbar must not change the results
+    net.load.at[load, "bus"] = b3
+    runpp(net)
+    for b in (b2, b3):
+        assert isclose(net.res_bus.p_mw.at[b], 45.0)
+        assert isclose(net.res_bus.q_mvar.at[b], 15.0)
+
+    # with the switch open, the buses are not fused and the injection stays at the bus
+    # the load is connected to
+    net.switch.closed = False
+    runpp(net)
+    assert isclose(net.res_bus.p_mw.at[b3], 90.0)
+    assert isclose(net.res_bus.q_mvar.at[b3], 30.0)
+    assert isclose(net.res_bus.p_mw.at[b2], 0.0)
+    assert isclose(net.res_bus.q_mvar.at[b2], 0.0)
 
 
 def test_enforce_q_lims(v_tol=1e-6, s_tol=5e-3):

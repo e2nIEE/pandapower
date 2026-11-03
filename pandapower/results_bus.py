@@ -95,9 +95,37 @@ def _get_opf_marginal_prices(net, ppc):
     net["res_bus"]["lam_q"] = ppc["bus"][bus_idx][:, LAM_Q]
 
 
+def _split_pq_between_fused_buses(net, bus_pq):
+    """
+    Split the power injections of fused buses equally between the buses of each fused group.
+
+    Buses connected by closed bus-bus switches with zero impedance are fused to a single bus
+    for the power flow calculation, so only the total injection of the fused buses is defined.
+    The element injections are however summed up at the bus they are connected to, which leaves
+    the other buses of the group with an injection of zero and makes the results of the coupled
+    buses inconsistent (see issue #2702). Splitting the total injection equally between the
+    fused buses keeps the sum over each group equal to the actual injection.
+    """
+    if bus_pq.shape[0] == 0 or net["switch"].empty:
+        return
+    # pandapower buses that are fused share the same ppc bus; buses that are not in service
+    # are not part of the ppc (lookup -1) and cannot be fused
+    ppc_bus = net["_pd2ppc_lookups"]["bus"][net["bus"].index.values]
+    is_buses = np.nonzero(ppc_bus >= 0)[0]
+    if len(is_buses) == 0:
+        return
+    _, inverse, counts = np.unique(ppc_bus[is_buses], return_inverse=True, return_counts=True)
+    for group in np.nonzero(counts > 1)[0]:
+        members = is_buses[inverse == group]
+        bus_pq[members] = np.sum(bus_pq[members], axis=0) / len(members)
+
+
 def _get_bus_results(net, ppc, bus_pq):
     ac = net["_options"]["ac"]
     mode = net["_options"]["mode"]
+
+    # split the injections of buses fused by bus-bus switches between the fused buses
+    _split_pq_between_fused_buses(net, bus_pq)
 
     # write sum of p and q values to bus
     net["res_bus"].loc[:, "p_mw"] = bus_pq[:, 0]
@@ -123,6 +151,9 @@ def _get_bus_dc_results(net, bus_p_dc):
 
 def _get_bus_results_3ph(net, bus_pq):
     ac = net["_options"]["ac"]
+
+    # split the injections of buses fused by bus-bus switches between the fused buses
+    _split_pq_between_fused_buses(net, bus_pq)
 
     # write sum of p and q values to bus
     net["res_bus_3ph"]["p_a_mw"] = bus_pq[:, 0]
