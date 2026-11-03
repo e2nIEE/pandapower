@@ -15,7 +15,7 @@ from pandapower.converter.pypower.from_ppc import _branch_to_which, _gen_to_whic
 from pandapower.file_io import from_json
 from pandapower.networks.power_system_test_cases import case9, case24_ieee_rts
 from pandapower.pypower.idx_brch import PF, PT, QF, QT
-from pandapower.pypower.idx_bus import PD, VA, VM
+from pandapower.pypower.idx_bus import BASE_KV, PD, VA, VM
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.results import reset_results
 from pandapower.run import runopp, runpp, set_user_pf_options
@@ -368,6 +368,40 @@ def overwrite_results_data_of_ppc_pickle(file_name, grid_names):
     with open(file, "wb") as handle:
         # pickle.dump(ppcs, handle, protocol=pickle.HIGHEST_PROTOCOL)
         pickle.dump(ppcs, handle, protocol=4)  # as long as py3.7 is supported, 4 is the highest protocol
+
+
+def test_from_ppc_without_base_kv():
+    # MATPOWER calculates in per-unit and does not need baseKV, so many MATPOWER case files
+    # set it to 0 (e.g. the original MATPOWER case14 and case57). from_ppc must nevertheless
+    # produce a runnable net (regression test for #2516: vn_kv of 0 let runpp fail with a
+    # FloatingPointError). Since the ppc branch data is in per-unit, the placeholder vn_kv
+    # must not change the power flow results: they must equal those of the same case
+    # converted with an arbitrary constant baseKV.
+    ppc = get_testgrids("ppc_testgrids", "case6.json")
+    ppc["bus"][:, BASE_KV] = 110.0
+    net_ref = from_ppc(ppc)
+    runpp(net_ref)
+
+    ppc = get_testgrids("ppc_testgrids", "case6.json")
+    ppc["bus"][:, BASE_KV] = 0
+    net = from_ppc(ppc)
+    assert (net.bus.vn_kv == 1.0).all()
+    runpp(net)
+    assert net.converged
+    assert np.allclose(net.res_bus.vm_pu, net_ref.res_bus.vm_pu, atol=1e-6)
+    assert np.allclose(net.res_bus.va_degree, net_ref.res_bus.va_degree, atol=1e-6)
+
+
+def test_from_ppc_with_partly_missing_base_kv():
+    # a bus without baseKV inherits the baseKV of a connected bus with a valid baseKV
+    ppc = get_testgrids("ppc_testgrids", "case6.json")
+    ppc["bus"][0, BASE_KV] = 0
+    net = from_ppc(ppc)
+    assert (net.bus.vn_kv > 0).all()
+    # bus 0 is only connected to buses with a baseKV of 20 (see case6.json)
+    assert net.bus.vn_kv.iloc[0] == 20.0
+    runpp(net)
+    assert net.converged
 
 
 if __name__ == "__main__":

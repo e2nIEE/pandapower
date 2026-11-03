@@ -7,6 +7,7 @@ __all__ = [
 ]
 
 import logging
+from collections import deque
 from math import pi
 
 import numpy as np
@@ -62,8 +63,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs) -> pandapowerNet
         >>> net = from_ppc(ppc, f_hz=60)
     """
     # --- catch common failures
-    if np.any(ppc["bus"][:, BASE_KV] <= 0):
-        logger.info("There are false baseKV given in the pypower case file.")
+    _ensure_base_kv(ppc)
 
     net = pandapowerNet(name="from_ppc", f_hz=f_hz, sn_mva=ppc["baseMVA"])
     net._from_ppc_lookups = dict()
@@ -81,6 +81,48 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs) -> pandapowerNet
             logger.error("Validation failed.")
 
     return net
+
+
+def _ensure_base_kv(ppc):
+    """
+    Ensure that all buses of the ppc have a valid (positive) baseKV.
+
+    MATPOWER calculates in per-unit and therefore does not need the baseKV, so many MATPOWER
+    case files set it to 0 (e.g. the original MATPOWER case14 and case57). pandapower, however,
+    requires vn_kv > 0: with vn_kv == 0 the conversion would silently produce NaN parameters
+    and runpp would fail with a FloatingPointError. Therefore, buses without a valid baseKV
+    inherit the baseKV of the nearest connected bus with a valid baseKV (breadth-first search
+    over the branches). If no bus of a connected component has a valid baseKV, 1.0 is used for
+    the buses of that component. Since the branch data of the ppc is in per-unit and the
+    transformer ratios are adopted unchanged, this does not alter the per-unit power flow
+    results; only the absolute voltage levels, which are unknown in such case files, are
+    placeholders.
+    """
+    base_kv = ppc["bus"][:, BASE_KV]
+    invalid = ~(base_kv > 0)
+    if not invalid.any():
+        return
+    logger.warning(
+        f"There are {int(invalid.sum())} buses without a valid baseKV (<= 0) in the pypower "
+        "case file. Their vn_kv is inherited from the nearest connected bus with a valid "
+        "baseKV or set to 1.0 if there is none."
+    )
+    from_pos = _get_bus_pos(ppc, ppc["branch"][:, F_BUS].astype(np.int64))
+    to_pos = _get_bus_pos(ppc, ppc["branch"][:, T_BUS].astype(np.int64))
+    neighbours = [[] for _ in range(ppc["bus"].shape[0])]
+    for f, t in zip(from_pos, to_pos):
+        neighbours[f].append(t)
+        neighbours[t].append(f)
+    filled = base_kv.astype(float).copy()
+    queue = deque(np.flatnonzero(~invalid).tolist())
+    while queue:
+        pos = queue.popleft()
+        for neighbour in neighbours[pos]:
+            if filled[neighbour] <= 0:
+                filled[neighbour] = filled[pos]
+                queue.append(neighbour)
+    filled[filled <= 0] = 1.0
+    ppc["bus"][invalid, BASE_KV] = filled[invalid]
 
 
 def _from_ppc_bus(net, ppc):

@@ -57,6 +57,66 @@ def test_from_mpc_m():
     assert nets_equal(case24_mat, case24_m)
 
 
+@pytest.mark.skipif(not matpowercaseframes_imported, reason="matpowercaseframes is needed to convert .m files.")
+def test_from_mpc_m_without_base_kv(tmp_path):
+    # regression test for #2516: many original MATPOWER .m files (e.g. case14, case57) set
+    # baseKV to 0 for all buses, since MATPOWER calculates in per-unit. Together with the
+    # bus names (which matpowercaseframes returns as (n, 1) arrays), converting such a file
+    # and running a power flow must work.
+    m_file_content = """function mpc = case_without_base_kv
+%% MATPOWER Case Format : Version 2
+mpc.version = '2';
+
+%% system MVA base
+mpc.baseMVA = 100;
+
+%% bus data
+%\tbus_i\ttype\tPd\tQd\tGs\tBs\tarea\tVm\tVa\tbaseKV\tzone\tVmax\tVmin
+mpc.bus = [
+\t1\t3\t0\t0\t0\t0\t1\t1.05\t0\t0\t1\t1.1\t0.9;
+\t2\t2\t20\t10\t0\t0\t1\t1.03\t0\t0\t1\t1.1\t0.9;
+\t3\t1\t50\t20\t0\t0\t1\t1\t0\t0\t1\t1.1\t0.9;
+];
+
+%% generator data
+%\tbus\tPg\tQg\tQmax\tQmin\tVg\tmBase\tstatus\tPmax\tPmin
+mpc.gen = [
+\t1\t60\t0\t100\t-100\t1.05\t100\t1\t200\t0;
+\t2\t30\t0\t80\t-80\t1.03\t100\t1\t120\t0;
+];
+
+%% branch data
+%\tfbus\ttbus\tr\tx\tb\trateA\trateB\trateC\tratio\tangle\tstatus\tangmin\tangmax
+mpc.branch = [
+\t1\t2\t0.01\t0.04\t0\t100\t100\t100\t0\t0\t1\t-360\t360;
+\t1\t3\t0.02\t0.06\t0.03\t100\t100\t100\t0\t0\t1\t-360\t360;
+\t2\t3\t0.01\t0.05\t0\t80\t80\t80\t0.98\t0\t1\t-360\t360;
+];
+
+%% generator cost data
+%\tmodel\tstartup\tshutdown\tn\tc2\tc1\tc0
+mpc.gencost = [
+\t2\t0\t0\t3\t0\t20\t0;
+\t2\t0\t0\t3\t0\t25\t0;
+];
+
+%% bus names
+mpc.bus_name = {
+\t'Slack';
+\t'PV bus';
+\t'Load bus';
+};
+"""
+    m_file = tmp_path / "case_without_base_kv.m"
+    m_file.write_text(m_file_content)
+
+    net = from_mpc(str(m_file), f_hz=50, casename_mpc_file="mpc", validate_conversion=False)
+    assert list(net.bus.name) == ["Slack", "PV bus", "Load bus"]
+    assert (net.bus.vn_kv == 1.0).all()
+    runpp(net)
+    assert net.converged
+
+
 def test_to_and_from_mpc_case14_trafos(tmp_path):
     # Regression test for https://github.com/e2nIEE/pandapower/issues/2620:
     # the two transformers at the three-winding star point bus of case14 have a tap ratio of 1
