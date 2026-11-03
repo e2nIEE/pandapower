@@ -1267,5 +1267,41 @@ def test_z_switch(numba):
     assert pytest.approx(net_zero_z_switch.res_bus.vm_pu.at[0], abs=1e-9) == net_zero_z_switch.res_bus.vm_pu.at[2]
 
 
+def test_fused_buses_split_pq_results_3ph():
+    # Buses coupled by a closed bus-bus switch with zero impedance are fused to a
+    # single bus for the power flow, so only their total injection is defined. It is
+    # split equally between the fused buses in each phase (see issue #2702).
+    net = pandapowerNet(name="test_fused_buses_split_pq_results_3ph", sn_mva=100)
+    b1 = create_bus(net, vn_kv=110.0)
+    b2 = create_bus(net, vn_kv=110.0)
+    b3 = create_bus(net, vn_kv=110.0)
+    create_ext_grid(net, b1, vm_pu=1.0, s_sc_max_mva=5000, rx_max=0.1, r0x0_max=0.1, x0x_max=1.0)
+    line_kw = {
+        "length_km": 1.0,
+        "r_ohm_per_km": 0.0212,
+        "x_ohm_per_km": 0.1162389,
+        "c_nf_per_km": 230,
+        "g_us_per_km": 0,
+        "r0_ohm_per_km": 0.0848,
+        "x0_ohm_per_km": 0.4649556,
+        "c0_nf_per_km": 230.6,
+        "g0_us_per_km": 0,
+        "max_i_ka": 0.963,
+    }
+    create_line_from_parameters(net, b1, b2, **line_kw)
+    create_line_from_parameters(net, b1, b3, **line_kw)
+    create_switch(net, bus=b2, element=b3, et="b", closed=True)
+    create_load(net, b2, p_mw=90.0, q_mvar=30.0)
+
+    runpp_3ph(net)
+    for b in (b2, b3):
+        for ph in ("a", "b", "c"):
+            assert np.isclose(net.res_bus_3ph.at[b, f"p_{ph}_mw"], 15.0)
+            assert np.isclose(net.res_bus_3ph.at[b, f"q_{ph}_mvar"], 5.0)
+    for ph in ("a", "b", "c"):
+        assert np.isclose(net.res_bus_3ph.loc[[b2, b3], f"p_{ph}_mw"].sum(), 30.0)
+        assert np.isclose(net.res_bus_3ph.loc[[b2, b3], f"q_{ph}_mvar"].sum(), 10.0)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

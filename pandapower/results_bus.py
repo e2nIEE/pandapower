@@ -108,16 +108,20 @@ def _split_pq_between_fused_buses(net, bus_pq):
     """
     if bus_pq.shape[0] == 0 or net["switch"].empty:
         return
-    # pandapower buses that are fused share the same ppc bus; buses that are not in service
-    # are not part of the ppc (lookup -1) and cannot be fused
+    # pandapower buses that are fused share the same ppc bus; a bus that is not in service
+    # can never be fused (a bus-bus switch is only fused if both of its buses are in
+    # service, see create_bus_lookup in build_bus.py), so it never shares a ppc bus
     ppc_bus = net["_pd2ppc_lookups"]["bus"][net["bus"].index.values]
     is_buses = np.nonzero(ppc_bus >= 0)[0]
     if len(is_buses) == 0:
         return
     _, inverse, counts = np.unique(ppc_bus[is_buses], return_inverse=True, return_counts=True)
-    for group in np.nonzero(counts > 1)[0]:
-        members = is_buses[inverse == group]
-        bus_pq[members] = np.sum(bus_pq[members], axis=0) / len(members)
+    # group the buses by their ppc bus with a single sort instead of building a
+    # full-length mask for every fused group
+    order = np.argsort(inverse, kind="stable")
+    for members in np.split(is_buses[order], np.cumsum(counts)[:-1]):
+        if len(members) > 1:
+            bus_pq[members] = np.sum(bus_pq[members], axis=0) / len(members)
 
 
 def _get_bus_results(net, ppc, bus_pq):

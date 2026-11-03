@@ -180,6 +180,12 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
     if test_q:
         assert allclose(net.res_bus.q_mvar.loc[unfused].values, bus_q.loc[unfused].values, equal_nan=True, rtol=rtol)
     for members in fused_groups:
+        # the group sums below would silently drop a NaN in the expected feed-in
+        # (pandas sum skips NaN), which could mask a mismatch; the buses of a fused
+        # group are in service, so their expected feed-in must not be NaN
+        assert not bus_p.loc[members].isna().any(), f"expected bus power of fused buses {members} contains NaN"
+        if test_q:
+            assert not bus_q.loc[members].isna().any(), f"expected bus power of fused buses {members} contains NaN"
         assert isclose(net.res_bus.p_mw.loc[members].sum(), bus_p.loc[members].sum(), rtol=rtol)
         assert allclose(net.res_bus.p_mw.loc[members].values, net.res_bus.p_mw.at[members[0]], rtol=rtol)
         if test_q:

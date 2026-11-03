@@ -734,6 +734,79 @@ def test_fused_buses_split_pq_results():
     assert isclose(net.res_bus.q_mvar.at[b2], 0.0)
 
 
+def test_fused_buses_chain_of_three_split_pq_results():
+    # a chain of three buses fused by two closed bus-bus switches forms one group:
+    # the total injection is split equally between all three buses (see issue #2702)
+    net = pandapowerNet(name="test_fused_buses_chain_of_three_split_pq_results")
+    b1 = create_bus(net, vn_kv=20.0)
+    b2 = create_bus(net, vn_kv=20.0)
+    b3 = create_bus(net, vn_kv=20.0)
+    b4 = create_bus(net, vn_kv=20.0)
+    create_ext_grid(net, b4, vm_pu=1.0)
+    create_line(net, b4, b1, length_km=1.0, std_type="NAYY 4x50 SE")
+    create_switch(net, bus=b1, element=b2, et="b", closed=True)
+    create_switch(net, bus=b2, element=b3, et="b", closed=True)
+    create_load(net, b2, p_mw=90.0, q_mvar=30.0)
+
+    runpp(net)
+    for b in (b1, b2, b3):
+        assert isclose(net.res_bus.p_mw.at[b], 30.0)
+        assert isclose(net.res_bus.q_mvar.at[b], 10.0)
+    assert isclose(net.res_bus.p_mw.loc[[b1, b2, b3]].sum(), 90.0)
+    assert isclose(net.res_bus.q_mvar.loc[[b1, b2, b3]].sum(), 30.0)
+
+
+def test_two_independent_fused_groups_split_pq_results():
+    # two separate fused groups in one network are split independently (see issue #2702)
+    net = pandapowerNet(name="test_two_independent_fused_groups_split_pq_results")
+    b1 = create_bus(net, vn_kv=20.0)
+    b2 = create_bus(net, vn_kv=20.0)
+    b3 = create_bus(net, vn_kv=20.0)
+    b4 = create_bus(net, vn_kv=20.0)
+    b5 = create_bus(net, vn_kv=20.0)
+    create_ext_grid(net, b1, vm_pu=1.0)
+    create_line(net, b1, b2, length_km=1.0, std_type="NAYY 4x50 SE")
+    create_line(net, b1, b4, length_km=1.0, std_type="NAYY 4x50 SE")
+    create_switch(net, bus=b2, element=b3, et="b", closed=True)
+    create_switch(net, bus=b4, element=b5, et="b", closed=True)
+    create_load(net, b3, p_mw=90.0, q_mvar=30.0)
+    create_load(net, b4, p_mw=60.0, q_mvar=12.0)
+
+    runpp(net)
+    for b in (b2, b3):
+        assert isclose(net.res_bus.p_mw.at[b], 45.0)
+        assert isclose(net.res_bus.q_mvar.at[b], 15.0)
+    for b in (b4, b5):
+        assert isclose(net.res_bus.p_mw.at[b], 30.0)
+        assert isclose(net.res_bus.q_mvar.at[b], 6.0)
+
+
+def test_fused_buses_out_of_service_partner_not_split():
+    # a bus that is out of service is never fused (a bus-bus switch is only fused if
+    # both of its buses are in service), so it neither enters the divisor of a fused
+    # group it is coupled to nor receives a split value (see issue #2702)
+    net = pandapowerNet(name="test_fused_buses_out_of_service_partner_not_split")
+    b1 = create_bus(net, vn_kv=20.0)
+    b2 = create_bus(net, vn_kv=20.0)
+    b3 = create_bus(net, vn_kv=20.0)
+    b4 = create_bus(net, vn_kv=20.0)
+    create_ext_grid(net, b1, vm_pu=1.0)
+    create_line(net, b1, b2, length_km=1.0, std_type="NAYY 4x50 SE")
+    create_line(net, b1, b3, length_km=1.0, std_type="NAYY 4x50 SE")
+    create_line(net, b1, b4, length_km=1.0, std_type="NAYY 4x50 SE")
+    create_switch(net, bus=b2, element=b3, et="b", closed=True)
+    create_switch(net, bus=b2, element=b4, et="b", closed=True)
+    create_load(net, b3, p_mw=90.0, q_mvar=30.0)
+    net.bus.at[b4, "in_service"] = False
+
+    runpp(net)
+    for b in (b2, b3):
+        assert isclose(net.res_bus.p_mw.at[b], 45.0)
+        assert isclose(net.res_bus.q_mvar.at[b], 15.0)
+    assert isnan(net.res_bus.p_mw.at[b4])
+    assert isnan(net.res_bus.q_mvar.at[b4])
+
+
 def test_enforce_q_lims(v_tol=1e-6, s_tol=5e-3):
     """
     Test for enforce_q_lims loadflow option
