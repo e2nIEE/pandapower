@@ -140,7 +140,7 @@ def run_contingency(
         for element in ("bus", "line", "trafo", "trafo3w")
         if len(net[element]) > 0
     }
-    for element, results in contingency_results:
+    for element, results in contingency_results.items():
         if element == "bus":
             continue
         results.update(
