@@ -44,7 +44,7 @@ class BasicCtrl(JSONSerializableClass):
         for attr in self.json_excludes:
             try:
                 del state[attr]
-            except:
+            except Exception:
                 continue
 
         return state

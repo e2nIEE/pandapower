@@ -15,17 +15,6 @@ from pandapower.create import (
     create_transformer3w,
 )
 from pandapower.run import rundcpp, runpp
-from test.timeseries.test_output_writer import (
-    ConstControl,
-    OutputWriter,
-    create_data_source,
-    run_timeseries,
-)
-
-# reexported with "as" to prevent ruff removing it as unused
-from test.timeseries.test_timeseries import (
-    simple_test_net as simple_test_net,
-)
 from pandapower.timeseries.data_sources.frame_data import DFData
 from pandapower.timeseries.read_batch_results import (
     get_batch_line_results,
@@ -34,6 +23,13 @@ from pandapower.timeseries.read_batch_results import (
     polar_to_rad,
     v_to_i_s,
 )
+from test.timeseries.test_output_writer import (
+    ConstControl,
+    OutputWriter,
+    create_data_source,
+    run_timeseries,
+)
+from test.timeseries.test_timeseries import simple_test_net  # noqa: F401
 
 n_timesteps = 5
 time_steps = range(n_timesteps)

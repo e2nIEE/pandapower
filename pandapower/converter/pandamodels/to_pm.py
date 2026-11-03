@@ -1,8 +1,26 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "NumpyEncoder",
+    "add_params_to_pm",
+    "add_pm_gen_start_values_from_results",
+    "add_pm_options",
+    "add_redispatch_params",
+    "add_time_series_to_pm",
+    "allow_multi_ext_grids",
+    "build_ne_branch",
+    "convert_pp_to_pm",
+    "convert_to_pm_structure",
+    "create_pm_lookups",
+    "dump_pm_json",
+    "get_branch_angles",
+    "init_ne_line",
+    "ppc_to_pm",
+]
 
 import json
+import logging
 import math
 import os
 import tempfile
@@ -40,7 +58,6 @@ from pandapower.results import init_results, verify_results
 
 # const value in branch for tnep
 CONSTRUCTION_COST = 23
-import logging
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -834,7 +851,7 @@ def add_time_series_to_pm(net, pm, from_time_step, to_time_step):
             "to_time_step": to_time_step + 1,
         }
         for idx, content in net.controller.iterrows():
-            if type(content["object"]) != ConstControl:
+            if not isinstance(content["object"], ConstControl):
                 continue
             else:
                 element = content["object"].__dict__["matching_params"]["element"]

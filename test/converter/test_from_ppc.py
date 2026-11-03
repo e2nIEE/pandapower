@@ -10,7 +10,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower import reset_results
 from pandapower.converter.pypower import from_ppc, to_ppc, validate_from_ppc
 from pandapower.converter.pypower.from_ppc import _branch_to_which, _gen_to_which
 from pandapower.file_io import from_json
@@ -18,6 +17,7 @@ from pandapower.networks.power_system_test_cases import case9, case24_ieee_rts
 from pandapower.pypower.idx_brch import PF, PT, QF, QT
 from pandapower.pypower.idx_bus import PD, VA, VM
 from pandapower.pypower.idx_gen import PG, QG
+from pandapower.results import reset_results
 from pandapower.run import runopp, runpp, set_user_pf_options
 from pandapower.toolbox.comparison import nets_equal
 from pandapower.toolbox.data_modification import reindex_buses
@@ -328,7 +328,8 @@ def _bool_arr_to_positional_column_vector(arr):
 def overwrite_results_data_of_ppc_pickle(file_name, grid_names):
     folder = os.path.join(test_path, "converter")
     file = os.path.join(folder, file_name)
-    ppcs = pickle.load(open(file, "rb"))
+    with open(file, "rb") as f:
+        ppcs = pickle.load(f)
 
     for i in grid_names:
         ppc = ppcs[i]

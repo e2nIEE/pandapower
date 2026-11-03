@@ -33,18 +33,17 @@ from pandapower.networks import create_cigre_network_mv
 from pandapower.pf.runpp_3ph import runpp_3ph
 from pandapower.run import runpp
 from pandapower.std_types import add_zero_impedance_parameters, create_std_type
+from pandapower.toolbox.comparison import dataframes_equal
+from pandapower.toolbox.grid_modification import replace_line_by_impedance
+from test import test_path
 from test.consistency_checks import (
     runpp_3ph_with_consistency_checks,
     runpp_with_consistency_checks,
     trafo_currents_consistent_3ph,
 )
 from test.helper_functions import add_grid_connection
-from test.loadflow.PF_Results import get_PF_Results
+from test.loadflow.pf_results import get_pf_results
 from test.loadflow.test_runpp import get_isolated
-from pandapower.toolbox.comparison import dataframes_equal
-from pandapower.toolbox.grid_modification import replace_line_by_impedance
-
-from test import test_path
 
 
 @pytest.fixture
@@ -217,6 +216,21 @@ def test_2bus_network_one_of_two_ext_grids_oos(test_net):
     )
     runpp_3ph(test_net)
     assert test_net["converged"]
+
+
+def test_2bus_network_first_of_two_ext_grids_oos(test_net):
+    """The results of an in-service ext_grid must not be assigned to an out-of-service ext_grid before it."""
+    add_zero_impedance_parameters(test_net)
+    runpp_3ph(test_net)
+    expected = test_net.res_ext_grid_3ph.loc[0].values
+
+    test_net.ext_grid.loc[0, "in_service"] = False
+    create_ext_grid(test_net, bus=1, vm_pu=1.0, s_sc_max_mva=5000, rx_max=0.1, r0x0_max=0.1, x0x_max=1.0)
+    runpp_3ph_with_consistency_checks(test_net)
+    assert test_net["converged"]
+    check_it(test_net)
+    assert np.allclose(test_net.res_ext_grid_3ph.loc[0].values, 0.0)
+    assert np.allclose(test_net.res_ext_grid_3ph.loc[1].values, expected)
 
 
 @pytest.mark.parametrize("init", ["auto", "results", "flat", "dc"])
@@ -658,7 +672,7 @@ def check_line_currents(net, result, trafo_vector_group):
 
     assert np.allclose(result, res_line_i_ka, atol=tolerances[trafo_vector_group])
     if not np.allclose(result, res_line_i_ka, atol=tolerances[trafo_vector_group]):
-        raise ValueError("Incorrect results for vector group %s" % trafo_vector_group, res_line_i_ka, result)
+        raise ValueError(f"Incorrect results for vector group {trafo_vector_group}", res_line_i_ka, result)
 
 
 def check_trafo_currents(net, result, trafo_vector_group):
@@ -683,7 +697,7 @@ def check_trafo_currents(net, result, trafo_vector_group):
 
     assert np.allclose(result, res_trafo_i_ka, atol=tolerances[trafo_vector_group])
     if not np.allclose(result, res_trafo_i_ka, atol=tolerances[trafo_vector_group]):
-        raise ValueError("Incorrect results for vector group %s" % trafo_vector_group, res_trafo_i_ka, result)
+        raise ValueError(f"Incorrect results for vector group {trafo_vector_group}", res_trafo_i_ka, result)
 
 
 def check_results(_net, trafo_vector_group, results):
@@ -791,7 +805,7 @@ def test_trafo_asym():
         net["trafo"].vector_group = trafo_vector_group
         runpp_3ph_with_consistency_checks(net)
         assert net["converged"]
-        check_results(net, trafo_vector_group, get_PF_Results(trafo_vector_group))
+        check_results(net, trafo_vector_group, get_pf_results(trafo_vector_group))
 
 
 def _test_trafo_shifts(net, rtol):
@@ -1065,7 +1079,7 @@ def test_3ph_enforce_q_lims(result_test_network):
     assert abs(_net.res_gen.q_mvar.at[g1] - _net.gen.min_q_mvar.at[g1]) < s_tol
 
 
-def test_gen_3ph_loadflow():
+def _create_gen_3ph_net(gen_index=None):
     net = pandapowerNet(name="test_gen_3ph_loadflow", f_hz=50, add_stdtypes=False)
     add_zero_impedance_parameters(net)
 
@@ -1079,7 +1093,7 @@ def test_gen_3ph_loadflow():
 
     create_ext_grid(net, bus=2, vm_pu=1.018182, s_sc_max_mva=1e34)
 
-    create_gen(net, bus=1, p_mw=70, q_mvar=0, vm_pu=1.027273)
+    create_gen(net, bus=1, p_mw=70, q_mvar=0, vm_pu=1.027273, index=gen_index)
 
     create_load(net, bus=0, p_mw=100, q_mvar=30)
 
@@ -1089,6 +1103,11 @@ def test_gen_3ph_loadflow():
     net.line.r0_ohm_per_km = 3 * net.line.r_ohm_per_km
     net.line.x0_ohm_per_km = 3 * net.line.x_ohm_per_km
     net.line.c0_nf_per_km = net.line.c_nf_per_km
+    return net
+
+
+def test_gen_3ph_loadflow():
+    net = _create_gen_3ph_net()
 
     runpp_3ph(net)
 
@@ -1104,6 +1123,18 @@ def test_gen_3ph_loadflow():
 
     assert np.isclose(net.res_gen_3ph.loc[0, ["p_a_mw", "p_b_mw", "p_c_mw"]].sum(), 70.0)
     assert np.isclose(net.res_gen_3ph.loc[0, ["q_a_mvar", "q_b_mvar", "q_c_mvar"]].sum(), 33.165882)
+
+
+def test_gen_3ph_loadflow_non_continuous_index():
+    """The gen results must not depend on the index of net.gen (#1474)."""
+    net = _create_gen_3ph_net()
+    runpp_3ph(net)
+
+    net_idx = _create_gen_3ph_net(gen_index=5)
+    runpp_3ph(net_idx)
+
+    assert net_idx.res_gen_3ph.index.tolist() == [5]
+    assert np.allclose(net_idx.res_gen_3ph.loc[5].values, net.res_gen_3ph.loc[0].values)
 
 
 @pytest.mark.xfail

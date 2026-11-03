@@ -104,7 +104,7 @@ def pipsopf_solver(om, ppopt, out_opt=None):
     ny = om.getN("var", "y")  ## number of piece-wise linear costs
 
     ## linear constraints
-    A, l, u = om.linear_constraints()
+    A, l, u = om.linear_constraints()  # noqa: E741
 
     ## bounds on optimization vars
     x0, xmin, xmax = om.getv()
@@ -136,9 +136,14 @@ def pipsopf_solver(om, ppopt, out_opt=None):
     nl2 = len(il)  ## number of constrained lines
 
     ##-----  run opf  -----
-    f_fcn = lambda x, return_hessian=False: opf_costfcn(x, om, return_hessian)
-    gh_fcn = lambda x: opf_consfcn(x, om, Ybus, Yf[il, :], Yt[il, :], ppopt, il)
-    hess_fcn = lambda x, lmbda, cost_mult: opf_hessfcn(x, lmbda, om, Ybus, Yf[il, :], Yt[il, :], ppopt, il, cost_mult)
+    def f_fcn(x, return_hessian=False):
+        return opf_costfcn(x, om, return_hessian)
+
+    def gh_fcn(x):
+        return opf_consfcn(x, om, Ybus, Yf[il, :], Yt[il, :], ppopt, il)
+
+    def hess_fcn(x, lmbda, cost_mult):
+        return opf_hessfcn(x, lmbda, om, Ybus, Yf[il, :], Yt[il, :], ppopt, il, cost_mult)
 
     solution = pips(f_fcn, x0, A, l, u, xmin, xmax, gh_fcn, hess_fcn, opt)
     x, f, info, lmbda, output = solution["x"], solution["f"], solution["eflag"], solution["lmbda"], solution["output"]

@@ -111,7 +111,7 @@ def dcopf_solver(om, ppopt, out_opt=None):
     nxyz = om.getN("var")  ## total number of control vars of all types
 
     ## linear constraints & variable bounds
-    A, l, u = om.linear_constraints()
+    A, l, u = om.linear_constraints()  # noqa: E741
     x0, xmin, xmax = om.getv()
 
     ## set up objective function of the form: f = 1/2 * X'*HH*X + CC'*X

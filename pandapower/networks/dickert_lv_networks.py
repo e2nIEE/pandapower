@@ -1,3 +1,11 @@
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
+__all__ = [
+    "create_dickert_lv_feeders",
+    "create_dickert_lv_network",
+]
+
 from copy import deepcopy
 
 from numpy import append, ceil
@@ -212,7 +220,7 @@ def create_dickert_lv_feeders(
         )
 
     # add missing line types
-    if "NFA2X 4x70" not in net.std_types["line"].keys():
+    if "NFA2X 4x70" not in net.std_types["line"]:
         create_std_type(
             net,
             {"c_nf_per_km": 12.8, "r_ohm_per_km": 0.443, "x_ohm_per_km": 0.07, "max_i_ka": 0.205, "type": "ol"},

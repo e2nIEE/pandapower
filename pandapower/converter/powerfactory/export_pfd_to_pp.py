@@ -287,7 +287,7 @@ def import_project(path_src, app, name="Import", import_folder="", template=None
 
     try:
         prj = imp_dir.GetContents()[0]
-    except:
+    except Exception:
         raise RuntimeError("could not get the project - failed at import?")
 
     return prj

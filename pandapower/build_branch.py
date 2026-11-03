@@ -1045,10 +1045,8 @@ def _get_vk_values(trafo_df: pd.DataFrame, trafotype: Literal["2W", "3W"] = "2W"
             raise UserWarning(
                 "tap_dependent_impedance has NaN values, but must be of type bool and set to True or False"
             )
-        tap_pos = get_trafo_values(trafo_df, "tap_pos")
     else:
         tap_dependent_impedance = False
-        tap_pos = None
 
     use_tap_dependent_impedance = np.any(tap_dependent_impedance)
 
@@ -1071,7 +1069,6 @@ def _get_vk_values(trafo_df: pd.DataFrame, trafotype: Literal["2W", "3W"] = "2W"
         all_characteristic_idx = np.vstack(
             [get_trafo_values(trafo_df, f"{c}_characteristic").astype(np.float64) for c in char_columns]
         ).T
-        index_column = {c: i for i, c in enumerate(char_columns)}
         # now we check if any trafos that have tap_dependent_impedance have all characteristics missing
         all_missing = np.isnan(all_characteristic_idx).all(axis=1) & tap_dependent_impedance
         if np.any(all_missing):

@@ -32,7 +32,7 @@ from pandapower.create import (
 )
 from pandapower.file_io import from_json
 from pandapower.network import pandapowerNet
-from pandapower.pf.makeYbus_facts import calc_y_svc_pu
+from pandapower.pf.make_y_bus_facts import calc_y_svc_pu
 from pandapower.run import runpp
 from test import test_path
 from test.consistency_checks import runpp_with_consistency_checks

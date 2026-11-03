@@ -169,7 +169,7 @@ class opf_model:
 
         return s
 
-    def add_constraints(self, name, AorN, l, u=None, varsets=None):
+    def add_constraints(self, name, AorN, l, u=None, varsets=None):  # noqa: E741
         """Adds a set of constraints to the model.
 
         Linear constraints are of the form C{l <= A * x <= u}, where
@@ -213,7 +213,7 @@ class opf_model:
 
             N, M = AorN.shape
             if len(l) == 0:  ## default l is -Inf
-                l = full(N, -inf)
+                l = full(N, -inf)  # noqa: E741
 
             if len(u) == 0:  ## default u is Inf
                 u = full(N, inf)
@@ -446,22 +446,12 @@ class opf_model:
 
             L <= A * x <= U
         """
-
-        ## initialize A, l and u
-        #        nnzA = 0
-        #        for k in range(self.lin["NS"]):
-        #            nnzA = nnzA + nnz(self.lin["data"].A.(self.lin.order{k}))
-
         if self.lin["N"]:
             A = lil_matrix((self.lin["N"], self.var["N"]))
             u = full(self.lin["N"], inf)
-            l = -u
+            l = -u  # noqa: E741
         else:
-            A = None
-            u = array([])
-            l = array([])
-
-            return A, l, u
+            return None, array([]), array([])
 
         ## fill in each piece
         for k in range(self.lin["NS"]):

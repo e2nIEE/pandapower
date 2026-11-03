@@ -211,9 +211,9 @@ def test_convert_format():
 
     # check and assert result
     logger.debug("test_simplest_voltage")
-    logger.debug("res_gen:\n%s" % net.res_gen)
-    logger.debug("res_ext_grid:\n%s" % net.res_ext_grid)
-    logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
+    logger.debug(f"res_gen:\n{net.res_gen}")
+    logger.debug(f"res_ext_grid:\n{net.res_ext_grid}")
+    logger.debug(f"res_bus.vm_pu: \n{net.res_bus.vm_pu}")
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
 
@@ -234,9 +234,9 @@ def test_simplest_voltage():
 
     # check and assert result
     logger.debug("test_simplest_voltage")
-    logger.debug("res_gen:\n%s" % net.res_gen)
-    logger.debug("res_ext_grid:\n%s" % net.res_ext_grid)
-    logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
+    logger.debug(f"res_gen:\n{net.res_gen}")
+    logger.debug(f"res_ext_grid:\n{net.res_ext_grid}")
+    logger.debug(f"res_bus.vm_pu: \n{net.res_bus.vm_pu}")
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
 
@@ -245,9 +245,9 @@ def test_simplest_voltage():
 
     # check and assert result
     logger.debug("test_simplest_voltage")
-    logger.debug("res_gen:\n%s" % net.res_gen)
-    logger.debug("res_ext_grid:\n%s" % net.res_ext_grid)
-    logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
+    logger.debug(f"res_gen:\n{net.res_gen}")
+    logger.debug(f"res_ext_grid:\n{net.res_ext_grid}")
+    logger.debug(f"res_bus.vm_pu: \n{net.res_bus.vm_pu}")
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
 
@@ -320,9 +320,9 @@ def test_simplest_dispatch():
 
     # check and assert result
     logger.debug("test_simplest_voltage")
-    logger.debug("res_gen:\n%s" % net.res_gen)
-    logger.debug("res_est_grid:\n%s" % net.res_ext_grid)
-    logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
+    logger.debug(f"res_gen:\n{net.res_gen}")
+    logger.debug(f"res_est_grid:\n{net.res_ext_grid}")
+    logger.debug(f"res_bus.vm_pu: \n{net.res_bus.vm_pu}")
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
 
@@ -400,8 +400,8 @@ def test_opf_gen_voltage():
 
     # check and assert result
     logger.debug("test_opf_gen_voltage")
-    logger.debug("res_gen:\n%s" % net.res_gen)
-    logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
+    logger.debug(f"res_gen:\n{net.res_gen}")
+    logger.debug(f"res_bus.vm_pu: \n{net.res_bus.vm_pu}")
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
 
@@ -481,8 +481,8 @@ def test_opf_sgen_voltage():
 
     # assert and check result
     logger.debug("test_opf_sgen_voltage")
-    logger.debug("res_sgen:\n%s" % net.res_sgen)
-    logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
+    logger.debug(f"res_sgen:\n{net.res_sgen}")
+    logger.debug(f"res_bus.vm_pu: \n{net.res_bus.vm_pu}")
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
 
@@ -570,10 +570,10 @@ def test_opf_gen_loading():
 
     # assert and check result
     logger.debug("test_opf_gen_loading")
-    logger.debug("res_gen:\n%s" % net.res_gen)
-    logger.debug("res_line.loading_percent:\n%s" % net.res_line.loading_percent)
+    logger.debug(f"res_gen:\n{net.res_gen}")
+    logger.debug(f"res_line.loading_percent:\n{net.res_line.loading_percent}")
     assert max(net.res_line.loading_percent) < max_line_loading
-    logger.debug("res_trafo.loading_percent:\n%s" % net.res_trafo.loading_percent)
+    logger.debug(f"res_trafo.loading_percent:\n{net.res_trafo.loading_percent}")
     assert max(net.res_trafo.loading_percent) < 145
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
@@ -657,10 +657,10 @@ def test_opf_sgen_loading():
 
     # assert and check result
     logger.debug("test_opf_sgen_loading")
-    logger.debug("res_sgen:\n%s" % net.res_sgen)
-    logger.debug("res_line.loading_percent:\n%s" % net.res_line.loading_percent)
+    logger.debug(f"res_sgen:\n{net.res_sgen}")
+    logger.debug(f"res_line.loading_percent:\n{net.res_line.loading_percent}")
     assert max(net.res_line.loading_percent) - max_line_loading < 0.15
-    logger.debug("res_trafo.loading_percent:\n%s" % net.res_trafo.loading_percent)
+    logger.debug(f"res_trafo.loading_percent:\n{net.res_trafo.loading_percent}")
     assert max(net.res_trafo.loading_percent) < max_trafo_loading
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
@@ -694,9 +694,9 @@ def test_unconstrained_line():
 
     # check and assert result
     logger.debug("test_simplest_voltage")
-    logger.debug("res_gen:\n%s" % net.res_gen)
-    logger.debug("res_ext_grid:\n%s" % net.res_ext_grid)
-    logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
+    logger.debug(f"res_gen:\n{net.res_gen}")
+    logger.debug(f"res_ext_grid:\n{net.res_ext_grid}")
+    logger.debug(f"res_bus.vm_pu: \n{net.res_bus.vm_pu}")
     assert max(net.res_bus.vm_pu) < vm_max
     assert min(net.res_bus.vm_pu) > vm_min
 
@@ -729,9 +729,9 @@ def test_dcopf_poly(simple_opf_test_net):
 
     # check and assert result
     logger.debug("test_simplest_voltage")
-    logger.debug("res_gen:\n%s" % net.res_gen)
-    logger.debug("res_ext_grid:\n%s" % net.res_ext_grid)
-    logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
+    logger.debug(f"res_gen:\n{net.res_gen}")
+    logger.debug(f"res_ext_grid:\n{net.res_ext_grid}")
+    logger.debug(f"res_bus.vm_pu: \n{net.res_bus.vm_pu}")
     assert abs(100 * net.res_gen.p_mw.values - net.res_cost) < 1e-3
 
 
@@ -743,9 +743,9 @@ def test_dcopf_poly_verbose_true(simple_opf_test_net):
 
     # check and assert result
     logger.debug("test_simplest_voltage")
-    logger.debug("res_gen:\n%s" % net.res_gen)
-    logger.debug("res_ext_grid:\n%s" % net.res_ext_grid)
-    logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
+    logger.debug(f"res_gen:\n{net.res_gen}")
+    logger.debug(f"res_ext_grid:\n{net.res_ext_grid}")
+    logger.debug(f"res_bus.vm_pu: \n{net.res_bus.vm_pu}")
     assert abs(100 * net.res_gen.p_mw.values - net.res_cost) < 1e-3
 
 
@@ -758,9 +758,9 @@ def test_opf_poly(simple_opf_test_net):
         assert net["OPF_converged"]
     # check and assert result
     logger.debug("test_simplest_voltage")
-    logger.debug("res_gen:\n%s" % net.res_gen)
-    logger.debug("res_ext_grid:\n%s" % net.res_ext_grid)
-    logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
+    logger.debug(f"res_gen:\n{net.res_gen}")
+    logger.debug(f"res_ext_grid:\n{net.res_ext_grid}")
+    logger.debug(f"res_bus.vm_pu: \n{net.res_bus.vm_pu}")
     assert abs(100 * net.res_gen.p_mw.values - net.res_cost) < 1e-3
 
 
@@ -775,9 +775,9 @@ def test_opf_pwl(simple_opf_test_net):
 
     # check and assert result
     logger.debug("test_simplest_voltage")
-    logger.debug("res_gen:\n%s" % net.res_gen)
-    logger.debug("res_ext_grid:\n%s" % net.res_ext_grid)
-    logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
+    logger.debug(f"res_gen:\n{net.res_gen}")
+    logger.debug(f"res_ext_grid:\n{net.res_ext_grid}")
+    logger.debug(f"res_bus.vm_pu: \n{net.res_bus.vm_pu}")
     assert abs(100 * net.res_gen.p_mw.values - net.res_cost) < 1e-3
 
 
@@ -792,9 +792,9 @@ def test_dcopf_pwl(simple_opf_test_net):
 
     # check and assert result
     logger.debug("test_simplest_voltage")
-    logger.debug("res_gen:\n%s" % net.res_gen)
-    logger.debug("res_ext_grid:\n%s" % net.res_ext_grid)
-    logger.debug("res_bus.vm_pu: \n%s" % net.res_bus.vm_pu)
+    logger.debug(f"res_gen:\n{net.res_gen}")
+    logger.debug(f"res_ext_grid:\n{net.res_ext_grid}")
+    logger.debug(f"res_bus.vm_pu: \n{net.res_bus.vm_pu}")
     assert abs(100 * net.res_gen.p_mw.values - net.res_cost) < 1e-3
 
 
@@ -877,10 +877,10 @@ def test_opf_varying_max_line_loading():
 
     # assert and check result
     logger.debug("test_opf_sgen_loading")
-    logger.debug("res_sgen:\n%s" % net.res_sgen)
-    logger.debug("res_line.loading_percent:\n%s" % net.res_line.loading_percent)
+    logger.debug(f"res_sgen:\n{net.res_sgen}")
+    logger.debug(f"res_line.loading_percent:\n{net.res_line.loading_percent}")
     assert net.res_line.loading_percent.at[0] - 20 < 1e-2
-    logger.debug("res_line.loading_percent:\n%s" % net.res_line.loading_percent)
+    logger.debug(f"res_line.loading_percent:\n{net.res_line.loading_percent}")
     assert net.res_line.loading_percent.at[1] - 10 < 1e-2
 
 

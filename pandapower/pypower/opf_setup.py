@@ -139,7 +139,8 @@ def opf_setup(ppc, ppopt):
     Qmin = gen[:, QMIN] / baseMVA
     Qmax = gen[:, QMAX] / baseMVA
 
-    if dc:  ## DC model
+    if dc:
+        ## DC model
         ## more problem dimensions
         nv = 0  ## number of voltage magnitude vars
         nq = 0  ## number of Qg vars
@@ -158,9 +159,10 @@ def opf_setup(ppc, ppopt):
         upf = branch[il, RATE_A] / baseMVA - Pfinj[il]
         upt = branch[il, RATE_A] / baseMVA + Pfinj[il]
 
-        user_vars = ["Va", "Pg"]
+        # user_vars = ["Va", "Pg"]
         ycon_vars = ["Pg", "y"]
-    else:  ## AC model
+    else:
+        ## AC model
         ## more problem dimensions
         nv = nb  ## number of voltage magnitude vars
         nq = ng  ## number of Qg vars
@@ -172,7 +174,7 @@ def opf_setup(ppc, ppopt):
         ## generator PQ capability curve constraints
         Apqh, ubpqh, Apql, ubpql, Apqdata = makeApq(baseMVA, gen)
 
-        user_vars = ["Va", "Vm", "Pg", "Qg"]
+        # user_vars = ["Va", "Vm", "Pg", "Qg"]
         ycon_vars = ["Pg", "Qg", "y"]
 
     ## voltage angle reference constraints

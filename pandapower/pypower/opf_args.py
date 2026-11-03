@@ -142,7 +142,7 @@ def opf_args(ppc, ppopt):
 
     if Au is not None and not issparse(Au):
         stderr.write("opf_args.m: Au must be sparse\n")
-    if ppopt == None or len(ppopt) == 0:
+    if ppopt is None or len(ppopt) == 0:
         ppopt = ppoption()
 
     return baseMVA, bus, gen, branch, gencost, Au, lbu, ubu, ppopt, N, fparm, H, Cw, z0, zl, zu, userfcn, areas

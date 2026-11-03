@@ -95,13 +95,12 @@ def gen_Ybus(Yf_x, Yt_x, Ysh, col_Y, f, t, f_sort, t_sort, nb, nl, r_nl):  # pra
                     nnz_row += 1
             b += 1
 
-        if not YshAdded:
-            # check if diagonal entry was added. If not -> add if not zero
-            if Ysh[curRow]:
-                Yx[nnz] = Ysh[curRow]
-                Yj[nnz] = curRow
-                nnz += 1
-                nnz_row += 1
+        # check if diagonal entry was added. If not -> add if not zero
+        if not YshAdded and Ysh[curRow]:
+            Yx[nnz] = Ysh[curRow]
+            Yj[nnz] = curRow
+            nnz += 1
+            nnz_row += 1
 
         YshAdded = False
         # add number of nonzeros in row to row pointer

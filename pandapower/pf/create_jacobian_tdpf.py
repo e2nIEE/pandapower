@@ -304,8 +304,6 @@ def calc_a0_a1_a2_tau(
 
 def calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_air_degree_celsius):
     rho_air = 101325 / (287.058 * (t_air_degree_celsius + 273))  # pressure 1 atm. / (R_specific * T)
-    rho_air_relative = 1.0  # relative air density
-    # r_f = 0.05 # roughness of conductors
     r_f = 0.1  # roughness of conductors
     w = rho_air * conductor_outer_diameter_m * v_m_per_s
 
@@ -328,59 +326,6 @@ def calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_air_deg
     h_c = np.maximum(np.maximum(h_cfl, h_cfh), h_cn)
 
     return h_c
-
-
-#
-# def calc_a0_a1_a2_old(t_air_degree_celsius, t_max, r_ref_ohm_per_m, conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, s_w_per_square_meter=300, alpha=ALPHA, solar_absorptivity=0.5, emissivity=0.5):
-#     r_amb_ohm_per_m = calc_r_temp(r_ref_ohm_per_m, t_air_degree_celsius)
-#     r_max_ohm_per_m = calc_r_temp(r_ref_ohm_per_m, t_max)
-#     h_r = 4 * SIGMA * emissivity * (t_air_degree_celsius + 273) ** 3
-#     # h_r = 4 * np.pi * conductor_outer_diameter_m * SIGMA * emissivity * (t_air_degree_celsius + 273) ** 3
-#     h_c = calc_h_c(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree, t_air_degree_celsius)
-#     # R0 = 1 / (np.pi * conductor_outer_diameter_m * (h_r + h_c))
-#     R0 = 1 / (h_r + h_c)
-#     kappa = 6 * np.pi * conductor_outer_diameter_m * SIGMA * emissivity * (t_air_degree_celsius + 273) ** 2
-#     R1 = 1 / (np.pi * conductor_outer_diameter_m * (h_r + h_c + kappa * (t_max - t_air_degree_celsius)))
-#     Ps = solar_absorptivity * conductor_outer_diameter_m * s_w_per_square_meter
-#     #a0 = t_air_degree_celsius + R0 * Ps
-#     a0 = t_air_degree_celsius + (solar_absorptivity * conductor_outer_diameter_m * s_w_per_square_meter) / (h_r + h_c)
-#     a1 = R0 * r_amb_ohm_per_m
-#     # a2 = R0 * R1 * r_max_ohm_per_m * (alpha * r_ref_ohm_per_m - kappa)
-#     a2 = a1 / (h_r + h_c) * (alpha * r_ref_ohm_per_m - kappa * a1)
-#     return a0, a1, a2
-#
-#
-# def calc_h_c_old(conductor_outer_diameter_m, v_m_per_s, wind_angle_degree):
-#     B1 = 0.178
-#     n1 = 0.633
-#     # rho_air = 1.2041  # kg_per_m3
-#     rho_air = 1.  # relative air density
-#
-#     if v_m_per_s < 0.5:
-#         K = 0.55
-#     elif wind_angle_degree < 24:
-#         K = 0.42 + 0.68 * np.sin(np.deg2rad(wind_angle_degree)) ** 1.08
-#     else:
-#         K = 0.42 + 0.58 * np.sin(np.deg2rad(wind_angle_degree)) ** 0.9
-#
-#     # K = 1.194 - np.cos(np.deg2rad(wind_angle_degree)) + (0.194 * np.cos(2 * np.deg2rad(wind_angle_degree))) + (0.368 * np.sin(2 * np.deg2rad(wind_angle_degree)))
-#
-#     h_cl = 3.07 / conductor_outer_diameter_m * K * (rho_air * conductor_outer_diameter_m * v_m_per_s) ** 0.471
-#
-#     h_ch = B1 / conductor_outer_diameter_m * K * (rho_air * conductor_outer_diameter_m * v_m_per_s) ** n1
-#
-#     h_c = np.maximum(h_cl, h_ch)
-#
-#     return h_c
-#
-#
-# def calc_tau_old(R0, q_mm2, rho, c, h_r, h_c):
-#     # rho = 2710  # kg/m³ # density of aluminum
-#     # c = 1.309e6  # J/kg°C
-#     q_m2 = q_mm2 * 1e-6
-#     m_kg_per_m = rho_kg_per_m3 * area_m2
-#     tau = m_kg_per_m * c / (h_r + h_c)
-#     return tau
 
 
 def create_J_tdpf(

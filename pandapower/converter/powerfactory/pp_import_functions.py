@@ -1222,7 +1222,7 @@ def create_line_no_sections(net, main_item, item_list, bus1, bus2, coords, is_un
 
     sec_len = [item.dline for item in item_list]
     total_len = sum(sec_len)
-    weights = [l / total_len for l in sec_len]
+    weights = [len / total_len for len in sec_len]
 
     # df = [item.fline for item in item_list]
     # adapt line values if there is a characteristic given
@@ -1527,7 +1527,7 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced, multiplier, is_definit
     vm_set_pu = item.usetp
     phi = item.phiini
 
-    if item.HasAttribute("bustp") and (is_definite_ext_grid == False):
+    if item.HasAttribute("bustp") and (not is_definite_ext_grid):
         node_type = item.bustp
     elif item.HasAttribute("bustp") and is_definite_ext_grid:
         node_type = np.nan
@@ -1820,9 +1820,7 @@ def split_line_add_bus(net, split_dict):
             to_bus = net.line.at[lix, "to_bus"]
             std_type = net.line.at[lix, "std_type"]
             name = net.line.at[lix, "name"]
-            new_lix = create_line(
-                net, from_bus=from_bus, to_bus=to_bus, length_km=len_sections[i], std_type=std_type, name=name
-            )
+            create_line(net, from_bus=from_bus, to_bus=to_bus, length_km=len_sections[i], std_type=std_type, name=name)
             # change old line
             net.line.at[lix, "to_bus"] = bus
             net.line.at[lix, "length_km"] = net.line.at[lix, "length_km"] - len_sections[i]
@@ -2240,7 +2238,7 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
     # If there is no connecting bus, do not create pandapower object
     try:
         params.bus, _ = get_connection_nodes(net, item, 1)
-    except:
+    except Exception:
         logger.error("Static gen '%s': has no connecting bus, no pandapower object will be created!" % params.name)
         return
 
@@ -2776,15 +2774,6 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net, export_ctrl):
         logger.error("Cannot add Sgen asm '%s': not connected" % item.loc_name)
         return
 
-    params = {
-        "name": item.loc_name,
-        "bus": bus,
-        "p_mw": item.pgini * multiplier,
-        "q_mvar": item.qgini * multiplier if item.bustp == "PQ" else q_res,
-        "in_service": in_service,
-        "scaling": global_scaling,
-    }
-
     categories = {"wgen": "WKA", "pv": "PV", "reng": "REN", "stg": "SGEN"}
     # category (wind, PV, etc):
     try:
@@ -2819,7 +2808,6 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net, export_ctrl):
                     vm_pu = pstac.usetp
                 else:
                     vm_pu = pstac.cpCtrlNode.vtarget  # Bus target voltage
-        type = item.typ_id
         sid = create_gen(
             net,
             bus=bus,
@@ -2840,7 +2828,6 @@ def create_sgen_asm(net, item, pf_variable_p_gen, dict_net, export_ctrl):
             q_mvar = item.GetAttribute("m:Q:bus1") * multiplier
         except AttributeError:
             q_mvar = item.ng_num * item.qgini * multiplier if item.bustp == "PQ" else q_res
-        type = item.typ_id
         sid = create_sgen(
             net,
             bus=bus,
@@ -3238,9 +3225,15 @@ def add_tap_dependent_impedance_for_trafo(item, net, pf_type, tid):
     tap_diff = steps - tap_neutral
 
     # Calculate angle and voltage ratio for each step
-    cos = lambda x: np.cos(np.deg2rad(x))
-    sin = lambda x: np.sin(np.deg2rad(x))
-    arctan = lambda x: np.rad2deg(np.arctan(x))
+    def cos(x):
+        return np.cos(np.deg2rad(x))
+
+    def sin(x):
+        return np.sin(np.deg2rad(x))
+
+    def arctan(x):
+        return np.rad2deg(np.arctan(x))
+
     direction = -1 if pf_type.tap_side else 1
     tap_step_percent = (pf_type.dutap if pf_type.tapchtype != 1 else 0,)
     tap_step_degree = pf_type.dphitap if pf_type.tapchtype == 1 else pf_type.phitr
@@ -3707,9 +3700,15 @@ def add_tap_dependant_impedance_for_trafo3W(net, pf_type, tid):
 
     index = int(net.trafo_characteristic_table.iat[-1, 0] + 1) if not net["trafo_characteristic_table"].empty else 0
 
-    cos = lambda x: np.cos(np.deg2rad(x))
-    sin = lambda x: np.sin(np.deg2rad(x))
-    arctan = lambda x: np.rad2deg(np.arctan(x))
+    def cos(x):
+        return np.cos(np.deg2rad(x))
+
+    def sin(x):
+        return np.sin(np.deg2rad(x))
+
+    def arctan(x):
+        return np.rad2deg(np.arctan(x))
+
     direction = -1 if pf_type.itapzside else 1
 
     # Calculate voltage ratio and phase shift for each tap
@@ -4120,7 +4119,7 @@ def update_in_service_depending_station_switch(net, element_type, new_elements, 
     if len(new_switch_idx) != 0:
         for i in range(len(new_switch_idx)):
             if new_switch_closed[i] == 0:
-                if net[element_type].loc[new_elements[i], "in_service"] == False:
+                if not net[element_type].at[new_elements[i], "in_service"]:
                     continue
                 else:
                     net[element_type].loc[new_elements[i], "in_service"] = False
@@ -4285,8 +4284,6 @@ def create_svc(net, item, pv_as_slack, pf_variable_p_gen, dict_net):
     # TODO: transfer item entries for usage of pp.create_svc, x_l_ohm, x_cvar_ohm,
     #       thyristor_firing_angle must be computed
     name = item.loc_name
-    sid = None
-    element = None
     logger.debug(">> creating synchronous machine <%s>" % name)
 
     try:
@@ -4995,7 +4992,6 @@ def GetBranchElementFromSwitch(net, q_control_element, graph):
 
             if len(neighbors) == 1 or valid_t3w_neighbors:
                 nb = neighbors[0]
-                matches = []
 
                 # parallel lines
                 par_lines = net.line[
@@ -5043,7 +5039,6 @@ def GetBranchElementFromSwitch(net, q_control_element, graph):
                 if not line_match.empty:
                     idx = line_match.index[0]
                     from_bus = net.line.at[idx, "from_bus"]
-                    to_bus = net.line.at[idx, "to_bus"]
                     connection_side = "from_bus" if current == from_bus else "to_bus"
                     return ("line", idx, connection_side)
 
@@ -5052,7 +5047,6 @@ def GetBranchElementFromSwitch(net, q_control_element, graph):
                 if not trafo_match.empty:
                     idx = trafo_match.index[0]
                     hv_bus = net.trafo.at[idx, "hv_bus"]
-                    lv_bus = net.trafo.at[idx, "lv_bus"]
                     connection_side = "hv_bus" if current == hv_bus else "lv_bus"
                     return ("trafo", idx, connection_side)
 
@@ -5061,7 +5055,6 @@ def GetBranchElementFromSwitch(net, q_control_element, graph):
                 if not impedance_match.empty:
                     idx = impedance_match.index[0]
                     from_bus = net.impedance.at[idx, "from_bus"]
-                    to_bus = net.impedance.at[idx, "to_bus"]
                     connection_side = "from_bus" if current == from_bus else "to_bus"
                     return ("impedance", idx, connection_side)
 

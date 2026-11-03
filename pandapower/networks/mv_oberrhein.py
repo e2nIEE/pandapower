@@ -1,6 +1,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = ["mv_oberrhein"]
 
 import os
 
@@ -71,7 +72,7 @@ def mv_oberrhein(
         net.sgen.scaling = 0.8
         net.trafo.loc[hv_trafos, "tap_pos"] = [0, 0]
     else:
-        raise ValueError("Unknown scenario %s - chose 'load' or 'generation'" % scenario)
+        raise ValueError(f"Unknown scenario {scenario} - chose 'load' or 'generation'")
 
     if separation_by_sub:
         # creating multigraph

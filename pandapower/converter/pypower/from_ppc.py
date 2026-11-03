@@ -1,6 +1,11 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "from_ppc",
+    "validate_from_ppc",
+]
+
 import logging
 from math import pi
 
@@ -414,7 +419,7 @@ def _get_bus_pos(ppc, bus_names):
         return (
             pd.Series(np.arange(ppc["bus"].shape[0], dtype=np.int64), index=ppc["bus"][:, BUS_I]).loc[bus_names].values
         )
-    except:
+    except Exception:
         return (
             pd.Series(np.arange(ppc["bus"].shape[0], dtype=np.int64), index=ppc["bus"][:, BUS_I].astype(np.int64))
             .loc[bus_names]

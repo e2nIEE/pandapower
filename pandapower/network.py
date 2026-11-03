@@ -47,7 +47,7 @@ def plural_s(number):
 def _preserve_dtypes(df, dtypes):
     for item, dtype in list(dtypes.items()):
         if df.dtypes.at[item] != dtype:
-            if (dtype == bool or dtype == np.bool_) and np.any(df[item].isnull()):
+            if (dtype is bool or dtype is np.bool_) and np.any(df[item].isnull()):
                 raise UserWarning(
                     f"Encountered NaN value(s) in a boolean column {item}! "
                     f"NaN are casted to True by default, which can lead to errors. "

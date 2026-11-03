@@ -1,6 +1,16 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "add_storage_results",
+    "add_time_series_data_to_net",
+    "pm_results_to_ppc_results",
+    "pm_results_to_ppc_results_one_time_step",
+    "read_ots_results",
+    "read_pm_results_to_net",
+    "read_tnep_results",
+]
+
 
 import math
 from copy import deepcopy
@@ -68,7 +78,7 @@ def add_time_series_data_to_net(net: pandapowerNet, controller, tp):
     from pandapower.control import ConstControl
 
     for idx, content in controller.iterrows():
-        if type(content["object"]) == ConstControl:
+        if isinstance(content["object"], ConstControl):
             element = content["object"].__dict__["matching_params"]["element"]
             variable = content["object"].__dict__["matching_params"]["variable"]
             elm_idxs = content["object"].__dict__["matching_params"]["element_index"]
@@ -113,7 +123,7 @@ def pm_results_to_ppc_results_one_time_step(ppci, sol):
             ppci["bus"][bus_idx, VM] = bus["vm"]
         if "va" in bus:
             # replace nans with 0.(in case of SOCWR model for example
-            ppci["bus"][bus_idx, VA] = 0.0 if bus["va"] == None else math.degrees(bus["va"])
+            ppci["bus"][bus_idx, VA] = 0.0 if bus["va"] is None else math.degrees(bus["va"])
         if "w" in bus:
             # SOCWR model has only w instead of vm values
             ppci["bus"][bus_idx, VM] = bus["w"]

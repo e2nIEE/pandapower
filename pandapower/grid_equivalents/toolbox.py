@@ -1,3 +1,13 @@
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
+__all__ = [
+    "append_set_to_dict",
+    "get_boundaries_by_bus_zone_with_boundary_branches",
+    "get_connected_switch_buses_groups",
+    "set_bus_zone_by_boundary_branches",
+]
+
 import logging
 from copy import deepcopy
 

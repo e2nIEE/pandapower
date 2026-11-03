@@ -74,8 +74,8 @@ def dSbus_dV(Ybus, V, I=None):
     """
 
     if issparse(Ybus):
-        # I is substracted from Y*V,
-        # therefore it must be negative for numba version of dSbus_dV if it is not zeros anyways
+        # I is subtracted from Y*V,
+        # therefore it must be negative for numba version of dSbus_dV if it is not zeros anyway
         I = zeros(len(V), dtype=complex128) if I is None else -I
         # calculates sparse data
         dS_dVm, dS_dVa = dSbus_dV_numba_sparse(Ybus.data, Ybus.indptr, Ybus.indices, V, V / abs(V), I)

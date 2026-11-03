@@ -26,7 +26,7 @@ from pandapower.run import rundcpp, runpp
 from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.std_types import create_std_type
 from test.consistency_checks import runpp_with_consistency_checks
-from test.helper_functions import create_test_network2, add_grid_connection
+from test.helper_functions import add_grid_connection, create_test_network2
 from test.loadflow.result_test_network_generator import add_test_bus_bus_switch, add_test_trafo
 
 # TODO: 2 gen 2 ext_grid missing

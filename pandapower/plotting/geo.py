@@ -226,7 +226,7 @@ def abstract_convert_crs(
     try:
         net[component_geo_name] = net[component_geo_name].apply(_geo_component_transformer, axis=1)
         net[component_geo_name].attrs = {"crs": f"EPSG:{epsg_out}"}
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         logger.warning(e)
 
 

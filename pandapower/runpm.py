@@ -1,6 +1,23 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "runpm",
+    "runpm_ac_opf",
+    "runpm_dc_opf",
+    "runpm_loading",
+    "runpm_multi_qflex",
+    "runpm_multi_vstab",
+    "runpm_ots",
+    "runpm_pf",
+    "runpm_ploss",
+    "runpm_qflex",
+    "runpm_redispatch",
+    "runpm_storage_opf",
+    "runpm_tnep",
+    "runpm_vstab",
+]
+
 from functools import partial
 from typing import Literal
 
@@ -900,7 +917,7 @@ def runpm_ploss(
     for elm in ["line", "trafo"]:
         if "pm_param/target_branch" in net[elm].columns:
             net[elm]["pm_param/side"] = None
-            target_branch_mask = net[elm]["pm_param/target_branch"] == True
+            target_branch_mask = net[elm]["pm_param/target_branch"]
             net[elm].loc[target_branch_mask, "pm_param/side"] = "from"
 
     net._options = {}
@@ -969,7 +986,7 @@ def runpm_loading(
     for elm in ["line", "trafo"]:
         if "pm_param/target_branch" in net[elm].columns:
             net[elm]["pm_param/side"] = None
-            target_branch_mask = net[elm]["pm_param/target_branch"] == True
+            target_branch_mask = net[elm]["pm_param/target_branch"]
             net[elm].loc[target_branch_mask, "pm_param/side"] = "from"
 
     net._options = {}

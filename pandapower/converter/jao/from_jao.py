@@ -974,10 +974,6 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
     longest_part_in_buses = trafo_bus_names_longest_part.isin(bus_location_names)
 
     # --- check whether all name strings point at location names of the buses
-    if False:  # for easy testing
-        fail = ~(joined_in_buses | longest_part_in_buses)
-        a = pd.concat([trafo_bus_names_joined.loc[fail], trafo_bus_names_longest_part.loc[fail]], axis=1)
-
     if n_bus_names_not_found := len(joined_in_buses) - sum(joined_in_buses | longest_part_in_buses):
         raise ValueError(
             f"For {n_bus_names_not_found} Tranformers, no suitable bus location names were found, "
