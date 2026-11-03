@@ -337,35 +337,35 @@ def create_sgens(
 # Create 3ph Sgen
 # =============================================================================
 
-_p_a_mw: float = get_default_value("asymmetric_sgen", "p_a_mw")
-_p_b_mw: float = get_default_value("asymmetric_sgen", "p_b_mw")
-_p_c_mw: float = get_default_value("asymmetric_sgen", "p_c_mw")
-_q_a_mvar: float = get_default_value("asymmetric_sgen", "q_a_mvar")
-_q_b_mvar: float = get_default_value("asymmetric_sgen", "q_b_mvar")
-_q_c_mvar: float = get_default_value("asymmetric_sgen", "q_c_mvar")
-_scaling: float = get_default_value("asymmetric_sgen", "scaling")
-_type: WyeDeltaType = get_default_value("asymmetric_sgen", "type")
-_in_service: bool = get_default_value("asymmetric_sgen", "in_service")
+_asymmetric_sgen_p_a_mw: float = get_default_value("asymmetric_sgen", "p_a_mw")
+_asymmetric_sgen_p_b_mw: float = get_default_value("asymmetric_sgen", "p_b_mw")
+_asymmetric_sgen_p_c_mw: float = get_default_value("asymmetric_sgen", "p_c_mw")
+_asymmetric_sgen_q_a_mvar: float = get_default_value("asymmetric_sgen", "q_a_mvar")
+_asymmetric_sgen_q_b_mvar: float = get_default_value("asymmetric_sgen", "q_b_mvar")
+_asymmetric_sgen_q_c_mvar: float = get_default_value("asymmetric_sgen", "q_c_mvar")
+_asymmetric_sgen_scaling: float = get_default_value("asymmetric_sgen", "scaling")
+_asymmetric_sgen_type: WyeDeltaType = get_default_value("asymmetric_sgen", "type")
+_asymmetric_sgen_in_service: bool = get_default_value("asymmetric_sgen", "in_service")
 
 
 def create_asymmetric_sgen(
     net: pandapowerNet,
     bus: Int,
-    p_a_mw: float = _p_a_mw,
-    p_b_mw: float = _p_b_mw,
-    p_c_mw: float = _p_c_mw,
-    q_a_mvar: float = _q_a_mvar,
-    q_b_mvar: float = _q_b_mvar,
-    q_c_mvar: float = _q_c_mvar,
+        p_a_mw: float = _asymmetric_sgen_p_a_mw,
+        p_b_mw: float = _asymmetric_sgen_p_b_mw,
+        p_c_mw: float = _asymmetric_sgen_p_c_mw,
+        q_a_mvar: float = _asymmetric_sgen_q_a_mvar,
+        q_b_mvar: float = _asymmetric_sgen_q_b_mvar,
+        q_c_mvar: float = _asymmetric_sgen_q_c_mvar,
     sn_a_mva: float = nan,
     sn_b_mva: float = nan,
     sn_c_mva: float = nan,
     sn_mva: float = nan,
     name: str | None = None,
     index: Int | None = None,
-    scaling: float = _scaling,
+        scaling: float = _asymmetric_sgen_scaling,
     type: WyeDeltaType = _type,
-    in_service: bool = _in_service,
+        in_service: bool = _asymmetric_sgen_in_service,
     **kwargs,
 ) -> Int:
     """

@@ -133,37 +133,37 @@ def create_load(
     return index
 
 
-_q_mvar: float | Iterable[float] = get_default_value("load", "q_mvar")
-_const_z_p_percent: float | Iterable[float] = get_default_value("load", "const_z_p_percent")
-_const_i_p_percent: float | Iterable[float] = get_default_value("load", "const_i_p_percent")
-_const_z_q_percent: float | Iterable[float] = get_default_value("load", "const_z_q_percent")
-_const_i_q_percent: float | Iterable[float] = get_default_value("load", "const_i_q_percent")
-_scaling: float | Iterable[float] = get_default_value("load", "scaling")
-_in_service: bool | Iterable[bool] = get_default_value("load", "in_service")
-_type: WyeDeltaType = get_default_value("load", "type")
-_controllable: bool | Iterable[bool] = get_default_value("load", "controllable")
+_load_q_mvar: float | Iterable[float] = get_default_value("load", "q_mvar")
+_load_const_z_p_percent: float | Iterable[float] = get_default_value("load", "const_z_p_percent")
+_load_const_i_p_percent: float | Iterable[float] = get_default_value("load", "const_i_p_percent")
+_load_const_z_q_percent: float | Iterable[float] = get_default_value("load", "const_z_q_percent")
+_load_const_i_q_percent: float | Iterable[float] = get_default_value("load", "const_i_q_percent")
+_load_scaling: float | Iterable[float] = get_default_value("load", "scaling")
+_load_in_service: bool | Iterable[bool] = get_default_value("load", "in_service")
+_load_type: WyeDeltaType = get_default_value("load", "type")
+_load_controllable: bool | Iterable[bool] = get_default_value("load", "controllable")
 
 
 def create_loads(
     net: pandapowerNet,
     buses: Sequence,
     p_mw: float | Iterable[float],
-    q_mvar: float | Iterable[float] = _q_mvar,
-    const_z_p_percent: float | Iterable[float] = _const_z_p_percent,
-    const_i_p_percent: float | Iterable[float] = _const_i_p_percent,
-    const_z_q_percent: float | Iterable[float] = _const_z_q_percent,
-    const_i_q_percent: float | Iterable[float] = _const_i_q_percent,
+        q_mvar: float | Iterable[float] = _load_q_mvar,
+        const_z_p_percent: float | Iterable[float] = _load_const_z_p_percent,
+        const_i_p_percent: float | Iterable[float] = _load_const_i_p_percent,
+        const_z_q_percent: float | Iterable[float] = _load_const_z_q_percent,
+        const_i_q_percent: float | Iterable[float] = _load_const_i_q_percent,
     sn_mva: float | Iterable[float] = nan,
     name: Iterable[str] | None = None,
-    scaling: float | Iterable[float] = _scaling,
+        scaling: float | Iterable[float] = _load_scaling,
     index: Int | Iterable[Int] | None = None,
-    in_service: bool | Iterable[bool] = _in_service,
-    type: WyeDeltaType = _type,
+        in_service: bool | Iterable[bool] = _load_in_service,
+        type: WyeDeltaType = _load_type,
     max_p_mw: float | Iterable[float] = nan,
     min_p_mw: float | Iterable[float] = nan,
     max_q_mvar: float | Iterable[float] = nan,
     min_q_mvar: float | Iterable[float] = nan,
-    controllable: bool | Iterable[bool] = _controllable,
+        controllable: bool | Iterable[bool] = _load_controllable,
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
@@ -251,35 +251,35 @@ def create_loads(
     return index
 
 
-_p_a_mw: float = get_default_value("asymmetric_load", "p_a_mw")
-_p_b_mw: float = get_default_value("asymmetric_load", "p_b_mw")
-_p_c_mw: float = get_default_value("asymmetric_load", "p_c_mw")
-_q_a_mvar: float = get_default_value("asymmetric_load", "q_a_mvar")
-_q_b_mvar: float = get_default_value("asymmetric_load", "q_b_mvar")
-_q_c_mvar: float = get_default_value("asymmetric_load", "q_c_mvar")
-_scaling: float = get_default_value("asymmetric_load", "scaling")
-_in_service: bool = get_default_value("asymmetric_load", "in_service")
-_type: WyeDeltaType = get_default_value("asymmetric_load", "type")
+_asymmetric_load_p_a_mw: float = get_default_value("asymmetric_load", "p_a_mw")
+_asymmetric_load_p_b_mw: float = get_default_value("asymmetric_load", "p_b_mw")
+_asymmetric_load_p_c_mw: float = get_default_value("asymmetric_load", "p_c_mw")
+_asymmetric_load_q_a_mvar: float = get_default_value("asymmetric_load", "q_a_mvar")
+_asymmetric_load_q_b_mvar: float = get_default_value("asymmetric_load", "q_b_mvar")
+_asymmetric_load_q_c_mvar: float = get_default_value("asymmetric_load", "q_c_mvar")
+_asymmetric_load_scaling: float = get_default_value("asymmetric_load", "scaling")
+_asymmetric_load_in_service: bool = get_default_value("asymmetric_load", "in_service")
+_asymmetric_load_type: WyeDeltaType = get_default_value("asymmetric_load", "type")
 
 
 def create_asymmetric_load(
     net: pandapowerNet,
     bus: Int,
-    p_a_mw: float = _p_a_mw,
-    p_b_mw: float = _p_b_mw,
-    p_c_mw: float = _p_c_mw,
-    q_a_mvar: float = _q_a_mvar,
-    q_b_mvar: float = _q_b_mvar,
-    q_c_mvar: float = _q_c_mvar,
+        p_a_mw: float = _asymmetric_load_p_a_mw,
+        p_b_mw: float = _asymmetric_load_p_b_mw,
+        p_c_mw: float = _asymmetric_load_p_c_mw,
+        q_a_mvar: float = _asymmetric_load_q_a_mvar,
+        q_b_mvar: float = _asymmetric_load_q_b_mvar,
+        q_c_mvar: float = _asymmetric_load_q_c_mvar,
     sn_a_mva: float = nan,
     sn_b_mva: float = nan,
     sn_c_mva: float = nan,
     sn_mva: float = nan,
     name: str | None = None,
-    scaling: float = _scaling,
+        scaling: float = _asymmetric_load_scaling,
     index: Int | None = None,
-    in_service: bool = _in_service,
-    type: WyeDeltaType = _type,
+        in_service: bool = _asymmetric_load_in_service,
+        type: WyeDeltaType = _asymmetric_load_type,
     **kwargs,
 ) -> Int:
     """
