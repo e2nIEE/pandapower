@@ -48,15 +48,15 @@ class PowerTransformersCim16:
             self.cimConverter.power_trafo3w = power_trafo3w
 
         self.logger.info(
-            "Created %s 2w trafos and %s 3w trafos in %ss."
-            % (power_trafo2w.index.size, power_trafo3w.index.size, time.time() - time_start)
+            f"Created {power_trafo2w.index.size} 2w trafos and {power_trafo3w.index.size} 3w trafos in "
+            f"{time.time() - time_start}s."
         )
         self.cimConverter.report_container.add_log(
             Report(
                 level=LogLevel.INFO,
                 code=ReportCode.INFO_CONVERTING,
-                message="Created %s 2w trafos and %s 3w trafos from PowerTransformers in %ss."
-                % (power_trafo2w.index.size, power_trafo3w.index.size, time.time() - time_start),
+                message=f"Created {power_trafo2w.index.size} 2w trafos and {power_trafo3w.index.size} 3w trafos from "
+                f"PowerTransformers in {time.time() - time_start}s.",
             )
         )
 

@@ -25,7 +25,7 @@ class TapController:
 
     def _create_tap_controller(self, input_df: pd.DataFrame, trafo_type: str):
         if not self.cimConverter.kwargs.get("create_tap_controller", True):
-            self.logger.info("Skip creating transformer tap changer controller for transformer type %s." % trafo_type)
+            self.logger.info(f"Skip creating transformer tap changer controller for transformer type {trafo_type}.")
             return
         for _, row in input_df.loc[input_df["TapChangerControl"].notna()].iterrows():
             trafo_id = (
@@ -46,7 +46,7 @@ class TapController:
             ):
                 side = "mv"
             if row["discrete"]:
-                self.logger.info("Creating DiscreteTapControl for transformer %s." % row[sc["o_id"]])
+                self.logger.info(f"Creating DiscreteTapControl for transformer {row[sc['o_id']]}.")
                 DiscreteTapControl(
                     self.cimConverter.net,
                     element=trafo_type,
@@ -58,7 +58,7 @@ class TapController:
                     vm_upper_pu=row["c_vm_upper_pu"],
                 )
             else:
-                self.logger.info("Creating ContinuousTapControl for transformer %s." % row[sc["o_id"]])
+                self.logger.info(f"Creating ContinuousTapControl for transformer {row[sc['o_id']]}.")
                 ContinuousTapControl(
                     self.cimConverter.net,
                     element=trafo_type,
