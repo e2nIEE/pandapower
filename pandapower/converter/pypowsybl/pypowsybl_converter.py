@@ -135,7 +135,7 @@ class PyPowSyBlConverter(
         return_loadflow_table: bool = False,
         default_shift_degree: float = 0.0,
         default_length_km: float = 1.0,
-    ) -> tuple[Any, Any, str] | tuple[Any, Any, str, pd.DataFrame]:
+    ) -> tuple[Any, Any, str, pd.DataFrame|None]:
         """
         Convert a powsybl ``.xiidm`` file into a pandapower network.
 
@@ -151,7 +151,7 @@ class PyPowSyBlConverter(
             log_loadflow_comparison: If ``True``, run AC load-flow calculations
                 in both frameworks and log a result comparison table.
             return_loadflow_table: If ``True``, return the load-flow comparison
-                table as a fourth return value.
+                table as a fourth return value, else None is returned.
             default_shift_degree: Fallback phase-shift angle in degrees.
             default_length_km: Fallback line length in kilometres.
 
@@ -197,7 +197,7 @@ class PyPowSyBlConverter(
 
             return self.pandap_net, self.pyp_net, json_filename, self.loadflow_table
 
-        return self.pandap_net, self.pyp_net, json_filename
+        return self.pandap_net, self.pyp_net, json_filename, None
 
     # ======================================================
     # Helper
