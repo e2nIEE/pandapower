@@ -285,29 +285,29 @@ def printpf(
         maxv = max(bus[:, VM])
         maxi = argmax(bus[:, VM])
         fd.write(
-            f"\nVoltage Magnitude {minv:7.3f} p.u. @ bus {int(bus[mini, BUS_I]):<4d}     "
-            f"{maxv:7.3f} p.u. @ bus {int(bus[maxi, BUS_I]):<4d}"
+            f"\nVoltage Magnitude {minv:7.3f} p.u. @ bus {bus[mini, BUS_I]:<4.0f}     "
+            f"{maxv:7.3f} p.u. @ bus {bus[maxi, BUS_I]:<4.0f}"
         )
         minv = min(bus[:, VA])
         mini = argmin(bus[:, VA])
         maxv = max(bus[:, VA])
         maxi = argmax(bus[:, VA])
         fd.write(
-            f"\nVoltage Angle   {minv:8.2f} deg   @ bus {int(bus[mini, BUS_I]):<4d}   "
-            f"{maxv:8.2f} deg   @ bus {int(bus[maxi, BUS_I]):<4d}"
+            f"\nVoltage Angle   {minv:8.2f} deg   @ bus {bus[mini, BUS_I]:<4.0f}   "
+            f"{maxv:8.2f} deg   @ bus {bus[maxi, BUS_I]:<4.0f}"
         )
         if not isDC:
             maxv = max(loss.real)
             maxi = argmax(loss.real)
             fd.write(
-                f"\nP Losses (I^2*R){'-':^27} {maxv:8.2f} MW    @ line {branch[maxi, F_BUS].real:d}-"
-                f"{branch[maxi, T_BUS].real:d}"
+                f"\nP Losses (I^2*R){'-':^27} {maxv:8.2f} MW    @ line {branch[maxi, F_BUS].real:.0f}-"
+                f"{branch[maxi, T_BUS].real:.0f}"
             )
             maxv = max(loss.imag)
             maxi = argmax(loss.imag)
             fd.write(
-                f"\nQ Losses (I^2*X){'-':^27} {maxv:8.2f} MVAr  @ line {branch[maxi, F_BUS].real:d}-"
-                f"{branch[maxi, T_BUS].real:d}"
+                f"\nQ Losses (I^2*X){'-':^27} {maxv:8.2f} MVAr  @ line {branch[maxi, F_BUS].real:.0f}-"
+                f"{branch[maxi, T_BUS].real:.0f}"
             )
         if isOPF:
             minv = min(bus[:, LAM_P])
@@ -315,16 +315,16 @@ def printpf(
             maxv = max(bus[:, LAM_P])
             maxi = argmax(bus[:, LAM_P])
             fd.write(
-                f"\nLambda P        {minv:8.2f} $/MWh @ bus {int(bus[mini, BUS_I]):<4d}   {maxv:8.2f} $/MWh @ bus "
-                f"{int(bus[maxi, BUS_I]):<4d}"
+                f"\nLambda P        {minv:8.2f} $/MWh @ bus {bus[mini, BUS_I]:<4.0f}   {maxv:8.2f} $/MWh @ bus "
+                f"{bus[maxi, BUS_I]:<4.0f}"
             )
             minv = min(bus[:, LAM_Q])
             mini = argmin(bus[:, LAM_Q])
             maxv = max(bus[:, LAM_Q])
             maxi = argmax(bus[:, LAM_Q])
             fd.write(
-                f"\nLambda Q        {minv:8.2f} $/MWh @ bus {int(bus[mini, BUS_I]):<4d}   {maxv:8.2f} $/MWh @ bus "
-                f"{int(bus[maxi, BUS_I]):<4d}"
+                f"\nLambda Q        {minv:8.2f} $/MWh @ bus {bus[mini, BUS_I]:<4.0f}   {maxv:8.2f} $/MWh @ bus "
+                f"{bus[maxi, BUS_I]:<4.0f}"
             )
         fd.write("\n")
 
@@ -369,7 +369,7 @@ def printpf(
                     )
                 )
             fd.write(
-                f"\n{int(a):3d}  {len(ib):6d}   {len(ig):5d}  {len(igon):5d}   {len(inzld) + len(ildon):5d}  {len(inzld):5d}"
+                f"\n{a:3.0f}  {len(ib):6d}   {len(ig):5d}  {len(igon):5d}   {len(inzld) + len(ildon):5d}  {len(inzld):5d}"
                 f"  {len(ildon):5d}   {len(inzsh):5d}   {len(ibrch):5d}  {nxfmr:5d}  {len(in_tie) + len(out_tie):5d}"
             )
 
@@ -389,7 +389,7 @@ def printpf(
                 (bus[e2i[gen[:, GEN_BUS].astype(int64)], BUS_AREA] == a) & (gen[:, GEN_STATUS] > 0) & ~isload(gen)
             )
             fd.write(
-                f"\n{int(a):3d}   {sum(gen[ig, PMAX]):7.1f}  {sum(gen[ig, QMIN]):7.1f} to {sum(gen[ig, QMAX]):.1f}  "
+                f"\n{a:3.0f}   {sum(gen[ig, PMAX]):7.1f}  {sum(gen[ig, QMIN]):7.1f} to {sum(gen[ig, QMAX]):.1f}  "
                 f"{sum(gen[igon, PMAX]):7.1f}  {sum(gen[igon, QMIN]):7.1f} to {sum(gen[igon, QMAX]):7.1f}   "
                 f"{sum(gen[igon, PG]):7.1f} {sum(gen[igon, QG]):7.1f}"
             )
@@ -407,7 +407,7 @@ def printpf(
             )
             inzld = find((bus[:, BUS_AREA] == a) & logical_or(bus[:, PD], bus[:, QD]))
             fd.write(
-                f"\n{int(a):3d}    {-sum(gen[ildon, PMIN]):7.1f} {-sum(Qlim[ildon]):7.1f}   "
+                f"\n{a:3.0f}    {-sum(gen[ildon, PMIN]):7.1f} {-sum(Qlim[ildon]):7.1f}   "
                 f"{-sum(gen[ildon, PG]):7.1f} {-sum(gen[ildon, QG]):7.1f}   {sum(bus[inzld, PD]):7.1f} "
                 f"{sum(bus[inzld, QD]):7.1f}   {-sum(gen[ildon, PG]) + sum(bus[inzld, PD]):7.1f} "
                 f"{-sum(gen[ildon, QG]) + sum(bus[inzld, QD]):7.1f}"
@@ -442,7 +442,7 @@ def printpf(
                 & branch[:, BR_STATUS].astype(bool)
             )
             fd.write(
-                f"\n{int(a):3d}    {-sum(bus[inzsh, VM] ** 2 * bus[inzsh, GS]):7.1f}"
+                f"\n{a:3.0f}    {-sum(bus[inzsh, VM] ** 2 * bus[inzsh, GS]):7.1f}"
                 f" {sum(bus[inzsh, VM] ** 2 * bus[inzsh, BS]):7.1f}"
                 f"    {sum(fchg[ibrch]) + sum(tchg[ibrch]) + sum(fchg[out_tie]) + sum(tchg[in_tie]):7.1f}"
                 f"    {sum(real(loss[ibrch])) + sum(real(loss[r_[in_tie, out_tie]])) / 2:7.2f}"
@@ -478,7 +478,7 @@ def printpf(
             fd.write("  --------  --------")
         for k in range(len(ong)):
             i = ong[k]
-            fd.write(f"\n{int(i):3d} {int(gen[i, GEN_BUS]):6d}     {int(gen[i, GEN_STATUS]):2d} ")
+            fd.write(f"\n{i:3.0f} {gen[i, GEN_BUS]:6.0f}     {gen[i, GEN_STATUS]:2.0f} ")
             if (gen[i, GEN_STATUS] > 0) & logical_or(gen[i, PG], gen[i, QG]):
                 fd.write(f"{gen[i, PG]:10.2f}{gen[i, QG]:10.2f}")
             else:
@@ -532,7 +532,7 @@ def printpf(
             fd.write("  -------  -------")
         for i in range(nb):
             b = bus[i, [BUS_I, VM, VA]]
-            fd.write(f"\n{int(b[0]):5d}{b[1]:7.3f}{b[2]:9.3f}")
+            fd.write(f"\n{b[0]:5.0f}{b[1]:7.3f}{b[2]:9.3f}")
             if bus[i, BUS_TYPE] == REF:
                 fd.write("*")
             else:
@@ -573,7 +573,7 @@ def printpf(
         fd.write("\n-----  -----  -----  --------  --------  --------  --------  --------  --------")
         for i in range(nl):
             fd.write(
-                f"\n{int(i):4d}{int(branch[i, F_BUS].real):7d}{int(branch[i, T_BUS].real):7d}{branch[i, PF].real:10.2f}"
+                f"\n{i:4.0f}{branch[i, F_BUS].real:7.0f}{branch[i, T_BUS].real:7.0f}{branch[i, PF].real:10.2f}"
                 f"{branch[i, QF].real:10.2f}{branch[i, PT].real:10.2f}{branch[i, QT].real:10.2f}{loss[i].real:10.3f}"
                 f"{loss[i].imag:10.2f}"
             )
@@ -615,7 +615,7 @@ def printpf(
                         | (bus[i, MU_VMAX] > ptol)
                     )
                 ):
-                    fd.write(f"\n{bus[i, BUS_I]:5d}")
+                    fd.write(f"\n{bus[i, BUS_I]:5.0f}")
                     if (bus[i, VM] < bus[i, VMIN] + ctol) | (bus[i, MU_VMIN] > ptol):
                         fd.write(f"{bus[i, MU_VMIN]:10.3f}")
                     else:
@@ -683,7 +683,7 @@ def printpf(
                         | (gen[i, MU_PMAX] > ptol)
                     )
                 ):
-                    fd.write(f"\n{int(i):4d}{int(gen[i, GEN_BUS]):6d} ")
+                    fd.write(f"\n{i:4.0f}{gen[i, GEN_BUS]:6.0f} ")
                     if (gen[i, PG] < gen[i, PMIN] + ctol) | (gen[i, MU_PMIN] > ptol):
                         fd.write(f"{gen[i, MU_PMIN]:8.3f}")
                     else:
@@ -725,7 +725,7 @@ def printpf(
                         | (gen[i, MU_QMAX] > ptol)
                     )
                 ):
-                    fd.write(f"\n{i:3d}{gen[i, GEN_BUS]:5d}")
+                    fd.write(f"\n{i:3.0f}{gen[i, GEN_BUS]:5.0f}")
                     if (gen[i, QG] < gen[i, QMIN] + ctol) | (gen[i, MU_QMIN] > ptol):
                         fd.write(f"{gen[i, MU_QMIN]:8.3f}")
                     else:
@@ -889,7 +889,7 @@ def printpf(
                         | (branch[i, MU_ST] > ptol)
                     )
                 ):
-                    fd.write(f"\n{int(i):4d}{int(branch[i, F_BUS].real):7d}")
+                    fd.write(f"\n{i:4.0f}{branch[i, F_BUS].real:7.0f}")
                     if (Ff[i] > branch[i, RATE_A] - ctol) | (branch[i, MU_SF] > ptol):
                         fd.write(f"{branch[i, MU_SF].real:10.3f}")
                     else:
@@ -900,7 +900,7 @@ def printpf(
                         fd.write(f"{branch[i, MU_ST].real:10.3f}")
                     else:
                         fd.write("      -   ")
-                    fd.write(f"{int(branch[i, T_BUS].real):6d}")
+                    fd.write(f"{branch[i, T_BUS].real:6.0f}")
             fd.write("\n")
 
     # execute userfcn callbacks for 'printpf' stage
