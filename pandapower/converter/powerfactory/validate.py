@@ -24,7 +24,7 @@ def _get_pf_results(net, is_unbalanced=False):
 def _get_pf_results_balanced(net):
     pf_switch_status = (
         net.res_switch.pf_closed & net.res_switch.get("pf_in_service", True)
-        if len(net.switch) > 0 and "res_switch" in net.keys()
+        if len(net.switch) > 0 and "res_switch" in net
         else pd.Series(dtype=np.float64)
     )
     pf_bus_vm = net.res_bus.pf_vm_pu.replace(0, np.nan)
@@ -97,7 +97,7 @@ def _get_pf_results_unbalanced(net):
             else:
                 pf_results[f"pf_trafo_{suffix}"] = pd.Series([], dtype=np.float64)
 
-    if len(net.switch) > 0 and "res_switch" in net.keys():
+    if len(net.switch) > 0 and "res_switch" in net:
         pf_results["pf_switch_status"] = net.res_switch.pf_closed & net.res_switch.get("pf_in_service", True)
     else:
         pf_results["pf_switch_status"] = pd.Series([], dtype=bool)
@@ -133,7 +133,7 @@ def _set_pf_results(net, pf_results, is_unbalanced=False):
 
 
 def _set_pf_results_balanced(net, pf_results):
-    if "res_switch" in net.keys():
+    if "res_switch" in net:
         net.res_switch["pf_closed"] = pf_results["pf_switch_status"]
 
     if "res_bus" not in net:
@@ -162,7 +162,7 @@ def _set_pf_results_balanced(net, pf_results):
 
 
 def _set_pf_results_unbalanced(net, pf_results):
-    if "res_switch" in net.keys():
+    if "res_switch" in net:
         net.res_switch["pf_closed"] = pf_results["pf_switch_status"]
 
     # init res tables
@@ -257,7 +257,7 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
     ].to_numpy()
 
     if len(net.switch) > 0:
-        logger.info("%d switches are wrong: %s" % (len(wrong_switches), wrong_switches))
+        logger.info(f"{len(wrong_switches)} switches are wrong: {wrong_switches}")
 
     if len(net.trafo3w[net.trafo3w.in_service]) > 0:
         trafo3w_idx = net.trafo3w.query("in_service").index
@@ -272,8 +272,8 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
         trafo3w_diff["loading_percent_pf"] = tr3w_pf_res_is
         max_diff_idx = abs(trafo3w_diff["diff"]).idxmax()
         logger.info(
-            "Maximum trafo3w loading difference between pandapower and powerfactory: %.1f "
-            "percent at trafo3w %d (%s)" % (max(abs(tr3w_diff_is)), max_diff_idx, net.trafo3w.at[max_diff_idx, "name"])
+            f"Maximum trafo3w loading difference between pandapower and powerfactory: "
+            f"{max(abs(tr3w_diff_is)):.1f} percent at trafo3w {max_diff_idx} ({net.trafo3w.at[max_diff_idx, 'name']})"
         )
 
         all_diffs["trafo3w_diff"] = trafo3w_diff
@@ -291,8 +291,8 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
         sgen_p_diff_is["p_mw_pf"] = sgen_p_pf_res_is
         max_diff_idx = abs(sgen_p_diff_is["diff"]).idxmax()
         logger.info(
-            "Maximum sgen active power difference between pandapower and powerfactory: %.1f "
-            "MW at sgen %d (%s)" % (max(abs(sgen_diff_is)), max_diff_idx, net.sgen.at[max_diff_idx, "name"])
+            f"Maximum sgen active power difference between pandapower and powerfactory: "
+            f"{max(abs(sgen_diff_is)):.1f} MW at sgen {max_diff_idx} ({net.sgen.at[max_diff_idx, 'name']})"
         )
 
         sgen_q_diff_is = pd.DataFrame(
@@ -307,8 +307,8 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
         sgen_q_diff_is["q_mvar_pf"] = sgen_q_pf_res_is
         max_diff_idx = abs(sgen_q_diff_is["diff"]).idxmax()
         logger.info(
-            "Maximum sgen reactive power difference between pandapower and powerfactory: %.1f "
-            "Mvar at sgen %d (%s)" % (max(abs(sgen_diff_is)), max_diff_idx, net.sgen.at[max_diff_idx, "name"])
+            f"Maximum sgen reactive power difference between pandapower and powerfactory: "
+            f"{max(abs(sgen_diff_is)):.1f} Mvar at sgen {max_diff_idx} ({net.sgen.at[max_diff_idx, 'name']})"
         )
 
         all_diffs["sgen_p_diff_is"] = sgen_p_diff_is
@@ -328,8 +328,8 @@ def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
         gen_p_diff_is["p_mw_pf"] = gen_p_pf_res_is
         max_diff_idx = abs(gen_p_diff_is["diff"]).idxmax()
         logger.info(
-            "Maximum gen active power difference between pandapower and powerfactory: %.1f "
-            "MW at gen %d (%s)" % (max(abs(gen_diff_is)), max_diff_idx, net.gen.at[max_diff_idx, "name"])
+            f"Maximum gen active power difference between pandapower and powerfactory: "
+            f"{max(abs(gen_diff_is)):.1f} MW at gen {max_diff_idx} ({net.gen.at[max_diff_idx, 'name']})"
         )
 
         gen_q_diff_is = pd.DataFrame(

@@ -112,11 +112,11 @@ def from_pfd(
     logger.debug("started")
     echo_off(app)
     user = app.GetCurrentUser()
-    logger.debug("user: %s" % user)
+    logger.debug(f"user: {user}")
 
     res = app.ActivateProject(prj_name)
     if res == 1:
-        raise RuntimeError("Project %s could not be found or activated" % prj_name)
+        raise RuntimeError(f"Project {prj_name} could not be found or activated")
 
     prj = app.GetActiveProject()
 
@@ -257,7 +257,7 @@ def execute(
 
 def import_project(path_src, app, name="Import", import_folder="", template=None, clear_import_folder=False):
     user = app.GetCurrentUser()
-    logger.debug("user: %s" % user)
+    logger.debug(f"user: {user}")
 
     imp_dir = choose_imp_dir(user, import_folder)
     logger.info("Auxiliary import folder: %s", imp_dir)
@@ -269,14 +269,14 @@ def import_project(path_src, app, name="Import", import_folder="", template=None
     # com_import = app.GetFromStudyCase('ComPfdimport')
     if ".dgs" in path_src:
         com_import = app.GetFromStudyCase("ComImport")
-        logger.info("Importing .dgs project %s" % path_src)
+        logger.info(f"Importing .dgs project {path_src}")
         if template is not None:
             app.ActivateProject(template)
             template = app.GetActiveProject()
         prj_dgs_import(com_import, imp_dir, path_src, name, template)
     elif ".pfd" in path_src:
         com_import = app.GetFromStudyCase("ComPfdimport")
-        logger.info("Importing .pfd project %s" % path_src)
+        logger.info(f"Importing .pfd project {path_src}")
         # prj_import(com_import, imp_dir, path_src)
         com_import.g_file = path_src
         com_import.g_target = imp_dir
@@ -287,7 +287,7 @@ def import_project(path_src, app, name="Import", import_folder="", template=None
 
     try:
         prj = imp_dir.GetContents()[0]
-    except Exception:
+    except Exception:  # noqa: BLE001
         raise RuntimeError("could not get the project - failed at import?")
 
     return prj
@@ -316,9 +316,9 @@ def _check_network(app):
     # check if there is External grid and Transformer
     obj_types = ["ElmXnet", "ElmTr2"]
     for ot in obj_types:
-        elms = app.GetCalcRelevantObjects("*.%s" % ot)
+        elms = app.GetCalcRelevantObjects(f"*.{ot}")
         if len(elms) == 0:
-            raise RuntimeError("there are no elements of type %s in net" % ot)
+            raise RuntimeError(f"there are no elements of type {ot} in net")
 
     # check if there are more than 3 buses
     buses = app.GetCalcRelevantObjects("*.ElmTerm")
@@ -337,7 +337,7 @@ def _check_network(app):
     for load in loads:
         load_name = load.loc_name
         if "RLM" in load_name and load.i_scale != 0:
-            logger.warning("load %s.%s i_scale" % (load.loc_name, load.GetClassName()))
+            logger.warning(f"load {load.loc_name}.{load.GetClassName()} i_scale")
             load.i_scale = 0
             # raise Exception('Adjusted by load scaling set to True')
 
