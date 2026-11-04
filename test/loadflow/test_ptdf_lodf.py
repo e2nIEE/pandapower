@@ -6,8 +6,8 @@ import pytest
 
 from pandapower.networks.power_system_test_cases import case9, case30, case9241pegase
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.pypower.makeLODF import makeLODF, makeOTDF, outage_results_OTDF
-from pandapower.pypower.makePTDF import makePTDF
+from pandapower.pypower.make_lodf import makeLODF, makeOTDF, outage_results_OTDF
+from pandapower.pypower.make_ptdf import makePTDF
 from pandapower.run import rundcpp
 from pandapower.topology.create_graph import create_nxgraph
 from pandapower.topology.graph_searches import find_graph_characteristics, lines_on_path

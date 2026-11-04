@@ -6,7 +6,7 @@
 
 from scipy.sparse import csr_matrix
 
-from pandapower.pypower.d2Sbr_dV2 import d2Sbr_dV2
+from pandapower.pypower.d2_s_br_d_v2 import d2Sbr_dV2
 
 
 def d2ASbr_dV2(dSbr_dVa, dSbr_dVm, Sbr, Cbr, Ybr, V, lam):

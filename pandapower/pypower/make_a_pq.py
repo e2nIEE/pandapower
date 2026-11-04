@@ -8,7 +8,7 @@ from numpy import arange, array, c_, linalg, r_, zeros
 from numpy import flatnonzero as find
 from scipy.sparse import csr_matrix as sparse
 
-from pandapower.pypower.hasPQcap import hasPQcap
+from pandapower.pypower.has_pq_cap import hasPQcap
 from pandapower.pypower.idx_gen import PC1, PC2, QC1MAX, QC1MIN, QC2MAX, QC2MIN
 
 
