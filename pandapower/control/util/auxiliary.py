@@ -96,9 +96,7 @@ def _controller_attributes_query(controller, parameters):
             ensure_iterability(parameters["element_index"])
         )
         if len(intersect_elms):
-            logger.debug(
-                f"'element_index' has an intersection of {intersect_elms} with Controller {controller.index}"
-            )
+            logger.debug(f"'element_index' has an intersection of {intersect_elms} with Controller {controller.index}")
 
     return complete_match & element_index_match
 

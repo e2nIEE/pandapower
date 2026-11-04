@@ -151,7 +151,7 @@ class SplineCharacteristic(Characteristic):
     Characteristic can be followed by providing a tuple for the fill value for x outside the specified range,
     refer to the documentation of interp1d for more details. We set the parameter bounds_error to False.
     """
-    
+
     json_excludes: ClassVar[list[str]] = ["self", "__class__", "_interpolator"]
 
     def __init__(self, net, x_values, y_values, interpolator_kind="interp1d", table="characteristic", **kwargs):

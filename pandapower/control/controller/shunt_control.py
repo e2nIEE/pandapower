@@ -6,6 +6,7 @@ from pandapower.control.basic_controller import Controller
 
 logger = logging.getLogger(__name__)
 
+
 class ShuntController(Controller):
     """
     Base Shunt Controller for controlling the steps of a shunt in a power network.

@@ -287,7 +287,10 @@ class BinarySearchControl(Controller):
             self.input_variable.append(input_variable_temp)
 
     def __str__(self):
-        return super().__str__() + f" [{self.input_element}.{self.input_variable}.{self.output_element}.{self.output_variable}]"
+        return (
+            super().__str__()
+            + f" [{self.input_element}.{self.input_variable}.{self.output_element}.{self.output_variable}]"
+        )
 
     def __getattr__(self, name):
         if name == "control_modus":
@@ -968,9 +971,7 @@ class DroopControl(Controller):
         if getattr(self, "control_modus", None) is None and hasattr(self, "voltage_ctrl"):
             # catching old attribute voltage_ctrl
             self.control_modus = self.voltage_ctrl
-            if (
-                getattr(self, "_deprecation_warned", False) is False
-            ):  # only one message that voltage ctrl is deprecated
+            if getattr(self, "_deprecation_warned", False) is False:  # only one message that voltage ctrl is deprecated
                 logger.warning(
                     f"'voltage_ctrl' in Controller {self.index} is deprecated. "
                     "Use 'control_modus' ('Q_ctrl', 'V_ctrl', etc.) instead."

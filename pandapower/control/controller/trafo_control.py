@@ -87,14 +87,16 @@ class TrafoController(Controller):
         )
         if isinstance(self.element_index, (np.int64, int)):
             # if the controller shouldn't do anything, return True
-            return bool(not element_in_service
+            return bool(
+                not element_in_service
                 or ext_grid_bus
                 or not element_index_in_net
                 or (self._read_write_flag != "single_index" and len(self.element_index) == 0)
             )
         else:
             # if the controller shouldn't do anything, return True
-            return bool(np.all(~element_in_service[self.controlled])
+            return bool(
+                np.all(~element_in_service[self.controlled])
                 or np.all(ext_grid_bus[self.controlled])
                 or np.all(~element_index_in_net[self.controlled])
                 or (self._read_write_flag != "single_index" and len(self.element_index) == 0)
