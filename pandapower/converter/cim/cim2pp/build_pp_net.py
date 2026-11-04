@@ -177,9 +177,8 @@ class CimConverter:
                 self.classes_dict["coordinatesFromDLCim16"](cimConverter=self).add_coordinates_from_dl_cim16(
                     diagram_name=kwargs.get("diagram_name", None)
                 )
-            except Exception as e:
-                self.logger.warning("Creating the coordinates failed, returning the net without coordinates!")
-                self.logger.exception(e)
+            except Exception:
+                self.logger.exception("Creating the coordinates failed, returning the net without coordinates!")
                 self.report_container.add_log(
                     Report(
                         level=LogLevel.WARNING,
@@ -209,9 +208,8 @@ class CimConverter:
         if kwargs.get("run_powerflow", False):
             try:
                 runpp(self.net)
-            except Exception as e:
-                self.logger.error("Failed running a powerflow.")
-                self.logger.exception(e)
+            except Exception:
+                self.logger.exception("Failed running a powerflow.")
                 self.report_container.add_log(
                     Report(level=LogLevel.ERROR, code=ReportCode.ERROR, message="Failed running a powerflow.")
                 )
@@ -219,7 +217,7 @@ class CimConverter:
                     Report(level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION, message=traceback.format_exc())
                 )
                 if not self.ignore_errors:
-                    raise e
+                    raise
             else:
                 self.logger.info("Power flow solved normal.")
                 self.report_container.add_log(
@@ -244,9 +242,8 @@ class CimConverter:
                 raise ValueError(
                     "Not supported value for argument 'create_measurements', check method signature forvalid values!"
                 )
-        except Exception as e:
-            self.logger.error("Creating the measurements failed, returning the net without measurements!")
-            self.logger.exception(e)
+        except Exception:
+            self.logger.exception("Creating the measurements failed, returning the net without measurements!")
             self.report_container.add_log(
                 Report(
                     level=LogLevel.ERROR,
@@ -259,7 +256,7 @@ class CimConverter:
             )
             self.net.measurement = self.net.measurement[0:0]
             if not self.ignore_errors:
-                raise e
+                raise
         # a special fix for BB and NB mixed networks:
         # fuse boundary ConnectivityNodes with their TopologicalNodes
         bus_t = self.net.bus.reset_index(level=0, drop=False)
@@ -274,7 +271,7 @@ class CimConverter:
         )
         if bus_drop.index.size > 0:
             for b1, b2 in bus_drop[["b1", "b2"]].itertuples(index=False):
-                self.logger.info("Fusing buses: b1: %s, b2: %s" % (b1, b2))
+                self.logger.info(f"Fusing buses: b1: {b1}, b2: {b2}")
                 fuse_buses(self.net, b1, b2, drop=True, fuse_bus_measurements=True)
         # finally a fix for EquivalentInjections: If an EquivalentInjection is attached to boundary node, check if the
         # network behind this boundary node is attached. In this case, disable the EquivalentInjection.

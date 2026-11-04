@@ -95,12 +95,12 @@ def get_cim_schema(cgmes_version: str = "2.4.15") -> dict[str, dict[str, dict[st
     for one_file in os.listdir(path_with_serialized_schemas):
         path_to_schema = path_with_serialized_schemas + os.sep + one_file
         if one_file.lower().startswith("cim16_") and cgmes_version == "2.4.15":
-            logger.info("Parsing the schema from CIM 16 from disk: %s" % path_to_schema)
+            logger.info(f"Parsing the schema from CIM 16 from disk: {path_to_schema}")
             with open(path_to_schema, encoding="UTF-8", mode="r") as f:
                 cim_schema = json.load(f)
             return cim_schema
         elif one_file.lower().startswith("cim100_") and (cgmes_version == "3.0" or cgmes_version.lower() == "ltds"):
-            logger.info("Parsing the schema from CIM 100 from disk: %s" % path_to_schema)
+            logger.info(f"Parsing the schema from CIM 100 from disk: {path_to_schema}")
             with open(path_to_schema, encoding="UTF-8", mode="r") as f:
                 cim_schema = json.load(f)
             return cim_schema

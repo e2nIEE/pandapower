@@ -175,7 +175,7 @@ def from_cim(
         **kwargs,
     )
     time_end_converting = time.time()
-    logger.info("The pandapower net: \n%s" % pp_net)
+    logger.info(f"The pandapower net: \n{pp_net}")
 
     logger.info("Needed time for parsing: %s" % (time_start_converting - time_start_parsing))
     logger.info("Needed time for converting: %s" % (time_end_converting - time_start_converting))
