@@ -421,7 +421,7 @@ def element_associated_groups(
     index = list(set(net.group.index))
     ensure_lists_in_group_element_column(net, drop_empty_lines=drop_empty_lines)
     gr_et = net.group.loc[net.group.element_type == element_type]
-    associated = pd.Series(dict.fromkeys(element_index, []))
+    associated = pd.Series({key: [] for key in element_index})
     for idx in gr_et.index:
         ass = pd.Index(element_index).intersection(group_element_index(net, idx, element_type))
         associated.loc[ass] = associated.loc[ass].apply(lambda x: x + [idx])
