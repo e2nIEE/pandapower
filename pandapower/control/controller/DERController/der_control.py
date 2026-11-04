@@ -8,8 +8,8 @@ import logging
 import numpy as np
 
 from pandapower.auxiliary import ensure_iterability
-from pandapower.control.controller.DERController.PQVAreas import BaseArea, PQVArea4110, QVArea4110
-from pandapower.control.controller.DERController.QModels import QModel
+from pandapower.control.controller.DERController.pqv_areas import BaseArea, PQVArea4110, QVArea4110
+from pandapower.control.controller.DERController.q_models import QModel
 from pandapower.control.controller.pq_control import PQController
 
 logger = logging.getLogger(__name__)

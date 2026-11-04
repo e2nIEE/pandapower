@@ -4,7 +4,7 @@
 import os
 
 from pandapower import __version__ as pp_version
-from pandapower.control.controller.trafo import DiscreteTapControl
+from pandapower.control.controller.trafo import discrete_tap_control
 from pandapower.control.util.auxiliary import _create_trafo_characteristics
 from pandapower.file_io import to_json
 from pandapower.networks.create_examples import example_multivoltage
