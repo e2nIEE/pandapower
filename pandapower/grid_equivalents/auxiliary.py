@@ -405,7 +405,7 @@ def ensure_origin_id(net, elms=None):
         if "origin_id" not in net[elm].columns:
             net[elm]["origin_id"] = pd.Series([None] * net[elm].shape[0], dtype=object)
         idxs = net[elm].index[net[elm].origin_id.isnull()]
-        net[elm].loc[idxs, "origin_id"] = ["%s_%i_%s" % (elm, idx, str(uuid.uuid4())) for idx in idxs]
+        net[elm].loc[idxs, "origin_id"] = [f"{elm}_{idx}_{uuid.uuid4()!s}" for idx in idxs]
 
 
 def drop_and_edit_cost_functions(net, buses, drop_cost, add_origin_id):
@@ -533,11 +533,11 @@ def adaptation_phase_shifter(net, v_boundary):
                                 net[e].lv_bus[i] = hb
                         elif e == "trafo3w":
                             if net[e].hv_bus[i] == lb:
-                                net[e].hv_bus[i] == hb
+                                net[e].hv_bus[i] = hb
                             elif net[e].mv_bus[i] == lb:
-                                net[e].mv_bus[i] == hb
+                                net[e].mv_bus[i] = hb
                             else:
-                                net[e].lv_bus[i] == lb
+                                net[e].lv_bus[i] = lb
                         elif e in ["bus", "load", "sgen", "gen", "shunt", "ward", "xward"]:
                             continue
                         else:

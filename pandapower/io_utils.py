@@ -138,7 +138,7 @@ def coords_to_df(value, geotype="line"):
                 continue
             v[i, : len(coords) * 2] = numpy.array(coords).flatten()
         geo = pd.DataFrame(v, index=value.index)
-        geo.columns = ["%s%i" % (w, i) for i in range(k) for w in "xy"]
+        geo.columns = [f"{w}{i}" for i in range(k) for w in "xy"]
     if geotype == "bus":
         geo["x"] = value["x"].values
         geo["y"] = value["y"].values
@@ -169,12 +169,12 @@ def to_dict_of_dfs(
                     for el in std_type_structure:
                         if el in type_df.columns:
                             type_df[el] = type_df[el].astype(std_type_structure[el])
-                    dodfs["%s_std_types" % t] = type_df
+                    dodfs[f"{t}_std_types"] = type_df
             continue
         elif item == "profiles":
             for t in net.profiles:  # which could be e.g. "sgen", "gen", "load", ...
                 if net.profiles[t].shape[0]:  # avoid empty Excel sheets for std_types if empty
-                    dodfs["%s_profiles" % t] = pd.DataFrame(net.profiles[t])
+                    dodfs[f"{t}_profiles"] = pd.DataFrame(net.profiles[t])
             continue
         elif item == "user_pf_options":
             if len(value) > 0:
@@ -185,7 +185,7 @@ def to_dict_of_dfs(
             parameters[item] = value
             continue
         elif not isinstance(value, pd.DataFrame):
-            logger.warning("Could not serialize net.%s" % item)
+            logger.warning(f"Could not serialize net.{item}")
             continue
 
         # value is pandas DataFrame
@@ -266,7 +266,9 @@ def df_to_coords(net, item, table):
     for i in table.index:
         coords = table.loc[i]
         # for i, coords in table.iterrows():
-        coord = [(coords["x%u" % nr], coords["y%u" % nr]) for nr in range(num_points) if pd.notnull(coords["x%u" % nr])]
+        coord = [
+            (coords[f"x{nr:.0f}"], coords[f"y{nr:.0f}"]) for nr in range(num_points) if pd.notnull(coords[f"x{nr:.0f}"])
+        ]
         if len(coord):
             net[item].loc[i, "coords"] = coord
 
@@ -323,10 +325,9 @@ def from_dict_of_dfs(dodfs, net=None, add_basic_std_types=True):
                 table = table.rename_axis(name)
             net[item] = table
             # convert geodata to geojson
-            if item in ["bus", "line"]:
-                if "geo" in table.columns:
-                    table.geo = table.geo.mask(table.geo == '"<NA>"', pd.NA)
-                    table.geo = table.geo.apply(lambda x: geojson.loads(x, cls=PPJSONDecoder) if pd.notna(x) else x)
+            if item in ["bus", "line"] and "geo" in table.columns:
+                table.geo = table.geo.mask(table.geo == '"<NA>"', pd.NA)
+                table.geo = table.geo.apply(lambda x: geojson.loads(x, cls=PPJSONDecoder) if pd.notna(x) else x)
         # set the index to be Int
         try:
             net[item] = net[item].set_index(net[item].index.astype(np.int64))
@@ -376,7 +377,7 @@ def get_raw_data_from_pickle(filename):
     if hasattr(filename, "read"):
         net = pd.read_pickle(filename)
     elif not os.path.isfile(filename):
-        raise UserWarning("File %s does not exist!!" % filename)
+        raise UserWarning(f"File {filename} does not exist!!")
     else:
         with open(filename, "rb") as f:
             net = pd.read_pickle(f)
@@ -415,15 +416,14 @@ def transform_net_with_df_and_geo(net, point_geo_columns, line_geo_columns):
                 if "columns" in item:
                     net[key] = net[key].reindex(item["columns"], axis=1)
 
-            if "dtypes" in item:
-                if "columns" not in df_dict or "geometry" not in df_dict["columns"]:
-                    try:
-                        # only works with pandas 0.19 or newer
-                        net[key] = net[key].astype(item["dtypes"])
-                    except Exception:
-                        # works with pandas <0.19
-                        for column in net[key].columns:
-                            net[key][column] = net[key][column].astype(item["dtypes"][column])
+            if "dtypes" in item and ("columns" not in df_dict or "geometry" not in df_dict["columns"]):
+                try:
+                    # only works with pandas 0.19 or newer
+                    net[key] = net[key].astype(item["dtypes"])
+                except Exception:  # noqa: BLE001
+                    # works with pandas <0.19
+                    for column in net[key].columns:
+                        net[key][column] = net[key][column].astype(item["dtypes"][column])
 
 
 def isinstance_partial(obj, cls):
@@ -462,9 +462,7 @@ def _is_safe_to_deserialize(module_name, class_name, class_):
     if module_name.startswith("pandas"):
         return isclass(class_) and issubclass(class_, pd.Index)
     # Enums from unknown modules could have a custom __new__ that executes arbitrary code.
-    if module_name.startswith("pandapower") and isclass(class_) and issubclass(class_, Enum):
-        return True
-    return False
+    return bool(module_name.startswith("pandapower") and isclass(class_) and issubclass(class_, Enum))
 
 
 class PPJSONEncoder(json.JSONEncoder):
@@ -613,7 +611,7 @@ class FromSerializableRegistry:
                     ser.index = pd.MultiIndex.from_tuples([], names=index_names, dtype=np.int64)
                 else:
                     ser.index = pd.MultiIndex.from_tuples(pd.Series(ser.index).apply(literal_eval).tolist())
-            except Exception:
+            except Exception:  # noqa: BLE001
                 logger.warning("Converting index to multiindex failed.")
             else:
                 if index_names is not None:
@@ -661,7 +659,7 @@ class FromSerializableRegistry:
                     df.index = pd.MultiIndex.from_tuples(pd.Series(df.index).apply(literal_eval).tolist())
                 # slower alternative code:
                 # df.index = pd.MultiIndex.from_tuples([literal_eval(idx) for idx in df.index])
-            except Exception:
+            except Exception:  # noqa: BLE001
                 logger.warning("Converting index to multiindex failed.")
             else:
                 if index_names is not None:
@@ -672,7 +670,7 @@ class FromSerializableRegistry:
                     df.columns = pd.MultiIndex.from_frame(pd.DataFrame(columns=column_names, dtype=np.int64))
                 else:
                     df.columns = pd.MultiIndex.from_tuples(pd.Series(df.columns).apply(literal_eval).tolist())
-            except Exception:
+            except Exception:  # noqa: BLE001
                 logger.warning("Converting columns to multiindex failed.")
             else:
                 if column_names is not None:
@@ -863,20 +861,20 @@ class FromSerializableRegistry:
 
         try:
             module = importlib.import_module(self.module_name)
-        except ModuleNotFoundError as e:
+        except ModuleNotFoundError:
             if self.ignore_unknown_objects:
                 warn(f"Module {self.module_name} not found. Returning object as is.")
                 return json.loads(self.obj)
             else:
-                raise e
+                raise
         try:
             class_ = getattr(module, self.class_name)
-        except AttributeError as e:
+        except AttributeError:
             if self.ignore_unknown_objects:
                 warn(f"Class {self.class_name} not found in module {self.module_name}. Returning object as is.")
                 return json.loads(self.obj)
             else:
-                raise e
+                raise
         if isclass(class_) and issubclass(class_, JSONSerializableClass):
             if isinstance(self.obj, str):
                 self.obj = json.loads(
@@ -1001,7 +999,7 @@ def pp_hook(
         else:
             return d
     except TypeError:
-        logger.debug("Loading your grid raised a TypeError. %s raised this exception" % d)
+        logger.debug(f"Loading your grid raised a TypeError. {d} raised this exception")
         return d
 
 
@@ -1080,9 +1078,9 @@ class JSONSerializableClass:
         if index in net[element].index.values:
             obj = net[element].object.at[index]
             if overwrite or not isinstance(obj, JSONSerializableClass):
-                logger.info("Updating %s with index %s" % (element, index))
+                logger.info(f"Updating {element} with index {index}")
             else:
-                raise UserWarning("%s with index %s already exists" % (element, index))
+                raise UserWarning(f"{element} with index {index} already exists")
 
         dtypes = None
         if preserve_dtypes:
@@ -1121,11 +1119,8 @@ class JSONSerializableClass:
         def check_equality(obj1, obj2):
             if isinstance(obj1, (ndarray, generic)) or isinstance(obj2, (ndarray, generic)):
                 unequal = True
-                if equal(obj1, obj2):
+                if equal(obj1, obj2) or anynp(isnan(obj1)) and allclose(obj1, obj2, atol=0, rtol=0, equal_nan=True):
                     unequal = False
-                elif anynp(isnan(obj1)):
-                    if allclose(obj1, obj2, atol=0, rtol=0, equal_nan=True):
-                        unequal = False
                 if unequal:
                     raise UnequalityFound
             elif not isinstance(obj2, type(obj1)):
@@ -1136,13 +1131,13 @@ class JSONSerializableClass:
                 if len(obj1) > 0:
                     try:
                         assert_frame_equal(obj1, obj2)
-                    except Exception:
+                    except Exception:  # noqa: BLE001
                         raise UnequalityFound
             elif isinstance(obj2, pd.Series):
                 if len(obj1) > 0:
                     try:
                         assert_series_equal(obj1, obj2)
-                    except Exception:
+                    except Exception:  # noqa: BLE001
                         raise UnequalityFound
             elif isinstance(obj1, dict):
                 check_dictionary_equality(obj1, obj2)
@@ -1153,7 +1148,7 @@ class JSONSerializableClass:
                     try:
                         if not (isnan(obj1) and isnan(obj2)):
                             raise UnequalityFound
-                    except Exception:
+                    except Exception:  # noqa: BLE001
                         raise UnequalityFound
 
         def check_dictionary_equality(obj1, obj2):

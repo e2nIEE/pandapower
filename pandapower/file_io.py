@@ -62,7 +62,7 @@ def to_pickle(net, filename) -> None:
         pickle.dump(dict(net), filename, protocol=2)
         return
     if not filename.endswith(".p"):
-        raise Exception("Please use .p to save pandapower networks!")
+        raise RuntimeError("Please use .p to save pandapower networks!")
     save_net = to_dict_with_coord_transform(net, ["bus_geodata"], ["line_geodata"])
 
     with open(filename, "wb") as f:
@@ -213,14 +213,14 @@ def from_excel(
     """
 
     if not os.path.isfile(filename):
-        raise UserWarning("File %s does not exist!" % filename)
+        raise UserWarning(f"File {filename} does not exist!")
     if not openpyxl_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "openpyxl")
     xls = pd.read_excel(filename, sheet_name=None, index_col=0, engine="openpyxl")
 
     try:
         net = from_dict_of_dfs(xls, add_basic_std_types=add_basic_std_types)
-    except Exception:
+    except Exception:  # noqa: BLE001
         net = _from_excel_old(xls, add_basic_std_types=add_basic_std_types)
     if convert:
         convert_format(net, drop_invalid_geodata=drop_invalid_geodata, donot_open_newer=not ignore_version_conflicts)
@@ -243,7 +243,9 @@ def _from_excel_old(xls, add_basic_std_types=True):
             points = int(len(table.columns) / 2)
             for i, coords in table.iterrows():
                 coord = [
-                    (coords["x%u" % nr], coords["y%u" % nr]) for nr in range(points) if pd.notnull(coords["x%u" % nr])
+                    (coords[f"x{nr:.0f}"], coords[f"y{nr:.0f}"])
+                    for nr in range(points)
+                    if pd.notnull(coords[f"x{nr:.0f}"])
                 ]
                 net.line_geodata.loc[i, "coords"] = coord
         else:
@@ -437,7 +439,7 @@ def from_json_string(
             for key in elements_to_deserialize:
                 net[key] = json.loads(net[key], cls=PPJSONDecoder, skip_checks=skip_checks)
         else:
-            if (("version" not in net.keys()) or (net["version"] != net_dummy.version)) and not convert:
+            if (("version" not in net) or (net["version"] != net_dummy.version)) and not convert:
                 raise UserWarning(
                     f"The version of the pandapower net you are trying to load differs from the actual "
                     f"pandapower version {net_dummy.version}. Before you can load only distinct tables, convert and "
@@ -492,8 +494,8 @@ def from_json_dict(json_dict):
         >>> from pandapower.file_io import from_json_dict
         >>> net = from_json_dict(json.loads(json_str))
     """
-    name = json_dict["name"] if "name" in json_dict else None
-    f_hz = json_dict["f_hz"] if "f_hz" in json_dict else 50.0
+    name = json_dict.get("name", None)
+    f_hz = json_dict.get("f_hz", 50.0)
     if name is None:
         logger.warning("pandapowerNet.name not present or empty. Please set a name and resave the network")
         name = ""
