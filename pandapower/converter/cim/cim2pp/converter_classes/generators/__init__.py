@@ -1,8 +1,13 @@
 __all__ = [
-    "asynchronousMachinesCim16",
-    "energySourcesCim16",
-    "powerElectronicsConnection",
-    "synchronousMachinesCim16",
+    "asynchronous_machines_cim16",
+    "energy_sources_cim16",
+    "power_electronics_connection",
+    "synchronous_machines_cim16",
 ]
 
-from . import asynchronousMachinesCim16, energySourcesCim16, powerElectronicsConnection, synchronousMachinesCim16
+from . import (
+    asynchronous_machines_cim16,
+    energy_sources_cim16,
+    power_electronics_connection,
+    synchronous_machines_cim16,
+)

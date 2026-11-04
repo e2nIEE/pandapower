@@ -88,7 +88,7 @@ def get_converter_classes() -> dict[str, object]:
         "nonConformLoadsCim16": std_converter_classes.loads.nonConformLoadsCim16.NonConformLoadsCim16,
         "stationSuppliesCim16": std_converter_classes.loads.stationSuppliesCim16.StationSuppliesCim16,
         "synchronousMachinesCim16": std_converter_classes.generators.synchronousMachinesCim16.SynchronousMachinesCim16,
-        "asynchronousMachinesCim16": std_converter_classes.generators.asynchronousMachinesCim16.AsynchronousMachinesCim16,
+        "asynchronousMachinesCim16": std_converter_classes.generators.asynchronous_machines_cim16.AsynchronousMachinesCim16,
         "energySourcesCim16": std_converter_classes.generators.energySourcesCim16.EnergySourceCim16,
         "powerElectronicsConnection": std_converter_classes.generators.powerElectronicsConnection.PowerElectronicsConnection,
         "linearShuntCompensatorCim16": std_converter_classes.shunts.linearShuntCompensatorCim16.LinearShuntCompensatorCim16,
