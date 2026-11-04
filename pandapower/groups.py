@@ -91,7 +91,7 @@ def drop_group_and_elements(net: pandapowerNet, index: int) -> None:
         idx = group_element_index(net, index, et)
         net[et].drop(idx.intersection(net[et].index), inplace=True)
         res_et = "res_" + et
-        if res_et in net.keys() and net[res_et].shape[0]:
+        if res_et in net and net[res_et].shape[0]:
             net[res_et].drop(net[res_et].index.intersection(idx), inplace=True)
     net.group = net.group.drop(index)
 
@@ -424,7 +424,7 @@ def element_associated_groups(
     associated = pd.Series({key: [] for key in element_index})
     for idx in gr_et.index:
         ass = pd.Index(element_index).intersection(group_element_index(net, idx, element_type))
-        associated.loc[ass] = associated.loc[ass].apply(lambda x: x + [idx])
+        associated.loc[ass] = associated.loc[ass].apply(lambda x, idx=idx: x + [idx])
     if not return_empties:
         associated = associated.loc[associated.apply(len).astype(bool)]
     associated_: dict = associated.to_dict()
