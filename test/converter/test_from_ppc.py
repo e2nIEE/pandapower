@@ -445,7 +445,7 @@ def test_trafo_branch_charging_matches_ppc(from_lv, tap_side, branch_b):
 
 
 def test_case300_from_ppc_matches_pypower():
-    pypower = pytest.importorskip("pypower")
+    pytest.importorskip("pypower")
     from pypower.api import runpf
     from pypower.ppoption import ppoption
 
