@@ -2,8 +2,8 @@ import logging
 
 import pandas as pd
 
-from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
-from pandapower.control.controller.trafo.DiscreteTapControl import DiscreteTapControl
+from pandapower.control.controller.trafo.continuous_tap_control import ContinuousTapControl
+from pandapower.control.controller.trafo.discrete_tap_control import DiscreteTapControl
 from pandapower.converter.cim import cim_tools
 from pandapower.converter.cim.cim2pp import build_pp_net
 
