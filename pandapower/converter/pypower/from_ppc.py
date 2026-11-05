@@ -753,10 +753,16 @@ def validate_from_ppc(ppc: dict, net: pandapowerNet, max_diff_values: dict | Non
         vm = net.res_bus.loc[ppc["bus"][:, BUS_I].astype(np.int64), "vm_pu"].values
         vm_from_squared = vm[from_bus] ** 2
         vm_to_squared = vm[to_bus] ** 2
-        pp_res["branch"][is_trafo, 0] += branch_status * branch_g / 2 * ppc["baseMVA"] / tap_squared * vm_from_squared
-        pp_res["branch"][is_trafo, 1] += -branch_status * branch_b / 2 * ppc["baseMVA"] / tap_squared * vm_from_squared
-        pp_res["branch"][is_trafo, 2] += branch_status * branch_g / 2 * ppc["baseMVA"] * vm_to_squared
-        pp_res["branch"][is_trafo, 3] += -branch_status * branch_b / 2 * ppc["baseMVA"] * vm_to_squared
+        shunt_flows = np.column_stack(
+            (
+                branch_g / tap_squared * vm_from_squared,
+                -branch_b / tap_squared * vm_from_squared,
+                branch_g * vm_to_squared,
+                -branch_b * vm_to_squared,
+            )
+        )
+        shunt_flows *= (branch_status * ppc["baseMVA"] / 2)[:, np.newaxis]
+        pp_res["branch"][is_trafo] += shunt_flows  # type: ignore[index]
 
     # --- gen
     pp_res["gen"] = np.zeros(ppc_res["gen"].shape)  # type: ignore[union-attr]

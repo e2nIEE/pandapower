@@ -70,7 +70,20 @@ def test_from_ppc_simple_against_target():
         net_by_code.impedance
     )  # TODO: due to changes in the models this tests fails.
     assert len(net_by_ppc.ext_grid) == len(net_by_code.ext_grid)
-    assert nets_equal(net_by_ppc, net_by_code, check_only_results=True, atol=1e-9)
+    # from_ppc represents the transformer BR_B by shunts at both branch ends, while net_by_code
+    # holds it in the transformer magnetizing branch. Bus voltages and the other element results
+    # are equal, and the trafo flows plus the end shunt flows equal the reference trafo flows.
+    assert nets_equal(
+        net_by_ppc, net_by_code, check_only_results=True, atol=1e-9, exclude_elms=["bus", "trafo", "shunt"]
+    )
+    vm_va = ["vm_pu", "va_degree"]
+    assert np.allclose(net_by_ppc.res_bus[vm_va], net_by_code.res_bus.loc[net_by_ppc.bus.index, vm_va], atol=1e-9)
+    shunt_res = net_by_ppc.res_shunt.groupby(net_by_ppc.shunt.bus)[["p_mw", "q_mvar"]].sum()
+    trafo_hv_lv = net_by_ppc.trafo[["hv_bus", "lv_bus"]].values
+    pq_cols = [["p_hv_mw", "q_hv_mvar"], ["p_lv_mw", "q_lv_mvar"]]
+    for side, cols in enumerate(pq_cols):
+        trafo_with_shunt = net_by_ppc.res_trafo[cols].values + shunt_res.loc[trafo_hv_lv[:, side]].values
+        assert np.allclose(trafo_with_shunt, net_by_code.res_trafo[cols].values, atol=1e-9)
 
 
 @pytest.mark.xfail
