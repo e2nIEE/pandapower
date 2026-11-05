@@ -71,7 +71,7 @@ def from_mpc(
         if "_options" not in net:
             net["_options"] = {}
         net._options.update(ppc["mpc_additional_data"])
-        logger.info("added fields %s in net._options" % list(ppc["mpc_additional_data"].keys()))
+        logger.info(f"added fields {list(ppc['mpc_additional_data'].keys())} in net._options")
 
     return net
 
@@ -89,7 +89,6 @@ def _mat2ppc(mpc_file, casename_mpc_file):
 
     _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file)
     _adjust_ppc_indices(ppc)
-    _change_ppc_TAP_value(ppc)
 
     return ppc
 
@@ -106,7 +105,6 @@ def _m2ppc(mpc_file, load_case_engine=None):
         if isinstance(v, list):
             ppc[k] = np.array(v)
     _adjust_ppc_indices(ppc)
-    _change_ppc_TAP_value(ppc)
     return ppc
 
 
@@ -132,7 +130,7 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
 
         try:
             ppc["gencost"] = mpc[casename_mpc_file].gencost
-        except Exception:
+        except Exception:  # noqa: BLE001
             logger.info("gencost is not in mpc")
 
         for k in mpc[casename_mpc_file]._fieldnames:
@@ -141,8 +139,3 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
 
     else:
         logger.error("Matfile does not contain a valid mpc structure.")
-
-
-def _change_ppc_TAP_value(ppc):
-    # adjust for the matpower converter -> taps should be 0 when there is no transformer, but are 1
-    ppc["branch"][ppc["branch"][:, 8] == 0, 8] = 1

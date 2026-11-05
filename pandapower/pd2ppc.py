@@ -65,7 +65,7 @@ from pandapower.pypower.run_userfcn import run_userfcn
 
 def _pd2ppc_recycle(net, sequence, recycle):
     # TODO: for FACTS and DC elements: SVC, TCSC, SSC, VSC
-    key = "_ppc" if sequence is None else "_ppc%d" % sequence
+    key = "_ppc" if sequence is None else f"_ppc{sequence}"
     if not recycle or not net.get(key, None):
         return _pd2ppc(net, sequence=sequence)
 
@@ -302,7 +302,7 @@ def _init_ppc(net, mode="pf", sequence=None):
         net["_ppc"] = ppc
     else:
         ppc["sequence"] = int(sequence)
-        net["_ppc%s" % sequence] = ppc
+        net[f"_ppc{sequence}"] = ppc
     return ppc
 
 

@@ -22,13 +22,13 @@ class SeriesCompensatorsCim16:
         self.logger.info("Start converting SeriesCompensators.")
         eq_sc = self._prepare_series_compensators_cim16()
         self.cimConverter.copy_to_pp("impedance", eq_sc)
-        self.logger.info("Created %s impedance elements in %ss." % (eq_sc.index.size, time.time() - time_start))
+        self.logger.info(f"Created {eq_sc.index.size} impedance elements in {time.time() - time_start}s.")
         self.cimConverter.report_container.add_log(
             Report(
                 level=LogLevel.INFO,
                 code=ReportCode.INFO_CONVERTING,
-                message="Created %s impedance elements from SeriesCompensators in %ss."
-                % (eq_sc.index.size, time.time() - time_start),
+                message=f"Created {eq_sc.index.size} impedance elements from SeriesCompensators in "
+                f"{time.time() - time_start}s.",
             )
         )
 
@@ -85,29 +85,29 @@ class SeriesCompensatorsCim16:
         # if each series compensator got two terminals, reduce back to one row to use fast slicing
         if ser_comp.index.size != eqs_length_before_merge * 2:
             self.logger.error(
-                "There is a problem at the SeriesCompensators source data: Not each SeriesCompensator "
-                "has two Terminals, %s Terminals should be given but there are %s Terminals available"
-                % (eqs_length_before_merge * 2, ser_comp.index.size)
+                f"There is a problem at the SeriesCompensators source data: Not each SeriesCompensator "
+                f"has two Terminals, {eqs_length_before_merge * 2} Terminals should be given but there are "
+                f"{ser_comp.index.size} Terminals available"
             )
             self.cimConverter.report_container.add_log(
                 Report(
                     level=LogLevel.ERROR,
                     code=ReportCode.ERROR_CONVERTING,
-                    message="There is a problem at the SeriesCompensators source data: Not each SeriesCompensator "
-                    "has two Terminals, %s Terminals should be given but there are %s Terminals available"
-                    % (eqs_length_before_merge * 2, ser_comp.index.size),
+                    message=f"There is a problem at the SeriesCompensators source data: Not each SeriesCompensator "
+                    f"has two Terminals, {eqs_length_before_merge * 2} Terminals should be given but there are "
+                    f"{ser_comp.index.size} Terminals available",
                 )
             )
             dups = ser_comp.pivot_table(index=["rdfId"], aggfunc="size")  # type: ignore[arg-type]
             dups = dups.loc[dups != 2]  # type: ignore[call-overload]
             for rdfId, count in dups.items():
-                self.logger.warning("The SeriesCompensator with RDF ID %s has %s Terminals!" % (rdfId, count))
-                self.logger.warning("The SeriesCompensator data: \n%s" % ser_comp[ser_comp["rdfId"] == rdfId])
+                self.logger.warning(f"The SeriesCompensator with RDF ID {rdfId} has {count} Terminals!")
+                self.logger.warning(f"The SeriesCompensator data: \n{ser_comp[ser_comp['rdfId'] == rdfId]}")
                 self.cimConverter.report_container.add_log(
                     Report(
                         level=LogLevel.ERROR,
                         code=ReportCode.ERROR_CONVERTING,
-                        message="The SeriesCompensator with RDF ID %s has %s Terminals!" % (rdfId, count),
+                        message=f"The SeriesCompensator with RDF ID {rdfId} has {count} Terminals!",
                     )
                 )
             ser_comp = ser_comp[0:0]

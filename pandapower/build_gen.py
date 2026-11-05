@@ -102,7 +102,7 @@ def add_element_to_gen(net, ppc, element, f, t, sequence):
     elif element == "xward":
         _build_pp_xward(net, ppc, f, t)
     else:
-        raise ValueError("Unknown element %s" % element)
+        raise ValueError(f"Unknown element {element}")
 
 
 def _build_pp_ext_grid(net, ppc, f, t):
@@ -293,7 +293,7 @@ def _build_pp_xward(net, ppc, f, t):
 def _build_pp_pq_element(net, ppc, element, f, t, inverted=False):
     delta = net._options["delta"]
     sign = -1 if inverted else 1
-    is_element = net._is_elements["%s_controllable" % element]
+    is_element = net._is_elements[f"{element}_controllable"]
     tab = net[element]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     buses = bus_lookup[tab["bus"].values[is_element]]
@@ -320,7 +320,7 @@ def add_q_constraints(net, element, is_element, ppc, f, t, delta, inverted=False
 
     # add qmin and qmax limit from q_capability_characteristic
     capability_curve_condition = (
-        "q_capability_characteristic" in net.keys() and net._options["enforce_q_lims"] and element in ["gen", "sgen"]
+        "q_capability_characteristic" in net and net._options["enforce_q_lims"] and element in ["gen", "sgen"]
     )
     if capability_curve_condition:
         curve_q = _calculate_qmin_qmax_from_q_capability_characteristics(net, element)
@@ -516,10 +516,10 @@ def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
         sum_slack_weights = np.sum(slack_weights_gen[subnet_gen_mask])
         if np.isclose(sum_slack_weights, 0):
             # ppc['gen'][subnet_gen_mask, SL_FAC] = 0
-            raise ValueError("Distributed slack contribution factors in island '%s' sum to zero." % str(subnet))
+            raise ValueError(f"Distributed slack contribution factors in island '{subnet!s}' sum to zero.")
         elif sum_slack_weights < 0:
             raise ValueError(
-                "Distributed slack contribution factors in island '%s'" % str(subnet)
+                f"Distributed slack contribution factors in island '{subnet!s}'"
                 + " sum to negative value. Please correct the data."
             )
         else:

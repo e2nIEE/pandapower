@@ -37,15 +37,15 @@ class SynchronousMachinesCim16:
         ]
         self.cimConverter.copy_to_pp("sgen", eqssh_synchronous_machines)
         self.logger.info(
-            "Created %s gens and %s sgens in %ss."
-            % (eqssh_sm_gens.index.size, eqssh_synchronous_machines.index.size, time.time() - time_start)
+            f"Created {eqssh_sm_gens.index.size} gens and {eqssh_synchronous_machines.index.size} sgens in "
+            f"{time.time() - time_start}s."
         )
         self.cimConverter.report_container.add_log(
             Report(
                 level=LogLevel.INFO,
                 code=ReportCode.INFO_CONVERTING,
-                message="Created %s gens and %s sgens from SynchronousMachines in %ss."
-                % (eqssh_sm_gens.index.size, eqssh_synchronous_machines.index.size, time.time() - time_start),
+                message=f"Created {eqssh_sm_gens.index.size} gens and {eqssh_synchronous_machines.index.size} sgens "
+                f"from SynchronousMachines in {time.time() - time_start}s.",
             )
         )
 

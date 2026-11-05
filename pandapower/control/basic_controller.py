@@ -27,10 +27,8 @@ class BasicCtrl(JSONSerializableClass):
         rep = "This " + self.__class__.__name__ + " has the following parameters: \n"
 
         for member in ["index", "json_excludes"]:
-            rep += ("\n" + member + ": ").ljust(20)
-            d = locals()
-            exec("value = self." + member, d)
-            rep += str(d["value"])
+            value = getattr(self, member)
+            rep += f"\n{member + ':':<19}{value}"
 
         return rep
 
@@ -44,7 +42,7 @@ class BasicCtrl(JSONSerializableClass):
         for attr in self.json_excludes:
             try:
                 del state[attr]
-            except Exception:
+            except Exception:  # noqa: BLE001, S112
                 continue
 
         return state
@@ -159,7 +157,7 @@ class Controller(BasicCtrl):
         # add oneself to net, creating the ['controller'] DataFrame, if necessary
         # even though this code is repeated in JSONSerializableClass, it is necessary because of how drop_same_existing_controller works
         # it is still needed in JSONSerializableClass because it is used for characteristics
-        if index is None and "controller" in net.keys():
+        if index is None and "controller" in net:
             index = get_free_id(net.controller)
         self.index = self.add_controller_to_net(
             net=net,
