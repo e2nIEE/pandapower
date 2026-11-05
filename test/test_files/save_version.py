@@ -11,7 +11,7 @@ from pandapower.networks.create_examples import example_multivoltage
 from pandapower.run import runpp
 
 net = example_multivoltage()
-DiscreteTapControl.DiscreteTapControl(net, 1, 1.02, 1.03)
+discrete_tap_control.DiscreteTapControl(net, 1, 1.02, 1.03)
 _create_trafo_characteristics(net, "trafo", 1, "vk_percent", [-2, 0, 2], [3.5, 4, 4.5])
 runpp(net, run_control=True)
 to_json(net, os.path.join("old_versions", f"example_{pp_version}.json"))
