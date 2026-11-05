@@ -42,6 +42,7 @@ from enum import Enum
 from functools import partial, singledispatch
 from importlib.util import find_spec
 from inspect import _findclass, isclass  # type: ignore[attr-defined]
+from typing import ClassVar
 from warnings import warn
 
 import geojson
@@ -1025,7 +1026,7 @@ def decrypt_string(s, key):
 
 
 class JSONSerializableClass:
-    json_excludes = ["self", "__class__"]
+    json_excludes: ClassVar[list[str]] = ["self", "__class__"]
 
     def __init__(self, **kwargs):
         pass

@@ -162,10 +162,8 @@ class PQController(ConstControl):
             "max_p_error",
             "max_q_error",
         ]:
-            rep += ("\n" + member + ":").ljust(20)
-            d = locals()
-            exec("value = self." + member, d)
-            rep += str(d["value"])
+            value = getattr(self, member)
+            rep += f"\n{member + ':':<19}{value}"
 
         return rep
 
@@ -211,7 +209,7 @@ class PQController(ConstControl):
         try:
             self.p_curtailment -= self.p_mw
         except AttributeError:
-            logger.error("No p_kw present at %s. Assuming no curtailment." % self)
+            logger.error(f"No p_kw present at {self}. Assuming no curtailment.")
 
     def limit_to_inverter_sizing(self, p_mw, q_mvar):
         """
