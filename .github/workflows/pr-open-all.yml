@@ -39,8 +39,8 @@ jobs:
           uv pip install ruff
       - name: Ruff Format Check
         run: uv run ruff format --check
-  #      - name: Ruff Check
-  #        run: uv run ruff check
+      - name: Ruff Check
+        run: uv run ruff check
 
   build:
     runs-on: ubuntu-latest
