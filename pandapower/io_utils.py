@@ -110,6 +110,20 @@ else:
 logger = logging.getLogger(__name__)
 
 
+MODULE_RENAMES = {
+    # Support for pandapower networks older than version 4.0
+    #  (these renames can be removed once support for older networks is dropped):
+    "pandapower.control.controller.DERController.DERControl": "pandapower.control.controller.DERController.der_control",
+    "pandapower.control.controller.DERController.DERBasics": "pandapower.control.controller.DERController.der_basics",
+    "pandapower.control.controller.DERController.PQVAreas": "pandapower.control.controller.DERController.pqv_areas",
+    "pandapower.control.controller.DERController.QModels": "pandapower.control.controller.DERController.q_models",
+    "pandapower.control.controller.trafo.ContinuousTapControl": "pandapower.control.controller.trafo.continuous_tap_control",
+    "pandapower.control.controller.trafo.DiscreteTapControl": "pandapower.control.controller.trafo.discrete_tap_control",
+    "pandapower.control.controller.trafo.TapDependentImpedance": "pandapower.control.controller.trafo.tap_dependent_impedance",
+    "pandapower.control.controller.trafo.VmSetTapControl": "pandapower.control.controller.trafo.vm_set_tap_control",
+}
+
+
 def coords_to_df(value, geotype="line"):
     columns = ["x", "y", "coords"] if geotype == "bus" else ["coords"]
     geo = pd.DataFrame(columns=columns, index=value.index)
@@ -842,6 +856,10 @@ class FromSerializableRegistry:
                     f"set skip_checks=True to allow deserialization of objects."
                 )
                 raise ValueError(f"module {self.module_name} not allowed in pandapowerNet!")
+
+        if self.module_name in MODULE_RENAMES:
+            logger.warning(f"found legacy module name in json: {self.module_name}")
+            self.module_name = MODULE_RENAMES[self.module_name]
 
         try:
             module = importlib.import_module(self.module_name)
