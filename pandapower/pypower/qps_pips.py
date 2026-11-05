@@ -12,7 +12,7 @@ from scipy.sparse import csr_matrix as sparse
 from pandapower.pypower.pips import pips
 
 
-def qps_pips(H, c, A, l, u, xmin=None, xmax=None, x0=None, opt=None):  # noqa: E741
+def qps_pips(H, c, A, l, u, xmin=None, xmax=None, x0=None, opt=None):
     """Uses the Python Interior Point Solver (PIPS) to solve the following
     QP (quadratic programming) problem::
 

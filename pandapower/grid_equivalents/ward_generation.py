@@ -206,7 +206,7 @@ def _replace_external_area_by_wards(
         drop_buses(net_external, net_external.bus.index.tolist()[-(len(ext_buses_with_xward)) :])
     t_end = time.perf_counter()
     if show_computing_time:
-        logger.info('"replace_external_area_by_wards" finished in %s seconds:' % round((t_end - t_start), 2))
+        logger.info(f'"replace_external_area_by_wards" finished in {round((t_end - t_start), 2)} seconds:')
 
 
 def subtract_concat_of_p_and_q_from_first_input(eq_power, net_external, slack_gen):
@@ -319,4 +319,4 @@ def _replace_external_area_by_xwards(
         drop_buses(net_external, net_external.bus.index.tolist()[-(len(ext_buses_with_xward)) :])
     t_end = time.perf_counter()
     if show_computing_time:
-        logger.info('"replace_external_area_by_xwards" finished in %s seconds:' % round((t_end - t_start), 2))
+        logger.info(f'"replace_external_area_by_xwards" finished in {round((t_end - t_start), 2)} seconds:')

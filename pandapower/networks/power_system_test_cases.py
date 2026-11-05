@@ -2,6 +2,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 __all__ = [
+    "GBnetwork",
+    "GBreducednetwork",
     "case4gs",
     "case5",
     "case6ww",
@@ -28,8 +30,6 @@ __all__ = [
     "case9241pegase",
     "case_ieee30",
     "case_illinois200",
-    "GBnetwork",
-    "GBreducednetwork",
     "iceland",
     "sorted_from_json",
 ]
@@ -62,13 +62,12 @@ def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
         ext_grid_p = [ext_grid_p]
     for i in ref_bus_idx:
         if i not in net.gen.bus.values and i not in net.ext_grid.bus.values:
-            raise ValueError("Index %i is not in net.gen.bus or net.ext_grid.bus." % i)
+            raise ValueError(f"Index {i} is not in net.gen.bus or net.ext_grid.bus.")
     # determine indices of ext_grid and gen connected to ref_bus_idx
     gen_idx = net.gen.index[net.gen.bus.isin(ref_bus_idx)]
     ext_grid_idx = net.ext_grid.index[~net.ext_grid.bus.isin(ref_bus_idx)]
     # old ext_grid -> gen
-    j = 0
-    for i in ext_grid_idx:
+    for j, i in enumerate(ext_grid_idx):
         ext_grid_data = net.ext_grid.loc[i]
         net.ext_grid = net.ext_grid.drop(i)
         create_gen(
@@ -82,7 +81,6 @@ def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
             min_p_mw=ext_grid_data.min_p_mw,
             max_p_mw=ext_grid_data.max_p_mw,
         )
-        j += 1
     # old gen at ref_bus -> ext_grid (and sgen)
     for i in gen_idx:
         gen_data = net.gen.loc[i]

@@ -91,7 +91,7 @@ class TestShuntRequiredFields:
     def test_invalid_required_values(self, parameter, invalid_value):
         """Test: invalid required values are rejected"""
         net = pandapowerNet(name="test_invalid_required_values")
-        b0, b1 = create_buses(net, 2, 0.4)  # 0, 1
+        b0, _ = create_buses(net, 2, 0.4)
         create_shunt(
             net,
             bus=b0,
@@ -505,4 +505,3 @@ class TestShuntResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_shunt_result_totals(self):
         """Test: aggregated p_mw / q_mvar results are consistent"""
-        pass

@@ -16,7 +16,7 @@ from pandapower.pypower.bustypes import bustypes
 from pandapower.pypower.idx_brch import BR_B, BR_G, BR_R, BR_STATUS, BR_X, F_BUS, SHIFT, T_BUS, TAP
 from pandapower.pypower.idx_bus import BS, BUS_I, BUS_TYPE, GS
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, QG, QMAX, QMIN, VG
-from pandapower.pypower.makeSbus import makeSbus
+from pandapower.pypower.make_s_bus import makeSbus
 from pandapower.pypower.newtonpf import _check_for_convergence, _evaluate_Fx
 from pandapower.pypower.pfsoln import pfsoln
 
@@ -225,15 +225,9 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
     verbose = kwargs["VERBOSE"]  # verbose is set in run._runpppf() #
 
     # tolerance for the inner loop for PV nodes
-    if "tolerance_mva_pv" in kwargs:
-        tol_mva_inner = kwargs["tolerance_mva_pv"]
-    else:
-        tol_mva_inner = 1.0e-2
+    tol_mva_inner = kwargs.get("tolerance_mva_pv", 1.0e-2)
 
-    if "max_iter_pv" in kwargs:
-        max_iter_pv = kwargs["max_iter_pv"]
-    else:
-        max_iter_pv = 20
+    max_iter_pv = kwargs.get("max_iter_pv", 20)
 
     nobus = bus.shape[0]
     ngen = gen.shape[0]

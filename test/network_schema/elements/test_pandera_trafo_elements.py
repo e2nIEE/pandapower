@@ -873,14 +873,11 @@ class TestTrafoResults:
     @pytest.mark.skip(reason="Not yet implemented - requires power flow calculation")
     def test_trafo_power_flows(self):
         """Test: Power flow result fields have valid numeric values"""
-        pass
 
     @pytest.mark.skip(reason="Not yet implemented - requires short-circuit calculation")
     def test_trafo_short_circuit_results(self):
         """Test: Short-circuit result fields contain expected ranges"""
-        pass
 
     @pytest.mark.skip(reason="Not yet implemented - requires 3-phase calculation")
     def test_trafo_3ph_results(self):
         """Test: 3-phase result fields contain expected values"""
-        pass

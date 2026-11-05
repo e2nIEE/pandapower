@@ -1,13 +1,14 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-
+from importlib.util import find_spec
+import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
 
-from pandapower.network import pandapowerNet
 from pandapower.io_utils import from_dict_of_dfs, to_dict_of_dfs
+from pandapower.network import pandapowerNet
 
 try:
     import psycopg
@@ -16,21 +17,20 @@ try:
 
     PSYCOPG_INSTALLED = True
 except ImportError:
-    psycopg = None  # type: ignore[assignment]
+    psycopg = None
     PSYCOPG_INSTALLED = False
 
-try:
+if find_spec("sqlite3"):
     import sqlite3
 
     SQLITE_INSTALLED = True
-except ImportError:
+else:
     sqlite3 = None  # type: ignore[assignment]
     SQLITE_INSTALLED = False
 
-import logging
 
-if TYPE_CHECKING:
-    import psycopg.sql as psql
+if TYPE_CHECKING and not PSYCOPG_INSTALLED:
+    raise ImportError("psycopg is required for type checking")
 
 logger = logging.getLogger(__name__)
 

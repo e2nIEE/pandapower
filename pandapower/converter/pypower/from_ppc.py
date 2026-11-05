@@ -66,7 +66,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs) -> pandapowerNet
         logger.info("There are false baseKV given in the pypower case file.")
 
     net = pandapowerNet(name="from_ppc", f_hz=f_hz, sn_mva=ppc["baseMVA"])
-    net._from_ppc_lookups = dict()
+    net._from_ppc_lookups = {}
 
     _from_ppc_bus(net, ppc)
     net._from_ppc_lookups["gen"] = _from_ppc_gen(net, ppc)
@@ -146,7 +146,7 @@ def _from_ppc_gen(net, ppc):
     gen_name = ppc.get("gen_name", np.array([None] * n_gen))
 
     # create ext_grid
-    idx_eg = list()
+    idx_eg = []
     for i in np.arange(n_gen, dtype=np.int64)[is_ext_grid]:
         idx_eg.append(
             create_ext_grid(
@@ -229,7 +229,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
              - obtain the values for rft, rtf, xft, xtf
              - calculate ratios for HV portion of r and x
              - write the ratios in trafo columns leakage_resistance_ratio_hv, leakage_reactance_ratio_hv
-        * for branches that are not transformers but connect different voltage levels:
+        * for branches that are not transformers (tap ratio 0 and no phase shift) but connect different
+          voltage levels:
              - import them as impedance instead
     """
     n_bra = ppc["branch"].shape[0]
@@ -419,7 +420,7 @@ def _get_bus_pos(ppc, bus_names):
         return (
             pd.Series(np.arange(ppc["bus"].shape[0], dtype=np.int64), index=ppc["bus"][:, BUS_I]).loc[bus_names].values
         )
-    except Exception:
+    except Exception:  # noqa: BLE001
         return (
             pd.Series(np.arange(ppc["bus"].shape[0], dtype=np.int64), index=ppc["bus"][:, BUS_I].astype(np.int64))
             .loc[bus_names]
@@ -459,7 +460,11 @@ def _branch_to_which(ppc, from_vn_kv=None, to_vn_kv=None, flattened=True):
         & ((ppc["branch"][:, TAP] == 0) | (ppc["branch"][:, TAP] == 1))
         & (ppc["branch"][:, SHIFT] == 0)
     )
-    is_trafo = (ppc["branch"][:, TAP] != 0) & (ppc["branch"][:, TAP] != 1) | (ppc["branch"][:, SHIFT] != 0)
+    # In the matpower format, a tap ratio of 0 denotes "no transformer", while any other ratio denotes a
+    # transformer (a ratio of 1 is a transformer without a tap changer). Therefore, branches with a tap
+    # ratio or a phase shift are transformers, and only the remaining branches that connect different
+    # voltage levels (tap ratio 0 and no phase shift) are impedances.
+    is_trafo = ((ppc["branch"][:, TAP] != 0) | (ppc["branch"][:, SHIFT] != 0)) & ~is_line
     is_impedance = ~is_line & ~is_trafo
     to_vn_is_leq = to_vn_kv[is_trafo] <= from_vn_kv[is_trafo]
     return is_line, is_trafo, is_impedance, to_vn_is_leq
@@ -661,9 +666,9 @@ def validate_from_ppc(ppc: dict, net: pandapowerNet, max_diff_values: dict | Non
             "gen_q_mvar": 1e-6,
         }
     if (
-        "_from_ppc_lookups" not in net.keys()
-        or ("gen" not in net._from_ppc_lookups.keys() and len(ppc["gen"]) > 0)
-        or ("branch" not in net._from_ppc_lookups.keys() and len(ppc["branch"]) > 0)
+        "_from_ppc_lookups" not in net
+        or ("gen" not in net._from_ppc_lookups and len(ppc["gen"]) > 0)
+        or ("branch" not in net._from_ppc_lookups and len(ppc["branch"]) > 0)
     ):
         raise ValueError("net._from_ppc_lookups must contain a lookup (dict of keys 'branch' and 'gen')")
 
@@ -724,7 +729,7 @@ def validate_from_ppc(ppc: dict, net: pandapowerNet, max_diff_values: dict | Non
     pp_res["gen_q_sum_per_bus"] = _gen_q_per_bus_sum(pp_res["gen"][:, -1:], ppc)  # type: ignore[index]
 
     # --- log maximal differences the powerflow result comparison
-    diff_res = dict()
+    diff_res = {}
     comp_keys = ["bus", "branch", "gen_p", "gen_q_sum_per_bus"]
     for comp_key in comp_keys:
         diff_res[comp_key] = ppc_res[comp_key] - pp_res[comp_key]  # type: ignore[operator]

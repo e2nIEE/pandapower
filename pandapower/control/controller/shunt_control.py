@@ -4,6 +4,8 @@ import numpy as np
 
 from pandapower.control.basic_controller import Controller
 
+logger = logging.getLogger(__name__)
+
 
 class ShuntController(Controller):
     """
@@ -70,7 +72,7 @@ class ShuntController(Controller):
 
         ext_grid_buses = net.ext_grid.loc[net.ext_grid.in_service, "bus"].values
         if self.controlled_bus in ext_grid_buses:
-            logging.warning("Controlled Bus is Slack Bus - deactivating controller")
+            logger.warning("Controlled Bus is Slack Bus - deactivating controller")
             self.set_active(net, False)
 
 
