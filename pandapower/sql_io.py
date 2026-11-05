@@ -1,6 +1,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 from importlib.util import find_spec
+import logging
 from typing import TYPE_CHECKING
 
 import numpy as np
@@ -9,13 +10,13 @@ import pandas as pd
 from pandapower.io_utils import from_dict_of_dfs, to_dict_of_dfs
 from pandapower.network import pandapowerNet
 
-if find_spec("psycopg"):
+try:
     import psycopg
     import psycopg.errors
     import psycopg.sql as psql
 
     PSYCOPG_INSTALLED = True
-else:
+except ImportError:
     psycopg = None
     PSYCOPG_INSTALLED = False
 
@@ -27,7 +28,6 @@ else:
     sqlite3 = None  # type: ignore[assignment]
     SQLITE_INSTALLED = False
 
-import logging
 
 if TYPE_CHECKING and not PSYCOPG_INSTALLED:
     raise ImportError("psycopg is required for type checking")
