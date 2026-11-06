@@ -7,6 +7,9 @@ on:
     paths-ignore:
       - 'CHANGELOG.rst'
       - '**/CHANGELOG.rst'
+  # NOTE: Schedule always runs on the default branch of a repository. In our case this is develop.
+  schedule:
+    - cron: '0 22 * * 1-5'  # run once a day at 22:00 UTC Mo-Fr (coverage for develop branch)
 
 permissions:
   contents: read
@@ -233,7 +236,7 @@ jobs:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
       - name: Upload coverage to Codecov
         continue-on-error: true
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 #v6
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 #v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ${{ steps.coverage-files.outputs.files }}
