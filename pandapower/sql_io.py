@@ -1,7 +1,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-from importlib.util import find_spec
 import logging
+from importlib.util import find_spec
 from typing import TYPE_CHECKING
 
 import numpy as np
