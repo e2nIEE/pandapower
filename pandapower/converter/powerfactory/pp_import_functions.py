@@ -4988,17 +4988,13 @@ def GetBranchElementFromSwitch(net, q_control_element, graph):
                 for elm in ["load", "sgen", "gen", "shunt", "ext_grid"]:
                     if elm in net:
                         df = net[elm]
-                        if isinstance(df, DataFrame):
-                            if "bus" in df.columns and current in df.bus.values:
-                                elements_at_bus.append(elm)
-                                break
-                            elif "from_bus" in df.columns or "to_bus" in df.columns:
-                                if (
-                                    current in df.get("from_bus", Series()).values
-                                    or current in df.get("to_bus", Series()).values
-                                ):
-                                    elements_at_bus.append(elm)
-                                    break
+                        if isinstance(df, DataFrame) and (
+                            ("bus" in df.columns and current in df.bus.values)
+                            or ("from_bus" in df.columns and current in df.get("from_bus", Series()).values)
+                            or ("to_bus" in df.columns and current in df.get("to_bus", Series()).values)
+                        ):
+                            elements_at_bus.append(elm)
+                            break
                 if elements_at_bus:
                     logger.warning(f"Bus {current} is connected with {elements_at_bus} – Stopping.")
                     return None
