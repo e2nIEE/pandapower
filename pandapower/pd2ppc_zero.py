@@ -19,6 +19,7 @@ from pandapower.build_branch import (
     _calc_nominal_ratio_from_dataframe,
     _calc_switch_parameter,
     _calc_tap_from_dataframe,
+    _calc_xward_parameter,
     _end_temperature_correction_factor,
     _initialize_branch_lookup,
     _switch_branches,
@@ -127,6 +128,10 @@ def _build_branch_ppc_zero(net, ppc, k_st=None):
     _add_line_sc_impedance_zero(net, ppc)
     _add_impedance_sc_impedance_zero(net, ppc)
     _add_trafo_sc_impedance_zero(net, ppc, k_st=k_st)
+    if "xward" in lookup:
+        # the internal bus of an xward has no connection to earth in the zero sequence system, so no zero
+        # sequence current flows over its impedance. Without it, the branch would have zero impedance.
+        _calc_xward_parameter(net, ppc)
     if "switch" in lookup:
         _calc_switch_parameter(net, ppc)
     if mode == "sc":
