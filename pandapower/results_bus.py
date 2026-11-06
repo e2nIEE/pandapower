@@ -560,6 +560,14 @@ def _get_p_q_results_3ph(net, bus_lookup_aranged):
             qB = np.hstack([qB, sign * q_el_B if ac else np.zeros(len(p_el_B))])
             qC = np.hstack([qC, sign * q_el_C if ac else np.zeros(len(p_el_C))])
             b = np.hstack([b, bus_el])
+    if len(net["ward"]):
+        # constant power part of the wards, there is no res_ward_3ph table
+        ward_is = net["_is_elements"]["ward"]
+        p_ward = net["ward"]["ps_mw"].values * ward_is / 3
+        q_ward = net["ward"]["qs_mvar"].values * ward_is / 3 if ac else np.zeros(len(p_ward))
+        pA, pB, pC = (np.hstack([p, p_ward]) for p in (pA, pB, pC))
+        qA, qB, qC = (np.hstack([q, q_ward]) for q in (qA, qB, qC))
+        b = np.hstack([b, net["ward"]["bus"].values])
 
     # sum pq results from every element to be written to net['bus'] later on
     b_pp, vp_A, vq_A, vp_B, vq_B, vp_C, vq_C = _sum_by_group_nvals(b.astype(np.int64), pA, qA, pB, qB, pC, qC)
