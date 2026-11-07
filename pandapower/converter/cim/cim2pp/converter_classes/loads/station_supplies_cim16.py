@@ -22,13 +22,13 @@ class StationSuppliesCim16:
         self.logger.info("Start converting StationSupplies.")
         eqssh_station_supplies = self._prepare_station_supplies_cim16()
         self.cimConverter.copy_to_pp("load", eqssh_station_supplies)
-        self.logger.info("Created %s loads in %ss." % (eqssh_station_supplies.index.size, time.time() - time_start))
+        self.logger.info(f"Created {eqssh_station_supplies.index.size} loads in {time.time() - time_start}s.")
         self.cimConverter.report_container.add_log(
             Report(
                 level=LogLevel.INFO,
                 code=ReportCode.INFO_CONVERTING,
-                message="Created %s loads from StationSupplies in %ss."
-                % (eqssh_station_supplies.index.size, time.time() - time_start),
+                message=f"Created {eqssh_station_supplies.index.size} loads from StationSupplies in "
+                f"{time.time() - time_start}s.",
             )
         )
 

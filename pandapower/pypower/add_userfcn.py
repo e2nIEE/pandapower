@@ -91,7 +91,7 @@ def add_userfcn(ppc, stage, fcn, args=None, allow_multiple=False):
         args = []
 
     if stage not in ["ext2int", "formulation", "int2ext", "printpf", "savecase"]:
-        stderr.write("add_userfcn : '%s' is not the name of a valid callback stage\n" % stage)
+        stderr.write(f"add_userfcn : '{stage}' is not the name of a valid callback stage\n")
 
     n = 0
     if "userfcn" in ppc:
@@ -100,7 +100,7 @@ def add_userfcn(ppc, stage, fcn, args=None, allow_multiple=False):
             if not allow_multiple:
                 for k in range(n):
                     if ppc["userfcn"][stage][k]["fcn"] == fcn:
-                        stderr.write("add_userfcn: the function '%s' has already been added\n" % fcn.__name__)
+                        stderr.write(f"add_userfcn: the function '{fcn.__name__}' has already been added\n")
         else:
             ppc["userfcn"][stage] = []
     else:

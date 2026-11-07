@@ -327,7 +327,7 @@ def get_equivalent(
     match_cost_functions_and_eq_net(net_eq, boundary_buses, eq_type)
 
     time_end = time.perf_counter()
-    logger.info("%s equivalent finished in %.2f seconds." % (eq_type, time_end - time_start))
+    logger.info(f"{eq_type} equivalent finished in {time_end - time_start:.2f} seconds.")
 
     if kwargs.get("add_group", True):
         # declare a group for the new equivalent
@@ -361,7 +361,7 @@ def get_equivalent(
                     fr_buses = net_eq[elm].from_bus
                     to_buses = net_eq[elm].to_bus
                     new_idx = net_eq[elm].index[
-                        names.str.startswith("eq_%s" % elm)
+                        names.str.startswith(f"eq_{elm}")
                         | (fr_buses.isin(be_buses_after_merge) & to_buses.isin(be_buses_after_merge))
                     ]
                 else:

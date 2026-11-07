@@ -217,7 +217,7 @@ def load_std_type(net, name, element="line"):
     if name in library:
         return library[name]
     else:
-        raise UserWarning("Unknown standard %s type %s" % (element, name))
+        raise UserWarning(f"Unknown standard {element} type {name}")
 
 
 def std_type_exists(net, name, element="line"):
@@ -249,7 +249,7 @@ def delete_std_type(net, name, element="line"):
     if name in library:
         del library[name]
     else:
-        raise UserWarning("Unknown standard %s type %s" % (element, name))
+        raise UserWarning(f"Unknown standard {element} type {name}")
 
 
 def rename_std_type(net, old_name, new_name, element="line"):
