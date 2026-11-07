@@ -61,7 +61,7 @@ from pandapower.pypower.idx_bus import BUS_TYPE as pypower_BUS_TYPE
 from pandapower.pypower.idx_bus import VA as pypower_VA
 from pandapower.pypower.idx_bus import VM as pypower_VM
 from pandapower.pypower.idx_bus import bus_cols
-from pandapower.pypower.makeYbus import makeYbus
+from pandapower.pypower.make_y_bus import makeYbus
 
 std_logger = logging.getLogger(__name__)
 ZERO_INJECTION_STD_DEV = 0.001
@@ -446,7 +446,7 @@ def _add_measurements_to_ppci(net, ppci, zero_injection, algorithm):
     """
     meas = net.measurement.copy(deep=True)
     if meas.empty:
-        raise Exception("No measurements are available in pandapower Network! Abort estimation!")
+        raise ValueError("No measurements are available in pandapower Network! Abort estimation!")
 
     # Convert power measurements (p, q) to per unit (p.u.)
     meas.loc[meas.measurement_type == "p", ["value", "std_dev"]] /= ppci["baseMVA"]

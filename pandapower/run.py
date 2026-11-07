@@ -1,6 +1,14 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "rundcopp",
+    "rundcpp",
+    "runopp",
+    "runpp",
+    "runpp_pgm",
+    "set_user_pf_options",
+]
 
 import inspect
 import logging
@@ -86,7 +94,7 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
 
     # this part is to inform user and to make typos in parameters visible
     if len(additional_kwargs) > 0:
-        logger.info("parameters %s are not in the list of standard options" % list(additional_kwargs.keys()))
+        logger.info(f"parameters {list(additional_kwargs.keys())} are not in the list of standard options")
 
         net.user_pf_options.update(additional_kwargs)
 
@@ -380,7 +388,7 @@ def runpp_pgm(net, algorithm="nr", max_iterations=20, error_tolerance_vm_pu=1e-8
 
     # 5. Convert the Power Grid Model output data back to the pandapower format and update the pandapower net
     converted_output_data = pgm_converter.convert(data=output_data)
-    for table in converted_output_data.keys():
+    for table in converted_output_data:
         net[table] = converted_output_data[table]
 
 
@@ -631,7 +639,7 @@ def _passed_runpp_parameters(local_parameters):
     :return: dictionary of explicitly passed parameters
     """
     net = local_parameters.pop("net")
-    if "user_pf_options" not in net.keys() or len(net.user_pf_options) == 0:
+    if "user_pf_options" not in net or len(net.user_pf_options) == 0:
         return None
     # default_parameters contains the parameters that are specified for the runpp function by default in its definition
     args, _, _, defaults, *_ = inspect.getfullargspec(runpp)

@@ -36,7 +36,7 @@ from pandapower.toolbox.element_selection import (
 
 def test_get_element_indices():
     net = example_multivoltage()
-    idx1 = get_element_indices(net, "bus", ["Bus HV%i" % i for i in range(1, 4)])
+    idx1 = get_element_indices(net, "bus", [f"Bus HV{i}" for i in range(1, 4)])
     idx2 = get_element_indices(net, ["bus", "line"], "HV", exact_match=False)
     idx3 = get_element_indices(net, ["bus", "line"], ["Bus HV3", "MV Line6"])
     assert [32, 33, 34] == idx1

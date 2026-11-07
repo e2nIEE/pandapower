@@ -1,6 +1,17 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "clear_result_tables",
+    "compute_switch_flows",
+    "lf_info",
+    "opf_task",
+    "overloaded_lines",
+    "res_power_columns",
+    "switch_info",
+    "violated_buses",
+]
+
 import copy
 import logging
 from collections.abc import Collection
@@ -318,43 +329,43 @@ def _log_opf_task_overview(opf_task_overview):
         if isinstance(data, str):
             if dict_key != "flexibilities_without_costs":
                 raise AssertionError("dict_key is not 'flexibilities_without_costs'")
-            s += "\n\n%s flexibilities without costs" % data
+            s += f"\n\n{data} flexibilities without costs"
             continue
         else:
             if not isinstance(data, dict):
-                raise AssertionError("data is not a dict")
+                raise TypeError("data is not a dict")
         heading_logged = False
         keys, elms = _get_keys_and_elements_from_opf_task_dict(data)
         for key, elm in zip(keys, elms):
             if elm not in key:
-                raise AssertionError("elm should be in key")
+                raise TypeError("elm should be in key")
             df = data[key]
 
             if dict_key in ["flexibilities", "network_constraints"]:
                 if not df.shape[0]:
                     continue
                 if not heading_logged:
-                    s += "\n\n%s:" % dict_key
+                    s += f"\n\n{dict_key}:"
                     heading_logged = True
 
                 # --- logging information
                 len_idx = len(list(chain(*df["index"])))
                 if df.shape[0] > 1:
-                    s += "\n    %ix %s" % (len_idx, key)
+                    s += f"\n    {len_idx}x {key}"
                 else:
                     if not len(set(df.columns).symmetric_difference({"index", "min", "max"})):
-                        s += "\n    %g <= %ix %s (all) <= %g" % (df.loc[0, "min"], len_idx, key, df.loc[0, "max"])
+                        s += f"\n    {df.loc[0, 'min']} <= {len_idx}x {key} (all) <= {df.loc[0, 'max']:g}"
                     else:
-                        s += "\n    %ix %s (all) with these constraints:" % (len_idx, key)
+                        s += f"\n    {len_idx}x {key} (all) with these constraints:"
                         for col in set(df.columns) - {"index"}:
-                            s += " %s=%g" % (col, df.loc[0, col])
+                            s += f" {col}={df.loc[0, col]:g}"
             elif dict_key == "flexibilities_without_costs":
                 if not heading_logged:
-                    s += "\n\n%s:" % dict_key
+                    s += f"\n\n{dict_key}:"
                     heading_logged = True
-                s += "\n%ix %s" % (len(df), key)
+                s += f"\n{len(df)}x {key}"
             else:
-                raise NotImplementedError("Key %s is unknown to this code." % dict_key)
+                raise NotImplementedError(f"Key {dict_key} is unknown to this code.")
     logger.info(s + "\n")
 
 
@@ -370,19 +381,13 @@ def switch_info(net, sidx):  # pragma: no cover
     """
     Prints what buses and elements are connected by a certain switch.
     """
+    _type_lookup = {"b": "bus", "l": "line", "t": "trafo"}
     switch_type = net.switch.at[sidx, "et"]
     bidx = net.switch.at[sidx, "bus"]
     bus_name = net.bus.at[bidx, "name"]
     eidx = net.switch.at[sidx, "element"]
-    if switch_type == "b":
-        bus2_name = net.bus.at[eidx, "name"]
-        logger.info("Switch %u connects bus %u (%s) with bus %u (%s)" % (sidx, bidx, bus_name, eidx, bus2_name))
-    elif switch_type == "l":
-        line_name = net.line.at[eidx, "name"]
-        logger.info("Switch %u connects bus %u (%s) with line %u (%s)" % (sidx, bidx, bus_name, eidx, line_name))
-    elif switch_type == "t":
-        trafo_name = net.trafo.at[eidx, "name"]
-        logger.info("Switch %u connects bus %u (%s) with trafo %u (%s)" % (sidx, bidx, bus_name, eidx, trafo_name))
+    name = net[_type_lookup[switch_type]].at[eidx, "name"]
+    logger.info(f"Switch {sidx:u} connects bus {bidx:u} ({bus_name}) with trafo {eidx:u} ({name})")
 
 
 def overloaded_lines(net, max_load=100):
@@ -497,7 +502,7 @@ def compute_switch_flows(net):
     ]
     for tbl_name, sign in _bus_element_names:
         tbl = net.get(tbl_name)
-        res = net.get("res_%s" % tbl_name)
+        res = net.get(f"res_{tbl_name}")
         if tbl is None or res is None or len(tbl) == 0 or len(res) == 0:
             continue
         in_service = tbl["in_service"].values if "in_service" in tbl.columns else np.ones(len(tbl), dtype=bool)
@@ -596,9 +601,8 @@ def compute_switch_flows(net):
         # A tree with N nodes has exactly N-1 edges; more means a cycle
         if len(couplers) >= len(coupler_buses):
             raise ValueError(
-                "Zero-impedance bus-bus switches form a cycle in fused "
-                "group containing buses %s. The flow split is "
-                "indeterminate without impedance values." % sorted(grp_buses)
+                f"Zero-impedance bus-bus switches form a cycle in fused group containing buses {sorted(grp_buses)}. "
+                f"The flow split is indeterminate without impedance values."
             )
 
         # DFS to build tree order
@@ -629,7 +633,6 @@ def compute_switch_flows(net):
             subtree_p[bus] = sp
             subtree_q[bus] = sq
             if parent_sw is not None:
-                sw_bus_col = int(net.switch.at[parent_sw, "bus"])
                 sw_elem_col = int(net.switch.at[parent_sw, "element"])
                 if bus == sw_elem_col:
                     p_from, q_from = sp, sq

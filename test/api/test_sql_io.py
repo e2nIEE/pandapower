@@ -10,10 +10,11 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from pandapower import reset_results, runpp
 from pandapower.auxiliary import _preserve_dtypes
 from pandapower.networks import case9, case14, case39, create_cigre_network_hv, mv_oberrhein, simple_mv_open_ring_net
 from pandapower.plotting.geo import convert_geodata_to_geojson
+from pandapower.results import reset_results
+from pandapower.run import runpp
 from pandapower.sql_io import (
     PSYCOPG_INSTALLED,
     delete_postgresql_net,

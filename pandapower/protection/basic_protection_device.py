@@ -15,7 +15,7 @@ class ProtectionDevice(JSONSerializableClass):
     def __init__(self, net, index=None, in_service=True, overwrite=False, **kwargs):
         super().__init__()
         # add oneself to net, creating the ['controller'] DataFrame, if necessary
-        if index is None and "protection" in net.keys():
+        if index is None and "protection" in net:
             index = get_free_id(net.protection)
         fill_dict = {"in_service": in_service}
         self.index = super().add_to_net(
@@ -36,10 +36,8 @@ class ProtectionDevice(JSONSerializableClass):
         rep = "This " + self.__class__.__name__ + " has the following parameters: \n"
 
         for member in ["index", "json_excludes"]:
-            rep += ("\n" + member + ": ").ljust(20)
-            d = locals()
-            exec("value = self." + member, d)
-            rep += str(d["value"])
+            value = getattr(self, member)
+            rep += f"\n{member + ':':<19}{value}"
 
         return rep
 
@@ -53,7 +51,7 @@ class ProtectionDevice(JSONSerializableClass):
         for attr in self.json_excludes:
             try:
                 del state[attr]
-            except:
+            except (KeyError, AttributeError):
                 continue
 
         return state

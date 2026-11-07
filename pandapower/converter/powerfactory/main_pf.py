@@ -7,9 +7,6 @@ from tkinter.filedialog import askdirectory
 import numpy as np
 import pandas
 
-logger = logging.getLogger(__name__)
-root_logger = logging.getLogger()
-
 from pandapower.converter.powerfactory import gui
 from pandapower.converter.powerfactory import logger_setup as pflog
 from pandapower.converter.powerfactory import pf_export_functions as pef
@@ -23,6 +20,9 @@ from pandapower.toolbox.grid_modification import create_replacement_switch_for_b
 pandas.set_option("display.width", 1000)
 pandas.set_option("display.max_columns", 100)
 
+logger = logging.getLogger(__name__)
+root_logger = logging.getLogger()
+
 
 def browse_dst(input_panel, entry_path_dst):
     logger.debug("browsing directory")
@@ -31,7 +31,7 @@ def browse_dst(input_panel, entry_path_dst):
     )
     entry_path_dst.delete(0, tk.END)
     entry_path_dst.insert(tk.END, path)
-    logger.debug("directory received: <%s>" % path)
+    logger.debug(f"directory received: <{path}>")
 
 
 def get_dst_dir(input_panel, entry_path_dst):
@@ -56,7 +56,7 @@ def get_filename(entry_fname, save_as="JSON"):
     else:
         raise NotImplementedError(f"extension {save_as} not implemented")
     _, extension = os.path.splitext(filename)
-    logger.debug("filename extension: %s" % extension)
+    logger.debug(f"filename extension: {extension}")
     if filename == "":
         raise RuntimeError("No filename given!")
     elif extension != goal_extension:
@@ -72,14 +72,14 @@ def save_net(net, filepath, save_as):
     elif save_as == "Excel":
         to_excel(net, filepath)
     else:
-        raise ValueError("tried to save grid as %s to %s and failed :(" % (save_as, filepath))
+        raise ValueError(f"tried to save grid as {save_as} to {filepath} and failed :(")
 
 
 def exit_gracefully(app, input_panel, msg, is_err):
     if is_err:
-        logger.error("Execution terminated: %s" % msg, exc_info=True)
+        logger.error(f"Execution terminated: {msg}")
     else:
-        logger.info("Execution finished: %s" % msg)
+        logger.info(f"Execution finished: {msg}")
     echo_on(app)
     if input_panel is not None:
         input_panel.destroy()
@@ -143,7 +143,7 @@ def run_verify(net, load_flow_params=None):
             # 'init': 'dc',  # initialization of load flow: 'flat', 'dc', 'results'
             "PF_MAX_IT": 500  # Pypower option, maximal iterations, passed with kwargs
         }
-    logger.debug("load flow params: %s" % load_flow_params)
+    logger.debug(f"load flow params: {load_flow_params}")
     all_diffs = validate_pf_conversion(net, **load_flow_params)
     return all_diffs
 
@@ -182,7 +182,7 @@ def calc(
     # ask for destination path
     try:
         dst_dir = get_dst_dir(input_panel, entry_path_dst)
-    except Exception as err:
+    except Exception as err:  # noqa: BLE001
         exit_gracefully(app, input_panel, err, True)
         return
     # ask for file name
@@ -192,13 +192,13 @@ def calc(
         exit_gracefully(app, input_panel, err, True)
         return
 
-    logger.info("the destination directory is: <%s>" % dst_dir)
+    logger.info(f"the destination directory is: <{dst_dir}>")
     filepath = os.path.join(dst_dir, filename)
 
     # the actual export
     try:
         max_iter = int(max_iter_entry.get())
-        logger.info("max_iter: %s" % max_iter)
+        logger.info(f"max_iter: {max_iter}")
         net = run_export(
             app,
             pv_as_slack(),
@@ -317,36 +317,36 @@ def calc(
                 )
                 logger.info(f"adjusted {sum(trafo3w)} 3W transformers with {max_vk_percent}")
 
-        logger.info("saving file to: <%s>" % filepath)
+        logger.info(f"saving file to: <{filepath}>")
         save_net(net, filepath, save_as())
-        logger.info("exported net:\n %s" % net)
-    except Exception as err:
-        logger.error("Error while exporting net: %s", err, exc_info=True)
+        logger.info(f"exported net:\n {net}")
+    except Exception:
+        logger.exception("Error while exporting net.")
     else:
         if is_to_verify():
             try:
                 run_verify(net)
-            except Exception as err:
-                logger.error("Error while verifying net: %s", err, exc_info=True)
+            except Exception:
+                logger.exception("Error while verifying net.")
             # logger.info('saving file to: <%s>' % filepath)
             # save_net(net, filepath, save_as())
             # logger.info('exported validated net')
         if is_to_diagnostic():
             try:
                 diagnostic(net, report_style="compact", warnings_only=True, min_x_ohm=0.01)
-            except Exception as err:
-                logger.error("Error in diagnostic for net: %s", err, exc_info=True)
+            except Exception:
+                logger.exception("Error in diagnostic for net.")
     root_logger.removeHandler(app_handler)
     exit_gracefully(app, input_panel, "exiting script", False)
 
 
 # if called from powerfactory, __name__ is also '__main__'
 if __name__ == "__main__":
-    try:
+    from importlib.util import find_spec
+
+    if find_spec("powerfactory"):
         import powerfactory as pf
-    except:
-        pass
-    else:
+
         # power factory app
         app = pf.GetApplication()
         ### for debugging: uncomment app.Show() and add a breakpoint
@@ -360,14 +360,14 @@ if __name__ == "__main__":
         logger.info("starting application")
         # user to store the project and folders
         user = app.GetCurrentUser()
-        logger.debug("got the current user <%s>" % user.loc_name)
+        logger.debug(f"got the current user <{user.loc_name}>")
 
         prj = app.GetActiveProject()
         logger.debug("asked for active project")
 
         if prj is not None:
             project_name = prj.GetAttribute("loc_name")
-            logger.info("got the name of active project: <%s>" % project_name)
+            logger.info(f"got the name of active project: <{project_name}>")
         elif False:  # user flag for debug
             app.Show()
             echo_on(app)

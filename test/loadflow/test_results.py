@@ -31,7 +31,6 @@ from test.loadflow.result_test_network_generator import (
     add_test_gen,
 )
 
-
 # simple example grid for tap dependent impedance tests:
 
 
@@ -554,7 +553,7 @@ def test_trafo3w_tap(tap_pos, tap_side, tap_step_degree):
     if results.query("tap_side == @tap_side & tap_pos == @tap_pos & tap_step_degree == @tap_step_degree").empty:
         pytest.skip(f"Skipping combination: tap_side={tap_side}, tap_pos={tap_pos}, tap_step_degree={tap_step_degree}")
 
-    net = from_json(os.path.join(test_path, "test_files", "test_trafo3w_tap.json"))  #
+    net = from_json(os.path.join(test_path, "test_files", "test_trafo3w_tap.json"))
     net.trafo3w.loc[0, "tap_at_star_point"] = False
     net.trafo3w.loc[1, "tap_at_star_point"] = True
 
@@ -592,7 +591,7 @@ def test_trafo3w_tap_neutral_not_zero(tap_pos, tap_side, tap_step_degree):
     if results.query("tap_side == @tap_side & tap_pos == @tap_pos & tap_step_degree == @tap_step_degree").empty:
         pytest.skip(f"Skipping combination: tap_side={tap_side}, tap_pos={tap_pos}, tap_step_degree={tap_step_degree}")
 
-    net = from_json(os.path.join(test_path, "test_files", "test_trafo3w_tap.json"))  #
+    net = from_json(os.path.join(test_path, "test_files", "test_trafo3w_tap.json"))
 
     net.trafo3w.loc[[0, 1], "tap_min"] += 3
     net.trafo3w.loc[[0, 1], "tap_max"] += 3
@@ -734,7 +733,7 @@ def test_enforce_q_lims(v_tol=1e-6, s_tol=5e-3):
     # check sgen with enforce_q_lims=False first
     runpp(net)
     buses = net.bus[net.bus.zone == "test_enforce_qlims_sgen"]
-    sgen = [x for x in net.sgen.index if net.sgen.bus[x] in buses.index][0]
+    sgen = next(x for x in net.sgen.index if net.sgen.bus[x] in buses.index)
     assert abs(net.res_sgen.q_mvar.at[sgen] - net.sgen.q_mvar.at[sgen]) < s_tol
 
     # now enforce sgen q limits
@@ -769,7 +768,7 @@ def test_enforce_p_lims(s_tol=5e-3):
     # check sgen with enforce_p_lims=False first
     runpp(net)
     buses = net.bus[net.bus.zone == "test_enforce_plims_sgen"]
-    sgen = [x for x in net.sgen.index if net.sgen.bus[x] in buses.index][0]
+    sgen = next(x for x in net.sgen.index if net.sgen.bus[x] in buses.index)
     assert abs(net.res_sgen.p_mw.at[sgen] - net.sgen.p_mw.at[sgen]) < s_tol
 
     # now enforce sgen p limits

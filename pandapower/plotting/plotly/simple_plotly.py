@@ -273,16 +273,16 @@ def simple_plotly(
     Returns:
         graph_objs._figure.Figure: figure object
     """
-    settings = dict(
-        on_map=on_map,
-        map_style=map_style,
-        figsize=figsize,
-        aspectratio=aspectratio,
-        filename=filename,
-        auto_open=auto_open,
-        showlegend=showlegend,
-        zoomlevel=zoomlevel,
-    )
+    settings = {
+        "on_map": on_map,
+        "map_style": map_style,
+        "figsize": figsize,
+        "aspectratio": aspectratio,
+        "filename": filename,
+        "auto_open": auto_open,
+        "showlegend": showlegend,
+        "zoomlevel": zoomlevel,
+    }
 
     traces, _ = _simple_plotly_generic(
         net=net,
@@ -377,7 +377,7 @@ def _simple_plotly_generic(
     # ----- branches (Lines) ------
     # if node geodata is available, but no branch geodata
     if use_branch_geodata is None:
-        use_branch_geodata = False if len(net[branch_element]["geo"]) == 0 else True
+        use_branch_geodata = len(net[branch_element]["geo"]) != 0
     elif use_branch_geodata and len(net[branch_element]["geo"]) == 0:
         logger.warning("No or insufficient line geodata available --> only bus geodata will be used.")
         use_branch_geodata = False
