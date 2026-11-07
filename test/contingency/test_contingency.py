@@ -594,5 +594,17 @@ def get_net(request):
     return net
 
 
+@pytest.mark.parametrize("column", ["max_loading_percent_nminus1", "max_loading_nminus1_percent"])
+def test_get_element_limits_nminus1_column(column):
+    net = case9()
+    net.line["max_loading_percent"] = 100.0
+    assert np.all(get_element_limits(net)["line"]["max_limit_nminus1"] == 100.0)
+    net.line[column] = 80.0
+    limits = get_element_limits(net)["line"]
+    assert np.all(limits["max_limit_nminus1"] == 80.0)
+    assert np.all(limits["min_limit_nminus1"] == -80.0)
+    assert np.all(limits["max_limit"] == 100.0)
+
+
 if __name__ == "__main__":
     pytest.main(["-xs", __file__])
