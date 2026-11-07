@@ -10,7 +10,7 @@ from numpy import array, complex128, empty, float64, int64, r_, zeros
 from scipy.sparse import csr_matrix as sparse
 from scipy.sparse import hstack, vstack
 
-from pandapower.pypower.dSbus_dV import dSbus_dV
+from pandapower.pypower.d_s_bus_d_v import dSbus_dV
 
 try:
     # numba functions

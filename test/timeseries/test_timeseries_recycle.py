@@ -4,7 +4,7 @@ import tempfile
 import numpy as np
 import pytest
 
-from pandapower.control.controller.trafo.ContinuousTapControl import (
+from pandapower.control.controller.trafo.continuous_tap_control import (
     ContinuousTapControl,
 )
 from pandapower.create import (

@@ -22,13 +22,13 @@ class StaticVarCompensatorCim16:
         self.logger.info("Start converting StaticVarCompensator.")
         eq_stat_coms = self._prepare_static_var_compensator_cim16()
         self.cimConverter.copy_to_pp("shunt", eq_stat_coms)
-        self.logger.info("Created %s generators in %ss." % (eq_stat_coms.index.size, time.time() - time_start))
+        self.logger.info(f"Created {eq_stat_coms.index.size} generators in {time.time() - time_start}s.")
         self.cimConverter.report_container.add_log(
             Report(
                 level=LogLevel.INFO,
                 code=ReportCode.INFO_CONVERTING,
-                message="Created %s generators from StaticVarCompensator in %ss."
-                % (eq_stat_coms.index.size, time.time() - time_start),
+                message=f"Created {eq_stat_coms.index.size} generators from StaticVarCompensator in "
+                f"{time.time() - time_start}s.",
             )
         )
 

@@ -24,13 +24,13 @@ class DcLineSegmentsCim16:
 
         self.cimConverter.copy_to_pp("dcline", eq_dc_line_segments)
 
-        self.logger.info("Created %s DC lines in %ss" % (eq_dc_line_segments.index.size, time.time() - time_start))
+        self.logger.info(f"Created {eq_dc_line_segments.index.size} DC lines in {time.time() - time_start}s")
         self.cimConverter.report_container.add_log(
             Report(
                 level=LogLevel.INFO,
                 code=ReportCode.INFO_CONVERTING,
-                message="Created %s DC lines from DCLineSegments in %ss"
-                % (eq_dc_line_segments.index.size, time.time() - time_start),
+                message=f"Created {eq_dc_line_segments.index.size} DC lines from DCLineSegments in "
+                f"{time.time() - time_start}s",
             )
         )
 

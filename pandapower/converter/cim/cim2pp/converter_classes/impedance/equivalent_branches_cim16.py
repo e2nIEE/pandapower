@@ -22,13 +22,13 @@ class EquivalentBranchesCim16:
         self.logger.info("Start converting EquivalentBranches.")
         eq_eb = self._prepare_equivalent_branches_cim16()
         self.cimConverter.copy_to_pp("impedance", eq_eb)
-        self.logger.info("Created %s impedance elements in %ss." % (eq_eb.index.size, time.time() - time_start))
+        self.logger.info(f"Created {eq_eb.index.size} impedance elements in {time.time() - time_start}s.")
         self.cimConverter.report_container.add_log(
             Report(
                 level=LogLevel.INFO,
                 code=ReportCode.INFO_CONVERTING,
-                message="Created %s impedance elements from EquivalentBranches in %ss."
-                % (eq_eb.index.size, time.time() - time_start),
+                message=f"Created {eq_eb.index.size} impedance elements from EquivalentBranches in "
+                f"{time.time() - time_start}s.",
             )
         )
 
@@ -79,29 +79,29 @@ class EquivalentBranchesCim16:
         # if each equivalent branch got two terminals, reduce back to one row to use fast slicing
         if eqb.index.size != eqb_length_before_merge * 2:
             self.logger.error(
-                "There is a problem at the EquivalentBranches source data: Not each EquivalentBranch "
-                "has two Terminals, %s Terminals should be given but there are %s Terminals available"
-                % (eqb_length_before_merge * 2, eqb.index.size)
+                f"There is a problem at the EquivalentBranches source data: Not each EquivalentBranch "
+                f"has two Terminals, {eqb_length_before_merge * 2} Terminals should be given but there are "
+                f"{eqb.index.size} Terminals available"
             )
             self.cimConverter.report_container.add_log(
                 Report(
                     level=LogLevel.ERROR,
                     code=ReportCode.ERROR_CONVERTING,
-                    message="There is a problem at the EquivalentBranches source data: Not each EquivalentBranch "
-                    "has two Terminals, %s Terminals should be given but there are %s Terminals available"
-                    % (eqb_length_before_merge * 2, eqb.index.size),
+                    message=f"There is a problem at the EquivalentBranches source data: Not each EquivalentBranch "
+                    f"has two Terminals, {eqb_length_before_merge * 2} Terminals should be given but there are "
+                    f"{eqb.index.size} Terminals available",
                 )
             )
             dups = eqb.pivot_table(index=["rdfId"], aggfunc="size")  # type: ignore[arg-type]
             dups = dups.loc[dups != 2]  # type: ignore[call-overload]
             for rdfId, count in dups.items():
-                self.logger.warning("The EquivalentBranch with RDF ID %s has %s Terminals!" % (rdfId, count))
-                self.logger.warning("The EquivalentBranch data: \n%s" % eqb[eqb["rdfId"] == rdfId])
+                self.logger.warning(f"The EquivalentBranch with RDF ID {rdfId} has {count} Terminals!")
+                self.logger.warning("The EquivalentBranch data: \n{}".format(eqb[eqb["rdfId"] == rdfId]))
                 self.cimConverter.report_container.add_log(
                     Report(
                         level=LogLevel.WARNING,
                         code=ReportCode.WARNING_CONVERTING,
-                        message="The EquivalentBranch with RDF ID %s has %s Terminals!" % (rdfId, count),
+                        message=f"The EquivalentBranch with RDF ID {rdfId} has {count} Terminals!",
                     )
                 )
             eqb = eqb[0:0]

@@ -41,7 +41,7 @@ except ImportError:
 import logging
 
 from pandapower.auxiliary import soft_dependency_error
-from pandapower.control.controller.DERController.DERBasics import BaseModel
+from pandapower.control.controller.DERController.der_basics import BaseModel
 
 logger = logging.getLogger(__name__)
 

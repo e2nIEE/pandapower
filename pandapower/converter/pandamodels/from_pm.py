@@ -38,7 +38,7 @@ def read_pm_results_to_net(net: pandapowerNet, ppc, ppci, result_pm):
     result, multinetwork = pm_results_to_ppc_results(net, ppc, ppci, result_pm)
     net["_pm_result"] = result.copy()
     net["_pm_org_result"] = result_pm["solution"]
-    if "ne_branch" in result_pm["solution"].keys():
+    if "ne_branch" in result_pm["solution"]:
         net["_pm_result"]["ne_branch"] = result_pm["solution"]["ne_branch"]
     net["_pm_result"]["solve_time"] = result_pm["solve_time"]
 

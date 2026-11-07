@@ -12,7 +12,7 @@ from pandapower.pypower.qps_pips import qps_pips
 # from pandapower.pypower.qps_gurobi import qps_gurobi
 
 
-def qps_pypower(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None, x0=None, opt=None):  # noqa: E741
+def qps_pypower(H, c=None, A=None, l=None, u=None, xmin=None, xmax=None, x0=None, opt=None):
     """Quadratic Program Solver for PYPOWER.
 
     A common wrapper function for various QP solvers.

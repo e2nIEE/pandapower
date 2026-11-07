@@ -19,11 +19,11 @@ from pandapower.pypower.idx_brch import RATE_A
 from pandapower.pypower.idx_bus import BUS_TYPE, GS, PD, REF, VA, VM, VMAX, VMIN
 from pandapower.pypower.idx_cost import COST, MODEL, NCOST, POLYNOMIAL, PW_LINEAR
 from pandapower.pypower.idx_gen import GEN_BUS, PG, PMAX, PMIN, QG, QMAX, QMIN, VG
-from pandapower.pypower.makeAang import makeAang
-from pandapower.pypower.makeApq import makeApq
-from pandapower.pypower.makeAvl import makeAvl
-from pandapower.pypower.makeAy import makeAy
-from pandapower.pypower.makeBdc import makeBdc
+from pandapower.pypower.make_a_ang import makeAang
+from pandapower.pypower.make_a_pq import makeApq
+from pandapower.pypower.make_a_vl import makeAvl
+from pandapower.pypower.make_a_y import makeAy
+from pandapower.pypower.make_b_dc import makeBdc
 from pandapower.pypower.opf_args import opf_args
 from pandapower.pypower.opf_model import opf_model
 from pandapower.pypower.pqcost import pqcost
@@ -112,18 +112,16 @@ def opf_setup(ppc, ppopt):
         ]  # changed from ppc['gencost'][pwl1, COST:COST + 2] = r_[m, b] because we need to make sure, that m and b have the same shape, resulted in a value error due to shape mismatch before
 
     ## create (read-only) copies of individual fields for convenience
-    baseMVA, bus, gen, branch, gencost, _, lbu, ubu, ppopt, _, fparm, H, Cw, z0, zl, zu, userfcn, _ = opf_args(
-        ppc, ppopt
-    )
+    baseMVA, bus, gen, branch, gencost, _, _, _, ppopt, *_, userfcn, _ = opf_args(ppc, ppopt)
 
     ## warn if there is more than one reference bus
     refs = find(bus[:, BUS_TYPE] == REF)
     if len(refs) > 1 and verbose > 0:
         errstr = (
-            "\nopf_setup: Warning: Multiple reference buses.\n"
-            + "           For a system with islands, a reference bus in each island\n"
-            + "           may help convergence, but in a fully connected system such\n"
-            + "           a situation is probably not reasonable.\n\n"
+            f"\nopf_setup: Warning: Multiple reference buses."
+            f"\n{'':11}For a system with islands, a reference bus in each island"
+            f"\n{'':11}may help convergence, but in a fully connected system such"
+            f"\n{'':11}a situation is probably not reasonable.\n\n"
         )
         stdout.write(errstr)
 
@@ -204,12 +202,9 @@ def opf_setup(ppc, ppopt):
     if nusr:  # pragma: no cover
         nz = ppc["A"].shape[1] - nx  ## number of user z variables
         if nz < 0:
-            stderr.write("opf_setup: user supplied A matrix must have at least %d columns.\n" % nx)
-    else:
-        nz = 0  ## number of user z variables
-        if nw:  ## still need to check number of columns of N
-            if ppc["N"].shape[1] != nx:
-                stderr.write("opf_setup: user supplied N matrix must have %d columns.\n" % nx)
+            stderr.write(f"opf_setup: user supplied A matrix must have at least {nx} columns.\n")
+    elif nw and ppc["N"].shape[1] != nx:
+        stderr.write(f"opf_setup: user supplied N matrix must have {nx} columns.\n")
 
     ## construct OPF model object
     om = opf_model(ppc)
