@@ -22,15 +22,13 @@ class AsynchronousMachinesCim16:
         self.logger.info("Start converting AsynchronousMachines.")
         eqssh_asynchronous_machines = self._prepare_asynchronous_machines_cim16()
         self.cimConverter.copy_to_pp("motor", eqssh_asynchronous_machines)
-        self.logger.info(
-            "Created %s motors in %ss." % (eqssh_asynchronous_machines.index.size, time.time() - time_start)
-        )
+        self.logger.info(f"Created {eqssh_asynchronous_machines.index.size} motors in {time.time() - time_start}s.")
         self.cimConverter.report_container.add_log(
             Report(
                 level=LogLevel.INFO,
                 code=ReportCode.INFO_CONVERTING,
-                message="Created %s motors from AsynchronousMachines in %ss."
-                % (eqssh_asynchronous_machines.index.size, time.time() - time_start),
+                message=f"Created {eqssh_asynchronous_machines.index.size} motors from AsynchronousMachines in "
+                f"{time.time() - time_start}s.",
             )
         )
 

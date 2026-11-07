@@ -39,19 +39,19 @@ class ConnectivityNodesCim16:
         bus_merge = pd.merge(eqssh_terminals, bus_merge, how="left", on="ConnectivityNode")
         self.cimConverter.bus_merge = bus_merge
 
-        self.logger.info("Created %s busses in %ss" % (connectivity_nodes.index.size, time.time() - time_start))
+        self.logger.info(f"Created {connectivity_nodes.index.size} busses in {time.time() - time_start}s")
         self.cimConverter.report_container.add_log(
             Report(
                 level=LogLevel.INFO,
                 code=ReportCode.INFO_CONVERTING,
-                message="Created %s busses from ConnectivityNodes / TopologicalNodes in %ss"
-                % (connectivity_nodes.index.size, time.time() - time_start),
+                message=f"Created {connectivity_nodes.index.size} busses from ConnectivityNodes / TopologicalNodes in "
+                f"{time.time() - time_start}s",
             )
         )
 
     def _prepare_connectivity_nodes_cim16(self) -> tuple[pd.DataFrame, pd.DataFrame]:
         # check the model: Bus-Branch or Node-Breaker: In the Bus-Branch model are no ConnectivityNodes
-        node_breaker = True if self.cimConverter.cim["eq"]["ConnectivityNode"].index.size > 0 else False
+        node_breaker = self.cimConverter.cim["eq"]["ConnectivityNode"].index.size > 0
         # use this dictionary to store the source profile from the element (normal or boundary profile)
         cn_dict = {"eq": {sc["o_prf"]: "eq"}, "eq_bd": {sc["o_prf"]: "eq_bd"}, "tp": {sc["o_prf"]: "tp"}}
         if "tp_bd" in self.cimConverter.cim:  # check because tp_bd was removed in cgmes 3.0
@@ -117,14 +117,14 @@ class ConnectivityNodesCim16:
             if eq_subs_duplicates.index.size > 0:
                 self.logger.warning(
                     "More than one VoltageLevel refers to one Substation, maybe the voltages from some buses "
-                    "are incorrect, the problematic VoltageLevels and Substations:\n%s" % eq_subs_duplicates
+                    f"are incorrect, the problematic VoltageLevels and Substations:\n{eq_subs_duplicates}"
                 )
                 self.cimConverter.report_container.add_log(
                     Report(
                         level=LogLevel.WARNING,
                         code=ReportCode.WARNING_CONVERTING,
-                        message="More than one VoltageLevel refers to one Substation, maybe the voltages from some buses "
-                        "are incorrect, the problematic VoltageLevels and Substations:\n%s" % eq_subs_duplicates,
+                        message="More than one VoltageLevel refers to one Substation, maybe the voltages from some "
+                        "buses are incorrect, the problematic VoltageLevels and Substations:\n{eq_subs_duplicates}",
                     )
                 )
             eq_subs = eq_subs.drop_duplicates(["rdfId"], keep="first")
@@ -342,15 +342,15 @@ class ConnectivityNodesCim16:
             dups = connectivity_nodes.pivot_table(index=["rdfId"], aggfunc=lambda x: x.size)
             dups = dups.loc[dups != 1]  # type: ignore[call-overload]
             for rdfId, count in dups.items():
-                self.logger.warning("The ConnectivityNode with RDF ID %s has %s TopologicalNodes!" % (rdfId, count))
+                self.logger.warning(f"The ConnectivityNode with RDF ID {rdfId} has {count} TopologicalNodes!")
                 self.logger.warning(
-                    "The ConnectivityNode data: \n%s" % connectivity_nodes[connectivity_nodes["rdfId"] == rdfId]
+                    "The ConnectivityNode data: \n{}".format(connectivity_nodes[connectivity_nodes["rdfId"] == rdfId])
                 )
                 self.cimConverter.report_container.add_log(
                     Report(
                         level=LogLevel.WARNING,
                         code=ReportCode.WARNING_CONVERTING,
-                        message="The ConnectivityNode with RDF ID %s has %s TopologicalNodes!" % (rdfId, count),
+                        message=f"The ConnectivityNode with RDF ID {rdfId} has {count} TopologicalNodes!",
                     )
                 )
             connectivity_nodes = connectivity_nodes.drop_duplicates(subset=["rdfId"], keep="first")

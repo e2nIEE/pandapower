@@ -27,13 +27,13 @@ class NonLinearShuntCompensatorCim16:
             self.cimConverter.copy_to_pp("shunt", eqssh_shunts)
         else:
             eqssh_shunts = pd.DataFrame(None)
-        self.logger.info("Created %s shunts in %ss." % (eqssh_shunts.index.size, time.time() - time_start))
+        self.logger.info(f"Created {eqssh_shunts.index.size} shunts in {time.time() - time_start}s.")
         self.cimConverter.report_container.add_log(
             Report(
                 level=LogLevel.INFO,
                 code=ReportCode.INFO_CONVERTING,
-                message="Created %s shunts from NonlinearShuntCompensator in %ss."
-                % (eqssh_shunts.index.size, time.time() - time_start),
+                message=f"Created {eqssh_shunts.index.size} shunts from NonlinearShuntCompensator in "
+                f"{time.time() - time_start}s.",
             )
         )
 

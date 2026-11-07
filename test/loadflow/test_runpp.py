@@ -55,7 +55,7 @@ from pandapower.pf.create_jacobian import _create_J_without_numba
 from pandapower.pf.run_newton_raphson_pf import _get_pf_variables_from_ppci
 from pandapower.powerflow import LoadflowNotConverged
 from pandapower.pypower.idx_brch import BR_B, BR_G, BR_R, BR_X
-from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
+from pandapower.pypower.make_y_bus import makeYbus as makeYbus_pypower
 from pandapower.results import reset_results
 from pandapower.run import runopp, runpp, set_user_pf_options
 from pandapower.toolbox.comparison import nets_equal

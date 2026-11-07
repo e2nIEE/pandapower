@@ -71,7 +71,7 @@ def from_mpc(
         if "_options" not in net:
             net["_options"] = {}
         net._options.update(ppc["mpc_additional_data"])
-        logger.info("added fields %s in net._options" % list(ppc["mpc_additional_data"].keys()))
+        logger.info(f"added fields {list(ppc['mpc_additional_data'].keys())} in net._options")
 
     return net
 
@@ -134,7 +134,7 @@ def _copy_data_from_mpc_to_ppc(ppc, mpc, casename_mpc_file):
 
         try:
             ppc["gencost"] = mpc[casename_mpc_file].gencost
-        except Exception:
+        except Exception:  # noqa: BLE001
             logger.info("gencost is not in mpc")
 
         for k in mpc[casename_mpc_file]._fieldnames:
