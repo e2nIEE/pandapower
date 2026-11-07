@@ -28,7 +28,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           python-version: '3.14'
           enable-cache: true
@@ -36,7 +36,7 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --all-extras
-          uv pip install ruff
+          uv pip install ruff --no-build
       - name: Ruff Format Check
         run: uv run ruff format --check
       - name: Ruff Check
@@ -56,7 +56,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -65,13 +65,13 @@ jobs:
         if: ${{matrix.python-version != '3.11'}}
         run: |
           uv sync --extra all --extra test --extra pandamodels --extra pgm
-          uv pip install pytest-split
+          uv pip install pytest-split --no-build
           uv pip uninstall juliacall
       - name: Install dependencies # Test without pgm
         if: ${{matrix.python-version == '3.11'}}
         run: |
           uv sync --extra all --extra test --extra pandamodels
-          uv pip install pytest-split
+          uv pip install pytest-split --no-build
           uv pip uninstall juliacall
       - name: List of installed packages
         run: |
@@ -83,7 +83,7 @@ jobs:
       - name: Test with pytest, Codecov and Coverage
         if: ${{ matrix.python-version == '3.12' }} # collecting on 3.12 (oldest version where pgm is included)
         run: |
-          uv pip install pytest-cov numpy~=1.26
+          uv pip install pytest-cov numpy~=1.26 --no-build
           uv run pytest --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }} $IGNORES
           cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
       - name: Upload coverage as artifact
@@ -108,7 +108,7 @@ jobs:
 #      - uses: julia-actions/setup-julia # Update version when using this by adding commit sha!
       - uses: actions/checkout@v6
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           #python-version: ${{ matrix.python-version }}
           python-version: '3.14'
@@ -118,7 +118,7 @@ jobs:
         run: |
           uv sync --extra all --extra test --extra pandamodels --extra pgm
           uv pip uninstall juliacall
-          uv pip install pytest-cov pytest-split
+          uv pip install pytest-cov pytest-split --no-build
       - name: List of installed packages
         run: |
           uv pip list
@@ -142,16 +142,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           python-version: "3.14"
           enable-cache: true
           cache-dependency-glob: "pyproject.toml"
       - name: Install dependencies
         run: |
-          uv sync --extra dev          
-          uv pip install pytest-split
-          uv pip install numpy~=1.26
+          uv sync --extra dev
+          uv pip install pytest-split --no-build
+          uv pip install numpy~=1.26 --no-build
           uv pip uninstall juliacall
       - name: List of installed packages
         run: |
@@ -174,7 +174,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -182,7 +182,7 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --extra pandamodels --extra test
-          uv pip install pytest-cov pytest-split
+          uv pip install pytest-cov pytest-split --no-build
       - name: Setup Julia
         uses: julia-actions/setup-julia@5c9647d97b78a5debe5164e9eec09d653d29bd71 #v2
         with:
@@ -252,7 +252,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -260,8 +260,8 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --extra dev
-          uv pip install pytest-split
-          if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
+          uv pip install pytest-split --no-build
+          if [ -f requirements.txt ]; then uv pip install -r requirements.txt --no-build; fi
       - name: List of installed packages
         run: |
           uv pip list
@@ -279,7 +279,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -287,14 +287,14 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --extra test
-          uv pip install setuptools
-          uv pip install matplotlib
-          uv pip install lxml
-          if ${{ matrix.python-version != '3.11' }}; then uv pip install numba; fi
+          uv pip install setuptools --no-build
+          uv pip install matplotlib --no-build
+          uv pip install lxml --no-build
+          if ${{ matrix.python-version != '3.11' }}; then uv pip install numba --no-build; fi
       - name: Install pandapipes and simbench
         run: |
-          uv pip install git+https://github.com/e2nIEE/pandapipes@develop#egg=pandapipes
-          uv pip install git+https://github.com/e2nIEE/simbench@develop#egg=simbench
+          uv pip install git+https://github.com/e2nIEE/pandapipes@develop#egg=pandapipes --no-build
+          uv pip install git+https://github.com/e2nIEE/simbench@develop#egg=simbench --no-build
       - name: List of installed packages
         run: |
           uv pip list
@@ -318,7 +318,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -326,7 +326,7 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync
-          uv pip install flake8 matplotlib
+          uv pip install flake8 matplotlib --no-build
       - name: List of installed packages
         run: |
           uv pip list
@@ -384,7 +384,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
@@ -425,7 +425,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           python-version: '3.14'
           enable-cache: true
@@ -467,7 +467,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7.0.1
       - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
+        uses: astral-sh/setup-uv@c18668ad3cf93ea998bef934396af7bb5c839dc7
         with:
           python-version: ${{ matrix.python-version }}
           enable-cache: true
