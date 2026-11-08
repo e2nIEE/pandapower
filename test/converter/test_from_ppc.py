@@ -4,6 +4,7 @@
 import logging
 import os
 import pickle
+from copy import deepcopy
 from importlib.util import find_spec
 
 import numpy as np
@@ -69,7 +70,20 @@ def test_from_ppc_simple_against_target():
         net_by_code.impedance
     )  # TODO: due to changes in the models this tests fails.
     assert len(net_by_ppc.ext_grid) == len(net_by_code.ext_grid)
-    assert nets_equal(net_by_ppc, net_by_code, check_only_results=True, atol=1e-9)
+    # from_ppc represents the transformer BR_B by shunts at both branch ends, while net_by_code
+    # holds it in the transformer magnetizing branch. Bus voltages and the other element results
+    # are equal, and the trafo flows plus the end shunt flows equal the reference trafo flows.
+    assert nets_equal(
+        net_by_ppc, net_by_code, check_only_results=True, atol=1e-9, exclude_elms=["bus", "trafo", "shunt"]
+    )
+    vm_va = ["vm_pu", "va_degree"]
+    assert np.allclose(net_by_ppc.res_bus[vm_va], net_by_code.res_bus.loc[net_by_ppc.bus.index, vm_va], atol=1e-9)
+    shunt_res = net_by_ppc.res_shunt.groupby(net_by_ppc.shunt.bus)[["p_mw", "q_mvar"]].sum()
+    trafo_hv_lv = net_by_ppc.trafo[["hv_bus", "lv_bus"]].values
+    pq_cols = [["p_hv_mw", "q_hv_mvar"], ["p_lv_mw", "q_lv_mvar"]]
+    for side, cols in enumerate(pq_cols):
+        trafo_with_shunt = net_by_ppc.res_trafo[cols].values + shunt_res.loc[trafo_hv_lv[:, side]].values
+        assert np.allclose(trafo_with_shunt, net_by_code.res_trafo[cols].values, atol=1e-9)
 
 
 @pytest.mark.xfail
@@ -368,6 +382,78 @@ def overwrite_results_data_of_ppc_pickle(file_name, grid_names):
     with open(file, "wb") as handle:
         # pickle.dump(ppcs, handle, protocol=pickle.HIGHEST_PROTOCOL)
         pickle.dump(ppcs, handle, protocol=4)  # as long as py3.7 is supported, 4 is the highest protocol
+
+
+def _two_bus_trafo_ppc(from_lv, tap, shift, branch_b=0.0):
+    bus = np.array(
+        [[1, 3, 0, 0, 0, 0, 1, 1.0, 0, 345.0, 1, 1.1, 0.9], [2, 1, 80, 20, 0, 0, 1, 1.0, 0, 138.0, 1, 1.1, 0.9]],
+        dtype=float,
+    )
+    gen = np.array([[1, 0, 0, 999, -999, 1.0, 100, 1, 999, 0] + [0] * 11], dtype=float)
+    f_bus, t_bus = (2, 1) if from_lv else (1, 2)
+    branch = np.array([[f_bus, t_bus, 0.002, 0.08, branch_b, 250, 250, 250, tap, shift, 1, -360, 360]], dtype=float)
+    return {"version": "2", "baseMVA": 100.0, "bus": bus, "gen": gen, "branch": branch}
+
+
+@pytest.mark.parametrize("from_lv", [False, True])
+@pytest.mark.parametrize("tap, shift", [(1.05, 0.0), (0.95, 0.0), (1.05, 10.0), (1.0, -15.0)])
+@pytest.mark.parametrize("tap_side", ["hv", "lv"])
+def test_trafo_tap_at_from_bus(from_lv, tap, shift, tap_side):
+    """The ppc tap ratio and phase shift act at the FROM bus, also when it is the lv bus."""
+    ppc = _two_bus_trafo_ppc(from_lv, tap, shift)
+    net = from_ppc(ppc, f_hz=60, tap_side=tap_side)
+    runpp(net)
+    ybus = net._ppc["internal"]["Ybus"].toarray()
+    lookup = net._pd2ppc_lookups["bus"][net.bus.index.values]
+    ybus = ybus[np.ix_(lookup, lookup)]
+
+    r, x, t_ratio, sh = ppc["branch"][0, [2, 3, 8, 9]]
+    f, t = ppc["branch"][0, :2].astype(np.int64) - 1
+    ys = 1 / (r + 1j * x)
+    tps = t_ratio * np.exp(1j * np.deg2rad(sh))
+    expected = np.zeros((2, 2), dtype=complex)
+    expected[f, f] = ys / (tps * np.conj(tps))
+    expected[f, t] = -ys / np.conj(tps)
+    expected[t, f] = -ys / tps
+    expected[t, t] = ys
+    assert np.allclose(ybus, expected, atol=1e-10)
+
+
+@pytest.mark.parametrize("from_lv", [False, True])
+@pytest.mark.parametrize("tap_side", ["hv", "lv"])
+@pytest.mark.parametrize("branch_b", [-0.1, 0.1])
+def test_trafo_branch_charging_matches_ppc(from_lv, tap_side, branch_b):
+    """Transformer branch charging is represented by end shunts, including for B > 0."""
+    ppc = _two_bus_trafo_ppc(from_lv=from_lv, tap=1.05, shift=10.0, branch_b=branch_b)
+    net = from_ppc(ppc, f_hz=60, tap_side=tap_side)
+    runpp(net)
+    ybus = net._ppc["internal"]["Ybus"].toarray()
+    lookup = net._pd2ppc_lookups["bus"][net.bus.index.values]
+    ybus = ybus[np.ix_(lookup, lookup)]
+
+    r, x, tap_ratio, shift = ppc["branch"][0, [2, 3, 8, 9]]
+    ys = 1 / (r + 1j * x)
+    tap_complex = tap_ratio * np.exp(1j * np.deg2rad(shift))
+    f, t = ppc["branch"][0, :2].astype(np.int64) - 1
+    expected = np.zeros((2, 2), dtype=complex)
+    expected[f, f] = (ys + 1j * branch_b / 2) / abs(tap_complex) ** 2
+    expected[f, t] = -ys / np.conj(tap_complex)
+    expected[t, f] = -ys / tap_complex
+    expected[t, t] = ys + 1j * branch_b / 2
+    assert np.allclose(ybus, expected, atol=1e-10)
+    assert np.all(net.trafo.i0_percent == 0)
+
+
+def test_case300_from_ppc_matches_pypower():
+    pytest.importorskip("pypower")
+    from pypower.api import runpf
+    from pypower.ppoption import ppoption
+
+    ppc = get_testgrids("pypower_cases", "case300.json")
+    ppc_reference, success = runpf(deepcopy(ppc), ppoption(OUT_ALL=0, VERBOSE=0))
+    assert success
+    net = from_ppc(ppc_reference, f_hz=60)
+    assert validate_from_ppc(ppc_reference, net, max_diff_values=max_diff_values1)
 
 
 if __name__ == "__main__":

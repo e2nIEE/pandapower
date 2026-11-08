@@ -15,12 +15,12 @@
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": 50.916789947891964
+            "_object": 51.43403894357971
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": -3.7787204090706297
+            "_object": -33.58154309735663
           },
           {
             "_module": "numpy",
@@ -132,7 +132,7 @@
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": 9.999999999382595
+            "_object": 9.999999999382766
           },
           {
             "_module": "numpy",
@@ -244,7 +244,7 @@
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": 52.28957364198044
+            "_object": 84.76356891391058
           },
           {
             "_module": "numpy",
@@ -460,12 +460,12 @@
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": 0.9673449057900133
+            "_object": 0.9827812826178461
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": -1.3959011617142048
+            "_object": -1.2636883775365548
           },
           {
             "_module": "numpy",
@@ -532,12 +532,12 @@
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": 0.9620980395265021
+            "_object": 0.9805961185581694
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": -1.5646165434336605
+            "_object": -1.5657988875610633
           },
           {
             "_module": "numpy",
@@ -604,12 +604,12 @@
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": 0.9661187754065664
+            "_object": 0.9872218486024721
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": -1.1881226862714493
+            "_object": -1.187327150331831
           },
           {
             "_module": "numpy",
@@ -676,12 +676,12 @@
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": 0.9764822609434244
+            "_object": 1.0003487386614633
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": -1.175782587838459
+            "_object": -1.3130850777217626
           },
           {
             "_module": "numpy",
@@ -748,12 +748,12 @@
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": 1.0199999999999998
+            "_object": 1.02
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": -0.1229402144915331
+            "_object": -0.1636648865909966
           },
           {
             "_module": "numpy",
@@ -2450,22 +2450,22 @@
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": 39.742831952666755
+            "_object": 36.55336928289627
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": 7.3712871818335
+            "_object": -18.74331934341307
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": -39.74283195266676
+            "_object": -36.55336928289627
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": -6.374029883905207
+            "_object": 19.77331273336385
           }
         ],
         "dtype": "float64"
@@ -2542,22 +2542,22 @@
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": 39.10039362024596
+            "_object": 36.21195977753615
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": 11.695249050115198
+            "_object": -14.602607980684503
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": -38.92239643564036
+            "_object": -36.054116643839414
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": -11.51725186550959
+            "_object": 14.760451114381237
           }
         ],
         "dtype": "float64"
@@ -2634,22 +2634,22 @@
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": -61.077603564359904
+            "_object": -63.94588335616004
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": -38.482748134490365
+            "_object": -64.76045111437953
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": 61.07760356435991
+            "_object": 63.94588335616004
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": 39.0457571889591
+            "_object": 65.62185515296542
           }
         ],
         "dtype": "float64"
@@ -2726,22 +2726,22 @@
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": -51.07760356435969
+            "_object": -53.94588335616095
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": -49.04575718895769
+            "_object": -75.62185515296497
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": 51.61483153153362
+            "_object": 54.83124776452888
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": 49.582985156131606
+            "_object": 76.50721956133289
           }
         ],
         "dtype": "float64"
@@ -2818,22 +2818,22 @@
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": 11.173957995224974
+            "_object": 14.880669660683369
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": -11.150007590904043
+            "_object": -14.838223753943197
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": -11.150007590903916
+            "_object": -14.838223753943414
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": 11.173957995225097
+            "_object": 14.880669660683152
           }
         ],
         "dtype": "float64"
@@ -2910,22 +2910,22 @@
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": -31.150007590905357
+            "_object": -34.83822375394423
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": -39.582985156748954
+            "_object": -66.50721956195127
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": 31.15000759090536
+            "_object": 34.83822375394423
           },
           {
             "_module": "numpy",
             "_class": "float64",
-            "_object": 41.115615646754186
+            "_object": 69.88289925322671
           }
         ],
         "dtype": "float64"
