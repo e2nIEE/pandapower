@@ -126,9 +126,11 @@ def branch_dict_to_ppci_branch_list(net: pandapowerNet, branch_dict: dict[str, l
     :param branch_dict: dictionary should include branch types as keys 'line', 'trafo', 'trafo3, 'impedance' and
                         for each key a list of indices.
     :return: list of ppci branch indices, dict for branch type ppci lookup
+    :raises ValueError: if branch_dict selects branches that are out of service (they are not part of the ppci)
     """
     branch_id_ppci = []
     ppci_branch_lookup = {}
+    out_of_service: dict[str, list] = {}
     s = 0
     t = 0
     for br_type in ("line", "trafo", "impedance", "trafo3w"):
@@ -141,19 +143,36 @@ def branch_dict_to_ppci_branch_list(net: pandapowerNet, branch_dict: dict[str, l
                 trafo3w_lookup = _get_trafo3w_lookup(net)
                 if trafo3w_lookup is not None:
                     for trafo_type in ["trafo3w_hv", "trafo3w_mv", "trafo3w_lv"]:
-                        branch_id_ppci += list(trafo3w_lookup[trafo_type][branch_id])
+                        trafo_3w_side_ppci_ix = trafo3w_lookup[trafo_type][branch_id]
+                        _collect_out_of_service(out_of_service, trafo_type, br_list, trafo_3w_side_ppci_ix)
+                        branch_id_ppci += list(trafo_3w_side_ppci_ix)
                         ppci_branch_lookup[trafo_type] = [s, t]
                         s = t
                         t += len(branch_id)
             else:
                 br_lookup: npt.NDArray | None = _get_branch_lookup(net, br_type)
                 if br_lookup is not None:
-                    branch_id_ppci += list(br_lookup[branch_id])
+                    br_ppci_ix = br_lookup[branch_id]
+                    _collect_out_of_service(out_of_service, br_type, br_list, br_ppci_ix)
+                    branch_id_ppci += list(br_ppci_ix)
                     ppci_branch_lookup[br_type] = [s, t]
 
             s = t
 
+    if out_of_service:
+        raise ValueError(
+            "branch_dict selects out-of-service branches, which are not part of the ppci and cannot be selected: "
+            + ", ".join(f"{br_type} {ix}" for br_type, ix in out_of_service.items())
+        )
+
     return branch_id_ppci, ppci_branch_lookup
+
+
+def _collect_out_of_service(out_of_service: dict[str, list], br_type: str, br_list: list, ppci_ix: npt.NDArray) -> None:
+    # out-of-service branches have the lookup value -1, which would silently select the last ppci row
+    oos_mask = np.asarray(ppci_ix) < 0
+    if np.any(oos_mask):
+        out_of_service[br_type] = [br_list[i] for i in np.flatnonzero(oos_mask)]
 
 
 def get_dist_slack(net: pandapowerNet, pf_required: bool = True) -> tuple[pd.DataFrame, dict]:
