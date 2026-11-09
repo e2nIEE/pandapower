@@ -43,6 +43,7 @@ def pf_res_plotly(
     current_unit: Literal["", "k"] = "k",
     voltage_unit: Literal["", "k"] = "k",
     zoomlevel: int = 11,
+    plot_out_of_service: bool = True,
 ):
     """
     Plots a pandapower network in plotly
@@ -72,37 +73,25 @@ def pf_res_plotly(
             - 'dark'
             - 'satellite'
 
-            **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
-
-            **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the network geodata
+        figsize: aspectratio is multiplied by it in order to get final image size
+        aspectratio: when 'auto' it preserves original aspect ratio of the network geodata
             any custom aspectration can be given as a tuple, e.g. (1.2, 1)
+        line_width: width of lines
+        bus_size:  size of buses to plot.
+        climits_volt: limits of the colorbar for voltage
+        climits_load: limits of the colorbar for line_loading
+        cpos_volt: position of the bus voltage colorbar
+        cpos_load: position of the loading percent colorbar
+        filename: filename / path to plot to. Should end on `*.html`
+        auto_open: automatically open plot in browser
+        power_unit: default unit of displayed P, Q, S data ["", "k", "M"]
+        current_unit: default unit of displayed I data ["", "k"]
+        voltage_unit: default unit of displayed V data ["", "k"]
+        zoomlevel: initial zoomlevel of map plot (only if on_map=True)
+        plot_out_of_service: should out of service elements be plotted?
 
-            **line_width** (float, 1.0) - width of lines
-
-            **bus_size** (float, 10.0) -  size of buses to plot.
-
-            **climits_volt** (tuple, (0.9, 1.0)) - limits of the colorbar for voltage
-
-            **climits_load** (tuple, (0, 100)) - limits of the colorbar for line_loading
-
-            **cpos_volt** (float, 1.0) - position of the bus voltage colorbar
-
-            **cpos_load** (float, 1.1) - position of the loading percent colorbar
-
-            **filename** (str, "temp-plot.html") - filename / path to plot to. Should end on `*.html`
-
-            **auto_open** (bool, True) - automatically open plot in browser
-
-            **power_unit** (str, 'k') - default unit of displayed P, Q, S data ["", "k", "M"]
-
-            **current_unit** (str, '') - default unit of displayed I data ["", "k"]
-
-            **voltage_unit** (str, '') - default unit of displayed V data ["", "k"]
-
-            **zoomlevel** (int, 11): initial zoomlevel of map plot (only if on_map=True)
-
-        OUTPUT:
-            **figure** (graph_objs._figure.Figure) figure object
+    Returns:
+        figure (graph_objs._figure.Figure): figure object
     """
     if "res_bus" not in net or net.res_bus.shape[0] == 0:
         logger.warning("There are no Power Flow results. A Newton-Raphson power flow will be executed.")
@@ -118,24 +107,12 @@ def pf_res_plotly(
             logger.warning("Map plots not available with artificial coordinates and will be disabled!")
             on_map = False
 
-    # for geo_type in ["bus_geodata", "line_geodata"]:
-    #     dupl_geo_idx = pd.Series(net[geo_type].index)[pd.Series(
-    #             net[geo_type].index).duplicated()]
-    #     if len(dupl_geo_idx):
-    #         if len(dupl_geo_idx) > 20:
-    #             logger.warning("In net.%s are %i duplicated " % (geo_type, len(dupl_geo_idx)) +
-    #                            "indices. That can cause troubles for draw_traces()")
-    #         else:
-    #             logger.warning("In net.%s are the following duplicated " % geo_type +
-    #                            "indices. That can cause troubles for draw_traces(): " + str(
-    #                            dupl_geo_idx))
-
-    # check if geodata are real geographycal lat/lon coordinates using geopy
+    # check if geodata are real geographical lat/lon coordinates using geopy
     if on_map and projection is not None:
         convert_crs(net, epsg_in=projection, epsg_out=4326)
 
     # ----- Buses ------
-    # initializating bus trace
+    # initializing bus trace
     # hoverinfo which contains name and pf results
     precision = 3
 
@@ -153,41 +130,29 @@ def pf_res_plotly(
     else:
         power_factor = 1e6
 
+    bus_ids = net.bus.index
+    if not plot_out_of_service:
+        bus_ids = bus_ids[net.bus.in_service is True]
     hoverinfo = (
         net.bus.name.astype(str)
-        + "<br />"
-        + "V_m = "
+        + "<br />V_m = "
         + net.res_bus.vm_pu.round(precision).astype(str)
-        + " pu"
-        + "<br />"
-        + "V_m = "
+        + " pu<br />V_m = "
         + (net.res_bus.vm_pu * net.bus.vn_kv.round(2) * voltage_factor).round(precision).astype(str)
-        + " "
-        + voltage_unit
-        + "V"
-        + "<br />"
-        + "V_a = "
+        + f" {voltage_unit}V<br />V_a = "
         + net.res_bus.va_degree.round(precision).astype(str)
-        + " deg"
-        + "<br />"
-        + "P = "
+        + " deg<br />P = "
         + (net.res_bus.p_mw * power_factor).round(precision).astype(str)
-        + " "
-        + power_unit
-        + "W"
-        + "<br />"
-        + "Q = "
+        + f" {power_unit}W<br />Q = "
         + (net.res_bus.q_mvar * power_factor).round(precision).astype(str)
-        + " "
-        + power_unit
-        + "Var"
+        + f" {power_unit}Var"
     ).tolist()
     hoverinfo = pd.Series(index=net.bus.index, data=hoverinfo)
     bus_trace = create_bus_trace(
         net,
-        net.bus.index,
+        bus_ids,
         size=bus_size,
-        infofunc=hoverinfo,
+        infofunc=hoverinfo[bus_ids],
         cmap=cmap,
         cbar_title="Bus Voltage [pu]",
         cmin=climits_volt[0],
@@ -212,57 +177,35 @@ def pf_res_plotly(
     else:
         current_factor = 1e3
 
+    line_ids = net.line.index
+    if not plot_out_of_service:
+        line_ids = line_ids[net.line.in_service is True]
     hoverinfo = (
         net.line.name.astype(str)
-        + "<br />"
-        + "I = "
+        + "<br />I = "
         + net.res_line.loading_percent.round(precision).astype(str)
-        + " %"
-        + "<br />"
-        + "I_from = "
+        + " %<br />I_from = "
         + (net.res_line.i_from_ka * current_factor).round(precision).astype(str)
-        + " "
-        + current_unit
-        + "A"
-        + "<br />"
-        + "I_to = "
+        + f" {current_unit}A<br />I_to = "
         + (net.res_line.i_to_ka * current_factor).round(precision).astype(str)
-        + " "
-        + current_unit
-        + "A"
-        + "<br />"
-        + "P_from = "
+        + f" {current_unit}A<br />P_from = "
         + (net.res_line.p_from_mw * power_factor).round(precision).astype(str)
-        + " "
-        + power_unit
-        + "W"
-        + "<br />"
-        + "P_to = "
+        + f" {power_unit}W<br />P_to = "
         + (net.res_line.p_to_mw * power_factor).round(precision).astype(str)
-        + " "
-        + power_unit
-        + "W"
-        + "<br />"
-        + "Q_from = "
+        + f" {power_unit}W<br />Q_from = "
         + (net.res_line.q_from_mvar * power_factor).round(precision).astype(str)
-        + " "
-        + power_unit
-        + "Var"
-        + "<br />"
-        + "Q_to = "
+        + f" {power_unit}Var<br />Q_to = "
         + (net.res_line.q_to_mvar * power_factor).round(precision).astype(str)
-        + " "
-        + power_unit
-        + "Var"
+        + f" {power_unit}Var"
     ).tolist()
-
     hoverinfo = pd.Series(index=net.line.index, data=hoverinfo)
     line_traces = create_line_trace(
         net,
+        line_ids,
         use_line_geo=use_line_geo,
         respect_switches=True,
         width=line_width,
-        infofunc=hoverinfo,
+        infofunc=hoverinfo[line_ids],
         cmap=cmap_lines,
         cmap_vals=net.res_line["loading_percent"].values,
         cmin=climits_load[0],
@@ -272,64 +215,44 @@ def pf_res_plotly(
     )
 
     # ----- Trafos ------
+    trafo_ids = net.trafo.index
+    if not plot_out_of_service:
+        trafo_ids = trafo_ids[net.trafo.in_service is True]
     # hoverinfo which contains name and pf results
     hoverinfo = (
         net.trafo.name.astype(str)
-        + "<br />"
-        + "I = "
+        + "<br />I = "
         + net.res_trafo.loading_percent.round(precision).astype(str)
-        + " %"
-        + "<br />"
-        + "I_hv = "
+        + f" %<br />I_hv = "
         + (net.res_trafo.i_hv_ka * current_factor).round(precision).astype(str)
-        + " "
-        + current_unit
-        + "A"
-        + "<br />"
-        + "I_lv = "
+        + f" {current_unit}A<br />I_lv = "
         + (net.res_trafo.i_lv_ka * current_factor).round(precision).astype(str)
-        + " "
-        + current_unit
-        + "A"
-        + "<br />"
-        + "P_hv = "
+        + f" {current_unit}A<br />P_hv = "
         + (net.res_trafo.p_hv_mw * power_factor).round(precision).astype(str)
-        + " "
-        + power_unit
-        + "W"
-        + "<br />"
-        + "P_lv = "
+        + f" {power_unit}W<br />P_lv = "
         + (net.res_trafo.p_lv_mw * power_factor).round(precision).astype(str)
-        + " "
-        + power_unit
-        + "W"
-        + "<br />"
-        + "Q_hv = "
+        + f" {power_unit}W<br />Q_hv = "
         + (net.res_trafo.q_hv_mvar * power_factor).round(precision).astype(str)
-        + " "
-        + power_unit
-        + "Var"
-        + "<br />"
-        + "Q_lv = "
+        + f" {power_unit}Var<br />Q_lv = "
         + (net.res_trafo.q_lv_mvar * power_factor).round(precision).astype(str)
-        + " "
-        + power_unit
-        + "Var"
-        + "<br />"
+        + f" {power_unit}Var<br />"
     ).tolist()
     hoverinfo = pd.Series(index=net.trafo.index, data=hoverinfo)
     trafo_traces = create_trafo_trace(
-        net, width=line_width * 1.5, infofunc=hoverinfo, cmap=cmap_lines, cmin=0, cmax=100
+        net, trafo_ids, width=line_width * 1.5, infofunc=hoverinfo[trafo_ids], cmap=cmap_lines, cmin=0, cmax=100
     )
 
     # ----- Ext grid ------
     ext_grid_trace = []
     # get external grid from create_bus_trace
     if "ext_grid" in net and len(net.ext_grid):
+        ext_grid_ids = net.ext_grid.index
+        if not plot_out_of_service:
+            ext_grid_ids = ext_grid_ids[net.ext_grid.in_service is True]
         marker_type = "circle" if on_map else "square"
         ext_grid_trace = create_bus_trace(
             net,
-            buses=net.ext_grid.bus,
+            buses=net.ext_grid[ext_grid_ids].bus,
             color="grey",
             size=bus_size * 2,
             trace_name="external_grid",
