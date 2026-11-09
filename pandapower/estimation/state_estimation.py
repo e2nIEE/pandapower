@@ -10,9 +10,8 @@ __all__ = [
     "remove_bad_data",
 ]
 
+import datetime
 import logging
-from datetime import datetime
-from datetime.timezone import UTC
 
 import numpy as np
 from scipy.stats import chi2
@@ -298,7 +297,7 @@ class StateEstimation:
             self.ppc, self.eppci = None, None
 
         if algorithm == "wls" or algorithm == "af-wls":
-            now = datetime.now(tz=UTC)
+            now = datetime.datetime.now(tz=datetime.UTC)
             se_results = {
                 "success": self.solver.successful,
                 "num_iterations": self.solver.iterations,
