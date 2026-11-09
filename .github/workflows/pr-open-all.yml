@@ -9,7 +9,7 @@ on:
       - '**/CHANGELOG.rst'
   # NOTE: Schedule always runs on the default branch of a repository. In our case this is develop.
   schedule:
-    - cron: '0 22 * * 1-5'  # run once a day at 22:00 UTC Mo-Fr (coverage for develop branch)
+    - cron: '0 22 * * 0-5'  # run once a day at 22:00 UTC So-Fr (coverage for develop branch)
 
 permissions:
   contents: read
@@ -46,6 +46,10 @@ jobs:
         run: uv run ruff check
 
   build:
+    needs:
+      - ruff-check
+      - linting
+      - typing
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -306,7 +310,6 @@ jobs:
 
   linting:
     # run flake8 and check for errors
-    needs: build
     runs-on: ubuntu-latest
     continue-on-error: true
     strategy:
@@ -333,11 +336,11 @@ jobs:
         continue-on-error: true
         run: |
           # stop the build if there are Python syntax errors or undefined names (omitted by exit-zero)
-          uv run flake8 . --exclude .venv --count --exit-zero --select=E9,F63,F7,F82 --show-source --statistics
+          uv run flake8 . --exclude .venv --count --select=E9,F63,F7,F82 --show-source --statistics
       - name: Lint with flake8 (all errors and warnings)
         run: |
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          uv run flake8 . --exclude .venv --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          uv run flake8 . --exclude .venv --count --max-complexity=10 --max-line-length=127 --statistics
 
   postgresql:
     # for the one test to cover postgresql
