@@ -8,8 +8,6 @@
 
 """Solves the power flow using a full Newton's method."""
 
-import copy
-
 import numpy as np
 from numpy import (
     angle,
@@ -249,7 +247,6 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     vsc_mode_ac = vsc[vsc_branches[vsc_controllable], VSC_MODE_AC]
     vsc_value_ac = vsc[vsc_branches[vsc_controllable], VSC_VALUE_AC]
     vsc_mode_dc = vsc[vsc_branches[vsc_controllable], VSC_MODE_DC]
-    vsc_value_dc = vsc[vsc_branches[vsc_controllable], VSC_VALUE_DC]
     vsc_y_pu = 1 / (vsc[vsc_branches, VSC_R] + 1j * vsc[vsc_branches, VSC_X].real)
     # make sure this is not 0 in the inputs!
     with np.errstate(all="raise"):
@@ -299,32 +296,35 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     V_dc = bus_dc[:, DC_VM]  # initial voltage vector for the DC line
 
     # Set VSC dc voltage if vsc in dc slack mode
-    v_set_point_index = vsc_controllable & (vsc_mode_dc == VSC_MODE_DC_V) & (vsc_dc_mb < 0)
-    if len(vsc_value_dc[v_set_point_index]) > 0:
-        V_dc[vsc[v_set_point_index, VSC_BUS_DC].astype(np.int64)] = vsc_value_dc[v_set_point_index]
+    # (masks, modes and values refer to the in-service VSC vsc_branches, so that non-controllable VSC are skipped
+    # without shifting the values of the other VSC)
+    v_set_point_index = vsc_controllable & (vsc_mode_dc_all == VSC_MODE_DC_V) & (vsc_dc_mb < 0)
+    if np.any(v_set_point_index):
+        V_dc[vsc_dc_fb[v_set_point_index]] = vsc_value_dc_all[v_set_point_index]
 
-    v_set_point_plus_index = vsc_controllable & (vsc_mode_dc == VSC_MODE_DC_DP)
-    if len(vsc_value_dc[v_set_point_plus_index]) > 0:
+    # the minus pole refers to the voltages before the plus pole is set
+    V_dc_copy = V_dc.copy()
+    v_set_point_plus_index = vsc_controllable & (vsc_mode_dc_all == VSC_MODE_DC_DP)
+    if np.any(v_set_point_plus_index):
         # fetch reference buses
-        ref_bus = vsc[v_set_point_plus_index, VSC_DIFF_REF_BUS].astype(np.int64)
+        ref_bus = vsc[vsc_branches[v_set_point_plus_index], VSC_DIFF_REF_BUS].real.astype(np.int64)
 
         # calculate the current voltage plus the offset voltage
-        value = V_dc[ref_bus] + vsc_value_dc[v_set_point_plus_index]
+        value = V_dc[ref_bus] + vsc_value_dc_all[v_set_point_plus_index]
 
         # set the result as new bus voltage for "regulation" by the vsc
-        V_dc_copy = copy.copy(V_dc)
-        V_dc[vsc[v_set_point_plus_index, VSC_BUS_DC].astype(np.int64)] = value
+        V_dc[vsc_dc_fb[v_set_point_plus_index]] = value
 
-    v_set_point_minus_index = vsc_controllable & (vsc_mode_dc == VSC_MODE_DC_DM)
-    if len(vsc_value_dc[v_set_point_minus_index]) > 0:
+    v_set_point_minus_index = vsc_controllable & (vsc_mode_dc_all == VSC_MODE_DC_DM)
+    if np.any(v_set_point_minus_index):
         # fetch reference buses
-        ref_bus = vsc[v_set_point_minus_index, VSC_DIFF_REF_BUS].astype(np.int64)
+        ref_bus = vsc[vsc_branches[v_set_point_minus_index], VSC_DIFF_REF_BUS].real.astype(np.int64)
 
-        # calculate the current voltage plus the offset voltage
-        value = V_dc_copy[ref_bus] - vsc_value_dc[v_set_point_minus_index]
+        # calculate the current voltage minus the offset voltage
+        value = V_dc_copy[ref_bus] - vsc_value_dc_all[v_set_point_minus_index]
 
         # set the result as new bus voltage for "regulation" by the vsc
-        V_dc[vsc[v_set_point_minus_index, VSC_BUS_DC].astype(np.int64)] = value
+        V_dc[vsc_dc_fb[v_set_point_minus_index]] = value
 
     Ybus_svc = makeYbus_svc(Ybus, x_control_svc, svc_x_l_pu, svc_x_cvar_pu, svc_buses)
     y_tcsc_pu = -1j * calc_y_svc_pu(x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu)
