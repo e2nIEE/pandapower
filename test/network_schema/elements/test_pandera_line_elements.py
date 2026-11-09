@@ -380,6 +380,55 @@ class TestLineForeignKey:
         validate_network(net)
 
 
+class TestLineAngleLimits:
+    """Tests for the OPF branch angle difference limits"""
+
+    @staticmethod
+    def _net():
+        net = pandapowerNet(name="test_line_angle_limits")
+        create_buses(net, 2, 0.4)
+        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        return net
+
+    def test_min_less_equal_max_passes(self):
+        net = self._net()
+        net.line["min_angle_degree"] = -30.0
+        net.line["max_angle_degree"] = 30.0
+        validate_network(net)
+
+    def test_min_equals_max_passes(self):
+        net = self._net()
+        net.line["min_angle_degree"] = 10.0
+        net.line["max_angle_degree"] = 10.0
+        validate_network(net)
+
+    def test_min_greater_than_max_fails(self):
+        net = self._net()
+        net.line["min_angle_degree"] = 30.0
+        net.line["max_angle_degree"] = -30.0
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_nan_passes(self):
+        net = self._net()
+        net.line["min_angle_degree"] = float(np.nan)
+        net.line["max_angle_degree"] = float(np.nan)
+        validate_network(net)
+
+    def test_columns_are_optional(self):
+        net = self._net()
+        assert "min_angle_degree" not in net.line.columns
+        assert "max_angle_degree" not in net.line.columns
+        validate_network(net)
+
+    @pytest.mark.parametrize("parameter", ["min_angle_degree", "max_angle_degree"])
+    def test_non_float_fails(self, parameter):
+        net = self._net()
+        net.line[parameter] = "not a float"
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+
 class TestLineResults:
     """Tests for line results after calculations"""
 

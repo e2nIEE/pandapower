@@ -867,6 +867,47 @@ class TestTrafoCrossFieldValidations:
             validate_network(net)
 
 
+class TestTrafoAngleLimits:
+    """Tests for the OPF branch angle difference limits"""
+
+    def test_min_less_equal_max_passes(self):
+        net = _create_net_with_buses()
+        net.trafo = _create_valid_trafo_dataframe()
+        net.trafo["min_angle_degree"] = -30.0
+        net.trafo["max_angle_degree"] = 30.0
+        validate_network(net)
+
+    def test_min_greater_than_max_fails(self):
+        net = _create_net_with_buses()
+        net.trafo = _create_valid_trafo_dataframe()
+        net.trafo["min_angle_degree"] = 30.0
+        net.trafo["max_angle_degree"] = -30.0
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_nan_passes(self):
+        net = _create_net_with_buses()
+        net.trafo = _create_valid_trafo_dataframe()
+        net.trafo["min_angle_degree"] = float(np.nan)
+        net.trafo["max_angle_degree"] = float(np.nan)
+        validate_network(net)
+
+    def test_columns_are_optional(self):
+        net = _create_net_with_buses()
+        net.trafo = _create_valid_trafo_dataframe()
+        assert "min_angle_degree" not in net.trafo.columns
+        assert "max_angle_degree" not in net.trafo.columns
+        validate_network(net)
+
+    @pytest.mark.parametrize("parameter", ["min_angle_degree", "max_angle_degree"])
+    def test_non_float_fails(self, parameter):
+        net = _create_net_with_buses()
+        net.trafo = _create_valid_trafo_dataframe()
+        net.trafo[parameter] = "not a float"
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+
 class TestTrafoResults:
     """Tests for trafo results after calculations"""
 
