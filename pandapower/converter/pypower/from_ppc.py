@@ -62,8 +62,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs) -> pandapowerNet
         >>> net = from_ppc(ppc, f_hz=60)
     """
     # --- catch common failures
-    if np.any(ppc["bus"][:, BASE_KV] <= 0):
-        logger.info("There are false baseKV given in the pypower case file.")
+    _ensure_base_kv(ppc)
 
     net = pandapowerNet(name="from_ppc", f_hz=f_hz, sn_mva=ppc["baseMVA"])
     net._from_ppc_lookups = {}
@@ -81,6 +80,38 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs) -> pandapowerNet
             logger.error("Validation failed.")
 
     return net
+
+
+def _ensure_base_kv(ppc):
+    """
+    Ensure that all buses of the ppc have a valid (positive and finite) baseKV.
+
+    MATPOWER calculates in per-unit and therefore does not need the baseKV, so many MATPOWER
+    case files set it to 0 (e.g. the original MATPOWER case14 and case57), and single values
+    can also be negative or not finite (NaN, inf). pandapower, however, requires vn_kv > 0:
+    with an invalid baseKV the conversion would silently produce NaN parameters and runpp
+    would fail with a FloatingPointError. Therefore, a warning is logged and 1.0 is used
+    as the baseKV of every bus without a valid baseKV. The value is only a placeholder:
+    the true voltage level of such buses is unknown, so absolute quantities derived from
+    vn_kv (such as currents in kA) are not meaningful for them, and a filled value can
+    change how a branch is classified (e.g. a branch whose buses receive the same
+    placeholder is imported as a line instead of an impedance), i.e. the element type and
+    the result table the branch appears in. Since the branch data of the ppc is in per-unit
+    and the transformer ratios are adopted unchanged, this does not alter the per-unit
+    power flow results at the buses. The bus array of the given ppc is not modified;
+    ppc["bus"] is replaced by a corrected copy.
+    """
+    base_kv = ppc["bus"][:, BASE_KV]
+    valid = np.isfinite(base_kv) & (base_kv > 0)
+    if valid.all():
+        return
+    logger.warning(
+        f"There are {int((~valid).sum())} buses without a valid baseKV (not a positive, "
+        "finite value) in the pypower case file. Their vn_kv is set to 1.0."
+    )
+    bus = ppc["bus"].copy()
+    bus[~valid, BASE_KV] = 1.0
+    ppc["bus"] = bus
 
 
 def _from_ppc_bus(net, ppc):

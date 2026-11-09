@@ -15,7 +15,7 @@ from pandapower.converter.pypower.from_ppc import _branch_to_which, _gen_to_whic
 from pandapower.file_io import from_json
 from pandapower.networks.power_system_test_cases import case9, case24_ieee_rts
 from pandapower.pypower.idx_brch import PF, PT, QF, QT
-from pandapower.pypower.idx_bus import PD, VA, VM
+from pandapower.pypower.idx_bus import BASE_KV, PD, VA, VM
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.results import reset_results
 from pandapower.run import runopp, runpp, set_user_pf_options
@@ -368,6 +368,182 @@ def overwrite_results_data_of_ppc_pickle(file_name, grid_names):
     with open(file, "wb") as handle:
         # pickle.dump(ppcs, handle, protocol=pickle.HIGHEST_PROTOCOL)
         pickle.dump(ppcs, handle, protocol=4)  # as long as py3.7 is supported, 4 is the highest protocol
+
+
+def test_from_ppc_without_base_kv():
+    # MATPOWER calculates in per-unit and does not need baseKV, so many MATPOWER case files
+    # set it to 0 (e.g. the original MATPOWER case14 and case57). from_ppc must nevertheless
+    # produce a runnable net (regression test for #2516: vn_kv of 0 let runpp fail with a
+    # FloatingPointError). Since the ppc branch data is in per-unit, the placeholder vn_kv
+    # must not change the power flow results: they must equal those of the same case
+    # converted with an arbitrary constant baseKV.
+    ppc = get_testgrids("ppc_testgrids", "case6.json")
+    ppc["bus"][:, BASE_KV] = 110.0
+    net_ref = from_ppc(ppc)
+    runpp(net_ref)
+
+    ppc = get_testgrids("ppc_testgrids", "case6.json")
+    ppc["bus"][:, BASE_KV] = 0
+    net = from_ppc(ppc)
+    assert (net.bus.vn_kv == 1.0).all()
+    runpp(net)
+    assert net.converged
+    assert np.allclose(net.res_bus.vm_pu, net_ref.res_bus.vm_pu, atol=1e-6)
+    assert np.allclose(net.res_bus.va_degree, net_ref.res_bus.va_degree, atol=1e-6)
+
+
+def test_from_ppc_without_base_kv_logs_warning(caplog):
+    # the user must notice that the vn_kv of buses without a valid baseKV is only a
+    # placeholder: a warning naming the affected buses is logged
+    ppc = get_testgrids("ppc_testgrids", "case6.json")
+    ppc["bus"][:, BASE_KV] = 0
+    with caplog.at_level(logging.WARNING, logger="pandapower.converter.pypower.from_ppc"):
+        from_ppc(ppc)
+    assert f"{ppc['bus'].shape[0]} buses without a valid baseKV" in caplog.text
+    assert "vn_kv is set to 1.0" in caplog.text
+
+    # with all baseKV valid, no warning is logged
+    caplog.clear()
+    ppc = get_testgrids("ppc_testgrids", "case6.json")
+    ppc["bus"][:, BASE_KV] = 110.0
+    with caplog.at_level(logging.WARNING, logger="pandapower.converter.pypower.from_ppc"):
+        from_ppc(ppc)
+    assert "without a valid baseKV" not in caplog.text
+
+
+def test_from_ppc_with_partly_missing_base_kv():
+    # a bus without baseKV gets the placeholder vn_kv of 1.0; no value is taken over from
+    # a connected bus, and the valid baseKV values of the other buses are kept unchanged
+    ppc = get_testgrids("ppc_testgrids", "case6.json")
+    net_ref = from_ppc(get_testgrids("ppc_testgrids", "case6.json"))
+    ppc["bus"][0, BASE_KV] = 0
+    net = from_ppc(ppc)
+    assert (net.bus.vn_kv > 0).all()
+    assert net.bus.vn_kv.iloc[0] == 1.0
+    assert (net.bus.vn_kv.iloc[1:] == net_ref.bus.vn_kv.iloc[1:]).all()
+    runpp(net)
+    assert net.converged
+
+
+def _chain_ppc(base_kv, branch_status=(1, 1)):
+    # three buses in a chain (slack bus 1 - bus 2 - bus 3) with loads at buses 2 and 3
+    bus = np.array(
+        [
+            [1, 3, 0, 0, 0, 0, 1, 1.0, 0, base_kv[0], 1, 1.1, 0.9],
+            [2, 1, 20, 10, 0, 0, 1, 1.0, 0, base_kv[1], 1, 1.1, 0.9],
+            [3, 1, 30, 15, 0, 0, 1, 1.0, 0, base_kv[2], 1, 1.1, 0.9],
+        ]
+    )
+    gen = np.array([[1, 50, 0, 100, -100, 1.0, 100, 1, 200, 0]], dtype=float)
+    branch = np.array(
+        [
+            [1, 2, 0.01, 0.05, 0.0, 100, 100, 100, 0, 0, branch_status[0], -360, 360],
+            [2, 3, 0.01, 0.05, 0.0, 100, 100, 100, 0, 0, branch_status[1], -360, 360],
+        ],
+        dtype=float,
+    )
+    return {"version": "2", "baseMVA": 100.0, "bus": bus, "gen": gen, "branch": branch}
+
+
+def test_from_ppc_with_non_finite_base_kv():
+    # a NaN baseKV is invalid as well and is replaced by the placeholder 1.0
+    # (regression: NaN neither compares <= 0 nor > 0, so a validity check based on such
+    # comparisons alone would leak it through)
+    net = from_ppc(_chain_ppc([110.0, np.nan, 0.0]))
+    assert list(net.bus.vn_kv) == [110.0, 1.0, 1.0]
+    runpp(net)
+    assert net.converged
+
+    # an infinite baseKV is not a usable voltage level either and must be replaced
+    net = from_ppc(_chain_ppc([110.0, np.inf, 20.0]))
+    assert np.isfinite(net.bus.vn_kv).all()
+    assert (net.bus.vn_kv > 0).all()
+    assert list(net.bus.vn_kv) == [110.0, 1.0, 20.0]
+
+    # if no bus has a valid baseKV, 1.0 is used for all of them
+    net = from_ppc(_chain_ppc([np.nan, np.nan, np.nan]))
+    assert (net.bus.vn_kv == 1.0).all()
+    runpp(net)
+    assert net.converged
+
+
+def test_from_ppc_missing_base_kv_not_taken_from_connected_bus():
+    # no value is taken over from a connected bus: a bus without baseKV gets the
+    # placeholder 1.0 even if its neighbours have a valid baseKV, and this does not
+    # depend on the switching state of the connecting branches either
+    net = from_ppc(_chain_ppc([110.0, 0.0, 20.0]))
+    assert list(net.bus.vn_kv) == [110.0, 1.0, 20.0]
+
+    net = from_ppc(_chain_ppc([110.0, 0.0, 20.0], branch_status=(0, 1)))
+    assert net.bus.vn_kv.iloc[1] == 1.0
+
+
+def test_from_ppc_does_not_modify_input_bus_array():
+    # from_ppc must not write the filled baseKV values into the bus array of the caller:
+    # ppc["bus"] is replaced by a corrected copy instead
+    ppc = get_testgrids("ppc_testgrids", "case6.json")
+    input_bus = ppc["bus"]
+    input_bus[0, BASE_KV] = 0
+    snapshot = input_bus.copy()
+    net = from_ppc(ppc)
+    np.testing.assert_array_equal(input_bus, snapshot)
+    assert net.bus.vn_kv.iloc[0] == 1.0
+
+
+def _two_level_ppc(base_kv):
+    # two voltage levels: slack bus 1 (110) - bus 2 (110) - transformer with a tap ratio
+    # of 0.98 - bus 3 (20) - bus 4 (20)
+    bus = np.array(
+        [
+            [1, 3, 0, 0, 0, 0, 1, 1.05, 0, base_kv[0], 1, 1.1, 0.9],
+            [2, 2, 20, 10, 0, 0, 1, 1.02, 0, base_kv[1], 1, 1.1, 0.9],
+            [3, 1, 30, 15, 0, 0, 1, 1.0, 0, base_kv[2], 1, 1.1, 0.9],
+            [4, 1, 25, 12, 0, 0, 1, 1.0, 0, base_kv[3], 1, 1.1, 0.9],
+        ]
+    )
+    gen = np.array(
+        [
+            [1, 0, 0, 100, -100, 1.05, 100, 1, 200, 0],
+            [2, 40, 0, 80, -80, 1.02, 100, 1, 120, 0],
+        ],
+        dtype=float,
+    )
+    branch = np.array(
+        [
+            [1, 2, 0.01, 0.05, 0.02, 100, 100, 100, 0, 0, 1, -360, 360],
+            [2, 3, 0.005, 0.04, 0.0, 50, 50, 50, 0.98, 0, 1, -360, 360],
+            [3, 4, 0.02, 0.06, 0.01, 60, 60, 60, 0, 0, 1, -360, 360],
+        ],
+        dtype=float,
+    )
+    return {"version": "2", "baseMVA": 100.0, "bus": bus, "gen": gen, "branch": branch}
+
+
+def test_from_ppc_mixed_base_kv_with_trafo():
+    # partly missing baseKV in a net with two voltage levels and a transformer with a
+    # non-unit tap ratio: the placeholder values must not change the per-unit power flow
+    # results at the buses, compared to the conversion with all true baseKV given
+    # (the reference conversion itself matches a pypower runpf of the same data)
+    net_ref = from_ppc(_two_level_ppc([110.0, 110.0, 20.0, 20.0]))
+    runpp(net_ref)
+    assert net_ref.converged
+
+    # bus 4 has no baseKV and gets the placeholder 1.0 instead of its true level 20
+    net = from_ppc(_two_level_ppc([110.0, 110.0, 20.0, 0.0]))
+    assert net.bus.vn_kv.iloc[3] == 1.0
+    runpp(net)
+    assert np.allclose(net.res_bus.vm_pu, net_ref.res_bus.vm_pu, atol=1e-6)
+    assert np.allclose(net.res_bus.va_degree, net_ref.res_bus.va_degree, atol=1e-6)
+
+    # buses 3 and 4 have no baseKV and get the placeholder 1.0 instead of their true 20:
+    # their vn_kv (and absolute quantities derived from it) are placeholders, but the
+    # per-unit results at the buses, which only depend on the per-unit branch data and
+    # the tap ratio, are unchanged
+    net = from_ppc(_two_level_ppc([110.0, 110.0, 0.0, 0.0]))
+    assert list(net.bus.vn_kv) == [110.0, 110.0, 1.0, 1.0]
+    runpp(net)
+    assert np.allclose(net.res_bus.vm_pu, net_ref.res_bus.vm_pu, atol=1e-6)
+    assert np.allclose(net.res_bus.va_degree, net_ref.res_bus.va_degree, atol=1e-6)
 
 
 if __name__ == "__main__":
