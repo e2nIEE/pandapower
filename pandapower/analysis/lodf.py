@@ -76,8 +76,7 @@ def _get_lodf_direct(
     # Set results to default value of bridge branch
     lodf_ppci[:, bridge_branch_mask] = np.nan
     if branch_id is not None and not reduced:
-        assert branch_ppci_lookup is not None  # force mypy type narrowing
-        branch_id_complement = [x for x in range(list(branch_ppci_lookup.values())[-1][1]) if x not in branch_id]
+        branch_id_complement = np.setdiff1d(np.arange(lodf_ppci.shape[0]), branch_id) # all PPC branches minus the selected ones
         lodf_ppci[:, branch_id_complement] = np.nan
         lodf_ppci[branch_id_complement, :] = np.nan
 

@@ -235,8 +235,9 @@ def _ptdf_pp_np_to_df(net, res_pp, source_bus=None, nan_to_num=True, branch_dict
 
         pp_br_type = "trafo3w" if br_type.startswith("trafo3w") else br_type
         if branch_dict is not None and not reduced:
-            branch_complement = [x for x in range(data.shape[0]) if x not in branch_dict[pp_br_type]]
-            data[branch_complement, :] = np.NaN
+            # rows of branches not selected in branch_dict (all rows if the type is not in branch_dict) are set to NaN
+            selected_branches = branch_dict.get(pp_br_type) or []
+            data[~net[pp_br_type].index.isin(selected_branches), :] = np.nan
         if source_bus is None:
             if reduced:
                 res[br_type] = pd.DataFrame(data=data, index=branch_dict[pp_br_type], columns=net.bus.index.to_numpy())
@@ -315,9 +316,11 @@ def _ptdf_ppci_to_pp(net, ptdf_ppci, result_side, branch_ppci_lookup=None):
 
     # Trafo3w needs to be handled differently
     if branch_ppci_lookup is not None:
+        # only sides contained in branch_dict, i.e. none if the net has no trafo3w or branch_dict does not select any
         pp_ppci_trafo3w_lookups = {
             type: range(branch_ppci_lookup[type][0], branch_ppci_lookup[type][1])
             for type in ("trafo3w_hv", "trafo3w_mv", "trafo3w_lv")
+            if type in branch_ppci_lookup
         }
     else:
         pp_ppci_trafo3w_lookups = _get_trafo3w_lookup(net)
