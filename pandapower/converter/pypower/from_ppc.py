@@ -481,8 +481,13 @@ def _ppc_angle_limits(branch):
 
     pypower treats 0 and the sentinels -360 (lower) / 360 (upper) as "no limit". These are mapped to NaN
     so that no meaningless columns are created for unconstrained networks.
+
+    A branch array that does not reach the ANGMIN/ANGMAX columns at all carries no angle limits and is
+    treated as unconstrained instead of raising an IndexError.
     """
-    angmin, angmax = branch[:, ANGMIN], branch[:, ANGMAX]
+    n_branch = branch.shape[0]
+    angmin = branch[:, ANGMIN] if branch.shape[1] > ANGMIN else np.full(n_branch, np.nan)
+    angmax = branch[:, ANGMAX] if branch.shape[1] > ANGMAX else np.full(n_branch, np.nan)
     return (
         np.where((angmin == 0) | (angmin <= -360), np.nan, angmin),
         np.where((angmax == 0) | (angmax >= 360), np.nan, angmax),

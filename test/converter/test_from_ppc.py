@@ -241,6 +241,22 @@ def test_angle_limits_roundtrip():
         )
 
 
+def test_from_ppc_branch_without_angle_columns():
+    """A branch array that stops before ANGMIN/ANGMAX must convert unconstrained instead of raising.
+
+    from_ppc accepts raw ppc dicts, and before the angle limits were imported only columns up to BR_STATUS
+    were read. Such truncated branch arrays must keep working.
+    """
+    ppc = get_testgrids("pypower_cases", "case9.json")
+    ppc["branch"] = ppc["branch"][:, : ANGMIN]  # drop ANGMIN and ANGMAX
+
+    net = from_ppc(ppc, f_hz=60)
+
+    assert len(net.line) > 0
+    assert "min_angle_degree" not in net.line.columns
+    assert "max_angle_degree" not in net.line.columns
+
+
 def test_gencost_pwl():
     case6 = get_testgrids("ppc_testgrids", "case6.json")
     case6["gencost"] = np.array(
