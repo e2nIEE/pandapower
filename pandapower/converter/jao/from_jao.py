@@ -625,7 +625,10 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
         .loc[:, ["col_name", "identifier", "bus"]]
     )
     lgd_bus = pd.concat(
-        [lgd_EIC_bus.set_axis(lgd_EIC_bus_idx_extended), lgd_name_bus.set_axis(lgd_name_bus_idx_extended)]
+        [
+            lgd_EIC_bus.set_axis(lgd_EIC_bus_idx_extended, axis=0),
+            lgd_name_bus.set_axis(lgd_name_bus_idx_extended, axis=0),
+        ]
     )
     dupl_EICs = net.line.EIC_Code.loc[net.line.EIC_Code.duplicated()]
     dupl_names = net.line.name.loc[net.line.name.duplicated()]
