@@ -1835,7 +1835,7 @@ def _add_vsc_bipolar(net: pandapowerNet):
                 control_value_ac=vb.control_value_ac,
                 control_mode_dc=vb.control_mode_dc,
                 control_value_dc=vb.control_value_dc,
-                name=vb["name"] if "name" in vb else None,
+                name=vb.get("name", None),
                 controllable=vb.controllable,
                 in_service=vb.in_service,
                 bus_dc_minus=vb.bus_dc_minus,
