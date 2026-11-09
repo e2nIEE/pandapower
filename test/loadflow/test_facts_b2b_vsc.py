@@ -6,7 +6,6 @@ from pandapower.create import (
     create_bus,
     create_bus_dc,
     create_buses,
-    create_empty_network,
     create_ext_grid,
     create_line_dc,
     create_line_dc_from_parameters,
@@ -38,7 +37,7 @@ def _bipolar_dmr_net(load_plus=100.0, load_minus=150.0, dmr_in_service=True, gro
 
     The neutral bus B is grounded. The DMR line carries the unbalance current of the poles.
     """
-    net = create_empty_network()
+    net = pandapowerNet(name="DMR Test")
 
     create_buses(net, 8, 380)
 
