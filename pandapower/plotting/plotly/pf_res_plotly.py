@@ -130,7 +130,7 @@ def pf_res_plotly(
 
     bus_ids = net.bus.index
     if not plot_out_of_service:
-        bus_ids = bus_ids[net.bus.in_service is True]
+        bus_ids = bus_ids[net.bus.in_service]
     hoverinfo = (
         net.bus.name.astype(str)
         + "<br />V_m = "
@@ -177,7 +177,7 @@ def pf_res_plotly(
 
     line_ids = net.line.index
     if not plot_out_of_service:
-        line_ids = line_ids[net.line.in_service is True]
+        line_ids = line_ids[net.line.in_service]
     hoverinfo = (
         net.line.name.astype(str)
         + "<br />I = "
@@ -215,7 +215,7 @@ def pf_res_plotly(
     # ----- Trafos ------
     trafo_ids = net.trafo.index
     if not plot_out_of_service:
-        trafo_ids = trafo_ids[net.trafo.in_service is True]
+        trafo_ids = trafo_ids[net.trafo.in_service]
     # hoverinfo which contains name and pf results
     hoverinfo = (
         net.trafo.name.astype(str)
@@ -246,7 +246,7 @@ def pf_res_plotly(
     if "ext_grid" in net and len(net.ext_grid):
         ext_grid_ids = net.ext_grid.index
         if not plot_out_of_service:
-            ext_grid_ids = ext_grid_ids[net.ext_grid.in_service is True]
+            ext_grid_ids = ext_grid_ids[net.ext_grid.in_service]
         marker_type = "circle" if on_map else "square"
         ext_grid_trace = create_bus_trace(
             net,
