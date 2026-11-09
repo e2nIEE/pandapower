@@ -21,6 +21,7 @@ Change Log
 -------------------------------
 - [FIXED] contingency limit checks now align results by constrained element index, including partial or reordered limits.
 - [FIXED] ``ConstControl`` now raises a ``ValueError`` if ``element_index`` contains indices that are not in the element table. Previously a missing single index silently added a row with NaN values, and the time series failed later with an unclear numba error (#1857)
+- [FIXED] ``compute_switch_flows`` read ``z_ohm`` by row position instead of by switch index, so with a non-default ``net.switch`` index it raised ``IndexError``, left zero-impedance switches without results or overwrote the results of switches with ``z_ohm > 0``
 - [FIXED] ``create_load_dc`` now allocates and validates indexes against ``load_dc``, preventing overwrites and false ``source_dc`` conflicts.
 - [FIXED] OPF cleaned up in case of non convergence
 - [FIXED] ``create_continuous_bus_index`` (and other toolbox functions relying on ``element_bus_tuples``) now also update the ``bus`` column of the ``ssc`` element table; it was previously missing from the list of bus-referencing elements
