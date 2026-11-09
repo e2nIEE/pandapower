@@ -143,6 +143,22 @@ _trafo3w_columns = {
         description="maximum current loading (only needed for OPF)",
         metadata={"opf": True},
     ),
+    "min_angle_degree": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="minimum voltage angle difference between hv_bus and mv_bus/lv_bus (va_hv - va_mv/lv) [degree], "
+        "considered in the OPF; NaN means unconstrained",
+        metadata={"opf": True},
+    ),
+    "max_angle_degree": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="maximum voltage angle difference between hv_bus and mv_bus/lv_bus (va_hv - va_mv/lv) [degree], "
+        "considered in the OPF; NaN means unconstrained",
+        metadata={"opf": True},
+    ),
     "vector_group": pa.Column(
         pd.StringDtype,
         nullable=True,
@@ -359,6 +375,7 @@ _trafo3w_columns = {
 tap_columns = ["tap_pos", "tap_neutral", "tap_side"]  # , "tap_step_percent", "tap_step_degree"]
 trafo3w_checks = [
     create_lower_equals_column_check(first_element="tap_min", second_element="tap_max"),
+    create_lower_equals_column_check(first_element="min_angle_degree", second_element="max_angle_degree"),
     pa.Check(
         create_column_group_dependency_validation_func(tap_columns),
         error=f"trafo3w tap configuration columns have dependency violations. Please ensure {tap_columns} are present in the dataframe.",

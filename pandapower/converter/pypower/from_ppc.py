@@ -26,7 +26,19 @@ from pandapower.create import (
     create_transformers_from_parameters,
 )
 from pandapower.network import pandapowerNet
-from pandapower.pypower.idx_brch import BR_B, BR_R, BR_STATUS, BR_X, F_BUS, RATE_A, SHIFT, T_BUS, TAP
+from pandapower.pypower.idx_brch import (
+    ANGMAX,
+    ANGMIN,
+    BR_B,
+    BR_R,
+    BR_STATUS,
+    BR_X,
+    F_BUS,
+    RATE_A,
+    SHIFT,
+    T_BUS,
+    TAP,
+)
 from pandapower.pypower.idx_bus import BASE_KV, BS, BUS_I, BUS_TYPE, GS, PD, QD, VA, VMAX, VMIN, ZONE
 from pandapower.pypower.idx_cost import COST, MODEL, NCOST
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, MBASE, PG, PMAX, PMIN, QG, QMAX, QMIN, VG
@@ -254,6 +266,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
 
     is_line, is_trafo, is_impedance, to_vn_is_leq = _branch_to_which(ppc, from_vn_kv=from_vn_kv, to_vn_kv=to_vn_kv)
 
+    min_angle, max_angle = _ppc_angle_limits(ppc["branch"])
+
     bra_name = ppc.get("branch_name", ppc.get("bra_name", np.array([None] * n_bra)))
 
     # --- create line
@@ -279,6 +293,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         },
         max_loading_percent=100,
         in_service=ppc["branch"][is_line, BR_STATUS].astype(bool),
+        min_angle_degree=min_angle[is_line],
+        max_angle_degree=max_angle[is_line],
     )
     # --- create transformer
     if np.any(is_trafo):
@@ -291,6 +307,13 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
             vn_hv_kv[~to_vn_is_leq] = to_vn_kv[is_trafo][~to_vn_is_leq]
             lv_bus[~to_vn_is_leq] = from_bus[is_trafo][~to_vn_is_leq]
             vn_lv_kv[~to_vn_is_leq] = from_vn_kv[is_trafo][~to_vn_is_leq]
+        # for reversed transformer branches, the pandapower orientation hv -> lv is opposite to
+        # the ppc orientation F_BUS -> T_BUS, so the angle limits have to be swapped and negated
+        min_angle_trafo = min_angle[is_trafo].copy()
+        max_angle_trafo = max_angle[is_trafo].copy()
+        if not np.all(to_vn_is_leq):
+            swap = ~to_vn_is_leq
+            min_angle_trafo[swap], max_angle_trafo[swap] = -max_angle_trafo[swap], -min_angle_trafo[swap]
         same_vn = to_vn_kv[is_trafo] == from_vn_kv[is_trafo]
         if np.any(same_vn):
             logger.warning(
@@ -359,6 +382,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
             tap_side=tap_side,
             tap_neutral=0,
             tap_changer_type=tap_changer_type,
+            min_angle_degree=min_angle_trafo,
+            max_angle_degree=max_angle_trafo,
         )
     else:
         idx_trafo = []
@@ -398,6 +423,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
             gt_pu=gf_pu + g_asym_pu,
             bt_pu=bf_pu + b_asym_pu,
             sn_mva=sn_mva,
+            min_angle_degree=min_angle[is_impedance],
+            max_angle_degree=max_angle[is_impedance],
         )
     else:
         idx_impedance = []
@@ -446,6 +473,20 @@ def _gen_to_which(ppc, bus_pos=None, flattened=True):
     is_gen = ((bus_type_df["bus_type"] == 2) & ~bus_type_df.duplicated(subset=["bus"])).sort_index().values
     is_sgen = ~(is_ext_grid | is_gen) & bus_type_df["bus_type"].sort_index().isin([3, 2, 1]).values
     return is_ext_grid, is_gen, is_sgen
+
+
+def _ppc_angle_limits(branch):
+    """
+    Convert pypower ANGMIN/ANGMAX to pandapower angle difference limits.
+
+    pypower treats 0 and the sentinels -360 (lower) / 360 (upper) as "no limit". These are mapped to NaN
+    so that no meaningless columns are created for unconstrained networks.
+    """
+    angmin, angmax = branch[:, ANGMIN], branch[:, ANGMAX]
+    return (
+        np.where((angmin == 0) | (angmin <= -360), np.nan, angmin),
+        np.where((angmax == 0) | (angmax >= 360), np.nan, angmax),
+    )
 
 
 def _branch_to_which(ppc, from_vn_kv=None, to_vn_kv=None, flattened=True):
