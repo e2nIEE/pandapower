@@ -441,6 +441,7 @@ jobs:
           uv run pytest -W error --splits 3 --group ${{ matrix.group }} --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials" $TUTORIAL_IGNORES
 
   docs_check:
+    needs: build
     name: Sphinx docs check
     runs-on: ubuntu-latest
     steps:
