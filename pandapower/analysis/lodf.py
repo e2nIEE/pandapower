@@ -347,7 +347,9 @@ def _get_dc_n1_with_lodf(
     THIS_RES_BR_SIDE_MAPPING = BR_SIDE_MAPPING if result_side == 0 else BR_SIDE_MAPPING_1
 
     if lodf is None:
-        lodf = _get_lodf_direct(net, outage_branch_type=outage_branch_type, outage_branch_ix=outage_branch_ix)
+        lodf = _get_lodf_direct(
+            net, outage_branch_type=outage_branch_type, outage_branch_ix=outage_branch_ix, random_verify=False
+        )
 
     outage_branch_ix = _get_outage_branch_ix(net, outage_branch_type, outage_branch_ix)
 
