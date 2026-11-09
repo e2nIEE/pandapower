@@ -23,15 +23,16 @@ from pandapower.pypower.make_b_dc import calc_b_from_branch
 
 logger = logging.getLogger(__name__)
 
+
 def make_psdf(
-        baseMVA: float,
-        ptdf: npt.NDArray,
-        bus: npt.NDArray,
-        branch: npt.NDArray,
-        using_sparse_solver: bool = False,
-        branch_id: int | None = None,
-        reduced: bool = False,
-        slack: int | npt.NDArray | None = None
+    baseMVA: float,
+    ptdf: npt.NDArray,
+    bus: npt.NDArray,
+    branch: npt.NDArray,
+    using_sparse_solver: bool = False,
+    branch_id: int | None = None,
+    reduced: bool = False,
+    slack: int | npt.NDArray | None = None,
 ):
     """
     Builds the DC PSDF matrix based on the DC PTDF
@@ -141,7 +142,6 @@ def _get_psdf_direct(
         psdf_pp_np = _lodf_ppci_to_pp(net, psdf_ppci)
         psdf = _lodf_pp_np_to_df(net, psdf_pp_np)
 
-
     # Select only required data points according to the outage_branch_type
     if phase_shift_branch_type is not None:
         outage_branch_ix = _get_outage_branch_ix(net, phase_shift_branch_type, phase_shift_branch_ix)
@@ -237,5 +237,3 @@ def run_psdf(
             net._psdf["branch"]["element"] = data.columns.to_numpy(copy=True)
         net["psdf_" + br_type] = data
     return psdf
-
-

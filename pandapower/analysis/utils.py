@@ -30,10 +30,7 @@ LOAD_REFRENCE = ("load", "storage")
 PP_SLACK_PRIO_COL = "slack_weight"
 
 
-def _get_source_bus_ix(
-        net: pandapowerNet,
-        source_bus: int | np.ndarray | None = None
-) -> npt.NDArray:
+def _get_source_bus_ix(net: pandapowerNet, source_bus: int | np.ndarray | None = None) -> npt.NDArray:
     if source_bus is None:
         return net.bus.index.to_numpy()
 
@@ -51,9 +48,7 @@ def _get_source_bus_ix(
 
 
 def _get_outage_branch_ix(
-        net: pandapowerNet,
-        outage_branch_type: str,
-        outage_branch_ix: npt.NDArray | None = None
+    net: pandapowerNet, outage_branch_type: str, outage_branch_ix: npt.NDArray | None = None
 ) -> npt.NDArray:
     assert outage_branch_type in ("line", "dcline", "trafo", "impedance", "trafo3w"), (
         outage_branch_type + " as outage branch type not supported!"
@@ -123,10 +118,7 @@ def _get_trafo3w_lookup(net: pandapowerNet) -> dict | None:
         return None
 
 
-def branch_dict_to_ppci_branch_list(
-        net: pandapowerNet,
-        branch_dict: dict[str, list[int] | None]
-) -> tuple[list, dict]:
+def branch_dict_to_ppci_branch_list(net: pandapowerNet, branch_dict: dict[str, list[int] | None]) -> tuple[list, dict]:
     """
     This function transforms a dictionary with branches of a net into a list of the corresponding internal ppci indices
     and produces a lookup for tha branch type intervals.
@@ -164,7 +156,7 @@ def branch_dict_to_ppci_branch_list(
     return branch_id_ppci, ppci_branch_lookup
 
 
-def get_dist_slack(net: pandapowerNet, pf_required: bool=True) -> tuple[pd.DataFrame, dict]:
+def get_dist_slack(net: pandapowerNet, pf_required: bool = True) -> tuple[pd.DataFrame, dict]:
     """
     Find active slacks of a pp net and check multi area
     of the grid
@@ -177,32 +169,47 @@ def get_dist_slack(net: pandapowerNet, pf_required: bool=True) -> tuple[pd.DataF
     slack_df = pd.DataFrame(columns=["ele_type", "ele_id", "bus_id", "priority", "new_ele_type", "new_ele_id"])
 
     # select all possible slacks of pp net
-    all_pp_slack = {"gen": net.gen.loc[net.gen.slack == True],
-                    "ext_grid": net.ext_grid}
+    all_pp_slack = {"gen": net.gen.loc[net.gen.slack == True], "ext_grid": net.ext_grid}
     for ele_type, ele_slack_df in all_pp_slack.items():
         if ele_slack_df.empty:
             continue
 
         for ix, slack in ele_slack_df.iterrows():
-            if not np.isnan(net.res_bus.at[net[ele_type].at[ix, "bus"], "va_degree"]) \
-                    and net[ele_type].at[ix, "in_service"]:
+            if (
+                not np.isnan(net.res_bus.at[net[ele_type].at[ix, "bus"], "va_degree"])
+                and net[ele_type].at[ix, "in_service"]
+            ):
                 # Skip out-of-service slack
-                this_priority = net[ele_type].at[ix, PP_SLACK_PRIO_COL] \
-                    if PP_SLACK_PRIO_COL in net[ele_type].columns else 1.0
+                this_priority = (
+                    net[ele_type].at[ix, PP_SLACK_PRIO_COL] if PP_SLACK_PRIO_COL in net[ele_type].columns else 1.0
+                )
                 # slack_df = slack_df.append({"ele_type": ele_type, "ele_id": ix,
                 #                             "bus_id": slack.bus, "priority": this_priority,
                 #                             "new_ele_type": "", "new_ele_id":-1}, ignore_index=True)
-                slack_df = pd.concat([slack_df,
-                                      pd.DataFrame({"ele_type": ele_type, "ele_id": ix,
-                                                    "bus_id": slack.bus, "priority": this_priority,
-                                                    "new_ele_type": "", "new_ele_id": -1}, index=[0])],
-                                     ignore_index=True, axis=0)
+                slack_df = pd.concat(
+                    [
+                        slack_df,
+                        pd.DataFrame(
+                            {
+                                "ele_type": ele_type,
+                                "ele_id": ix,
+                                "bus_id": slack.bus,
+                                "priority": this_priority,
+                                "new_ele_type": "",
+                                "new_ele_id": -1,
+                            },
+                            index=[0],
+                        ),
+                    ],
+                    ignore_index=True,
+                    axis=0,
+                )
 
     # Check slack df plausibility
     assert not slack_df.empty, "No slack in network available! Calculation not possible!"
-    if slack_df['priority'].isna().any():
+    if slack_df["priority"].isna().any():
         logger.warning("Some slack has NaN as priority! Force priority to equally distributed!")
-        slack_df['priority'] = 1.0
+        slack_df["priority"] = 1.0
 
     # Sort and normalization
     slack_df.sort_values(by="priority", ascending=False, inplace=True)
@@ -215,13 +222,12 @@ def get_dist_slack(net: pandapowerNet, pf_required: bool=True) -> tuple[pd.DataF
 
 
 def get_ppci_dist_slack(net: pandapowerNet, ppci: dict, slack_df: pd.DataFrame) -> np.ndarray:
-    """ Convert the priority defined in slack_df to a numpy array required for
-        pypower ptdf calculation
+    """Convert the priority defined in slack_df to a numpy array required for
+    pypower ptdf calculation
     """
     # Check number of slacks
     pp_slack = slack_df["bus_id"].to_numpy(dtype=int)
-    assert np.all(np.isin(pp_slack, net["_is_elements"]["bus_is_idx"])), \
-        "Some selected slacks are out of service"
+    assert np.all(np.isin(pp_slack, net["_is_elements"]["bus_is_idx"])), "Some selected slacks are out of service"
     ppci_slack = net["_pd2ppc_lookups"]["bus"][pp_slack]
     ppci_slack_priority = slack_df["priority"].to_numpy()
 
@@ -231,9 +237,9 @@ def get_ppci_dist_slack(net: pandapowerNet, ppci: dict, slack_df: pd.DataFrame) 
 
 
 def _check_multi_area(net: pandapowerNet, slack_df: pd.DataFrame) -> dict:
-    """ Check the multi grid areas of a pandapower networks with distributed slack
-        and update the area and priority area in slack_df
-        return dict: {area: bus_in_area}
+    """Check the multi grid areas of a pandapower networks with distributed slack
+    and update the area and priority area in slack_df
+    return dict: {area: bus_in_area}
     """
     # Set all active slacks to out-of-service
     for ix, slack in slack_df.iterrows():
@@ -266,8 +272,11 @@ def _check_multi_area(net: pandapowerNet, slack_df: pd.DataFrame) -> dict:
     slack_df["priority_in_area"] = 0.0
     # for i, val in sum_priority_in_area.iteritems():
     for i, val in sum_priority_in_area.items():
-        slack_df.loc[slack_df.area == i, "priority_in_area"] = \
-            slack_df.loc[slack_df.area == i, "priority_in_area"] / val if np.isclose(sum_priority_in_area.at[i], 0.0) else 0.0
+        slack_df.loc[slack_df.area == i, "priority_in_area"] = (
+            slack_df.loc[slack_df.area == i, "priority_in_area"] / val
+            if np.isclose(sum_priority_in_area.at[i], 0.0)
+            else 0.0
+        )
 
     # slack_df["priority_in_area"] = slack_df.apply(lambda slack: slack.priority/sum_priority_in_area.at[slack.area],
     #                                               axis=1)

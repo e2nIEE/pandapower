@@ -76,7 +76,7 @@ def _get_lodf_direct(
     # Set results to default value of bridge branch
     lodf_ppci[:, bridge_branch_mask] = np.nan
     if branch_id is not None and not reduced:
-        assert branch_ppci_lookup is not None # force mypy type narrowing
+        assert branch_ppci_lookup is not None  # force mypy type narrowing
         branch_id_complement = [x for x in range(list(branch_ppci_lookup.values())[-1][1]) if x not in branch_id]
         lodf_ppci[:, branch_id_complement] = np.nan
         lodf_ppci[branch_id_complement, :] = np.nan
@@ -114,11 +114,7 @@ def _get_lodf_direct(
     return lodf
 
 
-def _init_lodf_pp_np(
-        net: pandapowerNet,
-        outage_branch_type: str,
-        num_outage_branch: int
-) -> dict:
+def _init_lodf_pp_np(net: pandapowerNet, outage_branch_type: str, num_outage_branch: int) -> dict:
     lodf_pp = {}
     for br_type in ("line", "dcline", "trafo", "impedance"):
         if not net[br_type].empty:
@@ -134,11 +130,7 @@ def _init_lodf_pp_np(
     return lodf_pp
 
 
-def _lodf_ppci_to_pp(
-        net: pandapowerNet,
-        lodf_ppci: np.ndarray,
-        branch_ppci_lookup: dict | None=None
-):
+def _lodf_ppci_to_pp(net: pandapowerNet, lodf_ppci: np.ndarray, branch_ppci_lookup: dict | None = None):
     # convert the branch sensitivity of the ppci layer to pandapower net layer
     if branch_ppci_lookup is not None:
         pp_ppci_branch_lookups: dict[str, npt.NDArray | range | None] = {
@@ -178,11 +170,11 @@ def _lodf_ppci_to_pp(
 
 
 def _lodf_pp_np_to_df(
-        net: pandapowerNet,
-        res_pp_np,
-        outage_branch_type: str | None = None,
-        outage_branch_ix: ELE_IX_TYPE | None = None,
-        branch_dict: dict[str, list[int] | None] | None = None
+    net: pandapowerNet,
+    res_pp_np,
+    outage_branch_type: str | None = None,
+    outage_branch_ix: ELE_IX_TYPE | None = None,
+    branch_dict: dict[str, list[int] | None] | None = None,
 ) -> dict:
     res = {}
     for key, data in res_pp_np.items():
@@ -306,7 +298,13 @@ def _get_lodf_perturb(
                 outage_p0_series = net_mod[outage_res_table][outage_res_type].copy()
 
             net_mod_n1[outage_branch_type].at[br_ix, "in_service"] = False
-            rundcpp(net_mod_n1, outage_branch_type=outage_branch_type, outage_branch_ix=br_ix, distributed_slack=distributed_slack, recycle=recycle)
+            rundcpp(
+                net_mod_n1,
+                outage_branch_type=outage_branch_type,
+                outage_branch_ix=br_ix,
+                distributed_slack=distributed_slack,
+                recycle=recycle,
+            )
             net_mod_n1[outage_branch_type].at[br_ix, "in_service"] = True
 
             if np.sum(np.isnan(net_mod_n1.res_bus.va_degree.to_numpy())) > num_out_of_service_bus:
@@ -348,11 +346,11 @@ def _get_lodf_perturb(
 
 # Example application function with LODF
 def _get_dc_n1_with_lodf(
-        net: pandapowerNet,
-        outage_branch_type,
-        outage_branch_ix: ELE_IX_TYPE | None = None,
-        result_side: int=0,
-        lodf: dict | None = None
+    net: pandapowerNet,
+    outage_branch_type,
+    outage_branch_ix: ELE_IX_TYPE | None = None,
+    result_side: int = 0,
+    lodf: dict | None = None,
 ):
     """
     this function calculate p_mw of a side of branch under the outage
@@ -401,6 +399,7 @@ def _get_dc_n1_with_lodf(
         net, res_n1_pp_np, outage_branch_type=outage_branch_type, outage_branch_ix=outage_branch_ix
     )
     return res_n1
+
 
 def run_lodf(
     net: pandapowerNet,
@@ -468,12 +467,15 @@ def run_lodf(
             reduced=reduced,
         )
 
-    if outage_branch_ix is not None and (np.isscalar(outage_branch_ix) or len(outage_branch_ix) == 1) and \
-        np.all(np.isnan(lodf[("line", outage_branch_type)].to_numpy())):
-            # if only one branch selected for outage,
-            # raise an error when not allowed to outage
-            # logger.error(f"{outage_branch_ix} is not allowed to outage!")
-            raise UserWarning(f"{outage_branch_ix} is not allowed to outage!")
+    if (
+        outage_branch_ix is not None
+        and (np.isscalar(outage_branch_ix) or len(outage_branch_ix) == 1)
+        and np.all(np.isnan(lodf[("line", outage_branch_type)].to_numpy()))
+    ):
+        # if only one branch selected for outage,
+        # raise an error when not allowed to outage
+        # logger.error(f"{outage_branch_ix} is not allowed to outage!")
+        raise UserWarning(f"{outage_branch_ix} is not allowed to outage!")
 
     # Update lodf on net
     net._lodf = {"branch": {"table": outage_branch_type, "element": None}}
@@ -485,11 +487,11 @@ def run_lodf(
 
 
 def verify_dc_n1_with_lodf(
-        net: pandapowerNet,
-        outage_branch_type: str,
-        outage_branch_ix: ELE_IX_TYPE | None = None,
-        result_side: int = 0,
-        lodf: dict | None = None
+    net: pandapowerNet,
+    outage_branch_type: str,
+    outage_branch_ix: ELE_IX_TYPE | None = None,
+    result_side: int = 0,
+    lodf: dict | None = None,
 ):
     """
     this function verifies the result of dc_n1 with LODF and perturb method,
@@ -512,11 +514,11 @@ def verify_dc_n1_with_lodf(
 
 
 def verify_lodf(
-        net: pandapowerNet,
-        outage_branch_type: str,
-        outage_branch_ix: ELE_IX_TYPE | None = None,
-        using_sparse_solver: bool = True,
-        lodf: dict | None = None
+    net: pandapowerNet,
+    outage_branch_type: str,
+    outage_branch_ix: ELE_IX_TYPE | None = None,
+    using_sparse_solver: bool = True,
+    lodf: dict | None = None,
 ):
     """
     this function verifies the result of LODF and perturb method,
@@ -537,19 +539,19 @@ def verify_lodf(
     assert len(lodf) > 0, "Empty lodf, verification not possible!"
     for key in lodf:
         filter_lodf = ~lodf[key].isna().any(axis=0)
-        assert np.allclose(lodf[key].loc[:, filter_lodf], lodf_perturb[key].loc[:, filter_lodf], atol=1e-8, equal_nan=True), (
-            f"{key} LODF results verification failed!"
-        )
+        assert np.allclose(
+            lodf[key].loc[:, filter_lodf], lodf_perturb[key].loc[:, filter_lodf], atol=1e-8, equal_nan=True
+        ), f"{key} LODF results verification failed!"
         logger.info(str(key) + " LODF results verified!")
     logger.info("All LODF results verified with perturb method!")
 
 
 def _get_dc_n1_perturb(
-        net: pandapowerNet,
-        outage_branch_type: str,
-        outage_branch_ix: ELE_IX_TYPE | None = None,
-        result_side: int = 0,
-        distributed_slack: bool = True
+    net: pandapowerNet,
+    outage_branch_type: str,
+    outage_branch_ix: ELE_IX_TYPE | None = None,
+    result_side: int = 0,
+    distributed_slack: bool = True,
 ):
     """
     this function calculate p_mw of a side of branch under the outage

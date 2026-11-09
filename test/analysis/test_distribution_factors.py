@@ -29,7 +29,7 @@ from pandapower.run import rundcpp
         (case1354pegase, 100),
         (case2869pegase, 100),
         (case6470rte, 100),
-        (case9241pegase, 100)
+        (case9241pegase, 100),
     ]
 )
 def net_in(request):
@@ -56,6 +56,7 @@ def profiles():
             profiles[(ele_type, "p_mw")] *= np.random.rand(*profiles[(ele_type, "p_mw")].shape)
     return profiles
 
+
 # TODO: source_bus is hardcoded to 1000 which makes no sense in context of the test networks.
 # def test_ptdf(net_in: pandapowerNet):
 #     ptdf_matrix = run_PTDF(net_in, using_sparse_solver=True)
@@ -70,7 +71,9 @@ def profiles():
 def test_lodf(net_in):
     net, lodf_line = net_in
     outage_branch = lodf_line
-    lodf_matrix = run_lodf(net, outage_branch_type="line", outage_branch_ix=outage_branch, perturb=False, random_verify=False)
+    lodf_matrix = run_lodf(
+        net, outage_branch_type="line", outage_branch_ix=outage_branch, perturb=False, random_verify=False
+    )
     lodf_perturb = run_lodf(net, outage_branch_type="line", outage_branch_ix=outage_branch, perturb=True)
     lodf_comp_df = pd.DataFrame(
         data={
