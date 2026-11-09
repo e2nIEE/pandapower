@@ -10,8 +10,11 @@ import numpy.typing as npt
 import pandas as pd
 
 from pandapower import pandapowerNet
-from pandapower.analysis.ptdf import _get_ptdf_perturb, _make_ptdf_ppci
-from pandapower.analysis.utils import (
+from pandapower.create import create_load
+from pandapower.pypower.make_lodf import makeLODF
+from pandapower.run import rundcpp
+from pandapower.sensitivity.ptdf import _get_ptdf_perturb, _make_ptdf_ppci
+from pandapower.sensitivity.utils import (
     BR_NAN_CHECK,
     BR_PTDF_MAPPING,
     BR_PTDF_MAPPING_1,
@@ -24,9 +27,6 @@ from pandapower.analysis.utils import (
     _get_trafo3w_lookup,
     branch_dict_to_ppci_branch_list,
 )
-from pandapower.create import create_load
-from pandapower.pypower.make_lodf import makeLODF
-from pandapower.run import rundcpp
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +76,9 @@ def _get_lodf_direct(
     # Set results to default value of bridge branch
     lodf_ppci[:, bridge_branch_mask] = np.nan
     if branch_id is not None and not reduced:
-        branch_id_complement = np.setdiff1d(np.arange(lodf_ppci.shape[0]), branch_id) # all PPC branches minus the selected ones
+        branch_id_complement = np.setdiff1d(
+            np.arange(lodf_ppci.shape[0]), branch_id
+        )  # all PPC branches minus the selected ones
         lodf_ppci[:, branch_id_complement] = np.nan
         lodf_ppci[branch_id_complement, :] = np.nan
 

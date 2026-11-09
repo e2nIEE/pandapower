@@ -4,9 +4,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower.analysis.lodf import run_lodf, verify_dc_n1_with_lodf
-from pandapower.analysis.psdf import run_psdf
-from pandapower.analysis.ptdf import run_ptdf, run_ptdf_dc_profile
 from pandapower.control import ConstControl
 from pandapower.networks.create_examples import example_multivoltage
 from pandapower.networks.power_system_test_cases import (
@@ -18,6 +15,9 @@ from pandapower.networks.power_system_test_cases import (
     case2869pegase,
 )
 from pandapower.run import rundcpp
+from pandapower.sensitivity.lodf import run_lodf, verify_dc_n1_with_lodf
+from pandapower.sensitivity.psdf import run_psdf
+from pandapower.sensitivity.ptdf import run_ptdf, run_ptdf_dc_profile
 from pandapower.timeseries import DFData, OutputWriter, run_timeseries
 
 
@@ -164,6 +164,7 @@ def test_run_selected_elements(profiles):
     _assert_profile_matches_timeseries(net, profiles, result_side=1)
     verify_dc_n1_with_lodf(net, outage_branch_type="line")
 
+
 def test_psdf_direct_vs_perturb():
     for net_func in (case14, example_multivoltage):
         psdf_direct = run_psdf(net_func(), phase_shift_branch_type="trafo", distributed_slack=False)
@@ -171,6 +172,7 @@ def test_psdf_direct_vs_perturb():
         assert sorted(psdf_direct) == sorted(psdf_perturb)
         for key, data in psdf_direct.items():
             assert np.allclose(data, psdf_perturb[key], equal_nan=True, atol=1e-8)
+
 
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

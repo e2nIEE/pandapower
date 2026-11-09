@@ -15,18 +15,18 @@ from numpy import flatnonzero as find
 from scipy.sparse import csc_matrix, csr_matrix
 
 from pandapower import pandapowerNet
-from pandapower.analysis.lodf import _init_lodf_pp_np, _lodf_pp_np_to_df, _lodf_ppci_to_pp
-from pandapower.analysis.ptdf import _make_ptdf_ppci
-from pandapower.analysis.utils import (
+from pandapower.pypower.idx_brch import F_BUS, T_BUS
+from pandapower.pypower.idx_bus import BUS_TYPE, REF
+from pandapower.pypower.make_b_dc import calc_b_from_branch
+from pandapower.run import rundcpp
+from pandapower.sensitivity.lodf import _init_lodf_pp_np, _lodf_pp_np_to_df, _lodf_ppci_to_pp
+from pandapower.sensitivity.ptdf import _make_ptdf_ppci
+from pandapower.sensitivity.utils import (
     BR_SIDE_MAPPING,
     ELE_IX_TYPE,
     _get_outage_branch_ix,
     branch_dict_to_ppci_branch_list,
 )
-from pandapower.pypower.idx_brch import F_BUS, T_BUS
-from pandapower.pypower.idx_bus import BUS_TYPE, REF
-from pandapower.pypower.make_b_dc import calc_b_from_branch
-from pandapower.run import rundcpp
 
 logger = logging.getLogger(__name__)
 

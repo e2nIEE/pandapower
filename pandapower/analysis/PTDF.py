@@ -7,7 +7,16 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from pandapower.analysis.utils import (
+from pandapower.auxiliary import pandapowerNet
+from pandapower.create import create_load
+from pandapower.pd2ppc import _pd2ppc
+from pandapower.pypower.idx_brch import F_BUS, T_BUS
+from pandapower.pypower.idx_bus import BUS_I
+
+# replace pandapower makePTDF with custom function
+from pandapower.pypower.make_ptdf import makePTDF
+from pandapower.run import rundcpp
+from pandapower.sensitivity.utils import (
     BR_SIDE_MAPPING,
     BR_SIDE_MAPPING_1,
     DISCONNECTED_PADDING_VALUE,
@@ -21,15 +30,6 @@ from pandapower.analysis.utils import (
     get_dist_slack,
     get_ppci_dist_slack,
 )
-from pandapower.auxiliary import pandapowerNet
-from pandapower.create import create_load
-from pandapower.pd2ppc import _pd2ppc
-from pandapower.pypower.idx_brch import F_BUS, T_BUS
-from pandapower.pypower.idx_bus import BUS_I
-
-# replace pandapower makePTDF with custom function
-from pandapower.pypower.make_ptdf import makePTDF
-from pandapower.run import rundcpp
 
 logger = logging.getLogger(__name__)
 

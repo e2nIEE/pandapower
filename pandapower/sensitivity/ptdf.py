@@ -1,0 +1,534 @@
+# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+import logging
+from copy import deepcopy
+
+import numpy as np
+import numpy.typing as npt
+import pandas as pd
+
+from pandapower.auxiliary import pandapowerNet
+from pandapower.create import create_load
+from pandapower.pd2ppc import _pd2ppc
+from pandapower.pypower.idx_brch import F_BUS, T_BUS
+from pandapower.pypower.idx_bus import BUS_I
+
+# replace pandapower makePTDF with custom function
+from pandapower.pypower.make_ptdf import makePTDF
+from pandapower.run import rundcpp
+from pandapower.sensitivity.utils import (
+    BR_SIDE_MAPPING,
+    BR_SIDE_MAPPING_1,
+    DISCONNECTED_PADDING_VALUE,
+    ELE_IX_TYPE,
+    LOAD_REFRENCE,
+    _get_branch_lookup,
+    _get_bus_lookup,
+    _get_source_bus_ix,
+    _get_trafo3w_lookup,
+    branch_dict_to_ppci_branch_list,
+    get_dist_slack,
+    get_ppci_dist_slack,
+)
+
+logger = logging.getLogger(__name__)
+
+
+def _get_ptdf_direct(
+    net: pandapowerNet,
+    source_bus: int | npt.NDArray | None = None,
+    result_side=0,
+    using_sparse_solver: bool = True,
+    random_verify: bool = False,
+    branch_dict: dict[str, list[int] | None] | None = None,
+    reduced: bool = True,
+):
+    """
+    this function calculates PTDF (ratio without unit) of bus to a pp branch
+    with matrix based internal calculation.
+    """
+    if net.bus.shape[0] > 3000 and not using_sparse_solver:
+        logger.warning("Calculating ptdf for large network, please use sparse_solver for better numerical stability!")
+
+    # If branch_dict not None compute list of ppci branch indices and its branch type intervals as lookup
+    branch_ppci_lookup = None
+    branch_id = None
+    if branch_dict is not None:
+        branch_id, branch_ppci_lookup = branch_dict_to_ppci_branch_list(net=net, branch_dict=branch_dict)
+    else:
+        reduced = False
+
+    ptdf_ppci, _ = _make_ptdf_ppci(
+        net, using_sparse_solver=using_sparse_solver, result_side=result_side, branch_id=branch_id, reduced=reduced
+    )
+
+    # Use lookup to convert ppci ptdf to pp
+    if reduced:
+        ptdf_pp_np = _ptdf_ppci_to_pp(net, ptdf_ppci, result_side=result_side, branch_ppci_lookup=branch_ppci_lookup)
+    else:
+        ptdf_pp_np = _ptdf_ppci_to_pp(net, ptdf_ppci, result_side=result_side)
+
+    # Convert numpy array to pandas dataframe with the pp element index
+    # All bus data points are available no definition of perturb bus needed
+    ptdf = _ptdf_pp_np_to_df(net, ptdf_pp_np, source_bus=None, branch_dict=branch_dict, reduced=reduced)
+
+    # Select only required source buses
+    source_bus_ix = _get_source_bus_ix(net, source_bus)
+    for key in ptdf:
+        ptdf[key] = ptdf[key].loc[:, source_bus_ix]
+
+    # Verify with random selection of bus
+    if random_verify and source_bus_ix.size >= 3:
+        # Skip test if too few elements are calculated
+        # Select three random buses and verify against perturb method
+        rng = np.random.default_rng()
+        verify_bus = rng.choice(ptdf["line"].columns.values, size=3, replace=False)
+        verify_ptdf(
+            net,
+            source_bus=verify_bus,
+            result_side=result_side,
+            ptdf={key: data.loc[:, verify_bus] for key, data in ptdf.items()},
+        )
+    return ptdf
+
+
+def _get_ptdf_perturb(
+    net: pandapowerNet,
+    source_bus: int | npt.NDArray | None = None,
+    result_side: int = 0,
+    distributed_slack: bool = True,
+):
+    """
+    this function calculates PTDF (ratio without unit) of bus to
+    a pp branch with perturb method (brute-force)
+    """
+    THIS_BR_SIDE_MAPPING = BR_SIDE_MAPPING if result_side == 0 else BR_SIDE_MAPPING_1
+    # ToDo: remove distributed slack option
+
+    source_bus_ix = _get_source_bus_ix(net, source_bus)
+
+    # Init ptdf numpy array
+    ptdf_pp_np = _init_ptdf_pp_np(net, source_bus_ix.shape[0])
+
+    rundcpp(net, distributed_slack=distributed_slack)
+    # Using new net_mod object to do perturb
+    net_mod = deepcopy(net)
+    for ix, bus_ix in enumerate(source_bus_ix):
+        create_load(net_mod, bus_ix, p_mw=-1)
+        rundcpp(net_mod, distributed_slack=distributed_slack)
+        # Delete the new load
+        net_mod.load = net_mod.load.iloc[:-1, :]
+
+        for br_type in ("line", "dcline", "trafo", "impedance"):
+            if not net[br_type].empty:
+                value_type = "p_" + THIS_BR_SIDE_MAPPING[br_type] + "_mw"
+                ptdf_pp_np[br_type][:, ix] = (
+                    net_mod["res_" + br_type][value_type].to_numpy() - net["res_" + br_type][value_type].to_numpy()
+                )
+        if not net.trafo3w.empty:
+            for side in ("hv", "mv", "lv"):
+                value_type = "p_" + side + "_mw"
+                ptdf_pp_np["trafo3w_" + side][:, ix] = (
+                    net_mod["res_trafo3w"][value_type].to_numpy() - net["res_trafo3w"][value_type].to_numpy()
+                )
+
+    # Convert numpy array to pandas dataframe with the pp element index
+    ptdf = _ptdf_pp_np_to_df(net, ptdf_pp_np, source_bus=source_bus_ix)
+    return ptdf
+
+
+def _get_dc_profile_with_ptdf(net, profiles, result_side=0, ptdf=None):
+    """
+    Run dc profile with ptdf method, if ptdf not given will be recalculated
+    :return: {branch_type ("line", "trafo", "impedance", "trafo3w_{hv,mv,lv}"):
+              DataFrame(data=p_side_mw, index=calc_ix, columns=branch_index)}
+    """
+
+    THIS_RES_BR_SIDE_MAPPING = BR_SIDE_MAPPING if result_side == 0 else BR_SIDE_MAPPING_1
+    slack_df, _ = get_dist_slack(net, pf_required=True)
+
+    if ptdf is None:
+        ptdf = _get_ptdf_direct(net, result_side=result_side)
+
+    net_mod = deepcopy(net)
+    num_calc = None
+
+    # Check profile integrity and calculate to delta profile
+    delta_profiles = {}
+    for key in profiles:
+        assert key in (("load", "p_mw"), ("sgen", "p_mw"), ("gen", "p_mw"), ("storage", "p_mw")), (
+            str(key) + " not supported for superposition ptdf"
+        )
+        assert isinstance(profiles[key], pd.DataFrame), "Only profile as pandas dataframe supported!"
+        ele_type, value_type = key
+
+        if num_calc is None:
+            num_calc = profiles[key].shape[0]
+        else:
+            assert num_calc == profiles[key].shape[0], str(key) + " profile has wrong dimension"
+
+        # Update network with profiles calc_ix 0
+        net_mod[ele_type].loc[profiles[key].columns.to_numpy(), value_type] = profiles[key].iloc[0, :].to_numpy()
+
+        # Create differential profile
+        delta_profiles[key] = profiles[key].copy()
+        if key[0] == "gen":
+            # Exclude gen slack from the profile
+            gen_slack = slack_df.query("ele_type=='gen'")
+            if not gen_slack.empty:
+                logger.info("Gen slacks will be excluded from profile simulation!")
+                delta_profiles[key].loc[:, gen_slack["ele_id"].to_numpy()] = 0.0
+        delta_profiles[key] = delta_profiles[key] - delta_profiles[key].iloc[0, :]
+
+    # Calculate delta_bus_p profile for profile simulation
+    rundcpp(net_mod, distributed_slack=True)
+    delta_bus_p = pd.DataFrame(
+        np.zeros((num_calc, net_mod.bus.shape[0]), dtype=np.float64),
+        index=np.arange(num_calc),
+        columns=net_mod.bus.index.to_numpy(),
+    )
+    required_bus_mask = np.zeros(net.bus.shape[0], dtype=bool)
+    for (ele_type, value_type), this_delta_profile in delta_profiles.items():
+        this_ele_ix = this_delta_profile.columns.to_numpy()
+        this_bus_ix = net_mod[ele_type].loc[this_ele_ix, "bus"].to_numpy()
+        sign_corr = -1 if ele_type in LOAD_REFRENCE else 1
+        delta_bus_p.loc[:, this_bus_ix] += delta_profiles[(ele_type, value_type)].to_numpy() * sign_corr
+
+        # Update required bus mask
+        required_bus_mask[np.isin(net.bus.index.to_numpy(), this_bus_ix)] = True
+
+    # Subsets only the required value in delta p
+    required_bus_ix = net.bus.index.to_numpy()[required_bus_mask]
+    delta_bus_p = delta_bus_p.loc[:, required_bus_ix]
+
+    # Calculate branch flow with ptdf and delta_bus_p profile
+    # No extra initialization needed
+    res_pp_np = {}
+    for br_type in ptdf:
+        if br_type.startswith("trafo3w"):
+            ele_type = "trafo3w"
+            side = br_type.split("_")[1]
+        else:
+            ele_type = br_type
+            side = THIS_RES_BR_SIDE_MAPPING[ele_type]
+        ptdf_this_br = ptdf[br_type]
+        assert np.all(np.isin(required_bus_ix, ptdf_this_br.columns.to_numpy())), (
+            "Some bus required for profile simulation not available in ptdf!"
+        )
+        ptdf_this_br = ptdf_this_br.loc[:, required_bus_ix]
+
+        br_p0 = net_mod["res_" + ele_type]["p_" + side + "_mw"].to_numpy()
+        res_pp_np[br_type] = np.tile(br_p0, (num_calc, 1)) + np.matmul(
+            delta_bus_p.to_numpy(), ptdf_this_br.to_numpy().T
+        )
+
+    res = _profile_pp_np_to_df(net, res_pp_np, num_calc)
+    return res
+
+
+# Convert data in numpy array to pandas dataframe with pp index
+def _ptdf_pp_np_to_df(net, res_pp, source_bus=None, nan_to_num=True, branch_dict=None, reduced=False):
+    res = {}
+    for br_type, data in res_pp.items():
+        if nan_to_num:
+            data = np.nan_to_num(data)
+
+        pp_br_type = "trafo3w" if br_type.startswith("trafo3w") else br_type
+        if branch_dict is not None and not reduced:
+            # rows of branches not selected in branch_dict (all rows if the type is not in branch_dict) are set to NaN
+            selected_branches = branch_dict.get(pp_br_type) or []
+            data[~net[pp_br_type].index.isin(selected_branches), :] = np.nan
+        if source_bus is None:
+            if reduced:
+                res[br_type] = pd.DataFrame(data=data, index=branch_dict[pp_br_type], columns=net.bus.index.to_numpy())
+            else:
+                res[br_type] = pd.DataFrame(
+                    data=data, index=net[pp_br_type].index.to_numpy(), columns=net.bus.index.to_numpy()
+                )
+        else:
+            if reduced:
+                res[br_type] = pd.DataFrame(data=data, index=branch_dict[pp_br_type], columns=source_bus)
+            else:
+                res[br_type] = pd.DataFrame(data=data, index=net[pp_br_type].index.to_numpy(), columns=source_bus)
+    return res
+
+
+# Init result numpy array filled with zeros
+def _init_ptdf_pp_np(net, num_source_bus):
+    ptdf_pp = {}
+    for br_type in ("line", "dcline", "trafo", "impedance"):
+        if not net[br_type].empty:
+            ptdf_pp[br_type] = np.zeros((net[br_type].shape[0], num_source_bus), dtype=float)
+    if not net.trafo3w.empty:
+        for side in ("hv", "mv", "lv"):
+            ptdf_pp["trafo3w_" + side] = np.zeros((net.trafo3w.shape[0], num_source_bus), dtype=float)
+    return ptdf_pp
+
+
+def _make_ptdf_ppci(net, using_sparse_solver, result_side, branch_id=None, reduced=False):
+    # Select subnet areas
+    slack_df, pp_area_bus_mapping = get_dist_slack(net)
+    _, ppci = _pd2ppc(net)
+    # Make PTDF of the ppci data stucture
+    ppci_slack_mask_with_prio = get_ppci_dist_slack(net, ppci, slack_df)
+    if len(pp_area_bus_mapping) > 1:
+        ptdf_ppci = make_ptdf_multi_area(
+            net,
+            ppci,
+            pp_area_bus_mapping,
+            ppci_slack_mask_with_prio,
+            using_sparse_solver=using_sparse_solver,
+            result_side=result_side,
+        )
+    else:
+        ptdf_ppci = makePTDF(
+            ppci["baseMVA"],
+            ppci["bus"],
+            ppci["branch"],
+            slack=ppci_slack_mask_with_prio,
+            using_sparse_solver=using_sparse_solver,
+            result_side=result_side,
+            branch_id=branch_id,
+            reduced=reduced,
+        )
+    return ptdf_ppci, ppci
+
+
+def _ptdf_ppci_to_pp(net, ptdf_ppci, result_side, branch_ppci_lookup=None):
+    # Padding the sensitivity matrix for out-of-service elements
+    ptdf_ppci_padding = np.pad(ptdf_ppci, ((0, 1), (0, 1)), mode="constant", constant_values=DISCONNECTED_PADDING_VALUE)
+
+    # Get bus pp ppci lookup
+    pp_ppci_bus_lookup = _get_bus_lookup(net)
+
+    results = {}
+    # Get branch pp ppci lookup and update the matrix
+    for br_type in ("line", "trafo", "impedance"):
+        if branch_ppci_lookup is not None:
+            if br_type in branch_ppci_lookup:
+                pp_ppci_br_lookup = range(branch_ppci_lookup[br_type][0], branch_ppci_lookup[br_type][1])
+            else:
+                pp_ppci_br_lookup = None
+        else:
+            pp_ppci_br_lookup = _get_branch_lookup(net, br_type)
+        if pp_ppci_br_lookup is not None:
+            results[br_type] = ptdf_ppci_padding[pp_ppci_br_lookup, :][:, pp_ppci_bus_lookup[net.bus.index.to_numpy()]]
+
+    # Trafo3w needs to be handled differently
+    if branch_ppci_lookup is not None:
+        # only sides contained in branch_dict, i.e. none if the net has no trafo3w or branch_dict does not select any
+        pp_ppci_trafo3w_lookups = {
+            type: range(branch_ppci_lookup[type][0], branch_ppci_lookup[type][1])
+            for type in ("trafo3w_hv", "trafo3w_mv", "trafo3w_lv")
+            if type in branch_ppci_lookup
+        }
+    else:
+        pp_ppci_trafo3w_lookups = _get_trafo3w_lookup(net)
+    if pp_ppci_trafo3w_lookups is not None:
+        for trafo3w_side in pp_ppci_trafo3w_lookups:
+            results[trafo3w_side] = ptdf_ppci_padding[pp_ppci_trafo3w_lookups[trafo3w_side], :][
+                :, pp_ppci_bus_lookup[net.bus.index.to_numpy()]
+            ]
+            if result_side == 0:
+                # Sign correction only for "mv", "lv" side
+                if not trafo3w_side.endswith("hv"):
+                    results[trafo3w_side] *= -1
+            else:
+                # Sign correction only for "hv" side
+                if trafo3w_side.endswith("hv"):
+                    results[trafo3w_side] *= -1
+    return results
+
+
+def run_ptdf(
+    net: pandapowerNet,
+    source_bus: int | npt.NDArray | None = None,
+    distributed_slack: bool = True,
+    result_side: int = 0,
+    perturb: bool = False,
+    using_sparse_solver: bool = True,
+    random_verify: bool = False,
+    branch_dict: dict[str, list[int] | None] | None = None,
+    reduced: bool = True,
+):
+    """
+    this function is a wrapper of calculating PTDF (ratio without unit) of bus to a pp branch
+    with matrix based internal calculation or perturb.
+    The PTDF is defined as: (p_{side}_mw_new - p_{side}_mw_old) / delta_P_injection.
+
+    delta_P_injection is the injection or demand change at a bus
+    Side corresponds to the pandapower results definition (see result_side definition)
+
+    :param net: A pandapower network
+    :param source_bus: Select a subset of pp buses for the PTDF calculation, if None given then all buses are used
+    :param result_side: 0 means ("from", "hv") side, 1 means ("to", "lv") side of p_{side}_mw
+    :param distributed_slack: Only used by the perturb method (passed to rundcpp). If True, the additional
+        injection is balanced by all slacks according to their slack_weight; if False, it is balanced by
+        the reference bus only. The direct method ignores this parameter and always distributes the
+        additional injection over the in-service slack elements (ext_grid and gen with slack=True)
+        according to their slack_weight (equal shares if no weights are given).
+    :param perturb: Set True to use the perturb version (brute-force) which is faster for calculating
+        only a few elements on large networks, if a lot of elements required, set to False
+    :param using_sparse_solver: Select whether sparse linear system should be used (more efficient for large network)
+    :param random_verify: Set to True to check the direct version against perturb version
+        with 3 randomly selected elements
+    :param: branch_dict: dictionary with keys "line", "trafo", "impedance", "trafo3w"; if not None the computation is
+        restricted to the branch indices given in the dict
+    :param reduced: if True, the output is reduced to the branches given in branch_dict
+    :return: {goal_branch_type ("line", "trafo", "impedance", "trafo3w_{hv,mv,lv}"):
+        DataFrame(data=ptdf, index=goal_branch_pp_index, columns=bus_pp_index)}
+    """
+    if perturb and source_bus is None:
+        logger.info("If a lot of buses required in ptdf, please set perturb to False!")
+
+    # ToDo: Check distributed slack option here
+    if perturb:  # or not distributed_slack:
+        # if not distributed_slack:
+        #     logger.info("distributed_slack deactivated! Distirbuted slacks are used as Vref! Only Perturb Possible")
+        ptdf = _get_ptdf_perturb(
+            net, source_bus=source_bus, result_side=result_side, distributed_slack=distributed_slack
+        )
+    else:
+        ptdf = _get_ptdf_direct(
+            net,
+            source_bus=source_bus,
+            result_side=result_side,
+            using_sparse_solver=using_sparse_solver,
+            random_verify=random_verify,
+            branch_dict=branch_dict,
+            reduced=reduced,
+        )
+
+    # Update ptdf on net
+    net._ptdf = {"bus": None}
+    for br_type, data in ptdf.items():
+        if net._ptdf["bus"] is None:
+            net._ptdf["bus"] = data.columns.to_numpy(copy=True)
+        net["ptdf_" + br_type] = data
+    return ptdf
+
+
+def verify_ptdf(
+    net: pandapowerNet,
+    source_bus: ELE_IX_TYPE | None = None,
+    result_side: int = 0,
+    using_sparse_solver: bool = True,
+    ptdf: dict | None = None,
+):
+    """
+    this function verifies the result of PTDF and perturb method,
+    raise AssertionError on mismatches!
+    """
+    net = deepcopy(net)
+    # ToDo: Verify what the distributed_slack options does for both functions (perturb and classic)
+    if ptdf is None:
+        ptdf = run_ptdf(
+            net,
+            source_bus=source_bus,
+            result_side=result_side,
+            using_sparse_solver=using_sparse_solver,
+            perturb=False,
+            random_verify=False,
+            distributed_slack=False,
+        )
+    ptdf_perturb = run_ptdf(net, source_bus=source_bus, result_side=result_side, distributed_slack=False, perturb=True)
+
+    assert len(ptdf) > 0, "Empty ptdf, verification not possible!"
+    for key in ptdf:
+        assert np.allclose(ptdf[key], ptdf_perturb[key], atol=1e-8, equal_nan=True), (
+            f"{key} PTDF results verification failed!"
+        )
+        logger.info(str(key) + " PTDF results verified!")
+    logger.info("All PTDF results verified with perturb method!")
+
+
+def make_ptdf_multi_area(net, ppci, pp_area_bus_mapping, ppci_slack_mask_with_prio, using_sparse_solver, result_side):
+    """Select areas in the ppci network and calculate ptdf of each area independently"""
+    ptdf_ppci = np.zeros((ppci["branch"].shape[0], ppci["bus"].shape[0]), dtype=float)
+    for this_bus in pp_area_bus_mapping.values():
+        # Select ppci of the area
+        this_bus_ppci = net["_pd2ppc_lookups"]["bus"][this_bus[np.isin(this_bus, net._is_elements["bus_is_idx"])]]
+
+        ppci_br_f_bus, ppci_br_t_bus = (
+            ppci["branch"][:, F_BUS].real.astype(int),
+            ppci["branch"][:, T_BUS].real.astype(int),
+        )
+        br_in_area_mask = np.isin(ppci_br_f_bus, this_bus_ppci) | np.isin(ppci_br_t_bus, this_bus_ppci)
+        ppci_branch_this_area = ppci["branch"][br_in_area_mask, :].copy()
+        # Update ppci bus
+        this_ppci_bus_aux_bus = np.unique(np.r_[ppci_br_f_bus[br_in_area_mask], ppci_br_t_bus[br_in_area_mask]])
+        bus_in_area_mask = np.isin(np.arange(ppci["bus"].shape[0]), this_ppci_bus_aux_bus)
+        ppci_bus_this_area = ppci["bus"][bus_in_area_mask, :].copy()
+
+        # if no busses in area --> skip area
+        if len(ppci_bus_this_area) < 1:
+            continue
+
+        # Reindex bus_ix from 1-Nbus and create a lookup
+        ppci_bus_ix = ppci_bus_this_area[:, BUS_I].astype(int).copy()
+        ppci_bus_old_new_lookup = np.ones(np.max(ppci_bus_ix) + 1, dtype=int) * -1
+        ppci_bus_old_new_lookup[ppci_bus_this_area[:, BUS_I].astype(int)] = np.arange(this_ppci_bus_aux_bus.shape[0])
+
+        # Update the area ppci bus indexing
+        ppci_bus_this_area[:, BUS_I] = np.arange(ppci_bus_this_area.shape[0], dtype=int)
+        ppci_branch_this_area[:, F_BUS].real = ppci_bus_old_new_lookup[ppci_br_f_bus[br_in_area_mask]]
+        ppci_branch_this_area[:, T_BUS].real = ppci_bus_old_new_lookup[ppci_br_t_bus[br_in_area_mask]]
+
+        # Calculate ptdf of this area and update ptdf matrix
+        ptdf_ppci_this_area = makePTDF(
+            ppci["baseMVA"],
+            ppci_bus_this_area,
+            ppci_branch_this_area,
+            slack=ppci_slack_mask_with_prio[bus_in_area_mask],
+            using_sparse_solver=using_sparse_solver,
+            result_side=result_side,
+        )
+        for ix, bus in enumerate(ppci_bus_ix):
+            ptdf_ppci[br_in_area_mask, bus] = ptdf_ppci_this_area[:, ix]
+    return ptdf_ppci
+
+
+def run_ptdf_dc_profile(
+    net,
+    profiles: dict,
+    result_side=0,
+    ptdf: dict | None = None,
+):
+    """
+    this function calculates the branch flows of a dc profile (time series) with the ptdf: the flow changes of all
+    time steps are calculated with a single matrix product instead of one power flow per time step.
+    The slacks balance the injection changes according to their slack_weight.
+
+    For other results than branch flows or a dc power flow per time step, use run_timeseries with run=rundcpp.
+
+    :param net: A pandapower network
+    :param profiles: a dict of p profiles of pp elements as dataframe:
+        {(element ("load", "sgen", "gen", "storage"), "p_mw"):
+         pd.DataFrame(index=calculation_steps, columns=element_index, data=profile_data)}
+            all the profiles must have the same index, the columns could be a subset of the element,
+            the default value of not selected elements in pandapower networks is used in profile simulation
+    :param result_side: 0 means ("from", "hv") side, 1 means ("to", "lv") side
+    :param ptdf: precalculated ptdf (result of run_ptdf with the same result_side) to accelerate the calculation,
+        if None it is calculated
+    :return: {(res_{branch_type}, p_{side}_mw):
+        DataFrame(data=p_side_mw, index=calc_ix, columns=branch_pp_index)}
+    """
+    res = _get_dc_profile_with_ptdf(net, profiles, result_side=result_side, ptdf=ptdf)
+
+    res_renamed = {}
+    THIS_RES_BR_SIDE_MAPPING = BR_SIDE_MAPPING if result_side == 0 else BR_SIDE_MAPPING_1
+    for br_type, value in res.items():
+        if not br_type.startswith("trafo3w"):
+            side = THIS_RES_BR_SIDE_MAPPING[br_type]
+        else:
+            side = br_type.split("_")[-1]
+        res_renamed[(f"res_{br_type}", f"p_{side}_mw")] = value
+    return res_renamed
+
+
+def _profile_pp_np_to_df(net, res_pp_np, num_calc):
+    res = {}
+    for br_type, data in res_pp_np.items():
+        pp_br_type = "trafo3w" if br_type.startswith("trafo3w") else br_type
+        res[br_type] = pd.DataFrame(data=data, index=np.arange(num_calc), columns=net[pp_br_type].index.to_numpy())
+    return res
