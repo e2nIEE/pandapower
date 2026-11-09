@@ -205,7 +205,7 @@ def pf_res_plotly(
         width=line_width,
         infofunc=hoverinfo[line_ids],
         cmap=cmap_lines,
-        cmap_vals=net.res_line["loading_percent"].values,
+        cmap_vals=net.res_line.loc[line_ids, "loading_percent"].values,
         cmin=climits_load[0],
         cmax=climits_load[1],
         cbar_title="Line Loading [%]",
@@ -247,7 +247,7 @@ def pf_res_plotly(
         ext_grid_ids = net.ext_grid.index
         if not plot_out_of_service:
             ext_grid_ids = ext_grid_ids[net.ext_grid.in_service]
-        if ext_grid_ids:
+        if not ext_grid_ids.empty:
             marker_type = "circle" if on_map else "square"
             ext_grid_trace = create_bus_trace(
                 net,
