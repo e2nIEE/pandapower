@@ -104,7 +104,7 @@ def _get_lodf_direct(
         # Skip test if too few elements are calculated
         # Select three random branches and verify against perturb method
         rng = np.random.default_rng()
-        verify_branch_ix = rng.choice(a=outage_branch_ix, size=3)
+        verify_branch_ix = rng.choice(a=outage_branch_ix, size=3, replace=False)
         verify_lodf(
             net,
             outage_branch_type=outage_branch_type,
