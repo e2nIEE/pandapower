@@ -13,7 +13,7 @@ from pandapower.run import runpp
 from pandapower.runpm import runpm_tnep
 
 try:
-    from juliacall import JuliaError as UnsupportedPythonError  # noqa: 401 # type: ignore
+    from juliacall import JuliaError as UnsupportedPythonError  # type: ignore
 except ImportError:
     UnsupportedPythonError = Exception
 

@@ -152,42 +152,44 @@ def _replace_invalid_data(net, elements_to_deserialize, drop_invalid_geodata):
                 coords = geo["coordinates"]
                 if not drop_invalid_geodata and ((not _is_valid_number(coords[0])) | (not _is_valid_number(coords[1]))):
                     raise ValueError(
-                        "There exists invalid bus geodata at index %s. Please clean up your data first or "
-                        "set 'drop_invalid_geodata' to True" % i
+                        f"There exists invalid bus geodata at index {i}. Please clean up your data first or "
+                        "set 'drop_invalid_geodata' to True"
                     )
                 elif (not _is_valid_number(coords[0])) | (not _is_valid_number(coords[1])):
                     net[element].loc[i, "geo"] = None
-                    logger.warning("bus geodata at index %s is invalid and replaced by None" % i)
+                    logger.warning(f"bus geodata at index {i} is invalid and replaced by None")
 
         else:
             for i, geo in geo_df.items():
                 for x, y in geo["coordinates"]:
                     if not drop_invalid_geodata and ((not _is_valid_number(x)) | (not _is_valid_number(y))):
                         raise ValueError(
-                            "There exists invalid line geodata at index %s. Please clean up your data first or "
-                            "set 'drop_invalid_geodata' to True" % i
+                            f"There exists invalid line geodata at index {i}. Please clean up your data first or "
+                            "set 'drop_invalid_geodata' to True"
                         )
                     elif (not _is_valid_number(x)) | (not _is_valid_number(y)):
                         net[element].loc[i, "geo"] = None
-                        logger.warning("line geodata at index %s is invalid and replaced by None" % i)
+                        logger.warning(f"line geodata at index {i} is invalid and replaced by None")
                         break
 
 
 def _convert_geo_data(net, elements_to_deserialize=None, drop_invalid_geodata=True):
     if (
-        _check_elements_to_deserialize("bus_geodata", elements_to_deserialize)
-        and _check_elements_to_deserialize("bus", elements_to_deserialize)
-    ) or (
-        _check_elements_to_deserialize("line_geodata", elements_to_deserialize)
-        and _check_elements_to_deserialize("line", elements_to_deserialize)
-    ):
-        if hasattr(net, "bus_geodata") or hasattr(net, "line_geodata"):
-            if Version(str(net.format_version)) < Version("1.6"):
-                if hasattr(net, "bus_geodata"):
-                    net.bus_geodata = pd.DataFrame.from_dict(net.bus_geodata)
-                if hasattr(net, "line_geodata"):
-                    net.line_geodata = pd.DataFrame.from_dict(net.line_geodata)
-            convert_geodata_to_geojson(net)
+        (
+            _check_elements_to_deserialize("bus_geodata", elements_to_deserialize)
+            and _check_elements_to_deserialize("bus", elements_to_deserialize)
+        )
+        or (
+            _check_elements_to_deserialize("line_geodata", elements_to_deserialize)
+            and _check_elements_to_deserialize("line", elements_to_deserialize)
+        )
+    ) and (hasattr(net, "bus_geodata") or hasattr(net, "line_geodata")):
+        if Version(str(net.format_version)) < Version("1.6"):
+            if hasattr(net, "bus_geodata"):
+                net.bus_geodata = pd.DataFrame.from_dict(net.bus_geodata)
+            if hasattr(net, "line_geodata"):
+                net.line_geodata = pd.DataFrame.from_dict(net.line_geodata)
+        convert_geodata_to_geojson(net)
 
 
 def _restore_index_names(net):
@@ -284,12 +286,12 @@ def _convert_to_generation_system(net, elements_to_deserialize):
     for element in update_elements:
         for suffix in ["p_kw", "q_kvar"]:
             constraints = {}
-            if "min_%s" % suffix in net[element]:
-                constraints["max_%s" % suffix] = net[element]["min_%s" % suffix] * -1
-                del net[element]["min_%s" % suffix]
-            if "max_%s" % suffix in net[element]:
-                constraints["min_%s" % suffix] = net[element]["max_%s" % suffix] * -1
-                del net[element]["max_%s" % suffix]
+            if f"min_{suffix}" in net[element]:
+                constraints[f"max_{suffix}"] = net[element][f"min_{suffix}"] * -1
+                del net[element][f"min_{suffix}"]
+            if f"max_{suffix}" in net[element]:
+                constraints[f"min_{suffix}"] = net[element][f"max_{suffix}"] * -1
+                del net[element][f"max_{suffix}"]
             for column, values in constraints.items():
                 net[element][column] = values
     pq_measurements = net.measurement[net.measurement.measurement_type.isin(["p", "q"])].index
@@ -407,19 +409,23 @@ def _rename_columns(net, elements_to_deserialize):
             net.std_types["line"][typ]["max_i_ka"] = net.std_types["line"][typ].pop("imax_ka")
     _update_trafo_parameter_names(net, elements_to_deserialize)
     # initialize measurement dataframe
-    if _check_elements_to_deserialize("measurement", elements_to_deserialize):
-        if "measurement" in net and "type" in net.measurement and "measurement":
-            if net.measurement.empty:
-                ms = "measurement"
-                net[ms] = pandapowerNet.create_dataframes({ms: get_structure_dict()[ms]})[ms]
-                # TODO: improve this code to avoid this complex structure just so create_dataframes only creates one df
-            else:
-                net.measurement["side"] = None
-                bus_measurements = net.measurement.element_type == "bus"
-                net.measurement.loc[bus_measurements, "element"] = net.measurement.loc[bus_measurements, "bus"].values
-                net.measurement.loc[~bus_measurements, "side"] = net.measurement.loc[~bus_measurements, "bus"].values
-                net.measurement = net.measurement.rename(columns={"type": "measurement_type"})
-                net.measurement = net.measurement.drop(["bus"], axis=1)
+    if (
+        _check_elements_to_deserialize("measurement", elements_to_deserialize)
+        and "measurement" in net
+        and "type" in net.measurement
+        and "measurement"
+    ):
+        if net.measurement.empty:
+            ms = "measurement"
+            net[ms] = pandapowerNet.create_dataframes({ms: get_structure_dict()[ms]})[ms]
+            # TODO: improve this code to avoid this complex structure just so create_dataframes only creates one df
+        else:
+            net.measurement["side"] = None
+            bus_measurements = net.measurement.element_type == "bus"
+            net.measurement.loc[bus_measurements, "element"] = net.measurement.loc[bus_measurements, "bus"].values
+            net.measurement.loc[~bus_measurements, "side"] = net.measurement.loc[~bus_measurements, "bus"].values
+            net.measurement = net.measurement.rename(columns={"type": "measurement_type"})
+            net.measurement = net.measurement.drop(["bus"], axis=1)
     for ele in ["gen", "sgen"]:
         if (
             _check_elements_to_deserialize(ele, elements_to_deserialize)
@@ -428,35 +434,40 @@ def _rename_columns(net, elements_to_deserialize):
             net[ele] = net[ele].rename(
                 columns={"id_q_capability_curve_characteristic": "id_q_capability_characteristic"}
             )
-    if _check_elements_to_deserialize("controller", elements_to_deserialize):
-        if "controller" in net:
-            net["controller"] = net["controller"].rename(columns={"controller": "object"})
+    if _check_elements_to_deserialize("controller", elements_to_deserialize) and "controller" in net:
+        net["controller"] = net["controller"].rename(columns={"controller": "object"})
 
-    if "res_line_3ph" in net and _check_elements_to_deserialize("res_line_3ph", elements_to_deserialize):
-        if "p_a_l_mw" in net.res_line_3ph:
-            net["res_line_3ph"] = net["res_line_3ph"].rename(
-                columns={
-                    "p_a_l_mw": "pl_a_mw",
-                    "p_b_l_mw": "pl_b_mw",
-                    "p_c_l_mw": "pl_c_mw",
-                    "q_a_l_mvar": "ql_a_mvar",
-                    "q_b_l_mvar": "ql_b_mvar",
-                    "q_c_l_mvar": "ql_c_mvar",
-                }
-            )
+    if (
+        "res_line_3ph" in net
+        and _check_elements_to_deserialize("res_line_3ph", elements_to_deserialize)
+        and "p_a_l_mw" in net.res_line_3ph
+    ):
+        net["res_line_3ph"] = net["res_line_3ph"].rename(
+            columns={
+                "p_a_l_mw": "pl_a_mw",
+                "p_b_l_mw": "pl_b_mw",
+                "p_c_l_mw": "pl_c_mw",
+                "q_a_l_mvar": "ql_a_mvar",
+                "q_b_l_mvar": "ql_b_mvar",
+                "q_c_l_mvar": "ql_c_mvar",
+            }
+        )
 
-    if "res_trafo_3ph" in net and _check_elements_to_deserialize("res_trafo_3ph", elements_to_deserialize):
-        if "p_a_l_mw" in net.res_trafo_3ph:
-            net["res_trafo_3ph"] = net["res_trafo_3ph"].rename(
-                columns={
-                    "p_a_l_mw": "pl_a_mw",
-                    "p_b_l_mw": "pl_b_mw",
-                    "p_c_l_mw": "pl_c_mw",
-                    "q_a_l_mvar": "ql_a_mvar",
-                    "q_b_l_mvar": "ql_b_mvar",
-                    "q_c_l_mvar": "ql_c_mvar",
-                }
-            )
+    if (
+        "res_trafo_3ph" in net
+        and _check_elements_to_deserialize("res_trafo_3ph", elements_to_deserialize)
+        and "p_a_l_mw" in net.res_trafo_3ph
+    ):
+        net["res_trafo_3ph"] = net["res_trafo_3ph"].rename(
+            columns={
+                "p_a_l_mw": "pl_a_mw",
+                "p_b_l_mw": "pl_b_mw",
+                "p_c_l_mw": "pl_c_mw",
+                "q_a_l_mvar": "ql_a_mvar",
+                "q_b_l_mvar": "ql_b_mvar",
+                "q_c_l_mvar": "ql_c_mvar",
+            }
+        )
 
     if "options" in net and "recycle" in net["options"]:
         if "Ybus" in net["options"]["recycle"]:
@@ -522,7 +533,7 @@ def _add_missing_columns(net, elements_to_deserialize):
         net.trafo3w["std_type"] = None
 
     if _check_elements_to_deserialize("sgen", elements_to_deserialize) and "current_source" not in net.sgen:
-        net.sgen["current_source"] = net.sgen["type"].apply(func=lambda x: False if x == "motor" else True)
+        net.sgen["current_source"] = net.sgen["type"].apply(func=lambda x: x != "motor")
     if (
         _check_elements_to_deserialize("sgen", elements_to_deserialize)
         and "id_q_capability_characteristic" not in net.sgen
@@ -632,11 +643,7 @@ def _add_missing_columns(net, elements_to_deserialize):
 def _update_trafo_type_parameter_names(net):
     for element in ("trafo", "trafo3w"):
         for type in net.std_types[element]:
-            keys = {
-                col: _update_column(col)
-                for col in net.std_types[element][type]
-                if col.startswith("tp") or col.startswith("vsc")
-            }
+            keys = {col: _update_column(col) for col in net.std_types[element][type] if col.startswith(("tp", "vsc"))}
             for old_key, new_key in keys.items():
                 net.std_types[element][type][new_key] = net.std_types[element][type].pop(old_key)
 
@@ -648,9 +655,7 @@ def _update_trafo_parameter_names(net, elements_to_deserialize):
     if _check_elements_to_deserialize("trafo3w", elements_to_deserialize):
         update_data += ["trafo3w"]
     for element in update_data:
-        replace_cols = {
-            col: _update_column(col) for col in net[element].columns if col.startswith("tp") or col.startswith("vsc")
-        }
+        replace_cols = {col: _update_column(col) for col in net[element].columns if col.startswith(("tp", "vsc"))}
         net[element] = net[element].rename(columns=replace_cols)
     _update_trafo_type_parameter_names(net)
 
@@ -693,7 +698,7 @@ def _convert_to_mw(net):
                     net[element][new] *= 1e-3
 
     for element, std_types in net.std_types.items():
-        for std_type, parameters in std_types.items():
+        for parameters in std_types.values():
             for parameter in set(parameters.keys()):
                 for old, new in replace:
                     if old in parameter and parameter != "pfe_kw":
@@ -846,40 +851,37 @@ def convert_trafo_pst_logic(net):
     Converts trafo and trafo3w phase shifter logic to version 3.0 or later
     """
     for trafotable in ["trafo", "trafo3w"]:
-        if trafotable in net and isinstance(net[trafotable], pd.DataFrame):
-            if net[trafotable].index.size > 0:
-                for t in ("", "2"):
-                    # drop old tap_phase_shifter flag
-                    if f"tap{t}_phase_shifter" in net[trafotable]:
-                        net[trafotable] = net[trafotable].drop(columns=f"tap{t}_phase_shifter")
-                    if (f"tap{t}_step_degree" in net[trafotable]) or (f"tap{t}_step_percent" in net[trafotable]):
-                        # no phase shifters - check if both tap_step_percent & tap_step_degree are 0 or nan
-                        mask_na = (
-                            (net[trafotable][f"tap{t}_step_degree"].isna())
-                            | (net[trafotable][f"tap{t}_step_degree"] == 0)
-                        ) & (
-                            (net[trafotable][f"tap{t}_step_percent"].isna())
-                            | (net[trafotable][f"tap{t}_step_percent"] == 0)
-                        )
-                        net[trafotable].loc[mask_na, f"tap{t}_changer_type"] = None
-                        # ratio/asymmetrical phase shifters
-                        mask_ratio_asym = (net[trafotable][f"tap{t}_step_degree"] != 90) & (
-                            (net[trafotable][f"tap{t}_step_percent"].notna())
-                            & (net[trafotable][f"tap{t}_step_percent"] != 0)
-                        )
-                        net[trafotable].loc[mask_ratio_asym, f"tap{t}_changer_type"] = "Ratio"
-                        # symmetrical phase shifters
-                        mask_sym = (net[trafotable][f"tap{t}_step_degree"] == 90) & (
-                            (net[trafotable][f"tap{t}_step_percent"].notna())
-                            & (net[trafotable][f"tap{t}_step_percent"] != 0)
-                        )
-                        net[trafotable].loc[mask_sym, f"tap{t}_changer_type"] = "Symmetrical"
-                        # ideal phase shifters
-                        mask_ideal = (
-                            (net[trafotable][f"tap{t}_step_degree"].notna())
-                            & (net[trafotable][f"tap{t}_step_degree"] != 0)
-                        ) & (
-                            (net[trafotable][f"tap{t}_step_percent"].isna())
-                            | (net[trafotable][f"tap{t}_step_percent"] == 0)
-                        )
-                        net[trafotable].loc[mask_ideal, f"tap{t}_changer_type"] = "Ideal"
+        if trafotable in net and isinstance(net[trafotable], pd.DataFrame) and net[trafotable].index.size > 0:
+            for t in ("", "2"):
+                # drop old tap_phase_shifter flag
+                if f"tap{t}_phase_shifter" in net[trafotable]:
+                    net[trafotable] = net[trafotable].drop(columns=f"tap{t}_phase_shifter")
+                if (f"tap{t}_step_degree" in net[trafotable]) or (f"tap{t}_step_percent" in net[trafotable]):
+                    # no phase shifters - check if both tap_step_percent & tap_step_degree are 0 or nan
+                    mask_na = (
+                        (net[trafotable][f"tap{t}_step_degree"].isna()) | (net[trafotable][f"tap{t}_step_degree"] == 0)
+                    ) & (
+                        (net[trafotable][f"tap{t}_step_percent"].isna())
+                        | (net[trafotable][f"tap{t}_step_percent"] == 0)
+                    )
+                    net[trafotable].loc[mask_na, f"tap{t}_changer_type"] = None
+                    # ratio/asymmetrical phase shifters
+                    mask_ratio_asym = (net[trafotable][f"tap{t}_step_degree"] != 90) & (
+                        (net[trafotable][f"tap{t}_step_percent"].notna())
+                        & (net[trafotable][f"tap{t}_step_percent"] != 0)
+                    )
+                    net[trafotable].loc[mask_ratio_asym, f"tap{t}_changer_type"] = "Ratio"
+                    # symmetrical phase shifters
+                    mask_sym = (net[trafotable][f"tap{t}_step_degree"] == 90) & (
+                        (net[trafotable][f"tap{t}_step_percent"].notna())
+                        & (net[trafotable][f"tap{t}_step_percent"] != 0)
+                    )
+                    net[trafotable].loc[mask_sym, f"tap{t}_changer_type"] = "Symmetrical"
+                    # ideal phase shifters
+                    mask_ideal = (
+                        (net[trafotable][f"tap{t}_step_degree"].notna()) & (net[trafotable][f"tap{t}_step_degree"] != 0)
+                    ) & (
+                        (net[trafotable][f"tap{t}_step_percent"].isna())
+                        | (net[trafotable][f"tap{t}_step_percent"] == 0)
+                    )
+                    net[trafotable].loc[mask_ideal, f"tap{t}_changer_type"] = "Ideal"

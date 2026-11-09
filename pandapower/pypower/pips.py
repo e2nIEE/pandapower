@@ -24,13 +24,13 @@ def pips(
     f_fcn,
     x0=None,
     A=None,
-    l=None,  # noqa: E741
+    l=None,
     u=None,
     xmin=None,
     xmax=None,
     gh_fcn=None,
     hess_fcn=None,
-    opt=None,  # noqa: E741
+    opt=None,
 ):
     """Primal-dual interior point method for NLP (nonlinear programming).
     Minimize a function F(X) beginning from a starting point M{x0}, subject to
@@ -198,7 +198,7 @@ def pips(
         if "u" in p:
             u = p["u"]
         if "l" in p:
-            l = p["l"]  # noqa: E741
+            l = p["l"]
         if "A" in p:
             A = p["A"]
 
@@ -207,7 +207,7 @@ def pips(
 
     # default argument values
     if l is None or len(l) == 0:
-        l = full(nA, -inf)  # noqa: E741
+        l = full(nA, -inf)
     if u is None or len(u) == 0:
         u = full(nA, inf)
     if xmin is None or len(xmin) == 0:
@@ -379,13 +379,14 @@ def pips(
     if opt["verbose"]:  # pragma: no cover
         s = "-sc" if opt["step_control"] else ""
         v = pipsver("all")
-        print("Python Interior Point Solver - PIPS%s, Version %s, %s" % (s, v["Version"], v["Date"]))
+        print("Python Interior Point Solver - PIPS{}, Version {}, {}".format(s, v["Version"], v["Date"]))
         if opt["verbose"] > 1:
             print(" it    objective   step size   feascond     gradcond     compcond     costcond  ")
             print("----  ------------ --------- ------------ ------------ ------------ ------------")
             print(
-                "%3d  %12.8g %10s %12g %12g %12g %12g"
-                % (i, (f / opt["cost_mult"]), "", feascond, gradcond, compcond, costcond)
+                "{:3d}  {:12.8g} {:10s} {:12g} {:12g} {:12g} {:12g}".format(
+                    i, (f / opt["cost_mult"]), "", feascond, gradcond, compcond, costcond
+                )
             )
 
     if (
@@ -528,8 +529,9 @@ def pips(
 
         if opt["verbose"] > 1:
             print(
-                "%3d  %12.8g %10.5g %12g %12g %12g %12g"
-                % (i, (f / opt["cost_mult"]), norm(dx), feascond, gradcond, compcond, costcond)
+                "{:3d}  {:12.8g} {:10.5g} {:12g} {:12g} {:12g} {:12g}".format(
+                    i, (f / opt["cost_mult"]), norm(dx), feascond, gradcond, compcond, costcond
+                )
             )
 
         if (
@@ -549,22 +551,22 @@ def pips(
                 break
             f0 = f
 
-    if opt["verbose"]:
-        if not converged:
-            print("Did not converge in %d iterations." % i)
+    if opt["verbose"] and not converged:
+        print(f"Did not converge in {i} iterations.")
 
     # package results
     if eflag != -1:
         eflag = converged
 
-    if eflag == 0:
-        message = "Did not converge"
-    elif eflag == 1:
-        message = "Converged"
-    elif eflag == -1:
-        message = "Numerically failed"
-    else:
-        raise
+    match eflag:
+        case 0:
+            message = "Did not converge"
+        case 1:
+            message = "Converged"
+        case -1:
+            message = "Numerically failed"
+        case _:
+            raise ValueError(f"eflag has unexpected value: {eflag}")
 
     output = {"iterations": i, "hist": hist, "message": message}
 

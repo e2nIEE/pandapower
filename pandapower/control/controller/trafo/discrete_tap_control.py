@@ -242,7 +242,4 @@ class DiscreteTapControl(TrafoController):
         # Compare hunting_taps arrays
         if self._hunting_taps.shape != other._hunting_taps.shape:
             return False
-        if not np.allclose(self._hunting_taps, other._hunting_taps, equal_nan=True):
-            return False
-
-        return True
+        return np.allclose(self._hunting_taps, other._hunting_taps, equal_nan=True)

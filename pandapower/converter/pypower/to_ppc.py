@@ -5,12 +5,12 @@ __all__ = ["to_ppc"]
 
 import logging
 
-from numpy import allclose, any, delete
+from numpy import allclose, any, delete, zeros
 
 from pandapower.auxiliary import _add_ppc_options
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.powerflow import _pd2ppc
-from pandapower.pypower.idx_brch import BR_B_ASYM, BR_G, BR_G_ASYM, BR_R_ASYM, BR_X_ASYM
+from pandapower.pypower.idx_brch import BR_B_ASYM, BR_G, BR_G_ASYM, BR_R_ASYM, BR_X_ASYM, TAP
 
 logger = logging.getLogger(__name__)
 
@@ -137,6 +137,20 @@ def to_ppc(
         if any(col := net._ppc["branch"][:, brch_col]):
             ppci[ppc_name] = col
     ppci["branch"] = delete(ppci["branch"], [BR_R_ASYM, BR_G_ASYM, BR_G, BR_G_ASYM, BR_B_ASYM], axis=1)
+    # branches that originate from impedance elements are no transformers: in the pypower/matpower
+    # format, a tap ratio of 0 denotes that there is no transformer (the default ratio of 1 would
+    # denote a transformer without a tap changer), so mark them accordingly to let from_ppc()
+    # convert them back to impedance elements
+    branch_lookup = net._pd2ppc_lookups["branch"]
+    if "impedance" in branch_lookup:
+        start, end = branch_lookup["impedance"]
+        # the lookup refers to the rows of the full ppc, while the ppci only contains the
+        # in-service branches: build the mask in the coordinates of the full ppc and project
+        # it onto the ppci rows with the same "branch_is" selection that created the ppci
+        branch_is = ppci["internal"]["branch_is"]
+        impedance_branches = zeros(len(branch_is), dtype=bool)
+        impedance_branches[start:end] = True
+        ppci["branch"][impedance_branches[branch_is], TAP] = 0
     if not take_slack_vm_limits:
         slack_bus = min(
             net.ext_grid.bus.loc[net.ext_grid.in_service].tolist()

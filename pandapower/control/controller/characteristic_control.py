@@ -123,9 +123,7 @@ class CharacteristicControl(Controller):
         self.applied = True
 
     def __str__(self):
-        return super().__str__() + " [%s.%s.%s.%s]" % (
-            self.input_element,
-            self.input_variable,
-            self.output_element,
-            self.output_variable,
+        return (
+            super().__str__()
+            + f" [{self.input_element}.{self.input_variable}.{self.output_element}.{self.output_variable}]"
         )

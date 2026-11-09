@@ -154,4 +154,4 @@ class ConstControl(Controller):
         self.applied = True
 
     def __str__(self):
-        return super().__str__() + " [%s.%s]" % (self.element, self.variable)
+        return super().__str__() + f" [{self.element}.{self.variable}]"

@@ -44,7 +44,7 @@ def setup_logger(app, name, level):
 
     set_PF_level(logger, app_handler, level)
 
-    logger.info("initialized logger %s" % logger.name)
+    logger.info(f"initialized logger {logger.name}")
     return logger, app_handler
 
 

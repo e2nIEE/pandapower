@@ -3,8 +3,11 @@ Change Log
 
 [upcoming 4.0.0] - 2026-..-..
 -------------------------------
+- [FIXED] matpower/pypower converter: transformers without a tap changer (tap ratio 1) were converted to impedance elements by a to_mpc/from_mpc (and to_ppc/from_ppc) round trip, since a tap ratio of 1 was not recognized as a transformer when importing. The converters now follow the matpower convention (a tap ratio of 0 denotes "no transformer", any other ratio denotes a transformer): ``to_mpc`` keeps the tap ratio of transformer branches, ``from_mpc`` no longer rewrites tap ratios of 0, ``to_ppc`` marks branches of impedance elements with a tap ratio of 0, and ``from_ppc`` only imports branches without a tap ratio and without a phase shift that connect different voltage levels as impedances. The tap ratio marking also stays correct when branches are filtered out of the internal ppc (out-of-service or disconnected branches). A transformer with a tap ratio of 1 between buses of the same voltage level still cannot be distinguished from a line in the ppc/matpower format and keeps being converted to a line on the way back, as before (#2620)
 - [FIXED] short-circuit tutorial and docs: explain why meshed and radial results are equal with kappa method C in the example ring, show method B, complete the method C description and document ``kappa_method`` in ``calc_sc`` (#2621)
 - [FIXED] ``runpp_3ph``: ``gen`` results failed with an ``IndexError`` if the ``gen`` index was not ``0, 1, 2, ...``, and the results of an in-service ``ext_grid`` were written to an out-of-service ``ext_grid`` listed before it (#1474)
+- [FIXED] ``runpp_3ph`` ignored loads and sgens whose ``type`` is not "wye" or "delta", such as an sgen created by ``create_sgen`` without a type, and failed when the ``type`` column had missing values; they are now wye elements, as in ``runpp``
+- [FIXED] get_element_limits now reads the N-1 loading limit from "max_loading_percent_nminus1" (as run_contingency does), keeping "max_loading_nminus1_percent" as fallback
 - [FIXED] docstrings of detect_power_station_unit and elements_on_path now match their parameters
 - [CHANGED] ran ruff format for whole project
 - [CHANGED] moved test module to top level
@@ -21,6 +24,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] contingency limit checks now align results by constrained element index, including partial or reordered limits.
 - [FIXED] ``ConstControl`` now raises a ``ValueError`` if ``element_index`` contains indices that are not in the element table. Previously a missing single index silently added a row with NaN values, and the time series failed later with an unclear numba error (#1857)
 - [FIXED] ``create_load_dc`` now allocates and validates indexes against ``load_dc``, preventing overwrites and false ``source_dc`` conflicts.
 - [FIXED] OPF cleaned up in case of non convergence

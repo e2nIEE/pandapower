@@ -28,15 +28,17 @@ class EquivalentInjectionsCim16:
         self.cimConverter.copy_to_pp("ward", eqssh_ei_wards)
         self.cimConverter.copy_to_pp("xward", eqssh_ei_xwards)
         self.logger.info(
-            "Created %s wards and %s extended ward elements in %ss."
-            % (eqssh_ei_wards.index.size, eqssh_ei_xwards.index.size, time.time() - time_start)
+            f"Created {eqssh_ei_wards.index.size} wards and {eqssh_ei_xwards.index.size} extended ward elements in "
+            f"{time.time() - time_start}s."
         )
         self.cimConverter.report_container.add_log(
             Report(
                 level=LogLevel.INFO,
                 code=ReportCode.INFO_CONVERTING,
-                message="Created %s wards and %s extended ward elements from EquivalentInjections in %ss."
-                % (eqssh_ei_wards.index.size, eqssh_ei_xwards.index.size, time.time() - time_start),
+                message=(
+                    f"Created {eqssh_ei_wards.index.size} wards and {eqssh_ei_xwards.index.size} extended ward "
+                    f"elements from EquivalentInjections in {time.time() - time_start}s."
+                ),
             )
         )
 

@@ -7,6 +7,9 @@ on:
     paths-ignore:
       - 'CHANGELOG.rst'
       - '**/CHANGELOG.rst'
+  # NOTE: Schedule always runs on the default branch of a repository. In our case this is develop.
+  schedule:
+    - cron: '0 22 * * 1-5'  # run once a day at 22:00 UTC Mo-Fr (coverage for develop branch)
 
 permissions:
   contents: read
@@ -39,8 +42,8 @@ jobs:
           uv pip install ruff
       - name: Ruff Format Check
         run: uv run ruff format --check
-  #      - name: Ruff Check
-  #        run: uv run ruff check
+      - name: Ruff Check
+        run: uv run ruff check
 
   build:
     runs-on: ubuntu-latest
@@ -233,7 +236,7 @@ jobs:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
       - name: Upload coverage to Codecov
         continue-on-error: true
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 #v6
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 #v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ${{ steps.coverage-files.outputs.files }}
@@ -274,7 +277,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ '3.11', '3.12', '3.13', '3.14' ]
+        python-version: [ '3.11', '3.14' ]
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -291,16 +294,12 @@ jobs:
           uv pip install matplotlib
           uv pip install lxml
           if ${{ matrix.python-version != '3.11' }}; then uv pip install numba; fi
-      - name: Install pandapipes and simbench
+      - name: Install simbench
         run: |
-          uv pip install git+https://github.com/e2nIEE/pandapipes@develop#egg=pandapipes
           uv pip install git+https://github.com/e2nIEE/simbench@develop#egg=simbench
       - name: List of installed packages
         run: |
           uv pip list
-      - name: Test pandapipes
-        run: |
-          uv run python -c 'from pandapipes import pp_dir; import pytest; import sys; ec = pytest.main([pp_dir]); sys.exit(ec)'
       - name: Test simbench
         run: |
           uv run python -c 'from simbench import sb_dir; import pytest; import sys; ec = pytest.main([sb_dir]); sys.exit(ec)'

@@ -10,6 +10,7 @@ __all__ = [
     "reset_results",
     "verify_results",
 ]
+from typing import ClassVar
 
 import numpy as np
 import pandas as pd
@@ -74,8 +75,8 @@ class EmptyResults(metaclass=_EmptyResultsMeta):
     Will be created on first call, all subsequent calls will be faster
     """
 
-    _instance: "EmptyResults | None" = None
-    _data: dict[str, pd.DataFrame] = {}
+    _instance: "ClassVar[EmptyResults | None]" = None
+    _data: ClassVar[dict[str, pd.DataFrame]] = {}
 
     def __new__(cls):
         if cls._instance is None:
@@ -86,7 +87,7 @@ class EmptyResults(metaclass=_EmptyResultsMeta):
             # set data on instance
             for key, value in dataframes.items():
                 if not isinstance(value, pd.DataFrame):
-                    raise ValueError(f"EmptyResults got {type(value)} for {key}, expected pandas.DataFrame")
+                    raise TypeError(f"EmptyResults got {type(value)} for {key}, expected pandas.DataFrame")
                 cls._instance._data[key] = value
         return cls._instance
 
@@ -238,7 +239,7 @@ def _get_costs(net, ppc):
 
 
 def _remove_costs(net):
-    if "res_cost" in net.keys():
+    if "res_cost" in net:
         del net["res_cost"]
 
 
@@ -364,7 +365,7 @@ def reset_results(net, mode="pf"):
     suffix = suffix_mode.get(mode, None)
     for element in elements:
         empty_res_element(net, element, suffix)
-    if "res_cost" in net.keys():
+    if "res_cost" in net:
         del net["res_cost"]
 
 

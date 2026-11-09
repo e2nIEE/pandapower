@@ -25,8 +25,8 @@ from pandapower.pypower.bustypes import bustypes
 from pandapower.pypower.idx_bus import BS, BUS_I, BUS_TYPE, GS, PD, PQ, PV, QD
 from pandapower.pypower.idx_bus import SL_FAC as SL_FAC_BUS
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, QG, QMAX, QMIN, SL_FAC
-from pandapower.pypower.makeSbus import makeSbus
-from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
+from pandapower.pypower.make_s_bus import makeSbus
+from pandapower.pypower.make_y_bus import makeYbus as makeYbus_pypower
 from pandapower.pypower.newtonpf import newtonpf
 from pandapower.pypower.pfsoln import _update_v
 from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower

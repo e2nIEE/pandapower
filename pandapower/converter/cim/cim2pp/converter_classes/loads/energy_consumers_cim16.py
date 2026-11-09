@@ -22,13 +22,13 @@ class EnergyConsumersCim16:
         self.logger.info("Start converting EnergyConsumers.")
         eqssh_energy_consumers = self._prepare_energy_consumers_cim16()
         self.cimConverter.copy_to_pp("load", eqssh_energy_consumers)
-        self.logger.info("Created %s loads in %ss." % (eqssh_energy_consumers.index.size, time.time() - time_start))
+        self.logger.info(f"Created {eqssh_energy_consumers.index.size} loads in {time.time() - time_start}s.")
         self.cimConverter.report_container.add_log(
             Report(
                 level=LogLevel.INFO,
                 code=ReportCode.INFO_CONVERTING,
-                message="Created %s loads from EnergyConsumers in %ss."
-                % (eqssh_energy_consumers.index.size, time.time() - time_start),
+                message=f"Created {eqssh_energy_consumers.index.size} loads from EnergyConsumers in "
+                f"{time.time() - time_start}s.",
             )
         )
 

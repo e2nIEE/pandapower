@@ -196,8 +196,8 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
 
     Sabc, _ = SVabc_from_SV012(S012, V012 / np.sqrt(3), n_res=n_res_eg, idx=eg_is_mask)
 
-    pA, pB, pC = map(lambda x: x.flatten(), np.real(Sabc))
-    qA, qB, qC = map(lambda x: x.flatten(), np.imag(Sabc))
+    pA, pB, pC = (x.flatten() for x in np.real(Sabc))
+    qA, qB, qC = (x.flatten() for x in np.imag(Sabc))
 
     # store result in net['res']
     net["res_ext_grid_3ph"]["p_a_mw"] = pA
@@ -269,8 +269,8 @@ def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
     Vabc = sequence_to_phase(V012)
     Iabc = sequence_to_phase(I012)
     Sabc = S_from_VI_elementwise(Vabc, Iabc) * 1e-3 * -1
-    pA, pB, pC = map(lambda x: x.flatten(), np.real(Sabc))
-    qA, qB, qC = map(lambda x: x.flatten(), np.imag(Sabc))
+    pA, pB, pC = (x.flatten() for x in np.real(Sabc))
+    qA, qB, qC = (x.flatten() for x in np.imag(Sabc))
 
     net["res_gen_3ph"]["p_a_mw"] = pA
     net["res_gen_3ph"]["p_b_mw"] = pB

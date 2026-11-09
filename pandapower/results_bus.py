@@ -47,7 +47,7 @@ def _set_dc_buses_out_of_service(ppc):
 def _get_bus_v_results(net, ppc, suffix=None):
     bus_idx = _get_bus_idx(net)
 
-    res_table = "res_bus" if suffix is None else "res_bus%s" % suffix
+    res_table = "res_bus" if suffix is None else f"res_bus{suffix}"
     # always read the vm_pu from ppc, even for DC power flow - otherwise old values can persist
     net[res_table]["vm_pu"] = ppc["bus"][bus_idx][:, VM]
     # voltage angles
@@ -332,7 +332,7 @@ def write_p_dc_results_to_element(net, ppc, element):
 
     # info element
     element_data = net[element]
-    res_ = "res_%s" % element
+    res_ = f"res_{element}"
 
     if element == "vsc":
         _is_elements[element] & (net.vsc.control_mode_dc == "p_mw")
@@ -440,7 +440,7 @@ def get_p_q_b(net, element, suffix=None):
     ac = net["_options"]["ac"]
     res_ = "res_" + element
     if suffix is not None:
-        res_ += "_%s" % suffix
+        res_ += f"_{suffix}"
 
     # bus values are needed for stacking
     b = net[element]["bus"].values
