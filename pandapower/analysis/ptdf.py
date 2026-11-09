@@ -73,12 +73,12 @@ def _get_ptdf_direct(
     ptdf = _ptdf_pp_np_to_df(net, ptdf_pp_np, source_bus=None, branch_dict=branch_dict, reduced=reduced)
 
     # Select only required source buses
-    source_bus = _get_source_bus_ix(net, source_bus)
+    source_bus_ix = _get_source_bus_ix(net, source_bus)
     for key in ptdf:
-        ptdf[key] = ptdf[key].loc[:, source_bus]
+        ptdf[key] = ptdf[key].loc[:, source_bus_ix]
 
     # Verify with random selection of bus
-    if random_verify and source_bus.size >= 3:
+    if random_verify and source_bus_ix.size >= 3:
         # Skip test if too few elements are calculated
         # Select three random buses and verify against perturb method
         rng = np.random.default_rng()
@@ -105,15 +105,15 @@ def _get_ptdf_perturb(
     THIS_BR_SIDE_MAPPING = BR_SIDE_MAPPING if result_side == 0 else BR_SIDE_MAPPING_1
     # ToDo: remove distributed slack option
 
-    source_bus = _get_source_bus_ix(net, source_bus)
+    source_bus_ix = _get_source_bus_ix(net, source_bus)
 
     # Init ptdf numpy array
-    ptdf_pp_np = _init_ptdf_pp_np(net, source_bus.shape[0])
+    ptdf_pp_np = _init_ptdf_pp_np(net, source_bus_ix.shape[0])
 
     rundcpp(net, distributed_slack=distributed_slack)
     # Using new net_mod object to do perturb
     net_mod = deepcopy(net)
-    for ix, bus_ix in enumerate(source_bus):
+    for ix, bus_ix in enumerate(source_bus_ix):
         create_load(net_mod, bus_ix, p_mw=-1)
         rundcpp(net_mod, distributed_slack=distributed_slack)
         # Delete the new load
@@ -133,7 +133,7 @@ def _get_ptdf_perturb(
                 )
 
     # Convert numpy array to pandas dataframe with the pp element index
-    ptdf = _ptdf_pp_np_to_df(net, ptdf_pp_np, source_bus=source_bus)
+    ptdf = _ptdf_pp_np_to_df(net, ptdf_pp_np, source_bus=source_bus_ix)
     return ptdf
 
 
@@ -178,7 +178,7 @@ def _get_dc_profile_with_ptdf(net, profiles, result_side=0, ptdf=None):
             if not gen_slack.empty:
                 logger.info("Gen slacks will be excluded from profile simulation!")
                 delta_profiles[key].loc[:, gen_slack["ele_id"].to_numpy()] = 0.0
-        delta_profiles[key].to_numpy()[:] -= delta_profiles[key].to_numpy()[0, :]
+        delta_profiles[key] = delta_profiles[key] - delta_profiles[key].iloc[0, :]
 
     # Calculate delta_bus_p profile for profile simulation
     rundcpp(net_mod, distributed_slack=True)
@@ -546,7 +546,7 @@ def _get_dc_profile_perturb(net, profiles, result_side=0, distributed_slack=True
 
         # Update result table
         rundcpp(net_mod, distributed_slack=True)
-        for res_br_type in res_pp_np.values():
+        for res_br_type in res_pp_np:  # noqa: PLC0206
             if not res_br_type.startswith("trafo3w"):
                 res_pp_np[res_br_type][calc_ix, :] = net_mod["res_" + res_br_type][
                     "p_" + THIS_RES_BR_SIDE_MAPPING[res_br_type] + "_mw"

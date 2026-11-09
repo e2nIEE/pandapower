@@ -108,8 +108,9 @@ def makePTDF(
 
     ## distribute slack, if requested
     if not isscalar(slack):
-        if len(slack.shape) == 1:  ## slack is a vector of weights
-            slack = slack / sum(slack)  ## normalize weights
+        slack = np.asarray(slack)
+        if slack.ndim == 1:  ## slack is a vector of weights
+            slack = slack / slack.sum()  ## normalize weights
 
             ## conceptually, we want to do ...
             ##    H = H * (eye(nb, nb) - slack * ones((1, nb)))

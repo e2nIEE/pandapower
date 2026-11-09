@@ -24,7 +24,7 @@ from pandapower.analysis.utils import (
     _get_trafo3w_lookup,
     branch_dict_to_ppci_branch_list,
 )
-from pandapower.create import create_ext_grid, create_load
+from pandapower.create import create_load
 from pandapower.pypower.make_lodf import makeLODF
 from pandapower.run import rundcpp
 
@@ -278,24 +278,11 @@ def _get_lodf_perturb(
                 outage_p0_series = net_mod[outage_res_table][outage_res_type].copy()
 
             elif np.isclose(outage_p0_series.at[br_ix], 0, atol=1e-6) & (outage_branch_type == "dcline"):
-                bus_0 = net_mod[outage_branch_type].at[br_ix, BR_SIDE_MAPPING[outage_branch_type] + "_bus"]
-                bus_1 = net_mod[outage_branch_type].at[br_ix, BR_SIDE_MAPPING_1[outage_branch_type] + "_bus"]
-
-                ## ext_grid auf offshore seite
-                # res_dcline -> spannung am offshore knoten -> wenn ja dann slack schon da, wenn nan dann keine rechnung/konvergenz offshore ----> slack
-                if net_mod[outage_res_table].loc[br_ix].vm_from_pu == 0:
-                    bus_to_add_ext_grid = bus_0
-                elif net_mod[outage_res_table].loc[br_ix].vm_to_pu == 0:
-                    bus_to_add_ext_grid = bus_1
-                else:
-                    bus_to_add_ext_grid = None
-
-                # add ext_grid to bus
-                create_ext_grid(net_mod, bus_to_add_ext_grid)
-
-                # Update branch p0 in n-0 net
-                rundcpp(net_mod, distributed_slack=distributed_slack, recycle=recycle)
-                outage_p0_series = net_mod[outage_res_table][outage_res_type].copy()
+                # The flow of a dcline is fixed by its p_mw setpoint, not by the network state, so it cannot be
+                # raised by adding an injection or a slack (an unsupplied terminal does not cause zero flow either).
+                # With zero pre-outage flow the LODF (delta flow / p0) is undefined -> leave the column NaN.
+                logger.warning(f"dcline {br_ix} has zero pre-outage flow (p_mw setpoint is 0), LODF is undefined")
+                continue
 
             net_mod_n1[outage_branch_type].at[br_ix, "in_service"] = False
             rundcpp(
