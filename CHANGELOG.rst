@@ -8,6 +8,7 @@ Change Log
 - [FIXED] short-circuit tutorial and docs: explain why meshed and radial results are equal with kappa method C in the example ring, show method B, complete the method C description and document ``kappa_method`` in ``calc_sc`` (#2621)
 - [FIXED] ``runpp_3ph``: ``gen`` results failed with an ``IndexError`` if the ``gen`` index was not ``0, 1, 2, ...``, and the results of an in-service ``ext_grid`` were written to an out-of-service ``ext_grid`` listed before it (#1474)
 - [FIXED] ``runpp_3ph`` ignored loads and sgens whose ``type`` is not "wye" or "delta", such as an sgen created by ``create_sgen`` without a type, and failed when the ``type`` column had missing values; they are now wye elements, as in ``runpp``
+- [FIXED] ``runpp_3ph`` returned NaN results for a ``gen`` with ``vm_pu=1.0`` and failed with ``xward`` elements, and ``calc_sc`` failed for 1ph faults with ``xward`` elements: the zero and negative sequence voltages of gen and xward buses are no longer initialised with the voltage set point, the xward impedance uses the 3ph base impedance, and the xward branch is added to the zero sequence system
 - [FIXED] get_element_limits now reads the N-1 loading limit from "max_loading_percent_nminus1" (as run_contingency does), keeping "max_loading_nminus1_percent" as fallback
 - [FIXED] docstrings of detect_power_station_unit and elements_on_path now match their parameters
 - [CHANGED] ran ruff format for whole project

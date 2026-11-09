@@ -257,7 +257,8 @@ def _build_pp_gen(net, ppc, f, t, sequence):
 
     # set bus values for generator buses
     ppc["bus"][gen_buses[ppc["bus"][gen_buses, BUS_TYPE] != REF], BUS_TYPE] = PV
-    if mode != "se":
+    # the voltage set point only applies to the positive sequence system
+    if mode != "se" and ppc.get("sequence", 1) == 1:
         ppc["bus"][gen_buses, VM] = gen_is_vm
 
     add_q_constraints(net, "gen", gen_is, ppc, f, t, delta)
@@ -287,7 +288,8 @@ def _build_pp_xward(net, ppc, f, t):
     xward_buses = bus_lookup[aux_buses]
     ppc["bus"][xward_buses[xw_is], BUS_TYPE] = PV
     ppc["bus"][xward_buses[~xw_is], BUS_TYPE] = NONE
-    ppc["bus"][xward_buses, VM] = net["xward"]["vm_pu"].values
+    if ppc.get("sequence", 1) == 1:
+        ppc["bus"][xward_buses, VM] = net["xward"]["vm_pu"].values
 
 
 def _build_pp_pq_element(net, ppc, element, f, t, inverted=False):
