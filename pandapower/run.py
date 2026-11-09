@@ -516,8 +516,10 @@ def runopp(
     - net.trafo3w.min_angle_degree / net.trafo3w.max_angle_degree
     - net.impedance.min_angle_degree / net.impedance.max_angle_degree
 
-    The angle difference limits constrain ``va_from - va_to`` (for trafos ``va_hv - va_lv``) and can be ignored by
-    passing ``OPF_IGNORE_ANG_LIM=True``.
+    The angle difference limits constrain ``va_from - va_to`` (for trafos ``va_hv - va_lv``). For ``trafo3w`` the limit
+    applies to each internal star branch (``va_hv - va_star`` and ``va_star - va_mv`` resp. ``va_star - va_lv``)
+    separately, so the terminal difference ``va_hv - va_mv`` resp. ``va_hv - va_lv`` can reach twice the limit.
+    The limits can be ignored by passing ``OPF_IGNORE_ANG_LIM=True``.
 
     If the external grid ist controllable, the voltage setpoint of the external grid can be optimized within the
     voltage constraints by the OPF. The same applies to the voltage setpoints of the controllable generator
@@ -611,8 +613,10 @@ def rundcopp(
     - net.trafo3w.min_angle_degree / net.trafo3w.max_angle_degree
     - net.impedance.min_angle_degree / net.impedance.max_angle_degree
 
-    The angle difference limits constrain ``va_from - va_to`` (for trafos ``va_hv - va_lv``) and can be ignored by
-    passing ``OPF_IGNORE_ANG_LIM=True``.
+    The angle difference limits constrain ``va_from - va_to`` (for trafos ``va_hv - va_lv``). For ``trafo3w`` the limit
+    applies to each internal star branch (``va_hv - va_star`` and ``va_star - va_mv`` resp. ``va_star - va_lv``)
+    separately, so the terminal difference ``va_hv - va_mv`` resp. ``va_hv - va_lv`` can reach twice the limit.
+    The limits can be ignored by passing ``OPF_IGNORE_ANG_LIM=True``.
 
     Parameters:
         net: The pandapower format network

@@ -45,6 +45,10 @@ The defaults are unconstrained branch loadings, unconstrained angle differences 
 
 The voltage angle difference constraints are defined per branch element by ``min_angle_degree`` and ``max_angle_degree``.
 They bound :math:`\theta_{from} - \theta_{to}` (for lines and impedances) resp. :math:`\theta_{hv} - \theta_{lv}` (for transformers), in degree.
+
+A three-winding transformer is represented internally as three branches connected through a star point, i.e. :math:`\theta_{hv} - \theta_{star}` and :math:`\theta_{star} - \theta_{mv}` resp. :math:`\theta_{star} - \theta_{lv}`.
+The limit applies to each of these internal branches separately, so the terminal-to-terminal difference :math:`\theta_{hv} - \theta_{mv}` resp. :math:`\theta_{hv} - \theta_{lv}` can reach twice the configured limit.
+
 A missing or ``NaN`` value means that this side is unconstrained, which is also the default for networks created without these columns.
 Please note that a value of ``0`` follows the MATPOWER/PYPOWER convention and means "no limit" as well, not a limit at 0 degree; use a small epsilon instead if such a constraint is intended.
 The limits can be ignored by passing ``OPF_IGNORE_ANG_LIM=True`` to :func:`~pandapower.run.runopp` or :func:`~pandapower.run.rundcopp`.

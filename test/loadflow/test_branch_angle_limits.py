@@ -12,13 +12,14 @@ from pandapower.create import (
     create_ext_grid,
     create_impedances,
     create_lines,
+    create_loads,
     create_transformers3w_from_parameters,
     create_transformers_from_parameters,
 )
 from pandapower.network import pandapowerNet
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pypower.idx_brch import ANGMAX, ANGMIN
-from pandapower.run import runpp
+from pandapower.run import runopp, runpp
 
 LINE_PARAMS = {"r_ohm_per_km": 0.1, "x_ohm_per_km": 0.4, "c_nf_per_km": 0.0, "max_i_ka": 1.0}
 
@@ -201,6 +202,58 @@ def test_trafo3w_nan_is_unconstrained():
     f, t = lookup["trafo3w"]
     np.testing.assert_allclose(limits[f:t, 0], -360.0)
     np.testing.assert_allclose(limits[f:t, 1], 360.0)
+
+
+def test_trafo3w_limit_applies_per_star_branch_not_to_the_terminal_difference():
+    """The limit bounds hv->star and star->mv/lv separately, so the terminal difference can reach 2x the limit.
+
+    This is the documented (and intended) behaviour of the star-point representation. The test pins it so a
+    change of the branch topology or of the limit mapping cannot silently alter the constraint semantics.
+    """
+    net = pandapowerNet(name="angle_limits_3w_semantics")
+    hv = create_buses(net, 1, vn_kv=110.0)
+    mv = create_buses(net, 1, vn_kv=20.0)
+    lv = create_buses(net, 1, vn_kv=10.0)
+    create_ext_grid(net, hv[0], min_p_mw=-1000.0, max_p_mw=1000.0)
+    create_transformers3w_from_parameters(
+        net,
+        hv,
+        mv,
+        lv,
+        vn_hv_kv=110.0,
+        vn_mv_kv=20.0,
+        vn_lv_kv=10.0,
+        sn_hv_mva=100.0,
+        sn_mv_mva=100.0,
+        sn_lv_mva=100.0,
+        vk_hv_percent=10.0,
+        vk_mv_percent=10.0,
+        vk_lv_percent=10.0,
+        vkr_hv_percent=0.3,
+        vkr_mv_percent=0.3,
+        vkr_lv_percent=0.3,
+        pfe_kw=0.0,
+        i0_percent=0.0,
+        tap_at_star_point=False,
+        max_loading_percent=100.0,
+        min_angle_degree=-2.0,
+        max_angle_degree=2.0,
+    )
+    # load only the mv terminal, so hv->star and star->mv carry the same power and split the angle evenly
+    create_loads(net, [mv[0]], p_mw=60.0, q_mvar=0.0, min_p_mw=0.0, max_p_mw=60.0)
+
+    runopp(net, verbose=False)
+
+    va = net.res_bus.va_degree
+    # the loaded mv terminal: hv->star and star->mv each drop about half of the total, so the terminal
+    # difference exceeds the per-star-branch limit of 2 degree and can approach 2 * 2 = 4 degree
+    terminal_difference = va[hv[0]] - va[mv[0]]
+    assert terminal_difference > 2.0 + 1e-6, (
+        f"expected the terminal difference to exceed the per-star-branch limit of 2 degree, got {terminal_difference}"
+    )
+    assert terminal_difference <= 4.0 + 1e-6
+    # the unloaded lv star branch drops almost no angle, so its terminal difference stays within the limit
+    assert abs(va[hv[0]] - va[lv[0]]) <= 2.0 + 1e-6
 
 
 @pytest.mark.parametrize("column", ["min_angle_degree", "max_angle_degree"])

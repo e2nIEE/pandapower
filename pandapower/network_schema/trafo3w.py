@@ -147,16 +147,18 @@ _trafo3w_columns = {
         float,
         nullable=True,
         required=False,
-        description="minimum voltage angle difference between hv_bus and mv_bus/lv_bus (va_hv - va_mv/lv) [degree], "
-        "considered in the OPF; NaN means unconstrained",
+        description="minimum voltage angle difference per internal star branch (hv -> star, star -> mv/lv) [degree], "
+        "considered in the OPF; NaN means unconstrained. The terminal difference va_hv - va_mv/lv can reach twice "
+        "this value",
         metadata={"opf": True},
     ),
     "max_angle_degree": pa.Column(
         float,
         nullable=True,
         required=False,
-        description="maximum voltage angle difference between hv_bus and mv_bus/lv_bus (va_hv - va_mv/lv) [degree], "
-        "considered in the OPF; NaN means unconstrained",
+        description="maximum voltage angle difference per internal star branch (hv -> star, star -> mv/lv) [degree], "
+        "considered in the OPF; NaN means unconstrained. The terminal difference va_hv - va_mv/lv can reach twice "
+        "this value",
         metadata={"opf": True},
     ),
     "vector_group": pa.Column(

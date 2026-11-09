@@ -1754,6 +1754,9 @@ def _trafo_df_from_trafo3w(net: pandapowerNet, sequence: int = 1) -> dict:
     }
     if "max_loading_percent" in net.trafo3w:
         trafo2["max_loading_percent"] = {side: net.trafo3w.max_loading_percent.values for side in sides}
+    # the same limit is applied to all three star branches (hv -> aux, aux -> mv, aux -> lv). This bounds
+    # each star branch separately, not the hv -> mv / hv -> lv terminal difference, which can reach twice
+    # the limit. Documented in the trafo3w docstrings, the schema and doc/opf/formulation.rst.
     for angle_column in ("min_angle_degree", "max_angle_degree"):
         if angle_column in net.trafo3w:
             trafo2[angle_column] = {side: net.trafo3w[angle_column].values for side in sides}

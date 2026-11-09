@@ -3,4 +3,5 @@
 :math:`L_{k} \leq L_{max,k},\ k \ \epsilon \ trafo` ;net.trafo.max_loading_percent
 :math:`L_{l} \leq L_{max,l},\ l \ \epsilon \ line` ;net.line.max_loading_percent
 :math:`L_{l} \leq L_{max,l},\ l \ \epsilon \ trafo_{3w}` ;net.trafo3w.max_loading_percent
-:math:`\theta_{min,k} \leq \theta_{f,k} - \theta_{t,k} \leq \theta_{max,k},\ k \ \epsilon \ line, trafo, trafo_{3w}, impedance` ;net.line.min_angle_degree / net.line.max_angle_degree (analogous for trafo, trafo3w, impedance)
+:math:`\theta_{min,k} \leq \theta_{f,k} - \theta_{t,k} \leq \theta_{max,k},\ k \ \epsilon \ line, trafo, impedance` ;net.line.min_angle_degree / net.line.max_angle_degree (analogous for trafo, impedance)
+:math:`\theta_{min,k} \leq \theta_{hv,k} - \theta_{star,k} \leq \theta_{max,k}` ;net.trafo3w.min_angle_degree / net.trafo3w.max_angle_degree (per star branch, also bounds :math:`\theta_{star,k} - \theta_{mv/lv,k}`)

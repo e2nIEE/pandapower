@@ -808,10 +808,12 @@ def create_transformer3w(
         index: force a specified ID if it is available. If None, the index one higher than the highest already existing
             index is selected.
         max_loading_percent: maximum current loading (only needed for OPF)
-        min_angle_degree: minimum voltage angle difference between hv_bus and mv_bus/lv_bus (va_hv - va_mv/lv)
-            in degree, considered in the OPF. NaN means unconstrained.
-        max_angle_degree: maximum voltage angle difference between hv_bus and mv_bus/lv_bus (va_hv - va_mv/lv)
-            in degree, considered in the OPF. NaN means unconstrained.
+        min_angle_degree: minimum voltage angle difference in degree, considered in the OPF. NaN means unconstrained.
+            A three-winding transformer is modelled as three branches through an internal star point, so the limit
+            applies to each of those branches (hv -> star and star -> mv, star -> lv) separately. The angle
+            difference between the terminals, va_hv - va_mv resp. va_hv - va_lv, can therefore reach twice this value.
+        max_angle_degree: maximum voltage angle difference in degree, considered in the OPF. NaN means unconstrained.
+            See min_angle_degree for the three-winding transformer specifics.
         tap_at_star_point: whether tap changer is modelled at star point or at the bus
         tap_dependency_table: True if transformer parameters (voltage ratio, angle, impedance) must be adjusted
             dependent on the tap position of the transformer. Requires the additional column "id_characteristic_table".
@@ -954,10 +956,12 @@ def create_transformers3w(
         in_service: Wheather the transforers are in or out of service, default True
         index: the index to use for the new elements, default None
         max_loading_percent: the maximum loading percentage of the transformer, default nan
-        min_angle_degree: minimum voltage angle difference between hv_bus and mv_bus/lv_bus (va_hv - va_mv/lv)
-            in degree, considered in the OPF. NaN means unconstrained.
-        max_angle_degree: maximum voltage angle difference between hv_bus and mv_bus/lv_bus (va_hv - va_mv/lv)
-            in degree, considered in the OPF. NaN means unconstrained.
+        min_angle_degree: minimum voltage angle difference in degree, considered in the OPF. NaN means unconstrained.
+            A three-winding transformer is modelled as three branches through an internal star point, so the limit
+            applies to each of those branches (hv -> star and star -> mv, star -> lv) separately. The angle
+            difference between the terminals, va_hv - va_mv resp. va_hv - va_lv, can therefore reach twice this value.
+        max_angle_degree: maximum voltage angle difference in degree, considered in the OPF. NaN means unconstrained.
+            See min_angle_degree for the three-winding transformer specifics.
         tap_at_star_point: whether tap changer is modelled at star point or at the bus
         tap_changer_type: specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal", "Tabular" or None),
             default None
@@ -1117,10 +1121,12 @@ def create_transformer3w_from_parameters(
         name: name of the 3-winding transformer
         in_service: True for in_service or False for out of service
         max_loading_percent: maximum current loading (only needed for OPF)
-        min_angle_degree: minimum voltage angle difference between hv_bus and mv_bus/lv_bus (va_hv - va_mv/lv)
-            in degree, considered in the OPF. NaN means unconstrained.
-        max_angle_degree: maximum voltage angle difference between hv_bus and mv_bus/lv_bus (va_hv - va_mv/lv)
-            in degree, considered in the OPF. NaN means unconstrained.
+        min_angle_degree: minimum voltage angle difference in degree, considered in the OPF. NaN means unconstrained.
+            A three-winding transformer is modelled as three branches through an internal star point, so the limit
+            applies to each of those branches (hv -> star and star -> mv, star -> lv) separately. The angle
+            difference between the terminals, va_hv - va_mv resp. va_hv - va_lv, can therefore reach twice this value.
+        max_angle_degree: maximum voltage angle difference in degree, considered in the OPF. NaN means unconstrained.
+            See min_angle_degree for the three-winding transformer specifics.
         tap_dependency_table: True if transformer parameters (voltage ratio, angle, impedance) must be adjusted
             dependent on the tap position of the transformer. Requires the additional column "id_characteristic_table".
             The function pandapower.control.trafo_characteristic_table_diagnostic can be used for sanity checks.
@@ -1317,10 +1323,12 @@ def create_transformers3w_from_parameters(  # no index ?
         name: name of the 3-winding transformer
         in_service: True for in_service or False for out of service
         max_loading_percent: maximum current loading (only needed for OPF)
-        min_angle_degree: minimum voltage angle difference between hv_bus and mv_bus/lv_bus (va_hv - va_mv/lv)
-            in degree, considered in the OPF. NaN means unconstrained.
-        max_angle_degree: maximum voltage angle difference between hv_bus and mv_bus/lv_bus (va_hv - va_mv/lv)
-            in degree, considered in the OPF. NaN means unconstrained.
+        min_angle_degree: minimum voltage angle difference in degree, considered in the OPF. NaN means unconstrained.
+            A three-winding transformer is modelled as three branches through an internal star point, so the limit
+            applies to each of those branches (hv -> star and star -> mv, star -> lv) separately. The angle
+            difference between the terminals, va_hv - va_mv resp. va_hv - va_lv, can therefore reach twice this value.
+        max_angle_degree: maximum voltage angle difference in degree, considered in the OPF. NaN means unconstrained.
+            See min_angle_degree for the three-winding transformer specifics.
         tap_dependency_table: True if transformer parameters (voltage ratio, angle, impedance) must be adjusted
             dependent on the tap position of the transformer. Requires the additional column "id_characteristic_table".
             The function pandapower.control.trafo_characteristic_table_diagnostic can be used for sanity checks.
