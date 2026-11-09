@@ -3,6 +3,7 @@
 
 # Builds the DC PSDF matrix based on the DC PTDF
 import logging
+from copy import deepcopy
 from math import pi
 
 import numpy as np
@@ -14,12 +15,18 @@ from numpy import flatnonzero as find
 from scipy.sparse import csc_matrix, csr_matrix
 
 from pandapower import pandapowerNet
-from pandapower.analysis.lodf import _lodf_pp_np_to_df, _lodf_ppci_to_pp
+from pandapower.analysis.lodf import _init_lodf_pp_np, _lodf_pp_np_to_df, _lodf_ppci_to_pp
 from pandapower.analysis.ptdf import _make_ptdf_ppci
-from pandapower.analysis.utils import ELE_IX_TYPE, _get_outage_branch_ix, branch_dict_to_ppci_branch_list
+from pandapower.analysis.utils import (
+    BR_SIDE_MAPPING,
+    ELE_IX_TYPE,
+    _get_outage_branch_ix,
+    branch_dict_to_ppci_branch_list,
+)
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pypower.idx_bus import BUS_TYPE, REF
 from pandapower.pypower.make_b_dc import calc_b_from_branch
+from pandapower.run import rundcpp
 
 logger = logging.getLogger(__name__)
 
@@ -30,17 +37,20 @@ def make_psdf(
     bus: npt.NDArray,
     branch: npt.NDArray,
     using_sparse_solver: bool = False,
-    branch_id: int | None = None,
+    branch_id: list[int] | None = None,
     reduced: bool = False,
     slack: int | npt.NDArray | None = None,
-):
+) -> npt.NDArray:
     """
     Builds the DC PSDF matrix based on the DC PTDF
 
     Returns the DC PSDF matrix . The matrix is
     C{nbr x nbr}, where C{nbr} is the number of branches. The DC PSDF is independent from the selected slack.
+    Entry C{(l, k)} is the change of the active power flow (from side, in MW) on branch C{l} if the phase shift
+    angle C{SHIFT} of branch C{k} is increased by 1 degree. C{SHIFT} has the same sign as the pandapower
+    C{shift_degree}.
     To restrict the PSDF computation to a subset of branches, supply a list of ppci branch indices in C{branch_id}.
-    If C{reduced==True}, the output is reduced to the branches given in C{branch_id}, otherwise the complement rows are set to NaN.
+    If C{reduced==True}, the output is reduced to the branches given in C{branch_id}.
     @see: L{makeLODF}
     """
     if reduced and branch_id is None:
@@ -81,9 +91,9 @@ def make_psdf(
 
     Bd = sp.sparse.diags(b.real)
 
-    PSDF = Bd - ptdf[:, noslack] * (Cft.T * Bd)
+    PSDF = ptdf[:, noslack] * (Cft.T * Bd) - Bd
     PSDF = PSDF * (pi / 180 * baseMVA)
-    return PSDF
+    return np.asarray(PSDF)
 
 
 def _get_psdf_direct(
@@ -104,12 +114,10 @@ def _get_psdf_direct(
         using_sparse_solver = True
 
     # If branch_dict not None compute list of ppci branch indices and its branch type intervals as lookup
-    # TODO: _makePTDF_ppci only takes a single branch_id, but branch_dict_to_ppci_branch_list returns a list. Probably a loop is needed?
     branch_ppci_lookup: dict | None = None
-    branch_id: int | None = None
+    branch_id: list[int] | None = None
     if branch_dict is not None:
-        branch_ids, branch_ppci_lookup = branch_dict_to_ppci_branch_list(net=net, branch_dict=branch_dict)
-        branch_id = branch_ids[0]
+        branch_id, branch_ppci_lookup = branch_dict_to_ppci_branch_list(net=net, branch_dict=branch_dict)
     else:
         reduced = False
 
@@ -131,6 +139,11 @@ def _get_psdf_direct(
         branch_id=branch_id,
         reduced=reduced,
     )
+    if branch_id is not None and not reduced:
+        # all ppci branches that are not selected in branch_dict
+        branch_id_complement = np.setdiff1d(np.arange(psdf_ppci.shape[0]), branch_id)
+        psdf_ppci[:, branch_id_complement] = np.nan
+        psdf_ppci[branch_id_complement, :] = np.nan
 
     # Checkout ppci lodf to pp level
     # lodf pp contains all data
@@ -163,15 +176,63 @@ def _get_psdf_perturb(
     recycle: str | None = "lodf",
 ) -> dict[tuple[str, str], pd.DataFrame]:
     """
-    this function calculates PSDF (ratio without unit) of branch to
-    a pp branch with perturb method (brute-force)
+    this function calculates PSDF (MW per degree) of a pp branch from the phase shift through a pp branch
+    with perturb method (brute-force): the shift_degree of each selected trafo is increased by 1 degree,
+    one DC power flow is run and the change of the branch flows is stored.
     """
-    raise NotImplementedError()
+    if phase_shift_branch_type != "trafo":
+        raise ValueError(
+            "The perturb method is only available for phase_shift_branch_type='trafo' (shift_degree), "
+            f"{phase_shift_branch_type!r} has no phase shift parameter in pandapower. Use perturb=False instead!"
+        )
+
+    # Using net_mod for the base case and net_mod_shift for the phase shift
+    net_mod = deepcopy(net)
+    rundcpp(net_mod, distributed_slack=distributed_slack, recycle=recycle)
+    net_mod_shift = deepcopy(net_mod)
+
+    phase_shift_branch_ix = _get_outage_branch_ix(net_mod, phase_shift_branch_type, phase_shift_branch_ix)
+
+    # Init psdf array with NaN, Using Numpy array for better performance
+    psdf_pp_np = _init_lodf_pp_np(net_mod, phase_shift_branch_type, phase_shift_branch_ix.shape[0])
+
+    for ix, br_ix in enumerate(phase_shift_branch_ix):
+        if not net[phase_shift_branch_type].at[br_ix, "in_service"]:
+            # Skip out of service branch, its PSDF stays NaN
+            continue
+
+        # Increase the phase shift by 1 degree, run the power flow and reset the phase shift
+        shift_degree = net_mod_shift.trafo.at[br_ix, "shift_degree"]
+        net_mod_shift.trafo.at[br_ix, "shift_degree"] = shift_degree + 1.0
+        rundcpp(net_mod_shift, distributed_slack=distributed_slack)
+        net_mod_shift.trafo.at[br_ix, "shift_degree"] = shift_degree
+
+        # calculate the PSDF factor: change of the branch flows per degree
+        for br_type in ("line", "dcline", "trafo", "impedance"):
+            if not net[br_type].empty:
+                br_res_type = "p_" + BR_SIDE_MAPPING[br_type] + "_mw"
+                psdf_pp_np[(br_type, phase_shift_branch_type)][:, ix] = (
+                    net_mod_shift["res_" + br_type][br_res_type].to_numpy()
+                    - net_mod["res_" + br_type][br_res_type].to_numpy()
+                )
+
+        if not net.trafo3w.empty:
+            for side in ("hv", "mv", "lv"):
+                br_res_type = "p_" + side + "_mw"
+                psdf_pp_np[("trafo3w_" + side, phase_shift_branch_type)][:, ix] = (
+                    net_mod_shift["res_trafo3w"][br_res_type].to_numpy()
+                    - net_mod["res_trafo3w"][br_res_type].to_numpy()
+                )
+
+    psdf = _lodf_pp_np_to_df(
+        net, psdf_pp_np, outage_branch_type=phase_shift_branch_type, outage_branch_ix=phase_shift_branch_ix
+    )
+    return psdf
 
 
 def run_psdf(
     net: pandapowerNet,
-    phase_shift_branch_type: str | None,
+    phase_shift_branch_type: str | None = "trafo",
     phase_shift_branch_ix: ELE_IX_TYPE | None = None,
     distributed_slack: bool = True,
     perturb: bool = False,
@@ -186,16 +247,20 @@ def run_psdf(
 
     The PSDF is defined as: (p_{side}_mw_new - p_{side}_mw_old) / 1 degree
     Side corresponds to the pandapower results definition, for PSDF calculation both
-    sides give the same result, thus no side definition required
+    sides give the same result, thus no side definition required.
+    A positive PSDF means the flow increases if shift_degree increases.
+    A phase shifting tap changer (tap_step_degree) on the hv side has the same sign; on the lv side pandapower applies
+    the tap angle with the opposite sign, so there the flow change per tap step is -PSDF * tap_step_degree.
 
     :param net: A pandapower network
-    :param phase_shift_branch_type: The name of the type of the phase shift branch ("line", "trafo", "impedance")
+    :param phase_shift_branch_type: The name of the type of the phase shift branch. Default "trafo".
     :param phase_shift_branch_ix: The pandapower index of the phase shift branch (int/list/np.ndarray), if None then all branches
         will be used
     :param distributed_slack: Set True if p distribution amount distributed wished, or else slacks are
          only all voltage references! For non-perturb only False possible!!
-    :param perturb: Set True to use the perturb version (brute-force) which is faster for calculating
-        only a few elements on large networks, if a lot of elements required please set to False
+    :param perturb: Set True to use the perturb version (brute-force): the shift_degree of each selected trafo is
+        increased by 1 degree and a DC power flow is run. Faster for only a few elements on large networks, if a lot
+        of elements required please set to False
     :param using_sparse_solver: Select whether sparse linear system should be used (more efficient for large network)
     :param branch_dict: dictionary with keys "line", "trafo", "impedance", "trafo3w"; if not None the computation is
         restricted to the branch indices given in the dict
@@ -207,7 +272,7 @@ def run_psdf(
     # ToDo: check if distributed slack makes any difference
 
     if perturb:
-        if phase_shift_branch_type is None:
+        if phase_shift_branch_ix is None:
             logger.info("If a lot of branch required in psdf, please set perturb to False!")
         if recycle == "lodf" and distributed_slack == True:
             logger.warning("distributed_slack deactivated! recycling does not allow distributed slack")
