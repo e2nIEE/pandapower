@@ -55,6 +55,9 @@ def _powerflow(net, **kwargs):
 
 
 def _powerflow_with_auxiliary_elements(net, **kwargs):
+    """
+    Runs the power flow after the auxiliary elements were added to net (see _powerflow).
+    """
     # get infos from options
     ac = net["_options"]["ac"]
     algorithm = net["_options"]["algorithm"]

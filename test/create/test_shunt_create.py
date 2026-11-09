@@ -666,6 +666,40 @@ def test_create_vsc_stacked_index_conflict():
     assert idx2 == 5
 
 
+def test_create_vsc_bipolar_legacy_control_kwargs():
+    net = pandapowerNet(name="test_create_vsc_bipolar_legacy_control_kwargs")
+    b1 = create_bus(net, 110)
+    b_dc_plus = create_bus_dc(net, 100)
+    b_dc_minus = create_bus_dc(net, 100)
+
+    for legacy in ({"control_mode": "Vac_phi"}, {"control_value_1": 1.0}, {"control_value_2": 5.0}):
+        with pytest.raises(TypeError, match=next(iter(legacy))):
+            create_vsc_bipolar(
+                net,
+                bus=b1,
+                bus_dc_plus=b_dc_plus,
+                bus_dc_minus=b_dc_minus,
+                r_ohm=1.0,
+                x_ohm=10.0,
+                r_dc_ohm=0.5,
+                **legacy,
+            )
+    assert len(net.vsc_bipolar) == 0
+
+    # other additional keywords are still stored
+    idx = create_vsc_bipolar(
+        net,
+        bus=b1,
+        bus_dc_plus=b_dc_plus,
+        bus_dc_minus=b_dc_minus,
+        r_ohm=1.0,
+        x_ohm=10.0,
+        r_dc_ohm=0.5,
+        test_kwargs="dummy_string",
+    )
+    assert net.vsc_bipolar.at[idx, "test_kwargs"] == "dummy_string"
+
+
 def test_create_vsc_bipolar_index_conflict():
     net = pandapowerNet(name="test_create_vsc_bipolar_index_conflict")
     b1 = create_bus(net, 110)

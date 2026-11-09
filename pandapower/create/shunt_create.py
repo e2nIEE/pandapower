@@ -479,6 +479,13 @@ def create_vsc_bipolar(
         >>> create_source_dc(net, bus_dc=n, vm_pu=0.)
     """
 
+    # the former control parameters would otherwise be stored as additional columns and silently be ignored
+    legacy_kwargs = sorted({"control_mode", "control_value_1", "control_value_2"}.intersection(kwargs))
+    if legacy_kwargs:
+        raise TypeError(
+            f"create_vsc_bipolar() does not support {', '.join(legacy_kwargs)} any more, use control_mode_ac, "
+            "control_value_ac, control_mode_dc and control_value_dc instead"
+        )
     _check_element(net, bus)
     _check_element(net, bus_dc_plus, "bus_dc")
     _check_element(net, bus_dc_minus, "bus_dc")

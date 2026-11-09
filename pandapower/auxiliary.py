@@ -1052,6 +1052,13 @@ def _select_is_elements_numba(
             # if element_table has both bus and bus_dc e.g. "vsc":
             is_elements[element_table] = is_elements.get(element_table, True) & element_in_service
 
+    # the auxiliary VSC of bipolar VSC are also out of service if their minus terminal bus is out of service
+    # (bus_dc_minus is NaN for VSC connected to ground)
+    if len(net.vsc) > 0 and "bus_dc_minus" in net.vsc.columns:
+        bus_dc_minus = net.vsc["bus_dc_minus"].values
+        has_minus = pd.notna(bus_dc_minus)
+        is_elements["vsc"][has_minus] &= bus_dc_in_service[bus_dc_minus[has_minus].astype(np.int64)]
+
     if len(net.vsc) > 0 and "aux" in net["_pd2ppc_lookups"] and "vsc" in net["_pd2ppc_lookups"]["aux"]:
         # reasoning: it can be that there are isolated DC buses. But they are only discovered
         # after the connectivity check. Afterwards, the connected VSC elements are set out of service

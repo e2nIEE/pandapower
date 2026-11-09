@@ -39,6 +39,10 @@ from pandapower.pf.make_y_bus_facts import make_Ybus_facts
 
 
 def _minus_terminal_voltage(V_dc, m):
+    """
+    Returns the voltage of the minus terminal of every VSC (0 for VSC connected to ground) and the mask of the VSC
+    whose minus terminal is a DC bus.
+    """
     has_m = m >= 0
     return np.where(has_m, V_dc[np.where(has_m, m, 0)], 0.0), has_m
 
@@ -103,6 +107,9 @@ def calc_vsc_dc_quantities(V_dc, f, t, m, g, gl):
 
 
 def _row_order(dc_ref, dc_p):
+    """
+    Order of the DC buses in the mismatch vector and the Jacobian: reference buses first, then the P buses.
+    """
     return np.r_[dc_ref, dc_p].astype(np.int64)
 
 
@@ -153,6 +160,7 @@ def create_J_dc(V_dc, Ybus_dc, P_dc, dc_ref, dc_p, f, t, m, g, gl, ctrl_p, ctrl_
     rows, cols, data = [dc_ref], [dc_ref], [np.ones(len(dc_ref))]
 
     def _add(mask, col, value):
+        """Adds the derivative value w.r.t. V_dc[col] to the row of the internal node t of the VSC in mask."""
         rows.append(t[mask])
         cols.append(col[mask])
         data.append(value[mask])

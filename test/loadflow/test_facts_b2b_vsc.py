@@ -163,6 +163,9 @@ def test_hvdc_interconnect_with_dmr():
 
 
 def test_hvdc_interconnect_with_dmr_balanced():
+    """
+    Balanced loading of both poles, so there is no current in the DMR.
+    """
     net = _bipolar_dmr_net(load_plus=100.0, load_minus=100.0)
     runpp_with_consistency_checks(net)
     dmr = net.line_dc.index[net.line_dc.name == "dmr"][0]
@@ -263,6 +266,7 @@ def test_vsc_bipolar_partially_created_aux_vsc_is_rolled_back(monkeypatch):
     calls = []
 
     def create_vsc_failing(*args, **kwargs):
+        """Creates the VSC and raises on the second call, after the row was added."""
         calls.append(create_vsc_orig(*args, **kwargs))
         if len(calls) == 2:
             raise RuntimeError("failed after adding the row")
@@ -275,6 +279,24 @@ def test_vsc_bipolar_partially_created_aux_vsc_is_rolled_back(monkeypatch):
     assert net.vsc.equals(vsc_before)
     assert net.gen.equals(gen_before)
     assert "_vsc_bipolar_aux" not in net
+
+
+def test_vsc_bipolar_minus_bus_out_of_service():
+    """
+    A bipolar VSC is out of service if its minus terminal bus is out of service, the same as if its plus terminal
+    bus is out of service.
+    """
+    net = _bipolar_dmr_net()
+    # neutral bus of station 2: minus terminal of the positive pole, plus terminal of the negative pole
+    net.bus_dc.at[4, "in_service"] = False
+    runpp(net)
+    assert net.converged
+    station_2 = net.vsc_bipolar.index[(net.vsc_bipolar.bus_dc_plus == 4) | (net.vsc_bipolar.bus_dc_minus == 4)]
+    assert len(station_2) == 2
+    res = net.res_vsc_bipolar.loc[station_2]
+    assert np.allclose(res[["p_mw", "p_dc_mw", "i_dc_ka"]].values, 0.0, rtol=0, atol=1e-9)
+    assert res[["vm_dc_pu_p", "vm_dc_pu_m"]].isna().all().all()
+    assert len(net.vsc) == 0
 
 
 def test_vsc_bipolar_with_monopolar_vsc():
