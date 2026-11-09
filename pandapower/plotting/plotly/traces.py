@@ -597,7 +597,7 @@ def _create_branch_trace(
 
     color = get_plotly_color(color)
 
-    # defining branches (lines) to be plot
+    # defining branches (lines) to be plotted
     branches = net[branch_element].index.tolist() if branches is None else list(branches)
     if len(branches) == 0:
         return []
@@ -687,13 +687,22 @@ def _create_branch_trace(
             "line": Line(width=width, color=line_color, dash=dash),
             "showlegend": False,
             "legendgroup": legendgroup,
+            "x": (
+                _get_branch_geodata_plotly(
+                    net, branches_to_plot.loc[idx:idx], use_branch_geodata, branch_element, node_element
+                )
+            )[0],
+            "y": (
+                _get_branch_geodata_plotly(
+                    net, branches_to_plot.loc[idx:idx], use_branch_geodata, branch_element, node_element
+                )
+            )[1],
         }
 
-        line_trace["x"], line_trace["y"] = _get_branch_geodata_plotly(
-            net, branches_to_plot.loc[idx:idx], use_branch_geodata, branch_element, node_element
-        )
-
         branch_traces.append(line_trace)
+
+    if not branch_traces:
+        return []
 
     # enable legend for one element to make the legend group show up in the legend:
     branch_traces[0]["showlegend"] = True
