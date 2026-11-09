@@ -54,8 +54,6 @@ def pf_res_plotly(
     Parameters:
         net: The pandapower format network.
         cmap (str, True): name of the colormap
-        colors_dict (dict, None): by default 6 basic colors from default color palette is used. Otherwise, user can
-            define a dictionary in the form: voltage_kv : color
         use_line_geo: Should line geodata be used for plotting lines. If None: it will automatically decide.
         on_map (bool, False): enables using mapLibre plot in plotly. If provided geodata are not real
             geo-coordinates in lon/lat form, on_map will be set to False.
