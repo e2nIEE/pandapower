@@ -362,11 +362,12 @@ def run_ptdf(
     :param net: A pandapower network
     :param source_bus: Select a subset of pp buses for the PTDF calculation, if None given then all buses are used
     :param result_side: 0 means ("from", "hv") side, 1 means ("to", "lv") side of p_{side}_mw
-    :param distributed_slack: Only used by the perturb method (passed to rundcpp). If True, the additional
-        injection is balanced by all slacks according to their slack_weight; if False, it is balanced by
-        the reference bus only. The direct method ignores this parameter and always distributes the
-        additional injection over the in-service slack elements (ext_grid and gen with slack=True)
-        according to their slack_weight (equal shares if no weights are given).
+    :param distributed_slack: Only passed to the DC power flows of the perturb method, where it currently has no
+        effect, since rundcpp does not support a distributed slack: with several slack elements, all of them act as
+        fixed voltage angle references. The direct method ignores this parameter and always distributes the
+        additional injection over the in-service slack elements (ext_grid and gen with slack=True) according to
+        their slack_weight (equal shares if no weights are given). Therefore, the direct and the perturb method
+        only give the same result if there is a single slack element.
     :param perturb: Set True to use the perturb version (brute-force) which is faster for calculating
         only a few elements on large networks, if a lot of elements required, set to False
     :param using_sparse_solver: Select whether sparse linear system should be used (more efficient for large network)

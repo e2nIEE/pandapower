@@ -256,8 +256,10 @@ def run_psdf(
     :param phase_shift_branch_type: The name of the type of the phase shift branch. Default "trafo".
     :param phase_shift_branch_ix: The pandapower index of the phase shift branch (int/list/np.ndarray), if None then all branches
         will be used
-    :param distributed_slack: Set True if p distribution amount distributed wished, or else slacks are
-         only all voltage references! For non-perturb only False possible!!
+    :param distributed_slack: Only passed to the DC power flows of the perturb method, where it currently has no
+        effect, since rundcpp does not support a distributed slack. The PSDF does not depend on the slack, since a
+        phase shift does not change the injections. The direct method logs a warning if this is True, so pass False
+        with perturb=False.
     :param perturb: Set True to use the perturb version (brute-force): the shift_degree of each selected trafo is
         increased by 1 degree and a DC power flow is run. Faster for only a few elements on large networks, if a lot
         of elements required please set to False

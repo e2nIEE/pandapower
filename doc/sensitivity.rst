@@ -50,8 +50,11 @@ All distribution factors can be calculated with two methods:
   transformer). This is faster if only a few elements are required in a large grid and is useful to check results.
 
 The direct PTDF distributes the slack according to the ``slack_weight`` of the slack elements (``ext_grid`` and
-``gen`` with ``slack=True``), ``distributed_slack`` only changes the perturb method. LODF and PSDF do not depend on the
-slack, so ``distributed_slack=False`` is passed for their direct method to avoid a warning.
+``gen`` with ``slack=True``). The perturb method uses :func:`pandapower.run.rundcpp`, which currently does not support a
+distributed slack: with several slack elements, all of them act as fixed voltage angle references, and
+``distributed_slack`` has no effect. The direct and the perturb PTDF therefore only agree if there is a single slack
+element. LODF and PSDF do not depend on the slack, so ``distributed_slack=False`` is passed for their direct method to
+avoid a warning.
 
 Grid state
 ==========

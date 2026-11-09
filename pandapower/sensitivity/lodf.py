@@ -415,8 +415,10 @@ def run_lodf(
     :param outage_branch_type: The name of the type of the outage branch ("line", "trafo", "impedance")
     :param outage_branch_ix: The pandapower index of the outage branch (int/list/np.ndarray), if None then all branches
         will be used (except bridge branch and very low loading branch)
-    :param distributed_slack: Set True if p distribution amount distributed wished, or else slacks are
-         only all voltage references! For non-perturb only False possible!!
+    :param distributed_slack: Only passed to the DC power flows of the perturb method, where it currently has no
+        effect, since rundcpp does not support a distributed slack. The LODF does not depend on the slack, since an
+        outage does not change the injections. The direct method logs a warning if this is True, so pass False with
+        perturb=False.
     :param perturb: Set True to use the perturb version (brute-force) which is faster for calculating
         only a few elements on large networks, if a lot of elements required please set to False
     :param using_sparse_solver: Select whether sparse linear system should be used (more efficient for large network)
@@ -611,10 +613,10 @@ def run_lodf_dc_n1(
     :param outage_branch_ix: The pandapower index of the outage branch (int/list/np.ndarray), if None then all branches
         will be used (except bridge branch and extra low loading branch)
     :param result_side: 0 means ("from", "hv") side, 1 means ("to", "lv") side
-    :param distributed_slack: Only used by the perturb method, where it is passed to the DC power flow of the base
-        case and of each outage. The direct method takes the base case flows from a DC power flow with distributed
-        slack (according to slack_weight) and does not depend on the slack otherwise, since an outage does not change
-        the injections.
+    :param distributed_slack: Only passed to the DC power flows of the perturb method (base case and each outage),
+        where it currently has no effect, since rundcpp does not support a distributed slack: with several slack
+        elements, all of them act as fixed voltage angle references. The direct method takes the base case flows from
+        the same DC power flow, and the LODF does not depend on the slack, so both methods give the same flows.
     :param perturb: Set True to use the perturb version (brute-force) which is faster for calculating
         only a few elements on large networks, if a lot of elements required please set to False
     :param lodf: precomputed load matrices in dictionary, if None it will be calculated internally
