@@ -30,8 +30,6 @@ Adapt group members
 
 .. autofunction:: pandapower.attach_to_groups
 
-.. autofunction:: pandapower.detach_from_group
-
 .. autofunction:: pandapower.detach_from_groups
 
 =================================================

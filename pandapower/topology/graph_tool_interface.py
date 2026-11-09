@@ -1,4 +1,5 @@
 import copy
+
 from graph_tool import Graph
 
 
@@ -66,9 +67,8 @@ class GraphToolInterface(Graph):
         return edge_data
 
     def add_edge(self, source, target, add_missing=True, **kwargs):
-
         # add the edge
-        edge = super(GraphToolInterface, self).add_edge(source, target, add_missing=add_missing)
+        edge = super().add_edge(source, target, add_missing=add_missing)
         # add the properties from kwargs
         if "key" in kwargs:
             key = kwargs.pop("key")

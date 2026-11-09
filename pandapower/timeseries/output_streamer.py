@@ -1,7 +1,6 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+import logging
 import os
 
 import pandas as pd
@@ -10,11 +9,7 @@ from pandapower.auxiliary import pandapowerNet
 from pandapower.io_utils import mkdirs_if_not_existent
 from pandapower.timeseries.output_writer import OutputWriter
 
-try:
-    import pandaplan.core.pplog as pplog
-except ImportError:
-    import logging as pplog
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class OutputStreamer(OutputWriter):
@@ -99,7 +94,7 @@ class OutputStreamer(OutputWriter):
             data.rename(columns=mapping, inplace=True)
 
     def save_results(
-        self, net: pandapowerNet, time_step: int, pf_converged: bool, ctrl_converged: bool, recycle_options = None
+        self, net: pandapowerNet, time_step: int, pf_converged: bool, ctrl_converged: bool, recycle_options=None
     ):
         """
         Saves the results of the current time step to a matrix
@@ -191,7 +186,9 @@ class OutputStreamer(OutputWriter):
             else:
                 raise ValueError(e)
 
-    def _save_csv(self, net: pandapowerNet, file_path: str, data: pd.DataFrame, table: str, append: bool = False) -> None:
+    def _save_csv(
+        self, net: pandapowerNet, file_path: str, data: pd.DataFrame, table: str, append: bool = False
+    ) -> None:
         """
         Saves the new simulation data to a csv file.
 
@@ -213,7 +210,6 @@ class OutputStreamer(OutputWriter):
             data.to_csv(file_path, sep=self.csv_separator, mode="w", header=True)
 
     def _save_separate(self, append, net=None):
-
         for partial in self.output_list:
             table, variable = self._get_table_and_variable(partial)
             if table != "Parameters":

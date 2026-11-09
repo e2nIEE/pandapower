@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -44,7 +42,7 @@ def from_pypowsybl(
         >>> from pandapower.converter.pypowsybl.from_pypowsybl import from_pypowsybl
         >>> net = from_pypowsybl("network.xiidm")
     """
-    
+
     time_start_converting = time.time()
 
     pypowsybl_converter = PyPowSyBlConverter()

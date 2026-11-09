@@ -1,12 +1,14 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+import logging
+from importlib.util import find_spec
+from typing import TYPE_CHECKING
 
-from typing import Optional, TYPE_CHECKING
-
-import pandas as pd
 import numpy as np
+import pandas as pd
 
-from pandapower import io_utils, pandapowerNet
+from pandapower.io_utils import from_dict_of_dfs, to_dict_of_dfs
+from pandapower.network import pandapowerNet
 
 try:
     import psycopg
@@ -15,27 +17,26 @@ try:
 
     PSYCOPG_INSTALLED = True
 except ImportError:
-    psycopg = None  # type: ignore[assignment]
+    psycopg = None
     PSYCOPG_INSTALLED = False
 
-try:
+if find_spec("sqlite3"):
     import sqlite3
 
     SQLITE_INSTALLED = True
-except ImportError:
+else:
     sqlite3 = None  # type: ignore[assignment]
     SQLITE_INSTALLED = False
 
-import logging
 
-if TYPE_CHECKING:
-    import psycopg.sql as psql
+if TYPE_CHECKING and not PSYCOPG_INSTALLED:
+    raise ImportError("psycopg is required for type checking")
 
 logger = logging.getLogger(__name__)
 
 
 def to_sql_str(string: str) -> "psql.Identifier":
-    return psql.Identifier(*string.split('.'))
+    return psql.Identifier(*string.split("."))
 
 
 def match_sql_type(dtype):
@@ -55,14 +56,14 @@ def match_sql_type(dtype):
 
 def check_if_sql_table_exists(cursor, table_name):
     query = "SELECT EXISTS (SELECT FROM information_schema.tables WHERE table_schema = %s AND table_name = %s);"
-    cursor.execute(query, (table_name.split('.')[0], table_name.split('.')[-1]))
+    cursor.execute(query, (table_name.split(".")[0], table_name.split(".")[-1]))
     (exists,) = cursor.fetchone()
     return exists
 
 
 def get_sql_table_columns(cursor, table_name):
     query = "SELECT * FROM information_schema.columns WHERE table_schema = %s AND table_name = %s;"
-    cursor.execute(query, (table_name.split('.')[0], table_name.split('.')[-1]))
+    cursor.execute(query, (table_name.split(".")[0], table_name.split(".")[-1]))
     colnames = [desc[0] for desc in cursor.description]
     list_idx = colnames.index("column_name")
     columns_data = cursor.fetchall()
@@ -79,14 +80,15 @@ def download_sql_table(cursor, table_name, **id_columns):
     if len(id_columns.keys()) == 0:
         query = psql.SQL("SELECT * FROM {}").format(to_sql_str(table_name))
     else:
-        columns_string = psql.SQL(' AND ').join(
-            [psql.SQL("{} = {}").format(to_sql_str(k), v) for k, v in id_columns.items()])
+        columns_string = psql.SQL(" AND ").join(
+            [psql.SQL("{} = {}").format(to_sql_str(k), v) for k, v in id_columns.items()]
+        )
         query = psql.SQL("SELECT * FROM {} WHERE {}").format(to_sql_str(table_name), columns_string)
     cursor.execute(query)
     colnames = [desc[0] for desc in cursor.description]
     table = cursor.fetchall()
     df = pd.DataFrame(table, columns=colnames)
-    with pd.option_context('future.no_silent_downcasting', True):
+    with pd.option_context("future.no_silent_downcasting", True):
         df = df.fillna(np.nan).infer_objects()
     index_name = f"{table_name.split('.')[-1]}_id"
     if index_name in df.columns:
@@ -120,22 +122,22 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
 
     # Comma-separated dataframe columns
     sql_columns = [index_name, *table_columns, *id_columns.keys()]
-    sql_column_types = [index_type,
-                        *[match_sql_type(t) for t in table[table_columns].dtypes.astype(str).values],
-                        *[match_sql_type(np.result_type(type(v)).name) for v in id_columns.values()]]
+    sql_column_types = [
+        index_type,
+        *[match_sql_type(t) for t in table[table_columns].dtypes.astype(str).values],
+        *[match_sql_type(np.result_type(type(v)).name) for v in id_columns.values()],
+    ]
 
     # check if all columns already exist and if not, add more columns
     existing_columns = get_sql_table_columns(cursor, table_name)
-    new_columns = [(to_sql_str(c), t) for c, t in
-                   zip(sql_columns, sql_column_types) if c not in existing_columns]
+    new_columns = [(to_sql_str(c), t) for c, t in zip(sql_columns, sql_column_types) if c not in existing_columns]
     if len(new_columns) > 0:
         logger.info(f"adding columns {new_columns} to table {table_name}")
         query = psql.SQL("ALTER TABLE {table} {add_columns};").format(
             table=to_sql_str(table_name),
-            add_columns=psql.SQL(',').join([
-                psql.SQL(f"ADD COLUMN {{column}} {type_}").format(column=col)
-                for col, type_ in new_columns
-            ])
+            add_columns=psql.SQL(",").join(
+                [psql.SQL(f"ADD COLUMN {{column}} {type_}").format(column=col) for col, type_ in new_columns]
+            ),
         )
         cursor.execute(query)
         conn.commit()
@@ -144,13 +146,13 @@ def upload_sql_table(conn, cursor, table_name, table, index_name=None, timestamp
         add_timestamp_column(conn, cursor, table_name)
 
     # SQL query to execute
-    columns = [to_sql_str(c.replace('%', '%%')) for c in sql_columns]
+    columns = [to_sql_str(c.replace("%", "%%")) for c in sql_columns]
     query = psql.SQL("INSERT INTO {tbl}({fields}) VALUES({placeholders})").format(
         tbl=to_sql_str(table_name),
-        fields=psql.SQL(',').join(columns),
-        placeholders=psql.SQL(',').join(psql.Placeholder() * len(sql_columns))
+        fields=psql.SQL(",").join(columns),
+        placeholders=psql.SQL(",").join(psql.Placeholder() * len(sql_columns)),
     )
-    
+
     # batch_size = 1000
     # for chunk in tqdm(chunked(tuples, batch_size)):
     #     cursor.executemany(query, chunk)
@@ -167,10 +169,8 @@ def check_postgresql_catalogue_table(cursor, table_name, grid_id, grid_id_column
             raise UserWarning(f"grid catalogue {table_name} does not exist")
         else:
             query = psql.SQL(
-                "CREATE TABLE {table_name}({column} BIGSERIAL PRIMARY KEY, timestamp TIMESTAMPTZ DEFAULT now());").format(
-                table_name=to_sql_str(table_name),
-                column=to_sql_str(grid_id_column)
-            )
+                "CREATE TABLE {table_name}({column} BIGSERIAL PRIMARY KEY, timestamp TIMESTAMPTZ DEFAULT now());"
+            ).format(table_name=to_sql_str(table_name), column=to_sql_str(grid_id_column))
             cursor.execute(query)
     else:
         existing_columns = get_sql_table_columns(cursor, table_name)
@@ -181,8 +181,7 @@ def check_postgresql_catalogue_table(cursor, table_name, grid_id, grid_id_column
                 raise UserWarning(f"grid_id ({grid_id_column}) is None: {grid_id}")
             return  # we don't need to check for duplicates if grid_id is None (means we are uploading a new net)
         query = psql.SQL("SELECT COUNT(*) FROM {} where {}=%s").format(
-            to_sql_str(table_name),
-            to_sql_str(grid_id_column)
+            to_sql_str(table_name), to_sql_str(grid_id_column)
         )
         cursor.execute(query, (grid_id,))
         (found,) = cursor.fetchone()
@@ -213,7 +212,8 @@ def create_postgresql_catalogue_entry(conn, cursor, grid_id, grid_id_column, cat
 
 def add_timestamp_column(conn, cursor, table_name):
     cursor.execute(
-        psql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS timestamp TIMESTAMPTZ;").format(to_sql_str(table_name)))
+        psql.SQL("ALTER TABLE {} ADD COLUMN IF NOT EXISTS timestamp TIMESTAMPTZ;").format(to_sql_str(table_name))
+    )
     conn.commit()
     cursor.execute(psql.SQL("ALTER TABLE {} ALTER COLUMN timestamp SET DEFAULT now();").format(to_sql_str(table_name)))
     conn.commit()
@@ -221,7 +221,8 @@ def add_timestamp_column(conn, cursor, table_name):
 
 def create_sql_table_if_not_exists(conn, cursor, table_name, grid_id_column, catalogue_table_name):
     query = psql.SQL(
-        "CREATE TABLE IF NOT EXISTS {table}({column} BIGINT, FOREIGN KEY({column}) REFERENCES {catalogue}({column}) ON DELETE CASCADE);").format(
+        "CREATE TABLE IF NOT EXISTS {table}({column} BIGINT, FOREIGN KEY({column}) REFERENCES {catalogue}({column}) ON DELETE CASCADE);"
+    ).format(
         table=to_sql_str(table_name),
         column=to_sql_str(grid_id_column),
         catalogue=to_sql_str(catalogue_table_name),
@@ -231,11 +232,11 @@ def create_sql_table_if_not_exists(conn, cursor, table_name, grid_id_column, cat
 
 
 def delete_postgresql_net(
-        grid_id: int,
-        dsn: str,
-        schema: str,
-        grid_id_column: str = "grid_id",
-        grid_catalogue_name: str = "grid_catalogue",
+    grid_id: int,
+    dsn: str,
+    schema: str,
+    grid_id_column: str = "grid_id",
+    grid_catalogue_name: str = "grid_catalogue",
 ) -> None:
     """
     Removes a grid model from the PostgreSQL database.
@@ -254,7 +255,7 @@ def delete_postgresql_net(
     if not PSYCOPG_INSTALLED:
         raise UserWarning("install the package psycopg to use PostgreSQL I/O in pandapower")
 
-    with psycopg.connect(conninfo=dsn) as conn: # type: ignore[union-attr]
+    with psycopg.connect(conninfo=dsn) as conn:  # type: ignore[union-attr]
         cursor = conn.cursor()
         catalogue_table_name = grid_catalogue_name if schema is None else f"{schema}.{grid_catalogue_name}"
         check_postgresql_catalogue_table(cursor, catalogue_table_name, grid_id, grid_id_column, download=True)
@@ -266,8 +267,15 @@ def delete_postgresql_net(
         conn.commit()
 
 
-def from_sql(conn, schema, grid_id, grid_id_column="grid_id", grid_catalogue_name="grid_catalogue",
-             empty_dict_like_object=None, grid_tables=None):
+def from_sql(
+    conn,
+    schema,
+    grid_id,
+    grid_id_column="grid_id",
+    grid_catalogue_name="grid_catalogue",
+    empty_dict_like_object=None,
+    grid_tables=None,
+):
     """
     Downloads an existing pandapowerNet from a PostgreSQL database.
 
@@ -295,7 +303,9 @@ def from_sql(conn, schema, grid_id, grid_id_column="grid_id", grid_catalogue_nam
     if grid_tables is None:
         catalogue_table_name = grid_catalogue_name if schema is None else f"{schema}.{grid_catalogue_name}"
         check_postgresql_catalogue_table(cursor, catalogue_table_name, grid_id, grid_id_column, download=True)
-        grid_tables = download_sql_table(cursor, "grid_tables" if schema is None else f"{schema}.grid_tables", **id_columns)
+        grid_tables = download_sql_table(
+            cursor, "grid_tables" if schema is None else f"{schema}.grid_tables", **id_columns
+        )
 
     d = {}
     for element in grid_tables.table.values:
@@ -309,18 +319,26 @@ def from_sql(conn, schema, grid_id, grid_id_column="grid_id", grid_catalogue_nam
             logger.info(f"skipped {element} due to error: {err}")
             continue
 
-        if 'geo' in tab.columns:
-            tab.geo = tab.geo.replace({'NaN': None})
+        if "geo" in tab.columns:
+            tab.geo = tab.geo.replace({"NaN": None})
 
         d[element] = tab
 
-    net = io_utils.from_dict_of_dfs(d, net=empty_dict_like_object)
+    net = from_dict_of_dfs(d, net=empty_dict_like_object)
 
     return net
 
 
-def to_sql(net, conn, schema, include_results=False, grid_id=None, grid_id_column="grid_id",
-           grid_catalogue_name="grid_catalogue", index_name=None):
+def to_sql(
+    net,
+    conn,
+    schema,
+    include_results=False,
+    grid_id=None,
+    grid_id_column="grid_id",
+    grid_catalogue_name="grid_catalogue",
+    index_name=None,
+):
     """
     Uploads a pandapowerNet to a PostgreSQL database. The database must exist, the element tables
     are created if they do not exist.
@@ -352,7 +370,7 @@ def to_sql(net, conn, schema, include_results=False, grid_id=None, grid_id_colum
     """
     cursor = conn.cursor()
     catalogue_table_name = grid_catalogue_name if schema is None else f"{schema}.{grid_catalogue_name}"
-    d = io_utils.to_dict_of_dfs(net, include_results=include_results, include_empty_tables=False)
+    d = to_dict_of_dfs(net, include_results=include_results, include_empty_tables=False)
     written_grid_id = create_postgresql_catalogue_entry(conn, cursor, grid_id, grid_id_column, catalogue_table_name)
     id_columns = {grid_id_column: written_grid_id}
     d["grid_tables"] = pd.DataFrame(d.keys(), columns=["table"])
@@ -360,8 +378,9 @@ def to_sql(net, conn, schema, include_results=False, grid_id=None, grid_id_colum
         table_name = element if schema is None else f"{schema}.{element}"
         # None causes postgresql error, np.nan is better
         create_sql_table_if_not_exists(conn, cursor, table_name, grid_id_column, catalogue_table_name)
-        upload_sql_table(conn=conn, cursor=cursor, table_name=table_name, table=element_table,
-                         index_name=index_name, **id_columns)
+        upload_sql_table(
+            conn=conn, cursor=cursor, table_name=table_name, table=element_table, index_name=index_name, **id_columns
+        )
         logger.debug(f"uploaded table {element}")
     return written_grid_id
 
@@ -382,7 +401,7 @@ def to_sqlite(net, filename, include_results=False):
     if not SQLITE_INSTALLED:
         raise UserWarning("sqlite3 is not installed, install sqlite3 to use from_sqlite()")
     with sqlite3.connect(filename) as conn:
-        dodfs = io_utils.to_dict_of_dfs(net, include_results=include_results)
+        dodfs = to_dict_of_dfs(net, include_results=include_results)
         for name, data in dodfs.items():
             data.to_sql(name, conn)
 
@@ -406,24 +425,24 @@ def from_sqlite(filename):
         cursor = conn.cursor()
         cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
         dodfs = {}
-        for t, in cursor.fetchall():
+        for (t,) in cursor.fetchall():
             table = pd.read_sql_query('SELECT * FROM "{}"'.format(t.replace('"', '""')), conn, index_col="index")
             table.index.name = None
             dodfs[t] = table
-        net = io_utils.from_dict_of_dfs(dodfs)
+        net = from_dict_of_dfs(dodfs)
     return net
 
 
 def to_postgresql(
-        net: pandapowerNet,
-        dsn: str,
-        schema: str,
-        include_results: bool = False,
-        grid_id: Optional[int] = None,
-        grid_id_column: str = "grid_id",
-        grid_catalogue_name: str = "grid_catalogue",
-        index_name=None,
-    ) -> int:
+    net: pandapowerNet,
+    dsn: str,
+    schema: str,
+    include_results: bool = False,
+    grid_id: int | None = None,
+    grid_id_column: str = "grid_id",
+    grid_catalogue_name: str = "grid_catalogue",
+    index_name=None,
+) -> int:
     """
     Uploads a pandapowerNet to a PostgreSQL database. The database must exist, the element tables
     are created if they do not exist.
@@ -449,19 +468,19 @@ def to_postgresql(
         raise UserWarning("install the package psycopg to use PostgreSQL I/O in pandapower")
     logger.debug(f"Uploading the grid data to the DB schema {schema}")
 
-    with psycopg.connect(dsn) as conn: # type: ignore[union-attr]
+    with psycopg.connect(dsn) as conn:  # type: ignore[union-attr]
         grid_id = to_sql(net, conn, schema, include_results, grid_id, grid_id_column, grid_catalogue_name, index_name)
     return grid_id
 
 
 def from_postgresql(
-        grid_id: int,
-        dsn: str,
-        schema: str,
-        grid_id_column: str = "grid_id",
-        grid_catalogue_name: str = "grid_catalogue",
-        empty_dict_like_object: Optional[dict] = None,
-        grid_tables = None,
+    grid_id: int,
+    dsn: str,
+    schema: str,
+    grid_id_column: str = "grid_id",
+    grid_catalogue_name: str = "grid_catalogue",
+    empty_dict_like_object: dict | None = None,
+    grid_tables=None,
 ):
     """
     Downloads an existing pandapowerNet from a PostgreSQL database.
@@ -484,7 +503,7 @@ def from_postgresql(
     if not PSYCOPG_INSTALLED:
         raise UserWarning("install the package psycopg to use PostgreSQL I/O in pandapower")
 
-    with psycopg.connect(dsn) as conn: # type: ignore[union-attr]
+    with psycopg.connect(dsn) as conn:  # type: ignore[union-attr]
         net = from_sql(conn, schema, grid_id, grid_id_column, grid_catalogue_name, empty_dict_like_object, grid_tables)
 
     return net

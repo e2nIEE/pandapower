@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -22,7 +20,7 @@ class PyPowSyBlComparisonUtilsMixin:
     This mixin contains utility methods for tolerant value comparison, missing-value
     handling in comparison tables, pandapower result lookup, delta calculation, and
     shared transfer-table row creation.
-    
+
     """
 
     if TYPE_CHECKING:
@@ -66,9 +64,7 @@ class PyPowSyBlComparisonUtilsMixin:
 
         def _select_slack_generator_id(self, generators) -> Any | None: ...
 
-        def _calculate_3w_pair_short_circuit_values(
-            self, leg_a, leg_b, reference_u_kv
-        ) -> tuple[float, float]: ...
+        def _calculate_3w_pair_short_circuit_values(self, leg_a, leg_b, reference_u_kv) -> tuple[float, float]: ...
 
     def _comparison_to_float(self, value, default=np.nan) -> float:
         """
@@ -131,23 +127,15 @@ class PyPowSyBlComparisonUtilsMixin:
         if pp_row is not None:
             return pp_row
 
-        if (
-            pp_impedances is not None
-            and not pp_impedances.empty
-            and "powsybl_id" in pp_impedances.columns
-        ):
-            match = pp_impedances[
-                pp_impedances["powsybl_id"].astype(str) == str(element_id)
-            ]
+        if pp_impedances is not None and not pp_impedances.empty and "powsybl_id" in pp_impedances.columns:
+            match = pp_impedances[pp_impedances["powsybl_id"].astype(str) == str(element_id)]
 
             if not match.empty:
                 return match.iloc[0]
 
         return None
 
-    def _comparison_values_equal(
-        self, expected, actual, abs_tol=1e-6, rel_tol=1e-6
-    ) -> bool:
+    def _comparison_values_equal(self, expected, actual, abs_tol=1e-6, rel_tol=1e-6) -> bool:
         """
         Compare two comparison values with tolerant numerical handling.
 
@@ -165,18 +153,14 @@ class PyPowSyBlComparisonUtilsMixin:
         if expected_missing != actual_missing:
             return False
 
-        if isinstance(expected, (bool, np.bool_)) or isinstance(
-            actual, (bool, np.bool_)
-        ):
+        if isinstance(expected, (bool, np.bool_)) or isinstance(actual, (bool, np.bool_)):
             return bool(expected) == bool(actual)
 
         expected_float = self._comparison_to_float(expected, np.nan)
         actual_float = self._comparison_to_float(actual, np.nan)
 
         if np.isfinite(expected_float) and np.isfinite(actual_float):
-            return bool(
-                np.isclose(actual_float, expected_float, rtol=rel_tol, atol=abs_tol)
-            )
+            return bool(np.isclose(actual_float, expected_float, rtol=rel_tol, atol=abs_tol))
 
         return str(expected).strip() == str(actual).strip()
 
@@ -223,9 +207,7 @@ class PyPowSyBlComparisonUtilsMixin:
 
         return np.nan
 
-    def _comparison_get_pp_result_row(
-        self, result_table, element_index
-    ) -> pd.Series | None:
+    def _comparison_get_pp_result_row(self, result_table, element_index) -> pd.Series | None:
         """
         Return a pandapower result row by element index.
 
@@ -261,9 +243,7 @@ class PyPowSyBlComparisonUtilsMixin:
         was created in pandapower and stores the result status in the transfer table.
 
         """
-        is_equal = self._comparison_values_equal(
-            powsybl_expected, pandapower_created, abs_tol=abs_tol, rel_tol=rel_tol
-        )
+        is_equal = self._comparison_values_equal(powsybl_expected, pandapower_created, abs_tol=abs_tol, rel_tol=rel_tol)
 
         rows.append(
             {

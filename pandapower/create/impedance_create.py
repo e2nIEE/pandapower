@@ -3,15 +3,20 @@
 
 from __future__ import annotations
 
+__all__ = [
+    "create_impedance",
+    "create_impedances",
+    "create_series_reactor_as_impedance",
+    "create_tcsc",
+]
+
 import logging
-from typing import Iterable, Sequence
+from collections.abc import Iterable, Sequence
 
 import numpy as np
 import numpy.typing as npt
+from numpy import nan
 
-from pandapower.network import pandapowerNet
-from pandapower.network_structure import get_default_value
-from pandapower.pp_types import Int
 from pandapower.create._utils import (
     _add_to_entries_if_not_nan,
     _check_branch_element,
@@ -22,6 +27,9 @@ from pandapower.create._utils import (
     _set_multiple_entries,
     _set_value_if_not_nan,
 )
+from pandapower.network import pandapowerNet
+from pandapower.network_structure import get_default_value
+from pandapower.pp_types import Int
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +58,8 @@ def create_impedance(
     bf0_pu: float | None = None,
     gt0_pu: float | None = None,
     bt0_pu: float | None = None,
+    min_angle_degree: float = nan,
+    max_angle_degree: float = nan,
     **kwargs,
 ) -> Int:
     """
@@ -86,6 +96,14 @@ def create_impedance(
 
     in_service : bool, optional
         The service status of the impedance element. Default is True.
+
+    min_angle_degree : float, optional
+        Minimum voltage angle difference between from_bus and to_bus (va_from - va_to) in degree, considered in the
+        OPF. NaN means unconstrained.
+
+    max_angle_degree : float, optional
+        Maximum voltage angle difference between from_bus and to_bus (va_from - va_to) in degree, considered in the
+        OPF. NaN means unconstrained.
 
     index : int, optional
         The index of the impedance element. Default is None.
@@ -200,6 +218,9 @@ def create_impedance(
         _set_value_if_not_nan(net, index, gt0_pu, "gt0_pu", "impedance")
         _set_value_if_not_nan(net, index, bt0_pu, "bt0_pu", "impedance")
 
+    _set_value_if_not_nan(net, index, min_angle_degree, "min_angle_degree", "impedance")
+    _set_value_if_not_nan(net, index, max_angle_degree, "max_angle_degree", "impedance")
+
     return index
 
 
@@ -227,6 +248,8 @@ def create_impedances(
     bf0_pu: float | Iterable[float] | None = None,
     gt0_pu: float | Iterable[float] | None = None,
     bt0_pu: float | Iterable[float] | None = None,
+    min_angle_degree: float | Iterable[float] = nan,
+    max_angle_degree: float | Iterable[float] = nan,
     **kwargs,
 ) -> npt.NDArray[np.array]:
     """
@@ -263,6 +286,14 @@ def create_impedances(
 
     in_service : bool, optional
         The service status of the impedance element. Default is True.
+
+    min_angle_degree : float, optional
+        Minimum voltage angle difference between from_bus and to_bus (va_from - va_to) in degree, considered in the
+        OPF. NaN means unconstrained.
+
+    max_angle_degree : float, optional
+        Maximum voltage angle difference between from_bus and to_bus (va_from - va_to) in degree, considered in the
+        OPF. NaN means unconstrained.
 
     index : int, optional
         The index of the impedance element. Default is None.
@@ -374,6 +405,9 @@ def create_impedances(
         _add_to_entries_if_not_nan(net, "impedance", entries, index, "bf0_pu", bf0_pu)
         _add_to_entries_if_not_nan(net, "impedance", entries, index, "gt0_pu", gt0_pu)
         _add_to_entries_if_not_nan(net, "impedance", entries, index, "bt0_pu", bt0_pu)
+
+    _add_to_entries_if_not_nan(net, "impedance", entries, index, "min_angle_degree", min_angle_degree)
+    _add_to_entries_if_not_nan(net, "impedance", entries, index, "max_angle_degree", max_angle_degree)
 
     _set_multiple_entries(net, "impedance", index, entries=entries)
 

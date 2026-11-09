@@ -2,24 +2,22 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+import logging
 import warnings
 from sys import stdout
-from numpy import allclose, concatenate
 
-from pandapower.pypower.add_userfcn import add_userfcn
-from pandapower.pypower.ppoption import ppoption
+from numpy import allclose, concatenate
 from scipy.sparse import csr_matrix as sparse
 
-from pandapower.auxiliary import OPFNotConverged, _clean_up, _add_auxiliary_elements
-from pandapower.pypower.idx_bus import VM
-from pandapower.pypower.opf import opf
-from pandapower.pypower.printpf import printpf
+from pandapower.auxiliary import OPFNotConverged, _add_auxiliary_elements, _clean_up
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
-from pandapower.results import _copy_results_ppci_to_ppc, init_results, verify_results, \
-    _extract_results
-
-import logging
+from pandapower.pypower.add_userfcn import add_userfcn
+from pandapower.pypower.idx_bus import VM
+from pandapower.pypower.opf import opf
+from pandapower.pypower.ppoption import ppoption
+from pandapower.pypower.printpf import printpf
+from pandapower.results import _copy_results_ppci_to_ppc, _extract_results, init_results, verify_results
 
 logger = logging.getLogger(__name__)
 
@@ -32,8 +30,9 @@ def _optimal_powerflow(net, verbose, suppress_warnings, **kwargs):
         kwargs["OPF_FLOW_LIM"] = 2
 
     if net["_options"]["voltage_depend_loads"] and not (
-            allclose(concatenate((net.load.const_z_p_percent.values, net.load.const_z_q_percent.values)), 0) and
-            allclose(concatenate((net.load.const_i_p_percent.values, net.load.const_i_q_percent.values)), 0)):
+        allclose(concatenate((net.load.const_z_p_percent.values, net.load.const_z_q_percent.values)), 0)
+        and allclose(concatenate((net.load.const_i_p_percent.values, net.load.const_i_q_percent.values)), 0)
+    ):
         logger.error("pandapower optimal_powerflow does not support voltage depend loads.")
 
     ppopt = ppoption(VERBOSE=verbose, PF_DC=not ac, INIT=init, **kwargs)
@@ -52,7 +51,7 @@ def _optimal_powerflow(net, verbose, suppress_warnings, **kwargs):
         ppci["bus"][:, VM] = 1.0
     net["_ppc_opf"] = ppci
     if len(net.dcline) > 0:
-        ppci = add_userfcn(ppci, 'formulation', _add_dcline_constraints, args=net)
+        ppci = add_userfcn(ppci, "formulation", _add_dcline_constraints, args=net)
 
     if init == "pf":
         ppci = _run_pf_before_opf(net, ppci)
@@ -64,10 +63,18 @@ def _optimal_powerflow(net, verbose, suppress_warnings, **kwargs):
         result = opf(ppci, ppopt)
 
     if verbose:
-        ppopt['OUT_ALL'] = 1
-        printpf(baseMVA=result["baseMVA"], bus=result["bus"], gen=result["gen"],
-                branch=result["branch"],  f=result["f"],  success=result["success"],
-                et=result["et"], fd=stdout, ppopt=ppopt)
+        ppopt["OUT_ALL"] = 1
+        printpf(
+            baseMVA=result["baseMVA"],
+            bus=result["bus"],
+            gen=result["gen"],
+            branch=result["branch"],
+            f=result["f"],
+            success=result["success"],
+            et=result["et"],
+            fd=stdout,
+            ppopt=ppopt,
+        )
 
     if not result["success"]:
         _clean_up(net)
@@ -86,18 +93,18 @@ def _add_dcline_constraints(om, net):
     ppc = om.get_ppc()
     ndc = net.dcline.in_service.sum()  # number of in-service DC lines
     if ndc > 0:
-        ng = ppc['gen'].shape[0]  # number of total gens
+        ng = ppc["gen"].shape[0]  # number of total gens
         Adc = sparse((ndc, ng))
         gen_lookup = net._pd2ppc_lookups["gen"]
 
-        dcline_gens_from = net.gen.index[-2 * ndc::2]
-        dcline_gens_to = net.gen.index[-2 * ndc + 1::2]
-        for i, (f, t, loss, active) in enumerate(zip(dcline_gens_from, dcline_gens_to,
-                                                     net.dcline.loss_percent.values,
-                                                     net.dcline.in_service.values)):
+        dcline_gens_from = net.gen.index[-2 * ndc :: 2]
+        dcline_gens_to = net.gen.index[-2 * ndc + 1 :: 2]
+        for i, (f, t, loss, active) in enumerate(
+            zip(dcline_gens_from, dcline_gens_to, net.dcline.loss_percent.values, net.dcline.in_service.values)
+        ):
             if active:
-                Adc[i, gen_lookup[f]] = 1. + loss / 100
-                Adc[i, gen_lookup[t]] = 1.
+                Adc[i, gen_lookup[f]] = 1.0 + loss / 100
+                Adc[i, gen_lookup[t]] = 1.0
 
         # constraints
         nL0 = -net.dcline.loss_mw.values  # absolute losses
@@ -105,7 +112,7 @@ def _add_dcline_constraints(om, net):
         #    Adc = sparse(hstack([zeros((ndc, ng)), diag(1-L1), eye(ndc)]))
 
         # add them to the model
-        om = om.add_constraints('dcline', Adc, nL0, nL0, ['Pg'])
+        om = om.add_constraints("dcline", Adc, nL0, nL0, ["Pg"])
 
 
 def _run_pf_before_opf(net, ppci):

@@ -1,3 +1,19 @@
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
+__all__ = [
+    "coords_from_node_geodata",
+    "get_angle_list",
+    "get_collection_sizes",
+    "get_color_list",
+    "get_index_array",
+    "get_linewidth_list",
+    "get_list",
+    "position_on_busbar",
+    "safe_geojson_loads",
+    "set_line_geodata_from_bus_geodata",
+]
+
 import ast
 import logging
 import re
@@ -59,8 +75,17 @@ def _get_coords_from_geojson(gj_str):
     return None
 
 
-def get_collection_sizes(net, bus_size=1.0, ext_grid_size=1.0, trafo_size=1.0, load_size=1.0,
-                         sgen_size=1.0, switch_size=2.0, switch_distance=1.0, gen_size=1.0):
+def get_collection_sizes(
+    net,
+    bus_size=1.0,
+    ext_grid_size=1.0,
+    trafo_size=1.0,
+    load_size=1.0,
+    sgen_size=1.0,
+    switch_size=2.0,
+    switch_distance=1.0,
+    gen_size=1.0,
+):
     """
     Calculates the size for most collection types according to the distance between min and max
     geocoord so that the collections fit the plot nicely
@@ -88,7 +113,7 @@ def get_collection_sizes(net, bus_size=1.0, ext_grid_size=1.0, trafo_size=1.0, l
     """
 
     lst = net.bus.geo.apply(safe_geojson_loads).dropna().apply(geojson.utils.coords).apply(next).values
-    mean_distance_between_buses = sum(map(lambda a, b: (a-b)/200, *(map(max, zip(*lst)), map(min, zip(*lst)))))
+    mean_distance_between_buses = sum(map(lambda a, b: (a - b) / 200, *(map(max, zip(*lst)), map(min, zip(*lst)))))
 
     sizes = {
         "bus": bus_size * mean_distance_between_buses,
@@ -98,7 +123,7 @@ def get_collection_sizes(net, bus_size=1.0, ext_grid_size=1.0, trafo_size=1.0, l
         "load": load_size * mean_distance_between_buses,
         "sgen": sgen_size * mean_distance_between_buses,
         "trafo": trafo_size * mean_distance_between_buses,
-        "gen": gen_size * mean_distance_between_buses
+        "gen": gen_size * mean_distance_between_buses,
     }
     return sizes
 
@@ -125,22 +150,23 @@ def get_list(individuals, number_entries, name_ind, name_ent):
         if number_entries == len(individuals):
             return list(individuals)
         elif number_entries > len(individuals):
-            logger.warning("The number of given %s (%d) is smaller than the number of %s (%d) to"
-                           " draw! The %s will be repeated to fit."
-                           % (name_ind, len(individuals), name_ent, number_entries, name_ind))
-            return (list(individuals) * (int(number_entries / len(individuals)) + 1))[
-                   :number_entries]
+            logger.warning(
+                f"The number of given {name_ind} ({len(individuals)}) is smaller than the number of {name_ent} "
+                f"({number_entries}) to draw! The {name_ind} will be repeated to fit."
+            )
+            return (list(individuals) * (int(number_entries / len(individuals)) + 1))[:number_entries]
         else:
-            logger.warning("The number of given %s (%d) is larger than the number of %s (%d) to"
-                           " draw! The %s will be capped to fit."
-                           % (name_ind, len(individuals), name_ent, number_entries, name_ind))
+            logger.warning(
+                f"The number of given {name_ind} ({len(individuals)}) is larger than the number of {name_ent} "
+                f"({number_entries}) to draw! The {name_ind} will be capped to fit."
+            )
             return list(individuals)[:number_entries]
     return [individuals] * number_entries
 
 
 def get_color_list(color, number_entries, name_entries="nodes"):
     if (len(color) == 3 or len(color) == 4) and all(isinstance(c, float) for c in color):
-        logger.info("Interpreting color %s as rgb or rgba!" % str(color))
+        logger.info(f"Interpreting color {color} as rgb or rgba!")
         return get_list([color], number_entries, "colors", name_entries)
     return get_list(color, number_entries, "colors", name_entries)
 
@@ -161,8 +187,16 @@ def get_index_array(indices, net_table_indices):
     return np.array(indices)
 
 
-def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata, table_name,
-                             node_name="Bus", ignore_no_geo_diff=True, node_geodata_to=None):
+def coords_from_node_geodata(
+    element_indices,
+    from_nodes,
+    to_nodes,
+    node_geodata,
+    table_name,
+    node_name="Bus",
+    ignore_no_geo_diff=True,
+    node_geodata_to=None,
+):
     """
     Auxiliary function to get the node coordinates for a number of branches with respective from
     and to nodes. The branch elements for which there is no geodata available are not included in
@@ -196,8 +230,7 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
     if node_geodata_to is None:
         node_geodata_to = node_geodata
     # reduction of from_nodes, to_nodes, node_geodata to intersection
-    in_geo = np.isin(from_nodes, node_geodata.index.values) \
-        & np.isin(to_nodes, node_geodata_to.index.values)
+    in_geo = np.isin(from_nodes, node_geodata.index.values) & np.isin(to_nodes, node_geodata_to.index.values)
     fb_with_geo, tb_with_geo = from_nodes[in_geo], to_nodes[in_geo]
     if sum(~in_geo):
         logger.warning(
@@ -210,18 +243,23 @@ def coords_from_node_geodata(element_indices, from_nodes, to_nodes, node_geodata
     tb_geo_is_nan = node_geodata_to.loc[tb_with_geo].isnull().values
     not_nan = ~(fb_geo_is_nan | tb_geo_is_nan)
     if n_nans := len(not_nan) - sum(not_nan):
-        logger.warning(
-            f"NaN coords are returned {n_nans} times for {table_name}s applying {node_name} geodata."
-        )
+        logger.warning(f"NaN coords are returned {n_nans} times for {table_name}s applying {node_name} geodata.")
 
     node_geodata = node_geodata.apply(_get_coords_from_geojson)
     node_geodata_to = node_geodata_to.apply(_get_coords_from_geojson)
     if np.sum(not_nan):
-        coords, no_geo_diff = zip(*[
-            (f'{{"coordinates": [[{x_from}, {y_from}], [{x_to}, {y_to}]], "type": "LineString"}}',
-            x_from == x_to and y_from == y_to) for [x_from, y_from], [x_to, y_to] in zip(
-                node_geodata.loc[fb_with_geo[not_nan]], node_geodata_to.loc[tb_with_geo[not_nan]])])
-                #   if not ignore_no_geo_diff or (ignore_no_geo_diff and not ())]
+        coords, no_geo_diff = zip(
+            *[
+                (
+                    f'{{"coordinates": [[{x_from}, {y_from}], [{x_to}, {y_to}]], "type": "LineString"}}',
+                    x_from == x_to and y_from == y_to,
+                )
+                for [x_from, y_from], [x_to, y_to] in zip(
+                    node_geodata.loc[fb_with_geo[not_nan]], node_geodata_to.loc[tb_with_geo[not_nan]]
+                )
+            ]
+        )
+        #   if not ignore_no_geo_diff or (ignore_no_geo_diff and not ())]
         coords, no_geo_diff = np.array(coords), np.array(no_geo_diff)
     else:
         coords, no_geo_diff = np.array([], dtype=object), np.array([], dtype=bool)
@@ -241,9 +279,8 @@ def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False, ign
     :param overwrite: whether the existing coordinates in net.line.geo must be overwritten
     :return: None
     """
-    if 'geo' not in net.bus.columns or net.bus.geo.isnull().all():
-        logger.warning("The function set_line_geodata_from_bus_geodata requires geodata to be "
-                       "present in net.bus.geo")
+    if "geo" not in net.bus.columns or net.bus.geo.isnull().all():
+        logger.warning("The function set_line_geodata_from_bus_geodata requires geodata to be present in net.bus.geo")
         return
     if overwrite and line_index is None:
         line_index = net.line.index
@@ -254,14 +291,15 @@ def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False, ign
 
     geos, line_index_successful = coords_from_node_geodata(
         element_indices=line_index,
-        from_nodes=net.line.loc[line_index, 'from_bus'].values,
-        to_nodes=net.line.loc[line_index, 'to_bus'].values,
+        from_nodes=net.line.loc[line_index, "from_bus"].values,
+        to_nodes=net.line.loc[line_index, "to_bus"].values,
         node_geodata=net.bus.geo,
         table_name="line",
         node_name="bus",
-        ignore_no_geo_diff=ignore_no_geo_diff)
+        ignore_no_geo_diff=ignore_no_geo_diff,
+    )
 
-    net.line.loc[line_index_successful, 'geo'] = geos
+    net.line.loc[line_index_successful, "geo"] = geos
 
     num_failed = len(line_index) - len(line_index_successful)
     if num_failed > 0:
@@ -287,7 +325,7 @@ def position_on_busbar(net, bus, busbar_coords):
     intersection = None
     bus_coords = _get_coords_from_geojson(net.bus.loc[bus, "geo"])
     # Checking if bus has "coords" - if it is a busbar
-    if bus_coords is not None and bus_coords is not np.nan and busbar_coords is not None:
+    if bus_coords is not None and pd.notna(bus_coords) and busbar_coords is not None:
         for i in range(len(bus_coords) - 1):
             try:
                 # Calculating slope of busbar-line. If the busbar-line is vertical ZeroDivisionError
@@ -297,19 +335,21 @@ def position_on_busbar(net, bus, busbar_coords):
                 b = bus_coords[i][1] - bus_coords[i][0] * m
                 # Checking if the first end of the line is on the busbar-line
                 if (
-                        0 == m * busbar_coords[0][0] + b - busbar_coords[0][1] and
-                        # Checking if the end of the line is in the Range of the busbar-line
-                        (bus_coords[i + 1][0] <= busbar_coords[0][0] <= bus_coords[i][0] or
-                        bus_coords[i][0] <= busbar_coords[0][0] <= bus_coords[i + 1][0])
+                    0 == m * busbar_coords[0][0] + b - busbar_coords[0][1]
+                    and
+                    # Checking if the end of the line is in the Range of the busbar-line
+                    (
+                        bus_coords[i + 1][0] <= busbar_coords[0][0] <= bus_coords[i][0]
+                        or bus_coords[i][0] <= busbar_coords[0][0] <= bus_coords[i + 1][0]
+                    )
                 ):
                     # Intersection found. Breaking for-loop
                     intersection = busbar_coords[0]
                     break
                 # Checking if the second end of the line is on the busbar-line
-                elif (
-                        0 == m * busbar_coords[-1][0] + b - busbar_coords[-1][1] and
-                        (bus_coords[i][0] >= busbar_coords[-1][0] >= bus_coords[i + 1][0] or
-                         bus_coords[i][0] <= busbar_coords[-1][0] <= bus_coords[i + 1][0])
+                elif 0 == m * busbar_coords[-1][0] + b - busbar_coords[-1][1] and (
+                    bus_coords[i][0] >= busbar_coords[-1][0] >= bus_coords[i + 1][0]
+                    or bus_coords[i][0] <= busbar_coords[-1][0] <= bus_coords[i + 1][0]
                 ):
                     # Intersection found. Breaking for-loop
                     intersection = busbar_coords[-1]
@@ -319,20 +359,23 @@ def position_on_busbar(net, bus, busbar_coords):
                 # Checking if the first line-end is at the same position
                 if bus_coords[i][0] == busbar_coords[0][0]:
                     # Checking if the first line-end is in the Range of the busbar-line
-                    if bus_coords[i][1] >= busbar_coords[0][1] >= bus_coords[i + 1][1] \
-                            or bus_coords[i][1] <= busbar_coords[0][1] <= bus_coords[i + 1][1]:
+                    if (
+                        bus_coords[i][1] >= busbar_coords[0][1] >= bus_coords[i + 1][1]
+                        or bus_coords[i][1] <= busbar_coords[0][1] <= bus_coords[i + 1][1]
+                    ):
                         # Intersection found. Breaking for-loop
                         intersection = busbar_coords[0]
                         break
                 # Checking if the second line-end is at the same position
-                elif bus_coords[i][0] == busbar_coords[-1][0]:
-                    if bus_coords[i][1] >= busbar_coords[-1][1] >= bus_coords[i + 1][1] \
-                            or bus_coords[i][1] <= busbar_coords[-1][1] <= bus_coords[i + 1][1]:
-                        # Intersection found. Breaking for-loop
-                        intersection = busbar_coords[-1]
-                        break
+                elif bus_coords[i][0] == busbar_coords[-1][0] and (
+                    bus_coords[i][1] >= busbar_coords[-1][1] >= bus_coords[i + 1][1]
+                    or bus_coords[i][1] <= busbar_coords[-1][1] <= bus_coords[i + 1][1]
+                ):
+                    # Intersection found. Breaking for-loop
+                    intersection = busbar_coords[-1]
+                    break
     # If the bus has no "coords" it must be a normal bus
-    elif bus_coords is np.nan:
+    elif np.isnan(bus_coords):
         bus_geo = _get_coords_from_geojson(net.bus.loc[bus, "geo"])
         # Checking if the first end of the line is on the bus
         if bus_geo == busbar_coords[0]:

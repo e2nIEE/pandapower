@@ -42,7 +42,7 @@ def get_element_schema(element_name: str) -> pa.DataFrameSchema | None:
     return getattr(schema_module, f"{element_name}_schema", None)
 
 
-def get_dtypes(schema: pa.DataFrameSchema, required_only: bool = True, metadata: list = []) -> dict:
+def get_dtypes(schema: pa.DataFrameSchema, required_only: bool = True, metadata: list | None = None) -> dict:
     """
     Extract column data types from a Pandera DataFrame schema.
 
@@ -80,6 +80,9 @@ def get_dtypes(schema: pa.DataFrameSchema, required_only: bool = True, metadata:
         When metadata parameter is provided, columns with matching metadata keys
         having truthy values will be included regardless of required_only setting.
     """
+
+    if metadata is None:
+        metadata = []
     return {
         name: col.dtype.type
         for name, col in schema.columns.items()
@@ -91,8 +94,9 @@ def get_dtypes(schema: pa.DataFrameSchema, required_only: bool = True, metadata:
 
 
 def create_docu_csv_from_schema(schema: pa.DataFrameSchema):
-    import pandas as pd
     import json
+
+    import pandas as pd
 
     schema_json = schema.to_json()
     schema_dict = json.loads(schema_json)
@@ -121,7 +125,7 @@ def create_docu_csv_from_schema(schema: pa.DataFrameSchema):
     def _get_metadata(schema: pa.DataFrameSchema, name: str, kind: str):
         try:
             return schema.columns[name].metadata[kind]
-        except:
+        except Exception:  # noqa: BLE001
             return False
 
     for col_name, col_details in schema_dict["columns"].items():

@@ -1,10 +1,11 @@
-import os
-from pandapower.converter.pandamodels.to_pm import convert_to_pm_structure, dump_pm_json
-from pandapower.converter.pandamodels.from_pm import read_pm_results_to_net
-from pandapower.optimal_powerflow import OPFNotConverged
-from pandapower.auxiliary import pandapowerNet
-
 import logging
+import os
+
+from pandapower.auxiliary import pandapowerNet
+from pandapower.converter.pandamodels.from_pm import read_pm_results_to_net
+from pandapower.converter.pandamodels.to_pm import convert_to_pm_structure, dump_pm_json
+from pandapower.optimal_powerflow import OPFNotConverged
+
 logger = logging.getLogger(__name__)
 
 
@@ -13,7 +14,7 @@ def _runpm(
     delete_buffer_file: bool = True,
     pm_file_path: str | None = None,
     pdm_dev_mode: bool = False,
-    **kwargs
+    **kwargs,
 ):
     """
     Converts the pandapower net to a pm json file, saves it to disk, runs a PandaModels.jl, and reads
@@ -35,40 +36,40 @@ def _runpm(
         net._options["pp_to_pm_callback"](net, ppci, pm)
     # writes pm json to disk, which is loaded afterwards in julia
     buffer_file = dump_pm_json(pm, pm_file_path)
-    logger.debug("the json file for converted net is stored in: %s" % buffer_file)
+    logger.debug(f"the json file for converted net is stored in: {buffer_file}")
     # run power models optimization in julia
     result_pm = _call_pandamodels(buffer_file, net._options["julia_file"], pdm_dev_mode)
 
-    logger.info("Optimization ('"+net._options["julia_file"]+"') " +
-                "is finished in %s seconds:" % round(result_pm["solve_time"], 2))
+    logger.info(
+        f"Optimization ('{net._options['julia_file']}') is finished in {round(result_pm['solve_time'], 2)} seconds:"
+    )
     # read results and write back to net
     try:
         read_pm_results_to_net(net, ppc, ppci, result_pm)
         if pm_file_path is None and delete_buffer_file:
             # delete buffer file after calculation
             os.remove(buffer_file)
-            logger.debug("the json file for converted net is deleted from %s" % buffer_file)
-    except OPFNotConverged as e:
+            logger.debug(f"the json file for converted net is deleted from {buffer_file}")
+    except OPFNotConverged:
         if pm_file_path is None and delete_buffer_file:
             os.remove(buffer_file)
-            logger.debug("the json file for converted net is deleted from %s" % buffer_file)
-        raise e
-    except Exception as e:
-        raise e
+            logger.debug(f"the json file for converted net is deleted from {buffer_file}")
+        raise
+    except Exception:
+        raise
 
 
 def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
     try:
-        from juliacall import Main, Base, Pkg  # type: ignore  # pre juliacall 0.9.34 Pkg could be imported directly
+        from juliacall import Base, Main, Pkg  # type: ignore  # pre juliacall 0.9.34 Pkg could be imported directly
     except ImportError:
         try:
-            from juliacall import Main, Base  # type: ignore
+            from juliacall import Base, Main  # type: ignore
+
             Main.seval("using Pkg")
             Pkg = Main.Pkg
         except ImportError:
-            raise ImportError(
-                "Please install juliacall properly to run pandapower with PandaModels.jl."
-            )
+            raise ImportError("Please install juliacall properly to run pandapower with PandaModels.jl.")
 
     if not Base.find_package("PandaModels"):
         logger.info("PandaModels.jl is missing, adding.")
@@ -92,11 +93,10 @@ def _call_pandamodels(buffer_file, julia_file, dev_mode):  # pragma: no cover
         Pkg.resolve()
         Pkg.activate("PandaModels")
 
-
     Main.seval("global buffer_file")
     Main.buffer_file = buffer_file
 
-    seval_str = f'using PandaModels; PandaModels.{julia_file}(buffer_file)'
+    seval_str = f"using PandaModels; PandaModels.{julia_file}(buffer_file)"
     result_pm = Main.seval(seval_str)
 
     # if dev_mode:

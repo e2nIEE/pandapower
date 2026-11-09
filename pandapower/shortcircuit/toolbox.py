@@ -1,17 +1,16 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-from pandapower.auxiliary import _preserve_dtypes
+
+__all__ = ["calc_sc_on_line", "detect_power_station_unit"]
 
 import logging
-
-logger = logging.getLogger(__name__)
-
 from copy import deepcopy
 
 import networkx as nx
 import numpy as np
 import pandas as pd
 
+from pandapower.auxiliary import _preserve_dtypes
 from pandapower.create import _get_index_with_check, create_buses
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, TAP
 from pandapower.pypower.idx_bus import BUS_I
@@ -20,10 +19,10 @@ from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.topology import create_nxgraph
 from pandapower.topology.graph_searches import connected_component
 
-__all__ = ["detect_power_station_unit", "calc_sc_on_line"]
+logger = logging.getLogger(__name__)
 
-def detect_power_station_unit(net, mode="auto",
-                              max_gen_voltage_kv=80, max_distance_km=0.01):
+
+def detect_power_station_unit(net, mode="auto", max_gen_voltage_kv=80, max_distance_km=0.01):
     """
     Identifies the power station units configuration (gen and trafo) according to IEC 60909.
     Updates the power_station_trafo in the gen table
@@ -33,14 +32,14 @@ def detect_power_station_unit(net, mode="auto",
 
         **mode** (str, ("auto", trafo""))
 
-        **max_gen_voltage_level** (float)
+        **max_gen_voltage_kv** (float)
 
         **max_distance_km** (float)
     """
     logger.info("This function will overwrites the value 'power_station_trafo' in gen table")
     net.gen["power_station_trafo"] = np.nan
 
-    required_gen = net.gen.loc[net.bus.loc[net.gen.bus.values, "vn_kv"].values < max_gen_voltage_kv,:]
+    required_gen = net.gen.loc[net.bus.loc[net.gen.bus.values, "vn_kv"].values < max_gen_voltage_kv, :]
     required_gen_bus = required_gen.loc[:, "bus"].values
 
     if mode.lower() == "auto":
@@ -49,7 +48,9 @@ def detect_power_station_unit(net, mode="auto",
         if "power_station_unit" in net.trafo.columns:
             required_trafo = net.trafo.loc[net.trafo.power_station_unit, :]
         else:
-            logger.warning("Using mode 'trafo' requires 'power_station_unit' defined for trafo! Using 'auto' mode instead!")
+            logger.warning(
+                "Using mode 'trafo' requires 'power_station_unit' defined for trafo! Using 'auto' mode instead!"
+            )
             required_trafo = net.trafo.loc[net.bus.loc[net.trafo.lv_bus.values, "vn_kv"].values < max_gen_voltage_kv, :]
 
     else:
@@ -58,12 +59,11 @@ def detect_power_station_unit(net, mode="auto",
     trafo_lv_bus = net.trafo.loc[required_trafo.index, "lv_bus"].values
     trafo_hv_bus = net.trafo.loc[required_trafo.index, "hv_bus"].values
 
-    g = create_nxgraph(net, respect_switches=True,
-                       nogobuses=None, notravbuses=trafo_hv_bus)
+    g = create_nxgraph(net, respect_switches=True, nogobuses=None, notravbuses=trafo_hv_bus)
 
     for t_ix in required_trafo.index:
         t_lv_bus = required_trafo.at[t_ix, "lv_bus"]
-        bus_dist = pd.Series(nx.single_source_dijkstra_path_length(g, t_lv_bus, weight='weight'))
+        bus_dist = pd.Series(nx.single_source_dijkstra_path_length(g, t_lv_bus, weight="weight"))
 
         connected_bus_at_lv_side = bus_dist[bus_dist < max_distance_km].index.values
         gen_bus_at_lv_side = np.intersect1d(connected_bus_at_lv_side, required_gen_bus)
@@ -73,16 +73,16 @@ def detect_power_station_unit(net, mode="auto",
             if not len(np.intersect1d(connected_bus_at_lv_side, trafo_lv_bus)) == 1:
                 raise UserWarning("Failure in power station units detection! Parallel trafos on generator detected!")
             if np.isin(required_gen_bus, gen_bus_at_lv_side).sum() > 1:
-                logger.info("More than 1 gen detected at the lv side of a power station trafo! Will not be considered as power station unit")
+                logger.info(
+                    "More than 1 gen detected at the lv side of a power station trafo! Will not be considered as power station unit"
+                )
                 continue
-            net.gen.loc[np.isin(net.gen.bus.values, gen_bus_at_lv_side),
-                        "power_station_trafo"] = t_ix
+            net.gen.loc[np.isin(net.gen.bus.values, gen_bus_at_lv_side), "power_station_trafo"] = t_ix
 
 
 def _create_element_from_exisiting(net, ele_type, ele_ix):
     dtypes = net[ele_type].dtypes
-    ps = pd.Series(net[ele_type].loc[ele_ix, :].to_dict(), name=_get_index_with_check(net, ele_type,
-                                                                                      None))
+    ps = pd.Series(net[ele_type].loc[ele_ix, :].to_dict(), name=_get_index_with_check(net, ele_type, None))
 
     net[ele_type] = pd.concat([net[ele_type], ps.to_frame().T])
     _preserve_dtypes(net[ele_type], dtypes)
@@ -121,10 +121,10 @@ def _create_aux_net(net, line_ix, distance_to_bus0):
         aux_switch_ix = _create_element_from_exisiting(aux_net, "switch", switch_ix)
         if aux_net.switch.at[aux_switch_ix, "bus"] == aux_net.line.at[line_ix, "from_bus"]:
             # The from side switch connected to aux_line0
-            aux_net.switch.at[aux_switch_ix, "element"] =  aux_line0
+            aux_net.switch.at[aux_switch_ix, "element"] = aux_line0
         else:
             # The to side switch connected to aux_line1
-            aux_net.switch.at[aux_switch_ix, "element"] =  aux_line1
+            aux_net.switch.at[aux_switch_ix, "element"] = aux_line1
     return aux_net, aux_bus
 
 
@@ -164,11 +164,6 @@ def adjust_V0_for_trafo_tap(ppci, V0, bus_idx):
     Zbus = ppci["internal"]["Zbus"]
     bus = ppci["bus"]
 
-    f = (branch[:, F_BUS]).real.astype(np.int64)  ## list of "from" buses
-    t = (branch[:, T_BUS]).real.astype(np.int64)  ## list of "to" buses
-    nl = len(branch)
-    nb = len(bus)
-
     mg = nx.MultiGraph()
     mg.add_nodes_from(bus[:, BUS_I].astype(np.int64).tolist())
     mg.add_edges_from(branch[:, [F_BUS, T_BUS]].real.astype(np.int64).tolist())
@@ -201,29 +196,13 @@ def adjust_V0_for_trafo_tap(ppci, V0, bus_idx):
 def adjacency(ppci):
     branch = ppci["branch"]
     bus = ppci["bus"]
-    tap = ppci["branch"][:, TAP].real
-    tap_branch_idx = np.flatnonzero(tap != 1)
-    all_vertices = bus[:, BUS_I]
     num_vertices = len(bus)
-    f = (branch[:, F_BUS]).real.astype(np.int64)  ## list of "from" buses
-    t = (branch[:, T_BUS]).real.astype(np.int64)  ## list of "to" buses
-
-    hv_buses = branch[tap_branch_idx, F_BUS].real.astype(np.int64)
-    lv_buses = branch[tap_branch_idx, T_BUS].real.astype(np.int64)
+    f = (branch[:, F_BUS]).real.astype(np.int64)  # list of "from" buses
+    t = (branch[:, T_BUS]).real.astype(np.int64)  # list of "to" buses
 
     matrix = np.zeros((num_vertices, num_vertices))
     matrix[f, t] = -1
     matrix[t, f] = -1
     matrix[np.diag_indices(num_vertices)] = -matrix.sum(axis=1)
-
-    # matrix[hv_buses, lv_buses] = 1 / tap[tap_branch_idx]
-    # matrix[lv_buses, hv_buses] = 1 / tap[tap_branch_idx]
-    # matrix[hv_buses, hv_buses] = 1 / np.square(tap[tap_branch_idx])
-    #
-    # init = np.ones(num_vertices)
-    # init[4] = 1.1
-    # fake_i = matrix.dot(init)
-    # print(fake_i)
-    # np.flatnonzero(fake_i)
 
     return matrix

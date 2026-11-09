@@ -1,9 +1,12 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = []
+
 from typing_extensions import deprecated
 
 from pandapower.auxiliary import pandapowerNet
+
 
 @deprecated('Use the pandapowerNet constructor instead: pandapowerNet(name="Name", ...)')
 def create_empty_network(

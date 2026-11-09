@@ -2,8 +2,7 @@
 # Use of this source code is governed by a BSD-style
 # license that can be found in the LICENSE file.
 
-"""Updates values of generator limit shadow prices.
-"""
+"""Updates values of generator limit shadow prices."""
 
 from pandapower.pypower.idx_gen import MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN
 
@@ -26,8 +25,7 @@ def update_mupq(baseMVA, gen, mu_PQh, mu_PQl, data):
     Autonoma de Manizales)
     """
     ## extract the constraint parameters
-    ipqh, ipql, Apqhdata, Apqldata = \
-        data['ipqh'], data['ipql'], data['h'], data['l']
+    ipqh, ipql, Apqhdata, Apqldata = data["ipqh"], data["ipql"], data["h"], data["l"]
 
     ## combine original limit multipliers into single value
     muP = gen[:, MU_PMAX] - gen[:, MU_PMIN]
@@ -42,9 +40,9 @@ def update_mupq(baseMVA, gen, mu_PQh, mu_PQl, data):
     muQ[ipql] = muQ[ipql] - mu_PQl * Apqldata[:, 1] / baseMVA
 
     # split back into upper and lower multipliers based on sign
-    gen[:, MU_PMAX] = (muP > 0) *  muP
+    gen[:, MU_PMAX] = (muP > 0) * muP
     gen[:, MU_PMIN] = (muP < 0) * -muP
-    gen[:, MU_QMAX] = (muQ > 0) *  muQ
+    gen[:, MU_QMAX] = (muQ > 0) * muQ
     gen[:, MU_QMIN] = (muQ < 0) * -muQ
 
     return gen

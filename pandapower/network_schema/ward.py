@@ -10,9 +10,7 @@ ward_schema = pa.DataFrameSchema(
             description="name of the ward equivalent",
             metadata={"cim": True},
         ),
-        "bus": pa.Column(
-            int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus"}
-        ),
+        "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus"}),
         "ps_mw": pa.Column(float, description="constant active power demand [MW]"),
         "qs_mvar": pa.Column(float, description="constant reactive power demand [MVar]"),
         "pz_mw": pa.Column(float, description="constant impedance active power demand at 1.0 pu [MW]"),
@@ -21,7 +19,11 @@ ward_schema = pa.DataFrameSchema(
             bool, description="specifies if the ward equivalent is in service.", metadata={"default": True}
         ),
         "origin_id": pa.Column(
-            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="element rdfId from CIM",
+            metadata={"cim": True, "doc": False},
         ),
         "origin_class": pa.Column(
             pd.StringDtype,

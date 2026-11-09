@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -26,16 +24,16 @@ from dataclasses import dataclass, field
 
 import numpy as np
 
-from pandapower.network import pandapowerNet
 from pandapower.create import (
     create_bus,
     create_ext_grid,
+    create_line_from_parameters,
     create_load,
     create_shunt,
     create_switch,
-    create_line_from_parameters,
     create_transformer_from_parameters,
 )
+from pandapower.network import pandapowerNet
 
 try:
     # On Windows, OpenDSSDirect.py's native backend (dss_python_backend) raises an
@@ -68,14 +66,14 @@ __all__ = ["from_opendss"]
 # line carries is exact even where the unit is ambiguous; only the reported
 # length_km is nominal. "none" (0) is therefore safely treated as km.
 _LINE_UNITS_TO_KM = {
-    0: 1.0,          # none -> treat as km (impedance still exact, see above)
-    1: 1.609344,     # miles
-    2: 0.3048,       # kft (1000 ft)
-    3: 1.0,          # km
-    4: 1.0e-3,       # m
-    5: 3.048e-4,     # ft
-    6: 2.54e-5,      # in
-    7: 1.0e-5,       # cm
+    0: 1.0,  # none -> treat as km (impedance still exact, see above)
+    1: 1.609344,  # miles
+    2: 0.3048,  # kft (1000 ft)
+    3: 1.0,  # km
+    4: 1.0e-3,  # m
+    5: 3.048e-4,  # ft
+    6: 2.54e-5,  # in
+    7: 1.0e-5,  # cm
 }
 
 _SQRT3 = math.sqrt(3.0)
@@ -170,7 +168,7 @@ def _connected_phases(token):
     return len(phases)
 
 
-def from_opendss(path: str, solve: bool=True):
+def from_opendss(path: str, solve: bool = True):
     """Build a balanced (positive-sequence) pandapower net from an OpenDSS feeder.
 
     The OpenDSS circuit is compiled through ``OpenDSSDirect.py`` and its elements
@@ -216,7 +214,8 @@ def from_opendss(path: str, solve: bool=True):
     if not opendssdirect_imported:
         raise NotImplementedError(
             "OpenDSSDirect.py is required to import OpenDSS circuits. Please install "
-            "it, e.g. via 'pip install OpenDSSDirect.py' or 'pip install pandapower[opendss]'.")
+            "it, e.g. via 'pip install OpenDSSDirect.py' or 'pip install pandapower[opendss]'."
+        )
 
     dss.Command("Clear")
     dss.Command(f'Redirect "{path}"')
@@ -251,8 +250,10 @@ def _add_buses(net, report):
             vn_kv = kv_ln * _SQRT3  # pandapower wants line-to-line
         else:
             vn_kv = 0.0
-            report.warn(f"bus {name!r} has no voltage base (kVBase=0); "
-                        "set 'VoltageBases' and call 'CalcVoltageBases' in the master")
+            report.warn(
+                f"bus {name!r} has no voltage base (kVBase=0); "
+                "set 'VoltageBases' and call 'CalcVoltageBases' in the master"
+            )
         report.bus_phases[name.lower()] = len([n for n in dss.Bus.Nodes() if n != 0])
         bus_map[name.lower()] = create_bus(net, vn_kv=vn_kv, name=name)
     return bus_map
@@ -396,9 +397,9 @@ def _add_one_transformer(net, bus_map, report):
     for w in range(1, nwdg + 1):
         dss.Transformers.Wdg(w)
         kva.append(dss.Transformers.kVA())
-        pct_r.append(dss.Transformers.R())    # %R of this winding
-        tap.append(dss.Transformers.Tap())    # solved tap ratio (captures RegControl)
-    xhl = dss.Transformers.Xhl()              # HV-LV leakage reactance, %
+        pct_r.append(dss.Transformers.R())  # %R of this winding
+        tap.append(dss.Transformers.Tap())  # solved tap ratio (captures RegControl)
+    xhl = dss.Transformers.Xhl()  # HV-LV leakage reactance, %
 
     # Pick the HV winding and the LV winding.
     split_phase = False
@@ -416,8 +417,8 @@ def _add_one_transformer(net, bus_map, report):
         hv_w, lv_w = wbus.index(hv_name), wbus.index(lv_name)
     else:
         report.warn(
-            f"transformer {name!r} has {nwdg} windings across "
-            f"{len(set(wbus))} buses; unsupported topology, skipped")
+            f"transformer {name!r} has {nwdg} windings across {len(set(wbus))} buses; unsupported topology, skipped"
+        )
         return
 
     bus_hv = bus_map.get(wbus[hv_w])
@@ -442,7 +443,8 @@ def _add_one_transformer(net, bus_map, report):
     if any(abs(t - 1.0) > 1e-6 for t in tap):
         report.warn(
             f"transformer {name!r} imported at solved tap {tuple(round(t, 4) for t in tap)} "
-            "(RegControl baked in as a fixed tap)")
+            "(RegControl baked in as a fixed tap)"
+        )
 
     vkr = pct_r[hv_w] + pct_r[lv_w]  # copper/short-circuit R, % (= %loadloss)
     vk = math.hypot(vkr, xhl)  # short-circuit voltage: hypot of the R and X parts

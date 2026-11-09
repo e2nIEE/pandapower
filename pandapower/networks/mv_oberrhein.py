@@ -1,12 +1,13 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = ["mv_oberrhein"]
 
 import os
 
 import numpy as np
 
-from pandapower import pp_dir
+from pandapower.__init__ import pp_dir
 from pandapower.file_io import from_json
 from pandapower.run import runpp
 from pandapower.toolbox.grid_modification import select_subnet
@@ -21,14 +22,14 @@ def mv_oberrhein(
     Loads the Oberrhein network, a generic 20 kV network serviced by two 25 MVA HV/MV transformer stations. The network
     supplies 141 MV/LV substations and 6 MV loads through four MV feeders. The network layout is meshed, but the network
     is operated as a radial network with 6 open sectioning points.
-    
+
     The network can be loaded with two different worst case scenarios for load and generation, which are defined by
     scaling factors for loads / generators as well as tap positions of the HV/MV transformers. These worst case
     scenarios are a good starting point for working with this network, but you are of course free to parametrize the
     network for your use case.
-    
+
     The network also includes geographical information of lines and buses for plotting.
-    
+
     Parameters:
         scenario (str, "load"): defines the scaling for load and generation
 
@@ -41,10 +42,10 @@ def mv_oberrhein(
             loads representing the LV networks are connected directly to the MV node
         separation_by_sub (bool, False): if True, the network gets separated into two sections, referring to both
             substations
-    
+
     Returns:
          A single pandapower network or two pandapower network
-    
+
     Example:
         >>> from pandapower.networks.mv_oberrhein import mv_oberrhein
         >>> net = mv_oberrhein("generation")
@@ -71,24 +72,26 @@ def mv_oberrhein(
         net.sgen.scaling = 0.8
         net.trafo.loc[hv_trafos, "tap_pos"] = [0, 0]
     else:
-        raise ValueError("Unknown scenario %s - chose 'load' or 'generation'" % scenario)
+        raise ValueError(f"Unknown scenario {scenario} - chose 'load' or 'generation'")
 
     if separation_by_sub:
         # creating multigraph
         mg = create_nxgraph(net)
         # clustering connected buses
         zones = [list(area) for area in connected_components(mg)]
-        net1 = select_subnet(net, buses=zones[0], include_switch_buses=False,
-                             include_results=True, keep_everything_else=True)
-        net0 = select_subnet(net, buses=zones[1], include_switch_buses=False,
-                             include_results=True, keep_everything_else=True)
+        net1 = select_subnet(
+            net, buses=zones[0], include_switch_buses=False, include_results=True, keep_everything_else=True
+        )
+        net0 = select_subnet(
+            net, buses=zones[1], include_switch_buses=False, include_results=True, keep_everything_else=True
+        )
 
         runpp(net0)
         runpp(net1)
-        net0.name = 'MV Oberrhein 0'
-        net1.name = 'MV Oberrhein 1'
+        net0.name = "MV Oberrhein 0"
+        net1.name = "MV Oberrhein 1"
         return net0, net1
 
     runpp(net)
-    net.name = 'MV Oberrhein'
+    net.name = "MV Oberrhein"
     return net

@@ -1,18 +1,16 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
+from typing import ClassVar
+
 import numpy as np
 from numpy import interp
-from scipy.interpolate import interp1d, PchipInterpolator
+from scipy.interpolate import PchipInterpolator, interp1d
 
 from pandapower.io_utils import JSONSerializableClass
 
-try:
-    import pandaplan.core.pplog as pplog
-except ImportError:
-    import logging as pplog
-
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def _make_hashable(obj):
@@ -23,6 +21,7 @@ def _make_hashable(obj):
     if isinstance(obj, np.ndarray):
         return tuple(_make_hashable(v) for v in obj.tolist())
     return obj
+
 
 class Characteristic(JSONSerializableClass):
     """
@@ -109,7 +108,7 @@ class Characteristic(JSONSerializableClass):
         Parameters:
             x: The x-value at which the current y-value is measured
             actual: The actual y-value being measured.
-            
+
         Returns:
              The difference between actual and expected value.
         """
@@ -125,10 +124,7 @@ class Characteristic(JSONSerializableClass):
         Returns:
             Whether or not the point satisfies the characteristics curve with respect to the epsilon being set
         """
-        if abs(self.diff(x, measured)) < epsilon:
-            return True
-        else:
-            return False
+        return abs(self.diff(x, measured)) < epsilon
 
     def __call__(self, x):
         """
@@ -155,14 +151,14 @@ class SplineCharacteristic(Characteristic):
     Characteristic can be followed by providing a tuple for the fill value for x outside the specified range,
     refer to the documentation of interp1d for more details. We set the parameter bounds_error to False.
     """
-    json_excludes = ["self", "__class__", "_interpolator"]
+
+    json_excludes: ClassVar[list[str]] = ["self", "__class__", "_interpolator"]
 
     def __init__(self, net, x_values, y_values, interpolator_kind="interp1d", table="characteristic", **kwargs):
         super().__init__(net, x_values=x_values, y_values=y_values, table=table)
         self.kwargs = kwargs
         self.interpolator_kind = interpolator_kind
         self._interpolator = None
-
 
     @property
     def interpolator(self):
@@ -206,7 +202,6 @@ class SplineCharacteristic(Characteristic):
             and np.array_equal(self.y_vals, other.y_vals)
         )
 
-
     def __repr__(self):
         return self.__class__.__name__ + f"({self.interpolator_kind}, {self.kwargs})"
 
@@ -226,7 +221,6 @@ class SplineCharacteristic(Characteristic):
 
 
 class LogSplineCharacteristic(SplineCharacteristic):
-
     def __init__(self, net, x_values, y_values, **kwargs):
         super().__init__(net, x_values, y_values, **kwargs)
 
@@ -236,7 +230,7 @@ class LogSplineCharacteristic(SplineCharacteristic):
 
     @x_vals.setter
     def x_vals(self, x_values):
-        if np.any([True if x <= 0 else False for x in x_values]):
+        if np.any([x <= 0 for x in x_values]):
             logger.warning("zero-values not supported in x_values")
         self._x_vals = np.log10(x_values)
 
@@ -246,7 +240,7 @@ class LogSplineCharacteristic(SplineCharacteristic):
 
     @y_vals.setter
     def y_vals(self, y_values):
-        if np.any([True if y <= 0 else False for y in y_values]):
+        if np.any([y <= 0 for y in y_values]):
             logger.warning("zero-values not supported in y_values")
         self._y_vals = np.log10(y_values)
 

@@ -7,6 +7,9 @@ on:
     paths-ignore:
       - 'CHANGELOG.rst'
       - '**/CHANGELOG.rst'
+  # NOTE: Schedule always runs on the default branch of a repository. In our case this is develop.
+  schedule:
+    - cron: '0 22 * * 0-5'  # run once a day at 22:00 UTC So-Fr (coverage for develop branch)
 
 permissions:
   contents: read
@@ -17,11 +20,36 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  IGNORES: "--ignore=pandapower/test/opf --ignore=pandapower/test/network_schema"
+  IGNORES: "--ignore=test/opf --ignore=test/network_schema"
   TUTORIAL_IGNORES: "--ignore=tutorials/uk_power_networks"
 
 jobs:
+  ruff-check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7.0.1
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          python-version: '3.14'
+          enable-cache: true
+          cache-dependency-glob: 'pyproject.toml'
+      - name: Install dependencies
+        run: |
+          uv sync --all-extras
+          uv pip install ruff
+      - name: Ruff Format Check
+        run: uv run ruff format --check
+      - name: Ruff Check
+        run: uv run ruff check
+
   build:
+    needs:
+      - ruff-check
+      - linting
+      - typing
     runs-on: ubuntu-latest
     timeout-minutes: 20
     strategy:
@@ -103,7 +131,7 @@ jobs:
           uv pip list
       - name: Test with pytest, Codecov and Coverage
         run: |
-          uv run pytest --cov=./ --cov-report=xml --splits 4 --group ${{ matrix.group }} pandapower/test/network_schema
+          uv run pytest --cov=./ --cov-report=xml --splits 4 --group ${{ matrix.group }} test/network_schema
           cp ./coverage.xml ./coverage-net-schema-${{ matrix.group }}.xml
       - name: Upload coverage as artifact
         uses: actions/upload-artifact@v7
@@ -152,33 +180,28 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
+      - name: Install uv
+        uses: astral-sh/setup-uv@v10.2.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          enable-cache: true
+          cache-dependency-glob: "pyproject.toml"
+      - name: Install dependencies
+        run: |
+          uv sync --extra pandamodels --extra test
+          uv pip install pytest-cov pytest-split
       - name: Setup Julia
         uses: julia-actions/setup-julia@5c9647d97b78a5debe5164e9eec09d653d29bd71 #v2
         with:
           version: ${{ matrix.julia-version }}
           arch: 'x64'
-      #      - name: Install uv
-      #        uses: astral-sh/setup-uv@v10.2.0
-      #        with:
-      #          python-version: ${{ matrix.python-version }}
-      #          enable-cache: true
-      #          cache-dependency-glob: "pyproject.toml"
-      - name: Install dependencies
-        run: |
-          python -m pip install pypower pytest-split pytest-cov juliacall julia
-          python -m pip install .[pandamodels,test]
-      - name: Install PandaModels.jl
-        run: |
-          julia -e 'using Pkg; Pkg.add("PandaModels")'
-          julia -e 'using Pkg; ENV["PYTHON"] = "/home/runner/work/pandapower/pandapower/.venv/bin/python3"; Pkg.add("PyCall")'
-          python -c "import julia; julia.install(color=True)"
       - name: List of installed packages
         run: |
-          pip list
+          uv pip list
           julia -e 'using Pkg; Pkg.status()'
       - name: Test with pytest, Codecov and Coverage
         run: |
-          pytest --cov=./ --cov-report=xml pandapower/test/opf
+          uv run pytest --cov=./ --cov-report=xml test/opf
           cp ./coverage.xml ./coverage-opf.xml
       - name: Upload coverage as artifact
         uses: actions/upload-artifact@v7
@@ -217,7 +240,7 @@ jobs:
           project-token: ${{ secrets.CODACY_PROJECT_TOKEN }}
       - name: Upload coverage to Codecov
         continue-on-error: true
-        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 #v6
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 #v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ${{ steps.coverage-files.outputs.files }}
@@ -258,7 +281,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: [ '3.11', '3.12', '3.13', '3.14' ]
+        python-version: [ '3.11', '3.14' ]
     steps:
       - name: Checkout
         uses: actions/checkout@v7.0.1
@@ -275,23 +298,18 @@ jobs:
           uv pip install matplotlib
           uv pip install lxml
           if ${{ matrix.python-version != '3.11' }}; then uv pip install numba; fi
-      - name: Install pandapipes and simbench
+      - name: Install simbench
         run: |
-          uv pip install git+https://github.com/e2nIEE/pandapipes@develop#egg=pandapipes
           uv pip install git+https://github.com/e2nIEE/simbench@develop#egg=simbench
       - name: List of installed packages
         run: |
           uv pip list
-      - name: Test pandapipes
-        run: |
-          uv run python -c 'from pandapipes import pp_dir; import pytest; import sys; ec = pytest.main([pp_dir]); sys.exit(ec)'
       - name: Test simbench
         run: |
           uv run python -c 'from simbench import sb_dir; import pytest; import sys; ec = pytest.main([sb_dir]); sys.exit(ec)'
 
   linting:
     # run flake8 and check for errors
-    needs: build
     runs-on: ubuntu-latest
     continue-on-error: true
     strategy:
@@ -318,11 +336,11 @@ jobs:
         continue-on-error: true
         run: |
           # stop the build if there are Python syntax errors or undefined names (omitted by exit-zero)
-          uv run flake8 . --exclude .venv --count --exit-zero --select=E9,F63,F7,F82 --show-source --statistics
+          uv run flake8 . --exclude .venv --count --select=E9,F63,F7,F82 --show-source --statistics
       - name: Lint with flake8 (all errors and warnings)
         run: |
           # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          uv run flake8 . --exclude .venv --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+          uv run flake8 . --exclude .venv --count --max-complexity=10 --max-line-length=127 --statistics
 
   postgresql:
     # for the one test to cover postgresql
@@ -385,19 +403,19 @@ jobs:
           DSN: 'postgresql://test_user:secret@localhost:55432/sandbox'
           SCHEMA: 'test_schema'
         run: |
-          uv run python -c "import sys; from pandapower.test.api.test_sql_io import POSTGRESQL_AVAILABLE; sys.exit(not POSTGRESQL_AVAILABLE);"
+          uv run python -c "import sys; from test.api.test_sql_io import POSTGRESQL_AVAILABLE; sys.exit(not POSTGRESQL_AVAILABLE);"
       - name: Test pandapower File I/O
         env:
           DSN: 'postgresql://test_user:secret@localhost/sandbox'
           SCHEMA: 'test_schema'
         run: |
-          uv run pytest pandapower/test/api/test_sql_io.py
+          uv run pytest test/api/test_sql_io.py
       - name: Test pandapower File I/O against alternative port
         env:
           DSN: 'postgresql://test_user:secret@localhost:55432/sandbox'
           SCHEMA: 'test_schema'
         run: |
-          uv run pytest pandapower/test/api/test_sql_io.py
+          uv run pytest test/api/test_sql_io.py
 
   tutorial_tests:
     needs: build
@@ -422,31 +440,6 @@ jobs:
           uv pip list
       - name: Test with pytest
         # Careful when copying this command. The PYTHONPATH setup is Linux specific syntax.
-        run: |
-          uv run pytest --splits 3 --group ${{ matrix.group }} --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials" $TUTORIAL_IGNORES
-
-  tutorial_warnings_tests:
-    needs: build
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        group: [ 1, 2, 3 ]
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v7.0.1
-      - name: Install uv
-        uses: astral-sh/setup-uv@v10.2.0
-        with:
-          python-version: '3.14'
-          enable-cache: true
-          cache-dependency-glob: "pyproject.toml"
-      - name: Install dependencies
-        run: |
-          uv sync --extra all --extra tutorials --extra test --extra pgm
-      - name: List all installed packages
-        run: |
-          uv pip list
-      - name: Test with pytest
         run: |
           uv run pytest -W error --splits 3 --group ${{ matrix.group }} --nbmake --nbmake-timeout=900 --timeout=900 "./tutorials" $TUTORIAL_IGNORES
 

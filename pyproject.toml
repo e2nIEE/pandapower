@@ -29,8 +29,8 @@ classifiers = [
     "Programming Language :: Python",
     "Programming Language :: Python :: 3",
     # Add the specific Python versions supported here, e.g.:
-    #  REMINDER: When removeing or adding support for a Version here, please remember to update ALL github pipelines.
-    #  REMINDER: The mypy config also contains the lowest supported python version
+    #  REMINDER: When removing or adding support for a Version here, please remember to update ALL github pipelines.
+    #  REMINDER: The mypy and sonarcloud config also contain the lowest supported python version
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
@@ -118,9 +118,6 @@ version = {attr = "pandapower._version.__version__"}
 include = [
     "pandapower*",
 ]
-exclude = [
-    "pandapower.test*",
-]
 
 [tool.setuptools.package-data]
 "*" = [
@@ -135,8 +132,8 @@ exclude = [
 [tool.pytest.ini_options]
 addopts = [
     "--strict-markers",
-    "--maxfail=1",  # stop after the first failure / error / timeout
-    "--timeout=60", # "--timeout-method=thread",  # per‑test timeout in seconds (requires pytest-timeout)
+    "--maxfail=10",  # stop after the first ten failures / error / timeout
+    "--timeout=60", # "--timeout-method=thread", # per‑test timeout in seconds (requires pytest-timeout)
 ]
 markers = [
   "slow: marks tests as slow (deselect with '-m \"not slow\"'), e.g. in run_fast_tests"
@@ -165,3 +162,11 @@ exclude_lines = [
 # styling information for ruff formatter
 [tool.ruff]
 line-length = 120
+
+[tool.ruff.format]
+# Use `\n` line endings for all files
+line-ending = "lf"
+
+[tool.ruff.lint.extend-per-file-ignores]
+# F811 is redefinition of symbol because ruff does not understand pytest fixtures and will complain
+"test/**/*.py" = ["F811"]

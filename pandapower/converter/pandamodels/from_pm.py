@@ -1,21 +1,33 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "add_storage_results",
+    "add_time_series_data_to_net",
+    "pm_results_to_ppc_results",
+    "pm_results_to_ppc_results_one_time_step",
+    "read_ots_results",
+    "read_pm_results_to_net",
+    "read_tnep_results",
+]
+
 
 import math
-import numpy as np
-import pandas as pd
 from copy import deepcopy
-from pandapower.auxiliary import _clean_up
-from pandapower import pandapowerNet
-from pandapower.pypower.idx_brch import PF, PT, QF, QT, BR_STATUS
-from pandapower.pypower.idx_bus import VA, VM
-from pandapower.pypower.idx_gen import PG, QG
-from pandapower.results import _extract_results, _copy_results_ppci_to_ppc
-from pandapower.optimal_powerflow import OPFNotConverged
 from logging import getLogger
 
-logger = getLogger('converter.pandamodels.from_pm')
+import numpy as np
+import pandas as pd
+
+from pandapower.auxiliary import _clean_up
+from pandapower.network import pandapowerNet
+from pandapower.optimal_powerflow import OPFNotConverged
+from pandapower.pypower.idx_brch import BR_STATUS, PF, PT, QF, QT
+from pandapower.pypower.idx_bus import VA, VM
+from pandapower.pypower.idx_gen import PG, QG
+from pandapower.results import _copy_results_ppci_to_ppc, _extract_results
+
+logger = getLogger("converter.pandamodels.from_pm")
 
 
 def read_pm_results_to_net(net: pandapowerNet, ppc, ppci, result_pm):
@@ -26,7 +38,7 @@ def read_pm_results_to_net(net: pandapowerNet, ppc, ppci, result_pm):
     result, multinetwork = pm_results_to_ppc_results(net, ppc, ppci, result_pm)
     net["_pm_result"] = result.copy()
     net["_pm_org_result"] = result_pm["solution"]
-    if "ne_branch" in result_pm["solution"].keys():
+    if "ne_branch" in result_pm["solution"]:
         net["_pm_result"]["ne_branch"] = result_pm["solution"]["ne_branch"]
     net["_pm_result"]["solve_time"] = result_pm["solve_time"]
 
@@ -40,7 +52,7 @@ def read_pm_results_to_net(net: pandapowerNet, ppc, ppci, result_pm):
             for tp, ri in result.items():
                 add_time_series_data_to_net(neti, net.controller, tp)
                 _extract_results(neti, ri)
-                add_storage_results(neti, result_pm["solution"]["nw"][str(int(tp)+1)])
+                add_storage_results(neti, result_pm["solution"]["nw"][str(int(tp) + 1)])
                 result[tp] = deepcopy(neti)
             net["res_ts_opt"] = result
         _clean_up(net)
@@ -64,8 +76,9 @@ def add_storage_results(net: pandapowerNet, result_pmi):
 
 def add_time_series_data_to_net(net: pandapowerNet, controller, tp):
     from pandapower.control import ConstControl
+
     for idx, content in controller.iterrows():
-        if type(content["object"]) == ConstControl:
+        if isinstance(content["object"], ConstControl):
             element = content["object"].__dict__["matching_params"]["element"]
             variable = content["object"].__dict__["matching_params"]["variable"]
             elm_idxs = content["object"].__dict__["matching_params"]["element_index"]
@@ -84,7 +97,7 @@ def pm_results_to_ppc_results(net: pandapowerNet, ppc, ppci, result_pm):
     ppci["et"] = result_pm["solve_time"]
     ppci["f"] = result_pm["objective"]
 
-    if "multinetwork" in sol and sol["multinetwork"]:
+    if sol.get("multinetwork"):
         multinetwork = True
         ppc["obj"] = ppci["obj"]
         ppc["success"] = ppci["success"]
@@ -93,10 +106,10 @@ def pm_results_to_ppc_results(net: pandapowerNet, ppc, ppci, result_pm):
         result = {}
         for tp, soli in sol["nw"].items():
             pm_results_to_ppc_results_one_time_step(ppci, soli)
-            result[str(int(tp)-1)] = deepcopy(_copy_results_ppci_to_ppc(ppci, ppc, options["mode"]))
+            result[str(int(tp) - 1)] = deepcopy(_copy_results_ppci_to_ppc(ppci, ppc, options["mode"]))
     else:
         if "bus" not in sol:
-            ppci["success"] = False # PowerModels failed
+            ppci["success"] = False  # PowerModels failed
         else:
             pm_results_to_ppc_results_one_time_step(ppci, sol)
             result = _copy_results_ppci_to_ppc(ppci, ppc, options["mode"])
@@ -110,7 +123,7 @@ def pm_results_to_ppc_results_one_time_step(ppci, sol):
             ppci["bus"][bus_idx, VM] = bus["vm"]
         if "va" in bus:
             # replace nans with 0.(in case of SOCWR model for example
-            ppci["bus"][bus_idx, VA] = 0.0 if bus["va"] == None else math.degrees(bus["va"])
+            ppci["bus"][bus_idx, VA] = 0.0 if bus["va"] is None else math.degrees(bus["va"])
         if "w" in bus:
             # SOCWR model has only w instead of vm values
             ppci["bus"][bus_idx, VM] = bus["w"]

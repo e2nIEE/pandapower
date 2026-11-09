@@ -3,9 +3,7 @@ import pandera.pandas as pa
 
 switch_schema = pa.DataFrameSchema(
     {
-        "bus": pa.Column(
-            int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus"}
-        ),
+        "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus"}),
         "name": pa.Column(
             pd.StringDtype, nullable=True, required=False, description="name of the switch", metadata={"cim": True}
         ),
@@ -40,7 +38,11 @@ switch_schema = pa.DataFrameSchema(
             metadata={"default": 0.0},
         ),
         "origin_id": pa.Column(
-            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="element rdfId from CIM",
+            metadata={"cim": True, "doc": False},
         ),
         "origin_class": pa.Column(
             pd.StringDtype,

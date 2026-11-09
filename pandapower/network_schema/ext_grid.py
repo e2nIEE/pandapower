@@ -82,10 +82,18 @@ _ext_grid_columns = {
         metadata={"default": False},
     ),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="element rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="origin_class rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "substation": pa.Column(
         pd.StringDtype,
@@ -137,10 +145,16 @@ _ext_grid_columns = {
         metadata={"cim": True, "doc": False},
     ),
     "p_mw": pa.Column(
-        float, nullable=True, description="p from converter, not relevant for calculations", metadata={"cim": True, "doc": False}
+        float,
+        nullable=True,
+        description="p from converter, not relevant for calculations",
+        metadata={"cim": True, "doc": False},
     ),
     "q_mvar": pa.Column(
-        float, nullable=True, description="q from converter, not relevant for calculations", metadata={"cim": True, "doc": False}
+        float,
+        nullable=True,
+        description="q from converter, not relevant for calculations",
+        metadata={"cim": True, "doc": False},
     ),
 }
 ext_grid_schema = pa.DataFrameSchema(

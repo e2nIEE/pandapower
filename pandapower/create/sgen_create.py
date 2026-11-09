@@ -3,16 +3,21 @@
 
 from __future__ import annotations
 
+__all__ = [
+    "create_asymmetric_sgen",
+    "create_sgen",
+    "create_sgen_from_cosphi",
+    "create_sgens",
+]
+
 import logging
-from typing import Iterable, Sequence
+from collections.abc import Iterable, Sequence
 
-import pandas as pd
-from pandas.api.typing import NAType
-from numpy import nan, bool_
 import numpy.typing as npt
+import pandas as pd
+from numpy import bool_, nan
+from pandas.api.typing import NAType
 
-from pandapower import pandapowerNet
-from pandapower.pp_types import GeneratorType, Int, UnderOverExcitedType, WyeDeltaType
 from pandapower.create._utils import (
     _add_to_entries_if_not_nan,
     _check_element,
@@ -23,7 +28,9 @@ from pandapower.create._utils import (
     _set_multiple_entries,
     _set_value_if_not_nan,
 )
+from pandapower.network import pandapowerNet
 from pandapower.network_structure import get_default_value
+from pandapower.pp_types import GeneratorType, Int, UnderOverExcitedType, WyeDeltaType
 
 logger = logging.getLogger(__name__)
 
@@ -170,17 +177,25 @@ def create_sgen(
     return index
 
 
+_q_mvar: float | Iterable[float] = get_default_value("sgen", "q_mvar")
+_scaling: float | Iterable[float] = get_default_value("sgen", "scaling")
+_type: WyeDeltaType = get_default_value("sgen", "type")
+_in_service: bool | Iterable[bool] = get_default_value("sgen", "in_service")
+_current_source: bool | Iterable[bool] = get_default_value("sgen", "current_source")
+_generator_type: GeneratorType = get_default_value("sgen", "generator_type")
+
+
 def create_sgens(
     net: pandapowerNet,
     buses: Sequence,
     p_mw: float | Iterable[float],
-    q_mvar: float | Iterable[float] = get_default_value("sgen", "q_mvar"),
+    q_mvar: float | Iterable[float] = _q_mvar,
     sn_mva: float | Iterable[float] = nan,
     name: Iterable[str] | NAType = pd.NA,
     index: Int | Iterable[Int] | None = None,
-    scaling: float | Iterable[float] = get_default_value("sgen", "scaling"),
-    type: WyeDeltaType = get_default_value("sgen", "type"),
-    in_service: bool | Iterable[bool] = get_default_value("sgen", "in_service"),
+    scaling: float | Iterable[float] = _scaling,
+    type: WyeDeltaType = _type,
+    in_service: bool | Iterable[bool] = _in_service,
     max_p_mw: float | Iterable[float] = nan,
     min_p_mw: float | Iterable[float] = nan,
     max_q_mvar: float | Iterable[float] = nan,
@@ -191,8 +206,8 @@ def create_sgens(
     id_q_capability_characteristic: Int | Iterable[Int] | NAType = pd.NA,
     reactive_capability_curve: bool | Iterable[bool] | NAType = pd.NA,
     curve_style: str | Iterable[str] | NAType = pd.NA,
-    current_source: bool | Iterable[bool] = get_default_value("sgen", "current_source"),
-    generator_type: GeneratorType = get_default_value("sgen", "generator_type"),
+    current_source: bool | Iterable[bool] = _current_source,
+    generator_type: GeneratorType = _generator_type,
     max_ik_ka: float = nan,
     kappa: float = nan,
     lrc_pu: float = nan,
@@ -322,25 +337,35 @@ def create_sgens(
 # Create 3ph Sgen
 # =============================================================================
 
+_asymmetric_sgen_p_a_mw: float = get_default_value("asymmetric_sgen", "p_a_mw")
+_asymmetric_sgen_p_b_mw: float = get_default_value("asymmetric_sgen", "p_b_mw")
+_asymmetric_sgen_p_c_mw: float = get_default_value("asymmetric_sgen", "p_c_mw")
+_asymmetric_sgen_q_a_mvar: float = get_default_value("asymmetric_sgen", "q_a_mvar")
+_asymmetric_sgen_q_b_mvar: float = get_default_value("asymmetric_sgen", "q_b_mvar")
+_asymmetric_sgen_q_c_mvar: float = get_default_value("asymmetric_sgen", "q_c_mvar")
+_asymmetric_sgen_scaling: float = get_default_value("asymmetric_sgen", "scaling")
+_asymmetric_sgen_type: WyeDeltaType = get_default_value("asymmetric_sgen", "type")
+_asymmetric_sgen_in_service: bool = get_default_value("asymmetric_sgen", "in_service")
+
 
 def create_asymmetric_sgen(
     net: pandapowerNet,
     bus: Int,
-    p_a_mw: float = get_default_value("asymmetric_sgen", "p_a_mw"),
-    p_b_mw: float = get_default_value("asymmetric_sgen", "p_b_mw"),
-    p_c_mw: float = get_default_value("asymmetric_sgen", "p_c_mw"),
-    q_a_mvar: float = get_default_value("asymmetric_sgen", "q_a_mvar"),
-    q_b_mvar: float = get_default_value("asymmetric_sgen", "q_b_mvar"),
-    q_c_mvar: float = get_default_value("asymmetric_sgen", "q_c_mvar"),
+    p_a_mw: float = _asymmetric_sgen_p_a_mw,
+    p_b_mw: float = _asymmetric_sgen_p_b_mw,
+    p_c_mw: float = _asymmetric_sgen_p_c_mw,
+    q_a_mvar: float = _asymmetric_sgen_q_a_mvar,
+    q_b_mvar: float = _asymmetric_sgen_q_b_mvar,
+    q_c_mvar: float = _asymmetric_sgen_q_c_mvar,
     sn_a_mva: float = nan,
     sn_b_mva: float = nan,
     sn_c_mva: float = nan,
     sn_mva: float = nan,
     name: str | None = None,
     index: Int | None = None,
-    scaling: float = get_default_value("asymmetric_sgen", "scaling"),
-    type: WyeDeltaType = get_default_value("asymmetric_sgen", "type"),
-    in_service: bool = get_default_value("asymmetric_sgen", "in_service"),
+    scaling: float = _asymmetric_sgen_scaling,
+    type: WyeDeltaType = _type,
+    in_service: bool = _asymmetric_sgen_in_service,
     **kwargs,
 ) -> Int:
     """
