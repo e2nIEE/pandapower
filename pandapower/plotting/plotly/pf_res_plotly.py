@@ -221,7 +221,7 @@ def pf_res_plotly(
         net.trafo.name.astype(str)
         + "<br />I = "
         + net.res_trafo.loading_percent.round(precision).astype(str)
-        + f" %<br />I_hv = "
+        + " %<br />I_hv = "
         + (net.res_trafo.i_hv_ka * current_factor).round(precision).astype(str)
         + f" {current_unit}A<br />I_lv = "
         + (net.res_trafo.i_lv_ka * current_factor).round(precision).astype(str)
