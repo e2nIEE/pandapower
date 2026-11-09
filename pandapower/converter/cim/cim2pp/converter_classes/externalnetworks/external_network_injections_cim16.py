@@ -55,16 +55,16 @@ class ExternalNetworkInjectionsCim16:
         self.cimConverter.copy_to_pp("sgen", eni_sgens)
 
         self.logger.info(
-            "Created %s external networks, %s generators and %s static generators in %ss"
-            % (eni_slacks.index.size, eni_gens.index.size, eni_sgens.index.size, time.time() - time_start)
+            f"Created {eni_slacks.index.size} external networks, {eni_gens.index.size} generators and "
+            f"{eni_sgens.index.size} static generators in {time.time() - time_start}s"
         )
         self.cimConverter.report_container.add_log(
             Report(
                 level=LogLevel.INFO,
                 code=ReportCode.INFO_CONVERTING,
-                message="Created %s external networks, %s generators and %s static generators from "
-                "ExternalNetworkInjections in %ss"
-                % (eni_slacks.index.size, eni_gens.index.size, eni_sgens.index.size, time.time() - time_start),
+                message=f"Created {eni_slacks.index.size} external networks, {eni_gens.index.size} generators and "
+                f"{eni_sgens.index.size} static generators from "
+                f"ExternalNetworkInjections in {time.time() - time_start}s",
             )
         )
 

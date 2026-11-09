@@ -18,9 +18,8 @@ logger = logging.getLogger(__name__)
 def _set_column_to_type(input_df: pd.DataFrame, column: str, data_type: str) -> None:
     try:
         input_df[column] = input_df[column].astype(data_type)  # type: ignore[call-overload]
-    except Exception as e:
-        logger.error("Couldn't set data type %s for column %s!" % (data_type, column))
-        logger.exception(e)
+    except Exception:
+        logger.exception(f"Couldn't set data type {data_type} for column {column}!")
 
 
 def set_pp_col_types(net: pandapowerNet, ignore_errors: bool = False) -> pandapowerNet:
@@ -64,14 +63,14 @@ def set_pp_col_types(net: pandapowerNet, ignore_errors: bool = False) -> pandapo
         "parallel",
     ]
     logger.info(
-        "Setting the columns data types for buses to int and in_service to bool for the following elements: "
-        "%s" % pp_elements
+        f"Setting the columns data types for buses to int and in_service to bool for the following elements: "
+        f"{pp_elements}"
     )
     for ele in pp_elements:
-        logger.info("Accessing pandapower element %s." % ele)
+        logger.info(f"Accessing pandapower element {ele}.")
         if not hasattr(net, ele):
             if not ignore_errors:
-                logger.warning("Missing the pandapower element %s in the input pandapower network!" % ele)
+                logger.warning(f"Missing the pandapower element {ele} in the input pandapower network!")
             continue
         for column in columns:
             if column in net[ele].columns:
@@ -79,11 +78,12 @@ def set_pp_col_types(net: pandapowerNet, ignore_errors: bool = False) -> pandapo
     # some individual things
     if hasattr(net, "switch"):
         _set_column_to_type(net["switch"], "closed", structure_dict["switch"]["closed"])
-    if hasattr(net, "trafo") and "id_characteristic_table" in net["trafo"].columns:
-        if "id_characteristic_table" in net["trafo"].columns:
-            _set_column_to_type(
-                net["trafo"], "id_characteristic_table", structure_dict["trafo"]["id_characteristic_table"]
-            )
+    if (
+        hasattr(net, "trafo")
+        and "id_characteristic_table" in net["trafo"].columns
+        and "id_characteristic_table" in net["trafo"].columns
+    ):
+        _set_column_to_type(net["trafo"], "id_characteristic_table", structure_dict["trafo"]["id_characteristic_table"])
     if hasattr(net, "trafo3w") and "id_characteristic_table" in net["trafo3w"].columns:
         _set_column_to_type(
             net["trafo3w"], "id_characteristic_table", structure_dict["trafo3w"]["id_characteristic_table"]
@@ -126,7 +126,7 @@ def add_slack_and_lines_to_boundary_nodes(net: pandapowerNet, voltage_levels: li
     busses = net.bus.loc[(net.bus[sc["o_prf"]] == "eq_bd") | (net.bus[sc["o_prf"]] == "tp_bd")]
     if voltage_levels is None:
         max_voltage = busses["vn_kv"].max()
-        logger.info("Highest voltage level: %skV" % max_voltage)
+        logger.info(f"Highest voltage level: {max_voltage}kV")
         voltage_levels = [max_voltage]
     create_std_type(
         net,
@@ -135,14 +135,14 @@ def add_slack_and_lines_to_boundary_nodes(net: pandapowerNet, voltage_levels: li
         element="line",
     )
     for one_voltage_level in voltage_levels:
-        logger.info("Processing voltage level %skV" % one_voltage_level)
+        logger.info(f"Processing voltage level {one_voltage_level}kV")
         busses_t = busses.loc[busses["vn_kv"] == one_voltage_level]
         (new_bus_id,) = create_buses(
             net, 1, vn_kv=one_voltage_level, name="virtual slack bus at voltage level " + str(one_voltage_level)
         )
-        logger.info("Added virtual slack bus with ID: %s" % new_bus_id)
+        logger.info(f"Added virtual slack bus with ID: {new_bus_id}")
         create_ext_grid(net, bus=new_bus_id, vm_pu=1.0, name="virtual slack at voltage level " + str(one_voltage_level))
-        logger.info("Added slack at bus ID: %s" % new_bus_id)
+        logger.info(f"Added slack at bus ID: {new_bus_id}")
         new_bus_id_array = [new_bus_id for _ in busses_t.index.values]
         create_lines(
             net,
@@ -152,7 +152,7 @@ def add_slack_and_lines_to_boundary_nodes(net: pandapowerNet, voltage_levels: li
             name="virtual line to slack node with voltage level " + str(one_voltage_level),
             length_km=1,
         )
-        logger.info("Created %s low impedance lines." % len(busses_t.index.values))
+        logger.info(f"Created {len(busses_t.index.values)} low impedance lines.")
         del busses_t
 
 

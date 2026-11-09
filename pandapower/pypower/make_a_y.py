@@ -71,7 +71,7 @@ def makeAy(baseMVA, ng, gencost, pgbas, qgbas, ybas):
         c = gencost[i, COST + 1 : COST + 2 * ns : 2]
         m = diff(c) / diff(p)  ## slopes for Pg (or Qg)
         if any(diff(p) == 0):
-            print("makeAy: bad x axis data in row ##i of gencost matrix" % i)
+            print("makeAy: bad x axis data in row ##i of gencost matrix")
         b = m * p[: ns - 1] - c[: ns - 1]  ## and rhs
         by = r_[by, b]
         if i > ng:

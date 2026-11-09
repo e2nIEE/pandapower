@@ -626,8 +626,8 @@ def test_ignore_unknown_objects():
     # slightly change the class name of the controller so that it cannot be identified
     # by file_io anymore, but can still be loaded as dict if ignore_unknown_objects=True
     json_str2 = json_str.replace(
-        "pandapower.control.controller.trafo.ContinuousTapControl",
-        "pandapower.control.controller.trafo.ContinuousTapControl2",
+        "pandapower.control.controller.trafo.continuous_tap_control",
+        "pandapower.control.controller.trafo.continuous_tap_control2",
     )
     with pytest.raises(ModuleNotFoundError):
         from_json_string(json_str2, ignore_unknown_objects=False)

@@ -515,16 +515,22 @@ def get_element_limits(net):
         d = {element: {"index": element_index}}
 
         if "max_loading_percent" in net[element].columns:
+            # run_contingency uses "max_loading_percent_nminus1"; the older spelling is kept as a fallback
+            nminus1_col = next(
+                (
+                    c
+                    for c in ("max_loading_percent_nminus1", "max_loading_nminus1_percent")
+                    if c in net[element].columns
+                ),
+                "max_loading_percent",
+            )
+            nminus1_limit = net[element].loc[element_index, nminus1_col].values
             d[element].update(
                 {
                     "max_limit": net[element].loc[element_index, "max_loading_percent"].values,
                     "min_limit": -net[element].loc[element_index, "max_loading_percent"].values,
-                    "max_limit_nminus1": net[element].loc[element_index, "max_loading_nminus1_percent"].values
-                    if "max_loading_nminus1_percent" in net[element].columns
-                    else net[element].loc[element_index, "max_loading_percent"].values,
-                    "min_limit_nminus1": -net[element].loc[element_index, "max_loading_nminus1_percent"].values
-                    if "max_loading_nminus1_percent" in net[element].columns
-                    else -net[element].loc[element_index, "max_loading_percent"].values,
+                    "max_limit_nminus1": nminus1_limit,
+                    "min_limit_nminus1": -nminus1_limit,
                 }
             )
 
@@ -543,7 +549,10 @@ def get_element_limits(net):
 
 def check_elements_within_limits(element_limits, contingency_results, nminus1=False, branch_tol=1e-3, bus_tol=1e-6):
     """
-    Check if elements are within limits
+    Check if the indexed elements with extracted constraints are within limits.
+
+    Elements without extracted constraints are not checked. Missing constrained
+    elements or result groups raise ValueError.
 
     :param dict element_limits:
     :param dict contingency_results:
@@ -554,31 +563,39 @@ def check_elements_within_limits(element_limits, contingency_results, nminus1=Fa
     :return: True if all within limits (no violations), False if any limits violated
     :rtype: bool
     """
-    for element, values in contingency_results.items():
-        limit = element_limits[element]
+    for element, limit in element_limits.items():
+        if element not in contingency_results:
+            raise ValueError(f"Missing contingency results for constrained {element} elements")
+        values = contingency_results[element]
+        positions = pd.Index(values["index"]).get_indexer(limit["index"])
+        if np.any(positions < 0):
+            raise ValueError(f"A constrained {element} element is missing from contingency results")
         if "max_temperature_degree_celsius" in limit and "temperature_degree_celsius" in values:
-            if np.any(values["temperature_degree_celsius"] > limit["max_temperature_degree_celsius"] + branch_tol):
+            if np.any(
+                values["temperature_degree_celsius"][positions] > limit["max_temperature_degree_celsius"] + branch_tol
+            ):
                 return False
             if nminus1 and np.any(
-                values["max_temperature_degree_celsius"] > limit["max_temperature_degree_celsius"] + branch_tol
+                values["max_temperature_degree_celsius"][positions]
+                > limit["max_temperature_degree_celsius"] + branch_tol
             ):
                 return False
         if "max_limit" not in limit:
             continue
         if element == "bus":
-            if np.any(values["vm_pu"] > limit["max_limit"] + bus_tol) or np.any(
-                values["vm_pu"] < limit["min_limit"] - bus_tol
+            if np.any(values["vm_pu"][positions] > limit["max_limit"] + bus_tol) or np.any(
+                values["vm_pu"][positions] < limit["min_limit"] - bus_tol
             ):
                 return False
             if nminus1 and (
-                np.any(values["max_vm_pu"] > limit["max_limit_nminus1"] + bus_tol)
-                or np.any(values["min_vm_pu"] < limit["min_limit_nminus1"] - bus_tol)
+                np.any(values["max_vm_pu"][positions] > limit["max_limit_nminus1"] + bus_tol)
+                or np.any(values["min_vm_pu"][positions] < limit["min_limit_nminus1"] - bus_tol)
             ):
                 return False
             continue
-        if np.any(values["loading_percent"] > limit["max_limit"] + branch_tol):
+        if np.any(values["loading_percent"][positions] > limit["max_limit"] + branch_tol):
             return False
-        if nminus1 and np.any(values["max_loading_percent"] > limit["max_limit_nminus1"] + branch_tol):
+        if nminus1 and np.any(values["max_loading_percent"][positions] > limit["max_limit_nminus1"] + branch_tol):
             return False
     return True
 

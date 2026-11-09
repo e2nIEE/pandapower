@@ -60,15 +60,14 @@ class AcLineSegmentsCim16:
             switch_df = pd.DataFrame(None)
 
         self.logger.info(
-            "Created %s lines and %s switches in %ss"
-            % (line_df.index.size, switch_df.index.size, time.time() - time_start)
+            f"Created {line_df.index.size} lines and {switch_df.index.size} switches in {time.time() - time_start}s"
         )
         self.cimConverter.report_container.add_log(
             Report(
                 level=LogLevel.INFO,
                 code=ReportCode.INFO_CONVERTING,
-                message="Created %s lines and %s switches from ACLineSegments in %ss"
-                % (line_df.index.size, switch_df.index.size, time.time() - time_start),
+                message=f"Created {line_df.index.size} lines and {switch_df.index.size} switches from ACLineSegments "
+                f"in {time.time() - time_start}s",
             )
         )
 
@@ -107,29 +106,29 @@ class AcLineSegmentsCim16:
             dups = ac_line_segments.pivot_table(index=["rdfId"], aggfunc="size")  # type: ignore[arg-type]
             dups = dups.loc[dups != 2]  # type: ignore[call-overload]
             for rdfId, count in dups.items():
-                self.logger.warning("The ACLineSegment with RDF ID %s has %s Terminals!" % (rdfId, count))
+                self.logger.warning(f"The ACLineSegment with RDF ID {rdfId} has {count} Terminals!")
                 self.logger.warning(
-                    "The ACLineSegment data: \n%s" % ac_line_segments[ac_line_segments["rdfId"] == rdfId]
+                    "The ACLineSegment data: \n{}".format(ac_line_segments[ac_line_segments["rdfId"] == rdfId])
                 )
                 self.cimConverter.report_container.add_log(
                     Report(
                         level=LogLevel.WARNING,
                         code=ReportCode.WARNING_CONVERTING,
-                        message="The ACLineSegment with RDF ID %s has %s Terminals!" % (rdfId, count),
+                        message=f"The ACLineSegment with RDF ID {rdfId} has {count} Terminals!",
                     )
                 )
             # Only remove the problematic ACLineSegments, keep the valid ones
             ac_line_segments = ac_line_segments[~ac_line_segments["rdfId"].isin(dups.index)]
             self.logger.warning(
-                "Removed %s ACLineSegments with invalid Terminals, continuing with %s valid segments."
-                % (len(dups), ac_line_segments.index.size // 2)
+                f"Removed {len(dups)} ACLineSegments with invalid Terminals, continuing with "
+                f"{ac_line_segments.index.size // 2} valid segments."
             )
             self.cimConverter.report_container.add_log(
                 Report(
                     level=LogLevel.WARNING,
                     code=ReportCode.WARNING_CONVERTING,
-                    message="Removed %s ACLineSegments with invalid Terminals, continuing with %s valid segments."
-                    % (len(dups), ac_line_segments.index.size // 2),
+                    message=f"Removed {len(dups)} ACLineSegments with invalid Terminals, continuing with "
+                    f"{ac_line_segments.index.size // 2} valid segments.",
                 )
             )
         ac_line_segments = ac_line_segments.reset_index()

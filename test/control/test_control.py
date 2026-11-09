@@ -8,7 +8,7 @@ import pytest
 from pandapower import runpp
 from pandapower.auxiliary import ControllerNotConverged
 from pandapower.control.basic_controller import Controller
-from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
+from pandapower.control.controller.trafo.continuous_tap_control import ContinuousTapControl
 from pandapower.control.controller.trafo_control import TrafoController
 from pandapower.control.run_control import get_controller_order
 from pandapower.create import create_sgen

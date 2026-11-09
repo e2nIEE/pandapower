@@ -141,7 +141,7 @@ def _get_line_results(net, ppc, i_ft, suffix=None):
     to_bus = ppc["branch"][f:t, T_BUS].real.astype(np.int64)
 
     # write to line
-    res_line_df = net["res_line"] if suffix is None else net["res_line%s" % suffix]
+    res_line_df = net["res_line"] if suffix is None else net[f"res_line{suffix}"]
 
     res_line_df.loc[:, "p_from_mw"] = p_from_mw
     res_line_df.loc[:, "q_from_mvar"] = q_from_mvar
@@ -350,11 +350,11 @@ def _get_trafo_results(net, ppc, s_ft, i_ft, suffix=None):
         # calculate loading with rated loading
         ld_trafo = np.max(s_ft[f:t] / net["trafo"]["sn_mva"].values[:, np.newaxis] * 100.0, axis=1)
     else:
-        raise ValueError("Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
+        raise ValueError(f"Unknown transformer loading parameter {trafo_loading} - choose 'current' or 'power'")
     if any(net["trafo"]["df"].values <= 0):
         raise UserWarning(
-            "Transformer rating factor df must be positive. Transformers with false "
-            "rating factors: %s" % net["trafo"].query("df<=0").index.tolist()
+            f"Transformer rating factor df must be positive. Transformers with false rating factors: "
+            f"{net.trafo.query('df<=0').index.tolist()}"
         )
 
     loading_percent = ld_trafo / net["trafo"]["parallel"].values / net["trafo"]["df"].values
@@ -363,7 +363,7 @@ def _get_trafo_results(net, ppc, s_ft, i_ft, suffix=None):
     lv_buses = ppc["branch"][f:t, T_BUS].real.astype(np.int64)
 
     # write results to trafo dataframe
-    res_trafo_df = net["res_trafo"] if suffix is None else net["res_trafo%s" % suffix]
+    res_trafo_df = net["res_trafo"] if suffix is None else net[f"res_trafo{suffix}"]
 
     res_trafo_df.loc[:, "p_hv_mw"] = p_hv_mw
     res_trafo_df.loc[:, "q_hv_mvar"] = q_hv_mvar
@@ -420,11 +420,11 @@ def _get_trafo_results_3ph(net, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
         ld_trafo = np.maximum.reduce([np.abs(Sabc_hv), np.abs(Sabc_lv)])
         ld_trafo = ld_trafo / net["trafo"]["sn_mva"].values[:, np.newaxis] * 3.0 * 100.0
     else:
-        raise ValueError("Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
+        raise ValueError(f"Unknown transformer loading parameter {trafo_loading} - choose 'current' or 'power'")
     if any(net["trafo"]["df"].values <= 0):
         raise UserWarning(
-            "Transformer rating factor df must be positive. Transformers with false "
-            "rating factors: %s" % net["trafo"].query("df<=0").index.tolist()
+            f"Transformer rating factor df must be positive. Transformers with false rating factors: "
+            f"{net.trafo.query('df<=0').index.tolist()}"
         )
     loading_percent = ld_trafo / net["trafo"]["parallel"].values / net["trafo"]["df"].values
 
@@ -518,7 +518,7 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft, suffix=None):
         ld_l = s_ft[:, 1][mv:lv] / t3["sn_lv_mva"].values * 100.0
         ld_trafo = np.max(np.vstack([ld_h, ld_m, ld_l]), axis=0)
     else:
-        raise ValueError("Unknown transformer loading parameter %s - choose 'current' or 'power'" % trafo_loading)
+        raise ValueError(f"Unknown transformer loading parameter {trafo_loading} - choose 'current' or 'power'")
     loading_percent = ld_trafo
 
     hv_buses = ppc["branch"][f:hv, F_BUS].real.astype(np.int64)
@@ -527,7 +527,7 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft, suffix=None):
     lv_buses = ppc["branch"][mv:lv, T_BUS].real.astype(np.int64)
 
     # write results to trafo3w dataframe
-    res_trafo3w_df = net["res_trafo3w"] if suffix is None else net["res_trafo3w%s" % suffix]
+    res_trafo3w_df = net["res_trafo3w"] if suffix is None else net[f"res_trafo3w{suffix}"]
 
     res_trafo3w_df.loc[:, "p_hv_mw"] = p_hv_mw
     res_trafo3w_df.loc[:, "q_hv_mvar"] = q_hv_mvar
@@ -580,7 +580,7 @@ def _get_impedance_results(net, ppc, i_ft, suffix=None):
     i_to_ka = i_ft[f:t][:, 1]
 
     # write to impedance
-    res_impedance_df = net["res_impedance"] if suffix is None else net["res_impedance%s" % suffix]
+    res_impedance_df = net["res_impedance"] if suffix is None else net[f"res_impedance{suffix}"]
 
     res_impedance_df.loc[:, "p_from_mw"] = p_from_mw
     res_impedance_df.loc[:, "q_from_mvar"] = q_from_mvar
@@ -636,7 +636,7 @@ def _get_tcsc_results(net, ppc, suffix=None):
         # zeros_
 
     # write to impedance
-    res_tcsc_df = net["res_tcsc"] if suffix is None else net["res_tcsc%s" % suffix]
+    res_tcsc_df = net["res_tcsc"] if suffix is None else net[f"res_tcsc{suffix}"]
 
     res_tcsc_df.loc[:, "thyristor_firing_angle_degree"] = np.rad2deg(ppc["tcsc"][f:t, TCSC_THYRISTOR_FIRING_ANGLE].real)
     res_tcsc_df.loc[:, "x_ohm"] = ppc["tcsc"][f:t, TCSC_X_PU].real * baseZ
@@ -675,7 +675,7 @@ def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=Non
     pq_buses[b_ppc, 1] += q
     aux_buses = net["_pd2ppc_lookups"]["bus"][net["_pd2ppc_lookups"]["aux"]["xward"]]
 
-    res_xward_df = net["res_xward"] if suffix is None else net["res_xward%s" % suffix]
+    res_xward_df = net["res_xward"] if suffix is None else net[f"res_xward{suffix}"]
 
     res_xward_df.loc[:, "va_internal_degree"] = ppc["bus"][aux_buses, VA]
     res_xward_df.loc[:, "vm_internal_pu"] = ppc["bus"][aux_buses, VM]
@@ -685,7 +685,7 @@ def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=Non
 def _get_switch_results(net, ppc, i_ft, suffix=None):
     if len(net.switch) == 0:
         return
-    res_switch_df = "res_switch" if suffix is None else "res_switch%s" % suffix
+    res_switch_df = "res_switch" if suffix is None else f"res_switch{suffix}"
 
     if "switch" in net._pd2ppc_lookups["branch"]:
         f, t = net._pd2ppc_lookups["branch"]["switch"]
@@ -710,18 +710,18 @@ def _get_switch_results(net, ppc, i_ft, suffix=None):
 
 
 def _copy_switch_results_from_branches(net, suffix=None, current_parameter="i_ka"):
-    res_switch_df = "res_switch" if suffix is None else "res_switch%s" % suffix
+    res_switch_df = "res_switch" if suffix is None else f"res_switch{suffix}"
 
     switch_lines = net.switch.element[net.switch.et == "l"]
     if len(switch_lines) > 0:
-        res_line_df = "res_line" if suffix is None else "res_line%s" % suffix
+        res_line_df = "res_line" if suffix is None else f"res_line{suffix}"
         net[res_switch_df].loc[switch_lines.index, current_parameter] = (
             net[res_line_df].loc[switch_lines.values, current_parameter].values
         )
 
     switch_trafo = net.switch[net.switch.et.values == "t"]
     if len(switch_trafo) > 0:
-        res_trafo_df = "res_trafo" if suffix is None else "res_trafo%s" % suffix
+        res_trafo_df = "res_trafo" if suffix is None else f"res_trafo{suffix}"
         for side in ["hv", "lv"]:
             buses = net.trafo[f"{side}_bus"].loc[switch_trafo.element.values].values
             side_switch_trafo = switch_trafo[switch_trafo.bus.values == buses]

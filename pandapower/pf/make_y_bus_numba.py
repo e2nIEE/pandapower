@@ -12,7 +12,7 @@ from scipy.sparse import coo_matrix, csr_matrix
 
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pypower.idx_bus import BS, GS
-from pandapower.pypower.makeYbus import branch_vectors
+from pandapower.pypower.make_y_bus import branch_vectors
 
 
 @jit(nopython=True, cache=False)

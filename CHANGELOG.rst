@@ -8,6 +8,8 @@ Change Log
 - [FIXED] ``runpp_3ph``: ``gen`` results failed with an ``IndexError`` if the ``gen`` index was not ``0, 1, 2, ...``, and the results of an in-service ``ext_grid`` were written to an out-of-service ``ext_grid`` listed before it (#1474)
 - [FIXED] ``runpp_3ph`` ignored loads and sgens whose ``type`` is not "wye" or "delta", such as an sgen created by ``create_sgen`` without a type, and failed when the ``type`` column had missing values; they are now wye elements, as in ``runpp``
 - [FIXED] ``runpp_3ph`` ignored the constant power of ``storage`` elements and the ``ps_mw``/``qs_mvar`` part of ``ward`` elements; both are now balanced wye loads, and ``res_bus_3ph`` includes the ward constant power (#1919)
+- [FIXED] ``runpp_3ph`` returned NaN results for a ``gen`` with ``vm_pu=1.0`` and failed with ``xward`` elements, and ``calc_sc`` failed for 1ph faults with ``xward`` elements: the zero and negative sequence voltages of gen and xward buses are no longer initialised with the voltage set point, the xward impedance uses the 3ph base impedance, and the xward branch is added to the zero sequence system
+- [FIXED] get_element_limits now reads the N-1 loading limit from "max_loading_percent_nminus1" (as run_contingency does), keeping "max_loading_nminus1_percent" as fallback
 - [FIXED] docstrings of detect_power_station_unit and elements_on_path now match their parameters
 - [CHANGED] ran ruff format for whole project
 - [CHANGED] moved test module to top level
@@ -19,7 +21,9 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] contingency limit checks now align results by constrained element index, including partial or reordered limits.
 - [FIXED] ``ConstControl`` now raises a ``ValueError`` if ``element_index`` contains indices that are not in the element table. Previously a missing single index silently added a row with NaN values, and the time series failed later with an unclear numba error (#1857)
+- [FIXED] ``compute_switch_flows`` read ``z_ohm`` by row position instead of by switch index, so with a non-default ``net.switch`` index it raised ``IndexError``, left zero-impedance switches without results or overwrote the results of switches with ``z_ohm > 0``
 - [FIXED] ``create_load_dc`` now allocates and validates indexes against ``load_dc``, preventing overwrites and false ``source_dc`` conflicts.
 - [FIXED] OPF cleaned up in case of non convergence
 - [FIXED] ``create_continuous_bus_index`` (and other toolbox functions relying on ``element_bus_tuples``) now also update the ``bus`` column of the ``ssc`` element table; it was previously missing from the list of bus-referencing elements

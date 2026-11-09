@@ -66,7 +66,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs) -> pandapowerNet
         logger.info("There are false baseKV given in the pypower case file.")
 
     net = pandapowerNet(name="from_ppc", f_hz=f_hz, sn_mva=ppc["baseMVA"])
-    net._from_ppc_lookups = dict()
+    net._from_ppc_lookups = {}
 
     _from_ppc_bus(net, ppc)
     net._from_ppc_lookups["gen"] = _from_ppc_gen(net, ppc)
@@ -146,7 +146,7 @@ def _from_ppc_gen(net, ppc):
     gen_name = ppc.get("gen_name", np.array([None] * n_gen))
 
     # create ext_grid
-    idx_eg = list()
+    idx_eg = []
     for i in np.arange(n_gen, dtype=np.int64)[is_ext_grid]:
         idx_eg.append(
             create_ext_grid(
@@ -420,7 +420,7 @@ def _get_bus_pos(ppc, bus_names):
         return (
             pd.Series(np.arange(ppc["bus"].shape[0], dtype=np.int64), index=ppc["bus"][:, BUS_I]).loc[bus_names].values
         )
-    except Exception:
+    except Exception:  # noqa: BLE001
         return (
             pd.Series(np.arange(ppc["bus"].shape[0], dtype=np.int64), index=ppc["bus"][:, BUS_I].astype(np.int64))
             .loc[bus_names]
@@ -666,9 +666,9 @@ def validate_from_ppc(ppc: dict, net: pandapowerNet, max_diff_values: dict | Non
             "gen_q_mvar": 1e-6,
         }
     if (
-        "_from_ppc_lookups" not in net.keys()
-        or ("gen" not in net._from_ppc_lookups.keys() and len(ppc["gen"]) > 0)
-        or ("branch" not in net._from_ppc_lookups.keys() and len(ppc["branch"]) > 0)
+        "_from_ppc_lookups" not in net
+        or ("gen" not in net._from_ppc_lookups and len(ppc["gen"]) > 0)
+        or ("branch" not in net._from_ppc_lookups and len(ppc["branch"]) > 0)
     ):
         raise ValueError("net._from_ppc_lookups must contain a lookup (dict of keys 'branch' and 'gen')")
 
@@ -729,7 +729,7 @@ def validate_from_ppc(ppc: dict, net: pandapowerNet, max_diff_values: dict | Non
     pp_res["gen_q_sum_per_bus"] = _gen_q_per_bus_sum(pp_res["gen"][:, -1:], ppc)  # type: ignore[index]
 
     # --- log maximal differences the powerflow result comparison
-    diff_res = dict()
+    diff_res = {}
     comp_keys = ["bus", "branch", "gen_p", "gen_q_sum_per_bus"]
     for comp_key in comp_keys:
         diff_res[comp_key] = ppc_res[comp_key] - pp_res[comp_key]  # type: ignore[operator]

@@ -78,29 +78,29 @@ def from_cim_dict(
 
 def get_converter_classes() -> dict[str, object]:
     converter_classes: dict[str, object] = {
-        "ConnectivityNodesCim16": std_converter_classes.connectivitynodes.connectivityNodesCim16.ConnectivityNodesCim16,
-        "externalNetworkInjectionsCim16": std_converter_classes.externalnetworks.externalNetworkInjectionsCim16.ExternalNetworkInjectionsCim16,
-        "acLineSegmentsCim16": std_converter_classes.lines.acLineSegmentsCim16.AcLineSegmentsCim16,
-        "dcLineSegmentsCim16": std_converter_classes.lines.dcLineSegmentsCim16.DcLineSegmentsCim16,
-        "switchesCim16": std_converter_classes.switches.switchesCim16.SwitchesCim16,
-        "energyConsumersCim16": std_converter_classes.loads.energyConsumersCim16.EnergyConsumersCim16,
-        "conformLoadsCim16": std_converter_classes.loads.conformLoadsCim16.ConformLoadsCim16,
-        "nonConformLoadsCim16": std_converter_classes.loads.nonConformLoadsCim16.NonConformLoadsCim16,
-        "stationSuppliesCim16": std_converter_classes.loads.stationSuppliesCim16.StationSuppliesCim16,
-        "synchronousMachinesCim16": std_converter_classes.generators.synchronousMachinesCim16.SynchronousMachinesCim16,
-        "asynchronousMachinesCim16": std_converter_classes.generators.asynchronousMachinesCim16.AsynchronousMachinesCim16,
-        "energySourcesCim16": std_converter_classes.generators.energySourcesCim16.EnergySourceCim16,
-        "powerElectronicsConnection": std_converter_classes.generators.powerElectronicsConnection.PowerElectronicsConnection,
-        "linearShuntCompensatorCim16": std_converter_classes.shunts.linearShuntCompensatorCim16.LinearShuntCompensatorCim16,
-        "nonLinearShuntCompensatorCim16": std_converter_classes.shunts.nonLinearShuntCompensatorCim16.NonLinearShuntCompensatorCim16,
-        "staticVarCompensatorCim16": std_converter_classes.shunts.staticVarCompensatorCim16.StaticVarCompensatorCim16,
-        "equivalentBranchesCim16": std_converter_classes.impedance.equivalentBranchesCim16.EquivalentBranchesCim16,
-        "seriesCompensatorsCim16": std_converter_classes.impedance.seriesCompensatorsCim16.SeriesCompensatorsCim16,
-        "equivalentInjectionsCim16": std_converter_classes.wards.equivalentInjectionsCim16.EquivalentInjectionsCim16,
-        "powerTransformersCim16": std_converter_classes.transformers.powerTransformersCim16.PowerTransformersCim16,
-        "tapController": std_converter_classes.transformers.tapController.TapController,
-        "geoCoordinatesFromGLCim16": std_converter_classes.coordinates.geoCoordinatesFromGLCim16.GeoCoordinatesFromGLCim16,
-        "coordinatesFromDLCim16": std_converter_classes.coordinates.coordinatesFromDLCim16.CoordinatesFromDLCim16,
+        "ConnectivityNodesCim16": std_converter_classes.connectivitynodes.connectivity_nodes_cim16.ConnectivityNodesCim16,
+        "externalNetworkInjectionsCim16": std_converter_classes.externalnetworks.external_network_injections_cim16.ExternalNetworkInjectionsCim16,
+        "acLineSegmentsCim16": std_converter_classes.lines.ac_line_segments_cim16.AcLineSegmentsCim16,
+        "dcLineSegmentsCim16": std_converter_classes.lines.dc_line_segments_cim16.DcLineSegmentsCim16,
+        "switchesCim16": std_converter_classes.switches.switches_cim16.SwitchesCim16,
+        "energyConsumersCim16": std_converter_classes.loads.energy_consumers_cim16.EnergyConsumersCim16,
+        "conformLoadsCim16": std_converter_classes.loads.conform_loads_cim16.ConformLoadsCim16,
+        "nonConformLoadsCim16": std_converter_classes.loads.non_conform_loads_cim16.NonConformLoadsCim16,
+        "stationSuppliesCim16": std_converter_classes.loads.station_supplies_cim16.StationSuppliesCim16,
+        "synchronousMachinesCim16": std_converter_classes.generators.synchronous_machines_cim16.SynchronousMachinesCim16,
+        "asynchronousMachinesCim16": std_converter_classes.generators.asynchronous_machines_cim16.AsynchronousMachinesCim16,
+        "energySourcesCim16": std_converter_classes.generators.energy_sources_cim16.EnergySourceCim16,
+        "powerElectronicsConnection": std_converter_classes.generators.power_electronics_connection.PowerElectronicsConnection,
+        "linearShuntCompensatorCim16": std_converter_classes.shunts.linear_shunt_compensator_cim16.LinearShuntCompensatorCim16,
+        "nonLinearShuntCompensatorCim16": std_converter_classes.shunts.non_linear_shunt_compensator_cim16.NonLinearShuntCompensatorCim16,
+        "staticVarCompensatorCim16": std_converter_classes.shunts.static_var_compensator_cim16.StaticVarCompensatorCim16,
+        "equivalentBranchesCim16": std_converter_classes.impedance.equivalent_branches_cim16.EquivalentBranchesCim16,
+        "seriesCompensatorsCim16": std_converter_classes.impedance.series_compensators_cim16.SeriesCompensatorsCim16,
+        "equivalentInjectionsCim16": std_converter_classes.wards.equivalent_injections_cim16.EquivalentInjectionsCim16,
+        "powerTransformersCim16": std_converter_classes.transformers.power_transformers_cim16.PowerTransformersCim16,
+        "tapController": std_converter_classes.transformers.tap_controller.TapController,
+        "geoCoordinatesFromGLCim16": std_converter_classes.coordinates.geo_coordinates_from_gl_cim16.GeoCoordinatesFromGLCim16,
+        "coordinatesFromDLCim16": std_converter_classes.coordinates.coordinates_from_dl_cim16.CoordinatesFromDLCim16,
     }
     return converter_classes
 
@@ -175,7 +175,7 @@ def from_cim(
         **kwargs,
     )
     time_end_converting = time.time()
-    logger.info("The pandapower net: \n%s" % pp_net)
+    logger.info(f"The pandapower net: \n{pp_net}")
 
     logger.info("Needed time for parsing: %s" % (time_start_converting - time_start_parsing))
     logger.info("Needed time for converting: %s" % (time_end_converting - time_start_converting))

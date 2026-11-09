@@ -17,7 +17,7 @@ from numpy.linalg import solve
 from scipy.sparse.linalg import factorized, spsolve
 
 from .idx_bus import BUS_I, BUS_TYPE, REF
-from .makeBdc import makeBdc
+from .make_b_dc import makeBdc
 
 
 def makePTDF(baseMVA, bus, branch, slack=None, result_side=0, using_sparse_solver=False, branch_id=None, reduced=False):

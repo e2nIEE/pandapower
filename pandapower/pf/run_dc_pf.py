@@ -27,8 +27,8 @@ from pandapower.pypower.idx_vsc import (
     VSC_Q,
     VSC_VALUE_DC,
 )
-from pandapower.pypower.makeBdc import calc_b_from_branch, makeBdc, phase_shift_injection
-from pandapower.pypower.makeSbus import makeSbus
+from pandapower.pypower.make_b_dc import calc_b_from_branch, makeBdc, phase_shift_injection
+from pandapower.pypower.make_s_bus import makeSbus
 
 
 def _run_dc_pf(ppci, recycle: dict | bool = False):
