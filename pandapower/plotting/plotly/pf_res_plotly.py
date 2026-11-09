@@ -250,7 +250,7 @@ def pf_res_plotly(
         marker_type = "circle" if on_map else "square"
         ext_grid_trace = create_bus_trace(
             net,
-            buses=net.ext_grid[ext_grid_ids].bus,
+            buses=net.ext_grid.loc[ext_grid_ids, "bus"],
             color="grey",
             size=bus_size * 2,
             trace_name="external_grid",
