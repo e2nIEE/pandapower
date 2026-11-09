@@ -110,15 +110,15 @@ def test_random_outage_of_element():
 def test_trafo3w():
     # Example net with trafo3w
     net = example_multivoltage()
-    ptdf_t3w = run_ptdf(net)
-    lodf_t3w = run_lodf(net, outage_branch_type="line")
+    run_ptdf(net)
+    run_lodf(net, outage_branch_type="line")
 
 
 def test_profile_multiple_elements(profiles):
     # Example run profile of multiple element types
     net = case118()
-    res_profiles_ptdf = run_ptdf_dc_profile(net, profiles=profiles)
-    res_profiles_full = run_ptdf_dc_profile(net, profiles=profiles, extra_data_points=[("bus", "va_degree")])
+    run_ptdf_dc_profile(net, profiles=profiles)
+    run_ptdf_dc_profile(net, profiles=profiles, extra_data_points=[("bus", "va_degree")])
     verify_dc_profile_with_ptdf(net, profiles)
 
 
@@ -135,7 +135,7 @@ def test_run_selected_elements(profiles):
     )
     profiles_partial[("load", "p_mw")] *= np.random.rand(*profiles_partial[("load", "p_mw")].shape)
 
-    res_profiles_partial = run_ptdf_dc_profile(net, profiles_partial)
+    run_ptdf_dc_profile(net, profiles_partial)
     verify_dc_profile_with_ptdf(net, profiles=profiles, result_side=1)
     verify_dc_n1_with_lodf(net, outage_branch_type="line")
 

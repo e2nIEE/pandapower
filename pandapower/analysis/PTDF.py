@@ -74,7 +74,7 @@ def _get_ptdf_direct(
 
     # Select only required source buses
     source_bus = _get_source_bus_ix(net, source_bus)
-    for key in ptdf.keys():
+    for key in ptdf:
         ptdf[key] = ptdf[key].loc[:, source_bus]
 
     # Verify with random selection of bus
@@ -155,7 +155,7 @@ def _get_dc_profile_with_ptdf(net, profiles, result_side=0, ptdf=None):
 
     # Check profile integrity and calculate to delta profile
     delta_profiles = {}
-    for key in profiles.keys():
+    for key in profiles:
         assert key in (("load", "p_mw"), ("sgen", "p_mw"), ("gen", "p_mw"), ("storage", "p_mw")), (
             str(key) + " not supported for superposition ptdf"
         )
@@ -204,7 +204,7 @@ def _get_dc_profile_with_ptdf(net, profiles, result_side=0, ptdf=None):
     # Calculate branch flow with ptdf and delta_bus_p profile
     # No extra initialization needed
     res_pp_np = {}
-    for br_type in ptdf.keys():
+    for br_type in ptdf:
         if br_type.startswith("trafo3w"):
             ele_type = "trafo3w"
             side = br_type.split("_")[1]
@@ -304,7 +304,7 @@ def _ptdf_ppci_to_pp(net, ptdf_ppci, result_side, branch_ppci_lookup=None):
     # Get branch pp ppci lookup and update the matrix
     for br_type in ("line", "trafo", "impedance"):
         if branch_ppci_lookup is not None:
-            if br_type in branch_ppci_lookup.keys():
+            if br_type in branch_ppci_lookup:
                 pp_ppci_br_lookup = range(branch_ppci_lookup[br_type][0], branch_ppci_lookup[br_type][1])
             else:
                 pp_ppci_br_lookup = None
@@ -322,7 +322,7 @@ def _ptdf_ppci_to_pp(net, ptdf_ppci, result_side, branch_ppci_lookup=None):
     else:
         pp_ppci_trafo3w_lookups = _get_trafo3w_lookup(net)
     if pp_ppci_trafo3w_lookups is not None:
-        for trafo3w_side in pp_ppci_trafo3w_lookups.keys():
+        for trafo3w_side in pp_ppci_trafo3w_lookups:
             results[trafo3w_side] = ptdf_ppci_padding[pp_ppci_trafo3w_lookups[trafo3w_side], :][
                 :, pp_ppci_bus_lookup[net.bus.index.to_numpy()]
             ]
@@ -426,7 +426,7 @@ def verify_ptdf(
     ptdf_perturb = run_ptdf(net, source_bus=source_bus, result_side=result_side, distributed_slack=False, perturb=True)
 
     assert len(ptdf) > 0, "Empty ptdf, verification not possible!"
-    for key in ptdf.keys():
+    for key in ptdf:
         assert np.allclose(ptdf[key], ptdf_perturb[key], atol=1e-8, equal_nan=True), (
             f"{key} PTDF results verification failed!"
         )
@@ -446,7 +446,7 @@ def verify_dc_profile_with_ptdf(net, profiles: dict, result_side=0, ptdf=None):
     res_profile_perturb = run_ptdf_dc_profile(net, profiles, result_side=result_side, distributed_slack=False, perturb=True)
 
     assert len(res_profile_ptdf) > 0, "Empty result profile, verification not possible!"
-    for key in res_profile_ptdf.keys():
+    for key in res_profile_ptdf:
         assert np.allclose(res_profile_ptdf[key], res_profile_perturb[key], atol=1e-8), f"{key} verification failed!"
         logger.info(str(key) + " profile verified!")
     logger.info("Run dc profile with PTDF verified!")
@@ -512,7 +512,7 @@ def _get_dc_profile_perturb(net, profiles, result_side=0, distributed_slack=True
     net_mod = deepcopy(net)
     num_calc = None
     # Check profile integrity
-    for key in profiles.keys():
+    for key in profiles:
         assert isinstance(profiles[key], pd.DataFrame), "Only profile as pandas dataframe supported!"
 
         # Check only dimension
@@ -538,7 +538,7 @@ def _get_dc_profile_perturb(net, profiles, result_side=0, distributed_slack=True
     # run all timesteps of the profiles
     for calc_ix in range(num_calc):
         # Update network with profile
-        for ele_type, value_type in profiles.keys():
+        for ele_type, value_type in profiles:
             this_ele_profile = profiles[(ele_type, value_type)]
             ele_ix = this_ele_profile.columns.to_numpy()
             net_mod[ele_type].loc[ele_ix, value_type] = this_ele_profile.to_numpy()[calc_ix, :]
