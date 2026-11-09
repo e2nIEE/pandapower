@@ -492,10 +492,8 @@ class TestComputeSwitchFlowsNonDefaultIndex:
         p_impedance = net.res_switch.at[impedance_idx, "p_from_mw"]
         compute_switch_flows(net)
 
-        assert np.isclose(net.res_switch.at[coupler_idx, "p_from_mw"],
-                          net.res_load.at[0, "p_mw"], atol=1e-6)
-        assert np.isclose(net.res_switch.at[coupler_idx, "q_from_mvar"],
-                          net.res_load.at[0, "q_mvar"], atol=1e-6)
+        assert np.isclose(net.res_switch.at[coupler_idx, "p_from_mw"], net.res_load.at[0, "p_mw"], atol=1e-6)
+        assert np.isclose(net.res_switch.at[coupler_idx, "q_from_mvar"], net.res_load.at[0, "q_mvar"], atol=1e-6)
         assert net.res_switch.at[coupler_idx, "i_ka"] > 0
         assert net.res_switch.at[impedance_idx, "p_from_mw"] == p_impedance
 
