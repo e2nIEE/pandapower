@@ -392,14 +392,35 @@ def test_from_ppc_without_base_kv():
     assert np.allclose(net.res_bus.va_degree, net_ref.res_bus.va_degree, atol=1e-6)
 
 
-def test_from_ppc_with_partly_missing_base_kv():
-    # a bus without baseKV inherits the baseKV of a connected bus with a valid baseKV
+def test_from_ppc_without_base_kv_logs_warning(caplog):
+    # the user must notice that the vn_kv of buses without a valid baseKV is only a
+    # placeholder: a warning naming the affected buses is logged
     ppc = get_testgrids("ppc_testgrids", "case6.json")
+    ppc["bus"][:, BASE_KV] = 0
+    with caplog.at_level(logging.WARNING, logger="pandapower.converter.pypower.from_ppc"):
+        from_ppc(ppc)
+    assert f"{ppc['bus'].shape[0]} buses without a valid baseKV" in caplog.text
+    assert "vn_kv is set to 1.0" in caplog.text
+
+    # with all baseKV valid, no warning is logged
+    caplog.clear()
+    ppc = get_testgrids("ppc_testgrids", "case6.json")
+    ppc["bus"][:, BASE_KV] = 110.0
+    with caplog.at_level(logging.WARNING, logger="pandapower.converter.pypower.from_ppc"):
+        from_ppc(ppc)
+    assert "without a valid baseKV" not in caplog.text
+
+
+def test_from_ppc_with_partly_missing_base_kv():
+    # a bus without baseKV gets the placeholder vn_kv of 1.0; no value is taken over from
+    # a connected bus, and the valid baseKV values of the other buses are kept unchanged
+    ppc = get_testgrids("ppc_testgrids", "case6.json")
+    net_ref = from_ppc(get_testgrids("ppc_testgrids", "case6.json"))
     ppc["bus"][0, BASE_KV] = 0
     net = from_ppc(ppc)
     assert (net.bus.vn_kv > 0).all()
-    # bus 0 is only connected to buses with a baseKV of 20 (see case6.json)
-    assert net.bus.vn_kv.iloc[0] == 20.0
+    assert net.bus.vn_kv.iloc[0] == 1.0
+    assert (net.bus.vn_kv.iloc[1:] == net_ref.bus.vn_kv.iloc[1:]).all()
     runpp(net)
     assert net.converged
 
@@ -425,35 +446,36 @@ def _chain_ppc(base_kv, branch_status=(1, 1)):
 
 
 def test_from_ppc_with_non_finite_base_kv():
-    # a NaN baseKV is invalid as well: it must be filled in and must not block the
-    # inheritance of the buses behind it (regression: NaN neither compares <= 0 nor > 0,
-    # so a fill logic based on such comparisons leaks it through)
+    # a NaN baseKV is invalid as well and is replaced by the placeholder 1.0
+    # (regression: NaN neither compares <= 0 nor > 0, so a validity check based on such
+    # comparisons alone would leak it through)
     net = from_ppc(_chain_ppc([110.0, np.nan, 0.0]))
-    assert (net.bus.vn_kv == 110.0).all()
+    assert list(net.bus.vn_kv) == [110.0, 1.0, 1.0]
     runpp(net)
     assert net.converged
 
-    # an infinite baseKV is not a usable voltage level either and must be replaced;
-    # the buses with 110 and 20 are equally near, so one of them is inherited
+    # an infinite baseKV is not a usable voltage level either and must be replaced
     net = from_ppc(_chain_ppc([110.0, np.inf, 20.0]))
     assert np.isfinite(net.bus.vn_kv).all()
     assert (net.bus.vn_kv > 0).all()
-    assert net.bus.vn_kv.iloc[1] in (110.0, 20.0)
+    assert list(net.bus.vn_kv) == [110.0, 1.0, 20.0]
 
-    # if no bus of a component has a valid baseKV, 1.0 is used
+    # if no bus has a valid baseKV, 1.0 is used for all of them
     net = from_ppc(_chain_ppc([np.nan, np.nan, np.nan]))
     assert (net.bus.vn_kv == 1.0).all()
     runpp(net)
     assert net.converged
 
 
-def test_from_ppc_base_kv_inherited_over_out_of_service_branch():
-    # the inheritance uses all branches, including out-of-service ones: the filled vn_kv
-    # is a placeholder for the nominal voltage level of the bus, which does not depend on
-    # the switching state
+def test_from_ppc_missing_base_kv_not_taken_from_connected_bus():
+    # no value is taken over from a connected bus: a bus without baseKV gets the
+    # placeholder 1.0 even if its neighbours have a valid baseKV, and this does not
+    # depend on the switching state of the connecting branches either
+    net = from_ppc(_chain_ppc([110.0, 0.0, 20.0]))
+    assert list(net.bus.vn_kv) == [110.0, 1.0, 20.0]
+
     net = from_ppc(_chain_ppc([110.0, 0.0, 20.0], branch_status=(0, 1)))
-    assert not net.line.in_service.iloc[0]
-    assert net.bus.vn_kv.iloc[1] == 110.0
+    assert net.bus.vn_kv.iloc[1] == 1.0
 
 
 def test_from_ppc_does_not_modify_input_bus_array():
@@ -465,7 +487,7 @@ def test_from_ppc_does_not_modify_input_bus_array():
     snapshot = input_bus.copy()
     net = from_ppc(ppc)
     np.testing.assert_array_equal(input_bus, snapshot)
-    assert net.bus.vn_kv.iloc[0] == 20.0
+    assert net.bus.vn_kv.iloc[0] == 1.0
 
 
 def _two_level_ppc(base_kv):
@@ -506,19 +528,19 @@ def test_from_ppc_mixed_base_kv_with_trafo():
     runpp(net_ref)
     assert net_ref.converged
 
-    # bus 4 inherits its true level from the connected bus 3
+    # bus 4 has no baseKV and gets the placeholder 1.0 instead of its true level 20
     net = from_ppc(_two_level_ppc([110.0, 110.0, 20.0, 0.0]))
-    assert net.bus.vn_kv.iloc[3] == 20.0
+    assert net.bus.vn_kv.iloc[3] == 1.0
     runpp(net)
     assert np.allclose(net.res_bus.vm_pu, net_ref.res_bus.vm_pu, atol=1e-6)
     assert np.allclose(net.res_bus.va_degree, net_ref.res_bus.va_degree, atol=1e-6)
 
-    # buses 3 and 4 are only connected to buses with a valid baseKV via the transformer
-    # and inherit 110 instead of their true 20: their vn_kv (and absolute quantities
-    # derived from it) are placeholders, but the per-unit results at the buses, which
-    # only depend on the per-unit branch data and the tap ratio, are unchanged
+    # buses 3 and 4 have no baseKV and get the placeholder 1.0 instead of their true 20:
+    # their vn_kv (and absolute quantities derived from it) are placeholders, but the
+    # per-unit results at the buses, which only depend on the per-unit branch data and
+    # the tap ratio, are unchanged
     net = from_ppc(_two_level_ppc([110.0, 110.0, 0.0, 0.0]))
-    assert (net.bus.vn_kv == 110.0).all()
+    assert list(net.bus.vn_kv) == [110.0, 110.0, 1.0, 1.0]
     runpp(net)
     assert np.allclose(net.res_bus.vm_pu, net_ref.res_bus.vm_pu, atol=1e-6)
     assert np.allclose(net.res_bus.va_degree, net_ref.res_bus.va_degree, atol=1e-6)

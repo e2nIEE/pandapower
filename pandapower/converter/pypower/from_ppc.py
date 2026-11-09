@@ -7,7 +7,6 @@ __all__ = [
 ]
 
 import logging
-from collections import deque
 from math import pi
 
 import numpy as np
@@ -91,21 +90,15 @@ def _ensure_base_kv(ppc):
     case files set it to 0 (e.g. the original MATPOWER case14 and case57), and single values
     can also be negative or not finite (NaN, inf). pandapower, however, requires vn_kv > 0:
     with an invalid baseKV the conversion would silently produce NaN parameters and runpp
-    would fail with a FloatingPointError. Therefore, buses without a valid baseKV inherit
-    the baseKV of the nearest connected bus with a valid baseKV (breadth-first search over
-    the branches). If several buses with a valid baseKV are equally near, the value of one
-    of them is inherited (which one depends on the bus and branch ordering). The search uses
-    all branches, including out-of-service ones: the filled value is a placeholder for the
-    nominal voltage level of the bus, which is a property of the bus and does not depend on
-    the switching state. If no bus of a connected component has a valid baseKV, 1.0 is used
-    for the buses of that component. Since the branch data of the ppc is in per-unit and the
-    transformer ratios are adopted unchanged, this does not alter the per-unit power flow
-    results at the buses; only the absolute voltage levels, which are unknown in such case
-    files, are placeholders. A filled value can, however, change how a branch is classified
-    (e.g. a branch whose buses receive the same placeholder is imported as a line instead of
-    an impedance), i.e. the element type and the result table the branch appears in, and
-    absolute quantities derived from vn_kv (such as currents in kA) are not meaningful for
-    buses whose voltage level was filled in. The bus array of the given ppc is not modified;
+    would fail with a FloatingPointError. Therefore, a warning is logged and 1.0 is used
+    as the baseKV of every bus without a valid baseKV. The value is only a placeholder:
+    the true voltage level of such buses is unknown, so absolute quantities derived from
+    vn_kv (such as currents in kA) are not meaningful for them, and a filled value can
+    change how a branch is classified (e.g. a branch whose buses receive the same
+    placeholder is imported as a line instead of an impedance), i.e. the element type and
+    the result table the branch appears in. Since the branch data of the ppc is in per-unit
+    and the transformer ratios are adopted unchanged, this does not alter the per-unit
+    power flow results at the buses. The bus array of the given ppc is not modified;
     ppc["bus"] is replaced by a corrected copy.
     """
     base_kv = ppc["bus"][:, BASE_KV]
@@ -114,28 +107,10 @@ def _ensure_base_kv(ppc):
         return
     logger.warning(
         f"There are {int((~valid).sum())} buses without a valid baseKV (not a positive, "
-        "finite value) in the pypower case file. Their vn_kv is inherited from the nearest "
-        "connected bus with a valid baseKV or set to 1.0 if there is none."
+        "finite value) in the pypower case file. Their vn_kv is set to 1.0."
     )
-    from_pos = _get_bus_pos(ppc, ppc["branch"][:, F_BUS].astype(np.int64))
-    to_pos = _get_bus_pos(ppc, ppc["branch"][:, T_BUS].astype(np.int64))
-    neighbours = [[] for _ in range(ppc["bus"].shape[0])]
-    for f, t in zip(from_pos, to_pos):
-        neighbours[f].append(t)
-        neighbours[t].append(f)
-    filled = base_kv.astype(float).copy()
-    has_value = valid.copy()
-    queue = deque(np.flatnonzero(valid).tolist())
-    while queue:
-        pos = queue.popleft()
-        for neighbour in neighbours[pos]:
-            if not has_value[neighbour]:
-                has_value[neighbour] = True
-                filled[neighbour] = filled[pos]
-                queue.append(neighbour)
-    filled[~has_value] = 1.0
     bus = ppc["bus"].copy()
-    bus[~valid, BASE_KV] = filled[~valid]
+    bus[~valid, BASE_KV] = 1.0
     ppc["bus"] = bus
 
 
