@@ -247,15 +247,16 @@ def pf_res_plotly(
         ext_grid_ids = net.ext_grid.index
         if not plot_out_of_service:
             ext_grid_ids = ext_grid_ids[net.ext_grid.in_service]
-        marker_type = "circle" if on_map else "square"
-        ext_grid_trace = create_bus_trace(
-            net,
-            buses=net.ext_grid.loc[ext_grid_ids, "bus"],
-            color="grey",
-            size=bus_size * 2,
-            trace_name="external_grid",
-            patch_type=marker_type,
-        )
+        if ext_grid_ids:
+            marker_type = "circle" if on_map else "square"
+            ext_grid_trace = create_bus_trace(
+                net,
+                buses=net.ext_grid.loc[ext_grid_ids, "bus"],
+                color="grey",
+                size=bus_size * 2,
+                trace_name="external_grid",
+                patch_type=marker_type,
+            )
 
     return draw_traces(
         line_traces + trafo_traces + ext_grid_trace + bus_trace,
