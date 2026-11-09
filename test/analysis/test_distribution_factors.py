@@ -4,8 +4,8 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower.analysis.LODF import run_lodf, verify_dc_n1_with_lodf
-from pandapower.analysis.PTDF import run_ptdf, run_ptdf_dc_profile, verify_dc_profile_with_ptdf
+from pandapower.analysis.lodf import run_lodf, verify_dc_n1_with_lodf
+from pandapower.analysis.ptdf import run_ptdf, run_ptdf_dc_profile, verify_dc_profile_with_ptdf
 from pandapower.networks.create_examples import example_multivoltage
 from pandapower.networks.power_system_test_cases import (
     case30,

@@ -545,7 +545,7 @@ def _get_dc_profile_perturb(net, profiles, result_side=0, distributed_slack=True
 
         # Update result table
         rundcpp(net_mod, distributed_slack=True)
-        for res_br_type in res_pp_np:
+        for res_br_type in res_pp_np.values():
             if not res_br_type.startswith("trafo3w"):
                 res_pp_np[res_br_type][calc_ix, :] = net_mod["res_" + res_br_type][
                     "p_" + THIS_RES_BR_SIDE_MAPPING[res_br_type] + "_mw"
