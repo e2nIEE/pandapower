@@ -248,7 +248,7 @@ def test_from_ppc_branch_without_angle_columns():
     were read. Such truncated branch arrays must keep working.
     """
     ppc = get_testgrids("pypower_cases", "case9.json")
-    ppc["branch"] = ppc["branch"][:, : ANGMIN]  # drop ANGMIN and ANGMAX
+    ppc["branch"] = ppc["branch"][:, :ANGMIN]  # drop ANGMIN and ANGMAX
 
     net = from_ppc(ppc, f_hz=60)
 
