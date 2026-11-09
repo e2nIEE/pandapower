@@ -22,13 +22,13 @@ class SwitchesCim16:
         self.logger.info("Start converting Breakers, Disconnectors, LoadBreakSwitches and Switches.")
         eqssh_switches = self._prepare_switches_cim16()
         self.cimConverter.copy_to_pp("switch", eqssh_switches)
-        self.logger.info("Created %s switches in %ss." % (eqssh_switches.index.size, time.time() - time_start))
+        self.logger.info(f"Created {eqssh_switches.index.size} switches in {time.time() - time_start}s.")
         self.cimConverter.report_container.add_log(
             Report(
                 level=LogLevel.INFO,
                 code=ReportCode.INFO_CONVERTING,
-                message="Created %s switches from Breakers, Disconnectors, LoadBreakSwitches and Switches in %ss."
-                % (eqssh_switches.index.size, time.time() - time_start),
+                message=f"Created {eqssh_switches.index.size} switches from Breakers, Disconnectors, LoadBreakSwitches "
+                f"and Switches in {time.time() - time_start}s.",
             )
         )
 
@@ -80,13 +80,13 @@ class SwitchesCim16:
             dups = eqssh_switches.pivot_table(index=["rdfId"], aggfunc="size")  # type: ignore[arg-type]
             dups = dups.loc[dups != 2]  # type: ignore[call-overload]
             for rdfId, count in dups.items():
-                self.logger.warning("The switch with RDF ID %s has %s Terminals!" % (rdfId, count))
-                self.logger.warning("The switch data: \n%s" % eqssh_switches[eqssh_switches["rdfId"] == rdfId])
+                self.logger.warning(f"The switch with RDF ID {rdfId} has {count} Terminals!")
+                self.logger.warning("The switch data: \n{}".format(eqssh_switches[eqssh_switches["rdfId"] == rdfId]))
                 self.cimConverter.report_container.add_log(
                     Report(
                         level=LogLevel.WARNING,
                         code=ReportCode.WARNING_CONVERTING,
-                        message="The switch with RDF ID %s has %s Terminals!" % (rdfId, count),
+                        message=f"The switch with RDF ID {rdfId} has {count} Terminals!",
                     )
                 )
             eqssh_switches = eqssh_switches[0:0]

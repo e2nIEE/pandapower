@@ -22,13 +22,13 @@ class NonConformLoadsCim16:
         self.logger.info("Start converting NonConformLoads.")
         eqssh_non_conform_loads = self._prepare_non_conform_loads_cim16()
         self.cimConverter.copy_to_pp("load", eqssh_non_conform_loads)
-        self.logger.info("Created %s loads in %ss." % (eqssh_non_conform_loads.index.size, time.time() - time_start))
+        self.logger.info(f"Created {eqssh_non_conform_loads.index.size} loads in {time.time() - time_start}s.")
         self.cimConverter.report_container.add_log(
             Report(
                 level=LogLevel.INFO,
                 code=ReportCode.INFO_CONVERTING,
-                message="Created %s loads from NonConformLoads in %ss."
-                % (eqssh_non_conform_loads.index.size, time.time() - time_start),
+                message=f"Created {eqssh_non_conform_loads.index.size} loads from NonConformLoads in "
+                f"{time.time() - time_start}s.",
             )
         )
 

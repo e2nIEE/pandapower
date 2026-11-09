@@ -23,7 +23,7 @@ class CoordinatesFromDLCim16:
         # choose a diagram if it is not given (the first one ascending)
         if diagram_name is None:
             diagram_name = self.cimConverter.cim["dl"]["Diagram"].sort_values(by="name")["name"].values[0]  # type: ignore[assignment]
-        self.logger.debug("Choosing the geo coordinates from diagram %s" % diagram_name)
+        self.logger.debug(f"Choosing the geo coordinates from diagram {diagram_name}")
         if diagram_name != "all":
             # reduce the source data to the chosen diagram only
             diagram_rdf_id = self.cimConverter.cim["dl"]["Diagram"]["rdfId"][

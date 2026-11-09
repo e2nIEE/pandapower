@@ -27,13 +27,13 @@ class EnergySourceCim16:
         self.cimConverter.copy_to_pp("ext_grid", es_slack)
         self.cimConverter.copy_to_pp("sgen", es_sgen)
         # self._copy_to_pp('sgen', eqssh_energy_sources)
-        self.logger.info("Created %s sgens in %ss." % (eqssh_energy_sources.index.size, time.time() - time_start))
+        self.logger.info(f"Created {eqssh_energy_sources.index.size} sgens in {time.time() - time_start}s.")
         self.cimConverter.report_container.add_log(
             Report(
                 level=LogLevel.INFO,
                 code=ReportCode.INFO_CONVERTING,
-                message="Created %s sgens from EnergySources in %ss."
-                % (eqssh_energy_sources.index.size, time.time() - time_start),
+                message=f"Created {eqssh_energy_sources.index.size} sgens from EnergySources in "
+                f"{time.time() - time_start}s.",
             )
         )
 

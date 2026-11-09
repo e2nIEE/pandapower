@@ -1,6 +1,6 @@
 __all__ = [
-    "equivalentBranchesCim16",
-    "seriesCompensatorsCim16",
+    "equivalent_branches_cim16",
+    "series_compensators_cim16",
 ]
 
-from . import equivalentBranchesCim16, seriesCompensatorsCim16
+from . import equivalent_branches_cim16, series_compensators_cim16

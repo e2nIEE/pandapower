@@ -11,7 +11,7 @@ from numpy import complex128, conj, zeros
 from scipy.sparse import csr_matrix as sparse
 from scipy.sparse import issparse
 
-from pandapower.pypower.dSbus_dV import dSbus_dV_dense
+from pandapower.pypower.d_s_bus_d_v import dSbus_dV_dense
 
 
 # @jit(Tuple((c16[:], c16[:]))(c16[:], i4[:], i4[:], c16[:], c16[:]), nopython=True, cache=False)

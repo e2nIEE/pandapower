@@ -451,14 +451,14 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 
         elif vector_group[-1].isdigit():
             raise ValueError(
-                "Unknown transformer vector group %s - "
+                f"Unknown transformer vector group {vector_group} - "
                 "please specify vector group without "
                 "phase shift number. Phase shift can be "
-                "specified in net.trafo.shift_degree" % vector_group
+                "specified in net.trafo.shift_degree"
             )
         else:
             raise ValueError(
-                "Transformer vector group %s is unknown / not implemented for three phase load flow" % vector_group
+                f"Transformer vector group {vector_group} is unknown / not implemented for three phase load flow"
             )
         ppc["branch"][ppc_idx, BR_G] = y_sym.astype(complex).real
         ppc["branch"][ppc_idx, BR_B] = y_sym.astype(complex).imag
@@ -504,12 +504,12 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
         c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
     else:
         c = 1.1
-    if "s_sc_%s_mva" % case not in eg:
-        raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for " % case + "external grid")
-    s_sc = eg["s_sc_%s_mva" % case].values
-    if "rx_%s" % case not in eg:
-        raise ValueError("short circuit R/X rate rx_%s needs to be specified for external grid" % case)
-    rx = eg["rx_%s" % case].values
+    if f"s_sc_{case}_mva" not in eg:
+        raise ValueError(f"short circuit apparent power s_sc_{case}_mva needs to be specified for " + "external grid")
+    s_sc = eg[f"s_sc_{case}_mva"].values
+    if f"rx_{case}" not in eg:
+        raise ValueError(f"short circuit R/X rate rx_{case} needs to be specified for external grid")
+    rx = eg[f"rx_{case}"].values
 
     z_grid = c / s_sc
     if mode == "pf_3ph":
@@ -520,8 +520,8 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     eg["x"] = x_grid
 
     # ext_grid zero sequence impedance
-    x0_grid = net.ext_grid[is_egs]["x0x_%s" % case].values * x_grid
-    r0_grid = net.ext_grid[is_egs]["r0x0_%s" % case].values * x0_grid
+    x0_grid = net.ext_grid[is_egs][f"x0x_{case}"].values * x_grid
+    r0_grid = net.ext_grid[is_egs][f"r0x0_{case}"].values * x0_grid
     y0_grid = 1 / (r0_grid + x0_grid * 1j)
 
     buses, gs, bs = _sum_by_group(eg_buses_ppc, y0_grid.real, y0_grid.imag)
@@ -549,10 +549,9 @@ def _add_line_sc_impedance_zero(net, ppc):
     ppc["branch"][f:t, F_BUS] = fb
     ppc["branch"][f:t, T_BUS] = tb
     ppc["branch"][f:t, BR_R] = line["r0_ohm_per_km"].values * length / baseR / parallel
-    if mode == "sc":
+    if mode == "sc" and net["_options"]["case"] == "min":
         # temperature correction
-        if net["_options"]["case"] == "min":
-            ppc["branch"][f:t, BR_R] *= _end_temperature_correction_factor(net, short_circuit=True)
+        ppc["branch"][f:t, BR_R] *= _end_temperature_correction_factor(net, short_circuit=True)
     ppc["branch"][f:t, BR_X] = line["x0_ohm_per_km"].values * length / baseR / parallel
     ppc["branch"][f:t, BR_B] = (
         2 * net["f_hz"] * math.pi * line["c0_nf_per_km"].values * 1e-9 * baseR * length * parallel

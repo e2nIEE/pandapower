@@ -65,7 +65,7 @@ class PandapowerDiagnostic:
         if isinstance(input_obj, list):
             return_obj: list = []
             for one_input_obj in input_obj:
-                if isinstance(one_input_obj, list) or isinstance(one_input_obj, dict):
+                if isinstance(one_input_obj, (list, dict)):
                     return_obj.append(self._rec_replace_pp_diagnostic_with_cim_ids(one_input_obj, element_type))
                 elif element_type is not None and isinstance(one_input_obj, int):
                     # get the RDF ID direct
@@ -118,6 +118,6 @@ class PandapowerDiagnostic:
         :param path_to_store: The path to store the json on the disk.
         :return:
         """
-        self.logger.info("Storing diagnostic to path: %s" % path_to_store)
+        self.logger.info(f"Storing diagnostic to path: {path_to_store}")
         with open(path_to_store, mode="w", encoding="UTF-8") as fp:
             json.dump(diagnostic, fp, indent=2, sort_keys=True)
