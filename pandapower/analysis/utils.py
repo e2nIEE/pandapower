@@ -69,7 +69,25 @@ def _get_outage_branch_ix(
     return unique_outage_branch_ix if unique_outage_branch_ix.size < outage_branch_ix.size else outage_branch_ix
 
 
+def _ensure_pd2ppc_lookups(net: pandapowerNet) -> None:
+    """
+    Run a DC power flow if the pandapower to ppc lookups do not exist yet, e.g. because no power flow was run on the
+    net since it was created or loaded.
+    """
+    lookups = net.get("_pd2ppc_lookups")
+    if (
+        lookups is None
+        or lookups.get("bus") is None
+        or lookups.get("branch") is None
+        or net.get("_ppc") is None
+        or net.get("_is_elements") is None
+    ):
+        logger.info("No pd2ppc lookups found, running a DC power flow to create them.")
+        pp.rundcpp(net)
+
+
 def _get_bus_lookup(net: pandapowerNet) -> npt.NDArray:
+    _ensure_pd2ppc_lookups(net)
     pp_ppci_bus_lookup = net._pd2ppc_lookups["bus"]
     # Set out-of-service bus index to -1 (for padded array)
     if "_is_elements" not in net or net._is_elements is None:
@@ -84,6 +102,7 @@ def _get_branch_lookup(net: pandapowerNet, branch_type) -> np.ndarray | None:
     # Find the branch lookup table from pandapower net of ppci layer
     assert branch_type in ("line", "trafo", "trafo3w", "impedance"), "Branch Type not supported for lookup creation"
 
+    _ensure_pd2ppc_lookups(net)
     if branch_type in net["_pd2ppc_lookups"]["branch"]:
         br_ix_start, br_ix_end = net["_pd2ppc_lookups"]["branch"][branch_type]
 
