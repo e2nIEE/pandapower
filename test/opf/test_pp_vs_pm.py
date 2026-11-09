@@ -12,8 +12,9 @@ from numpy import array
 from pandapower.converter.pypower import from_ppc
 from pandapower.create import create_ext_grid
 from pandapower.pd2ppc import _pd2ppc
+from pandapower.pypower.idx_brch import MU_ANGMIN
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, REF, VMAX, VMIN
-from pandapower.run import runopp, runpp
+from pandapower.run import rundcopp, runopp, runpp
 from pandapower.runpm import runpm_ac_opf
 
 julia_installed = find_spec("juliacall") is not None
@@ -161,6 +162,54 @@ def test_opf_ext_grid_controllable_pm():
     assert np.isclose(net_old.res_bus.vm_pu[eg_bus], 1.06414000007302)
     assert np.abs(net_new.res_bus.vm_pu[eg_bus] - net_old.res_bus.vm_pu[eg_bus]) < 0.0058
     assert np.abs(net_new.res_cost - net_old.res_cost) / net_old.res_cost < 1e-2
+
+
+def _max_va_diff(net):
+    return float(np.abs(net.res_line.va_from_degree - net.res_line.va_to_degree).max())
+
+
+def test_opf_angle_limits_imported():
+    """The -30/30 limits of the mpc must be imported and must not bind for the base case."""
+    net = case5_pm_matfile_i()
+    assert np.allclose(net.line.min_angle_degree, -30.0)
+    assert np.allclose(net.line.max_angle_degree, 30.0)
+
+    runopp(net, delta=1e-12)
+    assert np.isclose(net.res_cost, 17089.886, atol=1e-3)
+    assert _max_va_diff(net) < 5.0
+
+
+def test_opf_angle_limits_binding():
+    """Tightening the imported limits must change the OPF solution."""
+    net = case5_pm_matfile_i()
+    net.line[["min_angle_degree", "max_angle_degree"]] = [-2.0, 2.0]
+
+    runopp(net, delta=1e-12)
+    assert np.isclose(net.res_cost, 23069.632, atol=1e-3)
+    assert np.isclose(_max_va_diff(net), 2.0, atol=1e-6)
+    # the binding branch must have a shadow price
+    assert net._ppc["branch"][:, MU_ANGMIN].max() > 0
+
+
+def test_dcopf_angle_limits_binding():
+    net = case5_pm_matfile_i()
+    runopp_net = copy.deepcopy(net)
+    rundcopp(runopp_net, delta=1e-12)
+    assert np.isclose(runopp_net.res_cost, 17613.024, atol=1e-3)
+
+    net.line[["min_angle_degree", "max_angle_degree"]] = [-2.0, 2.0]
+    rundcopp(net, delta=1e-12)
+    assert np.isclose(net.res_cost, 25337.206, atol=1e-3)
+
+
+def test_opf_ignore_angle_limits():
+    """OPF_IGNORE_ANG_LIM is the escape hatch back to the unconstrained solution."""
+    net = case5_pm_matfile_i()
+    net.line[["min_angle_degree", "max_angle_degree"]] = [-2.0, 2.0]
+
+    runopp(net, delta=1e-12, OPF_IGNORE_ANG_LIM=True)
+    assert np.isclose(net.res_cost, 17089.886, atol=1e-3)
+    assert _max_va_diff(net) > 2.0
 
 
 if __name__ == "__main__":
