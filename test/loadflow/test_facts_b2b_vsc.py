@@ -6,6 +6,7 @@ from pandapower.create import (
     create_bus,
     create_bus_dc,
     create_buses,
+    create_dcline,
     create_ext_grid,
     create_line_dc,
     create_line_dc_from_parameters,
@@ -198,6 +199,82 @@ def test_hvdc_interconnect_without_ground():
     # auxiliary elements are removed also if the power flow fails
     assert len(net.vsc) == 0
     assert "bus_dc_minus" not in net.vsc.columns
+
+
+def _bipolar_dmr_net_with_user_elements():
+    """
+    Bipolar DMR net with a dcline (auxiliary gens) and a monopolar VSC, so that net.gen and net.vsc contain entries
+    that are not created by the power flow.
+    """
+    net = _bipolar_dmr_net()
+    create_dcline(net, 0, 4, p_mw=5.0, loss_percent=0.0, loss_mw=0.0, vm_from_pu=1.0, vm_to_pu=1.0)
+    create_buses(net, 1, 380)
+    create_line_from_parameters(net, 0, 8, 1, 0.0487, 0.13823, 160, 0.664)
+    b1 = create_bus_dc(net, 380.0, "G")
+    create_vsc(
+        net,
+        8,
+        b1,
+        0.2,
+        10,
+        0.3,
+        control_mode_ac="vm_pu",
+        control_value_ac=1.0,
+        control_mode_dc="vm_pu",
+        control_value_dc=1.0,
+    )
+    return net
+
+
+def test_vsc_bipolar_failed_aux_creation_is_rolled_back():
+    """
+    If creating the auxiliary elements fails halfway, the rows and columns created so far (also the dcline gens
+    created before the bipolar VSC) are removed again, and repeated power flows do not accumulate them.
+    """
+    net = _bipolar_dmr_net_with_user_elements()
+    vsc_before, gen_before = net.vsc.copy(), net.gen.copy()
+    # the third auxiliary VSC cannot be created, the first two are created before
+    net.vsc_bipolar.at[net.vsc_bipolar.index[2], "bus"] = 999
+
+    for _ in range(2):
+        with pytest.raises(UserWarning, match="999"):
+            runpp(net)
+        assert net.vsc.equals(vsc_before)
+        assert net.gen.equals(gen_before)
+        assert "_vsc_bipolar_aux" not in net
+
+    # the net is still usable
+    net.vsc_bipolar.at[net.vsc_bipolar.index[2], "bus"] = 4
+    runpp_with_consistency_checks(net)
+    assert net.vsc.equals(vsc_before)
+    # (the regular dcline cleanup keeps the max_p_mw column of the auxiliary gens, so only the rows are compared)
+    assert net.gen.index.equals(gen_before.index)
+
+
+def test_vsc_bipolar_partially_created_aux_vsc_is_rolled_back(monkeypatch):
+    """
+    A create_vsc call that fails after it already added its row is rolled back as well.
+    """
+    import pandapower.create
+
+    net = _bipolar_dmr_net_with_user_elements()
+    vsc_before, gen_before = net.vsc.copy(), net.gen.copy()
+    create_vsc_orig = pandapower.create.create_vsc
+    calls = []
+
+    def create_vsc_failing(*args, **kwargs):
+        calls.append(create_vsc_orig(*args, **kwargs))
+        if len(calls) == 2:
+            raise RuntimeError("failed after adding the row")
+        return calls[-1]
+
+    monkeypatch.setattr(pandapower.create, "create_vsc", create_vsc_failing)
+    with pytest.raises(RuntimeError, match="failed after adding the row"):
+        runpp(net)
+    assert len(calls) == 2
+    assert net.vsc.equals(vsc_before)
+    assert net.gen.equals(gen_before)
+    assert "_vsc_bipolar_aux" not in net
 
 
 def test_vsc_bipolar_with_monopolar_vsc():

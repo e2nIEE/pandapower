@@ -1818,8 +1818,7 @@ def _add_vsc_bipolar(net: pandapowerNet):
     from pandapower.create import create_vsc
 
     _remove_vsc_bipolar_aux(net)
-    # columns that only the auxiliary entries introduce have to be dropped again afterwards
-    drop_columns = [c for c in ("bus_dc_minus", "name") if c not in net.vsc.columns]
+    columns_before = net.vsc.columns
     vsc_index = []
     for _, vb in net.vsc_bipolar.iterrows():
         vsc_index.append(
@@ -1841,6 +1840,8 @@ def _add_vsc_bipolar(net: pandapowerNet):
                 bus_dc_minus=vb.bus_dc_minus,
             )
         )
+    # columns that only the auxiliary entries introduce have to be dropped again afterwards
+    drop_columns = list(net.vsc.columns.difference(columns_before))
     net["_vsc_bipolar_aux"] = {"vsc_index": np.array(vsc_index, dtype=np.int64), "drop_columns": drop_columns}
 
 
@@ -1854,14 +1855,28 @@ def _add_auxiliary_elements(net: pandapowerNet):
     Returns:
 
     """
-    if len(net.dcline) > 0:
-        _add_dcline_gens(net)
+    # The auxiliary elements are added to net.gen and net.vsc. If adding them fails halfway (e.g. a create_vsc call
+    # for a bipolar VSC raises), all rows and columns added so far are removed again. Otherwise they would stay in the
+    # net, because the cleanup metadata is only recorded after a successful creation, and be added again by the next
+    # power flow.
+    tables = ("gen", "vsc")
+    before = {table: (net[table].index, net[table].columns) for table in tables}
+    try:
+        if len(net.dcline) > 0:
+            _add_dcline_gens(net)
 
-    if len(net.vsc_stacked) > 0:
-        _add_vsc_stacked(net)
+        if len(net.vsc_stacked) > 0:
+            _add_vsc_stacked(net)
 
-    if len(net.vsc_bipolar) > 0:
-        _add_vsc_bipolar(net)
+        if len(net.vsc_bipolar) > 0:
+            _add_vsc_bipolar(net)
+    except Exception:
+        net.pop("_vsc_bipolar_aux", None)
+        for table, (index_before, columns_before) in before.items():
+            net[table] = net[table].drop(
+                index=net[table].index.difference(index_before), columns=net[table].columns.difference(columns_before)
+            )
+        raise
 
 
 def _replace_nans_with_default_limits(net: pandapowerNet, ppc: PyPowerNetwork) -> None:
