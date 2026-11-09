@@ -620,6 +620,38 @@ def test_create_line_alpha_temperature():
     validate_network(net)
 
 
+def test_create_lines_angle_limits():
+    net = pandapowerNet(name="test_create_lines_angle_limits")
+    create_buses(net, 3, 110)
+    # default: no column is created at all
+    create_lines(net, [0], [1], 10, "48-AL1/8-ST1A 10.0")
+    assert "min_angle_degree" not in net.line.columns
+    assert "max_angle_degree" not in net.line.columns
+
+    # explicit NaN also must not create the columns
+    create_lines(net, [1], [2], 10, "48-AL1/8-ST1A 10.0", min_angle_degree=np.nan, max_angle_degree=np.nan)
+    assert "min_angle_degree" not in net.line.columns
+    assert "max_angle_degree" not in net.line.columns
+
+    # values are stored as float64, missing values stay NaN
+    line_ids = create_lines(
+        net,
+        [0, 1],
+        [1, 2],
+        10,
+        "48-AL1/8-ST1A 10.0",
+        min_angle_degree=[-30.0, np.nan],
+        max_angle_degree=30.0,
+    )
+    assert net.line["min_angle_degree"].dtype == np.float64
+    assert net.line["max_angle_degree"].dtype == np.float64
+    assert np.isclose(net.line.at[line_ids[0], "min_angle_degree"], -30.0)
+    assert np.isnan(net.line.at[line_ids[1], "min_angle_degree"])
+    assert np.allclose(net.line.loc[line_ids, "max_angle_degree"], 30.0)
+
+    validate_network(net)
+
+
 def test_create_line_dc():
     net = pandapowerNet(name="test_create_line_dc")
     b1, b2 = create_buses_dc(net, 2, 110)
