@@ -29,6 +29,9 @@ All distribution factors are based on the :ref:`DC power flow <ppDCPF>`. They ar
 :func:`pandapower.run.rundcpp` and a linear approximation of the AC power flow: losses, reactive power and voltage
 magnitudes are neglected.
 
+A tutorial that introduces this feature with examples is available at
+`Sensitivity analysis <https://github.com/e2nIEE/pandapower/tree/develop/tutorials/sensitivity_analysis.ipynb>`_.
+
 .. toctree::
     :maxdepth: 2
 
