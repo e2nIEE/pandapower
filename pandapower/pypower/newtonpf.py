@@ -771,8 +771,8 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
                 old_F=F,
                 pq_lookup=pq_lookup,
                 vsc_controllable=vsc_controllable,
-                vsc_fb=vsc_fb[vsc_controllable],
-                vsc_tb=vsc_tb[vsc_controllable],
+                vsc_fb=vsc_fb,
+                vsc_tb=vsc_tb,
                 Ybus_vsc=Ybus_vsc,
                 Yf_vsc=Yf_vsc,
                 vsc_mode_ac=vsc_mode_ac,
@@ -1007,36 +1007,40 @@ def _evaluate_Fx_facts(
 
     if len(vsc_controllable) > 0:
         Sbus_vsc = V * conj(Ybus_vsc * V)
-        sf_vsc = V[vsc_fb] * conj(Yf_vsc.dot(V))
+        # vsc_fb, vsc_tb and Yf_vsc refer to all in-service VSC, the control modes and values only to the
+        # controllable ones:
+        sf_vsc = (V[vsc_fb] * conj(Yf_vsc.dot(V)))[vsc_controllable]
+        vsc_fb_ctrl = vsc_fb[vsc_controllable]
+        vsc_tb_ctrl = vsc_tb[vsc_controllable]
 
         ###### Mismatch for the first VSC variable:
         # the mismatch value is written for the aux bus, but calculated based on the AC bus
         ac_mode_v = (vsc_mode_ac == VSC_MODE_AC_V) | (vsc_mode_ac == VSC_MODE_AC_SL)
         if np.any(ac_mode_v):
-            mis_vsc_v = np.abs(V[vsc_fb[ac_mode_v]]) - vsc_value_ac[ac_mode_v]
-            old_F[-len(pq) + pq_lookup[vsc_tb[ac_mode_v]]] = mis_vsc_v
+            mis_vsc_v = np.abs(V[vsc_fb_ctrl[ac_mode_v]]) - vsc_value_ac[ac_mode_v]
+            old_F[-len(pq) + pq_lookup[vsc_tb_ctrl[ac_mode_v]]] = mis_vsc_v
 
         # Mismatch for Q:
         ac_mode_q = vsc_mode_ac == VSC_MODE_AC_Q
         if np.any(ac_mode_q):
             mis_vsc_q = sf_vsc.imag[ac_mode_q] - vsc_value_ac[ac_mode_q]  # todo test for when they share same bus
-            old_F[-len(pq) + pq_lookup[vsc_tb[ac_mode_q]]] = mis_vsc_q
+            old_F[-len(pq) + pq_lookup[vsc_tb_ctrl[ac_mode_q]]] = mis_vsc_q
 
         ##### Mismatch for the second VSC variable:
         # Mismatch for AC slack - delta
         ac_mode_sl = vsc_mode_ac == VSC_MODE_AC_SL
         if np.any(ac_mode_sl):
             mis_vsc_delta = (
-                np.angle(V[vsc_fb[ac_mode_sl]]) - 0
+                np.angle(V[vsc_fb_ctrl[ac_mode_sl]]) - 0
             )  # <- here we set delta set point to zero, but can be a parameter in the future
-            old_F[-len(pq) * 2 + pq_lookup[vsc_tb[ac_mode_sl]]] = mis_vsc_delta
+            old_F[-len(pq) * 2 + pq_lookup[vsc_tb_ctrl[ac_mode_sl]]] = mis_vsc_delta
             # this connects the AC slack result and the DC bus P set-point:
             # (the power balance between AC and DC side is part of the DC mismatch, see evaluate_Fx_dc)
 
         # find the connection between the DC buses and VSC buses
         # find the slack DC buses
         # find the P DC buses
-        vsc_set_p_pu = np.zeros(len(vsc_fb[vsc_controllable]), dtype=np.float64)  # power sign convention issue
+        vsc_set_p_pu = np.zeros(len(vsc_fb_ctrl), dtype=np.float64)  # power sign convention issue
 
         vsc_dc_p = (vsc_mode_dc == VSC_MODE_DC_P) & (vsc_mode_ac != VSC_MODE_AC_SL)
         vsc_dc_ref = vsc_mode_dc == VSC_MODE_DC_V
@@ -1049,11 +1053,9 @@ def _evaluate_Fx_facts(
             vsc_set_p_pu[vsc_dc_ref] = -p_vsc_conv[vsc_controllable][vsc_dc_ref]
 
         ####  here used vsc_tb refereing to the q bus
-        mis_vsc_p = (
-            Sbus_vsc[vsc_tb[vsc_controllable]].real - vsc_set_p_pu
-        )  # this is coupling the AC and the DC sides # todo old
+        mis_vsc_p = Sbus_vsc[vsc_tb_ctrl].real - vsc_set_p_pu  # this is coupling the AC and the DC sides # todo old
         # todo: adjust the lookup to work with 1) VSC at ext_grid bus 2) only 1 VSC connected to HVDC line
-        old_F[-len(pq) * 2 + pq_lookup[vsc_tb[~ac_mode_sl]]] = mis_vsc_p[~ac_mode_sl]
+        old_F[-len(pq) * 2 + pq_lookup[vsc_tb_ctrl[~ac_mode_sl]]] = mis_vsc_p[~ac_mode_sl]
 
     return mis_facts
 
