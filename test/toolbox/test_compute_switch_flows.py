@@ -482,7 +482,7 @@ class TestComputeSwitchFlowsNonDefaultIndex:
                     |
                     +--switch with z_ohm > 0--(b3)--load
         """
-        net, b0, b1, b2 = _make_two_bus_coupler_net()
+        net, b0, _, _ = _make_two_bus_coupler_net()
         net.switch.index = [coupler_idx]
         b3 = create_bus(net, vn_kv=20.0)
         create_switch(net, bus=b0, element=b3, et="b", z_ohm=0.01, index=impedance_idx)
