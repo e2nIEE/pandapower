@@ -12,11 +12,13 @@ from pandapower.create import (
     create_ext_grid,
     create_gen,
     create_impedance,
+    create_line_from_parameters,
     create_lines,
     create_switch,
     create_transformer,
     create_transformer3w_from_parameters,
     create_transformer_from_parameters,
+    create_xward,
 )
 from pandapower.file_io import from_json
 from pandapower.network import pandapowerNet
@@ -193,6 +195,33 @@ def test_1ph_shortcircuit_min():
             except Exception as e:  # noqa: BLE001
                 raise UserWarning(f"{e!s}: Did not converge after adding transformer with vector group {vc}")
             check_results(net, vc, result)
+
+
+def test_1ph_shortcircuit_with_xward():
+    """An xward has no zero sequence parameters, so it must not change the zero sequence impedance."""
+    net = pandapowerNet(name="test_1ph_shortcircuit_with_xward")
+    b1, b2 = create_buses(net, 2, vn_kv=20.0)
+    create_ext_grid(net, b1, s_sc_max_mva=1000, rx_max=0.1, x0x_max=1.0, r0x0_max=0.1)
+    create_line_from_parameters(
+        net,
+        b1,
+        b2,
+        length_km=1,
+        r_ohm_per_km=1,
+        x_ohm_per_km=1,
+        c_nf_per_km=1,
+        r0_ohm_per_km=1,
+        x0_ohm_per_km=1,
+        c0_nf_per_km=1,
+        max_i_ka=1,
+    )
+    calc_sc(net, fault="1ph", case="max")
+    z0 = net.res_bus_sc[["rk0_ohm", "xk0_ohm"]].values
+
+    create_xward(net, b2, ps_mw=1, qs_mvar=1, pz_mw=1, qz_mvar=1, r_ohm=1, x_ohm=10, vm_pu=1.0)
+    calc_sc(net, fault="1ph", case="max")
+
+    assert np.allclose(net.res_bus_sc[["rk0_ohm", "xk0_ohm"]].values, z0)
 
 
 def test_iec60909_example_4():
