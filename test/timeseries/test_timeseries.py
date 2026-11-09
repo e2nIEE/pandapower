@@ -222,13 +222,13 @@ def test_false_alarm_trafos(simple_test_net):
 
     if "convergence problems" in s.getvalue():
         raise UserWarning(
-            "Control diagnostic raises false alarm! Controllers are fine, but warning is raised: %s" % s.getvalue()
+            f"Control diagnostic raises false alarm! Controllers are fine, but warning is raised: {s.getvalue()}"
         )
 
     control_diagnostic(net)
     if "convergence problems" in s.getvalue():
         raise UserWarning(
-            "Control diagnostic raises false alarm! Controllers are fine, but warning is raised: %s" % s.getvalue()
+            f"Control diagnostic raises false alarm! Controllers are fine, but warning is raised: {s.getvalue()}"
         )
 
     diagnostic_logger.removeHandler(h)

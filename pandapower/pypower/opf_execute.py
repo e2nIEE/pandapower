@@ -18,7 +18,7 @@ from pandapower.pypower.idx_bus import VM
 from pandapower.pypower.idx_gen import GEN_BUS, VG
 
 # from pandapower.pypower.ipoptopf_solver import ipoptopf_solver
-from pandapower.pypower.makeYbus import makeYbus
+from pandapower.pypower.make_y_bus import makeYbus
 from pandapower.pypower.opf_consfcn import opf_consfcn
 from pandapower.pypower.opf_costfcn import opf_costfcn
 from pandapower.pypower.pipsopf_solver import pipsopf_solver  # temporary changed import to match bugfix path
@@ -51,7 +51,7 @@ def opf_execute(om, ppopt):
 
     if verbose > 0:
         v = ppver("all")
-        stdout.write("PYPOWER Version %s, %s" % (v["Version"], v["Date"]))
+        stdout.write("PYPOWER Version {}, {}".format(v["Version"], v["Date"]))
 
     ##-----  run DC OPF solver  -----
     if dc:
@@ -83,16 +83,8 @@ def opf_execute(om, ppopt):
         ## run specific AC OPF solver
         if alg == 560 or alg == 565:  ## PIPS
             results, success, raw = pipsopf_solver(om, ppopt)
-        #        elif alg == 580:                              ## IPOPT # pragma: no cover
-        #            try:
-        #                __import__('pyipopt')
-        #                results, success, raw = ipoptopf_solver(om, ppopt)
-        #            except ImportError:
-        #                raise ImportError('OPF_ALG %d requires IPOPT '
-        #                                  '(see https://projects.coin-or.org/Ipopt/)' %
-        #                                  alg)
         else:
-            stderr.write("opf_execute: OPF_ALG %d is not a valid algorithm code\n" % alg)
+            stderr.write(f"opf_execute: OPF_ALG {alg:d} is not a valid algorithm code\n")
 
     if ("output" not in raw) or ("alg" not in raw["output"]):
         raw["output"]["alg"] = alg

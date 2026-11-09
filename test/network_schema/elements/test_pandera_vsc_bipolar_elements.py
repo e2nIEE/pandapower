@@ -446,9 +446,7 @@ class TestVscBipolarResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_vsc_bipolar_result_totals(self):
         """Test: aggregated p_mw / q_mvar / dc results are consistent"""
-        pass
 
     @pytest.mark.skip(reason="Not yet implemented")
     def test_vsc_bipolar_ac_dc_results(self):
         """Test: AC and DC side results contain valid values"""
-        pass

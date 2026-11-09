@@ -17,7 +17,7 @@ DEFAULT_OPT_METHOD = "Newton-CG"
 
 class OptAlgorithm(BaseAlgorithm):
     def estimate(self, eppci: ExtendedPPCI, estimator="wls", verbose=True, **kwargs):
-        opt_method = DEFAULT_OPT_METHOD if "opt_method" not in kwargs else kwargs["opt_method"]
+        opt_method = kwargs.get("opt_method", DEFAULT_OPT_METHOD)
 
         # matrix calculation object
         estm = get_estimator(BaseEstimatorOpt, estimator)(eppci, **kwargs)
@@ -38,4 +38,4 @@ class OptAlgorithm(BaseAlgorithm):
             eppci.update_E(E)
             return eppci
         else:
-            raise Exception("Optimization failed! State Estimation not successful!")
+            raise RuntimeError("Optimization failed! State Estimation not successful!")

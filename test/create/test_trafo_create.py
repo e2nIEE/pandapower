@@ -385,9 +385,9 @@ def test_trafo_2_tap_changers():
 
     t = create_transformer(net, b1, b2, "test_trafo_type")
 
-    for c in tap2_data:
+    for c, value in tap2_data.items():
         assert c in net.trafo.columns
-        assert net.trafo.at[t, c] == tap2_data[c]
+        assert net.trafo.at[t, c] == value
 
     validate_network(net)
 
@@ -415,9 +415,9 @@ def test_trafo_2_tap_changers_parameters():
 
     t = create_transformer_from_parameters(net, b1, b2, **std_type, **tap2_data)
 
-    for c in tap2_data:
+    for c, value in tap2_data.items():
         assert c in net.trafo.columns
-        assert net.trafo.at[t, c] == tap2_data[c]
+        assert net.trafo.at[t, c] == value
 
     validate_network(net)
 
@@ -447,9 +447,9 @@ def test_trafos_2_tap_changers_parameters():
 
     t = create_transformer_from_parameters(net, b1, b2, **std_type, **tap2_data)
 
-    for c in tap2_data:
+    for c, value in tap2_data.items():
         assert c in net.trafo.columns
-        assert net.trafo.at[t, c] == tap2_data[c]
+        assert net.trafo.at[t, c] == value
 
     validate_network(net)
 

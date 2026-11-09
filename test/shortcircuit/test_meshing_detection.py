@@ -9,7 +9,6 @@ import pytest
 from pandapower.create import create_buses, create_switch
 from pandapower.file_io import from_json
 from pandapower.shortcircuit.calc_sc import calc_sc
-
 from test import test_path
 
 

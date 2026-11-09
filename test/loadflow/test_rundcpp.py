@@ -25,7 +25,7 @@ from pandapower.network import pandapowerNet
 from pandapower.networks.power_system_test_cases import case4gs, case118
 from pandapower.run import rundcpp, runpp
 from test.consistency_checks import rundcpp_with_consistency_checks
-from test.helper_functions import add_grid_connection, create_test_line, assert_net_equal
+from test.helper_functions import add_grid_connection, assert_net_equal, create_test_line
 from test.loadflow.result_test_network_generator import result_test_network_generator_dcpp
 
 
@@ -61,9 +61,9 @@ def test_result_iter():
         try:
             rundcpp_with_consistency_checks(net)
         except AssertionError:
-            raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
+            raise UserWarning(f"Consistency Error after adding {net.last_added_case}")
         except LoadflowNotConverged:
-            raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
+            raise UserWarning(f"Power flow did not converge after adding {net.last_added_case}")
 
 
 def test_two_open_switches():
@@ -87,7 +87,7 @@ def test_test_sn_mva():
         try:
             assert_net_equal(net1, net2, exclude_elms=["sn_mva"])
         except AssertionError:
-            raise UserWarning("Result difference due to sn_mva after adding %s" % net1.last_added_case)
+            raise UserWarning(f"Result difference due to sn_mva after adding {net1.last_added_case}")
 
 
 def test_single_bus_network():

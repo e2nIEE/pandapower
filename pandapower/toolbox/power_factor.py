@@ -1,19 +1,21 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "cosphi_from_pos",
+    "cosphi_from_pq",
+    "cosphi_pos_neg_from_pq",
+    "cosphi_to_pos",
+    "pq_from_cosphi",
+    "signing_system_value",
+]
+
+import logging
+
 import numpy as np
 
 from pandapower.auxiliary import ensure_iterability
 from pandapower.toolbox.element_selection import pp_elements
-
-try:
-    from networkx.utils.misc import graphs_equal
-
-    GRAPHS_EQUAL_POSSIBLE = True
-except ImportError:
-    GRAPHS_EQUAL_POSSIBLE = False
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -74,8 +76,8 @@ def _pq_from_cosphi(s, cosphi, qmode, pmode):
         qsign = -1
     else:
         raise ValueError(
-            'Unknown mode %s - specify "underexcited" (Q absorption, decreases voltage'
-            ') or "overexcited" (Q injection, increases voltage)' % qmode
+            f'Unknown mode {qmode} - specify "underexcited" (Q absorption, decreases voltage) or '
+            f'"overexcited" (Q injection, increases voltage)'
         )
 
     if pmode == "load":
@@ -83,7 +85,7 @@ def _pq_from_cosphi(s, cosphi, qmode, pmode):
     elif pmode == "gen":
         psign = -1
     else:
-        raise ValueError('Unknown mode %s - specify "load" or "gen"' % pmode)
+        raise ValueError(f'Unknown mode {pmode} - specify "load" or "gen"')
 
     p = s * cosphi
     q = psign * qsign * np.sqrt(s**2 - p**2)
@@ -249,7 +251,7 @@ def cosphi_to_pos(cosphi):
     pandapower.toolbox.cosphi_from_pos
     pandapower.toolbox.cosphi_pos_neg_from_pq
     """
-    multiple = not (isinstance(cosphi, float) or isinstance(cosphi, int))
+    multiple = not isinstance(cosphi, (float, int))
     cosphi = np.array(ensure_iterability(cosphi))
     cosphi[cosphi < 0] += 2
     if multiple:
@@ -277,7 +279,7 @@ def cosphi_from_pos(cosphi):
     pandapower.toolbox.cosphi_to_pos
     pandapower.toolbox.cosphi_pos_neg_from_pq
     """
-    multiple = not (isinstance(cosphi, float) or isinstance(cosphi, int))
+    multiple = not isinstance(cosphi, (float, int))
     cosphi = np.array(ensure_iterability(cosphi))
     cosphi[cosphi > 1] -= 2
     if multiple:
