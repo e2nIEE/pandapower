@@ -310,10 +310,9 @@ def _check_multi_area(net: pandapowerNet, slack_df: pd.DataFrame) -> dict:
     slack_df["priority_in_area"] = 0.0
     # for i, val in sum_priority_in_area.iteritems():
     for i, val in sum_priority_in_area.items():
-        slack_df.loc[slack_df.area == i, "priority_in_area"] = (
-            slack_df.loc[slack_df.area == i, "priority_in_area"] / val
-            if np.isclose(sum_priority_in_area.at[i], 0.0)
-            else 0.0
+        in_area = slack_df.area == i
+        slack_df.loc[in_area, "priority_in_area"] = (
+            0.0 if np.isclose(val, 0.0) else slack_df.loc[in_area, "priority"].astype(float) / val
         )
 
     # slack_df["priority_in_area"] = slack_df.apply(lambda slack: slack.priority/sum_priority_in_area.at[slack.area],

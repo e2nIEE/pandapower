@@ -420,7 +420,6 @@ def verify_ptdf(
     raise AssertionError on mismatches!
     """
     net = deepcopy(net)
-    # ToDo: Verify what the distributed_slack options does for both functions (perturb and classic)
     if ptdf is None:
         ptdf = run_ptdf(
             net,
@@ -429,13 +428,13 @@ def verify_ptdf(
             using_sparse_solver=using_sparse_solver,
             perturb=False,
             random_verify=False,
-            distributed_slack=False,
         )
-    ptdf_perturb = run_ptdf(net, source_bus=source_bus, result_side=result_side, distributed_slack=False, perturb=True)
+    ptdf_perturb = run_ptdf(net, source_bus=source_bus, result_side=result_side, distributed_slack=True, perturb=True)
 
     assert len(ptdf) > 0, "Empty ptdf, verification not possible!"
     for key in ptdf:
-        assert np.allclose(ptdf[key], ptdf_perturb[key], atol=1e-8, equal_nan=True), (
+        this_ptdf_perturb = ptdf_perturb[key].loc[ptdf[key].index, ptdf[key].columns]
+        assert np.allclose(ptdf[key], this_ptdf_perturb, atol=1e-8, equal_nan=True), (
             f"{key} PTDF results verification failed!"
         )
         logger.info(str(key) + " PTDF results verified!")
