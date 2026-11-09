@@ -1,18 +1,27 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+import logging
 from copy import deepcopy
 
-import pandas as pd
 import numpy as np
 import numpy.typing as npt
+import pandas as pd
 
+from pandapower.analysis.utils import (
+    BR_SIDE_MAPPING,
+    BR_SIDE_MAPPING_1,
+    DISCONNECTED_PADDING_VALUE,
+    ELE_IX_TYPE,
+    LOAD_REFRENCE,
+    _get_branch_lookup,
+    _get_bus_lookup,
+    _get_source_bus_ix,
+    _get_trafo3w_lookup,
+    branch_dict_to_ppci_branch_list,
+    get_dist_slack,
+    get_ppci_dist_slack,
+)
 from pandapower.auxiliary import pandapowerNet
-from pandapower.analysis.utils import _get_bus_lookup, _get_branch_lookup, _get_trafo3w_lookup, \
-    branch_dict_to_ppci_branch_list, _get_source_bus_ix, DISCONNECTED_PADDING_VALUE, BR_SIDE_MAPPING, BR_SIDE_MAPPING_1, \
-    ELE_IX_TYPE
-from pandapower.run import rundcpp
 from pandapower.create import create_load
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
@@ -20,9 +29,8 @@ from pandapower.pypower.idx_bus import BUS_I
 
 # replace pandapower makePTDF with custom function
 from pandapower.pypower.make_ptdf import makePTDF
-from pandapower.analysis.utils import get_dist_slack, get_ppci_dist_slack, LOAD_REFRENCE
+from pandapower.run import rundcpp
 
-import logging
 logger = logging.getLogger(__name__)
 
 
@@ -537,7 +545,7 @@ def _get_dc_profile_perturb(net, profiles, result_side=0, distributed_slack=True
 
         # Update result table
         rundcpp(net_mod, distributed_slack=True)
-        for res_br_type in res_pp_np.keys():
+        for res_br_type in res_pp_np:
             if not res_br_type.startswith("trafo3w"):
                 res_pp_np[res_br_type][calc_ix, :] = net_mod["res_" + res_br_type][
                     "p_" + THIS_RES_BR_SIDE_MAPPING[res_br_type] + "_mw"

@@ -1,26 +1,33 @@
-# -*- coding: utf-8 -*-
-
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from typing import Union, Tuple
+import logging
 from copy import deepcopy
 from itertools import product
 
-import pandas as pd
 import numpy as np
 import numpy.typing as npt
+import pandas as pd
 
 from pandapower import pandapowerNet
-from pandapower.analysis.PTDF import _make_ptdf_ppci, _get_ptdf_perturb
-from pandapower.analysis.utils import _get_branch_lookup, _get_trafo3w_lookup, \
-    branch_dict_to_ppci_branch_list, _get_outage_branch_ix, DISCONNECTED_PADDING_VALUE, BR_SIDE_MAPPING, \
-    BR_SIDE_MAPPING_1, BR_PTDF_MAPPING, BR_PTDF_MAPPING_1, BR_NAN_CHECK, ELE_IX_TYPE
-from pandapower.run import rundcpp
-from pandapower.create import create_load, create_ext_grid
+from pandapower.analysis.ptdf import _get_ptdf_perturb, _make_ptdf_ppci
+from pandapower.analysis.utils import (
+    BR_NAN_CHECK,
+    BR_PTDF_MAPPING,
+    BR_PTDF_MAPPING_1,
+    BR_SIDE_MAPPING,
+    BR_SIDE_MAPPING_1,
+    DISCONNECTED_PADDING_VALUE,
+    ELE_IX_TYPE,
+    _get_branch_lookup,
+    _get_outage_branch_ix,
+    _get_trafo3w_lookup,
+    branch_dict_to_ppci_branch_list,
+)
+from pandapower.create import create_ext_grid, create_load
 from pandapower.pypower.make_lodf import makeLODF
+from pandapower.run import rundcpp
 
-import logging
 logger = logging.getLogger(__name__)
 
 
@@ -137,12 +144,12 @@ def _lodf_ppci_to_pp(
         pp_ppci_branch_lookups: dict[str, npt.NDArray | range | None] = {
             br_type: range(branch_ppci_lookup[br_type][0], branch_ppci_lookup[br_type][1])
             for br_type in ("line", "trafo", "impedance")
-            if br_type in branch_ppci_lookup.keys()
+            if br_type in branch_ppci_lookup
         }
         pp_ppci_trafo3w_lookups: dict[str, npt.NDArray | range] | None = {
             type: range(branch_ppci_lookup[type][0], branch_ppci_lookup[type][1])
             for type in ("trafo3w_hv", "trafo3w_mv", "trafo3w_lv")
-            if type in branch_ppci_lookup.keys()
+            if type in branch_ppci_lookup
         }
     else:
         pp_ppci_branch_lookups = {
@@ -163,7 +170,7 @@ def _lodf_ppci_to_pp(
     if pp_ppci_trafo3w_lookups is not None:
         # goal_trafo3w_side: ("trafo3w_hv", "trafo3w_mv", "trafo3w_lv")
         for source_br_type in available_branch_types:
-            for goal_trafo3w_side in pp_ppci_trafo3w_lookups.keys():
+            for goal_trafo3w_side in pp_ppci_trafo3w_lookups:
                 results[(goal_trafo3w_side, source_br_type)] = lodf_ppci_padding[
                     pp_ppci_trafo3w_lookups[goal_trafo3w_side], :
                 ][:, pp_ppci_branch_lookups[source_br_type]]
@@ -175,7 +182,7 @@ def _lodf_pp_np_to_df(
         res_pp_np,
         outage_branch_type: str | None = None,
         outage_branch_ix: ELE_IX_TYPE | None = None,
-        branch_dict: dict[str, Union[list[int], None]] | None = None
+        branch_dict: dict[str, list[int] | None] | None = None
 ) -> dict:
     res = {}
     for key, data in res_pp_np.items():
@@ -213,7 +220,7 @@ def _get_lodf_perturb(
     outage_branch_ix: ELE_IX_TYPE | None = None,
     distributed_slack=True,
     recycle: str | None = "lodf",
-) -> dict[Tuple[str, str], pd.DataFrame]:
+) -> dict[tuple[str, str], pd.DataFrame]:
     """
     this function calculate LODF (ratio without unit) of a pp branch from the outage of a pp branch
     with perturb method (brute-force)
@@ -269,9 +276,9 @@ def _get_lodf_perturb(
                 if bus_to_add_load is not None:
                     create_load(net_mod, bus=bus_to_add_load, p_mw=-1)
                     create_load(net_mod_n1, bus=bus_to_add_load, p_mw=-1)
-                    logger.info("Added load on %s to fix low loading branch" % str(br_ix))
+                    logger.info(f"Added load on {br_ix} to fix low loading branch")
                 else:
-                    logger.warning("Add load not possible on %s to fix low loading branch" % str(br_ix))
+                    logger.warning(f"Add load not possible on {br_ix} to fix low loading branch")
                     continue
 
                 # Update branch p0 in n-0 net
@@ -404,9 +411,9 @@ def run_lodf(
     recycle: str | None = None,
     using_sparse_solver: bool = True,
     random_verify: bool = False,
-    branch_dict: dict[str, Union[list[int], None]] | None = None,
+    branch_dict: dict[str, list[int] | None] | None = None,
     reduced: bool = True,
-) -> dict[Tuple[str, str], pd.DataFrame]:
+) -> dict[tuple[str, str], pd.DataFrame]:
     """
     this function is a wrapper of calculating LODF (ratio without unit) of a pp branch from the outage of a pp branch
     with pypower matrix function or perturb function.
@@ -461,8 +468,8 @@ def run_lodf(
             reduced=reduced,
         )
 
-    if outage_branch_ix is not None and (np.isscalar(outage_branch_ix) or len(outage_branch_ix) == 1):
-        if np.all(np.isnan(lodf[("line", outage_branch_type)].to_numpy())):
+    if outage_branch_ix is not None and (np.isscalar(outage_branch_ix) or len(outage_branch_ix) == 1) and \
+        np.all(np.isnan(lodf[("line", outage_branch_type)].to_numpy())):
             # if only one branch selected for outage,
             # raise an error when not allowed to outage
             # logger.error(f"{outage_branch_ix} is not allowed to outage!")
@@ -495,7 +502,7 @@ def verify_dc_n1_with_lodf(
     )
 
     assert len(res_n1_lodf) > 0, "Empty res n1 lodf, verification not possible!"
-    for key in res_n1_lodf.keys():
+    for key in res_n1_lodf:
         filter = ~res_n1_lodf[key].isna().any(axis=0)
         assert np.allclose(
             res_n1_lodf[key].loc[:, filter], res_n1_perturb[key].loc[:, filter], equal_nan=True, atol=1e-8
@@ -528,7 +535,7 @@ def verify_lodf(
     lodf_perturb = run_lodf(net, outage_branch_type, outage_branch_ix, distributed_slack=True, perturb=True)
 
     assert len(lodf) > 0, "Empty lodf, verification not possible!"
-    for key in lodf.keys():
+    for key in lodf:
         filter_lodf = ~lodf[key].isna().any(axis=0)
         assert np.allclose(lodf[key].loc[:, filter_lodf], lodf_perturb[key].loc[:, filter_lodf], atol=1e-8, equal_nan=True), (
             f"{key} LODF results verification failed!"

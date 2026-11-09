@@ -1,16 +1,15 @@
-# -*- coding: utf-8 -*-
 
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from typing import Union, Tuple
+import logging
+
 import numpy as np
 import numpy.typing as npt
 import pandas as pd
+
 import pandapower as pp
 from pandapower.auxiliary import pandapowerNet
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -34,7 +33,7 @@ PP_SLACK_PRIO_COL = "slack_weight"
 
 def _get_source_bus_ix(
         net: pandapowerNet,
-        source_bus: Union[int, np.ndarray] | None = None
+        source_bus: int | np.ndarray | None = None
 ) -> npt.NDArray:
     if source_bus is None:
         return net.bus.index.to_numpy()
@@ -166,7 +165,7 @@ def branch_dict_to_ppci_branch_list(
     return branch_id_ppci, ppci_branch_lookup
 
 
-def get_dist_slack(net: pandapowerNet, pf_required: bool=True) -> Tuple[pd.DataFrame, dict]:
+def get_dist_slack(net: pandapowerNet, pf_required: bool=True) -> tuple[pd.DataFrame, dict]:
     """
     Find active slacks of a pp net and check multi area
     of the grid

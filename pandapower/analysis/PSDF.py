@@ -1,26 +1,25 @@
-# -*- coding: utf-8 -*-
-
-# Copyright (c) 2016-2025 by University of Kassel and Fraunhofer Institute for Energy Economics
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 # Builds the DC PSDF matrix based on the DC PTDF
 import logging
 from math import pi
 
-import scipy as sp
-from scipy.sparse import csr_matrix, csc_matrix
-import pandas as pd
 import numpy as np
 import numpy.typing as npt
+import pandas as pd
+import scipy as sp
+from numpy import arange, int64, isscalar, ones, r_, real
+from numpy import flatnonzero as find
+from scipy.sparse import csc_matrix, csr_matrix
 
-from pandapower.analysis.LODF import _lodf_ppci_to_pp, _lodf_pp_np_to_df
-from pandapower.analysis.PTDF import _make_ptdf_ppci
+from pandapower import pandapowerNet
+from pandapower.analysis.lodf import _lodf_pp_np_to_df, _lodf_ppci_to_pp
+from pandapower.analysis.ptdf import _make_ptdf_ppci
+from pandapower.analysis.utils import ELE_IX_TYPE, _get_outage_branch_ix, branch_dict_to_ppci_branch_list
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pypower.idx_bus import BUS_TYPE, REF
 from pandapower.pypower.make_b_dc import calc_b_from_branch
-from numpy import ones, r_, real, int64, arange, flatnonzero as find, isscalar
-from pandapower import pandapowerNet
-from pandapower.analysis.utils import branch_dict_to_ppci_branch_list, _get_outage_branch_ix, ELE_IX_TYPE
 
 logger = logging.getLogger(__name__)
 
