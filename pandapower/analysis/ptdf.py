@@ -39,7 +39,7 @@ def _get_ptdf_direct(
     source_bus: int | npt.NDArray | None = None,
     result_side=0,
     using_sparse_solver: bool = True,
-    random_verify: bool = True,
+    random_verify: bool = False,
     branch_dict: dict[str, list[int] | None] | None = None,
     reduced: bool = True,
 ):

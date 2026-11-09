@@ -36,7 +36,7 @@ def _get_lodf_direct(
     outage_branch_type: str,
     outage_branch_ix=None,
     using_sparse_solver=True,
-    random_verify=True,
+    random_verify=False,
     branch_dict: dict[str, list[int] | None] | None = None,
     reduced=True,
 ) -> dict:
