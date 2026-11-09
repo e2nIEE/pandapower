@@ -50,20 +50,6 @@ The direct PTDF distributes the slack according to the ``slack_weight`` of the s
 ``gen`` with ``slack=True``), ``distributed_slack`` only changes the perturb method. LODF and PSDF do not depend on the
 slack, so ``distributed_slack=False`` is passed for their direct method to avoid a warning.
 
-Restricting the calculation to selected branches
-================================================
-
-With ``branch_dict``, the calculation is restricted to selected branches, given as a dictionary with the keys
-``"line"``, ``"trafo"``, ``"impedance"`` and ``"trafo3w"`` and lists of pandapower indices as values:
-
-.. code:: python
-
-    ptdf = run_ptdf(net, branch_dict={"line": [0, 1, 2], "trafo": [0]})
-
-With ``reduced=True`` (default), only the selected branches are returned. With ``reduced=False``, all branches are
-returned and the branches that are not selected are ``NaN``. Selecting out-of-service branches raises a ``ValueError``,
-since they are not part of the internal ppc.
-
 Grid state
 ==========
 
