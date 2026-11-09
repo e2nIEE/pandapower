@@ -35,7 +35,7 @@ from scipy.sparse import csr_matrix, diags
 from scipy.sparse.csgraph import connected_components
 from scipy.sparse.linalg import MatrixRankWarning, spsolve
 
-from pandapower.pf.makeYbus_facts import make_Ybus_facts
+from pandapower.pf.make_y_bus_facts import make_Ybus_facts
 
 
 def _minus_terminal_voltage(V_dc, m):

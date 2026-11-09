@@ -331,14 +331,10 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     Ybus_tcsc = make_Ybus_facts(tcsc_fb, tcsc_tb, y_tcsc_pu, Ybus.shape[0])
 
     # SSC
-    Ybus_ssc_not_controllable, _, Ybus_ssc = makeYbus_ssc_vsc(
-        Ybus, ssc_y_pu, ssc_fb, ssc_tb, ssc_controllable
-    )
+    Ybus_ssc_not_controllable, _, Ybus_ssc = makeYbus_ssc_vsc(Ybus, ssc_y_pu, ssc_fb, ssc_tb, ssc_controllable)
 
     # VSC
-    Ybus_vsc_not_controllable, _, Ybus_vsc = makeYbus_ssc_vsc(
-        Ybus, vsc_y_pu, vsc_fb, vsc_tb, vsc_controllable
-    )
+    Ybus_vsc_not_controllable, _, Ybus_vsc = makeYbus_ssc_vsc(Ybus, vsc_y_pu, vsc_fb, vsc_tb, vsc_controllable)
 
     # HVDC
     # Ybus_hvdc includes the r_dc and no-load losses of the VSC and the return current of bipolar VSC:
@@ -418,21 +414,21 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
 
     # DC grid model with VSC, see pandapower.pf.dc_vsc
     dc_model = {
-        'Ybus_dc': Ybus_hvdc,
-        'P_dc': P_dc,
-        'dc_ref': dc_ref,
-        'dc_p': dc_p,
-        'V_sl_dc': V_sl_dc,
-        'f': vsc_dc_fb,
-        't': vsc_dc_tb,
-        'm': vsc_dc_mb,
-        'g': vsc_g_pu,
-        'gl': vsc_gl_pu,
-        'ctrl_p': vsc_dc_ctrl_p,
-        'ctrl_v': vsc_dc_ctrl_v,
-        'ctrl_sl': vsc_dc_ctrl_sl,
-        'value_dc': vsc_value_dc_all,
-        'vsc_tb_ac': vsc_tb,
+        "Ybus_dc": Ybus_hvdc,
+        "P_dc": P_dc,
+        "dc_ref": dc_ref,
+        "dc_p": dc_p,
+        "V_sl_dc": V_sl_dc,
+        "f": vsc_dc_fb,
+        "t": vsc_dc_tb,
+        "m": vsc_dc_mb,
+        "g": vsc_g_pu,
+        "gl": vsc_gl_pu,
+        "ctrl_p": vsc_dc_ctrl_p,
+        "ctrl_v": vsc_dc_ctrl_v,
+        "ctrl_sl": vsc_dc_ctrl_sl,
+        "value_dc": vsc_value_dc_all,
+        "vsc_tb_ac": vsc_tb,
     }
     if any_vsc_bipolar:
         # the poles of bipolar VSC need a sensible start (negative voltages for negative poles, ~0 for neutrals):
