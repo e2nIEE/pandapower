@@ -78,6 +78,16 @@ class TrafoController(Controller):
     def _update_trafobus(self, net):
         self.trafobus = read_from_net(net, self.element, self.element_index, self.side + "_bus", self._read_write_flag)
 
+    def _get_vm_pu(self, net):
+        """
+        Returns the voltage in pu that is used by the controller to determine the tap position.
+
+        By default, this is the measured voltage at the bus on the controlled side of the transformer. Subclasses
+        (e.g. line drop compensation controllers) can override this method to control a different (e.g. virtual or
+        remote) voltage.
+        """
+        return read_from_net(net, "res_bus", self.trafobus, "vm_pu", self._read_write_flag)
+
     def nothing_to_do(self, net):
         element_in_service = read_from_net(net, self.element, self.element_index, "in_service", self._read_write_flag)
         ext_grid_bus = np.isin(self.trafobus, net.ext_grid.loc[net.ext_grid.in_service, "bus"].values)
