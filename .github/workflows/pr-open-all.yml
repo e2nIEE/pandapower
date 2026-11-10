@@ -444,7 +444,7 @@ jobs:
           cache-dependency-glob: "pyproject.toml"
       - name: Install dependencies
         run: |
-          uv sync --group test --extra tutorials --extra pgm
+          uv sync --group test --group tutorials --extra pgm
       - name: List all installed packages
         run: |
           uv pip list
