@@ -184,8 +184,13 @@ def _get_vsc_bipolar_results(net, ppc):
     Writes the results of the auxiliary net.vsc entries (see _add_vsc_bipolar) to net.res_vsc_bipolar.
     The auxiliary entries are removed from net.res_vsc in _clean_up.
     """
+    if len(net.vsc_bipolar) == 0:
+        # results of bipolar VSC that were removed since the last power flow must not remain
+        if "res_vsc_bipolar" in net and len(net.res_vsc_bipolar) > 0:
+            empty_res_element(net, "vsc_bipolar")
+        return
     aux = net.get("_vsc_bipolar_aux", None)
-    if aux is None or len(net.vsc_bipolar) == 0:
+    if aux is None:
         return
     vsc_index = aux["vsc_index"]
     res_vsc = net.res_vsc.loc[vsc_index]

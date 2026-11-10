@@ -299,6 +299,28 @@ def test_vsc_bipolar_minus_bus_out_of_service():
     assert len(net.vsc) == 0
 
 
+def test_vsc_bipolar_results_removed_with_elements():
+    """
+    If all bipolar VSC are removed, the results of a previous power flow are removed from net.res_vsc_bipolar.
+    """
+    from pandapower.results import EmptyResults
+
+    net = _bipolar_dmr_net()
+    runpp(net)
+    assert len(net.res_vsc_bipolar) == 4
+
+    vsc_bipolar = net.vsc_bipolar.copy()
+    net.vsc_bipolar = net.vsc_bipolar.iloc[0:0]
+    runpp(net)
+    assert net.res_vsc_bipolar.empty
+    assert net.res_vsc_bipolar.columns.equals(EmptyResults["res_vsc_bipolar"].columns)
+
+    # the results are written again when bipolar VSC are added again
+    net.vsc_bipolar = vsc_bipolar
+    runpp(net)
+    assert len(net.res_vsc_bipolar) == 4
+
+
 def test_vsc_bipolar_with_monopolar_vsc():
     """
     Bipolar VSC and monopolar VSC in one net, results are written to the correct tables. Second power flow is
