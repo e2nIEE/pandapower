@@ -15,12 +15,12 @@ __all__ = [
 ]
 
 import logging
-import warnings
 from collections.abc import Iterable, Sequence
 from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
+from typing_extensions import deprecated
 
 from pandapower.create._utils import (
     _check_element,
@@ -331,6 +331,7 @@ def create_ssc(
     return index
 
 
+@deprecated("Use create_vsc_bipolar instead.") # v4.0.0
 def create_vsc_stacked(
     net: pandapowerNet,
     bus: Int,
@@ -380,12 +381,6 @@ def create_vsc_stacked(
         The ID of the created ssc
     """
 
-    warnings.warn(
-        "create_vsc_stacked is deprecated and will be removed in a future release. The stacked VSC is split into two "
-        "VSC referenced to ground, so no current can flow through a metallic return. Use create_vsc_bipolar instead.",
-        DeprecationWarning,
-        stacklevel=2,
-    )
     _check_element(net, bus)
     _check_element(net, bus_dc_plus, "bus_dc")
     _check_element(net, bus_dc_minus, "bus_dc")
