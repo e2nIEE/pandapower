@@ -30,34 +30,40 @@ if find_spec("lightsim2grid"):
     import lightsim2grid
 
     ls2g_version = Version(lightsim2grid.__version__)
-    if ls2g_version < Version("0.9.0"):
-        logger.warning("Only lightsim2grid version 0.9.0 or newer is supported - please update ligtsim2grid")
-        raise ImportError
-
-    from lightsim2grid.contingencyAnalysis import ContingencyAnalysisCPP
-    from lightsim2grid.gridmodel.from_pandapower import init as init_ls2g
-
-    if ls2g_version < Version("0.13.0"):
-        from lightsim2grid_cpp import GridModel, SolverType
+    if ls2g_version < Version("1.3.0"):
+        # do not raise, otherwise this module (and with it the ls2g independent functions) becomes
+        # unimportable just because an outdated lightsim2grid is installed
+        logger.warning(
+            f"lightsim2grid {ls2g_version} is too old for contingency analysis, version 1.3.0 or newer is "
+            "required - please update lightsim2grid"
+        )
+        lightsim2grid_installed = False
     else:
-        from lightsim2grid.lightsim2grid_cpp import GridModel, SolverType
+        from lightsim2grid.algorithm import AlgorithmType as SolverType
+        from lightsim2grid.contingencyAnalysis import ContingencyAnalysisCPP
+        from lightsim2grid.network import LSGrid as GridModel
+        from lightsim2grid.network import init_from_pandapower as init_ls2g
 
-    lightsim2grid_installed = True
+        lightsim2grid_installed = True
 else:
     lightsim2grid_installed = False
 
 try:
     if not lightsim2grid_installed:
         raise ImportError
-    ls2g_version = Version(lightsim2grid.__version__)
-    if ls2g_version < Version("0.13.0"):
-        from lightsim2grid_cpp import KLUSolver, KLUSolverSingleSlack
-    else:
-        from lightsim2grid.lightsim2grid_cpp import KLUSolver, KLUSolverSingleSlack  # noqa: F401
+    from lightsim2grid.algorithm import NR_KLU, NRSing_KLU  # noqa: F401
 
     KLU_solver_available = True
 except ImportError:
     KLU_solver_available = False
+
+
+def _ls2g_solver_types() -> tuple["SolverType", "SolverType"]:
+    """
+    Return the lightsim2grid algorithm types for (multiple slack, single slack) grids, preferring KLU.
+    """
+    suffix = "KLU" if KLU_solver_available else "SparseLU"
+    return getattr(SolverType, f"NR_{suffix}"), getattr(SolverType, f"NRSing_{suffix}")
 
 
 def pp_to_ls2g(net: pandapowerNet) -> "GridModel":
@@ -264,7 +270,8 @@ def run_contingency_ls2g(
         tct3w, tct3w_tap_pos, tct3w_shift_degree = _convert_trafo_phase_shifter(net, "trafo3w", "tap_changer_type")
 
     # setting "slack" back-and-forth is due to the difference in interpretation of generators as "distributed slack"
-    if net._options.get("distributed_slack", False):
+    distributed_slack = net._options.get("distributed_slack", False)
+    if distributed_slack:
         slack_backup = net.gen.slack.copy()
         net.gen.loc[net.gen.slack_weight != 0, "slack"] = True
         msg = (
@@ -275,10 +282,10 @@ def run_contingency_ls2g(
             warnings.filterwarnings("ignore", msg)
             lightsim_grid_model = pp_to_ls2g(net)
         net.gen["slack"] = slack_backup
-        solver_type = SolverType.KLU if KLU_solver_available else SolverType.SparseLU
     else:
         lightsim_grid_model = pp_to_ls2g(net)
-        solver_type = SolverType.KLUSingleSlack if KLU_solver_available else SolverType.SparseLUSingleSlack
+    solver_multi_slack, solver_single_slack = _ls2g_solver_types()
+    solver_type = solver_multi_slack if distributed_slack else solver_single_slack
 
     if tps_flag:
         net.trafo["tap_phase_shifter"] = tps
