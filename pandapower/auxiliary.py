@@ -1945,12 +1945,12 @@ def _init_runpp_options(
 
             eg = eg_tbl["in_service"].to_numpy()
             gen = gen_tbl["in_service"].to_numpy()
-            vsc_mask = (vsc_tbl["in_service"].to_numpy() & (vsc_tbl["control_mode_ac"].to_numpy() == "slack"))
+            vsc_mask = vsc_tbl["in_service"].to_numpy() & (vsc_tbl["control_mode_ac"].to_numpy() == "slack")
 
             total = (
-                eg_tbl["vm_pu"].to_numpy()[eg].sum() +
-                gen_tbl["vm_pu"].to_numpy()[gen].sum() +
-                vsc_tbl["control_value_ac"].to_numpy()[vsc_mask].sum()
+                eg_tbl["vm_pu"].to_numpy()[eg].sum()
+                + gen_tbl["vm_pu"].to_numpy()[gen].sum()
+                + vsc_tbl["control_value_ac"].to_numpy()[vsc_mask].sum()
             )
             count = eg.sum() + gen.sum() + vsc_mask.sum()
 
