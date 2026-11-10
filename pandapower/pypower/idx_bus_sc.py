@@ -3,7 +3,7 @@
 
 
 # define the indices
-from pandapower.pypower.idx_bus import bus_cols as start
+from pandapower.pypower.idx_bus import BUS_COLS as start
 
 R_EQUIV = start + 0
 X_EQUIV = start + 1
@@ -34,4 +34,4 @@ PHI_IKSS1_DEGREE = start + 24
 PHI_IKSS2_DEGREE = start + 25
 PHI_IKCV_DEGREE = start + 26
 
-bus_cols_sc = 27
+BUS_COLS_SC = 27
