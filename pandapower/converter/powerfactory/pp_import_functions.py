@@ -5428,19 +5428,26 @@ def remove_folder_of_std_types(net):
     """
     for element in ["line", "trafo", "trafo3w"]:
         std_types = available_std_types(net, element=element).index
-        reduced_std_types = {name.split("\\")[-1] for name in std_types}
-        for std_type in reduced_std_types:
+        renaming = {}  # old name (with folder) -> new name (without folder)
+        for std_type in {name.split("\\")[-1] for name in std_types}:
             all_types = [st for st in std_types if st.split("\\")[-1] == std_type]
-            if len(all_types) > 1:
-                types_equal = [
-                    load_std_type(net, type1, element) == load_std_type(net, type2, element)
-                    for type1, type2 in combinations(all_types, 2)
-                ]
-                if not all(types_equal):
-                    continue
-            for st in all_types:
-                net.std_types[element][std_type] = net.std_types[element].pop(st)
-                net[element].std_type = net[element].std_type.replace(st, std_type)
+            if all_types == [std_type]:
+                continue  # no folder in the name, nothing to rename
+            if len(all_types) > 1 and not all(
+                load_std_type(net, type1, element) == load_std_type(net, type2, element)
+                for type1, type2 in combinations(all_types, 2)
+            ):
+                continue
+            renaming.update({st: std_type for st in all_types if st != std_type})
+        if not renaming:
+            continue
+
+        for old_name, new_name in renaming.items():
+            net.std_types[element][new_name] = net.std_types[element].pop(old_name)
+        # the std_type column only exists if an element was created from a standard type
+        if "std_type" in net[element].columns:
+            to_rename = net[element]["std_type"].isin(list(renaming))
+            net[element].loc[to_rename, "std_type"] = net[element].loc[to_rename, "std_type"].map(renaming)
 
 
 def create_q_capability_curve(net, item):
