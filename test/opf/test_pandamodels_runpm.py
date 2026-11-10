@@ -692,13 +692,19 @@ def test_storage_opt():
     assert net._pm["pm_solver"] == "juniper"
     assert net._pm["pm_mip_solver"] == "cbc"
     assert list(net.res_ts_opt["res_bus.vm_pu"].index) == list(range(5))
+    assert list(storage_results_1[0].columns) == ["p_mw", "q_mvar", "soc_mwh", "soc_percent"]
 
     net2 = create_cigre_grid_with_time_series(json_path)
     net2.sn_mva = 100.0
     runpm_storage_opf(net2, from_time_step=0, to_time_step=5, pm_mip_solver="cbc")
     storage_results_100 = read_pm_storage_results(net2)
 
-    assert abs(storage_results_100[0].values - storage_results_1[0].values).max() < 1e-6
+    # the storage schedule is not unique (no storage costs), only the optimum is independent of sn_mva
+    assert np.isclose(net2.res_cost, net.res_cost, rtol=1e-6)
+    storage = net.storage.loc[0]
+    for res in [storage_results_1[0], storage_results_100[0]]:
+        assert (res.p_mw.abs() <= storage.p_mw + 1e-6).all()
+        assert (res.soc_mwh >= -1e-6).all() and (res.soc_mwh <= storage.max_e_mwh + 1e-6).all()
 
 
 def _create_multi_vstab_net():
@@ -863,7 +869,9 @@ def test_runpm_ploss_loading():
         case39,
         case57,
         case118,
-        case145,
+        # infeasible with its large bus shunts (pandapower's rundcopp fails as well), converged before only
+        # because the shunts were scaled by 1 / sn_mva
+        pytest.param(case145, marks=pytest.mark.xfail(reason="infeasible")),
         case300,
     ],
 )

@@ -2,7 +2,6 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import json
-import math
 import os
 from copy import deepcopy
 from importlib.util import find_spec
@@ -86,8 +85,10 @@ def test_to_pm_angle_limits(net_3w_trafo_opf):
         for branch in pm["branch"].values()
         if branch["transformer"]
     }
-    assert line_limits == {(round(math.radians(-30.0), 9), round(math.radians(20.0), 9))}
-    assert trafo_limits == {(round(math.radians(-5.0), 9), round(math.radians(5.0), 9))}
+    # MATPOWER units: angles in degrees, PandaModels.jl converts them to rad
+    assert not pm["per_unit"]
+    assert line_limits == {(-30.0, 20.0)}
+    assert trafo_limits == {(-5.0, 5.0)}
 
 
 if __name__ == "__main__":
