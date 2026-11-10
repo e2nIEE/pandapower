@@ -14,6 +14,7 @@ from pandapower.contingency.contingency import (
     _convert_trafo_phase_shifter,
     check_elements_within_limits,
     get_element_limits,
+    pp_to_ls2g,
     report_contingency_results,
     run_contingency,
     run_contingency_ls2g,
@@ -76,11 +77,6 @@ def test_contingency_parallel(get_net):
 
 @pytest.mark.parametrize("contingency_function", [run_contingency, run_contingency_ls2g])
 def test_contingency_timeseries(get_net, contingency_function):
-    # FIXME: temporary skip for case14 and run_contingency_ls2g because of error in ls2g
-    if get_net.name == "case14" and contingency_function == run_contingency_ls2g:
-        pytest.skip(
-            "lightsim2grid's init_ls2g has an error when handling pandapower 4 networks. (pd.NA dtype support missing)"
-        )
     if not lightsim2grid_installed and contingency_function == run_contingency_ls2g:
         pytest.skip("lightsim2grid package is not installed")
 
@@ -132,11 +128,6 @@ def test_contingency_timeseries(get_net, contingency_function):
 @pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
 @pytest.mark.parametrize("case", [0, 1, 2])
 def test_with_lightsim2grid(get_net, case):
-    # FIXME: temporary skip for case14 because of error in lightsim2grid
-    if get_net.name == "case14":
-        pytest.skip(
-            "lightsim2grid's init_ls2g has an error when handling pandapower 4 networks. (pd.NA dtype support missing)"
-        )
     net = get_net
     rng = np.random.default_rng(seed=1)
 
@@ -264,6 +255,21 @@ def test_unequal_trafo_hv_lv_impedances():
 
 
 @pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
+@pytest.mark.parametrize("net_name", ["case9", "case14"])
+def test_pp_to_ls2g_with_extension_dtypes(net_name):
+    # lightsim2grid's converter can not handle the nullable extension dtypes that pandapower uses
+    # by default (case14 fails with "boolean value of NA is ambiguous"), so pp_to_ls2g has to
+    # convert a copy of the net without touching the dtypes of the original net
+    net = globals()[net_name]()
+    dtypes_before = {table: df.dtypes.copy() for table, df in net.items() if isinstance(df, pd.DataFrame)}
+
+    pp_to_ls2g(net)
+
+    for table, dtypes in dtypes_before.items():
+        assert dtypes.equals(net[table].dtypes), table
+
+
+@pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
 def test_lightsim2grid_distributed_slack():
     net = case9()
     net.gen["slack_weight"] = 1
@@ -344,10 +350,6 @@ def test_lightsim2grid_phase_shifters():
 
 @pytest.mark.skipif(not lightsim2grid_installed, reason="lightsim2grid package is not installed")
 def test_cause_congestion():
-    # FIXME: temporary skip for case14 because of error in lightsim2grid
-    pytest.skip(
-        "lightsim2grid's init_ls2g has an error when handling pandapower 4 networks. (pd.NA dtype support missing)"
-    )
     net = case14()
     for c in ("tap_neutral", "tap_step_percent", "tap_pos", "tap_step_degree"):
         net.trafo[c] = 0
@@ -427,10 +429,6 @@ def test_cause_element_index():
     check_cause_index(net, nminus1_cases)
 
     if lightsim2grid_installed:
-        # FIXME: temporary skip for case14 because of error in lightsim2grid
-        pytest.skip(
-            "lightsim2grid's init_ls2g has an error when handling pandapower 4 networks. (pd.NA dtype support missing)"
-        )
         run_contingency_ls2g(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
 
         columns = [
