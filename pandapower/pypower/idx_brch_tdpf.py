@@ -1,7 +1,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from pandapower.pypower.idx_brch import branch_cols as start
+from pandapower.pypower.idx_brch import BRANCH_COLS as start
 
 # columns for TDPF
 
@@ -22,4 +22,4 @@ R_THETA = start + 14  # Thermal resistance R_Theta in K/MW (Optional)
 OUTER_DIAMETER_M = start + 15  # outer diameter of the conductor
 MC_JOULE_PER_M_K = start + 16  # thermal inertia parameter of the conductor
 
-branch_cols_tdpf = 17
+BRANCH_COLS_TDPF = 17
