@@ -1,0 +1,14 @@
+repos:
+- repo: https://github.com/astral-sh/ruff-pre-commit
+  # Ruff version.
+  rev: c0f278f1254ccc8fb09676bcdb8d847e7db493e5  #v0.17.4
+  hooks:
+    - id: ruff-check
+      args: [ --fix ]
+    - id: ruff-format
+
+# Python type checking with Mypy
+- repo: https://github.com/pre-commit/mirrors-mypy
+  rev: ad26ebfa797fcb9b8f83275937c1c1d6e126719c  #v2.4.1
+  hooks:
+    - id: mypy
