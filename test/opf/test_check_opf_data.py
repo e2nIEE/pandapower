@@ -129,5 +129,42 @@ def test_opf_data_check_lim_col(elm, par):
     assert not _run_check(net)
 
 
+@pytest.mark.parametrize("elm", ["line", "trafo", "trafo3w", "impedance"])
+@pytest.mark.parametrize("par", ["min_angle_degree", "max_angle_degree"])
+def test_opf_data_check_angle_limits_missing_column(elm, par, caplog):
+    # missing angle limit columns must not raise or warn
+    net = _opf_net()
+    assert par not in net[elm].columns
+    with caplog.at_level(logging.WARNING, logger=logger.name):
+        assert _run_check(net)
+    assert not [rec for rec in caplog.records if rec.levelno >= logging.WARNING and "angle" in rec.getMessage()]
+
+
+@pytest.mark.parametrize("elm", ["line", "trafo"])
+def test_opf_data_check_angle_limits_all_nan_logs_info(elm, caplog):
+    net = _opf_net()
+    net[elm]["min_angle_degree"] = nan
+    net[elm]["max_angle_degree"] = nan
+    with caplog.at_level(logging.INFO, logger=logger.name):
+        assert _run_check(net)
+    messages = [rec.getMessage() for rec in caplog.records]
+    for par in ("min_angle_degree", "max_angle_degree"):
+        assert any(f"{elm}.{par}" in msg and "unconstrained" in msg for msg in messages)
+    assert not [rec for rec in caplog.records if rec.levelno >= logging.WARNING and "angle" in rec.getMessage()]
+
+
+@pytest.mark.parametrize("elm", ["line", "trafo"])
+@pytest.mark.parametrize("par", ["min_angle_degree", "max_angle_degree"])
+def test_opf_data_check_angle_limits_zero_warns(elm, par, caplog):
+    net = _opf_net()
+    net[elm]["min_angle_degree"] = -30.0
+    net[elm]["max_angle_degree"] = 30.0
+    net[elm][par] = 0.0
+    with caplog.at_level(logging.WARNING, logger=logger.name):
+        assert _run_check(net)
+    warnings = [rec.getMessage() for rec in caplog.records if rec.levelno >= logging.WARNING]
+    assert any(f"{elm}.{par} contains 0" in msg for msg in warnings)
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

@@ -23,6 +23,8 @@ from pandapower.create._utils import add_column_to_df
 from pandapower.network import pandapowerNet
 from pandapower.pf.create_jacobian_tdpf import ALPHA_TDPF
 from pandapower.pypower.idx_brch import (
+    ANGMAX,
+    ANGMIN,
     BR_B,
     BR_B_ASYM,
     BR_G,
@@ -250,6 +252,11 @@ def _calc_trafo3w_parameter(net: pandapowerNet, ppc: dict) -> None:
         # todo: inf and convert only when using PowerModels to 0., pypower opf converts the zero to inf
         branch[f:t, RATE_A] = 0.0 if net["_options"]["mode"] == "opf" else 100.0
 
+    lo, hi = _get_branch_angle_limits(trafo_df, t - f)
+    if lo is not None:
+        branch[f:t, ANGMIN] = lo
+        branch[f:t, ANGMAX] = hi
+
 
 def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
     """
@@ -328,6 +335,11 @@ def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
         # PowerModels considers "0" as "no limit"
         # todo: inf and convert only when using PowerModels to 0., pypower opf converts the zero to inf
         branch[f:t, RATE_A] = 0.0 if mode == "opf" else 100.0
+
+    lo, hi = _get_branch_angle_limits(line, t - f)
+    if lo is not None:
+        branch[f:t, ANGMIN] = lo
+        branch[f:t, ANGMAX] = hi
 
 
 def _calc_line_dc_parameter(net: pandapowerNet, ppc: dict, elm: str = "line_dc", ppc_elm: str = "branch_dc"):
@@ -463,6 +475,11 @@ def _calc_trafo_parameter(net, ppc, sequence=1):
         # todo: inf and convert only when using PowerModels to 0., pypower opf converts the zero to inf
         branch[f:t, RATE_A] = 0.0 if net["_options"]["mode"] == "opf" else 100.0
 
+    lo, hi = _get_branch_angle_limits(trafo, t - f)
+    if lo is not None:
+        branch[f:t, ANGMIN] = lo
+        branch[f:t, ANGMAX] = hi
+
 
 @overload
 def get_trafo_values(
@@ -515,6 +532,29 @@ def get_trafo_values(
         return series.infer_objects().to_numpy()
     else:
         return trafo_df[column].to_numpy()
+
+
+def _get_branch_angle_limits(branch_df: pd.DataFrame | dict, n_elements: int) -> tuple[NDArray | None, NDArray | None]:
+    """
+    Convert pandapower angle difference limits to pypower ANGMIN/ANGMAX values.
+
+    NaN values (or a missing column) mean "unconstrained" and are mapped to the pypower sentinels
+    -360 (lower limit) and 360 (upper limit).
+
+    Parameters:
+        branch_df: The DataFrame or trafo3w dict from which to read the limits
+        n_elements: number of branch elements, required because the trafo3w dict has no length
+
+    Returns:
+        Tuple of (ANGMIN, ANGMAX) arrays, or (None, None) if neither column is present.
+    """
+    lo = get_trafo_values(branch_df, "min_angle_degree")
+    hi = get_trafo_values(branch_df, "max_angle_degree")
+    if lo is None and hi is None:
+        return None, None
+    lo = np.full(n_elements, -360.0) if lo is None else np.where(pd.isna(lo), -360.0, np.asarray(lo, dtype=np.float64))
+    hi = np.full(n_elements, 360.0) if hi is None else np.where(pd.isna(hi), 360.0, np.asarray(hi, dtype=np.float64))
+    return lo.astype(np.float64), hi.astype(np.float64)
 
 
 def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None, sequence=1):
@@ -1195,6 +1235,11 @@ def _calc_impedance_parameter(net, ppc):
     branch[f:t, T_BUS] = bus_lookup[net.impedance["to_bus"].values]
     branch[f:t, BR_STATUS] = net["impedance"]["in_service"].values
 
+    lo, hi = _get_branch_angle_limits(net.impedance, t - f)
+    if lo is not None:
+        branch[f:t, ANGMIN] = lo
+        branch[f:t, ANGMAX] = hi
+
 
 def _calc_tcsc_parameter(net, ppc):
     f = 0
@@ -1273,7 +1318,8 @@ def _calc_xward_parameter(net, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     f, t = net["_pd2ppc_lookups"]["branch"]["xward"]
     branch = ppc["branch"]
-    baseR = np.square(get_values(ppc["bus"][:, BASE_KV], net["xward"]["bus"].values, bus_lookup)) / net.sn_mva
+    sn_mva = 3 * net.sn_mva if net["_options"]["mode"] == "pf_3ph" else net.sn_mva
+    baseR = np.square(get_values(ppc["bus"][:, BASE_KV], net["xward"]["bus"].values, bus_lookup)) / sn_mva
     xw_is = net["_is_elements"]["xward"]
     branch[f:t, F_BUS] = bus_lookup[net["xward"]["bus"].values]
     branch[f:t, T_BUS] = bus_lookup[net._pd2ppc_lookups["aux"]["xward"]]
@@ -1708,6 +1754,12 @@ def _trafo_df_from_trafo3w(net: pandapowerNet, sequence: int = 1) -> dict:
     }
     if "max_loading_percent" in net.trafo3w:
         trafo2["max_loading_percent"] = {side: net.trafo3w.max_loading_percent.values for side in sides}
+    # the same limit is applied to all three star branches (hv -> aux, aux -> mv, aux -> lv). This bounds
+    # each star branch separately, not the hv -> mv / hv -> lv terminal difference, which can reach twice
+    # the limit. Documented in the trafo3w docstrings, the schema and doc/opf/formulation.rst.
+    for angle_column in ("min_angle_degree", "max_angle_degree"):
+        if angle_column in net.trafo3w:
+            trafo2[angle_column] = {side: net.trafo3w[angle_column].values for side in sides}
     return {var: np.concatenate([trafo2[var][side] for side in sides]) for var in trafo2}
 
 

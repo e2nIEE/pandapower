@@ -221,6 +221,8 @@ def create_transformers(
     xn_ohm: float | Iterable[float] = nan,
     rn_ohm: float | Iterable[float] = nan,
     tap2_pos: Iterable[int] | float = nan,
+    min_angle_degree: float | Iterable[float] = nan,
+    max_angle_degree: float | Iterable[float] = nan,
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
@@ -238,6 +240,10 @@ def create_transformers(
         in_service: Wheather the transforers are in or out of service, default True
         index: the index to use for the new elements, default None
         max_loading_percent: the maximum loading percentage of the transformer, default nan
+        min_angle_degree: minimum voltage angle difference between hv_bus and lv_bus (va_hv - va_lv) in degree,
+            considered in the OPF. NaN means unconstrained.
+        max_angle_degree: maximum voltage angle difference between hv_bus and lv_bus (va_hv - va_lv) in degree,
+            considered in the OPF. NaN means unconstrained.
         parallel: number of parallel transformer, default 1
         df: derating factor: maximum current of transformer in relation to nominal current of transformer (0 - 1),
             default 1.0
@@ -303,6 +309,8 @@ def create_transformers(
         in_service=in_service,
         index=index,
         max_loading_percent=max_loading_percent,
+        min_angle_degree=min_angle_degree,
+        max_angle_degree=max_angle_degree,
         parallel=parallel,
         df=df,
         tap_changer_type=tap_changer_type,
@@ -593,6 +601,8 @@ def create_transformers_from_parameters(  # index missing ?
     tap2_step_degree: float | Iterable[float] = nan,
     tap2_pos: Iterable[int] | float = nan,
     tap2_changer_type: TapChangerType | Iterable[str] | None = None,
+    min_angle_degree: float | Iterable[float] = nan,
+    max_angle_degree: float | Iterable[float] = nan,
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
@@ -632,6 +642,10 @@ def create_transformers_from_parameters(  # index missing ?
         index: force a specified ID if it is available. If None, the index one higher than the highest already existing
             index is selected.
         max_loading_percent: maximum current loading (only needed for OPF)
+        min_angle_degree: minimum voltage angle difference between hv_bus and lv_bus (va_hv - va_lv) in degree,
+            considered in the OPF. NaN means unconstrained.
+        max_angle_degree: maximum voltage angle difference between hv_bus and lv_bus (va_hv - va_lv) in degree,
+            considered in the OPF. NaN means unconstrained.
         df: derating factor - maximum current of transformer in relation to nominal current of transformer (from 0 to 1)
         tap_dependency_table: True if transformer parameters (voltage ratio, angle, impedance) must be adjusted
             dependent on the tap position of the transformer. Requires the additional column "id_characteristic_table".
@@ -712,6 +726,8 @@ def create_transformers_from_parameters(  # index missing ?
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "mag0_rx", mag0_rx)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "si0_hv_partial", si0_hv_partial)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "max_loading_percent", max_loading_percent)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "min_angle_degree", min_angle_degree)
+    _add_to_entries_if_not_nan(net, "trafo", entries, index, "max_angle_degree", max_angle_degree)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "vector_group", vector_group)
     # _add_to_entries_if_not_nan(net, "trafo", entries, index, "oltc", oltc, bool_, False)
     _add_to_entries_if_not_nan(net, "trafo", entries, index, "pt_percent", pt_percent)
@@ -769,6 +785,8 @@ def create_transformer3w(
     tap_at_star_point: bool = get_default_value("trafo3w", "tap_at_star_point"),
     tap_dependency_table: bool | NAType = pd.NA,
     id_characteristic_table: int | None = None,
+    min_angle_degree: float = nan,
+    max_angle_degree: float = nan,
     **kwargs,
 ) -> Int:
     """
@@ -790,6 +808,12 @@ def create_transformer3w(
         index: force a specified ID if it is available. If None, the index one higher than the highest already existing
             index is selected.
         max_loading_percent: maximum current loading (only needed for OPF)
+        min_angle_degree: minimum voltage angle difference in degree, considered in the OPF. NaN means unconstrained.
+            A three-winding transformer is modelled as three branches through an internal star point, so the limit
+            applies to each of those branches (hv -> star and star -> mv, star -> lv) separately. The angle
+            difference between the terminals, va_hv - va_mv resp. va_hv - va_lv, can therefore reach twice this value.
+        max_angle_degree: maximum voltage angle difference in degree, considered in the OPF. NaN means unconstrained.
+            See min_angle_degree for the three-winding transformer specifics.
         tap_at_star_point: whether tap changer is modelled at star point or at the bus
         tap_dependency_table: True if transformer parameters (voltage ratio, angle, impedance) must be adjusted
             dependent on the tap position of the transformer. Requires the additional column "id_characteristic_table".
@@ -867,6 +891,8 @@ def create_transformer3w(
     _set_entries(net, "trafo3w", index, entries=entries)
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
+    _set_value_if_not_nan(net, index, min_angle_degree, "min_angle_degree", "trafo3w")
+    _set_value_if_not_nan(net, index, max_angle_degree, "max_angle_degree", "trafo3w")
     _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "trafo3w")
     _set_value_if_not_nan(net, index, tap_dependency_table, "tap_dependency_table", "trafo3w")
     _set_value_if_not_nan(net, index, tap_changer_type, "tap_changer_type", "trafo3w", default_val=None)
@@ -910,6 +936,8 @@ def create_transformers3w(
     tap_changer_type: float | Iterable[float] = nan,
     tap_dependency_table: bool | Iterable[bool] | NAType = pd.NA,
     id_characteristic_table: int | Iterable[int] | NAType = pd.NA,
+    min_angle_degree: float | Iterable[float] = nan,
+    max_angle_degree: float | Iterable[float] = nan,
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
@@ -928,6 +956,12 @@ def create_transformers3w(
         in_service: Wheather the transforers are in or out of service, default True
         index: the index to use for the new elements, default None
         max_loading_percent: the maximum loading percentage of the transformer, default nan
+        min_angle_degree: minimum voltage angle difference in degree, considered in the OPF. NaN means unconstrained.
+            A three-winding transformer is modelled as three branches through an internal star point, so the limit
+            applies to each of those branches (hv -> star and star -> mv, star -> lv) separately. The angle
+            difference between the terminals, va_hv - va_mv resp. va_hv - va_lv, can therefore reach twice this value.
+        max_angle_degree: maximum voltage angle difference in degree, considered in the OPF. NaN means unconstrained.
+            See min_angle_degree for the three-winding transformer specifics.
         tap_at_star_point: whether tap changer is modelled at star point or at the bus
         tap_changer_type: specifies the phase shifter type ("Ratio", "Symmetrical", "Ideal", "Tabular" or None),
             default None
@@ -991,6 +1025,8 @@ def create_transformers3w(
         std_type=std_type,
         in_service=in_service,
         max_loading_percent=max_loading_percent,
+        min_angle_degree=min_angle_degree,
+        max_angle_degree=max_angle_degree,
         tap_dependency_table=tap_dependency_table,
         id_characteristic_table=id_characteristic_table,
         tap_at_star_point=tap_at_star_point,
@@ -1043,6 +1079,8 @@ def create_transformer3w_from_parameters(
     vector_group: str | None = None,
     tap_dependency_table: bool | NAType = pd.NA,
     id_characteristic_table: int | None = None,
+    min_angle_degree: float = nan,
+    max_angle_degree: float = nan,
     **kwargs,
 ) -> Int:
     """
@@ -1083,6 +1121,12 @@ def create_transformer3w_from_parameters(
         name: name of the 3-winding transformer
         in_service: True for in_service or False for out of service
         max_loading_percent: maximum current loading (only needed for OPF)
+        min_angle_degree: minimum voltage angle difference in degree, considered in the OPF. NaN means unconstrained.
+            A three-winding transformer is modelled as three branches through an internal star point, so the limit
+            applies to each of those branches (hv -> star and star -> mv, star -> lv) separately. The angle
+            difference between the terminals, va_hv - va_mv resp. va_hv - va_lv, can therefore reach twice this value.
+        max_angle_degree: maximum voltage angle difference in degree, considered in the OPF. NaN means unconstrained.
+            See min_angle_degree for the three-winding transformer specifics.
         tap_dependency_table: True if transformer parameters (voltage ratio, angle, impedance) must be adjusted
             dependent on the tap position of the transformer. Requires the additional column "id_characteristic_table".
             The function pandapower.control.trafo_characteristic_table_diagnostic can be used for sanity checks.
@@ -1185,6 +1229,8 @@ def create_transformer3w_from_parameters(
     _set_entries(net, "trafo3w", index, entries=entries)
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo3w")
+    _set_value_if_not_nan(net, index, min_angle_degree, "min_angle_degree", "trafo3w")
+    _set_value_if_not_nan(net, index, max_angle_degree, "max_angle_degree", "trafo3w")
     _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "trafo3w")
     _set_value_if_not_nan(net, index, tap_changer_type, "tap_changer_type", "trafo3w", default_val=None)
     _set_value_if_not_nan(net, index, tap_dependency_table, "tap_dependency_table", "trafo3w")
@@ -1235,6 +1281,8 @@ def create_transformers3w_from_parameters(  # no index ?
     vector_group: str | Iterable[str] | NAType = pd.NA,
     tap_dependency_table: bool | Iterable[bool] | NAType = pd.NA,
     id_characteristic_table: int | Iterable[int] | NAType = pd.NA,
+    min_angle_degree: float | Iterable[float] = nan,
+    max_angle_degree: float | Iterable[float] = nan,
     **kwargs,
 ) -> npt.NDArray[integer]:
     """
@@ -1275,6 +1323,12 @@ def create_transformers3w_from_parameters(  # no index ?
         name: name of the 3-winding transformer
         in_service: True for in_service or False for out of service
         max_loading_percent: maximum current loading (only needed for OPF)
+        min_angle_degree: minimum voltage angle difference in degree, considered in the OPF. NaN means unconstrained.
+            A three-winding transformer is modelled as three branches through an internal star point, so the limit
+            applies to each of those branches (hv -> star and star -> mv, star -> lv) separately. The angle
+            difference between the terminals, va_hv - va_mv resp. va_hv - va_lv, can therefore reach twice this value.
+        max_angle_degree: maximum voltage angle difference in degree, considered in the OPF. NaN means unconstrained.
+            See min_angle_degree for the three-winding transformer specifics.
         tap_dependency_table: True if transformer parameters (voltage ratio, angle, impedance) must be adjusted
             dependent on the tap position of the transformer. Requires the additional column "id_characteristic_table".
             The function pandapower.control.trafo_characteristic_table_diagnostic can be used for sanity checks.
@@ -1356,6 +1410,8 @@ def create_transformers3w_from_parameters(  # no index ?
     }
 
     _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "max_loading_percent", max_loading_percent)
+    _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "min_angle_degree", min_angle_degree)
+    _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "max_angle_degree", max_angle_degree)
     _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "id_characteristic_table", id_characteristic_table)
     _add_to_entries_if_not_nan(net, "trafo3w", entries, index, "tap_changer_type", tap_changer_type)
 
