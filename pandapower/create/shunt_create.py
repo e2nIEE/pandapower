@@ -331,7 +331,7 @@ def create_ssc(
     return index
 
 
-@deprecated("Use create_vsc_bipolar instead.") # v4.0.0
+@deprecated("Use create_vsc_bipolar instead.")  # v4.0.0
 def create_vsc_stacked(
     net: pandapowerNet,
     bus: Int,

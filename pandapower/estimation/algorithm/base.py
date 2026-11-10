@@ -116,7 +116,7 @@ class WLSAlgorithm(BaseAlgorithm):
                 # gain matrix G_m
                 # G_m = H^t * R^-1 * H
                 G_m = H.T * (r_inv * H)
-                
+
                 # TODO: MOVE debug_mode to diagnostic!
                 if debug_mode:
                     norm_G = norm(G_m, np.inf)
@@ -346,7 +346,7 @@ class AFWLSAlgorithm(BaseAlgorithm):
 
                 # gain matrix G_m
                 G_m = H.T * (r_inv * H)
-                
+
                 # TODO: MOVE debug_mode to diagnostic!
                 if debug_mode:
                     norm_G = norm(G_m, np.inf)
