@@ -72,7 +72,7 @@ def _runpm(
 def _delete_buffer_file(buffer_file, pm_file_path, delete_buffer_file):
     if pm_file_path is None and delete_buffer_file:
         os.remove(buffer_file)
-        logger.debug("the json file for converted net is deleted from %s" % buffer_file)
+        logger.debug(f"the json file for converted net is deleted from {buffer_file}")
 
 
 def _load_pandamodels():  # pragma: no cover
@@ -101,10 +101,10 @@ def _load_pandamodels():  # pragma: no cover
             "reinstall it."
         ) from e
     if not Main.seval(f'pkgversion(PandaModels) >= v"{MIN_PANDAMODELS_VERSION}"'):
+        pm_version = Main.seval("string(pkgversion(PandaModels))")
         raise ImportError(
-            "PandaModels.jl %s is installed, but pandapower requires >= %s. Run "
-            "juliapkg.resolve(force=True) to update it."
-            % (Main.seval("string(pkgversion(PandaModels))"), MIN_PANDAMODELS_VERSION)
+            f"PandaModels.jl {pm_version} is installed, but pandapower requires >= {MIN_PANDAMODELS_VERSION}. "
+            f"Run juliapkg.resolve(force=True) to update it."
         )
     _pandamodels = Main.PandaModels
     return _pandamodels
@@ -115,6 +115,6 @@ def _call_pandamodels(buffer_file, julia_file):  # pragma: no cover
     try:
         run_function = getattr(pandamodels, julia_file)
     except AttributeError:
-        raise ValueError("PandaModels.jl has no function %s" % julia_file) from None
+        raise ValueError(f"PandaModels.jl has no function {julia_file}") from None
     # one JSON transfer instead of element-wise access to the Julia Dict (NaN arrives as None)
     return json.loads(pandamodels.json_result(run_function(buffer_file)))

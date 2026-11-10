@@ -21,7 +21,6 @@ __all__ = [
 
 import json
 import logging
-import math
 import os
 import tempfile
 from collections import OrderedDict
@@ -58,7 +57,6 @@ from pandapower.results import init_results, verify_results
 
 # extra column in ne_branch (tnep), behind the regular ppc branch columns
 CONSTRUCTION_COST = branch_cols
-import logging
 
 
 class NumpyEncoder(json.JSONEncoder):

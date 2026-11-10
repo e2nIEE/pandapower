@@ -92,7 +92,7 @@ def _read_multinetwork_results(net: pandapowerNet, ppc, ppci, sol):
     for table, dfs in frames.items():
         stacked = pd.concat(dfs, keys=time_steps)
         for column in stacked.columns:
-            res_ts_opt["%s.%s" % (table, column)] = stacked[column].unstack()
+            res_ts_opt[f"{table}.{column}"] = stacked[column].unstack()
     return res_ts_opt
 
 
@@ -153,7 +153,7 @@ def pm_results_to_ppc_results(net: pandapowerNet, ppc, ppci, result_pm):
     ppci["et"] = result_pm["solve_time"]
     ppci["f"] = result_pm["objective"]
 
-    if "multinetwork" in sol and sol["multinetwork"]:
+    if sol.get("multinetwork"):
         # the time steps are read in _read_multinetwork_results
         multinetwork = True
         result = None
