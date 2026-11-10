@@ -14,7 +14,7 @@ from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pypower.idx_bus import BUS_TYPE, NONE, PV, REF, VA, VM, VMAX, VMIN
 from pandapower.pypower.idx_bus import SL_FAC as SL_FAC_BUS
 from pandapower.pypower.idx_bus_dc import DC_BUS_TYPE, DC_NONE
-from pandapower.pypower.idx_gen import GEN_BUS, MBASE, PG, PMAX, PMIN, QG, QMAX, QMIN, SL_FAC, VG, gen_cols
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_COLS, MBASE, PG, PMAX, PMIN, QG, QMAX, QMIN, SL_FAC, VG
 from pandapower.pypower.idx_ssc import SSC_BUS, SSC_CONTROLLABLE, SSC_SET_VM_PU
 from pandapower.pypower.idx_vsc import (
     VSC_BUS,
@@ -78,7 +78,7 @@ def add_gen_order(gen_order, element, _is_elements, f):
 
 def _init_ppc_gen(net, ppc, nr_gens):
     # initialize generator matrix
-    ppc["gen"] = np.zeros(shape=(nr_gens, gen_cols), dtype=np.float64)
+    ppc["gen"] = np.zeros(shape=(nr_gens, GEN_COLS), dtype=np.float64)
     ppc["gen"][:] = np.array([0, 0, 0, 0, 0, 1.0, 1.0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     q_lim_default = net._options["q_lim_default"]
     p_lim_default = net._options["p_lim_default"]

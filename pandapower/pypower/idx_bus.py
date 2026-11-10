@@ -86,4 +86,4 @@ SL_FAC = 15
 CID_Q = 16  # coefficient of reactive power of constant current load at rated voltage in range [0,1]
 CZD_Q = 17  # coefficient of reactive power of constant impedance load at rated voltage in range [0,1]
 
-bus_cols = 18
+BUS_COLS = 18
