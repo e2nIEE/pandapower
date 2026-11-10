@@ -18,7 +18,6 @@ from pandapower.networks.create_examples import example_simple
 from pandapower.networks.power_system_test_cases import case9
 from pandapower.run import runpp
 from pandapower.timeseries import DFData
-
 from test import test_path
 
 

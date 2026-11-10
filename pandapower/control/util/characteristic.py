@@ -2,6 +2,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import logging
+from typing import ClassVar
 
 import numpy as np
 from numpy import interp
@@ -123,10 +124,7 @@ class Characteristic(JSONSerializableClass):
         Returns:
             Whether or not the point satisfies the characteristics curve with respect to the epsilon being set
         """
-        if abs(self.diff(x, measured)) < epsilon:
-            return True
-        else:
-            return False
+        return abs(self.diff(x, measured)) < epsilon
 
     def __call__(self, x):
         """
@@ -154,7 +152,7 @@ class SplineCharacteristic(Characteristic):
     refer to the documentation of interp1d for more details. We set the parameter bounds_error to False.
     """
 
-    json_excludes = ["self", "__class__", "_interpolator"]
+    json_excludes: ClassVar[list[str]] = ["self", "__class__", "_interpolator"]
 
     def __init__(self, net, x_values, y_values, interpolator_kind="interp1d", table="characteristic", **kwargs):
         super().__init__(net, x_values=x_values, y_values=y_values, table=table)
@@ -232,7 +230,7 @@ class LogSplineCharacteristic(SplineCharacteristic):
 
     @x_vals.setter
     def x_vals(self, x_values):
-        if np.any([True if x <= 0 else False for x in x_values]):
+        if np.any([x <= 0 for x in x_values]):
             logger.warning("zero-values not supported in x_values")
         self._x_vals = np.log10(x_values)
 
@@ -242,7 +240,7 @@ class LogSplineCharacteristic(SplineCharacteristic):
 
     @y_vals.setter
     def y_vals(self, y_values):
-        if np.any([True if y <= 0 else False for y in y_values]):
+        if np.any([y <= 0 for y in y_values]):
             logger.warning("zero-values not supported in y_values")
         self._y_vals = np.log10(y_values)
 

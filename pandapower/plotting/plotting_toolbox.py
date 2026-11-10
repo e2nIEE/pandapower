@@ -1,3 +1,19 @@
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
+__all__ = [
+    "coords_from_node_geodata",
+    "get_angle_list",
+    "get_collection_sizes",
+    "get_color_list",
+    "get_index_array",
+    "get_linewidth_list",
+    "get_list",
+    "position_on_busbar",
+    "safe_geojson_loads",
+    "set_line_geodata_from_bus_geodata",
+]
+
 import ast
 import logging
 import re
@@ -135,16 +151,14 @@ def get_list(individuals, number_entries, name_ind, name_ent):
             return list(individuals)
         elif number_entries > len(individuals):
             logger.warning(
-                "The number of given %s (%d) is smaller than the number of %s (%d) to"
-                " draw! The %s will be repeated to fit."
-                % (name_ind, len(individuals), name_ent, number_entries, name_ind)
+                f"The number of given {name_ind} ({len(individuals)}) is smaller than the number of {name_ent} "
+                f"({number_entries}) to draw! The {name_ind} will be repeated to fit."
             )
             return (list(individuals) * (int(number_entries / len(individuals)) + 1))[:number_entries]
         else:
             logger.warning(
-                "The number of given %s (%d) is larger than the number of %s (%d) to"
-                " draw! The %s will be capped to fit."
-                % (name_ind, len(individuals), name_ent, number_entries, name_ind)
+                f"The number of given {name_ind} ({len(individuals)}) is larger than the number of {name_ent} "
+                f"({number_entries}) to draw! The {name_ind} will be capped to fit."
             )
             return list(individuals)[:number_entries]
     return [individuals] * number_entries
@@ -152,7 +166,7 @@ def get_list(individuals, number_entries, name_ind, name_ent):
 
 def get_color_list(color, number_entries, name_entries="nodes"):
     if (len(color) == 3 or len(color) == 4) and all(isinstance(c, float) for c in color):
-        logger.info("Interpreting color %s as rgb or rgba!" % str(color))
+        logger.info(f"Interpreting color {color} as rgb or rgba!")
         return get_list([color], number_entries, "colors", name_entries)
     return get_list(color, number_entries, "colors", name_entries)
 
@@ -311,7 +325,7 @@ def position_on_busbar(net, bus, busbar_coords):
     intersection = None
     bus_coords = _get_coords_from_geojson(net.bus.loc[bus, "geo"])
     # Checking if bus has "coords" - if it is a busbar
-    if bus_coords is not None and bus_coords is not np.nan and busbar_coords is not None:
+    if bus_coords is not None and pd.notna(bus_coords) and busbar_coords is not None:
         for i in range(len(bus_coords) - 1):
             try:
                 # Calculating slope of busbar-line. If the busbar-line is vertical ZeroDivisionError
@@ -353,16 +367,15 @@ def position_on_busbar(net, bus, busbar_coords):
                         intersection = busbar_coords[0]
                         break
                 # Checking if the second line-end is at the same position
-                elif bus_coords[i][0] == busbar_coords[-1][0]:
-                    if (
-                        bus_coords[i][1] >= busbar_coords[-1][1] >= bus_coords[i + 1][1]
-                        or bus_coords[i][1] <= busbar_coords[-1][1] <= bus_coords[i + 1][1]
-                    ):
-                        # Intersection found. Breaking for-loop
-                        intersection = busbar_coords[-1]
-                        break
+                elif bus_coords[i][0] == busbar_coords[-1][0] and (
+                    bus_coords[i][1] >= busbar_coords[-1][1] >= bus_coords[i + 1][1]
+                    or bus_coords[i][1] <= busbar_coords[-1][1] <= bus_coords[i + 1][1]
+                ):
+                    # Intersection found. Breaking for-loop
+                    intersection = busbar_coords[-1]
+                    break
     # If the bus has no "coords" it must be a normal bus
-    elif bus_coords is np.nan:
+    elif np.isnan(bus_coords):
         bus_geo = _get_coords_from_geojson(net.bus.loc[bus, "geo"])
         # Checking if the first end of the line is on the bus
         if bus_geo == busbar_coords[0]:

@@ -56,7 +56,17 @@ Method A is only suited for estimated manual calculations with low accuracy and 
 
 **Method C: Equivalent frequency**
 
-For method C, the same formula for :math:`\kappa` is used as for radial grids. The R/X value that is inserter is however not the 
+For method C, the same formula for :math:`\kappa` is used as for radial grids. The R/X value that is inserted is however not the
+R/X ratio of the equivalent short-circuit impedance at the system frequency :math:`f`, but
+
+.. math::
+
+    R/X = \frac{R_c}{X_c} \cdot \frac{f_c}{f}
+
+where :math:`\underline{Z}_c = R_c + jX_c` is the equivalent short-circuit impedance at the fault location for the equivalent
+frequency :math:`f_c` = 20 Hz (:math:`f` = 50 Hz) or :math:`f_c` = 24 Hz (:math:`f` = 60 Hz).
+If all parallel branches of the meshed network have the same R/X ratio, method C gives the same :math:`\kappa` as the formula
+for radial networks.
 
 
 **Method B: R/X Ratio at short-circuit location**

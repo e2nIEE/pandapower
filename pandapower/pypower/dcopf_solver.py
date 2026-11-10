@@ -87,7 +87,7 @@ def dcopf_solver(om, ppopt, out_opt=None):
             # Todo: Fix Gurobi and activate 700 again. ATM: Fallback on 200
             # alg = 700
             alg = 200
-            UserWarning("Gurobi not working with pypower 5.1.4")
+            raise UserWarning("Gurobi not working with pypower 5.1.4")
         else:  ## otherwise PIPS
             alg = 200
 

@@ -334,12 +334,10 @@ def test_lightsim2grid_phase_shifters():
     bus_res = net.res_bus.copy()
     if "tap_phase_shifter" in net.trafo.columns:
         _convert_trafo_phase_shifter(net, "trafo", "tap_phase_shifter")
-    if "tap_changer_type" in net.trafo.columns:
-        if np.any(net.trafo.tap_changer_type == "Ideal"):
-            _convert_trafo_phase_shifter(net, "trafo", "tap_changer_type")
-    if "tap_changer_type" in net.trafo3w.columns:
-        if np.any(net.trafo3w.tap_changer_type == "Ideal"):
-            _convert_trafo_phase_shifter(net, "trafo3w", "tap_changer_type")
+    if "tap_changer_type" in net.trafo.columns and np.any(net.trafo.tap_changer_type == "Ideal"):
+        _convert_trafo_phase_shifter(net, "trafo", "tap_changer_type")
+    if "tap_changer_type" in net.trafo3w.columns and np.any(net.trafo3w.tap_changer_type == "Ideal"):
+        _convert_trafo_phase_shifter(net, "trafo3w", "tap_changer_type")
     runpp(net)
     assert_frame_equal(bus_res, net.res_bus)
 
@@ -594,6 +592,18 @@ def get_net(request):
         net.line.max_i_ka = 1
 
     return net
+
+
+@pytest.mark.parametrize("column", ["max_loading_percent_nminus1", "max_loading_nminus1_percent"])
+def test_get_element_limits_nminus1_column(column):
+    net = case9()
+    net.line["max_loading_percent"] = 100.0
+    assert np.all(get_element_limits(net)["line"]["max_limit_nminus1"] == 100.0)
+    net.line[column] = 80.0
+    limits = get_element_limits(net)["line"]
+    assert np.all(limits["max_limit_nminus1"] == 80.0)
+    assert np.all(limits["min_limit_nminus1"] == -80.0)
+    assert np.all(limits["max_limit"] == 100.0)
 
 
 if __name__ == "__main__":

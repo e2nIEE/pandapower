@@ -65,6 +65,20 @@ def _check_necessary_opf_parameters(net, logger):
     else:
         logger.info("'max_vm_pu' is missing in bus table. In OPF these limits are considered as 2.0 pu.")
 
+    # branch voltage angle difference limits: no error due to missing limits
+    for element in ("line", "trafo", "trafo3w", "impedance"):
+        for col in ("min_angle_degree", "max_angle_degree"):
+            if element not in net or col not in net[element].columns or not len(net[element]):
+                continue
+            values = net[element][col]
+            if values.isnull().all():
+                logger.info(f"All {element}.{col} values are missing, which means unconstrained angle differences.")
+            elif (values == 0).any():
+                logger.warning(
+                    f"{element}.{col} contains 0, which is interpreted as 'no limit' (MATPOWER convention), not as a "
+                    "0 degree limit. Use a small epsilon instead of 0 to enforce a limit."
+                )
+
     if error:
         raise KeyError("OPF parameters are not set correctly. See error log.")
 

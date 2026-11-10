@@ -1,6 +1,27 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "branch_element_bus_dict",
+    "count_elements",
+    "element_bus_tuples",
+    "false_elm_links",
+    "false_elm_links_loop",
+    "get_all_elements",
+    "get_connected_buses",
+    "get_connected_buses_at_element",
+    "get_connected_buses_at_switches",
+    "get_connected_elements",
+    "get_connected_elements_dict",
+    "get_connected_switches",
+    "get_connecting_branches",
+    "get_element_index",
+    "get_element_indices",
+    "get_gc_objects_dict",
+    "next_bus",
+    "pp_elements",
+]
+
 import gc
 import logging
 import warnings
@@ -117,7 +138,7 @@ def next_bus(
         # Raises error if switch is not a bus-bus switch
         bc = ["bus", "element"]
     else:
-        raise Exception("unknown element type")
+        raise TypeError("unknown element type")
     nb = list(net[et].loc[element_id, bc].values)
     nb.remove(bus)
     return nb[0]
@@ -441,7 +462,7 @@ def get_connected_switches(
     else:
         switch_selection = np.full(len(net.switch), True, dtype=bool)
         if status != "all":
-            logger.warning('Unknown switch status "%s" selected! Selecting all switches by default.' % status)
+            logger.warning(f'Unknown switch status "{status}" selected! Selecting all switches by default.')
 
     branch_buses = None
     if include_element_connections:

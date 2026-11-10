@@ -1,6 +1,23 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "runpm",
+    "runpm_ac_opf",
+    "runpm_dc_opf",
+    "runpm_loading",
+    "runpm_multi_qflex",
+    "runpm_multi_vstab",
+    "runpm_ots",
+    "runpm_pf",
+    "runpm_ploss",
+    "runpm_qflex",
+    "runpm_redispatch",
+    "runpm_storage_opf",
+    "runpm_tnep",
+    "runpm_vstab",
+]
+
 from functools import partial
 from typing import Literal
 
@@ -109,7 +126,7 @@ def runpm(
             starts for PowerModels. If "results", pg_start and qg_start values are
             added to the PowerModels generator data from pandapower result tables.
     """
-    ac = True if "DC" not in pm_model else False
+    ac = "DC" not in pm_model
     net._options = {}
     _add_ppc_options(
         net,
@@ -335,7 +352,7 @@ def runpm_redispatch(
 
     See :func:`runpm` for the remaining keyword arguments.
     """
-    ac = True if "DC" not in pm_model else False
+    ac = "DC" not in pm_model
     if pp_to_pm_callback is None:
         pp_to_pm_callback = partial(add_redispatch_params, redispatch_cost=redispatch_cost)
     net._options = {}
@@ -404,7 +421,7 @@ def runpm_tnep(
     """
     Runs transmission network extension planning (tnep) optimization from PowerModels.jl via PandaModels.jl
     """
-    ac = True if "DC" not in pm_model else False
+    ac = "DC" not in pm_model
     if pm_solver is None:
         if pm_model == "DCPPowerModel":
             pm_solver = "ipopt"
@@ -482,7 +499,7 @@ def runpm_ots(
     """
     Runs optimal transmission switching (OTS) optimization from PowerModels.jl via PandaModels.jl
     """
-    ac = True if "DC" not in pm_model else False
+    ac = "DC" not in pm_model
     if pm_solver is None:
         pm_solver = "juniper"
 
@@ -559,7 +576,7 @@ def runpm_storage_opf(
     kwargs["from_time_step"] = from_time_step
     kwargs["to_time_step"] = to_time_step
 
-    ac = True if "DC" not in pm_model else False
+    ac = "DC" not in pm_model
     net._options = {}
     _add_ppc_options(
         net,
@@ -900,7 +917,7 @@ def runpm_ploss(
     for elm in ["line", "trafo"]:
         if "pm_param/target_branch" in net[elm].columns:
             net[elm]["pm_param/side"] = None
-            target_branch_mask = net[elm]["pm_param/target_branch"] == True
+            target_branch_mask = net[elm]["pm_param/target_branch"]
             net[elm].loc[target_branch_mask, "pm_param/side"] = "from"
 
     net._options = {}
@@ -969,7 +986,7 @@ def runpm_loading(
     for elm in ["line", "trafo"]:
         if "pm_param/target_branch" in net[elm].columns:
             net[elm]["pm_param/side"] = None
-            target_branch_mask = net[elm]["pm_param/target_branch"] == True
+            target_branch_mask = net[elm]["pm_param/target_branch"]
             net[elm].loc[target_branch_mask, "pm_param/side"] = "from"
 
     net._options = {}
@@ -1038,7 +1055,7 @@ def runpm_pf(
     """
     Runs power flow from PowerModels.jl via PandaModels.jl
     """
-    ac = True if "DC" not in pm_model else False
+    ac = "DC" not in pm_model
     net._options = {}
     _add_ppc_options(
         net,

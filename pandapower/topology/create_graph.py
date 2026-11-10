@@ -1,6 +1,17 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
+__all__ = [
+    "add_edges",
+    "create_nxgraph",
+    "get_baseR",
+    "get_edge_table",
+    "get_nx_ppc",
+    "init_par",
+]
+
 import logging
+from importlib.util import find_spec
 from itertools import combinations
 
 import networkx as nx
@@ -14,14 +25,14 @@ from pandapower.build_branch import (
 )
 from pandapower.build_bus import _build_bus_ppc
 from pandapower.pd2ppc import _init_ppc
-from pandapower.pf.makeYbus_facts import calc_y_svc_pu
+from pandapower.pf.make_y_bus_facts import calc_y_svc_pu
 from pandapower.pypower.idx_bus import BASE_KV
 
-try:
+if find_spec("graph_tool"):
     from pandapower.topology.graph_tool_interface import GraphToolInterface
 
     graph_tool_available = True
-except:
+else:
     graph_tool_available = False
 
 INDEX = 0
@@ -236,8 +247,8 @@ def create_nxgraph(
             open_trafo3w = (open_trafo3w_index + open_trafo3w_buses * 1j).flatten()
         for f, t in combinations(sides, 2):
             indices, parameter, in_service = init_par(trafo3w, calc_branch_impedances, include_out_of_service)
-            indices[:, F_BUS] = trafo3w["%s_bus" % f].values
-            indices[:, T_BUS] = trafo3w["%s_bus" % t].values
+            indices[:, F_BUS] = trafo3w[f"{f}_bus"].values
+            indices[:, T_BUS] = trafo3w[f"{t}_bus"].values
 
             if trafo_length_km is not None:
                 parameter[:, WEIGHT] = trafo_length_km
@@ -287,7 +298,7 @@ def create_nxgraph(
             for i in list(mg[b].keys()):
                 try:
                     del mg[b][i]  # networkx versions < 2.0
-                except:
+                except Exception:  # noqa: BLE001
                     del mg._adj[b][i]  # networkx versions 2.0
 
     # remove out of service buses

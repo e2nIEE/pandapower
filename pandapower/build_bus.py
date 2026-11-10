@@ -393,8 +393,8 @@ def get_voltage_init_vector(net, init_v, mode, sequence=None):
                 # cannot init from results, since sorting of results is different from element table
                 # TO BE REVIEWED! Why there was no raise before this commit?
                 raise UserWarning(
-                    "Init from results not possible. Index of %s do not match with "
-                    "bus. You should sort res_bus before calling runpp." % res_table
+                    f"Init from results not possible. Index of {res_table} do not match with "
+                    "bus. You should sort res_bus before calling runpp."
                 )
 
             if res_table == "res_bus_3ph":
@@ -434,7 +434,7 @@ def _build_bus_ppc(net, ppc, sequence=None):
     init_vm_pu = net["_options"]["init_vm_pu"]
     init_va_degree = net["_options"]["init_va_degree"]
     mode = net["_options"]["mode"]
-    numba = net["_options"]["numba"] if "numba" in net["_options"] else False
+    numba = net["_options"].get("numba", False)
 
     # get bus indices
     nr_xward = len(net.xward)
@@ -555,9 +555,7 @@ def _build_bus_dc_ppc(net, ppc):
     """
     Generates the ppc["bus_dc"] array and the lookup pandapower indices -> ppc indices
     """
-    init_vm_pu = net["_options"]["init_vm_pu"]
     mode = net["_options"]["mode"]
-    numba = net["_options"]["numba"] if "numba" in net["_options"] else False
 
     # get bus indices
     bus_index = net["bus_dc"].index.values
@@ -663,13 +661,13 @@ def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux, bus_ta
         ppc[bus_table][aux_idx, vmax] = ppc[bus_table][element_bus_idx, vmax]
 
     if net._options["init_vm_pu"] == "results":
-        ppc[bus_table][aux_idx, vm] = net["res_%s" % element][
+        ppc[bus_table][aux_idx, vm] = net[f"res_{element}"][
             "vm_internal_pu" if bus_table == "bus" else "vm_internal_dc_pu"
         ].values
     else:
         ppc[bus_table][aux_idx, vm] = ppc[bus_table][element_bus_idx, vm]
     if net._options["init_va_degree"] == "results" and bus_table == "bus":
-        ppc[bus_table][aux_idx, VA] = net["res_%s" % element]["va_internal_degree"].values
+        ppc[bus_table][aux_idx, VA] = net[f"res_{element}"]["va_internal_degree"].values
     elif bus_table == "bus":
         ppc[bus_table][aux_idx, VA] = ppc[bus_table][element_bus_idx, VA]
 
@@ -894,12 +892,12 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
 
         if "step_dependency_table" in s:
             # TODO: remove step_dependency_table and infer from id_characterists_table if it exists
-            if np.any(vl & (s.step_dependency_table == True) & (pd.isna(s.id_characteristic_table))):
+            if np.any(vl & (s.step_dependency_table) & (pd.isna(s.id_characteristic_table))):
                 raise UserWarning(
                     "Shunts with step_dependency_table True and id_characteristic_table NA detected.\n"
                     "Please set an id_characteristic_table or set step_dependency_table to False."
                 )
-            elif np.any(vl & (s.step_dependency_table == False) & (~pd.isna(s.id_characteristic_table))):
+            elif np.any(vl & (~s.step_dependency_table) & (~pd.isna(s.id_characteristic_table))):
                 warnings.warn(
                     "Shunts with step_dependency_table False but id_characteristic_table detected.",
                     category=UserWarning,
@@ -1143,13 +1141,13 @@ def _add_ext_grid_sc_impedance(net, ppc):
             f"short circuit apparent power s_sc_{case}_mva needs to be specified for external grid \n"
             f" Try: net.ext_grid['s_sc_{case}_mva'] = 1000"
         )
-    s_sc = eg["s_sc_%s_mva" % case].values / ppc["baseMVA"]
+    s_sc = eg[f"s_sc_{case}_mva"].values / ppc["baseMVA"]
     if f"rx_{case}" not in eg:
         raise ValueError(
             f"short circuit R/X rate rx_{case} needs to be specified for external grid \n"
             f" Try: net.ext_grid['rx_{case}'] = 0.1"
         )
-    rx = eg["rx_%s" % case].values
+    rx = eg[f"rx_{case}"].values
 
     z_grid = c / s_sc
     if mode == "pf_3ph":
@@ -1178,7 +1176,7 @@ def _add_motor_impedances_ppc(net, ppc):
         return
     for par in ["vn_kv", "lrc_pu", "efficiency_n_percent", "cos_phi_n", "rx", "pn_mech_mw"]:
         if any(pd.isnull(motor[par])):
-            raise UserWarning("%s needs to be specified for all motors in net.motor.%s" % (par, par))
+            raise UserWarning(f"{par} needs to be specified for all motors in net.motor.{par}")
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     motor_buses_ppc = bus_lookup[motor.bus.values]
     vn_net = ppc["bus"][motor_buses_ppc, BASE_KV]

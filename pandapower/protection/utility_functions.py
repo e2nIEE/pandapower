@@ -238,7 +238,7 @@ def get_lowest_impedance_line(net: pandapowerNet, lines):
 def check_for_closed_bus_switches(net_copy):
     # closed switches
     net = copy.deepcopy(net_copy)
-    closed_bus_switches = net.switch.loc[(net.switch.et == "b") & (net.switch.closed == True)]
+    closed_bus_switches = net.switch.loc[(net.switch.et == "b") & (net.switch.closed)]
 
     if len(closed_bus_switches) > 0:
         net = fuse_bus_switches(net, closed_bus_switches)
@@ -346,7 +346,7 @@ def plot_tripped_grid(net, trip_decisions, sc_location, bus_size=0.055, plot_ann
         if trip_time == min(tripping_times):
             inst_trip_switches.append(switch_id)
 
-        if trip_time in backup_tripping_times and trip == True:
+        if trip_time in backup_tripping_times and trip:
             backup_trip_switches.append(switch_id)
 
     dist_to_bus = bus_size * 3.25
@@ -544,7 +544,7 @@ def plot_tripped_grid_protection_device(
         if trip_time == min(tripping_times):
             inst_trip_switches.append(switch_id)
 
-        if trip_time in backup_tripping_times and trip == True:
+        if trip_time in backup_tripping_times and trip:
             backup_trip_switches.append(switch_id)
 
     dist_to_bus = bus_size * 3.25
@@ -576,7 +576,7 @@ def plot_tripped_grid_protection_device(
         instant_sc_backup = create_line_switch_collection(
             net, size=bus_size, distance_to_bus=dist_to_bus, color="orange", switches=inst_backup_switches
         )
-        instant_bb_backup = create_bus_bus_switch_collection(net, size=bus_size, helper_line_color="orange")
+        create_bus_bus_switch_collection(net, size=bus_size, helper_line_color="orange")
         collection.append(instant_sc_backup)
 
     len_sc = len(set(net.switch.index) - set(inst_trip_switches) - set(backup_trip_switches))
@@ -661,8 +661,6 @@ def plot_tripped_grid_protection_device(
         bus_annotate = create_annotation_collection(texts=bus_text, coords=bus_geodata, size=0.06, prop=None)
         collection.append(bus_annotate)
 
-        max_bus_idx = max(net.bus.dropna(subset=["geo"]).index)
-
         # Short circuit annotations
         collection.append(get_fault_annotation(net, fault_current))
 
@@ -728,7 +726,7 @@ def switch_geodatas(net, size, distance_to_bus):
         tb = line.to_bus
 
         line_buses = {fb, tb}
-        target_bus = list(line_buses - {sb})[0]
+        target_bus = next(iter(line_buses - {sb}))
 
         pos_sb = _get_coords_from_bus_idx(net, sb)
         if len(pos_sb) > 1:
@@ -763,12 +761,12 @@ def create_I_t_plot(trip_decisions, switch_id):
     y = [0, 0, 0, 0]
 
     X = []
-    for counter, switch_id in enumerate(switch_id):
-        lst_I = [trip_decisions[switch_id]["Ig"], trip_decisions[switch_id]["Igg"]]
-        lst_t = [trip_decisions[switch_id]["tg"], trip_decisions[switch_id]["tgg"]]
-        fault_current = trip_decisions[switch_id]["Fault Current [kA]"]
+    for counter, switch_id_ in enumerate(switch_id):
+        lst_I = [trip_decisions[switch_id_]["Ig"], trip_decisions[switch_id_]["Igg"]]
+        lst_t = [trip_decisions[switch_id_]["tg"], trip_decisions[switch_id_]["tgg"]]
+        fault_current = trip_decisions[switch_id_]["Fault Current [kA]"]
 
-        label = "Relay:R" + str(switch_id)
+        label = "Relay:R" + str(switch_id_)
         x[counter] = [lst_I[0], lst_I[0], lst_I[1], lst_I[1], 100]
         y[counter] = [10, lst_t[0], lst_t[0], lst_t[1], lst_t[1]]
 
@@ -837,23 +835,16 @@ def power_flow_end_points(net):
 
 def bus_path_from_to_bus(net, radial_start_bus, loop_start_bus, end_bus):
     """function calculate the bus path from start and end buses"""
-    loop_path = []
-    radial_path = []
-
     from pandapower.topology.create_graph import create_nxgraph
 
     G = create_nxgraph(net)
-
-    for start_buses in radial_start_bus:
-        radial = nx.shortest_path(G, source=start_buses, target=end_bus)
-        radial_path.append(radial)
-
-    for start_buses in loop_start_bus:
-        for path in nx.all_simple_paths(G, source=start_buses, target=end_bus):
-            loop_path.append(path)
-
-    bus_path = radial_path + loop_path
-    return bus_path
+    radial_path = [
+        path for start_buses in radial_start_bus for path in nx.shortest_path(G, source=start_buses, target=end_bus)
+    ]
+    loop_path = [
+        path for start_buses in loop_start_bus for path in nx.all_simple_paths(G, source=start_buses, target=end_bus)
+    ]
+    return radial_path + loop_path
 
 
 def get_switches_in_path(net, paths):
@@ -948,7 +939,7 @@ def bus_path_multiple_ext_bus(net):
                     else:
                         max_bus_path.append(max([from_bus_path, to_bus_path]))
 
-            bus_path.append(sorted(max_bus_path, key=len)[0])
+            bus_path.append(min(max_bus_path, key=len))
 
     return bus_path
 

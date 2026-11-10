@@ -39,7 +39,7 @@ def _set_dc_buses_out_of_service(ppc):
 def _get_bus_v_results(net, ppc, suffix=None):
     bus_idx = _get_bus_idx(net)
 
-    res_table = "res_bus" if suffix is None else "res_bus%s" % suffix
+    res_table = "res_bus" if suffix is None else f"res_bus{suffix}"
     # always read the vm_pu from ppc, even for DC power flow - otherwise old values can persist
     net[res_table]["vm_pu"] = ppc["bus"][bus_idx][:, VM]
     # voltage angles
@@ -324,36 +324,15 @@ def write_p_dc_results_to_element(net, ppc, element):
 
     # info element
     element_data = net[element]
-    res_ = "res_%s" % element
-
-    # todo: how does "not controllable" element behave?
-    ctrl_ = "%s_controllable" % element
-
-    is_controllable = False
-    if ctrl_ in _is_elements:
-        controlled_elements = net[element][net._is_elements[ctrl_]].index
-        gen_idx = net._pd2ppc_lookups[ctrl_][controlled_elements]
-        gen_sign = 1 if element == "sgen" else -1
-        is_controllable = True
+    res_ = f"res_{element}"
 
     if element == "vsc":
-        p_mw = "control_value_dc"  # in "vsc" element
-        vsc_p_mode = _is_elements[element] & (net.vsc.control_mode_dc == "p_mw")
-
-        # P result in mw to element
-        # net[res_].loc[:, "p_dc_mw"] = element_data[p_mw].values * vsc_p_mode
-
-        # use the ppc value for the result instead:
-        # res_p = np.nans(shape=(len(net[element])), dtype=np.float64)
-        # res_p[net._is_elements["vsc"]] = ppc[element][:, VSC_P_DC]
+        _is_elements[element] & (net.vsc.control_mode_dc == "p_mw")
         net[res_].loc[:, "p_dc_mw"] = ppc[element][:, VSC_P_DC]
     else:
         scaling = element_data["scaling"].values if "scaling" in element_data else 1.0
         element_in_service = _is_elements[element]
         net[res_].loc[:, "p_dc_mw"] = element_data["p_dc_mw"].values * scaling * element_in_service
-
-        # if is_controllable:
-        #    net[res_].loc[controlled_elements, "p_dc_mw"] = ppc["gen"][gen_idx, PG] * gen_sign
 
     return net
 
@@ -453,7 +432,7 @@ def get_p_q_b(net, element, suffix=None):
     ac = net["_options"]["ac"]
     res_ = "res_" + element
     if suffix is not None:
-        res_ += "_%s" % suffix
+        res_ += f"_{suffix}"
 
     # bus values are needed for stacking
     b = net[element]["bus"].values

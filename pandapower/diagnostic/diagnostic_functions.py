@@ -179,9 +179,9 @@ class InvalidValues(DiagnosticFunction[pandapowerNet, dict[str, Any]]):
             "vkr_percent_larger": check_vkr_larger,
         }
 
-        for key in important_values:
+        for key, values in important_values.items():
             if len(net[key]) > 0:
-                for value in important_values[key]:
+                for value in values:
                     # every element is checked separately, TODO: implement vector based checks
                     for i, element in net[key].iterrows():
                         check_result = type_checks[value[1]](element, i, value[0])
@@ -386,7 +386,7 @@ class Overload(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
             net.load["scaling"] = load_scaling
         except Exception as e:
             self.out.error(f"Overload check failed: {e!s}")
-            raise e
+            raise
 
         return check_result if check_result else None
 
@@ -453,7 +453,7 @@ class CheckDCPowerflow(DiagnosticFunction[pandapowerNet, bool]):
 
         except Exception as e:
             self.out.error(f"rundcpp failed: {e!s}")
-            raise e
+            raise
 
         return check_result
 
@@ -505,7 +505,7 @@ class DisableVoltageDependentLoads(DiagnosticFunction[pandapowerNet, bool]):
 
         except Exception as e:
             self.out.error(f"voltage_depend_loads check failed: {e!s}")
-            raise e
+            raise
 
         return check_result
 
@@ -570,7 +570,7 @@ class WrongLineCapacitance(DiagnosticFunction[pandapowerNet, bool]):
 
         except Exception as e:
             self.out.error(f"Line capacitance check failed: {e!s}")
-            raise e
+            raise
 
         # teardown
         net.line["c_nf_per_km"] = line_capacitance
@@ -650,7 +650,7 @@ class WrongLineReactance(DiagnosticFunction[pandapowerNet, bool]):
 
         except Exception as e:
             self.out.error(f"Line reactance check failed: {e!s}")
-            raise e
+            raise
 
         # teardown
         net.line.x_ohm_per_km = line_reactance
@@ -730,7 +730,7 @@ class WrongLineResistance(DiagnosticFunction[pandapowerNet, bool]):
 
         except Exception as e:
             self.out.error(f"Line resistance check failed: {e!s}")
-            raise e
+            raise
 
         # teardown
         net.line.r_ohm_per_km = line_resistance
@@ -810,7 +810,7 @@ class SubNetProblemTest(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
                 self.out.debug(f"Calculation on zone: {zone} failed.")
             except Exception as e:
                 self.out.error(f"Calculation on subnets failed: {e!s}")
-                raise e
+                raise
 
         return check_result if not all(check_result.values()) else None
 
@@ -899,7 +899,7 @@ class OptimisticPowerflow(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
 
         except Exception as e:
             self.out.error(f"Optimistic calculation on failed: {e!s}")
-            raise e
+            raise
 
         return check_result if check_result else None
 
@@ -965,7 +965,7 @@ class SlackGenPlacement(DiagnosticFunction[pandapowerNet, dict[str, float]]):
         orig_gen = copy.copy(net.gen)
 
         def _calculate_losses(net):
-            idx = net.gen.loc[net.gen.slack == True].index
+            idx = net.gen.loc[net.gen.slack].index
             res = np.linalg.norm(net.res_gen.loc[idx].p_mw + net.res_gen.loc[idx].q_mvar * 1j)
             res += np.linalg.norm(net.res_ext_grid.p_mw + net.res_ext_grid.q_mvar * 1j)
             return res
@@ -980,7 +980,7 @@ class SlackGenPlacement(DiagnosticFunction[pandapowerNet, dict[str, float]]):
             check_result["base_case"] = sys.float_info.max
         except Exception as e:
             self.out.error(f"Slack gen placement calculation failed: {e!s}")
-            raise e
+            raise
 
         # disable all slack gen
         net.gen["slack"] = False
@@ -999,7 +999,7 @@ class SlackGenPlacement(DiagnosticFunction[pandapowerNet, dict[str, float]]):
                 check_result[idx] = sys.float_info.max  # type: ignore[index]
             except Exception as e:
                 self.out.error(f"Slack gen placement calculation failed: {e!s}")
-                raise e
+                raise
 
             net.gen.loc[idx, "slack"] = False
 
@@ -1058,7 +1058,7 @@ class TestContinuousBusIndices(DiagnosticFunction[pandapowerNet, bool]):
             return False
         except Exception as e:
             self.out.error(f"Continuous bus index calculation failed: {e!s}")
-            raise e
+            raise
 
     def report(self, error: Exception | None, results: bool | None) -> None:
         # error and success checks
@@ -1106,7 +1106,7 @@ class WrongSwitchConfiguration(DiagnosticFunction[pandapowerNet, bool]):
             except expected_exceptions:
                 net.switch["closed"] = switch_configuration
                 return False
-        except Exception as e:
+        except Exception as e:  # noqa: BLE001
             self.out.error(f"Switch check failed: {e!s}")
         return None
 
@@ -1161,9 +1161,11 @@ class MissingBusIndices(DiagnosticFunction[pandapowerNet, dict]):
             element_check = []
             for i, row in net[element].iterrows():
                 for bus_name in columns:
-                    if row[bus_name] not in bus_indices:
-                        if not ((element == "switch") and (bus_name == "element") and (row.et in ["l", "t", "t3"])):
-                            element_check.append((i, bus_name, row[bus_name]))
+                    if not (
+                        row[bus_name] in bus_indices
+                        or ((element == "switch") and (bus_name == "element") and (row.et in ["l", "t", "t3"]))
+                    ):
+                        element_check.append((i, bus_name, row[bus_name]))
             if element_check:
                 check_results[element] = element_check
 
@@ -1426,8 +1428,7 @@ class ImplausibleImpedanceValues(DiagnosticFunction[pandapowerNet, list[dict]]):
                 run(net)
             except (*expected_exceptions, FloatingPointError):
                 try:
-                    for key in implausible_elements:
-                        implausible_idx = implausible_elements[key]
+                    for key, implausible_idx in implausible_elements.items():
                         if key == "vsc":
                             net.vsc.x_ohm = np.fmax(net.vsc.x_ohm, 0.5)
                             net.vsc.r_dc_ohm = np.fmax(net.vsc.r_dc_ohm, 0.5)
@@ -1481,7 +1482,7 @@ class ImplausibleImpedanceValues(DiagnosticFunction[pandapowerNet, list[dict]]):
                 except expected_exceptions:
                     switch_replacement = False
                 check_results.append({"loadflow_converges_with_switch_replacement": switch_replacement})
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 self.out.error(f"Impedance values check failed: {e!s}")
             net.switch = switch_copy
             net.line = line_copy

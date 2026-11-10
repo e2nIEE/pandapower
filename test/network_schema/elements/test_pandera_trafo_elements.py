@@ -5,7 +5,7 @@ import pandas as pd
 import pandera as pa
 import pytest
 
-from pandapower.create import create_buses, create_transformer
+from pandapower.create import create_buses
 from pandapower.create._utils import add_column_to_df
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
@@ -13,9 +13,7 @@ from test.network_schema.elements.helper import (
     all_allowed_floats,
     bools,
     negativ_floats,
-    negativ_floats_plus_zero,
     negativ_ints,
-    negativ_ints_plus_zero,
     not_boolean_list,
     not_floats_list,
     not_ints_list,
@@ -869,20 +867,58 @@ class TestTrafoCrossFieldValidations:
             validate_network(net)
 
 
+class TestTrafoAngleLimits:
+    """Tests for the OPF branch angle difference limits"""
+
+    def test_min_less_equal_max_passes(self):
+        net = _create_net_with_buses()
+        net.trafo = _create_valid_trafo_dataframe()
+        net.trafo["min_angle_degree"] = -30.0
+        net.trafo["max_angle_degree"] = 30.0
+        validate_network(net)
+
+    def test_min_greater_than_max_fails(self):
+        net = _create_net_with_buses()
+        net.trafo = _create_valid_trafo_dataframe()
+        net.trafo["min_angle_degree"] = 30.0
+        net.trafo["max_angle_degree"] = -30.0
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_nan_passes(self):
+        net = _create_net_with_buses()
+        net.trafo = _create_valid_trafo_dataframe()
+        net.trafo["min_angle_degree"] = float(np.nan)
+        net.trafo["max_angle_degree"] = float(np.nan)
+        validate_network(net)
+
+    def test_columns_are_optional(self):
+        net = _create_net_with_buses()
+        net.trafo = _create_valid_trafo_dataframe()
+        assert "min_angle_degree" not in net.trafo.columns
+        assert "max_angle_degree" not in net.trafo.columns
+        validate_network(net)
+
+    @pytest.mark.parametrize("parameter", ["min_angle_degree", "max_angle_degree"])
+    def test_non_float_fails(self, parameter):
+        net = _create_net_with_buses()
+        net.trafo = _create_valid_trafo_dataframe()
+        net.trafo[parameter] = "not a float"
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+
 class TestTrafoResults:
     """Tests for trafo results after calculations"""
 
     @pytest.mark.skip(reason="Not yet implemented - requires power flow calculation")
     def test_trafo_power_flows(self):
         """Test: Power flow result fields have valid numeric values"""
-        pass
 
     @pytest.mark.skip(reason="Not yet implemented - requires short-circuit calculation")
     def test_trafo_short_circuit_results(self):
         """Test: Short-circuit result fields contain expected ranges"""
-        pass
 
     @pytest.mark.skip(reason="Not yet implemented - requires 3-phase calculation")
     def test_trafo_3ph_results(self):
         """Test: 3-phase result fields contain expected values"""
-        pass

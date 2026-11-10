@@ -10,9 +10,9 @@ import pandas as pd
 from pandapower.auxiliary import _add_auxiliary_elements, _sum_by_group
 from pandapower.build_branch import _transformer_correction_factor, get_trafo_values
 from pandapower.pd2ppc import _pd2ppc, _ppc2ppci
-from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS, T_BUS
+from pandapower.pypower.idx_brch import BR_R, BR_X, T_BUS
 from pandapower.pypower.idx_brch_sc import K_ST, K_T
-from pandapower.pypower.idx_bus import BASE_KV, BS, GS
+from pandapower.pypower.idx_bus import BS, GS
 from pandapower.pypower.idx_bus_sc import BS_GEN, BS_P, C_MAX, GS_GEN, GS_P, K_G, K_SG, KAPPA, PS_TRAFO_IX, V_G
 
 logger = logging.getLogger(__name__)
@@ -138,7 +138,6 @@ def _add_sgen_sc_z(net, ppc):
         vn_net = net.bus.loc[sgen_buses, "vn_kv"].values
         base_z_ohm = vn_net**2  # / net.sn_mva  # by logic it must by divided by sn_mva, but why is it wrong?
 
-        i_rg_ka = sgen_g.sn_mva / (vn_net * np.sqrt(3))
         z_g_ohm = 1 / sgen_g.lrc_pu * np.square(vn_net) / sgen_g.sn_mva
         z_g_complex_ohm = (sgen_g.rx + 1j) * z_g_ohm / (np.sqrt(1 + np.square(sgen_g.rx)))
         z_g_complex_pu = z_g_complex_ohm / base_z_ohm
@@ -295,7 +294,6 @@ def _add_gen_sc_z_kg_ks(net, ppc):
 
 def _create_k_updated_ppci(net, ppci_orig, ppci_bus, zero_sequence=False):
     ppci = deepcopy(ppci_orig)
-    base_z_ohm = ppci["bus"][:, BASE_KV] ** 2 / net.sn_mva
 
     non_ps_gen_bus = ppci_bus[np.isnan(ppci["bus"][ppci_bus, K_SG])]
     ps_gen_bus = ppci_bus[~np.isnan(ppci["bus"][ppci_bus, K_SG])]
@@ -306,10 +304,7 @@ def _create_k_updated_ppci(net, ppci_orig, ppci_bus, zero_sequence=False):
     if np.any(ps_trafo_mask):
         ps_trafo_ppci_ix = np.argwhere(ps_trafo_mask)
         ps_trafo_ppci_lv_bus = ppci["branch"][ps_trafo_mask, T_BUS].real.astype(np.int64)
-        ps_trafo_ppci_hv_bus = ppci["branch"][ps_trafo_mask, F_BUS].real.astype(np.int64)
         ppci["bus"][np.ix_(ps_trafo_ppci_lv_bus, [PS_TRAFO_IX])] = ps_trafo_ppci_ix
-        # if zero_sequence:
-        #     ppci["bus"][np.ix_(ps_trafo_ppci_hv_bus, [BS])] += 1/(3 * 22 / (110 ** 2))
 
     if np.any(ps_gen_bus_mask):
         ppci["bus"][np.ix_(ps_gen_bus_mask, [GS_P, BS_P])] /= ppci["bus"][np.ix_(ps_gen_bus_mask, [K_SG])]

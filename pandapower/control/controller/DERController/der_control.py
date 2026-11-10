@@ -1,13 +1,15 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = ["DERController"]
+
 import logging
 
 import numpy as np
 
 from pandapower.auxiliary import ensure_iterability
-from pandapower.control.controller.DERController.PQVAreas import BaseArea, PQVArea4110, QVArea4110
-from pandapower.control.controller.DERController.QModels import QModel
+from pandapower.control.controller.DERController.pqv_areas import BaseArea, PQVArea4110, QVArea4110
+from pandapower.control.controller.DERController.q_models import QModel
 from pandapower.control.controller.pq_control import PQController
 
 logger = logging.getLogger(__name__)
@@ -215,7 +217,7 @@ class DERController(PQController):
             q_pu = self.q_model.step(vm_pu=vm_pu, p_pu=p_series_mw / self.sn_mva)
         else:
             if q_series_mvar is None:
-                raise Exception("No Q_model and no q_profile available.")
+                raise RuntimeError("No Q_model and no q_profile available.")
             q_pu = q_series_mvar / self.sn_mva
         return q_pu
 
@@ -239,7 +241,7 @@ class DERController(PQController):
         to_saturate = p_pu**2 + q_pu**2 > sat_s_pu**2
         if any(to_saturate):
             if self.q_prio:
-                if (isinstance(self.pqv_area, PQVArea4110) or isinstance(self.pqv_area, QVArea4110)) and any(
+                if (isinstance(self.pqv_area, (PQVArea4110, QVArea4110))) and any(
                     (0.95 < vm_pu[to_saturate])
                     & (vm_pu[to_saturate] < 1.05)
                     & (-0.328684 < q_pu[to_saturate])
