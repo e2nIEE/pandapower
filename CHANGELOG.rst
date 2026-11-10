@@ -4,6 +4,7 @@ Change Log
 [upcoming 4.0.0] - 2026-..-..
 -------------------------------
 - [FIXED] fix symmetrical PST: before they were handled as asymmetric tap changer, now as proper symmetrical according to UCTE-DEF
+- [ADDED] transformer documentation: overview table of the tap changer models with the columns to set
 - [FIXED] fix PF2pp converter to work with pandapower 4.0: added init_results into it and fixed std_type saving
 - [CHANGED] ideal phase shifters only use ``tap_step_degree`` as angle per tap step. ``tap_step_percent`` must be NaN or 0
 - [FIXED] branch voltage angle difference constraints (MATPOWER ``ANGMIN``/``ANGMAX``) were lost in the pypower/matpower converters and ignored by the OPF: the new optional columns ``min_angle_degree`` and ``max_angle_degree`` in ``net.line``, ``net.trafo``, ``net.trafo3w`` and ``net.impedance`` are considered by ``runopp``/``rundcopp`` and by ``to_pm``, and ``from_ppc``/``to_ppc``/``to_mpc`` preserve them (#2385). For ``net.trafo3w`` the limit bounds each internal star branch (hv -> star and star -> mv/lv) separately, so the terminal difference can reach twice the configured value. OPF results of networks imported from MATPOWER/PYPOWER cases with angle limits change accordingly; pass ``OPF_IGNORE_ANG_LIM=True`` to ``runopp`` to ignore the limits.

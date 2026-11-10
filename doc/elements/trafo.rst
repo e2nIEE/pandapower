@@ -158,6 +158,85 @@ Where the reference voltage :math:`V_{N}` is the nominal voltage at the low volt
 Tap Changer
 ---------------
 
+**Overview of the transformer models**
+
+The model of a tap changer is defined by tap_changer_type. The table gives the columns that have to be set for each
+model (in addition to tap_side, tap_pos, tap_neutral, tap_min and tap_max) and the resulting voltage ratio and phase
+shift per tap, with :math:`n = tap\_pos - tap\_neutral` and :math:`\delta u = tap\_step\_percent / 100`. For a tap
+changer at the low voltage side, the sign of the angle is inverted. The models are described in the
+`ENTSO-E PST modelling guide <https://eepublicdownloads.entsoe.eu/clean-documents/CIM_documents/Grid_Model_CIM/ENTSOE_CGMES_v2.4_28May2014_PSTmodelling.pdf>`_.
+
+.. list-table::
+   :header-rows: 1
+   :widths: 18, 12, 30, 22, 18
+
+   * - Model
+     - tap_changer_type
+     - Columns to set
+     - Voltage ratio and angle per tap
+     - Impedance per tap
+   * - Fixed ratio, no tap changer
+     - None
+     - tap_changer_type None
+     - ratio of vn_hv_kv / vn_lv_kv, angle shift_degree
+     - constant
+   * - In-phase ratio changer (longitudinal regulator, off-circuit or on-load)
+     - "Ratio"
+     - tap_step_percent = :math:`\delta u` in %, tap_step_degree NaN or 0
+     - ratio :math:`1 + n \delta u`, angle 0
+     - constant for a tap changer at the high voltage side, scaled with the square of the ratio at the low voltage side
+   * - Tabular ratio changer
+     - "Tabular"
+     - tap_dependency_table True, id_characteristic_table; trafo_characteristic_table with step, voltage_ratio,
+       angle_deg = 0, vk_percent, vkr_percent per step
+     - voltage_ratio per step, angle 0
+     - vk_percent and vkr_percent per step (at the low voltage side additionally scaled with the square of the ratio)
+   * - Ideal (linear) phase shifter
+     - "Ideal"
+     - tap_step_degree = angle per tap step, tap_step_percent NaN or 0 (otherwise error)
+     - ratio 1, angle :math:`n \cdot tap\_step\_degree`
+     - constant
+   * - Symmetrical phase shifter
+     - "Symmetrical"
+     - tap_step_percent = :math:`\delta u` in %, tap_step_degree 90 (or NaN / 0)
+     - ratio 1, angle :math:`2 \arctan(n \delta u / 2)`
+     - multiplied with :math:`1 + (n \delta u / 2)^2` (as in PowerFactory)
+   * - Quadrature booster
+     - "Ratio"
+     - tap_step_percent = :math:`\delta u` in %, tap_step_degree = 90
+     - ratio :math:`\sqrt{1 + (n \delta u)^2}`, angle :math:`\arctan(n \delta u)`
+     - as in-phase ratio changer
+   * - Asymmetrical phase shifter
+     - "Ratio"
+     - tap_step_percent = :math:`\delta u` in %, tap_step_degree = boost angle :math:`\theta`
+     - ratio :math:`|1 + n \delta u e^{\mathrm j \theta}|`, angle :math:`\arg(1 + n \delta u e^{\mathrm j \theta})`
+     - as in-phase ratio changer
+   * - Tabular phase shifter
+     - "Tabular"
+     - as tabular ratio changer, with angle_deg per step
+     - voltage_ratio and angle_deg per step
+     - as tabular ratio changer
+   * - In-phase changer plus phase shifter on one winding (2-winding transformers only)
+     - "Ratio" and tap2_changer_type "Symmetrical", "Ideal" or "Ratio"
+     - tap_* for the in-phase changer, tap2_* for the phase shifter, tap2_side = tap_side
+     - product of both tap changers
+     - per tap changer as above (no combined impedance law)
+   * - Ratio changers on two windings, e.g. off-circuit at HV and on-load at LV (2-winding transformers only)
+     - "Ratio" and tap2_changer_type "Ratio"
+     - tap_side = "hv" with tap_*, tap2_side = "lv" with tap2_*
+     - quotient of both ratios
+     - per tap changer as above
+
+.. note::
+    Validation of the models in the pandapower tests during development:
+
+    - Validated : in-phase ratio changer, tabular ratio changer, tabular phase shifter, asymmetrical phase shifter, ideal phase shifter
+    - Not validated: quadrature booster, ideal and symmetrical phase shifter with the tap changer at the low voltage side, symmetrical
+      phase shifter with tap_step_degree other than 90, and the combinations with a second tap changer
+
+The available tap changer models of three-winding transformers (one tap changer at the high, medium or low voltage side or at the
+star point) are described in :ref:`trafo3w_model`.
+
 **Longitudinal regulator (Ratio Tap Changer)**
 
 A longitudinal regulator can be modeled by setting tap_changer_type to "Ratio" and defining the tap changer voltage step with tap_step_percent.
