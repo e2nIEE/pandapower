@@ -34,14 +34,15 @@ from pandapower.pypower.idx_brch import (
     BR_STATUS,
     BR_X,
     BR_X_ASYM,
+    BRANCH_COLS,
     F_BUS,
     RATE_A,
     SHIFT,
     T_BUS,
     TAP,
-    BRANCH_COLS,
 )
 from pandapower.pypower.idx_brch_dc import (
+    BRANCH_DC_COLS,
     DC_BR_G,
     DC_BR_R,
     DC_BR_STATUS,
@@ -50,13 +51,13 @@ from pandapower.pypower.idx_brch_dc import (
     DC_RATE_B,
     DC_RATE_C,
     DC_T_BUS,
-    BRANCH_DC_COLS,
 )
 from pandapower.pypower.idx_brch_sc import BRANCH_COLS_SC
 from pandapower.pypower.idx_brch_tdpf import (
     ALPHA,
     BR_LENGTH_KM,
     BR_R_REF_OHM_PER_KM,
+    BRANCH_COLS_TDPF,
     EPSILON,
     GAMMA,
     MC_JOULE_PER_M_K,
@@ -70,12 +71,12 @@ from pandapower.pypower.idx_brch_tdpf import (
     TDPF,
     WIND_ANGLE_DEGREE,
     WIND_SPEED_MPS,
-    BRANCH_COLS_TDPF,
 )
 from pandapower.pypower.idx_bus import BASE_KV, BUS_AREA, BUS_TYPE, PQ, VA, VM, VMAX, VMIN, ZONE
 from pandapower.pypower.idx_bus_dc import DC_BASE_KV, DC_BUS_AREA, DC_BUS_TYPE, DC_P, DC_VM, DC_VMAX, DC_VMIN, DC_ZONE
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN
 from pandapower.pypower.idx_tcsc import (
+    TCSC_COLS,
     TCSC_CONTROLLABLE,
     TCSC_F_BUS,
     TCSC_MAX_FIRING_ANGLE,
@@ -86,7 +87,6 @@ from pandapower.pypower.idx_tcsc import (
     TCSC_THYRISTOR_FIRING_ANGLE,
     TCSC_X_CVAR,
     TCSC_X_L,
-    TCSC_COLS,
 )
 
 

@@ -13,6 +13,7 @@ from pandapower.build_gen import _calculate_qmin_qmax_from_q_capability_characte
 from pandapower.pypower.idx_bus import (
     BASE_KV,
     BS,
+    BUS_COLS,
     BUS_I,
     BUS_TYPE,
     CID_P,
@@ -29,14 +30,14 @@ from pandapower.pypower.idx_bus import (
     VM,
     VMAX,
     VMIN,
-    BUS_COLS,
 )
-from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, BUS_COLS_SC
+from pandapower.pypower.idx_bus_sc import BUS_COLS_SC, C_MAX, C_MIN
 
 from .pypower.idx_bus_dc import (
     DC_B2B,
     DC_BASE_KV,
     DC_BUS_AREA,
+    DC_BUS_COLS,
     DC_BUS_I,
     DC_BUS_TYPE,
     DC_NONE,
@@ -47,11 +48,11 @@ from .pypower.idx_bus_dc import (
     DC_VMAX,
     DC_VMIN,
     DC_ZONE,
-    DC_BUS_COLS,
 )
-from .pypower.idx_source_dc import SOURCE_DC_BUS, SOURCE_DC_STATUS, SOURCE_DC_VG, SOURCE_DC_COLS
+from .pypower.idx_source_dc import SOURCE_DC_BUS, SOURCE_DC_COLS, SOURCE_DC_STATUS, SOURCE_DC_VG
 from .pypower.idx_ssc import (
     SSC_BUS,
+    SSC_COLS,
     SSC_CONTROLLABLE,
     SSC_INTERNAL_BUS,
     SSC_R,
@@ -60,10 +61,10 @@ from .pypower.idx_ssc import (
     SSC_X,
     SSC_X_CONTROL_VA,
     SSC_X_CONTROL_VM,
-    SSC_COLS,
 )
 from .pypower.idx_svc import (
     SVC_BUS,
+    SVC_COLS,
     SVC_CONTROLLABLE,
     SVC_MAX_FIRING_ANGLE,
     SVC_MIN_FIRING_ANGLE,
@@ -72,11 +73,11 @@ from .pypower.idx_svc import (
     SVC_THYRISTOR_FIRING_ANGLE,
     SVC_X_CVAR,
     SVC_X_L,
-    SVC_COLS,
 )
 from .pypower.idx_vsc import (
     VSC_BUS,
     VSC_BUS_DC,
+    VSC_COLS,
     VSC_CONTROLLABLE,
     VSC_DIFF_REF_BUS,
     VSC_INTERNAL_BUS,
@@ -97,7 +98,6 @@ from .pypower.idx_vsc import (
     VSC_VALUE_AC,
     VSC_VALUE_DC,
     VSC_X,
-    VSC_COLS,
 )
 
 try:

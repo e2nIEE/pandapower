@@ -46,11 +46,11 @@ from pandapower.pypower.idx_brch import (
     BR_STATUS,
     BR_X,
     BR_X_ASYM,
+    BRANCH_COLS,
     F_BUS,
     SHIFT,
     T_BUS,
     TAP,
-    BRANCH_COLS,
 )
 from pandapower.pypower.idx_brch_sc import BRANCH_COLS_SC
 from pandapower.pypower.idx_bus import BASE_KV, BS, BUS_TYPE, GS, NONE

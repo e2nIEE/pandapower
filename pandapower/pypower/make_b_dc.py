@@ -17,10 +17,10 @@ from numpy.typing import NDArray
 from scipy.sparse import csc_matrix, csr_matrix
 
 from pandapower.pypower.idx_brch import BR_STATUS, BR_X, F_BUS, SHIFT, T_BUS, TAP
-from pandapower.pypower.idx_brch_dc import DC_BR_R, DC_BR_STATUS, DC_F_BUS, DC_T_BUS, BRANCH_DC_COLS
+from pandapower.pypower.idx_brch_dc import BRANCH_DC_COLS, DC_BR_R, DC_BR_STATUS, DC_F_BUS, DC_T_BUS
 from pandapower.pypower.idx_bus import BUS_I
 from pandapower.pypower.idx_bus_dc import DC_BUS_COLS
-from pandapower.pypower.idx_vsc import VSC_BUS, VSC_BUS_DC, VSC_MODE_DC, VSC_MODE_DC_P, VSC_STATUS, VSC_X, VSC_COLS
+from pandapower.pypower.idx_vsc import VSC_BUS, VSC_BUS_DC, VSC_COLS, VSC_MODE_DC, VSC_MODE_DC_P, VSC_STATUS, VSC_X
 
 logger = logging.getLogger(__name__)
 

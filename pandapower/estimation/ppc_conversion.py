@@ -57,10 +57,10 @@ from pandapower.network import pandapowerNet
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
 from pandapower.pypower.idx_brch import BRANCH_COLS
+from pandapower.pypower.idx_bus import BUS_COLS
 from pandapower.pypower.idx_bus import BUS_TYPE as pypower_BUS_TYPE
 from pandapower.pypower.idx_bus import VA as pypower_VA
 from pandapower.pypower.idx_bus import VM as pypower_VM
-from pandapower.pypower.idx_bus import BUS_COLS
 from pandapower.pypower.make_y_bus import makeYbus
 
 std_logger = logging.getLogger(__name__)

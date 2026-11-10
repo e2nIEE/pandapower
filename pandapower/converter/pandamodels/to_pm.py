@@ -41,6 +41,7 @@ from pandapower.pypower.idx_brch import (
     BR_R,
     BR_STATUS,
     BR_X,
+    BRANCH_COLS,
     F_BUS,
     RATE_A,
     RATE_B,
@@ -48,7 +49,6 @@ from pandapower.pypower.idx_brch import (
     SHIFT,
     T_BUS,
     TAP,
-    BRANCH_COLS,
 )
 from pandapower.pypower.idx_bus import BASE_KV, BS, BUS_I, BUS_TYPE, GS, PD, QD, VA, VM, VMAX, VMIN, ZONE
 from pandapower.pypower.idx_cost import COST, MODEL, NCOST
