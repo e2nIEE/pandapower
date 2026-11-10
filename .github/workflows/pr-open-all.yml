@@ -235,6 +235,7 @@ jobs:
       - name: duplicate reports
         shell: bash
         run: |
+          shopt -s nullglob
           for f in coverage-*.xml; do
             cp "$f" "codacy-$f"
           done
@@ -253,9 +254,10 @@ jobs:
           verbose: true
       - name: Upload test results to Codecov
         continue-on-error: true
-        uses: codecov/test-results-action@v1
+        uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 #v7.1.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          report_type: "test_results"
           files: ${{ steps.result-files.outputs.files }}
 
   warnings:
