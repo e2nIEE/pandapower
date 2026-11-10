@@ -263,9 +263,10 @@ def run_psdf(
     :param branch_dict: dictionary with keys "line", "trafo", "impedance", "trafo3w"; if not None the computation is
         restricted to the branch indices given in the dict
     :param reduced: if True, the output is reduced to the branches given in branch_dict
-    :return: {(goal_branch_type ("line", "trafo", "impedance", "trafo3w_{hv,mv,lv}"),
-               phase_shift_branch_type (("line", "trafo", "impedance")):
+    :return: {(goal_branch_type, phase_shift_branch_type):
         DataFrame(data=psdf, index=goal_branch_pp_index, columns=phase_shift_branch_ix)}
+        with goal_branch_type in ("line", "trafo", "impedance", "trafo3w_{hv,mv,lv}")
+        and phase_shift_branch_type in ("line", "trafo", "impedance")
     """
     # ToDo: check if distributed slack makes any difference
 

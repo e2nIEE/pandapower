@@ -494,9 +494,9 @@ def run_ptdf_dc_profile(
     :param net: A pandapower network
     :param profiles: a dict of p profiles of pp elements as dataframe:
         {(element ("load", "sgen", "gen", "storage"), "p_mw"):
-         pd.DataFrame(index=calculation_steps, columns=element_index, data=profile_data)}
-            all the profiles must have the same index, the columns could be a subset of the element,
-            the default value of not selected elements in pandapower networks is used in profile simulation
+        pd.DataFrame(index=calculation_steps, columns=element_index, data=profile_data)}.
+        All the profiles must have the same index, the columns could be a subset of the element,
+        the default value of not selected elements in pandapower networks is used in profile simulation
     :param result_side: 0 means ("from", "hv") side, 1 means ("to", "lv") side
     :param ptdf: precalculated ptdf (result of run_ptdf with the same result_side) to accelerate the calculation,
         if None it is calculated

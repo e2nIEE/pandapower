@@ -417,9 +417,10 @@ def run_lodf(
         restricted to the branch indices given in the dict
     :param reduced: if True, the output is reduced to the branches given in branch_dict
     :param recycle: if True, recycles the previous
-    :return: {(goal_branch_type ("line", "trafo", "impedance", "trafo3w_{hv,mv,lv}"),
-               outage_branch_type (("line", "trafo", "impedance")):
+    :return: {(goal_branch_type, outage_branch_type):
         DataFrame(data=lodf, index=goal_branch_pp_index, columns=outage_branch_ix)}
+        with goal_branch_type in ("line", "trafo", "impedance", "trafo3w_{hv,mv,lv}")
+        and outage_branch_type in ("line", "trafo", "impedance")
     """
     if perturb and outage_branch_ix is None:
         logger.info("If a lot of branch required in lodf, please set perturb to False!")
