@@ -89,7 +89,9 @@ def estimate(
                     still be fused
 
     Returns:
-        bool: Was the state estimation successful?
+        dict: "success" (bool, whether the state estimation was successful), "num_iterations" (int) and "time" (str,
+        ISO 8601 time stamp of the estimation in UTC). The dict itself is always truthy, so use result["success"] to
+        detect a failed estimation, e.g. ``if not estimate(net)["success"]:``
     """
     if algorithm not in ALGORITHM_MAPPING:
         raise UserWarning(f"Algorithm {algorithm} is not a valid estimator")
@@ -237,12 +239,14 @@ class StateEstimation:
                 if one of the bus among the buses connected through bb switch is given, then all of them will still
                 be fused
         OUTPUT:
-            **successful** (boolean) - True if the estimation process was successful
+            **se_results** (dict) - "success" (bool, True if the estimation process was successful),
+            "num_iterations" (int) and "time" (str, ISO 8601 time stamp of the estimation in UTC). The dict itself
+            is always truthy, so use se_results["success"] to detect a failed estimation.
         Optional estimation variables:
             The bus power injections can be accessed with *se.s_node_powers* and the estimated
             values corresponding to the (noisy) measurement values with *se.hx*. (*hx* denotes h(x))
         EXAMPLE:
-            success = estimate(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]))
+            success = estimate(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]))["success"]
         """
         # check if all parameter are allowed
         for var_name in opt_vars:

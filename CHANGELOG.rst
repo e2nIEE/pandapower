@@ -23,6 +23,7 @@ Change Log
 - [CHANGED] runpp: the DC grid is solved with current balance equations and a revised Jacobian; several VSC in DC voltage control at the same DC bus share the current equally
 - [DEPRECATED] create_vsc_stacked and DmrControl, use create_vsc_bipolar instead
 - [FIXED] runpp: out of service VSC in AC slack mode defined a slack bus
+- [CHANGED] State Estimation: estimate() returns a dict with "success", "num_iterations" and "time" (ISO 8601, UTC) instead of a bool; the dict is always truthy, use result["success"] to detect a failed estimation
 
 [upcoming release] - 2026-..-..
 -------------------------------
