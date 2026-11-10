@@ -1,3 +1,6 @@
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import logging
 import operator
 import re
@@ -68,7 +71,7 @@ def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type, show_computing_ti
     Ybus_origin = net_zpbn._ppc["internal"]["Ybus"].todense()
     bus_lookup_ppc = bus_lookups["bus_lookup_ppc"]
     nb_dict = {}
-    for key in bus_lookup_ppc.keys():
+    for key in bus_lookup_ppc:
         if key != "b_area_buses_no_switch":
             nb_dict["nb_" + key.split("_")[0]] = len(bus_lookup_ppc[key])
     Ybus_buses = list(bus_lookup_ppc.values())
@@ -115,7 +118,7 @@ def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type, show_computing_ti
 
     t_end = time.perf_counter()
     if show_computing_time:
-        logger.info('"calculate_equivalent_Ybus" finished in %s seconds:' % round((t_end - t_start), 2))
+        logger.info(f'"calculate_equivalent_Ybus" finished in {round((t_end - t_start), 2)} seconds:')
     return y_bus_eq
 
 
@@ -220,13 +223,13 @@ def _create_net_zpbn(
             idxs = Z.index[~np.isnan(Z[elm + "_ground"].values)]
             vn_kvs = net_zpbn.bus.vn_kv[Z.ext_bus.loc[idxs]]
             new_g_buses = create_buses(
-                net_zpbn, len(idxs), vn_kvs, name=["%s_separate-ground %s" % (elm, str(Z.ext_bus.loc[i])) for i in idxs]
+                net_zpbn, len(idxs), vn_kvs, name=[f"{elm}_separate-ground {Z.ext_bus.loc[i]}" for i in idxs]
             )
             new_t_buses = create_buses(
                 net_zpbn,
                 len(idxs),
                 vn_kvs,
-                name=["%s_separate-total %s" % (elm, str(Z.ext_bus.loc[i])) for i in idxs],
+                name=[f"{elm}_separate-total {Z.ext_bus.loc[i]}" for i in idxs],
                 max_vm_pu=limits.max_vm_pu.loc[idxs],
                 min_vm_pu=limits.min_vm_pu.loc[idxs],
             )
@@ -371,9 +374,9 @@ def _create_net_zpbn(
                     other_cols_mixed |= {c}
                 elif value_types[0] in (float, int):
                     other_cols_number |= {c}
-                elif value_types[0] == bool:
+                elif value_types[0] is bool:
                     other_cols_bool |= {c}
-                elif value_types[0] == str:
+                elif value_types[0] is str:
                     other_cols_str |= {c}
                 else:  # value_types[0] is None:
                     other_cols_none |= {c}
@@ -627,7 +630,7 @@ def _create_bus_lookups(
     }
     t_end = time.perf_counter()
     if show_computing_time:
-        logger.info('"create_bus_lookup" finished in %s seconds:' % round((t_end - t_start), 2))
+        logger.info(f'"create_bus_lookup" finished in {round((t_end - t_start), 2)} seconds:')
     return bus_lookups
 
 
@@ -726,7 +729,7 @@ def _calclate_equivalent_element_params(
 
     t_end = time.perf_counter()
     if show_computing_time:
-        logger.info('"calclate_equivalent_element_params" finished in %s seconds:' % round((t_end - t_start), 2))
+        logger.info(f'"calclate_equivalent_element_params" finished in {round((t_end - t_start), 2)} seconds:')
     return shunt_params, impedance_params
 
 

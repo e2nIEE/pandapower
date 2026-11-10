@@ -5,12 +5,18 @@ import copy
 import logging
 import os
 import re
+from importlib.util import find_spec
 
 import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower.auxiliary import _add_ppc_options, _check_connectivity, lightsim2grid_available
+from pandapower.auxiliary import (
+    _add_ppc_options,
+    _check_connectivity,
+    _check_if_numba_is_installed,
+    lightsim2grid_available,
+)
 from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
 from pandapower.create import (
     create_bus,
@@ -49,9 +55,12 @@ from pandapower.pf.create_jacobian import _create_J_without_numba
 from pandapower.pf.run_newton_raphson_pf import _get_pf_variables_from_ppci
 from pandapower.powerflow import LoadflowNotConverged
 from pandapower.pypower.idx_brch import BR_B, BR_G, BR_R, BR_X
-from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
+from pandapower.pypower.make_y_bus import makeYbus as makeYbus_pypower
 from pandapower.results import reset_results
 from pandapower.run import runopp, runpp, set_user_pf_options
+from pandapower.toolbox.comparison import nets_equal
+from pandapower.toolbox.grid_modification import drop_elements
+from test import test_path
 from test.consistency_checks import runpp_with_consistency_checks
 from test.control.test_shunt_control import simple_test_net_shunt_control
 from test.helper_functions import add_grid_connection, assert_net_equal, assert_res_equal, create_test_line
@@ -63,46 +72,14 @@ from test.loadflow.result_test_network_generator import (
     add_test_xward,
     result_test_network_generator,
 )
-from pandapower.toolbox.comparison import nets_equal
-from pandapower.toolbox.grid_modification import drop_elements
-
-logger = logging.getLogger(__name__)
-
-from pandapower.auxiliary import _check_if_numba_is_installed
 
 numba_installed = _check_if_numba_is_installed()
 if numba_installed:
-    from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
+    from pandapower.pf.make_y_bus_numba import makeYbus as makeYbus_numba
 
-try:
-    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
+helmpy_available = find_spec("helmpy") is not None
 
-    helmpy_available = True
-except ImportError:
-    helmpy_available = False
-
-try:
-    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
-
-    helmpy_available = True
-except ImportError:
-    helmpy_available = False
-
-try:
-    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
-
-    helmpy_available = True
-except ImportError:
-    helmpy_available = False
-
-try:
-    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
-
-    helmpy_available = True
-except ImportError:
-    helmpy_available = False
-
-from test import test_path
+logger = logging.getLogger(__name__)
 
 
 def test_minimal_net(**kwargs):
@@ -139,7 +116,7 @@ def test_set_user_pf_options():
 
     # check if 'hello' is added to net._options, but other options are untouched
     runpp(net)
-    assert "hello" in net._options.keys() and net._options["hello"] == "world"
+    assert "hello" in net._options and net._options["hello"] == "world"
     net._options.pop("hello")
     assert net._options == old_options
 
@@ -148,7 +125,7 @@ def test_set_user_pf_options():
     set_user_pf_options(net, overwrite=True)
     assert net.user_pf_options == {}
     runpp(net)
-    assert "hello" not in net._options.keys()
+    assert "hello" not in net._options
 
     # see if user arguments overrule user_pf_options, but other user_pf_options still have the
     # priority
@@ -522,8 +499,8 @@ def test_isolated_in_service_bus_at_oos_line():
     net = pandapowerNet(name="test_isolated_in_service_bus_at_oos_line")
     _, b2, _ = add_grid_connection(net)
     b = create_bus(net, vn_kv=135)
-    l = create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
-    net.line.loc[l, "in_service"] = False
+    line_idx = create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
+    net.line.loc[line_idx, "in_service"] = False
     assert runpp_with_consistency_checks(net, init="flat")
 
 
@@ -570,8 +547,8 @@ def test_test_sn_mva():
         runpp(net2)
         try:
             assert_net_equal(net1, net2, exclude_elms=["sn_mva"])
-        except:
-            raise UserWarning("Result difference due to sn_mva after adding %s" % net1.last_added_case)
+        except AssertionError:
+            raise UserWarning(f"Result difference due to sn_mva after adding {net1.last_added_case}")
 
 
 def test_bsfw_algorithm():
@@ -700,9 +677,9 @@ def test_pypower_algorithms_iter():
                 runpp_with_consistency_checks(net, enforce_q_lims=True, algorithm=alg, calculate_voltage_angles="auto")
                 runpp_with_consistency_checks(net, enforce_q_lims=False, algorithm=alg, calculate_voltage_angles="auto")
             except AssertionError:
-                raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
+                raise UserWarning(f"Consistency Error after adding {net.last_added_case}")
             except LoadflowNotConverged:
-                raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
+                raise UserWarning(f"Power flow did not converge after adding {net.last_added_case}")
 
 
 @pytest.mark.xfail
@@ -1732,7 +1709,7 @@ def test_tap_table_order():
 
     tol = 0.001
 
-    assert net.converged == True
+    assert net.converged
     assert np.isclose(net.res_bus.at[4, "va_degree"], -1 * (150 - 2 + 0.03717), 0, tol, False)
     assert np.isclose(net.res_bus.at[5, "va_degree"], -1 * (150 - 0 + 0.03810), 0, tol, False)
     assert np.isclose(net.res_bus.at[4, "vm_pu"], 1.03144595, tol, False)
@@ -1767,9 +1744,9 @@ def test_lightsim2grid():
             runpp_with_consistency_checks(net, lightsim2grid=True, voltage_depend_loads=False)
             assert_res_equal(net, net_ref)
         except AssertionError:
-            raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
+            raise UserWarning(f"Consistency Error after adding {net.last_added_case}")
         except LoadflowNotConverged:
-            raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
+            raise UserWarning(f"Power flow did not converge after adding {net.last_added_case}")
         except NotImplementedError as err:
             assert len(net.ext_grid) > 1
             assert "multiple ext_grids are found" in str(err)
@@ -2044,15 +2021,15 @@ def test_q_capability_curve_for_sgen():
     assert net.res_sgen.q_mvar.loc[0] < 255
     assert net.res_sgen.q_mvar.loc[0] > -255
     logger.info("------------general limit------------------")
-    logger.info("res_sgen:\n%s" % net.res_sgen)
-    logger.info("res_bus.vm_pu: \n%s" % net.res_bus)
+    logger.info(f"res_sgen:\n{net.res_sgen}")
+    logger.info(f"res_bus.vm_pu: \n{net.res_bus}")
 
     logger.info("------------given maximum limit------------------\n")
     net.sgen.loc[0, "max_q_mvar"] = 261.01001
     net.sgen.loc[0, "min_q_mvar"] = -323.01001
     runopp(net, init="pf", calculate_voltage_angles=False)
-    logger.info("res_sgen:\n%s" % net.res_sgen)
-    logger.info("res_bus.vm_pu: \n%s" % net.res_bus)
+    logger.info(f"res_sgen:\n{net.res_sgen}")
+    logger.info(f"res_bus.vm_pu: \n{net.res_bus}")
     assert max(net.res_bus.vm_pu) < 1.02
     assert min(net.res_bus.vm_pu) > 0.96
     assert net.res_sgen.q_mvar.loc[0] < 261.01001
@@ -2099,8 +2076,8 @@ def test_q_capability_curve_for_sgen():
     create_q_capability_characteristics_object(net)
 
     runopp(net, init="pf", calculate_voltage_angles=False)
-    logger.info("res_sgen:\n%s" % net.res_sgen)
-    logger.info("res_bus.vm_pu: \n%s" % net.res_bus)
+    logger.info(f"res_sgen:\n{net.res_sgen}")
+    logger.info(f"res_bus.vm_pu: \n{net.res_bus}")
     assert max(net.res_bus.vm_pu) < 1.02
     assert min(net.res_bus.vm_pu) > 0.96
     assert net.res_sgen.q_mvar.loc[0] < 218.0099945068

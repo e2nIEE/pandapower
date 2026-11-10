@@ -15,7 +15,7 @@ from pandapower.create import (
 from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 from test.consistency_checks import runpp_with_consistency_checks
-from test.loadflow.test_facts import copy_with_impedance, facts_case_study_grid, compare_tcsc_impedance
+from test.loadflow.test_facts import compare_tcsc_impedance, copy_with_impedance, facts_case_study_grid
 
 
 def add_tcsc_to_line(net, xl, xc, set_p_mw, from_bus, line, side="from_bus"):
@@ -98,8 +98,6 @@ def test_tcsc_simple2():
 def test_tcsc_simple3():
     baseMVA = 100  # MVA
     baseV = 110  # kV
-    baseI = baseMVA / (baseV * np.sqrt(3))
-    baseZ = baseV**2 / baseMVA
     xl = 0.2
     xc = -20
     # plot_z(baseZ, xl, xc)
@@ -132,8 +130,6 @@ def test_tcsc_simple3():
 def test_tcsc_simple3_slack():
     baseMVA = 100  # MVA
     baseV = 110  # kV
-    baseI = baseMVA / (baseV * np.sqrt(3))
-    baseZ = baseV**2 / baseMVA
     xl = 0.2
     xc = -20
     # plot_z(baseZ, xl, xc)
@@ -168,7 +164,6 @@ def test_tcsc_simple3_slack():
 def test_compare_to_impedance():
     baseMVA = 100  # MVA
     baseV = 110  # kV
-    baseI = baseMVA / (baseV * np.sqrt(3))
     baseZ = baseV**2 / baseMVA
     xl = 0.2
     xc = -20
@@ -228,8 +223,8 @@ def test_tcsc_case_study():
     f = net.bus.loc[net.bus.name == "B4"].index.values[0]
     t = net.bus.loc[net.bus.name == "B6"].index.values[0]
     aux = create_bus(net, 230, "aux")
-    l = net.line.loc[(net.line.from_bus == f) & (net.line.to_bus == t)].index.values[0]
-    net.line.loc[l, "from_bus"] = aux
+    line_idx = net.line.loc[(net.line.from_bus == f) & (net.line.to_bus == t)].index.values[0]
+    net.line.loc[line_idx, "from_bus"] = aux
 
     net_ref = copy.deepcopy(net)
 

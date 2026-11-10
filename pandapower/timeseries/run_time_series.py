@@ -1,6 +1,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
 import tempfile
 from collections.abc import Iterable
 
@@ -12,13 +13,7 @@ from pandapower.control.util.diagnostic import control_diagnostic
 from pandapower.run import runpp
 from pandapower.timeseries.output_writer import OutputWriter
 
-try:
-    from pandaplan.core import pplog
-except ImportError:
-    import logging as pplog
-
-logger = pplog.getLogger(__name__)
-logger.setLevel(level=pplog.WARNING)
+logger = logging.getLogger(__name__)
 
 
 def init_default_outputwriter(net, time_steps, **kwargs):
@@ -54,13 +49,13 @@ def init_output_writer(net, time_steps):
 
 
 def controller_not_converged(time_step, ts_variables):
-    logger.error("ControllerNotConverged at time step %s" % time_step)
+    logger.error(f"ControllerNotConverged at time step {time_step}")
     if not ts_variables["continue_on_divergence"]:
         raise ControllerNotConverged
 
 
 def pf_not_converged(time_step, ts_variables):
-    logger.error("CalculationNotConverged at time step %s" % time_step)
+    logger.error(f"CalculationNotConverged at time step {time_step}")
     if not ts_variables["continue_on_divergence"]:
         raise ts_variables["errors"][0]
 
@@ -297,8 +292,8 @@ def print_progress(i, time_step, time_steps, verbose, **kwargs):
         kwargs["ts_variables"]["progress_bar"].update(1)
 
     # print debug info
-    if logger.level == pplog.DEBUG and verbose:
-        logger.debug("run time step %i" % time_step)
+    if logger.level == logging.DEBUG and verbose:
+        logger.debug(f"run time step {time_step}")
 
     # call a custom progress function
     if "progress_function" in kwargs:

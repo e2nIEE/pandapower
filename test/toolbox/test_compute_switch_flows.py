@@ -5,6 +5,7 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
+    create_bus,
     create_buses,
     create_ext_grid,
     create_gen,
@@ -45,7 +46,7 @@ class TestComputeSwitchFlowsBasic:
 
     def test_single_coupler_power_balance(self):
         """The switch must carry the entire load since it's the only path."""
-        net, b0, b1, b2 = _make_two_bus_coupler_net()
+        net, *_ = _make_two_bus_coupler_net()
         runpp(net)
         assert np.isnan(net.res_switch.at[0, "p_from_mw"])
 
@@ -75,7 +76,7 @@ class TestComputeSwitchFlowsBasic:
 
     def test_open_switch_zero_flow(self):
         """An open bus-bus switch must have zero flow (set by runpp already)."""
-        net, b0, b1, b2 = _make_two_bus_coupler_net()
+        net, _, b1, b2 = _make_two_bus_coupler_net()
         net.switch.at[0, "closed"] = False
         # Add line so bus 2 is still connected (otherwise non-convergence)
         create_lines(
@@ -93,7 +94,7 @@ class TestComputeSwitchFlowsBasic:
 
     def test_not_converged_raises(self):
         """Must raise when load flow has not converged."""
-        net, _, _, _ = _make_two_bus_coupler_net()
+        net, *_ = _make_two_bus_coupler_net()
         # Don't run load flow
         net.converged = False
         with pytest.raises(UserWarning, match="did not converge"):
@@ -117,7 +118,7 @@ class TestComputeSwitchFlowsBasic:
 
     def test_impedance_switch_not_overwritten(self):
         """Switches with z_ohm > 0 already have results; they must not change."""
-        net, b0, b1, b2 = _make_two_bus_coupler_net()
+        net, *_ = _make_two_bus_coupler_net()
         net.switch.at[0, "z_ohm"] = 0.001
         runpp(net)
 
@@ -385,7 +386,7 @@ class TestComputeSwitchFlowsSignConvention:
 
     def test_sign_convention(self):
         """Power flows from bus column toward element column when load is on element side."""
-        net, b0, b1, b2 = _make_two_bus_coupler_net()
+        net, *_ = _make_two_bus_coupler_net()
         runpp(net)
         compute_switch_flows(net)
 
@@ -470,11 +471,38 @@ class TestComputeSwitchFlowsMultipleGroups:
         assert np.isclose(abs(net.res_switch.at[sw1, "p_from_mw"]), net.res_load.at[1, "p_mw"], atol=1e-6)
 
 
+class TestComputeSwitchFlowsNonDefaultIndex:
+    """Switch indices that differ from the row position in net.switch."""
+
+    @pytest.mark.parametrize("coupler_idx, impedance_idx", [(1, 0), (5, 7)])
+    def test_non_default_switch_index(self, coupler_idx, impedance_idx):
+        """z_ohm must be read by switch index, not by row position.
+
+        ext_grid--(b0)--line--(b1)--coupler--(b2)--load
+                    |
+                    +--switch with z_ohm > 0--(b3)--load
+        """
+        net, b0, _, _ = _make_two_bus_coupler_net()
+        net.switch.index = [coupler_idx]
+        b3 = create_bus(net, vn_kv=20.0)
+        create_switch(net, bus=b0, element=b3, et="b", z_ohm=0.01, index=impedance_idx)
+        create_load(net, b3, p_mw=2.0)
+
+        runpp(net)
+        p_impedance = net.res_switch.at[impedance_idx, "p_from_mw"]
+        compute_switch_flows(net)
+
+        assert np.isclose(net.res_switch.at[coupler_idx, "p_from_mw"], net.res_load.at[0, "p_mw"], atol=1e-6)
+        assert np.isclose(net.res_switch.at[coupler_idx, "q_from_mvar"], net.res_load.at[0, "q_mvar"], atol=1e-6)
+        assert net.res_switch.at[coupler_idx, "i_ka"] > 0
+        assert net.res_switch.at[impedance_idx, "p_from_mw"] == p_impedance
+
+
 class TestComputeSwitchFlowsLoadingPercent:
     """Loading percent computation when in_ka is available."""
 
     def test_loading_percent(self):
-        net, b0, b1, b2 = _make_two_bus_coupler_net()
+        net, *_ = _make_two_bus_coupler_net()
         in_ka = 0.1
         net.switch.at[0, "in_ka"] = in_ka
         runpp(net)

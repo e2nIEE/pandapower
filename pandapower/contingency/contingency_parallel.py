@@ -34,7 +34,7 @@ def _run_single_contingency(
     except Exception as err:
         logger.error(f"Contingency {element} {i} failed: {err}")
         if raise_errors:
-            raise err
+            raise
         # Return a pack indicating failure
         return {"success": False, "case": contingency_case}
 
@@ -80,10 +80,10 @@ def run_contingency_parallel(
         for element in ("bus", "line", "trafo", "trafo3w")
         if len(net[element]) > 0
     }
-    for element in contingency_results:
+    for element, results in contingency_results.items():
         if element == "bus":
             continue
-        contingency_results[element].update(
+        results.update(
             {
                 "causes_overloading": np.zeros_like(net[element].index.values, dtype=bool),
                 "cause_element": np.empty_like(net[element].index.values, dtype=object),
@@ -156,7 +156,7 @@ def run_contingency_parallel(
                 except Exception as err:
                     logger.error(f"{element} {i} causes {err}")
                     if raise_errors:
-                        raise err
+                        raise
                 finally:
                     net[element].at[i, "in_service"] = True
 

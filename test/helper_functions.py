@@ -18,7 +18,6 @@ from pandapower.create import (
 )
 from pandapower.file_io import from_pickle
 from pandapower.toolbox.comparison import nets_equal
-
 from test import test_path
 
 

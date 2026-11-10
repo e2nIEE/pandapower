@@ -260,4 +260,3 @@ class TestStorageResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_storage_result_totals(self):
         """Aggregated p_mw / q_mvar results are consistent"""
-        pass

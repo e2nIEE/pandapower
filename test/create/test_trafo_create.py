@@ -7,6 +7,7 @@ import pytest
 
 from pandapower.create import (
     create_bus,
+    create_buses,
     create_transformer,
     create_transformer3w,
     create_transformer3w_from_parameters,
@@ -15,11 +16,10 @@ from pandapower.create import (
     create_transformers3w,
     create_transformers3w_from_parameters,
     create_transformers_from_parameters,
-    load_std_type,
 )
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
-from pandapower.std_types import create_std_type
+from pandapower.std_types import create_std_type, load_std_type
 from pandapower.toolbox import dataframes_equal
 
 
@@ -386,9 +386,9 @@ def test_trafo_2_tap_changers():
 
     t = create_transformer(net, b1, b2, "test_trafo_type")
 
-    for c in tap2_data:
+    for c, value in tap2_data.items():
         assert c in net.trafo.columns
-        assert net.trafo.at[t, c] == tap2_data[c]
+        assert net.trafo.at[t, c] == value
 
     validate_network(net)
 
@@ -416,9 +416,9 @@ def test_trafo_2_tap_changers_parameters():
 
     t = create_transformer_from_parameters(net, b1, b2, **std_type, **tap2_data)
 
-    for c in tap2_data:
+    for c, value in tap2_data.items():
         assert c in net.trafo.columns
-        assert net.trafo.at[t, c] == tap2_data[c]
+        assert net.trafo.at[t, c] == value
 
     validate_network(net)
 
@@ -448,9 +448,9 @@ def test_trafos_2_tap_changers_parameters():
 
     t = create_transformer_from_parameters(net, b1, b2, **std_type, **tap2_data)
 
-    for c in tap2_data:
+    for c, value in tap2_data.items():
         assert c in net.trafo.columns
-        assert net.trafo.at[t, c] == tap2_data[c]
+        assert net.trafo.at[t, c] == value
 
     validate_network(net)
 
@@ -1212,5 +1212,105 @@ def test_create_transformers3w_raise_errorexcept():
             mag0_rx=0.4,
             mag0_percent=30,
         )
+
+    validate_network(net)
+
+
+def test_create_transformers_angle_limits():
+    net = pandapowerNet(name="test_create_transformers_angle_limits")
+    b1 = create_buses(net, 1, 10)[0]
+    b2, b3 = create_buses(net, 2, 0.4)
+
+    # default: no column is created at all
+    create_transformers(net, hv_buses=[b1], lv_buses=[b2], std_type="0.4 MVA 10/0.4 kV")
+    assert "min_angle_degree" not in net.trafo.columns
+    assert "max_angle_degree" not in net.trafo.columns
+
+    # explicit NaN also must not create the columns
+    create_transformers(
+        net,
+        hv_buses=[b1],
+        lv_buses=[b3],
+        std_type="0.4 MVA 10/0.4 kV",
+        min_angle_degree=np.nan,
+        max_angle_degree=np.nan,
+    )
+    assert "min_angle_degree" not in net.trafo.columns
+    assert "max_angle_degree" not in net.trafo.columns
+
+    trafo_ids = create_transformers(
+        net,
+        hv_buses=[b1, b1],
+        lv_buses=[b2, b3],
+        std_type="0.4 MVA 10/0.4 kV",
+        min_angle_degree=[-30.0, np.nan],
+        max_angle_degree=30.0,
+    )
+    assert net.trafo["min_angle_degree"].dtype == np.float64
+    assert net.trafo["max_angle_degree"].dtype == np.float64
+    assert np.isclose(net.trafo.at[trafo_ids[0], "min_angle_degree"], -30.0)
+    assert np.isnan(net.trafo.at[trafo_ids[1], "min_angle_degree"])
+    assert np.allclose(net.trafo.loc[trafo_ids, "max_angle_degree"], 30.0)
+
+    validate_network(net)
+
+
+def test_create_transformers_from_parameters_angle_limits():
+    net = pandapowerNet(name="test_create_transformers_from_parameters_angle_limits")
+    b1 = create_buses(net, 1, 10)[0]
+    b2 = create_buses(net, 1, 0.4)[0]
+
+    trafo_id = create_transformers_from_parameters(
+        net,
+        [b1],
+        [b2],
+        sn_mva=0.4,
+        vn_hv_kv=10.0,
+        vn_lv_kv=0.4,
+        vk_percent=4.0,
+        vkr_percent=1.3,
+        pfe_kw=0.0,
+        i0_percent=0.0,
+        min_angle_degree=-30.0,
+        max_angle_degree=30.0,
+    )[0]
+    assert net.trafo["min_angle_degree"].dtype == np.float64
+    assert np.isclose(net.trafo.at[trafo_id, "min_angle_degree"], -30.0)
+    assert np.isclose(net.trafo.at[trafo_id, "max_angle_degree"], 30.0)
+
+    validate_network(net)
+
+
+def test_create_transformers3w_angle_limits():
+    net = pandapowerNet(name="test_create_transformers3w_angle_limits")
+    b1 = create_buses(net, 1, 10)[0]
+    b2 = create_buses(net, 1, 0.4)[0]
+    b3 = create_buses(net, 1, 0.9)[0]
+
+    trafo_id = create_transformers3w_from_parameters(
+        net,
+        hv_buses=[b1],
+        mv_buses=[b3],
+        lv_buses=[b2],
+        vn_hv_kv=15.0,
+        vn_mv_kv=0.9,
+        vn_lv_kv=0.45,
+        sn_hv_mva=0.6,
+        sn_mv_mva=0.5,
+        sn_lv_mva=0.4,
+        vk_hv_percent=1.0,
+        vk_mv_percent=1.0,
+        vk_lv_percent=1.0,
+        vkr_hv_percent=0.3,
+        vkr_mv_percent=0.3,
+        vkr_lv_percent=0.3,
+        pfe_kw=0.2,
+        i0_percent=0.3,
+        min_angle_degree=-30.0,
+        max_angle_degree=30.0,
+    )[0]
+    assert net.trafo3w["min_angle_degree"].dtype == np.float64
+    assert np.isclose(net.trafo3w.at[trafo_id, "min_angle_degree"], -30.0)
+    assert np.isclose(net.trafo3w.at[trafo_id, "max_angle_degree"], 30.0)
 
     validate_network(net)

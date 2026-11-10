@@ -31,7 +31,7 @@ from pandapower.create import (
 )
 from pandapower.file_io import from_json
 from pandapower.network import pandapowerNet
-from pandapower.pf.makeYbus_facts import calc_y_svc_pu
+from pandapower.pf.make_y_bus_facts import calc_y_svc_pu
 from pandapower.run import runpp
 from test import test_path
 from test.consistency_checks import runpp_with_consistency_checks
@@ -58,7 +58,6 @@ def xtcsc(x, x_l, x_c):
 def copy_with_impedance(net):
     baseMVA = net.sn_mva  # MVA
     baseV = net.bus.vn_kv.values  # kV
-    baseI = baseMVA / (baseV * np.sqrt(3))
     baseZ = baseV**2 / baseMVA
 
     net_ref = copy.deepcopy(net)

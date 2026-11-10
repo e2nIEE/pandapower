@@ -26,7 +26,6 @@ from pandapower.networks.cigre_networks import create_cigre_network_mv
 from pandapower.networks.power_system_test_cases import case9
 from pandapower.run import runpp
 from pandapower.std_types import create_std_type
-
 from test import test_path
 
 
@@ -638,12 +637,12 @@ def test_check_existing_measurements():
     create_bus(net, 10.0)
     create_bus(net, 10.0)
     create_line(net, 0, 1, 0.5, std_type="149-AL1/24-ST1A 10.0")
-    m1 = create_measurement(net, "v", "bus", 1.006, 0.004, 0)
-    m2 = create_measurement(net, "v", "bus", 1.006, 0.004, 0)
+    create_measurement(net, "v", "bus", 1.006, 0.004, 0)
+    create_measurement(net, "v", "bus", 1.006, 0.004, 0)
 
     # assert m1 == m2
     assert len(net.measurement) == 2
-    m3 = create_measurement(net, "v", "bus", 1.006, 0.004, 0, check_existing=False)
+    create_measurement(net, "v", "bus", 1.006, 0.004, 0, check_existing=False)
     # assert m3 != m2
     assert len(net.measurement) == 3
 

@@ -336,21 +336,17 @@ def _create_lines(net: pandapowerNet, data: dict[str, pd.DataFrame], max_i_ka_fi
             net,
             bus_idx.loc[
                 list(
-                    tuple(
-                        zip(
-                            data[key].loc[:, ("Substation_1", "Full_name")].values,  # type: ignore[arg-type]
-                            vn_kvs,
-                        )
+                    zip(
+                        data[key].loc[:, ("Substation_1", "Full_name")].values,  # type: ignore[arg-type]
+                        vn_kvs,
                     )
                 )
             ].values,
             bus_idx.loc[
                 list(
-                    tuple(
-                        zip(
-                            data[key].loc[:, ("Substation_2", "Full_name")].values,  # type: ignore[arg-type]
-                            vn_kvs,
-                        )
+                    zip(
+                        data[key].loc[:, ("Substation_2", "Full_name")].values,  # type: ignore[arg-type]
+                        vn_kvs,
                     )
                 )
             ].values,
@@ -618,14 +614,14 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
     lgd_name_bus = line_geo_data.pivot_table(values="value", index=["name", "bus"], columns="geo_dim")
     lgd_EIC_bus_idx_extended = pd.MultiIndex.from_frame(
         lgd_EIC_bus.index.to_frame()
-        .assign(**dict(col_name="EIC_Code"))
-        .rename(columns=dict(EIC_Code="identifier"))
+        .assign(col_name="EIC_Code")
+        .rename(columns={"EIC_Code": "identifier"})
         .loc[:, ["col_name", "identifier", "bus"]]
     )
     lgd_name_bus_idx_extended = pd.MultiIndex.from_frame(
         lgd_name_bus.index.to_frame()
-        .assign(**dict(col_name="name"))
-        .rename(columns=dict(name="identifier"))
+        .assign(col_name="name")
+        .rename(columns={"name": "identifier"})
         .loc[:, ["col_name", "identifier", "bus"]]
     )
     lgd_bus = pd.concat(
@@ -859,7 +855,7 @@ def _allocate_trafos_to_buses_and_create_buses(
         rel_dev = np.abs(next_vn - trafo_connections.loc[~isin, trafo_vn_col].values) / next_vn
         trafo_connections.loc[~isin, rel_dev_col] = rel_dev
         trafo_connections.loc[~isin, bus_col] = bus_idx.loc[
-            list(tuple(zip(trafo_connections.loc[~isin, "name"], trafo_connections.loc[~isin, next_col])))
+            list(zip(trafo_connections.loc[~isin, "name"], trafo_connections.loc[~isin, next_col]))
         ].values
 
         # --- create buses to avoid too large vn deviations between nodes and transformers
@@ -974,10 +970,6 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
     longest_part_in_buses = trafo_bus_names_longest_part.isin(bus_location_names)
 
     # --- check whether all name strings point at location names of the buses
-    if False:  # for easy testing
-        fail = ~(joined_in_buses | longest_part_in_buses)
-        a = pd.concat([trafo_bus_names_joined.loc[fail], trafo_bus_names_longest_part.loc[fail]], axis=1)
-
     if n_bus_names_not_found := len(joined_in_buses) - sum(joined_in_buses | longest_part_in_buses):
         raise ValueError(
             f"For {n_bus_names_not_found} Tranformers, no suitable bus location names were found, "

@@ -1,6 +1,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = ["get_plotly_cmap", "get_plotly_color", "get_plotly_color_palette"]
 
 import sys
 
@@ -8,8 +9,6 @@ import numpy as np
 
 try:
     import matplotlib.colors as mplc
-    import matplotlib.pyplot as plt
-    from matplotlib import cm
     from matplotlib import colormaps as mpl_colormaps
 
     MATPLOTLIB_INSTALLED = True

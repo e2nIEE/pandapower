@@ -1,11 +1,42 @@
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 """
 Notes:
     Using different reference_columns for the same group and element_type is not supported.
     See check_unique_group_rows()
 """
 
-# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
-# and Energy System Technology (IEE), Kassel. All rights reserved.
+__all__ = [
+    "attach_to_group",
+    "attach_to_groups",
+    "check_unique_group_rows",
+    "compare_group_elements",
+    "count_group_elements",
+    "detach_from_groups",
+    "drop_group",
+    "drop_group_and_elements",
+    "element_associated_groups",
+    "elements_connected_to_group",
+    "ensure_lists_in_group_element_column",
+    "group_element_index",
+    "group_element_lists",
+    "group_entries_exist_in_element_table",
+    "group_index",
+    "group_name",
+    "group_res_p_mw",
+    "group_res_power_per_bus",
+    "group_res_q_mvar",
+    "group_row",
+    "groups_equal",
+    "isin_group",
+    "remove_not_existing_group_members",
+    "return_group_as_net",
+    "set_group_in_service",
+    "set_group_out_of_service",
+    "set_group_reference_column",
+    "set_value_to_group",
+]
 
 import copy
 import logging
@@ -60,7 +91,7 @@ def drop_group_and_elements(net: pandapowerNet, index: int) -> None:
         idx = group_element_index(net, index, et)
         net[et].drop(idx.intersection(net[et].index), inplace=True)
         res_et = "res_" + et
-        if res_et in net.keys() and net[res_et].shape[0]:
+        if res_et in net and net[res_et].shape[0]:
             net[res_et].drop(net[res_et].index.intersection(idx), inplace=True)
     net.group = net.group.drop(index)
 
@@ -321,9 +352,9 @@ def group_row(net: pandapowerNet, index: int, element_type: str) -> pd.Series:
     if isinstance(row, pd.Series):
         return row
     elif isinstance(row, pd.DataFrame):
-        raise ValueError(f"Multiple {element_type} rows for group {index}")
+        raise TypeError(f"Multiple {element_type} rows for group {index}")
     else:
-        raise ValueError(f"Returning row {element_type} for group {index} failed.")
+        raise TypeError(f"Returning row {element_type} for group {index} failed.")
 
 
 def isin_group(
@@ -348,7 +379,7 @@ def isin_group(
         Information whether the element are in any group
     """
     if isinstance(element_index, str):
-        raise ValueError("element_index must be an integer or a list of integers.")
+        raise TypeError("element_index must be an integer or a list of integers.")
     single_element = np.isscalar(element_index)
     element_index = np.atleast_1d(element_index).tolist()
     if index is None:
@@ -390,10 +421,10 @@ def element_associated_groups(
     index = list(set(net.group.index))
     ensure_lists_in_group_element_column(net, drop_empty_lines=drop_empty_lines)
     gr_et = net.group.loc[net.group.element_type == element_type]
-    associated = pd.Series(dict.fromkeys(element_index, []))
+    associated = pd.Series({key: [] for key in element_index})
     for idx in gr_et.index:
         ass = pd.Index(element_index).intersection(group_element_index(net, idx, element_type))
-        associated.loc[ass] = associated.loc[ass].apply(lambda x: x + [idx])
+        associated.loc[ass] = associated.loc[ass].apply(lambda x, _idx=idx: x + [_idx])
     if not return_empties:
         associated = associated.loc[associated.apply(len).astype(bool)]
     associated_: dict = associated.to_dict()
@@ -652,15 +683,15 @@ def _sum_powers(net, index, formula_character, unit):
             continue
         idx = group_element_index(net, index, et)
         res_et = "res_" + et
-        if res_et not in net.keys():
+        if res_et not in net:
             no_res_table_found.append(et)
             continue
         res_idx = net[res_et].index.intersection(idx)
         sign = 1 if et not in ["ext_grid", "gen", "sgen"] else -1
         if len(res_idx) != len(idx):
             missing_res_idx.append(et)
-        col1 = "%s_%s" % (formula_character, unit)
-        col2 = "%sl_%s" % (formula_character, unit)
+        col1 = f"{formula_character}_{unit}"
+        col2 = f"{formula_character}l_{unit}"
         if col1 in net[res_et].columns:
             power += sign * net[res_et][col1].loc[res_idx].sum()
         elif col2 in net[res_et].columns:

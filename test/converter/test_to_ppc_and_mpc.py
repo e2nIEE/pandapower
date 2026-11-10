@@ -1,11 +1,11 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
 import numpy as np
 import pytest
 
-from pandapower.converter.matpower import to_mpc, to_ppc
+from pandapower.converter.matpower import to_mpc
+from pandapower.converter.pypower import to_ppc
 from pandapower.networks import case4gs, case6ww, case30, case39
 from pandapower.pf.runpf_pypower import _runpf_pypower
 from pandapower.powerflow import LoadflowNotConverged
@@ -31,7 +31,7 @@ def test_to_ppc_and_mpc(pandapower_function):
     # convert pandapower grids to ppc
     ppc = to_ppc(net)
     # convert pandapower grids to mpc (no result validation)
-    mpc = to_mpc(net)
+    to_mpc(net)
 
     # validate voltage results of pandapower-to-ppc-converted grids vs. original pypower results
     net["_options"]["ac"] = True

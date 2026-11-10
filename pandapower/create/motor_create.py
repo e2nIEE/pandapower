@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+__all__ = ["create_motor"]
+
 import logging
 
 from numpy import nan

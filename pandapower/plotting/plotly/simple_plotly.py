@@ -1,13 +1,17 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "get_hoverinfo",
+    "simple_plotly",
+]
+
 import logging
 
 import numpy as np
 import pandas as pd
 
 from pandapower.plotting.generic_geodata import create_generic_coordinates
-from pandapower.plotting.plotly.mapbox_plot import *
 from pandapower.plotting.plotly.traces import (
     _create_node_trace,
     create_bus_trace,
@@ -269,16 +273,16 @@ def simple_plotly(
     Returns:
         graph_objs._figure.Figure: figure object
     """
-    settings = dict(
-        on_map=on_map,
-        map_style=map_style,
-        figsize=figsize,
-        aspectratio=aspectratio,
-        filename=filename,
-        auto_open=auto_open,
-        showlegend=showlegend,
-        zoomlevel=zoomlevel,
-    )
+    settings = {
+        "on_map": on_map,
+        "map_style": map_style,
+        "figsize": figsize,
+        "aspectratio": aspectratio,
+        "filename": filename,
+        "auto_open": auto_open,
+        "showlegend": showlegend,
+        "zoomlevel": zoomlevel,
+    }
 
     traces, _ = _simple_plotly_generic(
         net=net,
@@ -373,7 +377,7 @@ def _simple_plotly_generic(
     # ----- branches (Lines) ------
     # if node geodata is available, but no branch geodata
     if use_branch_geodata is None:
-        use_branch_geodata = False if len(net[branch_element]["geo"]) == 0 else True
+        use_branch_geodata = len(net[branch_element]["geo"]) != 0
     elif use_branch_geodata and len(net[branch_element]["geo"]) == 0:
         logger.warning("No or insufficient line geodata available --> only bus geodata will be used.")
         use_branch_geodata = False

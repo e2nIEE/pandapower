@@ -60,18 +60,18 @@ def test_create_sgen():
     assert net.sgen.at[sgen_id2, "name"] == "test_sgen"
     assert np.isclose(net.sgen.at[sgen_id2, "scaling"], 0.8)
     assert net.sgen.at[sgen_id2, "type"] == "wye"
-    assert net.sgen.at[sgen_id2, "in_service"] == False
+    assert not net.sgen.at[sgen_id2, "in_service"]
     assert net.sgen.at[sgen_id2, "max_p_mw"] == 150
     assert net.sgen.at[sgen_id2, "min_p_mw"] == 10
     assert net.sgen.at[sgen_id2, "max_q_mvar"] == 30
     assert net.sgen.at[sgen_id2, "min_q_mvar"] == 5
-    assert net.sgen.at[sgen_id2, "controllable"] == True
+    assert net.sgen.at[sgen_id2, "controllable"]
     assert np.isclose(net.sgen.at[sgen_id2, "k"], 1.2)
     assert np.isclose(net.sgen.at[sgen_id2, "rx"], 0.5)
     assert net.sgen.at[sgen_id2, "id_q_capability_characteristic"] == 1
-    assert net.sgen.at[sgen_id2, "reactive_capability_curve"] == True
+    assert net.sgen.at[sgen_id2, "reactive_capability_curve"]
     assert net.sgen.at[sgen_id2, "curve_style"] == "straightLineYValues"
-    assert net.sgen.at[sgen_id2, "current_source"] == True
+    assert net.sgen.at[sgen_id2, "current_source"]
     assert net.sgen.at[sgen_id2, "generator_type"] == "current_source"
     assert np.isclose(net.sgen.at[sgen_id2, "kappa"], 1.5)
     assert "max_ik_ka" not in net.sgen.columns  # max_ik_ka should only be set for generator_type "async_doubly_fed"
@@ -291,7 +291,7 @@ def test_create_asymmetric_sgen():
     assert net.asymmetric_sgen.at[asym_sgen_id, "name"] == "asymmetric_test"
     assert np.isclose(net.asymmetric_sgen.at[asym_sgen_id, "scaling"], 0.9)
     assert net.asymmetric_sgen.at[asym_sgen_id, "type"] == "delta"
-    assert net.asymmetric_sgen.at[asym_sgen_id, "in_service"] == False
+    assert not net.asymmetric_sgen.at[asym_sgen_id, "in_service"]
     assert net.asymmetric_sgen.at[asym_sgen_id, "test_kwargs"] == "dummy_string"
 
     # Test with only one phase specified (others default to 0)
@@ -316,7 +316,7 @@ def test_create_asymmetric_sgen():
     assert net.asymmetric_sgen.at[asym_sgen_id3, "q_a_mvar"] == 0
     assert net.asymmetric_sgen.at[asym_sgen_id3, "q_b_mvar"] == 0
     assert net.asymmetric_sgen.at[asym_sgen_id3, "q_c_mvar"] == 0
-    assert net.asymmetric_sgen.at[asym_sgen_id3, "in_service"] == True  # default
+    assert net.asymmetric_sgen.at[asym_sgen_id3, "in_service"]  # default
     assert np.isclose(net.asymmetric_sgen.at[asym_sgen_id3, "scaling"], 1.0)  # default
 
     # Test with custom index
@@ -377,7 +377,7 @@ def test_create_sgen_from_cosphi():
     )
 
     assert net.sgen.at[sgen_with_kwargs, "name"] == "cosphi_sgen"
-    assert net.sgen.at[sgen_with_kwargs, "in_service"] == False
+    assert not net.sgen.at[sgen_with_kwargs, "in_service"]
     assert np.isclose(net.sgen.at[sgen_with_kwargs, "scaling"], 0.5)
     assert net.sgen.at[sgen_with_kwargs, "test_kwargs"] == "dummy_string"
 

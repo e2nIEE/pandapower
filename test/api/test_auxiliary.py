@@ -20,7 +20,7 @@ from pandapower.control.util.auxiliary import (
     get_min_max_q_mvar_from_characteristics_object,
 )
 from pandapower.control.util.characteristic import LogSplineCharacteristic, SplineCharacteristic
-from pandapower.create import create_bus, create_buses, create_line, create_lines, create_shunt
+from pandapower.create import create_buses, create_lines, create_sgen, create_shunt
 from pandapower.create._utils import add_column_to_df
 from pandapower.file_io import from_json_string, to_json
 from pandapower.network import pandapowerNet
@@ -165,6 +165,7 @@ def test_memory_leaks_no_copy():
     num = 3
     for _ in range(num):
         net = pandapowerNet(name="test_memory_leaks_no_copy")
+        create_sgen(net, create_buses(net, 1, 0.4)[0], 0)
         # In each net copy it has only one controller
         ConstControl(net, "sgen", "p_mw", 0)
 
@@ -588,21 +589,17 @@ def test_get_min_max_q_capability():
 @pytest.mark.parametrize("file_io", (False, True), ids=("Without JSON I/O", "With JSON I/O"))
 def test_characteristic(file_io):
     net = pandapowerNet(name="test_characteristic")
+    c1 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], fill_value=(0, 4))
+    SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
+    c3 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="hello")
     with pytest.warns(RuntimeWarning, match="divide by zero encountered in log10"):  # FIXME: should this be required?
-        c1 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], fill_value=(0, 4))
-        c2 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
-        c3 = SplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="hello")
-        c4 = LogSplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
+        LogSplineCharacteristic(net, [0, 1, 2], [0, 1, 4], interpolator_kind="Pchip", extrapolate=False)
 
     if file_io:
         net_copy = from_json_string(to_json(net))
-        c1, c2, c3, c4 = net_copy.characteristic.object.values
+        c1, _, c3, _ = net_copy.characteristic.object.values
 
     assert np.allclose(c1([-1]), [0], rtol=0, atol=1e-6)
-    # assert c1(3) == 4
-    # assert c1(1) == 1
-    # assert c1(2) == 4
-    # assert c1(1.5) == 2.25
 
     # test that unknown kind causes error:
     with pytest.raises(NotImplementedError):
@@ -614,35 +611,33 @@ def test_log_characteristic_property():
     c = LogSplineCharacteristic(
         net, [10, 1000, 10000], [1000, 0.1, 0.001], interpolator_kind="Pchip", extrapolate=False
     )
-    c._x_vals
-    c([2])
+    c(2.0)
 
 
 def test_geo_accessor_geojson():
     net = pandapowerNet(name="test_geo_accessor_geojson")
-    b1 = create_bus(net, 10, geodata=(1, 1))
-    b2 = create_bus(net, 10, geodata=(2, 2))
-    l = create_lines(
+    b1, b2 = create_buses(net, 2, 10, geodata=[(1, 1), (2, 2)])
+    line0, line1 = create_lines(
         net,
         [b1, b1],
         [b2, b2],
         [1.5, 3],
-        std_type="48-AL1/8-ST1A 10.0",
+        line_params="48-AL1/8-ST1A 10.0",
         geodata=[[(1, 1), (2, 2), (3, 3)], [(1, 1), (1, 2)]],
     )
-    create_line(net, b1, b2, 1.5, std_type="48-AL1/8-ST1A 10.0")
+    create_lines(net, b1, b2, 1.5, line_params="48-AL1/8-ST1A 10.0")
 
     assert len(net.line.geo.geojson._coords) == 2
-    assert np.array_equal(net.line.geo.geojson._coords.at[l[0]], [[1, 1], [2, 2], [3, 3]])
-    assert np.array_equal(net.line.geo.geojson._coords.at[l[1]], [[1, 1], [1, 2]])
+    assert np.array_equal(net.line.geo.geojson._coords.at[line0], [[1, 1], [2, 2], [3, 3]])
+    assert np.array_equal(net.line.geo.geojson._coords.at[line1], [[1, 1], [1, 2]])
     assert np.array_equal(net.bus.geo.geojson._coords.at[b1], [1, 1])
     assert np.array_equal(net.bus.geo.geojson._coords.at[b2], [2, 2])
     assert net.bus.geo.geojson.type.at[b1] == "Point"
     assert net.bus.geo.geojson.type.at[b2] == "Point"
-    assert net.line.geo.geojson.type.at[l[0]] == "LineString"
-    assert net.line.geo.geojson.type.at[l[1]] == "LineString"
-    assert set(net.line.geo.geojson.as_geo_obj.at[l[0]].keys()) == {"coordinates", "type"}
-    assert set(net.line.geo.geojson.as_geo_obj.at[l[1]].keys()) == {"coordinates", "type"}
+    assert net.line.geo.geojson.type.at[line0] == "LineString"
+    assert net.line.geo.geojson.type.at[line1] == "LineString"
+    assert set(net.line.geo.geojson.as_geo_obj.at[line0].keys()) == {"coordinates", "type"}
+    assert set(net.line.geo.geojson.as_geo_obj.at[line1].keys()) == {"coordinates", "type"}
     assert set(net.bus.geo.geojson.as_geo_obj.at[b1].keys()) == {"coordinates", "type"}
     assert set(net.bus.geo.geojson.as_geo_obj.at[b2].keys()) == {"coordinates", "type"}
 

@@ -43,8 +43,6 @@ def test_svc(vm_set_pu):
     assert np.isclose(net3.res_bus.at[3, "q_mvar"], net.res_bus.at[3, "q_mvar"], rtol=0, atol=1e-6)
 
     net3.load.at[3, "in_service"] = False
-    baseZ = np.square(net.bus.at[3, "vn_kv"]) / net.sn_mva
-    x_pu = net.res_svc.x_ohm.at[0] / baseZ
     create_shunt(net3, 3, 0)
     # net3.shunt.at[0, "q_mvar"] = x_pu * net.sn_mva
     net3.shunt.at[0, "q_mvar"] = net.res_svc.q_mvar.at[0]

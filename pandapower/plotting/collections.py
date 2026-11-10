@@ -1,6 +1,36 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "CustomTextPath",
+    "TextPath",
+    "add_cmap_to_collection",
+    "add_collections_to_axes",
+    "add_single_collection",
+    "create_annotation_collection",
+    "create_bus_bus_switch_collection",
+    "create_bus_collection",
+    "create_busbar_collection",
+    "create_dcline_collection",
+    "create_ext_grid_collection",
+    "create_gen_collection",
+    "create_impedance_collection",
+    "create_line_collection",
+    "create_line_switch_collection",
+    "create_load_collection",
+    "create_sgen_collection",
+    "create_storage_collection",
+    "create_trafo3w_collection",
+    "create_trafo3w_connection_collection",
+    "create_trafo_collection",
+    "create_trafo_connection_collection",
+    "create_vsc_collection",
+    "create_vsc_connection_collection",
+    "create_ward_collection",
+    "create_xward_collection",
+    "draw_collections",
+]
+
 import ast
 import copy
 import inspect
@@ -8,6 +38,7 @@ import logging
 import re
 import sys
 from collections.abc import Callable
+from importlib.util import find_spec
 from itertools import combinations
 from typing import TYPE_CHECKING, Literal
 
@@ -18,9 +49,10 @@ from pandas import DataFrame, Series, isnull
 from pandas.api.typing import NAType
 from typing_extensions import deprecated
 
-try:
+if find_spec("matplotlib"):
     import matplotlib.pyplot as plt
     from matplotlib.collections import Collection, LineCollection, PatchCollection
+    from matplotlib.colors import Colormap, Normalize
     from matplotlib.font_manager import FontProperties
     from matplotlib.patches import Circle, PathPatch, Rectangle
     from matplotlib.textpath import TextPath
@@ -41,7 +73,7 @@ try:
         ward_patches,
         xward_patches,
     )
-except ImportError:
+else:
     MATPLOTLIB_INSTALLED = False
 
     # so that the test does not fail
@@ -71,13 +103,8 @@ from pandapower.plotting.plotting_toolbox import (
     safe_geojson_loads,
 )
 
-if TYPE_CHECKING:
-    from matplotlib.collections import Collection, LineCollection, PatchCollection
-    from matplotlib.colors import Colormap, Normalize
-    from matplotlib.font_manager import FontProperties
-    from matplotlib.patches import Circle, PathPatch, Rectangle
-    from matplotlib.textpath import TextPath
-    from matplotlib.transforms import Affine2D
+if TYPE_CHECKING and not MATPLOTLIB_INSTALLED:
+    raise ImportError("matplotlib required for type checking")
 
 logger = logging.getLogger(__name__)
 
@@ -1592,7 +1619,7 @@ def create_line_switch_collection(net, switches=None, size=1, distance_to_bus=3,
         tb = line.to_bus
 
         line_buses = {fb, tb}
-        target_bus = list(line_buses - {sb})[0]
+        target_bus = next(iter(line_buses - {sb}))
 
         if sb not in net.bus.index or target_bus not in net.bus.index:
             logger.warning(f"Bus coordinates for switch {switch} not found, skipped switch!")
@@ -1689,7 +1716,7 @@ def create_bus_bus_switch_collection(
             or pd.isnull(net.bus.loc[switch_bus, "geo"])
             or pd.isnull(net.bus.loc[target_bus, "geo"])
         ):
-            logger.warning("Bus coordinates for switch %s not found, skipped switch!" % switch)
+            logger.warning(f"Bus coordinates for switch {switch} not found, skipped switch!")
             continue
         # switch bus and target coordinates
         pos_sb = np.array(next(geojson.utils.coords(geojson.loads(net.bus.loc[switch_bus, "geo"]))))
@@ -1849,7 +1876,7 @@ def draw_collections(
 
     try:
         ax.set_facecolor("white")
-    except:
+    except Exception:  # noqa: BLE001
         ax.set_axis_bgcolor("white")
     ax.xaxis.set_visible(axes_visible[0])
     ax.yaxis.set_visible(axes_visible[1])
@@ -1885,7 +1912,7 @@ def add_collections_to_axes(ax, collections, plot_colorbars=True, copy_collectio
         if Collection in inspect.getmro(c.__class__):
             # if Collection is in one of the base classes of c
             add_single_collection(c, ax, plot_colorbars, copy_collections)
-        elif isinstance(c, tuple) or isinstance(c, list):
+        elif isinstance(c, (tuple, list)):
             # if c is a tuple or a list of collections
             add_collections_to_axes(ax, c, plot_colorbars, copy_collections)
         else:

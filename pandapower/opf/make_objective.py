@@ -43,10 +43,10 @@ def _get_gen_index(net, et, element):
         dc_idx = net.dcline.index.get_loc(element)
         element = len(net.gen.index) - 2 * len(net.dcline) + dc_idx * 2 + 1
         et = "gen"
-    lookup = "%s_controllable" % et if et in ["load", "sgen", "storage"] else et
+    lookup = f"{et}_controllable" if et in ["load", "sgen", "storage"] else et
     try:
         return int(net._pd2ppc_lookups[lookup][int(element)])
-    except:
+    except Exception:  # noqa: BLE001
         return None
 
 

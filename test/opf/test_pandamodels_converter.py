@@ -2,6 +2,7 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import json
+import math
 import os
 from copy import deepcopy
 from importlib.util import find_spec
@@ -15,10 +16,10 @@ from pandapower.converter.pandamodels.from_pm import read_pm_results_to_net
 from pandapower.create import create_poly_cost
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.run import runopp
-
-# reexported with "as" to prevent ruff removing it as unused
-from test.opf.test_basic import net_3w_trafo_opf as net_3w_trafo_opf
-from test.opf.test_basic import simple_opf_test_net as simple_opf_test_net
+from test.opf.test_basic import (
+    net_3w_trafo_opf,  # noqa: F401
+    simple_opf_test_net,  # noqa: F401
+)
 
 julia_installed = find_spec("juliacall") is not None
 
@@ -62,6 +63,31 @@ def test_obj_factors(net_3w_trafo_opf):
     assert pm["user_defined_params"]["obj_factors"]["fac_2"] == 0.1
     assert pm["user_defined_params"]["gen_and_controllable_sgen"]["2"] == 2
     assert pm["user_defined_params"]["gen_and_controllable_sgen"]["3"] == 3
+
+
+def test_to_pm_angle_limits(net_3w_trafo_opf):
+    """The branch angle limits of the net must reach the PowerModels data structure."""
+    net = deepcopy(net_3w_trafo_opf)
+    create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=100)
+    net.line["min_angle_degree"] = -30.0
+    net.line["max_angle_degree"] = 20.0
+    net.trafo3w["min_angle_degree"] = -5.0
+    net.trafo3w["max_angle_degree"] = 5.0
+
+    pm = convert_pp_to_pm(net, correct_pm_network_data=False)
+
+    line_limits = {
+        (round(branch["angmin"], 9), round(branch["angmax"], 9))
+        for branch in pm["branch"].values()
+        if not branch["transformer"]
+    }
+    trafo_limits = {
+        (round(branch["angmin"], 9), round(branch["angmax"], 9))
+        for branch in pm["branch"].values()
+        if branch["transformer"]
+    }
+    assert line_limits == {(round(math.radians(-30.0), 9), round(math.radians(20.0), 9))}
+    assert trafo_limits == {(round(math.radians(-5.0), 9), round(math.radians(5.0), 9))}
 
 
 if __name__ == "__main__":

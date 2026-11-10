@@ -1,17 +1,16 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
+__all__ = ["calc_sc_on_line", "detect_power_station_unit"]
+
 import logging
-
-from pandapower.auxiliary import _preserve_dtypes
-
-logger = logging.getLogger(__name__)
-
 from copy import deepcopy
 
 import networkx as nx
 import numpy as np
 import pandas as pd
 
+from pandapower.auxiliary import _preserve_dtypes
 from pandapower.create import _get_index_with_check, create_buses
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, TAP
 from pandapower.pypower.idx_bus import BUS_I
@@ -20,7 +19,7 @@ from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.topology import create_nxgraph
 from pandapower.topology.graph_searches import connected_component
 
-__all__ = ["calc_sc_on_line", "detect_power_station_unit"]
+logger = logging.getLogger(__name__)
 
 
 def detect_power_station_unit(net, mode="auto", max_gen_voltage_kv=80, max_distance_km=0.01):
@@ -33,7 +32,7 @@ def detect_power_station_unit(net, mode="auto", max_gen_voltage_kv=80, max_dista
 
         **mode** (str, ("auto", trafo""))
 
-        **max_gen_voltage_level** (float)
+        **max_gen_voltage_kv** (float)
 
         **max_distance_km** (float)
     """
@@ -165,11 +164,6 @@ def adjust_V0_for_trafo_tap(ppci, V0, bus_idx):
     Zbus = ppci["internal"]["Zbus"]
     bus = ppci["bus"]
 
-    f = (branch[:, F_BUS]).real.astype(np.int64)  ## list of "from" buses
-    t = (branch[:, T_BUS]).real.astype(np.int64)  ## list of "to" buses
-    nl = len(branch)
-    nb = len(bus)
-
     mg = nx.MultiGraph()
     mg.add_nodes_from(bus[:, BUS_I].astype(np.int64).tolist())
     mg.add_edges_from(branch[:, [F_BUS, T_BUS]].real.astype(np.int64).tolist())
@@ -202,29 +196,13 @@ def adjust_V0_for_trafo_tap(ppci, V0, bus_idx):
 def adjacency(ppci):
     branch = ppci["branch"]
     bus = ppci["bus"]
-    tap = ppci["branch"][:, TAP].real
-    tap_branch_idx = np.flatnonzero(tap != 1)
-    all_vertices = bus[:, BUS_I]
     num_vertices = len(bus)
-    f = (branch[:, F_BUS]).real.astype(np.int64)  ## list of "from" buses
-    t = (branch[:, T_BUS]).real.astype(np.int64)  ## list of "to" buses
-
-    hv_buses = branch[tap_branch_idx, F_BUS].real.astype(np.int64)
-    lv_buses = branch[tap_branch_idx, T_BUS].real.astype(np.int64)
+    f = (branch[:, F_BUS]).real.astype(np.int64)  # list of "from" buses
+    t = (branch[:, T_BUS]).real.astype(np.int64)  # list of "to" buses
 
     matrix = np.zeros((num_vertices, num_vertices))
     matrix[f, t] = -1
     matrix[t, f] = -1
     matrix[np.diag_indices(num_vertices)] = -matrix.sum(axis=1)
-
-    # matrix[hv_buses, lv_buses] = 1 / tap[tap_branch_idx]
-    # matrix[lv_buses, hv_buses] = 1 / tap[tap_branch_idx]
-    # matrix[hv_buses, hv_buses] = 1 / np.square(tap[tap_branch_idx])
-    #
-    # init = np.ones(num_vertices)
-    # init[4] = 1.1
-    # fake_i = matrix.dot(init)
-    # print(fake_i)
-    # np.flatnonzero(fake_i)
 
     return matrix

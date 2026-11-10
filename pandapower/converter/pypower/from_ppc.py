@@ -1,6 +1,11 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "from_ppc",
+    "validate_from_ppc",
+]
+
 import logging
 from math import pi
 
@@ -21,7 +26,19 @@ from pandapower.create import (
     create_transformers_from_parameters,
 )
 from pandapower.network import pandapowerNet
-from pandapower.pypower.idx_brch import BR_B, BR_R, BR_STATUS, BR_X, F_BUS, RATE_A, SHIFT, T_BUS, TAP
+from pandapower.pypower.idx_brch import (
+    ANGMAX,
+    ANGMIN,
+    BR_B,
+    BR_R,
+    BR_STATUS,
+    BR_X,
+    F_BUS,
+    RATE_A,
+    SHIFT,
+    T_BUS,
+    TAP,
+)
 from pandapower.pypower.idx_bus import BASE_KV, BS, BUS_I, BUS_TYPE, GS, PD, QD, VA, VMAX, VMIN, ZONE
 from pandapower.pypower.idx_cost import COST, MODEL, NCOST
 from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, MBASE, PG, PMAX, PMIN, QG, QMAX, QMIN, VG
@@ -61,7 +78,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs) -> pandapowerNet
         logger.info("There are false baseKV given in the pypower case file.")
 
     net = pandapowerNet(name="from_ppc", f_hz=f_hz, sn_mva=ppc["baseMVA"])
-    net._from_ppc_lookups = dict()
+    net._from_ppc_lookups = {}
 
     _from_ppc_bus(net, ppc)
     net._from_ppc_lookups["gen"] = _from_ppc_gen(net, ppc)
@@ -141,7 +158,7 @@ def _from_ppc_gen(net, ppc):
     gen_name = ppc.get("gen_name", np.array([None] * n_gen))
 
     # create ext_grid
-    idx_eg = list()
+    idx_eg = []
     for i in np.arange(n_gen, dtype=np.int64)[is_ext_grid]:
         idx_eg.append(
             create_ext_grid(
@@ -224,7 +241,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
              - obtain the values for rft, rtf, xft, xtf
              - calculate ratios for HV portion of r and x
              - write the ratios in trafo columns leakage_resistance_ratio_hv, leakage_reactance_ratio_hv
-        * for branches that are not transformers but connect different voltage levels:
+        * for branches that are not transformers (tap ratio 0 and no phase shift) but connect different
+          voltage levels:
              - import them as impedance instead
     """
     n_bra = ppc["branch"].shape[0]
@@ -247,6 +265,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
     to_vn_kv = ppc["bus"][to_bus, BASE_KV]
 
     is_line, is_trafo, is_impedance, to_vn_is_leq = _branch_to_which(ppc, from_vn_kv=from_vn_kv, to_vn_kv=to_vn_kv)
+
+    min_angle, max_angle = _ppc_angle_limits(ppc["branch"])
 
     bra_name = ppc.get("branch_name", ppc.get("bra_name", np.array([None] * n_bra)))
 
@@ -273,6 +293,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         },
         max_loading_percent=100,
         in_service=ppc["branch"][is_line, BR_STATUS].astype(bool),
+        min_angle_degree=min_angle[is_line],
+        max_angle_degree=max_angle[is_line],
     )
     # --- create transformer
     if np.any(is_trafo):
@@ -285,6 +307,13 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
             vn_hv_kv[~to_vn_is_leq] = to_vn_kv[is_trafo][~to_vn_is_leq]
             lv_bus[~to_vn_is_leq] = from_bus[is_trafo][~to_vn_is_leq]
             vn_lv_kv[~to_vn_is_leq] = from_vn_kv[is_trafo][~to_vn_is_leq]
+        # for reversed transformer branches, the pandapower orientation hv -> lv is opposite to
+        # the ppc orientation F_BUS -> T_BUS, so the angle limits have to be swapped and negated
+        min_angle_trafo = min_angle[is_trafo].copy()
+        max_angle_trafo = max_angle[is_trafo].copy()
+        if not np.all(to_vn_is_leq):
+            swap = ~to_vn_is_leq
+            min_angle_trafo[swap], max_angle_trafo[swap] = -max_angle_trafo[swap], -min_angle_trafo[swap]
         same_vn = to_vn_kv[is_trafo] == from_vn_kv[is_trafo]
         if np.any(same_vn):
             logger.warning(
@@ -353,6 +382,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
             tap_side=tap_side,
             tap_neutral=0,
             tap_changer_type=tap_changer_type,
+            min_angle_degree=min_angle_trafo,
+            max_angle_degree=max_angle_trafo,
         )
     else:
         idx_trafo = []
@@ -392,6 +423,8 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
             gt_pu=gf_pu + g_asym_pu,
             bt_pu=bf_pu + b_asym_pu,
             sn_mva=sn_mva,
+            min_angle_degree=min_angle[is_impedance],
+            max_angle_degree=max_angle[is_impedance],
         )
     else:
         idx_impedance = []
@@ -414,7 +447,7 @@ def _get_bus_pos(ppc, bus_names):
         return (
             pd.Series(np.arange(ppc["bus"].shape[0], dtype=np.int64), index=ppc["bus"][:, BUS_I]).loc[bus_names].values
         )
-    except:
+    except Exception:  # noqa: BLE001
         return (
             pd.Series(np.arange(ppc["bus"].shape[0], dtype=np.int64), index=ppc["bus"][:, BUS_I].astype(np.int64))
             .loc[bus_names]
@@ -442,6 +475,25 @@ def _gen_to_which(ppc, bus_pos=None, flattened=True):
     return is_ext_grid, is_gen, is_sgen
 
 
+def _ppc_angle_limits(branch):
+    """
+    Convert pypower ANGMIN/ANGMAX to pandapower angle difference limits.
+
+    pypower treats 0 and the sentinels -360 (lower) / 360 (upper) as "no limit". These are mapped to NaN
+    so that no meaningless columns are created for unconstrained networks.
+
+    A branch array that does not reach the ANGMIN/ANGMAX columns at all carries no angle limits and is
+    treated as unconstrained instead of raising an IndexError.
+    """
+    n_branch = branch.shape[0]
+    angmin = branch[:, ANGMIN] if branch.shape[1] > ANGMIN else np.full(n_branch, np.nan)
+    angmax = branch[:, ANGMAX] if branch.shape[1] > ANGMAX else np.full(n_branch, np.nan)
+    return (
+        np.where((angmin == 0) | (angmin <= -360), np.nan, angmin),
+        np.where((angmax == 0) | (angmax >= 360), np.nan, angmax),
+    )
+
+
 def _branch_to_which(ppc, from_vn_kv=None, to_vn_kv=None, flattened=True):
     if from_vn_kv is None:
         from_bus = _get_bus_pos(ppc, ppc["branch"][:, F_BUS].astype(np.int64))
@@ -454,7 +506,11 @@ def _branch_to_which(ppc, from_vn_kv=None, to_vn_kv=None, flattened=True):
         & ((ppc["branch"][:, TAP] == 0) | (ppc["branch"][:, TAP] == 1))
         & (ppc["branch"][:, SHIFT] == 0)
     )
-    is_trafo = (ppc["branch"][:, TAP] != 0) & (ppc["branch"][:, TAP] != 1) | (ppc["branch"][:, SHIFT] != 0)
+    # In the matpower format, a tap ratio of 0 denotes "no transformer", while any other ratio denotes a
+    # transformer (a ratio of 1 is a transformer without a tap changer). Therefore, branches with a tap
+    # ratio or a phase shift are transformers, and only the remaining branches that connect different
+    # voltage levels (tap ratio 0 and no phase shift) are impedances.
+    is_trafo = ((ppc["branch"][:, TAP] != 0) | (ppc["branch"][:, SHIFT] != 0)) & ~is_line
     is_impedance = ~is_line & ~is_trafo
     to_vn_is_leq = to_vn_kv[is_trafo] <= from_vn_kv[is_trafo]
     return is_line, is_trafo, is_impedance, to_vn_is_leq
@@ -656,9 +712,9 @@ def validate_from_ppc(ppc: dict, net: pandapowerNet, max_diff_values: dict | Non
             "gen_q_mvar": 1e-6,
         }
     if (
-        "_from_ppc_lookups" not in net.keys()
-        or ("gen" not in net._from_ppc_lookups.keys() and len(ppc["gen"]) > 0)
-        or ("branch" not in net._from_ppc_lookups.keys() and len(ppc["branch"]) > 0)
+        "_from_ppc_lookups" not in net
+        or ("gen" not in net._from_ppc_lookups and len(ppc["gen"]) > 0)
+        or ("branch" not in net._from_ppc_lookups and len(ppc["branch"]) > 0)
     ):
         raise ValueError("net._from_ppc_lookups must contain a lookup (dict of keys 'branch' and 'gen')")
 
@@ -719,7 +775,7 @@ def validate_from_ppc(ppc: dict, net: pandapowerNet, max_diff_values: dict | Non
     pp_res["gen_q_sum_per_bus"] = _gen_q_per_bus_sum(pp_res["gen"][:, -1:], ppc)  # type: ignore[index]
 
     # --- log maximal differences the powerflow result comparison
-    diff_res = dict()
+    diff_res = {}
     comp_keys = ["bus", "branch", "gen_p", "gen_q_sum_per_bus"]
     for comp_key in comp_keys:
         diff_res[comp_key] = ppc_res[comp_key] - pp_res[comp_key]  # type: ignore[operator]

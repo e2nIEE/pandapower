@@ -1,21 +1,28 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import numpy as np
+__all__ = [
+    "check_final_convergence",
+    "check_for_initial_run",
+    "ctrl_variables_default",
+    "get_controller_order",
+    "get_recycle",
+    "net_initialization",
+    "prepare_run_ctrl",
+    "run_control",
+]
 
-try:
-    from pandaplan.core import pplog
-except ImportError:
-    import logging as pplog
+import logging
+
+import numpy as np
 
 from pandapower.auxiliary import ControllerNotConverged, NetCalculationNotConverged
 from pandapower.control.util.auxiliary import asarray
 from pandapower.optimal_powerflow import OPFNotConverged
 from pandapower.powerflow import LoadflowNotConverged
-
-logger = pplog.getLogger(__name__)
-
 from pandapower.run import runpp
+
+logger = logging.getLogger(__name__)
 
 
 def get_controller_order(nets, controller):
@@ -41,13 +48,12 @@ def get_controller_order(nets, controller):
 
     # identify the levels to be run
     controller_order = []
-    for l in level_list:
-        to_add = controller.in_service.values & [*map(lambda x: l in x, level)]
+    for level_ in level_list:
+        to_add = controller.in_service.values & [level_ in x for x in level]
         rel_controller, order = controller["object"].values[to_add], controller["order"].values[to_add]
         controller_order.append([*zip(rel_controller[order.argsort()], nets[to_add][order.argsort()])])
-        # controller_order.append(net.controller[to_add].sort_values(["order"]).object.values)
 
-    if logger.level <= pplog.DEBUG:
+    if logger.level <= logging.DEBUG:
         logger.debug("levellist: " + str(level_list))
         logger.debug("order: " + str(controller_order))  # Note: creates a long string if many controllers are present
 
@@ -84,7 +90,7 @@ def check_for_initial_run(controller_order):
 
 
 def ctrl_variables_default(net, **kwargs):
-    ctrl_variables = dict()
+    ctrl_variables = {}
     if not hasattr(net, "controller") or len(net.controller[net.controller.in_service]) == 0:
         ctrl_variables["level"], ctrl_variables["controller_order"] = [0], [[]]
     else:
@@ -113,10 +119,10 @@ def prepare_run_ctrl(net, ctrl_variables, **kwargs):
     if ctrl_variables is None:
         ctrl_variables = ctrl_variables_default(net, **kwargs)
 
-    if ("continue_on_divergence") in kwargs and (ctrl_var is None or "continue_on_divergence" not in ctrl_var.keys()):
+    if ("continue_on_divergence") in kwargs and (ctrl_var is None or "continue_on_divergence" not in ctrl_var):
         div = kwargs.pop("continue_on_divergence")
         ctrl_variables["continue_on_divergence"] = div
-    if ("check_each_level") in kwargs and (ctrl_var is None or "check_each_level" not in ctrl_var.keys()):
+    if ("check_each_level") in kwargs and (ctrl_var is None or "check_each_level" not in ctrl_var):
         check = kwargs.pop("check_each_level")
         ctrl_variables["check_each_level"] = check
 
@@ -126,13 +132,13 @@ def prepare_run_ctrl(net, ctrl_variables, **kwargs):
 def check_final_convergence(run_count, max_iter, net_converged):
     if run_count > max_iter:
         raise ControllerNotConverged(
-            "Maximum number of iterations per controller is reached. "
-            "Some controller did not converge after %i calculations!" % run_count
+            f"Maximum number of iterations per controller is reached. "
+            f"Some controller did not converge after {run_count} calculations!"
         )
     if not net_converged:
         raise NetCalculationNotConverged("Controller did not converge because the calculation did not converge!")
     else:
-        logger.debug("Converged after %i calculations" % run_count)
+        logger.debug(f"Converged after {run_count} calculations")
 
 
 def get_recycle(ctrl_variables):
@@ -169,7 +175,7 @@ def _evaluate_net(net, levelorder, ctrl_variables, **kwargs):
     errors = ctrl_variables["errors"]
     try:
         run_funct(net, **kwargs)  # run can be runpp, runopf or whatever
-    except errors as err:
+    except errors:
         net._ppc = None
         if ctrl_variables["continue_on_divergence"]:
             # give a chance to controllers to "repair" the control step if load flow
@@ -184,7 +190,7 @@ def _evaluate_net(net, levelorder, ctrl_variables, **kwargs):
             except errors:
                 pass
         else:
-            raise err
+            raise
     ctrl_variables["converged"] = net["converged"] or net.get("OPF_converged", False)
     return ctrl_variables
 
@@ -221,7 +227,7 @@ def _reset_convergence(levelorder):
 def _control_step(levelorder, run_count):
     # keep track of stopping criteria
     converged = True
-    logger.debug("Controller Iteration #%i" % run_count)
+    logger.debug(f"Controller Iteration #{run_count}")
     # run each controller until all are converged
     for ctrl, net in levelorder:
         # call control step while controller is not converged yet

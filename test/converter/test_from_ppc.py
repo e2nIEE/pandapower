@@ -1,38 +1,34 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
 import os
 import pickle
+from importlib.util import find_spec
 
 import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower import reset_results
 from pandapower.converter.pypower import from_ppc, to_ppc, validate_from_ppc
 from pandapower.converter.pypower.from_ppc import _branch_to_which, _gen_to_which
 from pandapower.file_io import from_json
 from pandapower.networks.power_system_test_cases import case9, case24_ieee_rts
-from pandapower.pypower.idx_brch import PF, PT, QF, QT
+from pandapower.pypower.idx_brch import ANGMAX, ANGMIN, PF, PT, QF, QT
 from pandapower.pypower.idx_bus import PD, VA, VM
 from pandapower.pypower.idx_gen import PG, QG
+from pandapower.results import reset_results
 from pandapower.run import runopp, runpp, set_user_pf_options
 from pandapower.toolbox.comparison import nets_equal
 from pandapower.toolbox.data_modification import reindex_buses
+from test import test_path
 
-try:
+if find_spec("pypower"):
     import pypower.case24_ieee_rts as c24
 
     pypower_installed = True
-except ImportError:
+else:
     pypower_installed = False
-
-try:
-    import pandaplan.core.pplog as logging
-except:
-    import logging
-
-from test import test_path
 
 logger = logging.getLogger(__name__)
 max_diff_values1 = {
@@ -57,7 +53,6 @@ def get_testgrids(foldername, filename):
     return ppcs
 
 
-@pytest.mark.xfail
 def test_from_ppc_simple_against_target():
     ppc = get_testgrids("ppc_testgrids", "case2_2.json")
     net_by_ppc = from_ppc(ppc)
@@ -67,7 +62,7 @@ def test_from_ppc_simple_against_target():
     runpp(net_by_ppc, trafo_model="pi")
     runpp(net_by_code, trafo_model="pi")
 
-    assert type(net_by_ppc) == type(net_by_code)
+    assert type(net_by_ppc) is type(net_by_code)
     assert net_by_ppc.converged
     assert len(net_by_ppc.bus) == len(net_by_code.bus)
     assert len(net_by_ppc.impedance) == len(
@@ -136,6 +131,10 @@ def test_to_and_from_ppc():
         runpp(net)
         ppc = to_ppc(net, mode="opf", take_slack_vm_limits=False)
 
+        # unconstrained cases must not gain the angle limit columns in the round trip
+        assert np.all(ppc["branch"][:, ANGMIN] == -360.0)
+        assert np.all(ppc["branch"][:, ANGMAX] == 360.0)
+
         # correct ppc data (to_ppc() does not convert completely)
         if i == 0:
             vm_setps = pd.concat(
@@ -165,6 +164,97 @@ def test_to_and_from_ppc():
             runopp(net, delta=1e-16)
             runopp(net2, delta=1e-16)
             assert nets_equal(net, net2, check_only_results=True, atol=1e-10)
+
+
+def test_from_ppc_angle_limits():
+    """ANGMIN/ANGMAX must be imported; the pypower 'no limit' spellings must become NaN."""
+    ppc = get_testgrids("pypower_cases", "case9.json")
+    ppc["branch"][0, ANGMIN] = -30.0
+    ppc["branch"][0, ANGMAX] = 20.0
+    ppc["branch"][1, ANGMIN] = 0.0  # MATPOWER convention: no limit
+    ppc["branch"][1, ANGMAX] = 360.0
+    ppc["branch"][2, ANGMIN] = -360.0
+    ppc["branch"][2, ANGMAX] = 0.0
+
+    net = from_ppc(ppc, f_hz=60)
+
+    assert np.isclose(net.line.at[0, "min_angle_degree"], -30.0)
+    assert np.isclose(net.line.at[0, "max_angle_degree"], 20.0)
+    assert net.line["min_angle_degree"].iloc[1:].isnull().all()
+    assert net.line["max_angle_degree"].iloc[1:].isnull().all()
+
+
+def test_from_ppc_no_angle_columns_for_unconstrained_case():
+    """A fully unconstrained case must not gain the angle columns at all."""
+    ppc = get_testgrids("pypower_cases", "case9.json")
+    net = from_ppc(ppc, f_hz=60)
+    assert "min_angle_degree" not in net.line.columns
+    assert "max_angle_degree" not in net.line.columns
+    assert "min_angle_degree" not in net.trafo.columns
+    assert "max_angle_degree" not in net.trafo.columns
+    assert "min_angle_degree" not in net.impedance.columns
+    assert "max_angle_degree" not in net.impedance.columns
+
+
+def test_from_ppc_angle_limits_reversed_trafo():
+    """For a trafo branch oriented lv -> hv in the ppc, the limits are swapped and negated."""
+    mpc = {
+        "branch": np.array(
+            [
+                # f_bus, t_bus, r, x, b, rateA, rateB, rateC, ratio, shift, status, angmin, angmax
+                [2, 1, 0.001, 0.01, 0.0, 100.0, 0.0, 0.0, 1.0, 0.0, 1, -30.0, 10.0],
+            ]
+        ),
+        "bus": np.array(
+            [
+                [1, 3, 0.0, 0.0, 0.0, 0.0, 1, 1.0, 0.0, 110.0, 1, 1.1, 0.9],
+                [2, 1, 50.0, 10.0, 0.0, 0.0, 1, 1.0, 0.0, 10.0, 1, 1.1, 0.9],
+            ]
+        ),
+        "gen": np.array([[1, 50.0, 0.0, 100.0, -100.0, 1.0, 100.0, 1, 100.0, 0.0]]),
+        "gencost": np.array([[2, 0.0, 0.0, 3, 0.0, 10.0, 0.0]]),
+        "version": 2,
+        "baseMVA": 100.0,
+    }
+
+    net = from_ppc(mpc, f_hz=50)
+    # pandapower models the trafo hv -> lv, which is the reverse ppc direction,
+    # so va_lv - va_hv in [-30, 10] becomes va_hv - va_lv in [-10, 30]
+    assert np.isclose(net.trafo.at[0, "min_angle_degree"], -10.0)
+    assert np.isclose(net.trafo.at[0, "max_angle_degree"], 30.0)
+
+
+def test_angle_limits_roundtrip():
+    """from_ppc -> to_ppc -> from_ppc must preserve the limits."""
+    ppc = get_testgrids("pypower_cases", "case9.json")
+    ppc["branch"][0, ANGMIN] = -30.0
+    ppc["branch"][0, ANGMAX] = 20.0
+    net = from_ppc(ppc, f_hz=60)
+    net.line["max_loading_percent"] = 100.0
+    runpp(net)
+
+    net2 = from_ppc(to_ppc(net, mode="opf"), f_hz=60)
+
+    for col in ("min_angle_degree", "max_angle_degree"):
+        assert np.allclose(net.line[col].to_numpy(), net2.line[col].to_numpy(), equal_nan=True), (
+            f"{col} not preserved by the round trip"
+        )
+
+
+def test_from_ppc_branch_without_angle_columns():
+    """A branch array that stops before ANGMIN/ANGMAX must convert unconstrained instead of raising.
+
+    from_ppc accepts raw ppc dicts, and before the angle limits were imported only columns up to BR_STATUS
+    were read. Such truncated branch arrays must keep working.
+    """
+    ppc = get_testgrids("pypower_cases", "case9.json")
+    ppc["branch"] = ppc["branch"][:, :ANGMIN]  # drop ANGMIN and ANGMAX
+
+    net = from_ppc(ppc, f_hz=60)
+
+    assert len(net.line) > 0
+    assert "min_angle_degree" not in net.line.columns
+    assert "max_angle_degree" not in net.line.columns
 
 
 def test_gencost_pwl():
@@ -332,7 +422,8 @@ def _bool_arr_to_positional_column_vector(arr):
 def overwrite_results_data_of_ppc_pickle(file_name, grid_names):
     folder = os.path.join(test_path, "converter")
     file = os.path.join(folder, file_name)
-    ppcs = pickle.load(open(file, "rb"))
+    with open(file, "rb") as f:
+        ppcs = pickle.load(f)
 
     for i in grid_names:
         ppc = ppcs[i]

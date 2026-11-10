@@ -67,7 +67,7 @@ def test_create_switch(_create_test_net):
     assert net.switch.et.at[sw1] == "l"
     assert net.switch.type.at[sw1] == "LS"
     assert net.switch.name.at[sw1] == "switch1"
-    assert net.switch.closed.at[sw1] == True  # default
+    assert net.switch.closed.at[sw1]  # default
 
     # Test bus-transformer switch
     sw2 = create_switch(net, bus=b2, element=t1, et="t", closed=False, type="CB")
@@ -75,7 +75,7 @@ def test_create_switch(_create_test_net):
     assert net.switch.element.at[sw2] == t1
     assert net.switch.et.at[sw2] == "t"
     assert net.switch.type.at[sw2] == "CB"
-    assert net.switch.closed.at[sw2] == False
+    assert not net.switch.closed.at[sw2]
 
     # Test bus-bus switch with z_ohm
     sw3 = create_switch(net, bus=b3, element=b4, et="b", z_ohm=0.5, in_ka=1.5)

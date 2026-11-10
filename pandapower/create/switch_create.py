@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 
+__all__ = ["create_switch", "create_switches"]
+
 import logging
 from collections.abc import Iterable, Sequence
 

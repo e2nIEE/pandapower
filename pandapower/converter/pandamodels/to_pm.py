@@ -1,8 +1,26 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "NumpyEncoder",
+    "add_params_to_pm",
+    "add_pm_gen_start_values_from_results",
+    "add_pm_options",
+    "add_redispatch_params",
+    "add_time_series_to_pm",
+    "allow_multi_ext_grids",
+    "build_ne_branch",
+    "convert_pp_to_pm",
+    "convert_to_pm_structure",
+    "create_pm_lookups",
+    "dump_pm_json",
+    "get_branch_angles",
+    "init_ne_line",
+    "ppc_to_pm",
+]
 
 import json
+import logging
 import math
 import os
 import tempfile
@@ -273,7 +291,7 @@ def dump_pm_json(pm, buffer_file=None):
         # if no buffer file is provided a random file name is generated
         temp_name = next(tempfile._get_candidate_names())
         buffer_file = os.path.join(tempfile.gettempdir(), "pp_to_pm_" + temp_name + ".json")
-    logger.debug("writing PowerModels data structure to %s" % buffer_file)
+    logger.debug(f"writing PowerModels data structure to {buffer_file}")
     with open(buffer_file, "w") as outfile:
         json.dump(pm, outfile, indent=4, sort_keys=True, cls=NumpyEncoder)
     return buffer_file
@@ -377,7 +395,7 @@ def create_pm_lookups(net, pm_lookup):
             pm_val = {}
             for subkey, subval in val.items():
                 pm_val[subkey] = tuple(v + 1 for v in subval)
-        elif isinstance(val, int) or isinstance(val, np.ndarray):
+        elif isinstance(val, (int, np.ndarray)):
             # lookup is a numpy array
             # julia starts counting at 1 instead of 0
             pm_val = val + 1
@@ -532,12 +550,12 @@ def ppc_to_pm(net, ppci):
 
 def add_pm_options(pm, net):
     # read values from net_options if present else use default values
-    pm["pm_solver"] = net._options["pm_solver"] if "pm_solver" in net._options else "ipopt"
-    pm["pm_mip_solver"] = net._options["pm_mip_solver"] if "pm_mip_solver" in net._options else "cbc"
-    pm["pm_nl_solver"] = net._options["pm_nl_solver"] if "pm_nl_solver" in net._options else "ipopt"
-    pm["pm_model"] = net._options["pm_model"] if "pm_model" in net._options else "DCPPowerModel"
-    pm["pm_log_level"] = net._options["pm_log_level"] if "pm_log_level" in net._options else 0
-    pm["pm_tol"] = net._options["pm_tol"] if "pm_tol" in net._options else 1e-8
+    pm["pm_solver"] = net._options.get("pm_solver", "ipopt")
+    pm["pm_mip_solver"] = net._options.get("pm_mip_solver", "cbc")
+    pm["pm_nl_solver"] = net._options.get("pm_nl_solver", "ipopt")
+    pm["pm_model"] = net._options.get("pm_model", "DCPPowerModel")
+    pm["pm_log_level"] = net._options.get("pm_log_level", 0)
+    pm["pm_tol"] = net._options.get("pm_tol", 1e-08)
     if "pm_time_limits" in net._options and isinstance(net._options["pm_time_limits"], dict):
         # write time limits to power models data structure
         for key, val in net._options["pm_time_limits"].items():
@@ -630,7 +648,7 @@ def add_params_to_pm(net, pm):
 
         if elm in ["line", "trafo"]:
             for bp in br_param:
-                for k in pm["user_defined_params"]["side"].keys():
+                for k in pm["user_defined_params"]["side"]:
                     side = pm["user_defined_params"]["side"][k]["value"]
                     pd_idx = pm["user_defined_params"]["side"][k]["element_pp_index"]
                     ppcidx = net._pd2pm_lookups["branch"][elm][0] - 1 + pd_idx
@@ -648,9 +666,9 @@ def add_params_to_pm(net, pm):
 
     # add controllable sgen:
     dic = {}
-    if "user_defined_params" in pm.keys():
+    if "user_defined_params" in pm:
         for elm in ["gen", "sgen_controllable"]:
-            if elm in net._pd2pm_lookups.keys():
+            if elm in net._pd2pm_lookups:
                 pm_idxs = net._pd2pm_lookups[elm]
                 for k in pm_idxs[pm_idxs != -1]:
                     dic[str(k)] = k
@@ -658,7 +676,7 @@ def add_params_to_pm(net, pm):
             pm["user_defined_params"]["gen_and_controllable_sgen"] = dic
 
     # add objective factors for multi optimization
-    if "obj_factors" in net.keys():
+    if "obj_factors" in net:
         if not isinstance(net.obj_factors, list):
             raise AssertionError("net.obj_factors is not a list")
         if sum(net.obj_factors) > 1:
@@ -738,8 +756,8 @@ def _redispatch_base_p_mw(net, elm, pp_idx, res_lookup):
     res_table = res_lookup[elm]
     if res_table not in net or pp_idx not in net[res_table].index:
         raise ValueError(
-            "redispatch base dispatch requires a prior power flow result: "
-            "%s[%d] missing. Run a power flow or use init_pq='results'." % (res_table, pp_idx)
+            f"redispatch base dispatch requires a prior power flow result: "
+            f"{res_table}[{pp_idx:.0f}] missing. Run a power flow or use init_pq='results'."
         )
     return float(net[res_table].at[pp_idx, "p_mw"])
 
@@ -818,7 +836,7 @@ def add_time_series_to_pm(net, pm, from_time_step, to_time_step):
             "to_time_step": to_time_step + 1,
         }
         for idx, content in net.controller.iterrows():
-            if type(content["object"]) != ConstControl:
+            if not isinstance(content["object"], ConstControl):
                 continue
             else:
                 element = content["object"].__dict__["matching_params"]["element"]

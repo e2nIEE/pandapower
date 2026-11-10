@@ -1,6 +1,15 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "ALGORITHM_MAPPING",
+    "ALLOWED_OPT_VAR",
+    "StateEstimation",
+    "chi2_analysis",
+    "estimate",
+    "remove_bad_data",
+]
+
 import logging
 from datetime import datetime
 
@@ -164,7 +173,6 @@ class StateEstimation:
         self.logger = logger
         if self.logger is None:
             self.logger = std_logger
-            # self.logger.setLevel(logging.DEBUG)
         self.net = net
         self.solver = ALGORITHM_MAPPING[algorithm](tolerance, maximum_iterations, self.logger)
         self.ppc = None
@@ -243,7 +251,7 @@ class StateEstimation:
         for var_name in opt_vars:
             if var_name not in ALLOWED_OPT_VAR:
                 self.logger.warning(
-                    "Caution! %s is not allowed as parameter" % var_name + " for estimate and will be ignored!"
+                    f"Caution! {var_name} is not allowed as parameter for estimate and will be ignored!"
                 )
 
         if self.net is None:
@@ -351,10 +359,10 @@ class StateEstimation:
 
         # Print results
         self.logger.debug("Result of Chi^2 test:")
-        self.logger.debug("Number of measurements: %d" % m)
-        self.logger.debug("Number of state variables: %d" % n)
-        self.logger.debug("Performance index: %.2f" % J.item())
-        self.logger.debug("Chi^2 test threshold: %.2f" % test_thresh)
+        self.logger.debug(f"Number of measurements: {m}")
+        self.logger.debug(f"Number of state variables: {n}")
+        self.logger.debug(f"Performance index: {J.item():.2f}")
+        self.logger.debug(f"Chi^2 test threshold: {test_thresh:.2f}")
 
         if J <= test_thresh:
             self.bad_data_present = False

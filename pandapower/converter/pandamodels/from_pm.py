@@ -1,6 +1,16 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "add_storage_results",
+    "add_time_series_data_to_net",
+    "pm_results_to_ppc_results",
+    "pm_results_to_ppc_results_one_time_step",
+    "read_ots_results",
+    "read_pm_results_to_net",
+    "read_tnep_results",
+]
+
 
 import math
 from copy import deepcopy
@@ -28,7 +38,7 @@ def read_pm_results_to_net(net: pandapowerNet, ppc, ppci, result_pm):
     result, multinetwork = pm_results_to_ppc_results(net, ppc, ppci, result_pm)
     net["_pm_result"] = {} if multinetwork else result.copy()
     net["_pm_org_result"] = result_pm["solution"]
-    if "ne_branch" in result_pm["solution"].keys():
+    if "ne_branch" in result_pm["solution"]:
         net["_pm_result"]["ne_branch"] = result_pm["solution"]["ne_branch"]
     net["_pm_result"]["solve_time"] = result_pm["solve_time"]
 
@@ -119,7 +129,7 @@ def add_time_series_data_to_net(net: pandapowerNet, controller, time_step):
     from pandapower.control import ConstControl
 
     for idx, content in controller.iterrows():
-        if type(content["object"]) == ConstControl:
+        if isinstance(content["object"], ConstControl):
             element = content["object"].__dict__["matching_params"]["element"]
             variable = content["object"].__dict__["matching_params"]["variable"]
             elm_idxs = content["object"].__dict__["matching_params"]["element_index"]
@@ -167,8 +177,7 @@ def pm_results_to_ppc_results_one_time_step(ppci, sol, va_in_degrees=True):
             ppci["bus"][bus_idx, VM] = _float(bus["vm"])
         if "va" in bus:
             # replace nans with 0.(in case of SOCWR model for example
-            va = 0.0 if bus["va"] is None else bus["va"]
-            ppci["bus"][bus_idx, VA] = va if va_in_degrees else math.degrees(va)
+            ppci["bus"][bus_idx, VA] = 0.0 if bus["va"] is None else math.degrees(bus["va"])
         if "w" in bus:
             # SOCWR model has only w = vm^2 instead of vm values
             ppci["bus"][bus_idx, VM] = math.sqrt(bus["w"])

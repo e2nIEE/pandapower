@@ -7,12 +7,12 @@
 from numpy import int64
 
 
-def sub2ind(shape, I, J, row_major=False):
+def sub2ind(shape, i, j, row_major=False):
     """Returns the linear indices of subscripts"""
     if row_major:
-        ind = (I % shape[0]) * shape[1] + (J % shape[1])
+        ind = (i % shape[0]) * shape[1] + (j % shape[1])
     else:
-        ind = (J % shape[1]) * shape[0] + (I % shape[0])
+        ind = (j % shape[1]) * shape[0] + (i % shape[0])
 
     return ind.astype(int64)
 

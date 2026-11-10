@@ -215,7 +215,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
 
             return {"success": success, "message": message, "results": results}
 
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             self.powsybl_loadflow_result = None
             return {
                 "success": False,
@@ -247,7 +247,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
                 "message": "converged" if converged else "pandapower load flow did not converge",
             }
 
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             self.pandapower_loadflow_result = None
             return {"success": False, "message": f"pandapower load flow failed: {exc}"}
 
@@ -582,7 +582,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
                     if pyp_prefix == "i":
                         pyp_value = self._comparison_ampere_to_kiloampere(pyp_value)
 
-                    if pyp_prefix.startswith("p") or pyp_prefix.startswith("q"):
+                    if pyp_prefix.startswith(("p", "q")):
                         abs_tol = 5e-3
                         rel_tol = 3e-2
                     else:

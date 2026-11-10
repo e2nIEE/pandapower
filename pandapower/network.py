@@ -47,7 +47,7 @@ def plural_s(number):
 def _preserve_dtypes(df, dtypes):
     for item, dtype in list(dtypes.items()):
         if df.dtypes.at[item] != dtype:
-            if (dtype == bool or dtype == np.bool_) and np.any(df[item].isnull()):
+            if (dtype is bool or dtype is np.bool_) and np.any(df[item].isnull()):
                 raise UserWarning(
                     f"Encountered NaN value(s) in a boolean column {item}! "
                     f"NaN are casted to True by default, which can lead to errors. "
@@ -321,7 +321,7 @@ class pandapowerNet(ADict):
                     par.append(f"   - {et} ({n_groups} group{plural_s(n_groups)}, {n_rows} row{plural_s(n_rows)})")
                 else:
                     par.append(f"   - {et} ({n_rows} element{plural_s(n_rows)})")
-        res_cost = [" and the following result values:", "   - %s" % "res_cost"] if "res_cost" in self.keys() else []
+        res_cost = [" and the following result values:", "   - res_cost"] if "res_cost" in self.keys() else []
         if not len(par) + len(res):
             return "This pandapower network is empty"
         if len(res):

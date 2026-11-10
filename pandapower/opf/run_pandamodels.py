@@ -53,15 +53,12 @@ def _runpm(
         net._options["pp_to_pm_callback"](net, ppci, pm)
     # writes pm json to disk, which is loaded afterwards in julia
     buffer_file = dump_pm_json(pm, pm_file_path)
-    logger.debug("the json file for converted net is stored in: %s" % buffer_file)
+    logger.debug(f"the json file for converted net is stored in: {buffer_file}")
     # run power models optimization in julia
     result_pm = _call_pandamodels(buffer_file, net._options["julia_file"])
 
     logger.info(
-        "Optimization ('"
-        + net._options["julia_file"]
-        + "') "
-        + "is finished in %s seconds:" % round(result_pm["solve_time"], 2)
+        f"Optimization ('{net._options['julia_file']}') is finished in {round(result_pm['solve_time'], 2)} seconds:"
     )
     # read results and write back to net
     try:
