@@ -821,9 +821,7 @@ def _calc_tap_from_dataframe(
                     if mask_ideal.any():
                         trafo_shift[mask_ideal] += _get_trafo_shift(trafo_df, t, mask_ideal, direction)[0]
                     if mask_symmetrical.any():
-                        shift, ratio_tap_side, ratio_opposite_side = _get_symmetrical_tap(
-                            trafo_df, t, mask_symmetrical
-                        )
+                        shift, ratio_tap_side, ratio_opposite_side = _get_symmetrical_tap(trafo_df, t, mask_symmetrical)
                         vn[mask_symmetrical] *= ratio_tap_side
                         vn_opposite[mask_symmetrical] *= ratio_opposite_side
                         trafo_shift[mask_symmetrical] += direction * shift
