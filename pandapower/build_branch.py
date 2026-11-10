@@ -755,7 +755,6 @@ def _calc_tap_from_dataframe(
         if tap_pos is None:
             continue
         tap_side = get_trafo_values(trafo_df, f"tap{t}_side", na_replacement="")
-        tap_step_percent = get_trafo_values(trafo_df, f"tap{t}_step_percent", na_replacement=float("nan"))
 
         tap_changer_type = get_trafo_values(trafo_df, f"tap{t}_changer_type", na_replacement="")
         if tap_changer_type is not None:
@@ -829,25 +828,6 @@ def _calc_tap_from_dataframe(
                         shift, _vn_mask_complex = _get_trafo_shift(trafo_df, t, mask_complex, direction, vn, False)
                         vn[mask_complex] = _vn_mask_complex
                         trafo_shift[mask_complex] += shift
-        elif f"tap{t}_phase_shifter" in trafo_df:
-            warnings.warn(
-                DeprecationWarning(
-                    f"tap{t}_phase_shifter was removed with pandapower 3.0 and replaced by "
-                    f"tap{t}_changer_type. Using old net data will still work, but usage of "
-                    f"tap{t}_phase_shifter is deprecated and will be removed in future releases."
-                )
-            )
-            tap_phase_shifter = get_trafo_values(trafo_df, f"tap{t}_phase_shifter")
-            for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
-                tap_ideal = (tap_phase_shifter & (tap_side == side)).fillna(False)
-                tap_complex = np.isfinite(tap_step_percent) & np.isfinite(tap_pos) & (tap_side == side) & ~tap_ideal
-                # tap_complex = tap_complex.fillna(False)
-                if tap_ideal.any():
-                    trafo_shift[tap_ideal] += _get_trafo_shift(trafo_df, t, tap_ideal, direction)[0]
-                if tap_complex.any():
-                    shift, _vn_tap_complex = _get_trafo_shift(trafo_df, t, tap_complex, direction, vn, False)
-                    vn[tap_complex] = _vn_tap_complex
-                    trafo_shift[tap_complex] += shift
 
     return vnh, vnl, trafo_shift
 
@@ -1759,7 +1739,6 @@ def _trafo_df_from_trafo3w(net: pandapowerNet, sequence: int = 1) -> dict:
         "tap_changer_type",
         "tap_dependency_table",
         "id_characteristic_table",
-        "tap_phase_shifter",
         "tap_at_star_point",
     ]:
         if param in net.trafo3w:

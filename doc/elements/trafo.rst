@@ -333,10 +333,10 @@ tap2_step_percent).
 
 .. note::
     Since pandapower 4.0, the boolean parameters tap_phase_shifter / tap2_phase_shifter (replaced by tap_changer_type
-    in pandapower 3.0) are not supported anymore. A network with tap_phase_shifter=True, a non-zero tap_step_percent
-    and no tap_changer_type column raises an error in the power flow. Networks saved with pandapower < 3.0 are
-    converted when they are loaded: an ideal phase shifter whose angle was given in tap_step_percent gets
-    tap_step_degree = 2 * arcsin(tap_step_percent / 200).
+    in pandapower 3.0) are not supported anymore. A network that still contains tap_phase_shifter (without a
+    tap_changer_type column) cannot be calculated and has to be converted with convert_trafo_pst_logic. This is done
+    automatically when loading networks saved with pandapower < 3.0: an ideal phase shifter whose angle was given in
+    tap_step_percent gets tap_step_degree = 2 * arcsin(tap_step_percent / 200).
 
 **Tabular phase shifter**
 
