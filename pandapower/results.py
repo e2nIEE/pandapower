@@ -314,10 +314,13 @@ def get_relevant_elements(net, mode="pf"):
     return [elem for elem in elements.get(mode, []) if not net[elem].empty]
 
 
-def init_results(net, mode="pf"):
+def init_results(net, mode="pf", exclude_result_tables=None):
+    exclude = set() if exclude_result_tables is None else set(exclude_result_tables)
     elements = get_relevant_elements(net, mode)
     suffix = suffix_mode.get(mode, None)
     for element in elements:
+        if get_result_tables(element, suffix) in exclude:
+            continue
         init_element(net, element, suffix)
 
 
