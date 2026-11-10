@@ -219,6 +219,11 @@ def test_line_drop_compensation_errors():
     with pytest.raises(ValueError, match="r_ohm has 3 values"):
         ContinuousTapControlLDC(net, [0, 0], vm_set_pu=1.0, r_ohm=[0.1, 0.2, 0.3], x_ohm=0.05)
 
+    # given impedance values do not hide a failing topological calculation on creation
+    net = simple_four_bus_system()
+    with pytest.raises(ValueError, match="no path without transformers"):
+        ContinuousTapControlLDC(net, 0, vm_set_pu=1.0, r_ohm=0.1, x_ohm=0.05, calculate_impedance=True, remote_bus=0)
+
 
 def test_line_drop_compensation_out_of_service_trafo():
     """

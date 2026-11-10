@@ -61,7 +61,8 @@ class LineDropCompensation:
             topology of the network as the shortest path between the bus at the controlled side of the transformer and
             ``remote_bus``. The path must not contain transformers, i.e. the remote bus must be on the same voltage
             level as the controlled bus. The impedance is calculated during initialization (and updated whenever the
-            controller is initialized) and can be refreshed manually with :meth:`update_impedance`.
+            controller is initialized) and can be refreshed manually with :meth:`update_impedance`. If True, any given
+            r_ohm and x_ohm are ignored and replaced by the calculated impedance.
     """
 
     def __init__(
@@ -86,6 +87,9 @@ class LineDropCompensation:
         self._update_trafobus(net)
 
         if self.calculate_impedance:
+            # the user values are replaced by the topology result, so a failure at creation must raise
+            self.r_ohm = None
+            self.x_ohm = None
             self.update_impedance(net)
         else:
             if self.r_ohm is None and self.x_ohm is None:
