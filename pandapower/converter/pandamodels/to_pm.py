@@ -48,7 +48,7 @@ from pandapower.pypower.idx_brch import (
     SHIFT,
     T_BUS,
     TAP,
-    branch_cols,
+    BRANCH_COLS,
 )
 from pandapower.pypower.idx_bus import BASE_KV, BS, BUS_I, BUS_TYPE, GS, PD, QD, VA, VM, VMAX, VMIN, ZONE
 from pandapower.pypower.idx_cost import COST, MODEL, NCOST
@@ -56,7 +56,7 @@ from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, PMAX, PMIN, QG, 
 from pandapower.results import init_results, verify_results
 
 # extra column in ne_branch (tnep), behind the regular ppc branch columns
-CONSTRUCTION_COST = branch_cols
+CONSTRUCTION_COST = BRANCH_COLS
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -570,7 +570,7 @@ def build_ne_branch(net, ppc):
     # this is only used by pm tnep
     if "ne_line" in net:
         length = len(net["ne_line"])
-        ppc["ne_branch"] = np.zeros(shape=(length, branch_cols + 1), dtype=np.complex128)
+        ppc["ne_branch"] = np.zeros(shape=(length, BRANCH_COLS + 1), dtype=np.complex128)
         ppc["ne_branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -60, 60])
         # create branch array ne_branch like the common branch array in the ppc
         net._pd2ppc_lookups["ne_branch"] = {}

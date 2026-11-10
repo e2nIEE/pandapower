@@ -56,11 +56,11 @@ from pandapower.estimation.util import estimate_voltage_vector
 from pandapower.network import pandapowerNet
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.run_newton_raphson_pf import _run_dc_pf
-from pandapower.pypower.idx_brch import branch_cols
+from pandapower.pypower.idx_brch import BRANCH_COLS
 from pandapower.pypower.idx_bus import BUS_TYPE as pypower_BUS_TYPE
 from pandapower.pypower.idx_bus import VA as pypower_VA
 from pandapower.pypower.idx_bus import VM as pypower_VM
-from pandapower.pypower.idx_bus import bus_cols
+from pandapower.pypower.idx_bus import BUS_COLS
 from pandapower.pypower.make_y_bus import makeYbus
 
 std_logger = logging.getLogger(__name__)
@@ -511,16 +511,16 @@ def _add_measurements_to_ppci(net, ppci, zero_injection, algorithm):
     _add_measurements_to_trafo3w(net, branch_append, meas, br_is_mask)
 
     # Integrate new measurement columns into ppci bus matrix
-    if ppci["bus"].shape[1] == bus_cols:
+    if ppci["bus"].shape[1] == BUS_COLS:
         ppci["bus"] = np.hstack((ppci["bus"], bus_append))
     else:
-        ppci["bus"][:, bus_cols : bus_cols + bus_cols_se] = bus_append
+        ppci["bus"][:, BUS_COLS: BUS_COLS + bus_cols_se] = bus_append
 
     # Integrate new measurement columns into ppci branch matrix
-    if ppci["branch"].shape[1] == branch_cols:
+    if ppci["branch"].shape[1] == BRANCH_COLS:
         ppci["branch"] = np.hstack((ppci["branch"], branch_append))
     else:
-        ppci["branch"][:, branch_cols : branch_cols + branch_cols_se] = branch_append
+        ppci["branch"][:, BRANCH_COLS: BRANCH_COLS + branch_cols_se] = branch_append
 
     # Add rated power information needed for AF-WLS estimator
     if algorithm == "af-wls":
@@ -606,32 +606,32 @@ def _build_measurement_vectors(ppci, update_meas_only=False):
     :param bus_cols: number of columns in original ppci["bus"] without measurements
     :return: both created vectors
     """
-    p_bus_not_nan = ~np.isnan(ppci["bus"][:, bus_cols + P])
-    p_line_f_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + P_FROM])
-    p_line_t_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + P_TO])
-    q_bus_not_nan = ~np.isnan(ppci["bus"][:, bus_cols + Q])
-    q_line_f_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + Q_FROM])
-    q_line_t_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + Q_TO])
-    v_bus_not_nan = ~np.isnan(ppci["bus"][:, bus_cols + VM])
-    v_degree_bus_not_nan = ~np.isnan(ppci["bus"][:, bus_cols + VA])
-    i_line_f_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + IM_FROM])
-    i_line_t_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + IM_TO])
+    p_bus_not_nan = ~np.isnan(ppci["bus"][:, BUS_COLS + P])
+    p_line_f_not_nan = ~np.isnan(ppci["branch"][:, BRANCH_COLS + P_FROM])
+    p_line_t_not_nan = ~np.isnan(ppci["branch"][:, BRANCH_COLS + P_TO])
+    q_bus_not_nan = ~np.isnan(ppci["bus"][:, BUS_COLS + Q])
+    q_line_f_not_nan = ~np.isnan(ppci["branch"][:, BRANCH_COLS + Q_FROM])
+    q_line_t_not_nan = ~np.isnan(ppci["branch"][:, BRANCH_COLS + Q_TO])
+    v_bus_not_nan = ~np.isnan(ppci["bus"][:, BUS_COLS + VM])
+    v_degree_bus_not_nan = ~np.isnan(ppci["bus"][:, BUS_COLS + VA])
+    i_line_f_not_nan = ~np.isnan(ppci["branch"][:, BRANCH_COLS + IM_FROM])
+    i_line_t_not_nan = ~np.isnan(ppci["branch"][:, BRANCH_COLS + IM_TO])
     # i_degree_line_f_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + IA_FROM])
     # i_degree_line_t_not_nan = ~np.isnan(ppci["branch"][:, branch_cols + IA_TO])
 
     # piece together our measurement vector z
     z = np.concatenate(
         (
-            ppci["bus"][p_bus_not_nan, bus_cols + P],
-            ppci["bus"][q_bus_not_nan, bus_cols + Q],
-            ppci["branch"][p_line_f_not_nan, branch_cols + P_FROM],
-            ppci["branch"][q_line_f_not_nan, branch_cols + Q_FROM],
-            ppci["branch"][p_line_t_not_nan, branch_cols + P_TO],
-            ppci["branch"][q_line_t_not_nan, branch_cols + Q_TO],
-            ppci["bus"][v_bus_not_nan, bus_cols + VM],
-            ppci["bus"][v_degree_bus_not_nan, bus_cols + VA],
-            ppci["branch"][i_line_f_not_nan, branch_cols + IM_FROM],
-            ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO],
+            ppci["bus"][p_bus_not_nan, BUS_COLS + P],
+            ppci["bus"][q_bus_not_nan, BUS_COLS + Q],
+            ppci["branch"][p_line_f_not_nan, BRANCH_COLS + P_FROM],
+            ppci["branch"][q_line_f_not_nan, BRANCH_COLS + Q_FROM],
+            ppci["branch"][p_line_t_not_nan, BRANCH_COLS + P_TO],
+            ppci["branch"][q_line_t_not_nan, BRANCH_COLS + Q_TO],
+            ppci["bus"][v_bus_not_nan, BUS_COLS + VM],
+            ppci["bus"][v_degree_bus_not_nan, BUS_COLS + VA],
+            ppci["branch"][i_line_f_not_nan, BRANCH_COLS + IM_FROM],
+            ppci["branch"][i_line_t_not_nan, BRANCH_COLS + IM_TO],
         )
     ).real.astype(np.float64)
     imag_meas = np.concatenate(
@@ -663,31 +663,31 @@ def _build_measurement_vectors(ppci, update_meas_only=False):
         # conserve the pandapower indices of measurements in the ppci order
         pp_meas_indices = np.concatenate(
             (
-                ppci["bus"][p_bus_not_nan, bus_cols + P_IDX],
-                ppci["bus"][q_bus_not_nan, bus_cols + Q_IDX],
-                ppci["branch"][p_line_f_not_nan, branch_cols + P_FROM_IDX],
-                ppci["branch"][q_line_f_not_nan, branch_cols + Q_FROM_IDX],
-                ppci["branch"][p_line_t_not_nan, branch_cols + P_TO_IDX],
-                ppci["branch"][q_line_t_not_nan, branch_cols + Q_TO_IDX],
-                ppci["bus"][v_bus_not_nan, bus_cols + VM_IDX],
-                ppci["bus"][v_degree_bus_not_nan, bus_cols + VA_IDX],
-                ppci["branch"][i_line_f_not_nan, branch_cols + IM_FROM_IDX],
-                ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO_IDX],
+                ppci["bus"][p_bus_not_nan, BUS_COLS + P_IDX],
+                ppci["bus"][q_bus_not_nan, BUS_COLS + Q_IDX],
+                ppci["branch"][p_line_f_not_nan, BRANCH_COLS + P_FROM_IDX],
+                ppci["branch"][q_line_f_not_nan, BRANCH_COLS + Q_FROM_IDX],
+                ppci["branch"][p_line_t_not_nan, BRANCH_COLS + P_TO_IDX],
+                ppci["branch"][q_line_t_not_nan, BRANCH_COLS + Q_TO_IDX],
+                ppci["bus"][v_bus_not_nan, BUS_COLS + VM_IDX],
+                ppci["bus"][v_degree_bus_not_nan, BUS_COLS + VA_IDX],
+                ppci["branch"][i_line_f_not_nan, BRANCH_COLS + IM_FROM_IDX],
+                ppci["branch"][i_line_t_not_nan, BRANCH_COLS + IM_TO_IDX],
             )
         ).real.astype(np.int64)
         # Covariance matrix R
         r_cov = np.concatenate(
             (
-                ppci["bus"][p_bus_not_nan, bus_cols + P_STD],
-                ppci["bus"][q_bus_not_nan, bus_cols + Q_STD],
-                ppci["branch"][p_line_f_not_nan, branch_cols + P_FROM_STD],
-                ppci["branch"][q_line_f_not_nan, branch_cols + Q_FROM_STD],
-                ppci["branch"][p_line_t_not_nan, branch_cols + P_TO_STD],
-                ppci["branch"][q_line_t_not_nan, branch_cols + Q_TO_STD],
-                ppci["bus"][v_bus_not_nan, bus_cols + VM_STD],
-                ppci["bus"][v_degree_bus_not_nan, bus_cols + VA_STD],
-                ppci["branch"][i_line_f_not_nan, branch_cols + IM_FROM_STD],
-                ppci["branch"][i_line_t_not_nan, branch_cols + IM_TO_STD],
+                ppci["bus"][p_bus_not_nan, BUS_COLS + P_STD],
+                ppci["bus"][q_bus_not_nan, BUS_COLS + Q_STD],
+                ppci["branch"][p_line_f_not_nan, BRANCH_COLS + P_FROM_STD],
+                ppci["branch"][q_line_f_not_nan, BRANCH_COLS + Q_FROM_STD],
+                ppci["branch"][p_line_t_not_nan, BRANCH_COLS + P_TO_STD],
+                ppci["branch"][q_line_t_not_nan, BRANCH_COLS + Q_TO_STD],
+                ppci["bus"][v_bus_not_nan, BUS_COLS + VM_STD],
+                ppci["bus"][v_degree_bus_not_nan, BUS_COLS + VA_STD],
+                ppci["branch"][i_line_f_not_nan, BRANCH_COLS + IM_FROM_STD],
+                ppci["branch"][i_line_t_not_nan, BRANCH_COLS + IM_TO_STD],
             )
         ).real.astype(np.float64)
         meas_mask = {

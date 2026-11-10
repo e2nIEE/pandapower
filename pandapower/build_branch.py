@@ -39,7 +39,7 @@ from pandapower.pypower.idx_brch import (
     SHIFT,
     T_BUS,
     TAP,
-    branch_cols,
+    BRANCH_COLS,
 )
 from pandapower.pypower.idx_brch_dc import (
     DC_BR_G,
@@ -50,9 +50,9 @@ from pandapower.pypower.idx_brch_dc import (
     DC_RATE_B,
     DC_RATE_C,
     DC_T_BUS,
-    branch_dc_cols,
+    BRANCH_DC_COLS,
 )
-from pandapower.pypower.idx_brch_sc import branch_cols_sc
+from pandapower.pypower.idx_brch_sc import BRANCH_COLS_SC
 from pandapower.pypower.idx_brch_tdpf import (
     ALPHA,
     BR_LENGTH_KM,
@@ -70,7 +70,7 @@ from pandapower.pypower.idx_brch_tdpf import (
     TDPF,
     WIND_ANGLE_DEGREE,
     WIND_SPEED_MPS,
-    branch_cols_tdpf,
+    BRANCH_COLS_TDPF,
 )
 from pandapower.pypower.idx_bus import BASE_KV, BUS_AREA, BUS_TYPE, PQ, VA, VM, VMAX, VMIN, ZONE
 from pandapower.pypower.idx_bus_dc import DC_BASE_KV, DC_BUS_AREA, DC_BUS_TYPE, DC_P, DC_VM, DC_VMAX, DC_VMIN, DC_ZONE
@@ -86,7 +86,7 @@ from pandapower.pypower.idx_tcsc import (
     TCSC_THYRISTOR_FIRING_ANGLE,
     TCSC_X_CVAR,
     TCSC_X_L,
-    tcsc_cols,
+    TCSC_COLS,
 )
 
 
@@ -114,12 +114,12 @@ def _build_branch_ppc(net: pandapowerNet, ppc: dict, sequence: int = 1) -> None:
     if mode == "sc" and tdpf:
         raise NotImplementedError("indexing for ppc branch columns not implemented for tdpf and sc together")
     # initialize "normal" ppc branch
-    all_branch_columns = branch_cols_tdpf + branch_cols if tdpf else branch_cols
+    all_branch_columns = BRANCH_COLS_TDPF + BRANCH_COLS if tdpf else BRANCH_COLS
     ppc["branch"] = np.zeros(shape=(length, all_branch_columns), dtype=np.float64)
     # add optional columns for short-circuit calculation
     # Check if this should be moved to somewhere else
     if mode == "sc":
-        branch_sc = np.empty(shape=(length, branch_cols_sc), dtype=np.float64)
+        branch_sc = np.empty(shape=(length, BRANCH_COLS_SC), dtype=np.float64)
         branch_sc.fill(np.nan)
         ppc["branch"] = np.hstack((ppc["branch"], branch_sc))
     ppc["branch"][:, :13] = np.array([0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, -360, 360])
@@ -162,7 +162,7 @@ def _build_branch_dc_ppc(net: pandapowerNet, ppc: dict):
     # if mode == "sc":
     #     raise NotImplementedError("indexing for ppc branch columns not implemented for tdpf and sc together")
     # initialize "normal" ppc branch
-    all_branch_columns = branch_cols_tdpf + branch_dc_cols if tdpf else branch_dc_cols
+    all_branch_columns = BRANCH_COLS_TDPF + BRANCH_DC_COLS if tdpf else BRANCH_DC_COLS
     ppc["branch_dc"] = np.zeros(shape=(length, all_branch_columns), dtype=np.float64)
     ppc["branch_dc"][:, [DC_RATE_A, DC_RATE_B, DC_RATE_C, DC_BR_STATUS]] = np.array([250, 250, 250, 1])
     if "line_dc" in lookup and mode in ["pf", "dc"]:
@@ -179,7 +179,7 @@ def _build_tcsc_ppc(net: pandapowerNet, ppc: dict, mode: str):
         mode: the powerflow mode
     """
     length = len(net.tcsc)
-    ppc["tcsc"] = np.zeros(shape=(length, tcsc_cols), dtype=np.float64)
+    ppc["tcsc"] = np.zeros(shape=(length, TCSC_COLS), dtype=np.float64)
     if mode != "pf":
         return
 

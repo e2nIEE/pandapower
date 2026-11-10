@@ -17,10 +17,10 @@ from numpy.typing import NDArray
 from scipy.sparse import csc_matrix, csr_matrix
 
 from pandapower.pypower.idx_brch import BR_STATUS, BR_X, F_BUS, SHIFT, T_BUS, TAP
-from pandapower.pypower.idx_brch_dc import DC_BR_R, DC_BR_STATUS, DC_F_BUS, DC_T_BUS, branch_dc_cols
+from pandapower.pypower.idx_brch_dc import DC_BR_R, DC_BR_STATUS, DC_F_BUS, DC_T_BUS, BRANCH_DC_COLS
 from pandapower.pypower.idx_bus import BUS_I
-from pandapower.pypower.idx_bus_dc import dc_bus_cols
-from pandapower.pypower.idx_vsc import VSC_BUS, VSC_BUS_DC, VSC_MODE_DC, VSC_MODE_DC_P, VSC_STATUS, VSC_X, vsc_cols
+from pandapower.pypower.idx_bus_dc import DC_BUS_COLS
+from pandapower.pypower.idx_vsc import VSC_BUS, VSC_BUS_DC, VSC_MODE_DC, VSC_MODE_DC_P, VSC_STATUS, VSC_X, VSC_COLS
 
 logger = logging.getLogger(__name__)
 
@@ -58,11 +58,11 @@ def makeBdc(
     :param return_csr: return a csr matrix instead of a csc matrix
     """
     if bus_dc is None:
-        bus_dc = np.empty((0, dc_bus_cols))
+        bus_dc = np.empty((0, DC_BUS_COLS))
     if branch_dc is None:
-        branch_dc = np.empty((0, branch_dc_cols))
+        branch_dc = np.empty((0, BRANCH_DC_COLS))
     if vsc is None:
-        vsc = np.empty((0, vsc_cols))
+        vsc = np.empty((0, VSC_COLS))
     # Select csc/csr B matrix
     sparse = csr_matrix if return_csr else csc_matrix
 
