@@ -319,7 +319,9 @@ def init_results(net, mode="pf", exclude_result_tables=None):
     elements = get_relevant_elements(net, mode)
     suffix = suffix_mode.get(mode, None)
     for element in elements:
-        if get_result_tables(element, suffix) in exclude:
+        res_element = get_result_tables(element, suffix)
+        if res_element in exclude and res_element in net:
+            net[res_element] = net[res_element].reindex(net[element].index)
             continue
         init_element(net, element, suffix)
 
