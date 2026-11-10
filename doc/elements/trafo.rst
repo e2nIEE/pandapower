@@ -247,7 +247,7 @@ The reference voltage is then multiplied with the tap factor:
    :nowrap:
    
    \begin{align*}
-    n_{tap} = 1 + (tap\_pos - tap\_neutral) \cdot \frac{tap\_st\_percent}{100}
+    n_{tap} = 1 + (tap\_pos - tap\_neutral) \cdot \frac{tap\_step\_percent}{100}
     \end{align*}
     
 On which side the reference voltage is adapted depends on the :math:`tap\_side` variable:
@@ -322,7 +322,7 @@ different meaning: here it is the angle per tap step):
    :nowrap:
 
    \begin{align*}
-   \theta_{tp} = tap\_st\_degree \cdot (tap\_pos - tap\_neutral)
+   \theta_{tp} = tap\_step\_degree \cdot (tap\_pos - tap\_neutral)
    \end{align*}
 
 If the tap changer is on the low voltage side, the sign of :math:`\theta_{tp}` is inverted.
