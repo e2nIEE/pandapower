@@ -76,7 +76,6 @@ docs = [
     "geopandas~=1.1"
 ]
 plotting = ["plotly~=6.8", "matplotlib~=3.11", "igraph", "geopandas~=1.1"]
-test = ["pytest~=9.1", "nbmake~=1.5", "pytest-timeout~=2.4", "pytest-split~=0.11"]
 performance = ["ortools~=9.15", "numba~=0.66", "lightsim2grid~=0.13.0"]
 fileio = ["xlsxwriter~=3.2", "openpyxl~=3.1", "cryptography~=49.0", "geopandas~=1.1", "psycopg~=3.2", "lxml~=6.1"]
 converter = ["matpowercaseframes~=2.1", "lxml~=6.1", "pypowsybl~=1.15"]
@@ -106,6 +105,9 @@ typing = [
 ]
 
 all = ["pandapower[plotting,performance,fileio,converter,pgm,control,helm,opendss]"]
+
+[dependency-groups]
+test = ["pytest~=9.1", "nbmake~=1.5", "pytest-timeout~=2.4", "pytest-split~=0.11", "pytest-cov", "pypower"]
 dev = ["pandapower[all,docs,test,typing,pandamodels,tutorials]", "ruff", "pytest-xdist", "pre-commit"]
 # "shapely", "pyproj", "Pyogrio" are dependencies of geopandas and should be already available ("Fiona" got dropped)
 # "hashlib", "zlib", "base64" produce install problems, so they are not included

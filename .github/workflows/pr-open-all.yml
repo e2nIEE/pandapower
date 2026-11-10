@@ -72,13 +72,11 @@ jobs:
         if: ${{matrix.python-version != '3.11'}}
         run: |
           uv sync --extra all --extra test --extra pandamodels --extra pgm
-          uv pip install pytest-split
           uv pip uninstall juliacall
       - name: Install dependencies # Test without pgm
         if: ${{matrix.python-version == '3.11'}}
         run: |
           uv sync --extra all --extra test --extra pandamodels
-          uv pip install pytest-split
           uv pip uninstall juliacall
       - name: List of installed packages
         run: |
@@ -90,15 +88,17 @@ jobs:
       - name: Test with pytest, Codecov and Coverage
         if: ${{ matrix.python-version == '3.12' }} # collecting on 3.12 (oldest version where pgm is included)
         run: |
-          uv pip install pytest-cov numpy~=1.26
-          uv run pytest --cov=./ --cov-report=xml --splits 2 --group ${{ matrix.group }} $IGNORES
+          uv pip install numpy~=1.26
+          uv run pytest --cov=./ --cov-report=xml --junitxml=junit-${{ matrix.group }}.xml -o junit_family=legacy --splits 2 --group ${{ matrix.group }} $IGNORES
           cp ./coverage.xml ./coverage-${{ matrix.group }}.xml
       - name: Upload coverage as artifact
         if: ${{ matrix.python-version == '3.12' }}
         uses: actions/upload-artifact@v7
         with:
           name: coverage-${{ matrix.group }}
-          path: ./coverage-${{ matrix.group }}.xml
+          path: |
+            ./coverage-${{ matrix.group }}.xml
+            ./junit-${{ matrix.group }}.xml
 
   network_schema:
     # This tests only the network_schema tests due to the large amount these are only tested on min/max python version
@@ -125,19 +125,20 @@ jobs:
         run: |
           uv sync --extra all --extra test --extra pandamodels --extra pgm
           uv pip uninstall juliacall
-          uv pip install pytest-cov pytest-split
       - name: List of installed packages
         run: |
           uv pip list
       - name: Test with pytest, Codecov and Coverage
         run: |
-          uv run pytest --cov=./ --cov-report=xml --splits 4 --group ${{ matrix.group }} test/network_schema
+          uv run pytest --cov=./ --cov-report=xml --junitxml=junit-net-schema-${{ matrix.group }}.xml -o junit_family=legacy --splits 4 --group ${{ matrix.group }} test/network_schema
           cp ./coverage.xml ./coverage-net-schema-${{ matrix.group }}.xml
       - name: Upload coverage as artifact
         uses: actions/upload-artifact@v7
         with:
           name: coverage-net-schema-${{ matrix.group }}
-          path: ./coverage-net-schema-${{ matrix.group }}.xml
+          path: |
+            ./coverage-net-schema-${{ matrix.group }}.xml
+            ./junit-net-schema-${{ matrix.group }}.xml
 
   numpy1-support:
     runs-on: ubuntu-latest
@@ -156,8 +157,7 @@ jobs:
           cache-dependency-glob: "pyproject.toml"
       - name: Install dependencies
         run: |
-          uv sync --extra dev          
-          uv pip install pytest-split
+          uv sync --extra test
           uv pip install numpy~=1.26
           uv pip uninstall juliacall
       - name: List of installed packages
@@ -189,7 +189,6 @@ jobs:
       - name: Install dependencies
         run: |
           uv sync --extra pandamodels --extra test
-          uv pip install pytest-cov pytest-split
       - name: Setup Julia
         uses: julia-actions/setup-julia@5c9647d97b78a5debe5164e9eec09d653d29bd71 #v2
         with:
@@ -201,13 +200,15 @@ jobs:
           julia -e 'using Pkg; Pkg.status()'
       - name: Test with pytest, Codecov and Coverage
         run: |
-          uv run pytest --cov=./ --cov-report=xml test/opf
+          uv run pytest --cov=./ --cov-report=xml --junitxml=junit-opf.xml -o junit_family=legacy test/opf
           cp ./coverage.xml ./coverage-opf.xml
       - name: Upload coverage as artifact
         uses: actions/upload-artifact@v7
         with:
           name: coverage-opf
-          path: ./coverage-opf.xml
+          path: |
+            ./coverage-opf.xml
+            ./junit-opf.xml
 
   upload-coverage:
     runs-on: ubuntu-latest
@@ -221,6 +222,11 @@ jobs:
           path: .
           pattern: coverage-*
           merge-multiple: true
+      - name: Generate test result file list
+        id: result-files
+        run: |
+          FILES=$(find . -name "junit-*.xml" | tr '\n' ',' | sed 's/,$//')
+          echo "files=$FILES" >> $GITHUB_OUTPUT
       - name: Generate coverage file list
         id: coverage-files
         run: |
@@ -245,6 +251,12 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ${{ steps.coverage-files.outputs.files }}
           verbose: true
+      - name: Upload test results to Codecov
+        continue-on-error: true
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ${{ steps.result-files.outputs.files }}
 
   warnings:
     # make pytest raise warnings as errors to see if there are warnings
@@ -266,8 +278,7 @@ jobs:
           cache-dependency-glob: "pyproject.toml"
       - name: Install dependencies
         run: |
-          uv sync --extra dev
-          uv pip install pytest-split
+          uv sync --extra test
           if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
       - name: List of installed packages
         run: |
