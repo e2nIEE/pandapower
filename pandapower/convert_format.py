@@ -375,6 +375,11 @@ def _create_seperate_cost_tables(net, elements_to_deserialize):
 
 
 def _rename_columns(net, elements_to_deserialize):
+    """
+    Renames the columns of networks stored with older pandapower versions to the current names (e.g. of line, load, gen,
+    trafo, measurement, controller, vsc_bipolar and some result tables). If elements_to_deserialize is given, only these
+    elements are considered.
+    """
     if _check_elements_to_deserialize("line", elements_to_deserialize):
         net.line = net.line.rename(columns={"imax_ka": "max_i_ka"})
     if _check_elements_to_deserialize("load", elements_to_deserialize) and (

@@ -31,6 +31,9 @@ from test.network_schema.elements.helper import (
 
 
 def _create_valid_vsc_bipolar_row(required=True, bus=0, bus_dc_plus=0, bus_dc_minus=1):
+    """
+    Returns the parameters of a valid bipolar VSC (with a name if required is False).
+    """
     df = {
         "bus": bus,
         "bus_dc_plus": bus_dc_plus,

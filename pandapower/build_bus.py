@@ -647,6 +647,12 @@ def _build_bus_dc_ppc(net, ppc):
 
 
 def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux, bus_table="bus"):
+    """
+    Fills the auxiliary buses of an element (e.g. the internal AC or DC bus of a VSC) in ppc[bus_table] with the base
+    voltage (and for the OPF the voltage limits) of the bus the element is connected to. The initial voltage is taken
+    from the results of the element if the power flow is initialized with the results and a result exists, otherwise
+    from the connected bus.
+    """
     element_bus_idx = bus_lookup[net[element][bus_column].values]
     aux_idx = bus_lookup[aux[element]]
     if bus_table == "bus":
@@ -1040,6 +1046,11 @@ def _build_ssc_ppc(net, ppc, mode):
 
 
 def _build_vsc_ppc(net, ppc, mode):
+    """
+    Builds ppc["vsc"] from net.vsc (including the auxiliary VSC of vsc_stacked and vsc_bipolar): connection buses,
+    minus terminal bus of bipolar VSC (-1 for VSC connected to ground), impedances in p.u., control modes and values.
+    Also sets the bus types of the AC buses of the VSC. The table is only filled for the modes "pf" and "dc".
+    """
     length = len(net.vsc)
     ppc["vsc"] = np.zeros(shape=(length, vsc_cols), dtype=np.float64)
 

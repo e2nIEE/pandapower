@@ -440,6 +440,9 @@ def test_create_vsc_stacked():
 
 
 def test_create_vsc_bipolar():
+    """
+    Creation of bipolar VSC with the required, all optional and the default parameters.
+    """
     net = pandapowerNet(name="test_create_vsc_bipolar")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
@@ -667,6 +670,9 @@ def test_create_vsc_stacked_index_conflict():
 
 
 def test_create_vsc_bipolar_legacy_control_kwargs():
+    """
+    The former control parameters raise a TypeError, other additional keywords are still stored.
+    """
     net = pandapowerNet(name="test_create_vsc_bipolar_legacy_control_kwargs")
     b1 = create_bus(net, 110)
     b_dc_plus = create_bus_dc(net, 100)

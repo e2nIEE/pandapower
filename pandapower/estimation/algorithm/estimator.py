@@ -213,6 +213,10 @@ class QLEstimatorOpt(BaseEstimatorOpt):
         return np.sum(cost)
 
     def create_cost_jacobian(self, E):
+        """
+        Gradient of the quadratic-linear cost function w.r.t. the state E: quadratic for residuals up to a * sigma, linear
+        for larger residuals.
+        """
         # dr/dE = drho / dr * d(z-hx) / dE
         # dr/dE = (drho/dr) * - (d(hx)/dE)
         # 2 * rx * -(dhx/dE) if np.abs(rx/sigma) < a

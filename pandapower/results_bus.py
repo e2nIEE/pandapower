@@ -501,6 +501,13 @@ def _get_p_q_results(net, ppc, bus_lookup_aranged):
 
 
 def _get_p_dc_results(net, ppc, bus_lookup_aranged):
+    """
+    Writes the DC power results of the VSC and DC loads to their result tables and sums the DC power per DC bus. The DC
+    power of bipolar VSC is assigned to the plus and to the minus terminal bus.
+
+    Returns:
+        bus_p_dc: DC power per DC bus (rows ordered as bus_lookup_aranged)
+    """
     bus_p_dc = np.zeros(shape=(len(net["bus_dc"].index), 1), dtype=np.float64)  # 1 because only p relevant
     b, p = np.array([]), np.array([])
 

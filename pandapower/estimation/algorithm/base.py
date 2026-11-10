@@ -73,6 +73,16 @@ class WLSAlgorithm(BaseAlgorithm):
         self.iterations = None
 
     def estimate(self, eppci: ExtendedPPCI, **kwargs):
+        """
+        Runs the weighted least squares (WLS) state estimation with Newton iterations.
+
+        Parameters:
+            eppci: the extended ppci with the measurements and the initial state
+
+        Returns:
+            eppci with the estimated state, or False if a linear algebra problem occurred. Whether the estimation converged
+            is stored in self.successful.
+        """
         # TODO: MOVE debug_mode to diagnostic!
         debug_mode = False
         self.initialize(eppci)
@@ -294,6 +304,17 @@ class AFWLSAlgorithm(BaseAlgorithm):
         self.iterations = None
 
     def estimate(self, eppci: ExtendedPPCI, **kwargs):
+        """
+        Runs the allocation factor WLS (AF-WLS) state estimation: in addition to the bus voltages, the allocation factors of
+        the load clusters are estimated, which allows the estimation of distribution grids that are not fully observable.
+
+        Parameters:
+            eppci: the extended ppci with the measurements, the clusters and the initial state
+
+        Returns:
+            eppci with the estimated state (the allocation factors in eppci.clusters), or False if a linear algebra problem
+            occurred. Whether the estimation converged is stored in self.successful.
+        """
         # TODO: MOVE debug_mode to diagnostic!
         debug_mode = False
         self.initialize(eppci)

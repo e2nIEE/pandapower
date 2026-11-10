@@ -1269,6 +1269,14 @@ def get_vsc_stacked_names(elements: NDArray):
 
 
 def _clean_up(net: pandapowerNet, res: bool = True) -> None:
+    """
+    Removes the auxiliary elements of the power flow from net: the gens of the dclines and the auxiliary VSC of
+    vsc_stacked and vsc_bipolar (see _add_auxiliary_elements).
+
+    Parameters:
+        net: the pandapower network
+        res: if True, the results of the dcline gens are removed from net.res_gen as well
+    """
     # mode = net.__internal_options["mode"]
 
     # set internal selected _is_elements to None. This way it is not stored (saves disk space)
@@ -1323,6 +1331,11 @@ def _remove_vsc_bipolar_aux(net: pandapowerNet) -> None:
 
 
 def _set_isolated_buses_out_of_service(net: pandapowerNet, ppc: PyPowerNetwork) -> None:
+    """
+    Sets the AC buses that are not connected to an in-service branch and the DC buses that are not connected to an
+    in-service DC line or VSC terminal (plus or minus) out of service (bus type NONE), unless they are reference buses.
+    The isolated buses are stored in net._isolated_buses and net._isolated_buses_dc.
+    """
     # set disconnected buses out of service
     # first check if buses are connected to branches
     # I don't know why this dance with [X, :][:, [Y, Z]] (instead of [X, [Y, Z]]) is necessary:

@@ -960,6 +960,14 @@ def _evaluate_Fx_facts(
     # V_sl_dc=None,
     dc_model=None,
 ):
+    """
+    Mismatch of the FACTS devices and of the DC grid.
+
+    The mismatches of the controllable SVC and TCSC and of the DC grid (see pandapower.pf.dc_vsc.evaluate_Fx_dc) are
+    returned and appended to F by the caller. The control equations of the SSC and VSC replace the mismatch rows of their
+    internal AC buses in old_F (in place). vsc_fb, vsc_tb and Yf_vsc refer to all in-service VSC, vsc_mode_ac,
+    vsc_mode_dc and vsc_value_ac only to the controllable VSC.
+    """
     mis_facts = np.array([], dtype=np.float64)
 
     if svc_buses is not None and len(svc_buses) > 0:

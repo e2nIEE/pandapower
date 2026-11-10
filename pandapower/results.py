@@ -115,6 +115,10 @@ def _overwrite_out_of_service(net: pandapowerNet) -> None:
 
 
 def _extract_results(net, ppc):
+    """
+    Writes the results of the power flow in ppc to the result tables of net (res_bus, res_line, res_vsc, res_vsc_bipolar,
+    ...).
+    """
     _set_buses_out_of_service(ppc)  # for NaN results in net.res_bus for inactive buses
     _set_dc_buses_out_of_service(ppc)  # for NaN results in net.res_bus_dc for inactive buses
     bus_lookup_aranged = _get_aranged_lookup(net)
