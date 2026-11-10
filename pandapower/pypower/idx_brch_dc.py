@@ -59,4 +59,4 @@ DC_BR_X_ASYM = 13  # todo check if necessary
 
 DC_TDPF = 14  ### TDPF not implemented for DC lines
 
-branch_dc_cols = 15
+BRANCH_DC_COLS = 15

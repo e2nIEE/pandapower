@@ -12,7 +12,7 @@ from pandapower.estimation.algorithm.estimator import BaseEstimatorIRWLS, get_es
 from pandapower.estimation.algorithm.matrix_base import BaseAlgebra, BaseAlgebraZeroInjConstraints
 from pandapower.estimation.idx_bus import P_STD, Q_STD, ZERO_INJ_FLAG, P, Q
 from pandapower.estimation.ppc_conversion import ExtendedPPCI
-from pandapower.pypower.idx_bus import bus_cols
+from pandapower.pypower.idx_bus import BUS_COLS
 
 std_logger = logging.getLogger(__name__)
 
@@ -176,10 +176,10 @@ class WLSZeroInjectionConstraintsAlgorithm(BaseAlgorithm):
     def estimate(self, eppci: ExtendedPPCI, **kwargs):
         # state vector built from delta, |V| and zero injections
         # Find pq bus with zero p,q and shunt admittance
-        if not np.any(eppci["bus"][:, bus_cols + ZERO_INJ_FLAG]):
+        if not np.any(eppci["bus"][:, BUS_COLS + ZERO_INJ_FLAG]):
             raise UserWarning("Network has no bus with zero injections! Please use WLS instead!")
-        zero_injection_bus = np.argwhere(eppci["bus"][:, bus_cols + ZERO_INJ_FLAG]).ravel()
-        eppci["bus"][np.ix_(zero_injection_bus, [bus_cols + P, bus_cols + P_STD, bus_cols + Q, bus_cols + Q_STD])] = (
+        zero_injection_bus = np.argwhere(eppci["bus"][:, BUS_COLS + ZERO_INJ_FLAG]).ravel()
+        eppci["bus"][np.ix_(zero_injection_bus, [BUS_COLS + P, BUS_COLS + P_STD, BUS_COLS + Q, BUS_COLS + Q_STD])] = (
             np.nan
         )
         # Withn pq buses with zero injection identify those who have also no p or q measurement

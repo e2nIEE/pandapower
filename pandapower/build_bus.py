@@ -13,6 +13,7 @@ from pandapower.build_gen import _calculate_qmin_qmax_from_q_capability_characte
 from pandapower.pypower.idx_bus import (
     BASE_KV,
     BS,
+    BUS_COLS,
     BUS_I,
     BUS_TYPE,
     CID_P,
@@ -29,14 +30,14 @@ from pandapower.pypower.idx_bus import (
     VM,
     VMAX,
     VMIN,
-    bus_cols,
 )
-from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, bus_cols_sc
+from pandapower.pypower.idx_bus_sc import BUS_COLS_SC, C_MAX, C_MIN
 
 from .pypower.idx_bus_dc import (
     DC_B2B,
     DC_BASE_KV,
     DC_BUS_AREA,
+    DC_BUS_COLS,
     DC_BUS_I,
     DC_BUS_TYPE,
     DC_NONE,
@@ -47,11 +48,11 @@ from .pypower.idx_bus_dc import (
     DC_VMAX,
     DC_VMIN,
     DC_ZONE,
-    dc_bus_cols,
 )
-from .pypower.idx_source_dc import SOURCE_DC_BUS, SOURCE_DC_STATUS, SOURCE_DC_VG, source_dc_cols
+from .pypower.idx_source_dc import SOURCE_DC_BUS, SOURCE_DC_COLS, SOURCE_DC_STATUS, SOURCE_DC_VG
 from .pypower.idx_ssc import (
     SSC_BUS,
+    SSC_COLS,
     SSC_CONTROLLABLE,
     SSC_INTERNAL_BUS,
     SSC_R,
@@ -60,10 +61,10 @@ from .pypower.idx_ssc import (
     SSC_X,
     SSC_X_CONTROL_VA,
     SSC_X_CONTROL_VM,
-    ssc_cols,
 )
 from .pypower.idx_svc import (
     SVC_BUS,
+    SVC_COLS,
     SVC_CONTROLLABLE,
     SVC_MAX_FIRING_ANGLE,
     SVC_MIN_FIRING_ANGLE,
@@ -72,11 +73,11 @@ from .pypower.idx_svc import (
     SVC_THYRISTOR_FIRING_ANGLE,
     SVC_X_CVAR,
     SVC_X_L,
-    svc_cols,
 )
 from .pypower.idx_vsc import (
     VSC_BUS,
     VSC_BUS_DC,
+    VSC_COLS,
     VSC_BUS_DC_MINUS,
     VSC_CONTROLLABLE,
     VSC_DIFF_REF_BUS,
@@ -98,7 +99,6 @@ from .pypower.idx_vsc import (
     VSC_VALUE_AC,
     VSC_VALUE_DC,
     VSC_X,
-    vsc_cols,
 )
 
 try:
@@ -480,7 +480,7 @@ def _build_bus_ppc(net, ppc, sequence=None):
 
     n_bus_ppc = len(bus_index)
     # init ppc with empty values
-    ppc["bus"] = np.zeros(shape=(n_bus_ppc, bus_cols), dtype=np.float64)
+    ppc["bus"] = np.zeros(shape=(n_bus_ppc, BUS_COLS), dtype=np.float64)
     ppc["bus"][:, :15] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 2, 0, 0.0, 0.0])  # changes of
     # voltage limits (2 and 0) must be considered in check_opf_data
 
@@ -488,7 +488,7 @@ def _build_bus_ppc(net, ppc, sequence=None):
         ppc["bus"][:, VM] = 0.0
 
     if mode == "sc":
-        bus_sc = np.empty(shape=(n_bus_ppc, bus_cols_sc), dtype=np.float64)
+        bus_sc = np.empty(shape=(n_bus_ppc, BUS_COLS_SC), dtype=np.float64)
         bus_sc.fill(np.nan)
         ppc["bus"] = np.hstack((ppc["bus"], bus_sc))
 
@@ -583,7 +583,7 @@ def _build_bus_dc_ppc(net, ppc):
 
     n_bus_ppc = len(bus_index)
     # init ppc with empty values
-    ppc["bus_dc"] = np.zeros(shape=(n_bus_ppc, dc_bus_cols), dtype=np.float64)
+    ppc["bus_dc"] = np.zeros(shape=(n_bus_ppc, DC_BUS_COLS), dtype=np.float64)
     # changes of voltage limits (2 and 0) must be considered in check_opf_data
     ppc["bus_dc"][:, [DC_BUS_TYPE, DC_BUS_AREA, DC_VM, DC_ZONE, DC_VMAX, DC_VMIN]] = np.array(
         [DC_P, 1, 1, 1, 2, 0], dtype=np.int64
@@ -632,7 +632,7 @@ def _build_bus_dc_ppc(net, ppc):
 
     # set dc sources
     n_source_dc = len(net.source_dc)
-    ppc["source_dc"] = np.zeros(shape=(n_source_dc, source_dc_cols), dtype=np.float64)
+    ppc["source_dc"] = np.zeros(shape=(n_source_dc, SOURCE_DC_COLS), dtype=np.float64)
     if n_source_dc > 0:
         source_buses = bus_lookup[net.source_dc.bus_dc.values]
         ppc["bus_dc"][source_buses, DC_BUS_TYPE] = DC_REF
@@ -977,7 +977,7 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
 
 def _build_svc_ppc(net, ppc, mode):
     length = len(net.svc)
-    ppc["svc"] = np.zeros(shape=(length, svc_cols), dtype=np.float64)
+    ppc["svc"] = np.zeros(shape=(length, SVC_COLS), dtype=np.float64)
 
     if mode != "pf":
         return
@@ -1011,7 +1011,7 @@ def _build_svc_ppc(net, ppc, mode):
 
 def _build_ssc_ppc(net, ppc, mode):
     length = len(net.ssc)
-    ppc["ssc"] = np.zeros(shape=(length, ssc_cols), dtype=np.float64)
+    ppc["ssc"] = np.zeros(shape=(length, SSC_COLS), dtype=np.float64)
 
     if mode != "pf":
         return
@@ -1052,7 +1052,7 @@ def _build_vsc_ppc(net, ppc, mode):
     Also sets the bus types of the AC buses of the VSC. The table is only filled for the modes "pf" and "dc".
     """
     length = len(net.vsc)
-    ppc["vsc"] = np.zeros(shape=(length, vsc_cols), dtype=np.float64)
+    ppc["vsc"] = np.zeros(shape=(length, VSC_COLS), dtype=np.float64)
 
     if mode != "pf" and mode != "dc":
         return

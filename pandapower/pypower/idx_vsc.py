@@ -81,4 +81,4 @@ VSC_BUS_DC_MINUS = 18
 VSC_P_DC_MINUS = 19  # result: DC power flowing from the minus terminal bus into the VSC (MW)
 VSC_I_DC = 20  # result: DC current flowing from the plus terminal bus into the VSC (p.u.)
 
-vsc_cols = 21
+VSC_COLS = 21

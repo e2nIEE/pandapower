@@ -55,4 +55,4 @@ DC_VMAX = 8  # maxVm, maximum voltage magnitude (p.u.)
 DC_VMIN = 9  # minVm, minimum voltage magnitude (p.u.)
 DC_SL_FAC = 10  # scaling factor for special purposes
 
-dc_bus_cols = 11
+DC_BUS_COLS = 11
