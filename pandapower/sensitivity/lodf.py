@@ -40,10 +40,7 @@ def _get_lodf_direct(
     branch_dict: dict[str, list[int] | None] | None = None,
     reduced=True,
 ) -> dict:
-    """
-    this function calculate LODF (ratio without unit) of a pp branch from the outage of a pp branch
-    with pypower matrix function.
-    """
+    """Calculate the LODF (ratio without unit) of a pp branch from the outage of a pp branch with pypower matrices."""
     if net.bus.shape[0] > 3000 and not using_sparse_solver:
         logger.warning("Calculating lodf for large network, switched to sparse solver!")
         using_sparse_solver = True
@@ -140,9 +137,9 @@ def _lodf_ppci_to_pp(net: pandapowerNet, lodf_ppci: np.ndarray, branch_ppci_look
             if br_type in branch_ppci_lookup
         }
         pp_ppci_trafo3w_lookups: dict[str, npt.NDArray | range] | None = {
-            type: range(branch_ppci_lookup[type][0], branch_ppci_lookup[type][1])
-            for type in ("trafo3w_hv", "trafo3w_mv", "trafo3w_lv")
-            if type in branch_ppci_lookup
+            side: range(branch_ppci_lookup[side][0], branch_ppci_lookup[side][1])
+            for side in ("trafo3w_hv", "trafo3w_mv", "trafo3w_lv")
+            if side in branch_ppci_lookup
         }
     else:
         pp_ppci_branch_lookups = {
@@ -214,10 +211,7 @@ def _get_lodf_perturb(
     distributed_slack=True,
     recycle: str | None = "lodf",
 ) -> dict[tuple[str, str], pd.DataFrame]:
-    """
-    this function calculate LODF (ratio without unit) of a pp branch from the outage of a pp branch
-    with perturb method (brute-force)
-    """
+    """Calculate the LODF (ratio without unit) of a pp branch from the outage of a pp branch with the perturb method."""
     # No side selection needed
     THIS_RES_BR_SIDE_MAPPING = BR_SIDE_MAPPING
     net_mod = deepcopy(net)
@@ -340,11 +334,7 @@ def _get_dc_n1_with_lodf(
     result_side: int = 0,
     lodf: dict | None = None,
 ):
-    """
-    this function calculate p_mw of a side of branch under the outage
-    of another branch with LODF method
-    """
-
+    """Calculate p_mw of a side of a branch under the outage of another branch with the LODF method."""
     THIS_RES_BR_SIDE_MAPPING = BR_SIDE_MAPPING if result_side == 0 else BR_SIDE_MAPPING_1
 
     if lodf is None:
@@ -403,10 +393,9 @@ def run_lodf(
     branch_dict: dict[str, list[int] | None] | None = None,
     reduced: bool = True,
 ) -> dict[tuple[str, str], pd.DataFrame]:
-    """
-    this function is a wrapper of calculating LODF (ratio without unit) of a pp branch from the outage of a pp branch
-    with pypower matrix function or perturb function.
+    """Calculate the LODF (ratio without unit) of pp branches from the outage of a pp branch.
 
+    The LODF is calculated with pypower matrices or with the perturb method.
     The LODF is defined as: (p_{side}_mw_new - p_{side}_mw_old) / (p_{side}_mw_outage)
     Side corresponds to the pandapower results definition, for LODF calculation both
     sides give the same result, thus no side definition required
@@ -432,7 +421,6 @@ def run_lodf(
                outage_branch_type (("line", "trafo", "impedance")):
         DataFrame(data=lodf, index=goal_branch_pp_index, columns=outage_branch_ix)}
     """
-
     if perturb and outage_branch_ix is None:
         logger.info("If a lot of branch required in lodf, please set perturb to False!")
 
@@ -485,22 +473,24 @@ def verify_dc_n1_with_lodf(
     result_side: int = 0,
     lodf: dict | None = None,
 ):
-    """
-    this function verifies the result of dc_n1 with LODF and perturb method,
-    raise AssertionError on mismatches!
-    """
+    """Verify the dc n-1 result with LODF against the perturb method, raise AssertionError on mismatches."""
     net = deepcopy(net)
     res_n1_lodf = run_lodf_dc_n1(net, outage_branch_type, outage_branch_ix, result_side, perturb=False, lodf=lodf)
     res_n1_perturb = run_lodf_dc_n1(
         net, outage_branch_type, outage_branch_ix, result_side, distributed_slack=True, perturb=True
     )
 
-    assert len(res_n1_lodf) > 0, "Empty res n1 lodf, verification not possible!"
+    if len(res_n1_lodf) == 0:
+        raise AssertionError("Empty res n1 lodf, verification not possible!")
     for key in res_n1_lodf:
-        filter = ~res_n1_lodf[key].isna().any(axis=0)
-        assert np.allclose(
-            res_n1_lodf[key].loc[:, filter], res_n1_perturb[key].loc[:, filter], equal_nan=True, atol=1e-8
-        ), f"{key} verification failed!"
+        no_nan_columns = ~res_n1_lodf[key].isna().any(axis=0)
+        if not np.allclose(
+            res_n1_lodf[key].loc[:, no_nan_columns],
+            res_n1_perturb[key].loc[:, no_nan_columns],
+            equal_nan=True,
+            atol=1e-8,
+        ):
+            raise AssertionError(f"{key} verification failed!")
         logger.info(str(key) + " dc n-1 results verified!")
     logger.info("Run dc n-1 with LODF verified!")
 
@@ -512,10 +502,7 @@ def verify_lodf(
     using_sparse_solver: bool = True,
     lodf: dict | None = None,
 ):
-    """
-    this function verifies the result of LODF and perturb method,
-    raise AssertionError on mismatches!
-    """
+    """Verify the result of the LODF against the perturb method, raise AssertionError on mismatches."""
     net = deepcopy(net)
     if lodf is None:
         lodf = run_lodf(
@@ -528,12 +515,14 @@ def verify_lodf(
         )
     lodf_perturb = run_lodf(net, outage_branch_type, outage_branch_ix, distributed_slack=True, perturb=True)
 
-    assert len(lodf) > 0, "Empty lodf, verification not possible!"
+    if len(lodf) == 0:
+        raise AssertionError("Empty lodf, verification not possible!")
     for key in lodf:
         filter_lodf = ~lodf[key].isna().any(axis=0)
-        assert np.allclose(
+        if not np.allclose(
             lodf[key].loc[:, filter_lodf], lodf_perturb[key].loc[:, filter_lodf], atol=1e-8, equal_nan=True
-        ), f"{key} LODF results verification failed!"
+        ):
+            raise AssertionError(f"{key} LODF results verification failed!")
         logger.info(str(key) + " LODF results verified!")
     logger.info("All LODF results verified with perturb method!")
 
@@ -545,10 +534,7 @@ def _get_dc_n1_perturb(
     result_side: int = 0,
     distributed_slack: bool = True,
 ):
-    """
-    this function calculate p_mw of a side of branch under the outage
-    of another branch with perturb (brute-force) method
-    """
+    """Calculate p_mw of a side of a branch under the outage of another branch with the perturb method."""
     THIS_RES_BR_SIDE_MAPPING = BR_SIDE_MAPPING if result_side == 0 else BR_SIDE_MAPPING_1
     # this_rundcpp = get_dcpp_runner(net, distributed_slack=distributed_slack)
 
@@ -606,8 +592,8 @@ def run_lodf_dc_n1(
     perturb: bool = False,
     lodf: dict | None = None,
 ):
-    """
-    this function calculate p_mw of a side of branch under the outage of another branch with LODF
+    """Calculate p_mw of a side of a branch under the outage of another branch with the LODF.
+
     :param net: A pandapower network
     :param outage_branch_type: The name of the type of the outage branch ("line", "trafo", "impedance")
     :param outage_branch_ix: The pandapower index of the outage branch (int/list/np.ndarray), if None then all branches

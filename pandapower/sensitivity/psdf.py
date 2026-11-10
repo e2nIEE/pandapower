@@ -41,10 +41,9 @@ def make_psdf(
     reduced: bool = False,
     slack: int | npt.NDArray | None = None,
 ) -> npt.NDArray:
-    """
-    Builds the DC PSDF matrix based on the DC PTDF
+    """Build the DC PSDF matrix based on the DC PTDF.
 
-    Returns the DC PSDF matrix . The matrix is
+    Returns the DC PSDF matrix. The matrix is
     C{nbr x nbr}, where C{nbr} is the number of branches. The DC PSDF is independent from the selected slack.
     Entry C{(l, k)} is the change of the active power flow (from side, in MW) on branch C{l} if the phase shift
     angle C{SHIFT} of branch C{k} is increased by 1 degree. C{SHIFT} has the same sign as the pandapower
@@ -105,10 +104,7 @@ def _get_psdf_direct(
     branch_dict: dict[str, list[int] | None] | None = None,
     reduced=True,
 ):
-    """
-    this function calculate PSDF of a pp branch from the angle shift of 1 degree
-    with pypower matrix function.
-    """
+    """Calculate the PSDF of a pp branch from the angle shift of 1 degree with pypower matrices."""
     if net.bus.shape[0] > 3000 and not using_sparse_solver:
         logger.warning("Calculating lodf for large network, switched to sparse solver!")
         using_sparse_solver = True
@@ -175,10 +171,10 @@ def _get_psdf_perturb(
     distributed_slack=True,
     recycle: str | None = "lodf",
 ) -> dict[tuple[str, str], pd.DataFrame]:
-    """
-    this function calculates PSDF (MW per degree) of a pp branch from the phase shift through a pp branch
-    with perturb method (brute-force): the shift_degree of each selected trafo is increased by 1 degree,
-    one DC power flow is run and the change of the branch flows is stored.
+    """Calculate the PSDF (MW per degree) of pp branches from the phase shift of a trafo with the perturb method.
+
+    The shift_degree of each selected trafo is increased by 1 degree, one DC power flow is run and the change of the
+    branch flows is stored.
     """
     if phase_shift_branch_type != "trafo":
         raise ValueError(
@@ -241,9 +237,9 @@ def run_psdf(
     branch_dict: dict[str, list[int] | None] | None = None,
     reduced: bool = True,
 ) -> dict[tuple[str, str], pd.DataFrame]:
-    """
-    this function is a wrapper of calculating PSDF of a pp branch from the phase shift through a pp branch
-    with pypower matrix function or perturb function.
+    """Calculate the PSDF of pp branches from the phase shift through a pp branch.
+
+    The PSDF is calculated with pypower matrices or with the perturb method.
 
     The PSDF is defined as: (p_{side}_mw_new - p_{side}_mw_old) / 1 degree
     Side corresponds to the pandapower results definition, for PSDF calculation both

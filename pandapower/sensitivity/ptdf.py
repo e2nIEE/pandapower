@@ -43,10 +43,7 @@ def _get_ptdf_direct(
     branch_dict: dict[str, list[int] | None] | None = None,
     reduced: bool = True,
 ):
-    """
-    this function calculates PTDF (ratio without unit) of bus to a pp branch
-    with matrix based internal calculation.
-    """
+    """Calculate the PTDF (ratio without unit) of bus to a pp branch with the matrix based internal calculation."""
     if net.bus.shape[0] > 3000 and not using_sparse_solver:
         logger.warning("Calculating ptdf for large network, please use sparse_solver for better numerical stability!")
 
@@ -98,10 +95,7 @@ def _get_ptdf_perturb(
     result_side: int = 0,
     distributed_slack: bool = True,
 ):
-    """
-    this function calculates PTDF (ratio without unit) of bus to
-    a pp branch with perturb method (brute-force)
-    """
+    """Calculate the PTDF (ratio without unit) of bus to a pp branch with the perturb method."""
     THIS_BR_SIDE_MAPPING = BR_SIDE_MAPPING if result_side == 0 else BR_SIDE_MAPPING_1
     # ToDo: remove distributed slack option
 
@@ -138,12 +132,11 @@ def _get_ptdf_perturb(
 
 
 def _get_dc_profile_with_ptdf(net, profiles, result_side=0, ptdf=None):
-    """
-    Run dc profile with ptdf method, if ptdf not given will be recalculated
+    """Run a dc profile with the ptdf method, the ptdf is calculated if it is not given.
+
     :return: {branch_type ("line", "trafo", "impedance", "trafo3w_{hv,mv,lv}"):
               DataFrame(data=p_side_mw, index=calc_ix, columns=branch_index)}
     """
-
     THIS_RES_BR_SIDE_MAPPING = BR_SIDE_MAPPING if result_side == 0 else BR_SIDE_MAPPING_1
     slack_df, _ = get_dist_slack(net, pf_required=True)
 
@@ -156,16 +149,16 @@ def _get_dc_profile_with_ptdf(net, profiles, result_side=0, ptdf=None):
     # Check profile integrity and calculate to delta profile
     delta_profiles = {}
     for key in profiles:
-        assert key in (("load", "p_mw"), ("sgen", "p_mw"), ("gen", "p_mw"), ("storage", "p_mw")), (
-            str(key) + " not supported for superposition ptdf"
-        )
-        assert isinstance(profiles[key], pd.DataFrame), "Only profile as pandas dataframe supported!"
+        if key not in (("load", "p_mw"), ("sgen", "p_mw"), ("gen", "p_mw"), ("storage", "p_mw")):
+            raise ValueError(str(key) + " not supported for superposition ptdf")
+        if not isinstance(profiles[key], pd.DataFrame):
+            raise TypeError("Only profile as pandas dataframe supported!")
         ele_type, value_type = key
 
         if num_calc is None:
             num_calc = profiles[key].shape[0]
-        else:
-            assert num_calc == profiles[key].shape[0], str(key) + " profile has wrong dimension"
+        elif num_calc != profiles[key].shape[0]:
+            raise ValueError(str(key) + " profile has wrong dimension")
 
         # Update network with profiles calc_ix 0
         net_mod[ele_type].loc[profiles[key].columns.to_numpy(), value_type] = profiles[key].iloc[0, :].to_numpy()
@@ -212,9 +205,8 @@ def _get_dc_profile_with_ptdf(net, profiles, result_side=0, ptdf=None):
             ele_type = br_type
             side = THIS_RES_BR_SIDE_MAPPING[ele_type]
         ptdf_this_br = ptdf[br_type]
-        assert np.all(np.isin(required_bus_ix, ptdf_this_br.columns.to_numpy())), (
-            "Some bus required for profile simulation not available in ptdf!"
-        )
+        if not np.all(np.isin(required_bus_ix, ptdf_this_br.columns.to_numpy())):
+            raise ValueError("Some bus required for profile simulation not available in ptdf!")
         ptdf_this_br = ptdf_this_br.loc[:, required_bus_ix]
 
         br_p0 = net_mod["res_" + ele_type]["p_" + side + "_mw"].to_numpy()
@@ -318,9 +310,9 @@ def _ptdf_ppci_to_pp(net, ptdf_ppci, result_side, branch_ppci_lookup=None):
     if branch_ppci_lookup is not None:
         # only sides contained in branch_dict, i.e. none if the net has no trafo3w or branch_dict does not select any
         pp_ppci_trafo3w_lookups = {
-            type: range(branch_ppci_lookup[type][0], branch_ppci_lookup[type][1])
-            for type in ("trafo3w_hv", "trafo3w_mv", "trafo3w_lv")
-            if type in branch_ppci_lookup
+            side: range(branch_ppci_lookup[side][0], branch_ppci_lookup[side][1])
+            for side in ("trafo3w_hv", "trafo3w_mv", "trafo3w_lv")
+            if side in branch_ppci_lookup
         }
     else:
         pp_ppci_trafo3w_lookups = _get_trafo3w_lookup(net)
@@ -351,9 +343,9 @@ def run_ptdf(
     branch_dict: dict[str, list[int] | None] | None = None,
     reduced: bool = True,
 ):
-    """
-    this function is a wrapper of calculating PTDF (ratio without unit) of bus to a pp branch
-    with matrix based internal calculation or perturb.
+    """Calculate the PTDF (ratio without unit) of bus to a pp branch.
+
+    The PTDF is calculated with the matrix based internal calculation or with the perturb method.
     The PTDF is defined as: (p_{side}_mw_new - p_{side}_mw_old) / delta_P_injection.
 
     delta_P_injection is the injection or demand change at a bus
@@ -416,10 +408,7 @@ def verify_ptdf(
     using_sparse_solver: bool = True,
     ptdf: dict | None = None,
 ):
-    """
-    this function verifies the result of PTDF and perturb method,
-    raise AssertionError on mismatches!
-    """
+    """Verify the result of the PTDF against the perturb method, raise AssertionError on mismatches."""
     net = deepcopy(net)
     if ptdf is None:
         ptdf = run_ptdf(
@@ -432,18 +421,18 @@ def verify_ptdf(
         )
     ptdf_perturb = run_ptdf(net, source_bus=source_bus, result_side=result_side, distributed_slack=True, perturb=True)
 
-    assert len(ptdf) > 0, "Empty ptdf, verification not possible!"
+    if len(ptdf) == 0:
+        raise AssertionError("Empty ptdf, verification not possible!")
     for key in ptdf:
         this_ptdf_perturb = ptdf_perturb[key].loc[ptdf[key].index, ptdf[key].columns]
-        assert np.allclose(ptdf[key], this_ptdf_perturb, atol=1e-8, equal_nan=True), (
-            f"{key} PTDF results verification failed!"
-        )
+        if not np.allclose(ptdf[key], this_ptdf_perturb, atol=1e-8, equal_nan=True):
+            raise AssertionError(f"{key} PTDF results verification failed!")
         logger.info(str(key) + " PTDF results verified!")
     logger.info("All PTDF results verified with perturb method!")
 
 
 def make_ptdf_multi_area(net, ppci, pp_area_bus_mapping, ppci_slack_mask_with_prio, using_sparse_solver, result_side):
-    """Select areas in the ppci network and calculate ptdf of each area independently"""
+    """Select areas in the ppci network and calculate the ptdf of each area independently."""
     ptdf_ppci = np.zeros((ppci["branch"].shape[0], ppci["bus"].shape[0]), dtype=float)
     for this_bus in pp_area_bus_mapping.values():
         # Select ppci of the area
@@ -494,9 +483,10 @@ def run_ptdf_dc_profile(
     result_side=0,
     ptdf: dict | None = None,
 ):
-    """
-    this function calculates the branch flows of a dc profile (time series) with the ptdf: the flow changes of all
-    time steps are calculated with a single matrix product instead of one power flow per time step.
+    """Calculate the branch flows of a dc profile (time series) with the ptdf.
+
+    The flow changes of all time steps are calculated with a single matrix product instead of one power flow per time
+    step.
     The slacks balance the injection changes according to their slack_weight.
 
     For other results than branch flows or a dc power flow per time step, use run_timeseries with run=rundcpp.

@@ -35,25 +35,22 @@ def _get_source_bus_ix(net: pandapowerNet, source_bus: int | np.ndarray | None =
         return net.bus.index.to_numpy()
 
     if np.isscalar(source_bus):
-        source_bus = np.array([source_bus]).astype(int)
-    assert type(source_bus) is np.ndarray  # force mypy type narrowing to ndarray
-    if isinstance(source_bus, np.ndarray):
-        # Convert to 1d np array
-        source_bus = source_bus.ravel()
+        source_bus_ix = np.array([source_bus]).astype(int)
     else:
-        source_bus = np.array([source_bus]).ravel()
+        # Convert to 1d np array
+        source_bus_ix = np.asarray(source_bus).ravel()
 
-    unique_source_bus: npt.NDArray = np.unique(source_bus)
-    return unique_source_bus if unique_source_bus.size < source_bus.size else source_bus
+    unique_source_bus: npt.NDArray = np.unique(source_bus_ix)
+    return unique_source_bus if unique_source_bus.size < source_bus_ix.size else source_bus_ix
 
 
 def _get_outage_branch_ix(
     net: pandapowerNet, outage_branch_type: str, outage_branch_ix: npt.NDArray | None = None
 ) -> npt.NDArray:
-    assert outage_branch_type in ("line", "dcline", "trafo", "impedance", "trafo3w"), (
-        outage_branch_type + " as outage branch type not supported!"
-    )
-    assert not net[outage_branch_type].empty, outage_branch_type + " is empty, outage test not possible!"
+    if outage_branch_type not in ("line", "dcline", "trafo", "impedance", "trafo3w"):
+        raise ValueError(outage_branch_type + " as outage branch type not supported!")
+    if net[outage_branch_type].empty:
+        raise ValueError(outage_branch_type + " is empty, outage test not possible!")
 
     if outage_branch_ix is None:
         outage_branch_ix = net[outage_branch_type].index.to_numpy()
@@ -70,9 +67,9 @@ def _get_outage_branch_ix(
 
 
 def _ensure_pd2ppc_lookups(net: pandapowerNet) -> None:
-    """
-    Run a DC power flow if the pandapower to ppc lookups do not exist yet, e.g. because no power flow was run on the
-    net since it was created or loaded.
+    """Run a DC power flow if the pandapower to ppc lookups do not exist yet.
+
+    This is the case if no power flow was run on the net since it was created or loaded.
     """
     lookups = net.get("_pd2ppc_lookups")
     if (
@@ -100,7 +97,8 @@ def _get_bus_lookup(net: pandapowerNet) -> npt.NDArray:
 
 def _get_branch_lookup(net: pandapowerNet, branch_type) -> np.ndarray | None:
     # Find the branch lookup table from pandapower net of ppci layer
-    assert branch_type in ("line", "trafo", "trafo3w", "impedance"), "Branch Type not supported for lookup creation"
+    if branch_type not in ("line", "trafo", "trafo3w", "impedance"):
+        raise ValueError(f"Branch type {branch_type!r} not supported for lookup creation")
 
     _ensure_pd2ppc_lookups(net)
     if branch_type in net["_pd2ppc_lookups"]["branch"]:
@@ -138,9 +136,10 @@ def _get_trafo3w_lookup(net: pandapowerNet) -> dict | None:
 
 
 def branch_dict_to_ppci_branch_list(net: pandapowerNet, branch_dict: dict[str, list[int] | None]) -> tuple[list, dict]:
-    """
-    This function transforms a dictionary with branches of a net into a list of the corresponding internal ppci indices
-    and produces a lookup for tha branch type intervals.
+    """Transform a dictionary with branches of a net into a list of the corresponding internal ppci indices.
+
+    Also produces a lookup for the branch type intervals.
+
     :param net: pp-net, on which a powerflow has been executed
     :param branch_dict: dictionary should include branch types as keys 'line', 'trafo', 'trafo3, 'impedance' and
                         for each key a list of indices.
@@ -195,9 +194,8 @@ def _collect_out_of_service(out_of_service: dict[str, list], br_type: str, br_li
 
 
 def get_dist_slack(net: pandapowerNet, pf_required: bool = True) -> tuple[pd.DataFrame, dict]:
-    """
-    Find active slacks of a pp net and check multi area
-    of the grid
+    """Find the active slacks of a pp net and check the grid areas.
+
     return: A dataframe contains info to distributed slack and
             A dict to area_bus_mapping
     """
@@ -244,7 +242,8 @@ def get_dist_slack(net: pandapowerNet, pf_required: bool = True) -> tuple[pd.Dat
                 )
 
     # Check slack df plausibility
-    assert not slack_df.empty, "No slack in network available! Calculation not possible!"
+    if slack_df.empty:
+        raise ValueError("No slack in network available! Calculation not possible!")
     if slack_df["priority"].isna().any():
         logger.warning("Some slack has NaN as priority! Force priority to equally distributed!")
         slack_df["priority"] = 1.0
@@ -260,12 +259,11 @@ def get_dist_slack(net: pandapowerNet, pf_required: bool = True) -> tuple[pd.Dat
 
 
 def get_ppci_dist_slack(net: pandapowerNet, ppci: dict, slack_df: pd.DataFrame) -> np.ndarray:
-    """Convert the priority defined in slack_df to a numpy array required for
-    pypower ptdf calculation
-    """
+    """Convert the priority defined in slack_df to the slack weight array of the pypower PTDF calculation."""
     # Check number of slacks
     pp_slack = slack_df["bus_id"].to_numpy(dtype=int)
-    assert np.all(np.isin(pp_slack, net["_is_elements"]["bus_is_idx"])), "Some selected slacks are out of service"
+    if not np.all(np.isin(pp_slack, net["_is_elements"]["bus_is_idx"])):
+        raise ValueError("Some selected slacks are out of service")
     ppci_slack = net["_pd2ppc_lookups"]["bus"][pp_slack]
     ppci_slack_priority = slack_df["priority"].to_numpy()
 
@@ -275,8 +273,10 @@ def get_ppci_dist_slack(net: pandapowerNet, ppci: dict, slack_df: pd.DataFrame) 
 
 
 def _check_multi_area(net: pandapowerNet, slack_df: pd.DataFrame) -> dict:
-    """Check the multi grid areas of a pandapower networks with distributed slack
-    and update the area and priority area in slack_df
+    """Check the grid areas of a pandapower network with distributed slack.
+
+    Updates the area and the priority within the area in slack_df.
+
     return dict: {area: bus_in_area}
     """
     # Set all active slacks to out-of-service
