@@ -72,4 +72,4 @@ VSC_P_DC = 16  # result for P
 
 VSC_DIFF_REF_BUS = 17  # reference bus for difference regulation
 
-vsc_cols = 18
+VSC_COLS = 18
