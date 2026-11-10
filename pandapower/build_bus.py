@@ -77,8 +77,8 @@ from .pypower.idx_svc import (
 from .pypower.idx_vsc import (
     VSC_BUS,
     VSC_BUS_DC,
-    VSC_COLS,
     VSC_BUS_DC_MINUS,
+    VSC_COLS,
     VSC_CONTROLLABLE,
     VSC_DIFF_REF_BUS,
     VSC_INTERNAL_BUS,
