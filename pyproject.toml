@@ -194,4 +194,4 @@ line-ending = "lf"
 "test/**/*.py" = ["F811"]
 
 [tool.uv]
-default-groups = "dev"
+default-groups = ["dev"]
