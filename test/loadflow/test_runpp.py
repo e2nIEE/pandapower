@@ -1315,7 +1315,7 @@ def test_dc_with_ext_grid_at_one_bus():
 
 
 @pytest.mark.parametrize("island_side", ["from", "to"])
-def test_dcline_terminal_in_island(run, island_side):
+def test_dcline_terminal_in_island(island_side):
     # a dcline terminal at an unsupplied bus (island without slack) has no voltage, like the bus in res_bus
     net = pandapowerNet(name="test_dcline_terminal_in_island")
     b = create_buses(net, nr_buses=4, vn_kv=110)
