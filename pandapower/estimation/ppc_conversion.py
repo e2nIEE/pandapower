@@ -514,13 +514,13 @@ def _add_measurements_to_ppci(net, ppci, zero_injection, algorithm):
     if ppci["bus"].shape[1] == BUS_COLS:
         ppci["bus"] = np.hstack((ppci["bus"], bus_append))
     else:
-        ppci["bus"][:, BUS_COLS: BUS_COLS + bus_cols_se] = bus_append
+        ppci["bus"][:, BUS_COLS : BUS_COLS + bus_cols_se] = bus_append
 
     # Integrate new measurement columns into ppci branch matrix
     if ppci["branch"].shape[1] == BRANCH_COLS:
         ppci["branch"] = np.hstack((ppci["branch"], branch_append))
     else:
-        ppci["branch"][:, BRANCH_COLS: BRANCH_COLS + branch_cols_se] = branch_append
+        ppci["branch"][:, BRANCH_COLS : BRANCH_COLS + branch_cols_se] = branch_append
 
     # Add rated power information needed for AF-WLS estimator
     if algorithm == "af-wls":
