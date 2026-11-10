@@ -219,7 +219,7 @@ class QLEstimatorOpt(BaseEstimatorOpt):
         # 2 * drho/dr * -(dhx/dE) else
         rx = self.create_rx(E)
         hx_jac = self.create_hx_jacobian(E)
-        drho_dr = 2 * (rx * (1 / self.sigma) ** 2)
+        # drho_dr = 2 * (rx * (1 / self.sigma) ** 2)
         large_dev_mask = np.abs(rx / self.sigma) > self.a
         # if np.any(large_dev_mask):
         #    drho_dr[large_dev_mask] = (np.sign(rx)* (1/self.sigma))[large_dev_mask]

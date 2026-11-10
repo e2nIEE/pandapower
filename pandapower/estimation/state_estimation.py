@@ -49,7 +49,6 @@ def estimate(
     maximum_iterations=50,
     zero_injection="aux_bus",
     fuse_buses_with_bb_switch="all",
-    debug_mode=False,
     **opt_vars,
 ):
     """
@@ -103,7 +102,6 @@ def estimate(
         zero_injection=zero_injection,
         fuse_buses_with_bb_switch=fuse_buses_with_bb_switch,
         algorithm=algorithm,
-        debug_mode=debug_mode,
         **opt_vars,
     )
 
@@ -191,7 +189,6 @@ class StateEstimation:
         zero_injection=None,
         fuse_buses_with_bb_switch="all",
         algorithm="wls",
-        debug_mode=False,
         **opt_vars,
     ):
         """
@@ -279,7 +276,7 @@ class StateEstimation:
         )
 
         # Estimate voltage magnitude and angle with the given estimator
-        self.eppci = self.solver.estimate(self.eppci, debug_mode=debug_mode, **opt_vars)
+        self.eppci = self.solver.estimate(self.eppci, **opt_vars)
 
         if self.solver.successful:
             self.net = eppci2pp(self.net, self.ppc, self.eppci)
@@ -296,16 +293,18 @@ class StateEstimation:
         if not self.recycle:
             self.ppc, self.eppci = None, None
 
-        if algorithm == "wls" or algorithm == "af-wls":
-            now = datetime.datetime.now(tz=datetime.UTC)
-            se_results = {
-                "success": self.solver.successful,
-                "num_iterations": self.solver.iterations,
-                "objective_function_value": self.solver.obj_func,
-                "time": now.strftime("%Y-%m-%d %H:%M:%S"),
-            }
-        else:
-            se_results = self.solver.successful
+        now = datetime.datetime.now(tz=datetime.UTC)
+        num_iterations = 0
+        if hasattr(self.solver, "iterations"):
+            num_iterations = self.solver.iterations
+        elif hasattr(self.solver, "cur_it"):
+            num_iterations = self.solver.cur_it
+
+        se_results = {
+            "success": self.solver.successful,
+            "num_iterations": num_iterations,
+            "time": now.isoformat(),
+        }
 
         return se_results
 
