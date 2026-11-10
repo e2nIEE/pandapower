@@ -182,53 +182,75 @@ On which side the reference voltage is adapted depends on the :math:`tap\_side` 
 .. note::
     The variables tap_min and tap_max are not considered in the power flow. The user is responsible to ensure that tap_min < tap_pos < tap_max!
 
-**Cross regulator (Ratio Tap Changer / Symmetrical Tap Changer)**
+**Cross regulator / asymmetrical phase shifter (Ratio Tap Changer)**
 
 In addition to tap_step_percent, the tap_step_degree parameter can be populated to model the fixed angle
-between the vectors of the input voltage and additional voltage per tap step :math:`\delta U` (**not tap-dependent**).
-This results in a cross regulator that affects the magnitude as well as the angle of the output voltage.
-Use tap_changer_type "Ratio", or if the fixed angle :math:`\theta` is 90 degrees, set tap_step_degree to 90 and use
-tap_changer_type "Symmetrical".
+:math:`\theta` between the vectors of the input voltage and the additional voltage per tap step :math:`\delta U`
+(**not tap-dependent**). The whole additional voltage is added at the tap side. This results in a cross regulator that
+affects the magnitude as well as the angle of the output voltage (tap_changer_type "Ratio"):
 
 .. math::
    :nowrap:
 
    \begin{align*}
-    n_{tap} = 1 + (tap\_pos - tap\_neutral) \cdot \frac{tap\_st\_percent}{100} e^{(\mathrm j \phi)}
+    n_{tap} = 1 + (tap\_pos - tap\_neutral) \cdot \frac{tap\_step\_percent}{100} e^{\mathrm j \theta}
+    \end{align*}
+
+**Symmetrical phase shifter**
+
+If tap_changer_type is set to "Symmetrical", half of the additional voltage is added at the tap side and half of it
+is subtracted at the opposite side:
+
+.. math::
+   :nowrap:
+
+   \begin{align*}
+    \underline{t}_{tap\_side} &= 1 + \frac{x}{2} e^{\mathrm j \theta}, \qquad
+    \underline{t}_{opposite\_side} = 1 - \frac{x}{2} e^{\mathrm j \theta}, \qquad
+    x = (tap\_pos - tap\_neutral) \cdot \frac{tap\_step\_percent}{100}
+    \end{align*}
+
+:math:`\theta` is given by tap_step_degree and is 90 degree if tap_step_degree is NaN or 0. The rated voltages of the
+tap side and of the opposite side are multiplied with :math:`|\underline{t}_{tap\_side}|` and
+:math:`|\underline{t}_{opposite\_side}|`, and the phase shift is
+:math:`\arg(\underline{t}_{tap\_side}) - \arg(\underline{t}_{opposite\_side})` (inverted for a tap changer at the low
+voltage side). For :math:`\theta = 90` degree, the voltage magnitude ratio stays 1 and the phase shift is
+
+.. math::
+   :nowrap:
+
+   \begin{align*}
+    \theta_{tp} = 2 \cdot \arctan\left(\frac{x}{2}\right)
     \end{align*}
 
 **Ideal phase shifter**
 
 If tap_changer_type is set to "Ideal", the tap changer is modeled as an ideal phase shifter, meaning that a constant
-angle shift is added with each tap step:
+angle shift is added with each tap step and the voltage magnitude is not changed:
 
 .. math::
    :nowrap:
-   
+
    \begin{align*}
    \underline{n} &= n \cdot e^{j \cdot (\theta + \theta_{tp}) \cdot \frac{\pi}{180}} \\
-   \theta &= shift\_degree 
+   \theta &= shift\_degree
    \end{align*}
-   
-The angle shift can be directly defined in tap_step_degree (the same parameter as for "Ratio" tap changer is used!), in which case:
+
+The angle per tap step is defined in tap_step_degree (the same parameter as for "Ratio" tap changer is used, but with a
+different meaning: here it is the angle per tap step):
 
 .. math::
    :nowrap:
-   
+
    \begin{align*}
    \theta_{tp} = tap\_st\_degree \cdot (tap\_pos - tap\_neutral)
    \end{align*}
 
-or it can be given as a constant voltage step in tap_step_percent, in which case the angle is calculated as:
+If the tap changer is on the low voltage side, the sign of :math:`\theta_{tp}` is inverted.
 
-.. math::
-   :nowrap:
-   
-   \begin{align*}
-   \theta_{tp} = 2 \cdot arcsin(\frac{1}{2} \cdot \frac{tap\_st\_percent}{100})  \cdot (tap\_pos - tap\_neutral)
-   \end{align*}
-
-If both values are given for an ideal phase shift transformer, the power flow will raise an error.
+tap_step_percent is not used for ideal phase shifters and must be NaN (or 0). If it is set to a non-zero value, the
+power flow raises an error. The same applies to the second tap changer (tap2_changer_type, tap2_step_degree,
+tap2_step_percent).
 
 **Tabular phase shifter**
 
