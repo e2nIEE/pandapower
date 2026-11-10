@@ -177,7 +177,10 @@ def pm_results_to_ppc_results_one_time_step(ppci, sol, va_in_degrees=True):
             ppci["bus"][bus_idx, VM] = _float(bus["vm"])
         if "va" in bus:
             # replace nans with 0.(in case of SOCWR model for example
-            ppci["bus"][bus_idx, VA] = 0.0 if bus["va"] is None else math.degrees(bus["va"])
+            if bus["va"] is None:
+                ppci["bus"][bus_idx, VA] = 0.0
+            else:
+                ppci["bus"][bus_idx, VA] = bus["va"] if va_in_degrees else math.degrees(bus["va"])
         if "w" in bus:
             # SOCWR model has only w = vm^2 instead of vm values
             ppci["bus"][bus_idx, VM] = math.sqrt(bus["w"])
