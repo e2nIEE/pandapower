@@ -38,8 +38,7 @@ jobs:
           cache-dependency-glob: 'pyproject.toml'
       - name: Install dependencies
         run: |
-          uv sync --all-extras
-          uv pip install ruff
+          uv sync --group test
       - name: Ruff Format Check
         run: uv run ruff format --check
       - name: Ruff Check
@@ -71,12 +70,12 @@ jobs:
       - name: Install dependencies
         if: ${{matrix.python-version != '3.11'}}
         run: |
-          uv sync --extra all --extra test --extra pandamodels --extra pgm
+          uv sync --group test --extra pandamodels --extra pgm
           uv pip uninstall juliacall
       - name: Install dependencies # Test without pgm
         if: ${{matrix.python-version == '3.11'}}
         run: |
-          uv sync --extra all --extra test --extra pandamodels
+          uv sync --group test --extra pandamodels
           uv pip uninstall juliacall
       - name: List of installed packages
         run: |
@@ -123,7 +122,7 @@ jobs:
           cache-dependency-glob: "pyproject.toml"
       - name: Install dependencies
         run: |
-          uv sync --extra all --extra test --extra pandamodels --extra pgm
+          uv sync --group test --extra pandamodels --extra pgm
           uv pip uninstall juliacall
       - name: List of installed packages
         run: |
@@ -157,7 +156,7 @@ jobs:
           cache-dependency-glob: "pyproject.toml"
       - name: Install dependencies
         run: |
-          uv sync --extra test
+          uv sync --group test
           uv pip install numpy~=1.26
           uv pip uninstall juliacall
       - name: List of installed packages
@@ -188,7 +187,7 @@ jobs:
           cache-dependency-glob: "pyproject.toml"
       - name: Install dependencies
         run: |
-          uv sync --extra pandamodels --extra test
+          uv sync --group test --extra pandamodels
       - name: Setup Julia
         uses: julia-actions/setup-julia@5c9647d97b78a5debe5164e9eec09d653d29bd71 #v2
         with:
@@ -278,7 +277,7 @@ jobs:
           cache-dependency-glob: "pyproject.toml"
       - name: Install dependencies
         run: |
-          uv sync --extra test
+          uv sync --group test
           if [ -f requirements.txt ]; then uv pip install -r requirements.txt; fi
       - name: List of installed packages
         run: |
@@ -304,7 +303,7 @@ jobs:
           cache-dependency-glob: "pyproject.toml"
       - name: Install dependencies
         run: |
-          uv sync --extra test
+          uv sync --group test
           uv pip install setuptools
           uv pip install matplotlib
           uv pip install lxml
@@ -404,7 +403,7 @@ jobs:
           cache-dependency-glob: "pyproject.toml"
       - name: Install dependencies
         run: |
-          uv sync --extra test --extra fileio
+          uv sync --group test --extra fileio
       - name: List of installed packages
         run: |
           uv pip list
@@ -445,7 +444,7 @@ jobs:
           cache-dependency-glob: "pyproject.toml"
       - name: Install dependencies
         run: |
-          uv sync --extra all --extra tutorials --extra test --extra pgm
+          uv sync --group test --extra tutorials --extra pgm
       - name: List all installed packages
         run: |
           uv pip list
@@ -464,8 +463,8 @@ jobs:
       - name: Check sphinx build
         uses: ammaraskar/sphinx-action@54e52bfb642e9b60ea5b6bcb05fe3f74b40d290a #8.2.3
         with:
-          pre-build-command: "python -m pip install uv && uv pip install .[docs] --system --link-mode=copy"
-          build-command: "sphinx-build -b html . _build -W"
+          pre-build-command: "python -m pip install uv && uv sync --group docs"
+          build-command: "uv run sphinx-build -b html . _build -W"
           docs-folder: "doc/"
 
   typing:

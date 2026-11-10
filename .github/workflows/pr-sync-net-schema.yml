@@ -31,7 +31,7 @@ jobs:
           cache-dependency-glob: "pyproject.toml"
       - name: Install dependencies
         run: |
-          uv sync --extra all --extra test --extra pandamodels --extra pgm
+          uv sync --group test --extra pandamodels --extra pgm
           uv pip uninstall juliacall
           uv pip install pytest-cov pytest-split
       - name: List of installed packages
