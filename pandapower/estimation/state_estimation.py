@@ -295,10 +295,10 @@ class StateEstimation:
 
         now = datetime.datetime.now(tz=datetime.UTC)
         num_iterations = 0
-        if hasattr(self.solver, "iterations"):
-            num_iterations = self.solver.iterations
-        elif hasattr(self.solver, "cur_it"):
+        if hasattr(self.solver, "cur_it"):
             num_iterations = self.solver.cur_it
+        elif hasattr(self.solver, "iterations"):
+            num_iterations = self.solver.iterations
 
         se_results = {
             "success": self.solver.successful,
