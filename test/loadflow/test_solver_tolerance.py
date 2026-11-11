@@ -1,7 +1,7 @@
 from math import isclose
 
-from pandapower.network import pandapowerNet
 from pandapower.create import create_buses, create_ext_grid
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp, set_user_pf_options
 
 
