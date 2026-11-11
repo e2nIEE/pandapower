@@ -114,3 +114,26 @@ def test_tolerance_mva_remains_backward_compatible():
 
     assert net.converged
     assert isclose(net._options["tolerance_mva"], 1e-5)
+
+
+def test_solver_tolerance_wins_over_stored_tolerance_mva_both_present():
+    net = _minimal_net()
+    # both aliases already stored, e.g. loaded from an older file or set directly
+    net.user_pf_options.update({"tolerance_mva": 1e-5, "solver_tolerance": 1e-8})
+
+    runpp(net, numba=False)
+
+    assert net.converged
+    assert isclose(net._options["tolerance_mva"], 1e-8)
+
+
+def test_none_solver_tolerance_keeps_stored_tolerance_mva():
+    net = _minimal_net()
+    set_user_pf_options(net, tolerance_mva=1e-5, solver_tolerance=None)
+
+    assert "tolerance_mva" in net.user_pf_options
+
+    runpp(net, numba=False)
+
+    assert net.converged
+    assert isclose(net._options["tolerance_mva"], 1e-5)

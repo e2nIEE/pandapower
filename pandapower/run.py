@@ -92,8 +92,9 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
     net.user_pf_options.update({key: val for key, val in kwargs.items() if key in standard_parameters})
 
     # tolerance_mva and solver_tolerance are aliases of the same option: drop the stale alias so
-    # that the alias supplied with this call takes effect in the power flow
-    if "solver_tolerance" in kwargs:
+    # that the alias supplied with this call takes effect in the power flow. solver_tolerance=None
+    # means the alias was not set, so the stored tolerance_mva must stay effective.
+    if kwargs.get("solver_tolerance") is not None:
         net.user_pf_options.pop("tolerance_mva", None)
     elif "tolerance_mva" in kwargs:
         net.user_pf_options.pop("solver_tolerance", None)

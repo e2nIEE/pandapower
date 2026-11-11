@@ -1953,6 +1953,11 @@ def _init_runpp_options(
 
     kwargs.update(overrule_options)
     solver_tolerance = kwargs.pop("solver_tolerance", None)
+    if solver_tolerance is not None:
+        # solver_tolerance and tolerance_mva are aliases of the same option, so the newer
+        # solver_tolerance name takes precedence over a stored tolerance_mva
+        tolerance_mva = solver_tolerance
+        overrule_options.pop("tolerance_mva", None)
 
     trafo3w_losses = kwargs.get("trafo3w_losses", "hv")
     v_debug = kwargs.get("v_debug", False)
@@ -2117,8 +2122,6 @@ def _init_runpp_options(
         tdpf_update_r_theta=tdpf_update_r_theta,
         tdpf_delay_s=tdpf_delay_s,
     )
-    if solver_tolerance is not None:
-        tolerance_mva = solver_tolerance
     _add_pf_options(
         net,
         tolerance_mva=tolerance_mva,
