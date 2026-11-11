@@ -8,6 +8,8 @@ Change Log
 - [FIXED] fix PF2pp converter to work with pandapower 4.0: added init_results into it and fixed std_type saving
 - [CHANGED] ideal phase shifters only use ``tap_step_degree`` as angle per tap step. ``tap_step_percent`` must be NaN or 0
 - [REMOVED] ``tap_phase_shifter`` / ``tap2_phase_shifter``: phase shifters are only defined by ``tap_changer_type`` / ``tap2_changer_type``
+- [ADDED] added a sensitivity package, it provides LODF, PSDF and PTDF calculation based on the DC power flow
+- [FIXED] ``res_dcline``: a terminal at an unsupplied bus (island without slack) now has ``NaN`` as voltage magnitude and angle, consistent with ``res_bus``, instead of ``0``
 - [FIXED] branch voltage angle difference constraints (MATPOWER ``ANGMIN``/``ANGMAX``) were lost in the pypower/matpower converters and ignored by the OPF: the new optional columns ``min_angle_degree`` and ``max_angle_degree`` in ``net.line``, ``net.trafo``, ``net.trafo3w`` and ``net.impedance`` are considered by ``runopp``/``rundcopp`` and by ``to_pm``, and ``from_ppc``/``to_ppc``/``to_mpc`` preserve them (#2385). For ``net.trafo3w`` the limit bounds each internal star branch (hv -> star and star -> mv/lv) separately, so the terminal difference can reach twice the configured value. OPF results of networks imported from MATPOWER/PYPOWER cases with angle limits change accordingly; pass ``OPF_IGNORE_ANG_LIM=True`` to ``runopp`` to ignore the limits.
 - [FIXED] matpower/pypower converter: transformers without a tap changer (tap ratio 1) were converted to impedance elements by a to_mpc/from_mpc (and to_ppc/from_ppc) round trip, since a tap ratio of 1 was not recognized as a transformer when importing. The converters now follow the matpower convention (a tap ratio of 0 denotes "no transformer", any other ratio denotes a transformer): ``to_mpc`` keeps the tap ratio of transformer branches, ``from_mpc`` no longer rewrites tap ratios of 0, ``to_ppc`` marks branches of impedance elements with a tap ratio of 0, and ``from_ppc`` only imports branches without a tap ratio and without a phase shift that connect different voltage levels as impedances. The tap ratio marking also stays correct when branches are filtered out of the internal ppc (out-of-service or disconnected branches). A transformer with a tap ratio of 1 between buses of the same voltage level still cannot be distinguished from a line in the ppc/matpower format and keeps being converted to a line on the way back, as before (#2620)
 - [FIXED] short-circuit tutorial and docs: explain why meshed and radial results are equal with kappa method C in the example ring, show method B, complete the method C description and document ``kappa_method`` in ``calc_sc`` (#2621)
@@ -23,6 +25,12 @@ Change Log
 - [ADDED] create function for trafo characteristic entries
 - [ADDED] converter for trafo characteristics
 - [FIXED] create_gen and create_gens now use connected bus voltage limits as generator voltage-limit defaults.
+- [ADDED] runpp: bipolar VSC (create_vsc_bipolar) connected between a plus and a minus DC bus instead of ground, enables bipolar HVDC systems with dedicated metallic return (DMR); the DMR current is calculated by the power flow
+- [CHANGED] vsc_bipolar: control parameters changed to control_mode_ac, control_value_ac, control_mode_dc, control_value_dc (same as vsc); the element was not considered in the power flow before; networks stored in the old format are converted on load by convert_format
+- [CHANGED] runpp: the DC grid is solved with current balance equations and a revised Jacobian; several VSC in DC voltage control at the same DC bus share the current equally
+- [DEPRECATED] create_vsc_stacked and DmrControl, use create_vsc_bipolar instead
+- [FIXED] runpp: out of service VSC in AC slack mode defined a slack bus
+- [CHANGED] State Estimation: estimate() returns a dict with "success", "num_iterations" and "time" (ISO 8601, UTC) instead of a bool; the dict is always truthy, use result["success"] to detect a failed estimation
 
 [upcoming release] - 2026-..-..
 -------------------------------
