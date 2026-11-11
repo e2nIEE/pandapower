@@ -104,6 +104,9 @@ def estimate(
         zero_injection=zero_injection,
         fuse_buses_with_bb_switch=fuse_buses_with_bb_switch,
         algorithm=algorithm,
+        init=init,
+        tolerance=tolerance,
+        maximum_iterations=maximum_iterations,
         **opt_vars,
     )
 
@@ -191,6 +194,9 @@ class StateEstimation:
         zero_injection=None,
         fuse_buses_with_bb_switch="all",
         algorithm="wls",
+        init: str = "flat",
+        tolerance: float = 1e-6,
+        maximum_iterations: int = 50,
         **opt_vars,
     ):
         """
@@ -277,6 +283,11 @@ class StateEstimation:
             algorithm=algorithm,
             ppc=self.ppc,
             eppci=self.eppci,
+            init=init,
+            tolerance=tolerance,
+            maximum_iterations=maximum_iterations,
+            fuse_buses_with_bb_switch=fuse_buses_with_bb_switch,
+            estimator=opt_vars.get("estimator", "wls"),
         )
 
         # Estimate voltage magnitude and angle with the given estimator
