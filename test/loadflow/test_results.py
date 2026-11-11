@@ -9,8 +9,8 @@ import pytest
 from numpy import isclose, isin, isnan
 
 from pandapower.create import (
-    create_empty_network,
     create_bus,
+    create_empty_network,
     create_ext_grid,
     create_impedance,
     create_line_from_parameters,
