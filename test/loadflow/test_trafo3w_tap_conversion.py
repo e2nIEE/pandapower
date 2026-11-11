@@ -20,7 +20,7 @@ def test_three_winding_star_tap_nullable_type():
             "tap_changer_type": pd.Series(["Ideal", pd.NA, "Ratio", "Symmetrical"], dtype="string"),
         }
     )
-    net = pandapowerNet()
+    net = pandapowerNet(name="test_3w_star_tap_net")
     net.trafo3w = trafos
     symmetrical = trafos.iloc[[3]].copy()
     net.trafo3w = symmetrical

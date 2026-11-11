@@ -541,7 +541,7 @@ def test_trafo3w(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=2e-2, l_tol=
 
 
 def _ideal_trafo3w_net(tap_side, tap_at_star_point, tap_pos, tap_step_degree, tap_step_percent, loaded=False):
-    net = pandapowerNet()
+    net = pandapowerNet(name="trafo3w_net")
     hv_bus = create_bus(net, vn_kv=380)
     mv_bus = create_bus(net, vn_kv=220)
     lv_bus = create_bus(net, vn_kv=110)
