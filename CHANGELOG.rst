@@ -3,6 +3,11 @@ Change Log
 
 [upcoming 4.0.0] - 2026-..-..
 -------------------------------
+- [FIXED] fix symmetrical PST: before they were handled as asymmetric tap changer, now as proper symmetrical according to UCTE-DEF
+- [ADDED] transformer documentation: overview table of the tap changer models with the columns to set
+- [FIXED] fix PF2pp converter to work with pandapower 4.0: added init_results into it and fixed std_type saving
+- [CHANGED] ideal phase shifters only use ``tap_step_degree`` as angle per tap step. ``tap_step_percent`` must be NaN or 0
+- [REMOVED] ``tap_phase_shifter`` / ``tap2_phase_shifter``: phase shifters are only defined by ``tap_changer_type`` / ``tap2_changer_type``
 - [ADDED] added a sensitivity package, it provides LODF, PSDF and PTDF calculation based on the DC power flow
 - [ADDED] TDPF: top-oil and hot-spot temperatures of ``net.trafo`` and ``net.trafo3w``, based on IEC 60076-7 and the optional ``transformer-thermal-model`` package (``pip install pandapower[tdpf]``); the thermal model runs as post-processing on the solved loading, so ``r_sc`` is unchanged and voltages/flows do not change; new input columns ``cooling_type`` (ONAN/ONAF, default ONAN) and ``air_temperature_degree_celsius`` (default 35) and new result columns ``top_oil_temperature_degree_celsius``, ``hot_spot_temperature_degree_celsius`` (2W) / ``hot_spot_temperature_degree_celsius_hv|mv|lv`` (3W) and ``temperature_degree_celsius``; without the package a warning is logged and line TDPF is unaffected
 - [FIXED] ``res_dcline``: a terminal at an unsupplied bus (island without slack) now has ``NaN`` as voltage magnitude and angle, consistent with ``res_bus``, instead of ``0``
@@ -17,6 +22,9 @@ Change Log
 - [CHANGED] ran ruff format for whole project
 - [CHANGED] moved test module to top level
 - [ADDED] pandera network validation
+- [ADDED] ``validate_network`` with ``collect_errors=True`` collects all validation issues of a network instead of raising on the first one, and returns human readable ``ValidationIssue`` objects that can be printed or formatted with ``format_validation_errors``
+- [ADDED] diagnostic: new default check ``schema_validation`` (``SchemaValidation``) that validates all element tables against the pandera ``network_schema`` schemas and reports every structural, data type and value range violation of the network at once
+- [FIXED] ``Diagnostic.register_function``: the ``argument_names`` and ``name`` parameters are now optional as documented, so ``register_function(some_function())`` no longer raises ``TypeError``
 - [CHANGED] removed deprecated trafo support characteristics table (replaced by trafo_characteristc_table)
 - [ADDED] create function for trafo characteristic entries
 - [ADDED] converter for trafo characteristics
