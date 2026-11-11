@@ -398,10 +398,10 @@ def _convert_trafo_phase_shifter(net, trafotable="trafo"):
     tap_neutral = net[trafotable].tap_neutral.values
     tap_diff = tap_pos - tap_neutral
     tap_step_degree = net[trafotable].tap_step_degree.values.copy()
+    direction = np.where(net[trafotable].tap_side.values == "lv", -1, 1)
 
-    net.trafo.loc[tap_changer == "Ideal", "shift_degree"] += (
-        tap_diff[tap_changer == "Ideal"] * tap_step_degree[tap_changer == "Ideal"]
-    )
+    ideal = tap_changer == "Ideal"
+    net.trafo.loc[ideal, "shift_degree"] += direction[ideal] * tap_diff[ideal] * tap_step_degree[ideal]
     net[trafotable]["tap_changer_type"] = None
 
     net[trafotable]["tap_pos"] = 0
