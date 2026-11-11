@@ -1944,7 +1944,12 @@ def _init_runpp_options(
     """
     overrule_options = {}
     if passed_parameters is not None:
-        overrule_options = {key: val for key, val in net.user_pf_options.items() if key not in passed_parameters}
+        excluded_parameters = set(passed_parameters)
+        # solver_tolerance and tolerance_mva are aliases, so an explicitly passed value for either name
+        # must also suppress a stored value of the other name
+        if excluded_parameters & {"solver_tolerance", "tolerance_mva"}:
+            excluded_parameters |= {"solver_tolerance", "tolerance_mva"}
+        overrule_options = {key: val for key, val in net.user_pf_options.items() if key not in excluded_parameters}
 
     kwargs.update(overrule_options)
     solver_tolerance = kwargs.pop("solver_tolerance", None)

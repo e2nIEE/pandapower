@@ -91,6 +91,13 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
 
     net.user_pf_options.update({key: val for key, val in kwargs.items() if key in standard_parameters})
 
+    # tolerance_mva and solver_tolerance are aliases of the same option: drop the stale alias so
+    # that the alias supplied with this call takes effect in the power flow
+    if "solver_tolerance" in kwargs:
+        net.user_pf_options.pop("tolerance_mva", None)
+    elif "tolerance_mva" in kwargs:
+        net.user_pf_options.pop("solver_tolerance", None)
+
     additional_kwargs = {key: val for key, val in kwargs.items() if key not in standard_parameters}
 
     # this part is to inform user and to make typos in parameters visible
@@ -175,6 +182,7 @@ def runpp(
             - 40 for "helm"
 
         solver_tolerance (float, 1e-8): unitless internal solver termination tolerance for the power-flow mismatch equations.
+            Note: the "helm" algorithm ignores this option and always uses a fixed mismatch value of 1e-8.
         tolerance_mva (float, 1e-8): deprecated alias for solver_tolerance. The name is kept for backward compatibility, but the value is treated as a unitless solver tolerance, not as an MVA quantity.
         trafo_model (str, "t"): transformer equivalent circuit model
             pandapower provides two equivalent circuit models for the transformer:
@@ -270,6 +278,8 @@ def runpp(
     # if dict 'user_pf_options' is present in net, these options overrule the net._options
     # except for parameters that are passed by user
     if isinstance(kwargs.get("recycle", None), dict) and _internal_stored(net):
+        if solver_tolerance is not None:
+            net["_options"]["tolerance_mva"] = solver_tolerance
         _recycled_powerflow(net, **kwargs)
         return
 
