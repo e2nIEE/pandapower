@@ -1817,7 +1817,6 @@ def wye_delta_vector(zbr_n, s):
 
 def _calculate_3w_tap_changers(net, t2, sides):
     tap_variables = ["tap_side", "tap_pos", "tap_neutral", "tap_max", "tap_min", "tap_step_percent", "tap_step_degree"]
-    t3 = net.trafo3w
     nr_trafos = len(net.trafo3w)
     empty = np.zeros(nr_trafos)
     empty.fill(np.nan)
@@ -1826,8 +1825,8 @@ def _calculate_3w_tap_changers(net, t2, sides):
     at_star_point = net.trafo3w.tap_at_star_point.values
     any_at_star_point = at_star_point.any()
     ideal_tap = np.zeros(nr_trafos, dtype=bool)
-    if "tap_changer_type" in t3:
-        ideal_tap = t3.tap_changer_type.eq("Ideal").fillna(False).to_numpy(dtype=bool)
+    if "tap_changer_type" in net.trafo3w:
+        ideal_tap = net.trafo3w.tap_changer_type.eq("Ideal").fillna(False).to_numpy(dtype=bool)
     for side in sides:
         add_column_to_df(net, "trafo3w", "tap_side")
         tap_mask = (net.trafo3w.tap_side.fillna("") == side).to_numpy()
