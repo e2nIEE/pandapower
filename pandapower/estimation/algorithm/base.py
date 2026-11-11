@@ -71,9 +71,20 @@ class WLSAlgorithm(BaseAlgorithm):
         self.H = None
         self.hx = None
         self.iterations = None
-        self.obj_func = None
 
-    def estimate(self, eppci: ExtendedPPCI, debug_mode=False, **kwargs):
+    def estimate(self, eppci: ExtendedPPCI, **kwargs):
+        """
+        Runs the weighted least squares (WLS) state estimation with Newton iterations.
+
+        Parameters:
+            eppci: the extended ppci with the measurements and the initial state
+
+        Returns:
+            eppci with the estimated state, or False if a linear algebra problem occurred. Whether the estimation converged
+            is stored in self.successful.
+        """
+        # TODO: MOVE debug_mode to diagnostic!
+        debug_mode = False
         self.initialize(eppci)
         # matrix calculation object
         sem = BaseAlgebra(eppci)
@@ -105,6 +116,8 @@ class WLSAlgorithm(BaseAlgorithm):
                 # gain matrix G_m
                 # G_m = H^t * R^-1 * H
                 G_m = H.T * (r_inv * H)
+
+                # TODO: MOVE debug_mode to diagnostic!
                 if debug_mode:
                     norm_G = norm(G_m, np.inf)
                     norm_invG = norm(inv(G_m), np.inf)
@@ -126,6 +139,7 @@ class WLSAlgorithm(BaseAlgorithm):
                 E += d_E.ravel()  # type: ignore[union-attr]
                 eppci.update_E(E)
 
+                # TODO: MOVE debug_mode to diagnostic!
                 if debug_mode:
                     obj_func = (r.T * r_inv * r)[0, 0]
                     self.logger.debug(f"Current delta_x: {current_error:.7f}")
@@ -147,8 +161,6 @@ class WLSAlgorithm(BaseAlgorithm):
         # check if the estimation is successful
         self.check_result(current_error, cur_it)
         self.iterations = cur_it
-        if debug_mode:
-            self.obj_func = obj_func
         if self.successful:
             # store variables required for chi^2 and r_N_max test:
             self.R_inv = r_inv.toarray()
@@ -290,9 +302,21 @@ class AFWLSAlgorithm(BaseAlgorithm):
         self.H = None
         self.hx = None
         self.iterations = None
-        self.obj_func = None
 
-    def estimate(self, eppci: ExtendedPPCI, debug_mode=False, **kwargs):
+    def estimate(self, eppci: ExtendedPPCI, **kwargs):
+        """
+        Runs the allocation factor WLS (AF-WLS) state estimation: in addition to the bus voltages, the allocation factors of
+        the load clusters are estimated, which allows the estimation of distribution grids that are not fully observable.
+
+        Parameters:
+            eppci: the extended ppci with the measurements, the clusters and the initial state
+
+        Returns:
+            eppci with the estimated state (the allocation factors in eppci.clusters), or False if a linear algebra problem
+            occurred. Whether the estimation converged is stored in self.successful.
+        """
+        # TODO: MOVE debug_mode to diagnostic!
+        debug_mode = False
         self.initialize(eppci)
         # matrix calculation object
         sem = BaseAlgebra(eppci)
@@ -322,6 +346,8 @@ class AFWLSAlgorithm(BaseAlgorithm):
 
                 # gain matrix G_m
                 G_m = H.T * (r_inv * H)
+
+                # TODO: MOVE debug_mode to diagnostic!
                 if debug_mode:
                     norm_G = norm(G_m, np.inf)
                     norm_invG = norm(inv(G_m), np.inf)
@@ -337,6 +363,8 @@ class AFWLSAlgorithm(BaseAlgorithm):
 
                 # log data
                 current_error = np.max(np.abs(d_E))
+
+                # TODO: MOVE debug_mode to diagnostic!
                 if debug_mode:
                     obj_func = (r.T * r_inv * r)[0, 0]
                     self.logger.debug(f"Current delta_x: {current_error:.7f}")
@@ -358,8 +386,6 @@ class AFWLSAlgorithm(BaseAlgorithm):
         # check if the estimation is successful
         self.check_result(current_error, cur_it)
         self.iterations = cur_it
-        if debug_mode:
-            self.obj_func = obj_func
         if self.successful:
             # split voltage and allocation factor variables
             E1 = E[:-num_clusters]
