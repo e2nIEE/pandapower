@@ -10,8 +10,8 @@ __all__ = [
     "remove_bad_data",
 ]
 
+import datetime
 import logging
-from datetime import datetime
 
 import numpy as np
 from scipy.stats import chi2
@@ -49,7 +49,6 @@ def estimate(
     maximum_iterations=50,
     zero_injection="aux_bus",
     fuse_buses_with_bb_switch="all",
-    debug_mode=False,
     **opt_vars,
 ):
     """
@@ -90,7 +89,9 @@ def estimate(
                     still be fused
 
     Returns:
-        bool: Was the state estimation successful?
+        dict: "success" (bool, whether the state estimation was successful), "num_iterations" (int) and "time" (str,
+        ISO 8601 time stamp of the estimation in UTC). The dict itself is always truthy, so use result["success"] to
+        detect a failed estimation, e.g. ``if not estimate(net)["success"]:``
     """
     if algorithm not in ALGORITHM_MAPPING:
         raise UserWarning(f"Algorithm {algorithm} is not a valid estimator")
@@ -103,7 +104,6 @@ def estimate(
         zero_injection=zero_injection,
         fuse_buses_with_bb_switch=fuse_buses_with_bb_switch,
         algorithm=algorithm,
-        debug_mode=debug_mode,
         **opt_vars,
     )
 
@@ -191,7 +191,6 @@ class StateEstimation:
         zero_injection=None,
         fuse_buses_with_bb_switch="all",
         algorithm="wls",
-        debug_mode=False,
         **opt_vars,
     ):
         """
@@ -240,12 +239,14 @@ class StateEstimation:
                 if one of the bus among the buses connected through bb switch is given, then all of them will still
                 be fused
         OUTPUT:
-            **successful** (boolean) - True if the estimation process was successful
+            **se_results** (dict) - "success" (bool, True if the estimation process was successful),
+            "num_iterations" (int) and "time" (str, ISO 8601 time stamp of the estimation in UTC). The dict itself
+            is always truthy, so use se_results["success"] to detect a failed estimation.
         Optional estimation variables:
             The bus power injections can be accessed with *se.s_node_powers* and the estimated
             values corresponding to the (noisy) measurement values with *se.hx*. (*hx* denotes h(x))
         EXAMPLE:
-            success = estimate(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]))
+            success = estimate(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]))["success"]
         """
         # check if all parameter are allowed
         for var_name in opt_vars:
@@ -279,7 +280,7 @@ class StateEstimation:
         )
 
         # Estimate voltage magnitude and angle with the given estimator
-        self.eppci = self.solver.estimate(self.eppci, debug_mode=debug_mode, **opt_vars)
+        self.eppci = self.solver.estimate(self.eppci, **opt_vars)
 
         if self.solver.successful:
             self.net = eppci2pp(self.net, self.ppc, self.eppci)
@@ -296,16 +297,18 @@ class StateEstimation:
         if not self.recycle:
             self.ppc, self.eppci = None, None
 
-        if algorithm == "wls" or algorithm == "af-wls":
-            now = datetime.now()
-            se_results = {
-                "success": self.solver.successful,
-                "num_iterations": self.solver.iterations,
-                "objective_function_value": self.solver.obj_func,
-                "time": now.strftime("%Y-%m-%d %H:%M:%S"),
-            }
-        else:
-            se_results = self.solver.successful
+        now = datetime.datetime.now(tz=datetime.UTC)
+        num_iterations = 0
+        if hasattr(self.solver, "cur_it"):
+            num_iterations = self.solver.cur_it
+        elif hasattr(self.solver, "iterations"):
+            num_iterations = self.solver.iterations
+
+        se_results = {
+            "success": self.solver.successful,
+            "num_iterations": num_iterations,
+            "time": now.isoformat(),
+        }
 
         return se_results
 
