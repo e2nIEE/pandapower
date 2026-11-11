@@ -105,6 +105,52 @@ def test_convert_format_renaming_characteristic_table():
     pd.testing.assert_frame_equal(net["q_capability_curve_table"], capa_df, atol=1e-5)
 
 
+def test_convert_format_adds_ext_grid_controllable():
+    net = from_json(os.path.join(folder, "example_3.1.2_capability.json"), convert=False)
+    net.format_version = "3.1.0"
+    if "controllable" in net.ext_grid.columns:
+        net.ext_grid = net.ext_grid.drop(columns=["controllable"])
+    assert "controllable" not in net.ext_grid.columns
+
+    convert_format(net)
+
+    assert "controllable" in net.ext_grid.columns
+    assert net.ext_grid["controllable"].dtype == bool
+    assert not net.ext_grid["controllable"].any()
+
+
+def test_convert_format_adds_ext_grid_controllable_empty_table():
+    net = from_json(os.path.join(folder, "example_3.1.2_capability.json"), convert=False)
+    net.format_version = "3.1.0"
+    net.ext_grid = net.ext_grid.iloc[0:0].drop(columns=["controllable"], errors="ignore")
+
+    convert_format(net)
+
+    assert "controllable" in net.ext_grid.columns
+    assert net.ext_grid["controllable"].dtype == bool
+
+
+def test_convert_format_ext_grid_controllable_keeps_opf_results():
+    # the backfilled default (False) must not change OPF results compared to a net
+    # that has no "controllable" column at all
+    from pandapower.networks import case9
+    from pandapower.run import runopp
+
+    legacy = case9()
+    legacy.ext_grid = legacy.ext_grid.drop(columns=["controllable"], errors="ignore")
+    runopp(legacy, verbose=False)
+    expected = legacy.res_ext_grid[["p_mw", "q_mvar"]].to_numpy()
+
+    net = case9()
+    net.format_version = "3.1.0"
+    net.ext_grid = net.ext_grid.drop(columns=["controllable"], errors="ignore")
+    convert_format(net)
+    assert "controllable" in net.ext_grid.columns
+    runopp(net, verbose=False)
+
+    np.testing.assert_allclose(net.res_ext_grid[["p_mw", "q_mvar"]].to_numpy(), expected)
+
+
 def test_convert_format_newer_format_version():
     version = max(found_versions, key=lambda k: Version(k))
     filename = os.path.join(folder, f"example_{version}.json")

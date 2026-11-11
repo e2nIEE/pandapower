@@ -499,6 +499,9 @@ def _add_missing_columns(net, elements_to_deserialize):
         if "df" not in net[element]:
             net[element]["df"] = 1.0
 
+    if _check_elements_to_deserialize("ext_grid", elements_to_deserialize) and "controllable" not in net.ext_grid:
+        net.ext_grid["controllable"] = get_default_value("ext_grid", "controllable")
+
     if (
         _check_elements_to_deserialize("bus", elements_to_deserialize)
         and _check_elements_to_deserialize("bus_geodata", elements_to_deserialize)
