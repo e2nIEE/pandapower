@@ -102,6 +102,13 @@ def run_contingency_parallel(
     ):
         result_variables["line"].append("temperature_degree_celsius")
 
+    # transformer temperatures of the thermal model (TDPF) are post-processing results; only collect
+    # them if the columns exist, because the calculation is skipped without its optional dependency
+    for element in ("trafo", "trafo3w"):
+        res_table = net.get(f"res_{element}")
+        if len(net[element]) > 0 and res_table is not None and "temperature_degree_celsius" in res_table.columns:
+            result_variables[element].append("temperature_degree_celsius")
+
     # --- N-1 Contingency Analysis ---
     if n_procs is None:
         n_procs = mp.cpu_count()

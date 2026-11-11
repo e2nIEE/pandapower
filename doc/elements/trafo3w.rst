@@ -44,6 +44,11 @@ Table Structure
 
 .. note:: Three Winding Transformer loading can not yet be constrained with the optimal power flow.
 
+.. note:: The columns ``cooling_type`` and ``air_temperature_degree_celsius`` are only used by the
+    transformer thermal calculation of the temperature dependent power flow, see
+    :ref:`Transformer temperatures <tdpf_transformer_temperatures>`. They default to ``"ONAN"`` and
+    ``35`` °C, so they can be left empty.
+
 .. _trafo3w_model:
 
 Electric Model
@@ -172,6 +177,11 @@ Result Tables
     :file: table_structures/res_trafo3w.csv
     :header-rows: 1
     :delim: ,
+
+.. note:: With ``runpp(tdpf=True)`` the columns ``top_oil_temperature_degree_celsius``,
+    ``hot_spot_temperature_degree_celsius_hv``, ``hot_spot_temperature_degree_celsius_mv``,
+    ``hot_spot_temperature_degree_celsius_lv`` and ``temperature_degree_celsius`` are added, see
+    :ref:`Transformer temperatures <tdpf_transformer_temperatures>`.
 
 .. math::
     p\_hv\_mw &= Re(\underline{v}_{hv} \cdot \underline{i}_{hv}) \\    

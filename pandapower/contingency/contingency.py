@@ -161,6 +161,14 @@ def run_contingency(
     ):
         result_variables["line"].append("temperature_degree_celsius")
 
+    # the transformer temperatures of the thermal model (TDPF) are post-processing results. They are
+    # only collected if the columns actually exist, because the thermal calculation is skipped when its
+    # optional dependency is missing -- in that case the columns must not be reported.
+    for element in ("trafo", "trafo3w"):
+        res_table = net.get(f"res_{element}")
+        if len(net[element]) > 0 and res_table is not None and "temperature_degree_celsius" in res_table.columns:
+            result_variables[element].append("temperature_degree_celsius")
+
     # for n-1
     for element, val in nminus1_cases.items():
         for i in val["index"]:

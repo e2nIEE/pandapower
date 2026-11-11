@@ -223,6 +223,13 @@ def _ppci_to_net(result, net):
     _extract_results(net, result)
     _clean_up(net)
 
+    # transformer thermal model is post-processing: it consumes the solved loading and does not
+    # influence the power flow. It must run after the results were extracted.
+    if net["_options"].get("tdpf", False):
+        from pandapower.pf.transformer_thermal import calculate_transformer_temperatures, dt_minutes_from_options
+
+        calculate_transformer_temperatures(net, dt_minutes=dt_minutes_from_options(net["_options"]))
+
 
 def _bypass_pf_and_set_results(ppci):
     Ybus, Yf, Yt = makeYbus_pypower(ppci["baseMVA"], ppci["bus"], ppci["branch"])

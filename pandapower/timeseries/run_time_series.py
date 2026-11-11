@@ -15,6 +15,18 @@ from pandapower.timeseries.output_writer import OutputWriter
 
 logger = logging.getLogger(__name__)
 
+# result variables of the transformer thermal model (TDPF). They are post-processing results that the
+# fast batch read of the output writer does not provide, so the recyclability check disables batch
+# reading when one of them is logged.
+_TRANSFORMER_THERMAL_VARIABLES = (
+    "top_oil_temperature_degree_celsius",
+    "hot_spot_temperature_degree_celsius",
+    "temperature_degree_celsius",
+    "hot_spot_temperature_degree_celsius_lv",
+    "hot_spot_temperature_degree_celsius_mv",
+    "hot_spot_temperature_degree_celsius_hv",
+)
+
 
 def init_default_outputwriter(net, time_steps, **kwargs):
     """
@@ -163,6 +175,12 @@ def _check_output_writer_recyclability(net, recycle, run):
         table, variable = output[0], output[1]
         if table not in ["res_bus", "res_line", "res_trafo", "res_trafo3w"] or recycle["trafo"] or len(output) > 2:
             # no fast read of outputs possible if other elements are required as these or tap changer is active
+            recycle["only_v_results"] = False
+            recycle["batch_read"] = False
+            return recycle
+        if table in ("res_trafo", "res_trafo3w") and variable in _TRANSFORMER_THERMAL_VARIABLES:
+            # the transformer temperatures are post-processing results that are not part of the batch
+            # functions, so they must be read from the result tables of each time step
             recycle["only_v_results"] = False
             recycle["batch_read"] = False
             return recycle
