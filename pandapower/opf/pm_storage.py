@@ -1,9 +1,7 @@
-import logging
-
 import numpy as np
 import pandas as pd
 
-logger = logging.getLogger(__name__)
+from pandapower.opf.make_objective import costs_from_areas
 
 
 def add_storage_opf_settings(net, ppci, pm):
@@ -25,9 +23,7 @@ def add_storage_opf_settings(net, ppci, pm):
     # Todo: Some variables are not used and not included in pandapower as well (efficiencies, r, x...)
     bus_lookup = net._pd2pm_lookups["bus"]
     storage = net["storage"]
-    controllable = storage.index[_controllable(storage)]
-    _warn_storage_costs(net, controllable)
-    for idx in controllable:
+    for idx in storage.index[_controllable(storage)]:
         energy = storage.at[idx, "soc_percent"] * 1e-2 * (storage.at[idx, "max_e_mwh"] - storage.at[idx, "min_e_mwh"])
         ps = float(storage.at[idx, "p_mw"])
         qs = float(storage.at[idx, "q_mvar"])
@@ -70,6 +66,34 @@ def add_storage_opf_settings(net, ppci, pm):
             "status": int(storage.at[idx, "in_service"]),
             "standby_loss": 0.0,
         }
+        pm["storage"][str(pm_idx)].update(_storage_cost(net, idx))
+
+
+def _storage_cost(net, idx):
+    """
+    Returns the active power costs of a storage in the format of the PowerModels gen costs, as a function of
+    the storage power ps in MW (charging: ps > 0) in MATPOWER units like the gen costs:
+
+        - "model": 2 (polynomial), "ncost": n, "cost": [c(n-1), ..., c1, c0] with cost = sum(c_i * ps^i)
+        - "model": 1 (piecewise linear), "ncost": n, "cost": [p1, c1, ..., pn, cn] with the cost cn at ps = pn
+
+    The ppc generator of the storage is deactivated, so the costs are part of the objective only by
+    pm["storage"]. Reactive power costs are not considered, as for the gens. Returns {} if there are no costs.
+    """
+    if "pwl_cost" in net and len(net.pwl_cost):
+        pwl = net.pwl_cost[
+            (net.pwl_cost.et == "storage") & (net.pwl_cost.element == idx) & (net.pwl_cost.power_type == "p")
+        ]
+        if len(pwl):
+            cost = [float(c) for c in costs_from_areas(pwl.points.iat[0], 1)]
+            return {"model": 1, "ncost": len(cost) // 2, "cost": cost}
+    if "poly_cost" in net and len(net.poly_cost):
+        poly = net.poly_cost[(net.poly_cost.et == "storage") & (net.poly_cost.element == idx)]
+        if len(poly):
+            c2, c1, c0 = (float(poly[col].iat[0]) for col in ["cp2_eur_per_mw2", "cp1_eur_per_mw", "cp0_eur"])
+            cost = [c2, c1, c0] if c2 else [c1, c0]
+            return {"model": 2, "ncost": len(cost), "cost": cost}
+    return {}
 
 
 def _controllable(storage):
@@ -83,19 +107,6 @@ def _value(df, idx, column, default):
     if column in df.columns and pd.notna(df.at[idx, column]):
         return float(df.at[idx, column])
     return float(default)
-
-
-def _warn_storage_costs(net, controllable):
-    # the objective of the PowerModels storage problem contains generator and dcline costs only
-    for cost in ["poly_cost", "pwl_cost"]:
-        if cost not in net or not len(net[cost]):
-            continue
-        costed = net[cost].element[(net[cost].et == "storage") & net[cost].element.isin(controllable)]
-        if len(costed):
-            logger.warning(
-                f"the {cost} of the storages {sorted(costed.astype(int).tolist())} are ignored, since the "
-                f"PowerModels storage model has no costs"
-            )
 
 
 def storage_ppci_gens(net, ppci):

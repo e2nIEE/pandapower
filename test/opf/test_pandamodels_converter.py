@@ -13,7 +13,7 @@ import pytest
 import test
 from pandapower.converter.pandamodels import convert_pp_to_pm
 from pandapower.converter.pandamodels.from_pm import read_pm_results_to_net
-from pandapower.create import create_poly_cost, create_storage
+from pandapower.create import create_poly_cost, create_pwl_cost, create_storage
 from pandapower.networks.cigre_networks import create_cigre_network_mv
 from pandapower.opf.pm_storage import add_storage_opf_settings, read_pm_storage_results
 from pandapower.pd2ppc import _pd2ppc
@@ -140,19 +140,15 @@ def test_storage_opf_settings():
     assert (st["qmin"], st["qmax"]) == (-0.05, 0.1)
 
 
-def test_storage_opf_settings_limits(caplog):
+def test_storage_opf_settings_limits():
     net = create_cigre_network_mv("pv_wind")
     net.switch["closed"] = True
     # discharging set point without limits -> the limits are |p_mw| and |q_mvar|
     s0 = create_storage(net, 10, p_mw=-0.5, max_e_mwh=1.0, soc_percent=50.0, q_mvar=-0.1, controllable=True)
-    create_poly_cost(net, s0, "storage", cp1_eur_per_mw=10)
     pm = convert_pp_to_pm(net)
     net._options["n_time_steps"] = 1
     net._options["time_elapsed"] = 1.0
-    with caplog.at_level("WARNING", logger="pandapower.opf.pm_storage"):
-        add_storage_opf_settings(net, net._ppc_opf, pm)
-    # the storage model has no costs
-    assert "poly_cost of the storages [0] are ignored" in caplog.text
+    add_storage_opf_settings(net, net._ppc_opf, pm)
     st = pm["storage"][str(s0 + 1)]
     assert (st["charge_rating"], st["discharge_rating"]) == (0.5, 0.5)
     assert (st["qmin"], st["qmax"]) == (-0.1, 0.1)
@@ -165,6 +161,29 @@ def test_storage_opf_settings_limits(caplog):
     net._options["time_elapsed"] = 1.0
     with pytest.raises(ValueError, match="min_p_mw"):
         add_storage_opf_settings(net, net._ppc_opf, pm)
+
+
+def test_storage_opf_settings_costs():
+    """the storage costs are part of pm["storage"] (as function of ps), since the storage gens are deactivated"""
+    net = create_cigre_network_mv("pv_wind")
+    net.switch["closed"] = True
+    kw = {"max_e_mwh": 1.0, "soc_percent": 50.0, "q_mvar": 0.0, "max_p_mw": 0.3, "min_p_mw": -0.2}
+    s0 = create_storage(net, 10, p_mw=0.0, controllable=True, **kw)
+    s1 = create_storage(net, 11, p_mw=0.0, controllable=True, **kw)
+    s2 = create_storage(net, 12, p_mw=0.0, controllable=True, **kw)
+    create_poly_cost(net, s0, "storage", cp1_eur_per_mw=10.0, cp0_eur=1.0)
+    create_pwl_cost(net, s1, "storage", [[-0.2, 0.0, -5.0], [0.0, 0.3, 10.0]])
+    pm = convert_pp_to_pm(net)
+    net._options["n_time_steps"] = 1
+    net._options["time_elapsed"] = 1.0
+    add_storage_opf_settings(net, net._ppc_opf, pm)
+
+    st = pm["storage"][str(s0 + 1)]
+    assert (st["model"], st["ncost"], st["cost"]) == (2, 2, [10.0, 1.0])
+    st = pm["storage"][str(s1 + 1)]
+    assert (st["model"], st["ncost"]) == (1, 3)
+    assert np.allclose(st["cost"], [-0.2, 1.0, 0.0, 0.0, 0.3, 3.0])
+    assert "cost" not in pm["storage"][str(s2 + 1)]
 
 
 def test_read_pm_storage_results_without_soc():
