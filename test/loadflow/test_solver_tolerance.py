@@ -1,12 +1,13 @@
 from math import isclose
 
-from pandapower.create import create_bus, create_empty_network, create_ext_grid
+from pandapower.network import pandapowerNet
+from pandapower.create import create_buses, create_ext_grid
 from pandapower.run import runpp, set_user_pf_options
 
 
 def _minimal_net():
-    net = create_empty_network()
-    bus = create_bus(net, vn_kv=20.0)
+    net = pandapowerNet(name="minimal_net")
+    (bus,) = create_buses(net, 1, vn_kv=20.0)
     create_ext_grid(net, bus=bus)
     return net
 
