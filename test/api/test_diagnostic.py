@@ -3,6 +3,7 @@
 
 import copy
 from collections.abc import Callable
+from importlib.util import find_spec
 
 import numpy as np
 import pandas as pd
@@ -26,6 +27,7 @@ from pandapower.diagnostic.diagnostic_functions import (
     NumbaComparison,
     Overload,
     ParallelSwitches,
+    SchemaValidation,
     SubNetProblemTest,
     WrongLineCapacitance,
     WrongLineReactance,
@@ -38,12 +40,7 @@ from pandapower.network import pandapowerNet
 from pandapower.networks import example_multivoltage, example_simple
 from pandapower.toolbox.grid_modification import change_std_type, drop_trafos
 
-try:
-    import numba
-
-    numba_installed = True
-except ImportError:
-    numba_installed = False
+numba_installed = find_spec("numba")
 
 pytestmark = pytest.mark.filterwarnings("ignore")
 
@@ -72,6 +69,7 @@ def test_net():
 
 
 diag_functions: list[Callable] = [
+    SchemaValidation,
     MissingBusIndices,
     DisconnectedElements,
     DifferentVoltageLevelsConnected,
@@ -98,7 +96,7 @@ diag_functions: list[Callable] = [
 def check_report_function(func: DiagnosticFunction, error, result):
     try:
         func.report(error, result)
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         raise AssertionError(f"Report function '{func.__class__.__name__}' failed: {e}")
 
 
@@ -1097,6 +1095,138 @@ def test_missing_bus_indices(test_net, diag_params, diag_errors):
     }
 
     check_report_function(diag_function, diag_errors.get(check_function, None), diag_results.get(check_function, None))
+
+
+def test_schema_validation(test_net, diag_params, diag_errors):
+    net = example_simple()
+    check_function = "schema_validation"
+    net.line.at[net.line.index[0], "length_km"] = -1
+    net.bus.at[net.bus.index[0], "vn_kv"] = -1
+
+    diag_function = SchemaValidation()
+    check_result = diag_function.diagnostic(net, **diag_params)
+
+    assert set(check_result) == {"bus", "line"}
+    assert len(check_result["bus"]) == 1
+    assert "vn_kv" in str(check_result["bus"][0])
+    assert len(check_result["line"]) == 1
+    assert "length_km" in str(check_result["line"][0])
+
+    check_report_function(diag_function, diag_errors.get(check_function, None), check_result)
+
+
+def test_schema_validation_no_issues(diag_params):
+    diag_function = SchemaValidation()
+
+    assert diag_function.diagnostic(example_simple(), **diag_params) is None
+    diag_function.report(None, None)
+
+
+def test_schema_validation_groups(diag_params):
+    net = example_simple()
+    diag_function = SchemaValidation()
+
+    # the sc columns are optional, so the base schema passes
+    assert diag_function.diagnostic(net, **diag_params) is None
+    # but requesting the sc group makes them required
+    check_result = diag_function.diagnostic(net, groups_to_validate="sc", **diag_params)
+    assert "ext_grid" in check_result
+    assert any("s_sc_max_mva" in str(issue) for issue in check_result["ext_grid"])
+
+
+def test_schema_validation_in_diagnostic(test_net):
+    net = example_simple()
+    net.line.at[net.line.index[0], "length_km"] = -1
+
+    diag_results = Diagnostic().diagnose_network(net, report_style=None)
+
+    assert "schema_validation" in diag_results
+
+
+class TestRegisterFunction:
+    """
+    Tests for Diagnostic.register_function.
+
+    The three parameters are optional beyond the diagnostic function itself, so that the
+    examples in the docstring of Diagnostic.register_function work as written.
+    """
+
+    def test_register_with_only_function(self):
+        diag = Diagnostic(add_default_functions=False)
+        diag.register_function(SchemaValidation())
+
+        assert len(diag._functions) == 1
+        name, _, argument_names = diag._functions[0]
+        assert name == "SchemaValidation"
+        assert argument_names is None
+
+    def test_register_with_argument_names(self):
+        diag = Diagnostic(add_default_functions=False)
+        diag.register_function(SchemaValidation(), [])
+
+        name, _, argument_names = diag._functions[0]
+        assert name == "SchemaValidation"
+        assert argument_names == []
+
+    def test_register_with_custom_name(self):
+        diag = Diagnostic(add_default_functions=False)
+        diag.register_function(SchemaValidation(), None, "my_schema_check")
+
+        name, _, argument_names = diag._functions[0]
+        assert name == "my_schema_check"
+        assert argument_names is None
+
+    def test_default_name_is_class_name(self):
+        diag = Diagnostic(add_default_functions=False)
+        diag.register_function(SchemaValidation(), None, None)
+
+        assert diag._functions[0][0] == "SchemaValidation"
+
+    def test_registered_function_runs_and_uses_name(self):
+        net = example_simple()
+        net.line.at[net.line.index[0], "length_km"] = -1
+
+        diag = Diagnostic(add_default_functions=False)
+        diag.register_function(SchemaValidation(), None, "my_schema_check")
+        diag_results = diag.diagnose_network(net, report_style=None)
+
+        assert "my_schema_check" in diag_results
+        assert "schema_validation" not in diag_results
+
+    def test_argument_names_none_passes_all_kwargs(self):
+        net = example_simple()
+
+        diag = Diagnostic(add_default_functions=False)
+        diag.register_function(SchemaValidation())
+        # groups_to_validate is only reachable because all kwargs are passed through
+        diag_results = diag.diagnose_network(net, report_style=None, groups_to_validate="sc")
+
+        assert "SchemaValidation" in diag_results
+
+    def test_argument_names_empty_passes_no_kwargs(self):
+        net = example_simple()
+
+        diag = Diagnostic(add_default_functions=False)
+        diag.register_function(SchemaValidation(), [])
+        diag_results = diag.diagnose_network(net, report_style=None, groups_to_validate="sc")
+
+        # the sc group is not requested, so a clean net reports nothing
+        assert diag_results == {}
+
+    def test_missing_required_argument_raises(self):
+        diag = Diagnostic(add_default_functions=False)
+        diag.register_function(NominalVoltagesMismatch(), ["nominal_voltage_tolerance"])
+
+        with pytest.raises(ValueError, match="nominal_voltage_tolerance"):
+            diag.diagnose_network(example_simple(), report_style=None)
+
+    def test_docstring_examples_work(self):
+        diag = Diagnostic(add_default_functions=False)
+        diag.register_function(DeviationFromStdType(), None)
+        diag.register_function(DeviationFromStdType(), None, "dev_from_std_twice")
+
+        names = [name for name, _, _ in diag._functions]
+        assert names == ["DeviationFromStdType", "dev_from_std_twice"]
 
 
 def test_runpp_errors(test_net, diag_params, diag_errors):

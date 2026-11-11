@@ -3,11 +3,11 @@
 
 import numpy as np
 import pandas as pd
-from pandas import DataFrame, notnull, isnull
+from pandas import DataFrame, isnull, notnull
 
-from pandapower.run import runpp
 from pandapower.create import create_measurement
-from pandapower.topology import create_nxgraph, connected_component
+from pandapower.run import runpp
+from pandapower.topology import connected_component, create_nxgraph
 
 
 def estimate_voltage_vector(net):
@@ -217,7 +217,7 @@ def remove_shunt_injection_from_meas(net, type):
                 net.measurement.loc[idxq, "value"] -= (
                     net.res_ward.loc[index[k], "q_mvar"] - net.ward.loc[index[k], "qs_mvar"]
                 )
-        except:
+        except Exception:  # noqa: BLE001, S112
             continue
 
 
@@ -238,15 +238,15 @@ def add_virtual_pmu_meas_from_loadflow(
         for side in branch_meas_type[br_type]["side"]:
             if "res_" + br_type in net:
                 p, q, vm, va = (
-                    net["res_" + br_type]["p_%s_mw" % side].values,
-                    net["res_" + br_type]["q_%s_mvar" % side].values,
-                    net["res_" + br_type]["vm_%s_pu" % side].values,
-                    net["res_" + br_type]["va_%s_degree" % side].values,
+                    net[f"res_{br_type}"][f"p_{side}_mw"].values,
+                    net[f"res_{br_type}"][f"q_{side}_mvar"].values,
+                    net[f"res_{br_type}"][f"vm_{side}_pu"].values,
+                    net[f"res_{br_type}"][f"va_{side}_degree"].values,
                 )
                 S = p + q * 1j
                 V = vm * np.exp(np.deg2rad(va) * 1j)
-                I = np.conj(S / V)
-                net["res_" + br_type]["ia_%s_degree" % side] = np.rad2deg(np.angle(I))
+                i = np.conj(S / V)
+                net[f"res_{br_type}"][f"ia_{side}_degree"] = np.rad2deg(np.angle(i))
 
     for bus_ix, bus_res in net.res_bus.iterrows():
         for meas_type in bus_meas_types:

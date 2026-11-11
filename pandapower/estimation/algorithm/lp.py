@@ -15,9 +15,9 @@ except ImportError:
     ortools_available = False
 import warnings
 
-from pandapower.estimation.ppc_conversion import ExtendedPPCI
 from pandapower.estimation.algorithm.base import BaseAlgorithm
 from pandapower.estimation.algorithm.matrix_base import BaseAlgebra
+from pandapower.estimation.ppc_conversion import ExtendedPPCI
 
 
 class LPAlgorithm(BaseAlgorithm):
@@ -31,7 +31,7 @@ class LPAlgorithm(BaseAlgorithm):
         current_error, cur_it = 100.0, 0
         E = eppci.E
         while current_error > self.tolerance and cur_it < self.max_iterations:
-            self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
+            self.logger.debug(f"Starting iteration {1 + cur_it:d}")
             try:
                 # residual r
                 r = sem.create_rx(E)
@@ -48,7 +48,7 @@ class LPAlgorithm(BaseAlgorithm):
                 # prepare next iteration
                 cur_it += 1
                 current_error = np.max(np.abs(d_E))
-                self.logger.debug("Current error: {:.7f}".format(current_error))
+                self.logger.debug(f"Current error: {current_error:.7f}")
             except np.linalg.LinAlgError:  # pragma: no cover
                 self.logger.error(
                     "A problem appeared while using the linear algebra methods.Check and change the measurement set."

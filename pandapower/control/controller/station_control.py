@@ -1,13 +1,14 @@
-import numpy as np
+import logging
 import numbers
 from collections.abc import Sequence
-import logging
+from enum import Enum
 
-from pandapower.control.basic_controller import Controller
+import numpy as np
+
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
+from pandapower.control.basic_controller import Controller
 from pandapower.control.util.auxiliary import get_min_max_q_mvar_from_characteristics_object
 from pandapower.create._utils import add_column_to_df
-from enum import Enum
 
 logger = logging.getLogger(__name__)
 
@@ -155,7 +156,7 @@ class BinarySearchControl(Controller):
         ###catching errors in variables, allocating
         if input_inverted is None:
             input_inverted = []  # for robustness
-        if isinstance(output_element_index, list) or isinstance(output_element_index, np.ndarray):
+        if isinstance(output_element_index, (list, np.ndarray)):
             self.output_element_index = [int(item) for item in output_element_index]
         else:
             self.output_element_index = []
@@ -165,7 +166,7 @@ class BinarySearchControl(Controller):
             self.output_element_in_service = [output_element_in_service]
         else:
             self.output_element_in_service = output_element_in_service
-        if isinstance(input_element_index, list) or isinstance(input_element_index, np.ndarray):
+        if isinstance(input_element_index, (list, np.ndarray)):
             for element in input_element_index:
                 self.input_element_index.append(element)
         else:
@@ -203,22 +204,21 @@ class BinarySearchControl(Controller):
             dtype=bool,
         )
         # finding correct control_modus, catching deprecated voltage_ctrl argument
-        if control_modus is None:  # catching old attribute voltage_ctrl
-            if hasattr(self, "voltage_ctrl"):
-                control_modus = self.voltage_ctrl
-                if not hasattr(self, "_deprecation_warned"):  # only one message that voltage ctrl is deprecated
-                    logger.warning(
-                        f"'voltage_ctrl' in Controller {self.index} is deprecated. "
-                        "Use 'control_modus' ('Q_ctrl', 'V_ctrl', etc.) instead."
-                    )
-                    self._deprecation_warned = True
-        if isinstance(control_modus, bool) and control_modus == True:  # Only functions written out!?!
+        if control_modus is None and hasattr(self, "voltage_ctrl"):  # catching old attribute voltage_ctrl
+            control_modus = self.voltage_ctrl
+            if not hasattr(self, "_deprecation_warned"):  # only one message that voltage ctrl is deprecated
+                logger.warning(
+                    f"'voltage_ctrl' in Controller {self.index} is deprecated. "
+                    "Use 'control_modus' ('Q_ctrl', 'V_ctrl', etc.) instead."
+                )
+                self._deprecation_warned = True
+        if isinstance(control_modus, bool) and control_modus:  # Only functions written out!?!
             self.control_modus = ControlModusEnum.v_ctrl
             logger.warning(
                 f"Deprecated Controller control_modus for Controller {self.index}, using 'V_ctrl' from available"
                 f" types 'Q_ctrl', 'V_ctrl', 'PF_ctrl' or 'tan(phi)_ctrl'\n"
             )
-        elif isinstance(control_modus, bool) and control_modus == False:  # Only functions written out!?!
+        elif isinstance(control_modus, bool) and not control_modus:  # Only functions written out!?!
             self.control_modus = ControlModusEnum.q_ctrl
             logger.warning(
                 f"Deprecated Controller control_modus for Controller {self.index}, using Q_ctrl from available"
@@ -243,12 +243,10 @@ class BinarySearchControl(Controller):
                 self.control_modus = ControlModusEnum.PF_ctrl_ind
             self.reactance = 1
 
-        if self.control_modus in ControlModusEnum.pf_modes():  # type: ignore[has-type] # checking cos(phi) limits
-            if abs(self.set_point) > 1:
-                raise UserWarning(f"Power Factor Controller {self.index}: Set point out of range ([-1,1]")
+        if self.control_modus in ControlModusEnum.pf_modes() and abs(self.set_point) > 1:  # type: ignore[has-type] # checking cos(phi) limits
+            raise UserWarning(f"Power Factor Controller {self.index}: Set point out of range ([-1,1]")
         ###adding input elements###
-        counter = 0
-        for input_index in np.atleast_1d(self.input_element_index):
+        for counter, input_index in enumerate(np.atleast_1d(self.input_element_index)):
             if self.input_element == "res_line":
                 self.input_element_in_service.append(net.line.in_service[input_index])
             elif self.input_element == "res_trafo":
@@ -287,14 +285,11 @@ class BinarySearchControl(Controller):
                 )  # read flag p not necessary, flag same as Q variables
             self.read_flag.append(read_flag_temp)
             self.input_variable.append(input_variable_temp)
-            counter += 1
 
     def __str__(self):
-        return super().__str__() + " [%s.%s.%s.%s]" % (
-            self.input_element,
-            self.input_variable,
-            self.output_element,
-            self.output_variable,
+        return (
+            super().__str__()
+            + f" [{self.input_element}.{self.input_variable}.{self.output_element}.{self.output_variable}]"
         )
 
     def __getattr__(self, name):
@@ -375,8 +370,8 @@ class BinarySearchControl(Controller):
         # check if at least one input and one output element is in_service
         if not (any(self.input_element_in_service) and any(self.output_element_in_service)):
             logger.warning(
-                "Input and/or output elements for controller %i out of service, putting controller "
-                "out of service" % self.index
+                f"Input and/or output elements for controller {self.index} out of service, putting controller out of "
+                f"service"
             )
             self.converged = True
             net.controller.loc[self.index, "in_service"] = False
@@ -437,7 +432,7 @@ class BinarySearchControl(Controller):
                 self.control_modus = ControlModusEnum.q_ctrl
             self.diff_old = self.diff
             if not any(self.output_adjustable):
-                logging.info("All stations controlled by %s reached reactive power limits." % self.name)
+                logger.info(f"All stations controlled by {self.name} reached reactive power limits.")
                 self.converged = True
                 return self.converged
             else:
@@ -467,7 +462,7 @@ class BinarySearchControl(Controller):
 
             self.diff_old = self.diff
             if not any(self.output_adjustable):
-                logging.info("PF_ctrl: All stations controlled by %s reached reactive power limits." % self.name)
+                logger.info(f"PF_ctrl: All stations controlled by {self.name} reached reactive power limits.")
                 self.converged = True
                 return self.converged
             else:
@@ -501,7 +496,7 @@ class BinarySearchControl(Controller):
         elif self.control_modus == ControlModusEnum.tan_phi_ctrl:
             self.diff_old = self.diff
             if not any(self.output_adjustable):
-                logging.info("tan(phi)_ctrl: All stations controlled by %s reached reactive power limits." % self.name)
+                logger.info(f"tan(phi)_ctrl: All stations controlled by {self.name} reached reactive power limits.")
                 self.converged = True
                 return self.converged
             else:
@@ -522,19 +517,15 @@ class BinarySearchControl(Controller):
             self.converged = np.all(np.abs(self.diff) < self.tol)
         else:
             ###catching deprecated modi from old imports
-            if (
-                isinstance(self.control_modus, bool)
-                and self.control_modus == True
-                and self.input_element_index is not None
-            ):
+            if isinstance(self.control_modus, bool) and self.control_modus and self.input_element_index is not None:
                 self.control_modus = ControlModusEnum.v_ctrl  # catching old implementation
                 logger.warning(
                     f"Deprecated Control Modus in Controller {self.index}, using V_ctrl from available types\n"
                 )
-            elif (isinstance(self.control_modus, bool) and self.control_modus == False) or (
-                isinstance(self.control_modus, bool) and self.control_modus == True and self.input_element_index is None
+            elif (isinstance(self.control_modus, bool) and not self.control_modus) or (
+                isinstance(self.control_modus, bool) and self.control_modus and self.input_element_index is None
             ):
-                if self.control_modus is True:
+                if self.control_modus:
                     logger.warning(
                         f'Deprecated Control Modus in Controller {self.index}, attempted to use "V_ctrl" but '
                         f"missing attribute input_element_index, defaulting to Q_ctrl\n"
@@ -549,11 +540,11 @@ class BinarySearchControl(Controller):
                 if (
                     self.input_element != "res_bus"
                 ):  # and not any(getattr(net.controller.at[x, 'object'], 'controller_idx', False) ==
-                    if hasattr(self, "bus_idx") and getattr(self, "bus_idx") is not None:  # legacy
+                    if hasattr(self, "bus_idx") and self.bus_idx is not None:  # legacy
                         self.diff_old = self.diff
                         if not any(self.output_adjustable):
-                            logging.info(
-                                "Q_ctrl: All stations controlled by %s reached reactive power limits." % self.name
+                            logger.info(
+                                f"Q_ctrl: All stations controlled by {self.name} reached reactive power limits."
                             )
                             self.converged = True
                             return self.converged
@@ -586,8 +577,8 @@ class BinarySearchControl(Controller):
                             self.input_variable = "vm_pu"
                         self.diff_old = self.diff  # V_ctrl
                         if not any(self.output_adjustable):
-                            logging.info(
-                                "V_ctrl: All stations controlled by %s reached reactive power limits." % self.name
+                            logger.info(
+                                f"V_ctrl: All stations controlled by {self.name} reached reactive power limits."
                             )
                             self.converged = True
                             return self.converged
@@ -611,7 +602,7 @@ class BinarySearchControl(Controller):
                 else:
                     self.diff_old = self.diff  # V_ctrl
                     if not any(self.output_adjustable):
-                        logging.info("V_ctrl: All stations controlled by %s reached reactive power limits." % self.name)
+                        logger.info(f"V_ctrl: All stations controlled by {self.name} reached reactive power limits.")
                         self.converged = True
                         return self.converged
                     else:
@@ -640,7 +631,7 @@ class BinarySearchControl(Controller):
                     self.control_modus = ControlModusEnum.q_ctrl
                 self.diff_old = self.diff  # Q_ctrl
                 if not any(self.output_adjustable):
-                    logging.info("Q_ctrl: All stations controlled by %s reached reactive power limits." % self.name)
+                    logger.info(f"Q_ctrl: All stations controlled by {self.name} reached reactive power limits.")
                     self.converged = True
                     return self.converged
                 else:
@@ -747,9 +738,9 @@ class BinarySearchControl(Controller):
                             i for i, val in enumerate(reached_max_qmvar) if val is np.True_
                         ]  # can be one or multiple
                         reached_index = [self.output_element_index[i] for i in positions]
-                        logging.info(
-                            "Station(s) controlled by %s reached the maximum reactive power limit: %s"
-                            % (self.name, ", ".join(net[self.output_element].loc[reached_index].name.tolist()))
+                        logger.info(
+                            f"Station(s) controlled by {self.name} reached the maximum reactive power limit: "
+                            f"{', '.join(net[self.output_element].loc[reached_index].name.tolist())}"
                         )
                         self.output_adjustable[positions] = False
                         sum_old = sum(x)
@@ -768,9 +759,9 @@ class BinarySearchControl(Controller):
                     elif any(reached_min_qmvar):
                         positions = [i for i, val in enumerate(reached_min_qmvar) if val is np.True_]
                         reached_index = [self.output_element_index[i] for i in positions]
-                        logging.info(
-                            "Station(s) controlled by %s reached the minimum reactive power limit: %s"
-                            % (self.name, ", ".join(net[self.output_element].loc[reached_index].name.tolist()))
+                        logger.info(
+                            f"Station(s) controlled by {self.name} reached the minimum reactive power limit: "
+                            f"{', '.join(net[self.output_element].loc[reached_index].name.tolist())}"
                         )
                         self.output_adjustable[positions] = False
                         sum_old = sum(x)
@@ -798,7 +789,7 @@ class BinarySearchControl(Controller):
 
                     self.output_values_old = self.output_values
                     if reached_min_qmvar or reached_max_qmvar:
-                        logging.info(
+                        logger.info(
                             f"Station {self.output_element_index} controlled by {self.name} reached a reactive power "
                             f"limit."
                         )
@@ -813,12 +804,12 @@ class BinarySearchControl(Controller):
                 self.output_values_old, self.output_values = self.output_values, x
         ### write new set of Q values to output elements###
         output_element_index = (
-            list(np.atleast_1d(self.output_element_index)[self.output_element_in_service])[0]
+            next(iter(np.atleast_1d(self.output_element_index)[self.output_element_in_service]))
             if self.write_flag == "single_index"
             else list(np.array(self.output_element_index)[self.output_element_in_service])
         )  # ruggedizing code
         output_values = (
-            list(self.output_values)[0] if self.write_flag == "single_index" else list(self.output_values)
+            next(iter(self.output_values)) if self.write_flag == "single_index" else list(self.output_values)
         )  # ruggedizing code
         write_to_net(
             net, self.output_element, output_element_index, self.output_variable, output_values, self.write_flag
@@ -977,18 +968,16 @@ class DroopControl(Controller):
         self.check_control_modus_and_values(net)
 
     def check_control_modus_and_values(self, net):
-        if getattr(self, "control_modus", None) is None:  # catching old attribute voltage_ctrl
-            if hasattr(self, "voltage_ctrl"):
-                self.control_modus = self.voltage_ctrl
-                if (
-                    getattr(self, "_deprecation_warned", False) is False
-                ):  # only one message that voltage ctrl is deprecated
-                    logger.warning(
-                        f"'voltage_ctrl' in Controller {self.index} is deprecated. "
-                        "Use 'control_modus' ('Q_ctrl', 'V_ctrl', etc.) instead."
-                    )
-                    self._deprecation_warned = True
-        ###catching old implementation
+        if getattr(self, "control_modus", None) is None and hasattr(self, "voltage_ctrl"):
+            # catching old attribute voltage_ctrl
+            self.control_modus = self.voltage_ctrl
+            if getattr(self, "_deprecation_warned", False) is False:  # only one message that voltage ctrl is deprecated
+                logger.warning(
+                    f"'voltage_ctrl' in Controller {self.index} is deprecated. "
+                    "Use 'control_modus' ('Q_ctrl', 'V_ctrl', etc.) instead."
+                )
+                self._deprecation_warned = True
+        # catching old implementation
         if isinstance(self.control_modus, bool) and self.control_modus:
             self.control_modus = ControlModusEnum.v_ctrl_q_droop
             logger.warning(
@@ -1068,9 +1057,8 @@ class DroopControl(Controller):
                 net, "res_bus", int(self.bus_idx), "vm_pu", self.read_flag
             )
         else:
-            counter = 0
             input_values = []
-            for input_index in net.controller.at[self.controller_idx, "object"].input_element_index:
+            for counter, input_index in enumerate(net.controller.at[self.controller_idx, "object"].input_element_index):
                 input_values.append(
                     read_from_net(
                         net,
@@ -1080,7 +1068,6 @@ class DroopControl(Controller):
                         net.controller.at[self.controller_idx, "object"].read_flag[counter],
                     )
                 )
-                counter += 1
             input_sign = np.asarray(net.controller.at[self.controller_idx, "object"].input_sign)
             input_values = (input_sign * np.asarray(input_values)).tolist()
             self.diff = net.controller.at[self.controller_idx, "object"].set_point - sum(input_values)
@@ -1205,7 +1192,6 @@ class VDroopControl_local(Controller):
             self.control_modus = ControlModusEnum.v_ctrl_q_droop_local
         self.tol = tol
         self.applied = False
-        gen_idx = net.controller.at[self.controller_idx, "object"].input_element_index[0]
         self.read_flag, self.input_variable = _detect_read_write_flag(net, "res_bus", bus_idx, "vm_pu")
         self.diff = None
         self.converged = False

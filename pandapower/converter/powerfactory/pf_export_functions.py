@@ -1,5 +1,6 @@
 import logging
 from typing import overload
+
 from typing_extensions import deprecated
 
 logger = logging.getLogger(__name__)
@@ -33,7 +34,6 @@ def create_network_dict(app, include_hidden_bus=None, flag_graphics="GPS"):
         "ElmSvs",
         "ElmVsc",
         "ElmVscmono",
-        "ElmSvs",
         # branch elements:
         "ElmLne",
         "ElmCoup",
@@ -131,7 +131,7 @@ def gather_graphic_objects(app, dict_net, dia_name):
     grf_objs = []
     for d in dia_grid:
         grf_objs.extend(d.GetContents("*.IntGrf"))
-    logger.debug("collected graphic objects: %s" % grf_objs)
+    logger.debug(f"collected graphic objects: {grf_objs}")
     dict_net["graphics"] = {grf.pDataObj: grf for grf in grf_objs}
 
 
@@ -184,45 +184,43 @@ def run_load_flow(app, scale_feeder_loads=False, load_scaling=None, gen_scaling=
     if com_ldf.iopt_igntow == 1:
         logger.warning("Line coupling model will be neglected.")
     if load_scaling is not None:
-        logger.debug("scaling loads at %.2f" % load_scaling)
+        logger.debug(f"scaling loads at {load_scaling:.2f}")
         com_ldf.scLoadFac = load_scaling
     if gen_scaling is not None:
-        logger.debug("scaling generators at %.2f" % gen_scaling)
+        logger.debug(f"scaling generators at {gen_scaling:.2f}")
         com_ldf.scGenFac = gen_scaling
     if motor_scaling is not None:
-        logger.debug("scaling motors at %.2f" % motor_scaling)
+        logger.debug(f"scaling motors at {motor_scaling:.2f}")
         com_ldf.scMotFac = motor_scaling
 
     logger.info("---------------------------------------------------------------------------------")
     logger.info("PowerFactory load flow settings:")
     # Active power regulation
-    logger.info("Calculation method (AC balanced, AC unbalanced): %s" % com_ldf.iopt_net)
+    logger.info(f"Calculation method (AC balanced, AC unbalanced): {com_ldf.iopt_net}")
     logger.info(f"Calculation method probabilistic loadflow of lv-loads: {com_ldf.iopt_sim}")
-    logger.info("Automatic tap adjustment of phase shifters: %s" % com_ldf.iPST_at)
-    logger.info("Consider active power limits: %s" % com_ldf.iopt_plim)
+    logger.info(f"Automatic tap adjustment of phase shifters: {com_ldf.iPST_at}")
+    logger.info(f"Consider active power limits: {com_ldf.iopt_plim}")
     # Voltage and reactive power regulation
-    logger.info("Automatic tap adjustment of transformers: %s" % com_ldf.iopt_at)
-    logger.info("Automatic tap adjustment of shunts: %s" % com_ldf.iopt_asht)
-    logger.info("Consider reactive power limits: %s" % com_ldf.iopt_lim)
+    logger.info(f"Automatic tap adjustment of transformers: {com_ldf.iopt_at}")
+    logger.info(f"Automatic tap adjustment of shunts: {com_ldf.iopt_asht}")
+    logger.info(f"Consider reactive power limits: {com_ldf.iopt_lim}")
     # Temperature dependency
-    logger.info("Calculate at 20 °C/max. temperature: %s" % com_ldf.iopt_tem)
+    logger.info(f"Calculate at 20 °C/max. temperature: {com_ldf.iopt_tem}")
     # Load options
-    logger.info("Consider voltage dependency of loads: %s" % com_ldf.iopt_pq)
-    logger.info("Feeder load scaling: %s" % com_ldf.iopt_fls)
+    logger.info(f"Consider voltage dependency of loads: {com_ldf.iopt_pq}")
+    logger.info(f"Feeder load scaling: {com_ldf.iopt_fls}")
     logger.info("---------------------------------------------------------------------------------")
 
     res = com_ldf.Execute()
     # print("pf result", res)
     if res != 0:
-        logger.error("Load flow failed due to divergence of %s loops" % ["inner", "outer"][res - 1])
-    #        raise RuntimeError(
-    #            'Load flow failed due to divergence of %s loops' % ['inner', 'outer'][res - 1])
+        logger.error(f"Load flow failed due to divergence of {['inner', 'outer'][res - 1]} loops")
     return res
 
 
 def setup_unit_exponents(prj, elm_class, unit, exponent):
     cdigexp = "M" if unit in ["var", "W", "VA"] else "u" if unit in ["F/km", "F"] else "k" if unit == "A" else ""
-    logger.debug("setting unit exponents: %s, %s, %s, %s" % (elm_class, unit, cdigexp, exponent))
+    logger.debug(f"setting unit exponents: {elm_class}, {unit}, {cdigexp}, {exponent}")
     settings_folder = prj.GetContents("*.SetFold")[0]
     units_folder = settings_folder.GetContents("*.IntUnit")
 

@@ -1,15 +1,16 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pytest
-import numpy as np
-import pandas as pd
 import logging as log
 
+import numpy as np
+import pandas as pd
+import pytest
+
+from pandapower.control import ConstControl, ContinuousTapControl
 from pandapower.create import create_sgen
 from pandapower.networks import simple_four_bus_system
 from pandapower.timeseries import DFData
-from pandapower.control import ConstControl, ContinuousTapControl
 
 logger = log.getLogger(__name__)
 
@@ -37,6 +38,17 @@ def test_write_to_object_attribute():
         c2.time_step(net, t)
         c2.control_step(net)
         assert net.controller.object.at[0].vm_set_pu == ds.df.at[t, 0]
+
+
+def test_missing_element_index():
+    net = simple_four_bus_system()
+    ds = DFData(pd.DataFrame(data=[[0.0, 1.0], [2.0, 3.0]]))
+    with pytest.raises(ValueError, match=r"element_index \[5\] not found in net.sgen"):
+        ConstControl(net, "sgen", "p_mw", element_index=5, profile_name=0, data_source=ds)
+    with pytest.raises(ValueError, match=r"element_index \[5\] not found in net.sgen"):
+        ConstControl(net, "sgen", "p_mw", element_index=[0, 5], profile_name=[0, 1], data_source=ds)
+    # the failed controllers are not added to the net
+    assert len(net.controller) == 0
 
 
 if __name__ == "__main__":

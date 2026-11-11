@@ -1,8 +1,22 @@
-import os
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
 
-test_path = os.path.dirname(os.path.realpath(__file__))
-tutorials_path = os.path.join(test_path, "..", "tutorials")
+__all__ = [
+    "run_all_tests",
+    "run_fast_tests",
+    "run_slow_tests",
+    "run_tutorials",
+    "start_tests",
+    "test_path",
+    "tutorials_path",
+]
 
-from test.conftest import *
-from test.helper_functions import *
-from test.run_tests import *
+from test.run_tests import (
+    run_all_tests,
+    run_fast_tests,
+    run_slow_tests,
+    run_tutorials,
+    start_tests,
+    test_path,
+    tutorials_path,
+)

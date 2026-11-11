@@ -1,23 +1,22 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging
+
 import numpy as np
 from numpy.linalg import LinAlgError
-from scipy.sparse import csr_matrix, vstack, hstack
-from scipy.sparse.linalg import spsolve, norm, inv
+from scipy.sparse import csr_matrix, hstack, vstack
+from scipy.sparse.linalg import inv, norm, spsolve
 
 from pandapower.estimation.algorithm.estimator import BaseEstimatorIRWLS, get_estimator
 from pandapower.estimation.algorithm.matrix_base import BaseAlgebra, BaseAlgebraZeroInjConstraints
-from pandapower.estimation.idx_bus import ZERO_INJ_FLAG, P, P_STD, Q, Q_STD
+from pandapower.estimation.idx_bus import P_STD, Q_STD, ZERO_INJ_FLAG, P, Q
 from pandapower.estimation.ppc_conversion import ExtendedPPCI
-from pandapower.pypower.idx_bus import bus_cols
-
-import logging
+from pandapower.pypower.idx_bus import BUS_COLS
 
 std_logger = logging.getLogger(__name__)
-std_logger.setLevel(logging.DEBUG)
 
-__all__ = ["WLSAlgorithm", "WLSZeroInjectionConstraintsAlgorithm", "IRWLSAlgorithm"]
+__all__ = ["IRWLSAlgorithm", "WLSAlgorithm", "WLSZeroInjectionConstraintsAlgorithm"]
 
 
 class BaseAlgorithm:
@@ -63,7 +62,7 @@ class BaseAlgorithm:
 
 class WLSAlgorithm(BaseAlgorithm):
     def __init__(self, tolerance, maximum_iterations, logger=std_logger):
-        super(WLSAlgorithm, self).__init__(tolerance, maximum_iterations, logger)
+        super().__init__(tolerance, maximum_iterations, logger)
 
         # Parameters for Bad data detection
         self.R_inv = None
@@ -72,9 +71,20 @@ class WLSAlgorithm(BaseAlgorithm):
         self.H = None
         self.hx = None
         self.iterations = None
-        self.obj_func = None
 
-    def estimate(self, eppci: ExtendedPPCI, debug_mode=False, **kwargs):
+    def estimate(self, eppci: ExtendedPPCI, **kwargs):
+        """
+        Runs the weighted least squares (WLS) state estimation with Newton iterations.
+
+        Parameters:
+            eppci: the extended ppci with the measurements and the initial state
+
+        Returns:
+            eppci with the estimated state, or False if a linear algebra problem occurred. Whether the estimation converged
+            is stored in self.successful.
+        """
+        # TODO: MOVE debug_mode to diagnostic!
+        debug_mode = False
         self.initialize(eppci)
         # matrix calculation object
         sem = BaseAlgebra(eppci)
@@ -106,6 +116,8 @@ class WLSAlgorithm(BaseAlgorithm):
                 # gain matrix G_m
                 # G_m = H^t * R^-1 * H
                 G_m = H.T * (r_inv * H)
+
+                # TODO: MOVE debug_mode to diagnostic!
                 if debug_mode:
                     norm_G = norm(G_m, np.inf)
                     norm_invG = norm(inv(G_m), np.inf)
@@ -127,10 +139,11 @@ class WLSAlgorithm(BaseAlgorithm):
                 E += d_E.ravel()  # type: ignore[union-attr]
                 eppci.update_E(E)
 
+                # TODO: MOVE debug_mode to diagnostic!
                 if debug_mode:
                     obj_func = (r.T * r_inv * r)[0, 0]
-                    self.logger.debug("Current delta_x: {:.7f}".format(current_error))
-                    self.logger.debug("Current objective function value: {:.1f}".format(obj_func))
+                    self.logger.debug(f"Current delta_x: {current_error:.7f}")
+                    self.logger.debug(f"Current objective function value: {obj_func:.1f}")
 
                 # Restore full weighting matrix with current measurements
                 if cur_it == 0 and eppci.any_i_meas:
@@ -148,8 +161,6 @@ class WLSAlgorithm(BaseAlgorithm):
         # check if the estimation is successful
         self.check_result(current_error, cur_it)
         self.iterations = cur_it
-        if debug_mode:
-            self.obj_func = obj_func
         if self.successful:
             # store variables required for chi^2 and r_N_max test:
             self.R_inv = r_inv.toarray()
@@ -165,10 +176,10 @@ class WLSZeroInjectionConstraintsAlgorithm(BaseAlgorithm):
     def estimate(self, eppci: ExtendedPPCI, **kwargs):
         # state vector built from delta, |V| and zero injections
         # Find pq bus with zero p,q and shunt admittance
-        if not np.any(eppci["bus"][:, bus_cols + ZERO_INJ_FLAG]):
+        if not np.any(eppci["bus"][:, BUS_COLS + ZERO_INJ_FLAG]):
             raise UserWarning("Network has no bus with zero injections! Please use WLS instead!")
-        zero_injection_bus = np.argwhere(eppci["bus"][:, bus_cols + ZERO_INJ_FLAG]).ravel()
-        eppci["bus"][np.ix_(zero_injection_bus, [bus_cols + P, bus_cols + P_STD, bus_cols + Q, bus_cols + Q_STD])] = (
+        zero_injection_bus = np.argwhere(eppci["bus"][:, BUS_COLS + ZERO_INJ_FLAG]).ravel()
+        eppci["bus"][np.ix_(zero_injection_bus, [BUS_COLS + P, BUS_COLS + P_STD, BUS_COLS + Q, BUS_COLS + Q_STD])] = (
             np.nan
         )
         # Withn pq buses with zero injection identify those who have also no p or q measurement
@@ -190,7 +201,7 @@ class WLSZeroInjectionConstraintsAlgorithm(BaseAlgorithm):
         E_ext = np.r_[eppci.E, new_states]
 
         while current_error > self.tolerance and cur_it < self.max_iterations:
-            self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
+            self.logger.debug(f"Starting iteration {1 + cur_it:d}")
             try:
                 c_x = sem.create_cx(E, p_zero_injections, q_zero_injections)
 
@@ -224,7 +235,7 @@ class WLSZeroInjectionConstraintsAlgorithm(BaseAlgorithm):
                 # prepare next iteration
                 cur_it += 1
                 current_error = np.max(np.abs(d_E_ext[: len(eppci.non_slack_buses) + num_bus]))
-                self.logger.debug("Current error: {:.7f}".format(current_error))
+                self.logger.debug(f"Current error: {current_error:.7f}")
             except LinAlgError:
                 self.logger.error(
                     "A problem appeared while using the linear algebra methods.Check and change the measurement set."
@@ -246,7 +257,7 @@ class IRWLSAlgorithm(BaseAlgorithm):
         current_error, cur_it = 100.0, 0
         E = eppci.E
         while current_error > self.tolerance and cur_it < self.max_iterations:
-            self.logger.debug("Starting iteration {:d}".format(1 + cur_it))
+            self.logger.debug(f"Starting iteration {1 + cur_it:d}")
             try:
                 # residual r
                 r = csr_matrix(sem.create_rx(E)).T
@@ -267,7 +278,7 @@ class IRWLSAlgorithm(BaseAlgorithm):
                 # prepare next iteration
                 cur_it += 1
                 current_error = np.max(np.abs(d_E))
-                self.logger.debug("Current error: {:.7f}".format(current_error))
+                self.logger.debug(f"Current error: {current_error:.7f}")
             except LinAlgError:
                 self.logger.error(
                     "A problem appeared while using the linear algebra methods.Check and change the measurement set."
@@ -282,7 +293,7 @@ class IRWLSAlgorithm(BaseAlgorithm):
 
 class AFWLSAlgorithm(BaseAlgorithm):
     def __init__(self, tolerance, maximum_iterations, logger=std_logger):
-        super(AFWLSAlgorithm, self).__init__(tolerance, maximum_iterations, logger)
+        super().__init__(tolerance, maximum_iterations, logger)
 
         # Parameters for Bad data detection
         self.R_inv = None
@@ -291,9 +302,21 @@ class AFWLSAlgorithm(BaseAlgorithm):
         self.H = None
         self.hx = None
         self.iterations = None
-        self.obj_func = None
 
-    def estimate(self, eppci: ExtendedPPCI, debug_mode=False, **kwargs):
+    def estimate(self, eppci: ExtendedPPCI, **kwargs):
+        """
+        Runs the allocation factor WLS (AF-WLS) state estimation: in addition to the bus voltages, the allocation factors of
+        the load clusters are estimated, which allows the estimation of distribution grids that are not fully observable.
+
+        Parameters:
+            eppci: the extended ppci with the measurements, the clusters and the initial state
+
+        Returns:
+            eppci with the estimated state (the allocation factors in eppci.clusters), or False if a linear algebra problem
+            occurred. Whether the estimation converged is stored in self.successful.
+        """
+        # TODO: MOVE debug_mode to diagnostic!
+        debug_mode = False
         self.initialize(eppci)
         # matrix calculation object
         sem = BaseAlgebra(eppci)
@@ -323,6 +346,8 @@ class AFWLSAlgorithm(BaseAlgorithm):
 
                 # gain matrix G_m
                 G_m = H.T * (r_inv * H)
+
+                # TODO: MOVE debug_mode to diagnostic!
                 if debug_mode:
                     norm_G = norm(G_m, np.inf)
                     norm_invG = norm(inv(G_m), np.inf)
@@ -338,10 +363,12 @@ class AFWLSAlgorithm(BaseAlgorithm):
 
                 # log data
                 current_error = np.max(np.abs(d_E))
+
+                # TODO: MOVE debug_mode to diagnostic!
                 if debug_mode:
                     obj_func = (r.T * r_inv * r)[0, 0]
-                    self.logger.debug("Current delta_x: {:.7f}".format(current_error))
-                    self.logger.debug("Current objective function value: {:.1f}".format(obj_func))
+                    self.logger.debug(f"Current delta_x: {current_error:.7f}")
+                    self.logger.debug(f"Current objective function value: {obj_func:.1f}")
 
                 # Restore full weighting matrix
                 if cur_it == 0 and eppci.any_i_meas:
@@ -359,8 +386,6 @@ class AFWLSAlgorithm(BaseAlgorithm):
         # check if the estimation is successful
         self.check_result(current_error, cur_it)
         self.iterations = cur_it
-        if debug_mode:
-            self.obj_func = obj_func
         if self.successful:
             # split voltage and allocation factor variables
             E1 = E[:-num_clusters]

@@ -1,12 +1,19 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "plot_loading",
+    "plot_voltage_profile",
+    "voltage_profile_to_bus_geodata",
+]
+
 import sys
 from itertools import combinations
 
 import networkx as nx
 import numpy as np
 import pandas as pd
+
 from pandapower.auxiliary import soft_dependency_error
 
 try:
@@ -100,7 +107,7 @@ def plot_voltage_profile(
                 x = [x0 + d.at[from_bus], x0 + d.at[to_bus]]
                 try:
                     y = [net.res_bus.vm_pu.at[from_bus], net.res_bus.vm_pu.at[to_bus]]
-                except:
+                except Exception:  # noqa: BLE001
                     raise UserWarning
                 if "linewidth" in kwargs or not line_loading_weight:
                     ax.plot(x, y, color=line_color, **kwargs)
@@ -111,20 +118,20 @@ def plot_voltage_profile(
                 if bus_colors is not None:
                     if isinstance(bus_colors, str):
                         bus_colors = dict.fromkeys(net.bus.index, bus_colors)
-                    for bus, x, y in zip((from_bus, to_bus), x, y):
+                    for bus, x_, y_ in zip((from_bus, to_bus), x, y):
                         if bus in bus_colors:
-                            ax.plot(x, y, "o", color=bus_colors[bus], ms=bus_size)
+                            ax.plot(x_, y_, "o", color=bus_colors[bus], ms=bus_size)
                 kwargs = {k: v for k, v in kwargs.items() if k != "label"}
 
         # trafo geodata
         if plot_transformers:
             for trafo_table in ["trafo", "trafo3w"]:
-                if trafo_table not in net.keys():
+                if trafo_table not in net:
                     continue
                 transformers = net[trafo_table].query("in_service")
                 for tid, tr in transformers.iterrows():
                     t_buses = [tr[b_col] for b_col in ("lv_bus", "mv_bus", "hv_bus") if b_col in tr.index]
-                    if any([b not in d.index.values or b not in net.res_bus.index.values for b in t_buses]):
+                    if any(b not in d.index.values or b not in net.res_bus.index.values for b in t_buses):
                         # logger.info('cannot add trafo %d to plot' % tid)
                         continue
 
@@ -180,18 +187,16 @@ def plot_loading(
         index_subset = net[element_type].index
 
     # run plotting code
-    loadings = net["res_%s" % element_type].loading_percent.values[
-        net["res_%s" % element_type].index.isin(index_subset)
-    ]
+    loadings = net[f"res_{element_type}"].loading_percent.values[net[f"res_{element_type}"].index.isin(index_subset)]
     boxplot = ax.boxplot(loadings[~np.isnan(loadings)], whis=[0, 100])
-    for l in list(boxplot.keys()):
-        plt.setp(boxplot[l], lw=3)
-        if l == "medians":
-            plt.setp(boxplot[l], color=median_color)
-        elif l == "boxes" or l == "whiskers":
-            plt.setp(boxplot[l], color=box_color)
+    for key in boxplot:
+        plt.setp(boxplot[key], lw=3)
+        if key == "medians":
+            plt.setp(boxplot[key], color=median_color)
+        elif key == "boxes" or key == "whiskers":
+            plt.setp(boxplot[key], color=box_color)
         else:
-            plt.setp(boxplot[l], color=whisker_color)
+            plt.setp(boxplot[key], color=whisker_color)
     ax.set_ylabel(f"{element_type.capitalize()} Loading [%]", fontweight="bold", color=(0.4, 0.4, 0.4))
     ax.set_xticks([1], [""])
     return ax
@@ -221,8 +226,8 @@ def voltage_profile_to_bus_geodata(net, voltages=None, root_bus=None):
 
 
 if __name__ == "__main__":
-    from pandapower.run import runpp
     from pandapower.networks.mv_oberrhein import mv_oberrhein
+    from pandapower.run import runpp
 
     net = mv_oberrhein()
     runpp(net)

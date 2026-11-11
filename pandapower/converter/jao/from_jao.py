@@ -1,34 +1,32 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import json
+import logging
 import os
 from copy import deepcopy
-import json
 from functools import reduce
-from typing import Optional, Union
 
 import numpy as np
 import pandas as pd
 from pandas.api.types import is_integer_dtype, is_object_dtype
 
-from pandapower.network import pandapowerNet
 from pandapower.create import create_buses, create_lines_from_parameters, create_transformers_from_parameters
-from pandapower.topology import create_nxgraph, connected_components
+from pandapower.network import pandapowerNet
 from pandapower.plotting import set_line_geodata_from_bus_geodata
 from pandapower.toolbox.grid_modification import drop_buses, fuse_buses
-
-import logging
+from pandapower.topology import connected_components, create_nxgraph
 
 logger = logging.getLogger(__name__)
 
 
 def from_jao(
     excel_file_path: str,
-    html_file_path: Optional[str],
+    html_file_path: str | None,
     extend_data_for_grid_group_connections: bool,
     drop_grid_groups_islands: bool = False,
     apply_data_correction: bool = True,
-    max_i_ka_fillna: Union[float, int] = 999,
+    max_i_ka_fillna: float = 999,
     **kwargs,
 ) -> pandapowerNet:
     """
@@ -144,9 +142,7 @@ def from_jao(
 # --- secondary functions --------------------------------------------------------------------------
 
 
-def _data_correction(
-    data: dict[str, pd.DataFrame], html_str: Optional[str], max_i_ka_fillna: Union[float, int]
-) -> Optional[str]:
+def _data_correction(data: dict[str, pd.DataFrame], html_str: str | None, max_i_ka_fillna: float) -> str | None:
     """
     Corrects input data in particular with regard to obvious weaknesses in the data provided,
     such as inconsistent spellings and missing necessary information
@@ -295,7 +291,7 @@ def _create_buses_from_line_data(net: pandapowerNet, data: dict[str, pd.DataFram
     :param pandapowerNet net: net to be filled by buses
     :param dict[str, pd.DataFrame data: data provided by the excel file which will be corrected
     """
-    bus_df_empty = pd.DataFrame({"name": str(), "vn_kv": float(), "TSO": str()}, index=[])
+    bus_df_empty = pd.DataFrame({"name": "", "vn_kv": 0.0, "TSO": ""}, index=[])
     bus_df = deepcopy(bus_df_empty)
     for key in ["Lines", "Tielines"]:
         for subst in ["Substation_1", "Substation_2"]:
@@ -311,7 +307,7 @@ def _create_buses_from_line_data(net: pandapowerNet, data: dict[str, pd.DataFram
         raise AssertionError("Not all values of now_bus_idx are identical to bus_df.index")
 
 
-def _create_lines(net: pandapowerNet, data: dict[str, pd.DataFrame], max_i_ka_fillna: Union[float, int]) -> None:
+def _create_lines(net: pandapowerNet, data: dict[str, pd.DataFrame], max_i_ka_fillna: float) -> None:
     """
     Creates lines to the pandapower net using information from the lines and tielines sheets (excel file).
 
@@ -340,21 +336,17 @@ def _create_lines(net: pandapowerNet, data: dict[str, pd.DataFrame], max_i_ka_fi
             net,
             bus_idx.loc[
                 list(
-                    tuple(
-                        zip(
-                            data[key].loc[:, ("Substation_1", "Full_name")].values,  # type: ignore[arg-type]
-                            vn_kvs,
-                        )
+                    zip(
+                        data[key].loc[:, ("Substation_1", "Full_name")].values,  # type: ignore[arg-type]
+                        vn_kvs,
                     )
                 )
             ].values,
             bus_idx.loc[
                 list(
-                    tuple(
-                        zip(
-                            data[key].loc[:, ("Substation_2", "Full_name")].values,  # type: ignore[arg-type]
-                            vn_kvs,
-                        )
+                    zip(
+                        data[key].loc[:, ("Substation_2", "Full_name")].values,  # type: ignore[arg-type]
+                        vn_kvs,
                     )
                 )
             ].values,
@@ -410,6 +402,9 @@ def _create_transformers_and_buses(net: pandapowerNet, data: dict[str, pd.DataFr
     dphi = _get_float_column(data[key], ("Phase Shifting Properties", "Angle Regulation δu (%)"))
     phase_shifter = np.isclose(du, 0) & (~np.isclose(dphi, 0))  # Symmetrical/Asymmetrical not
     # considered
+    has_du = ~(np.isnan(du) | np.isclose(du, 0))
+    tap_changer_type = np.where(phase_shifter, "Ideal", np.where(has_du, "Ratio", None))
+    tap_step_percent = np.where(phase_shifter, np.nan, du)  # ideal phase shifters only use tap_step_degree
 
     _ = create_transformers_from_parameters(
         net,
@@ -428,8 +423,8 @@ def _create_transformers_and_buses(net: pandapowerNet, data: dict[str, pd.DataFr
         tap_side="lv",
         tap_min=taps["tap_min"].values,
         tap_max=taps["tap_max"].values,
-        tap_phase_shifter=phase_shifter,
-        tap_step_percent=du,
+        tap_changer_type=tap_changer_type,
+        tap_step_percent=tap_step_percent,
         tap_step_degree=dphi,
         name=data[key].loc[:, ("Location", "Full Name")].str.strip().values,
         EIC_Code=data[key].xs("EIC_Code", level=1, axis=1).values[:, 0],  # type: ignore[call-overload]
@@ -568,7 +563,7 @@ def _invent_connections_between_grid_groups(
             )
 
 
-def drop_islanded_grid_groups(net: pandapowerNet, min_bus_number: Union[int, str], **kwargs) -> None:
+def drop_islanded_grid_groups(net: pandapowerNet, min_bus_number: int | str, **kwargs) -> None:
     """
     Drops grid groups that are islanded and include a number of buses below min_bus_number.
 
@@ -622,14 +617,14 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
     lgd_name_bus = line_geo_data.pivot_table(values="value", index=["name", "bus"], columns="geo_dim")
     lgd_EIC_bus_idx_extended = pd.MultiIndex.from_frame(
         lgd_EIC_bus.index.to_frame()
-        .assign(**dict(col_name="EIC_Code"))
-        .rename(columns=dict(EIC_Code="identifier"))
+        .assign(col_name="EIC_Code")
+        .rename(columns={"EIC_Code": "identifier"})
         .loc[:, ["col_name", "identifier", "bus"]]
     )
     lgd_name_bus_idx_extended = pd.MultiIndex.from_frame(
         lgd_name_bus.index.to_frame()
-        .assign(**dict(col_name="name"))
-        .rename(columns=dict(name="identifier"))
+        .assign(col_name="name")
+        .rename(columns={"name": "identifier"})
         .loc[:, ["col_name", "identifier", "bus"]]
     )
     lgd_bus = pd.concat(
@@ -641,7 +636,7 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
     def _geo_json_str(this_bus_geo: pd.Series) -> str:
         return f'{{"coordinates": [{this_bus_geo.at["lng"]}, {this_bus_geo.at["lat"]}], "type": "Point"}}'
 
-    def _add_bus_geo_inner(bus: int) -> Optional[str]:
+    def _add_bus_geo_inner(bus: int) -> str | None:
         from_bus_line_excerpt = net.line.loc[net.line.from_bus == bus, ["EIC_Code", "name", "Tieline"]]
         to_bus_line_excerpt = net.line.loc[net.line.to_bus == bus, ["EIC_Code", "name", "Tieline"]]
 
@@ -863,7 +858,7 @@ def _allocate_trafos_to_buses_and_create_buses(
         rel_dev = np.abs(next_vn - trafo_connections.loc[~isin, trafo_vn_col].values) / next_vn
         trafo_connections.loc[~isin, rel_dev_col] = rel_dev
         trafo_connections.loc[~isin, bus_col] = bus_idx.loc[
-            list(tuple(zip(trafo_connections.loc[~isin, "name"], trafo_connections.loc[~isin, next_col])))
+            list(zip(trafo_connections.loc[~isin, "name"], trafo_connections.loc[~isin, next_col]))
         ].values
 
         # --- create buses to avoid too large vn deviations between nodes and transformers
@@ -978,10 +973,6 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
     longest_part_in_buses = trafo_bus_names_longest_part.isin(bus_location_names)
 
     # --- check whether all name strings point at location names of the buses
-    if False:  # for easy testing
-        fail = ~(joined_in_buses | longest_part_in_buses)
-        a = pd.concat([trafo_bus_names_joined.loc[fail], trafo_bus_names_longest_part.loc[fail]], axis=1)
-
     if n_bus_names_not_found := len(joined_in_buses) - sum(joined_in_buses | longest_part_in_buses):
         raise ValueError(
             f"For {n_bus_names_not_found} Tranformers, no suitable bus location names were found, "
@@ -1017,7 +1008,7 @@ def _get_bus_idx(net: pandapowerNet) -> pd.Series:
 
 
 def get_grid_groups(net: pandapowerNet, **kwargs) -> pd.DataFrame:
-    notravbuses_dict = {} if "notravbuses" not in kwargs.keys() else {"notravbuses": kwargs.pop("notravbuses")}
+    notravbuses_dict = {} if "notravbuses" not in kwargs else {"notravbuses": kwargs.pop("notravbuses")}
     grid_group_buses = [set_ for set_ in connected_components(create_nxgraph(net, **kwargs), **notravbuses_dict)]
     grid_groups = pd.DataFrame({"buses": grid_group_buses})
     grid_groups["n_buses"] = grid_groups["buses"].apply(len)
@@ -1079,8 +1070,9 @@ def _multi_str_repl(st: str, repl: list[tuple]) -> str:
 
 
 if __name__ == "__main__":
-    from pathlib import Path
     import os
+    from pathlib import Path
+
     from pandapower.file_io import from_json, to_json
 
     home = str(Path.home())

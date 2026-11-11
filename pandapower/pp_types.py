@@ -1,11 +1,11 @@
-from typing import Literal, Union, TypedDict, Any
+from typing import Any, Literal, TypedDict
 
 import numpy as np
 
 # union type for integers from the Python standard library and numpy
-Int = Union[int, np.integer]
+Int = int | np.integer
 # union type for integers and floats from the Python standard library and numpy
-Float = Union[float, np.number]
+Float = float | np.number
 
 BusType = Literal["n", "b", "m"]
 CostElementType = Literal["gen", "sgen", "ext_grid", "load", "dcline", "storage"]

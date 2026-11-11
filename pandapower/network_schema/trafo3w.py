@@ -1,11 +1,14 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import (
-    create_column_group_dependency_validation_func,
-    create_column_dependency_checks_from_metadata,
+from pandapower.network_schema.tools.validation.column_condition import (
+    create_lower_equals_column_check,
+    create_lower_than_column_check,
 )
-from pandapower.network_schema.tools.validation.column_condition import create_lower_than_column_check
+from pandapower.network_schema.tools.validation.group_dependency import (
+    create_column_dependency_checks_from_metadata,
+    create_column_group_dependency_validation_func,
+)
 
 _trafo3w_columns = {
     "name": pa.Column(
@@ -138,6 +141,24 @@ _trafo3w_columns = {
         nullable=True,
         required=False,
         description="maximum current loading (only needed for OPF)",
+        metadata={"opf": True},
+    ),
+    "min_angle_degree": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="minimum voltage angle difference per internal star branch (hv -> star, star -> mv/lv) [degree], "
+        "considered in the OPF; NaN means unconstrained. The terminal difference va_hv - va_mv/lv can reach twice "
+        "this value",
+        metadata={"opf": True},
+    ),
+    "max_angle_degree": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="maximum voltage angle difference per internal star branch (hv -> star, star -> mv/lv) [degree], "
+        "considered in the OPF; NaN means unconstrained. The terminal difference va_hv - va_mv/lv can reach twice "
+        "this value",
         metadata={"opf": True},
     ),
     "vector_group": pa.Column(
@@ -355,6 +376,8 @@ _trafo3w_columns = {
 # FIXME: either tap_step_percent or tap_step_degree for each row
 tap_columns = ["tap_pos", "tap_neutral", "tap_side"]  # , "tap_step_percent", "tap_step_degree"]
 trafo3w_checks = [
+    create_lower_equals_column_check(first_element="tap_min", second_element="tap_max"),
+    create_lower_equals_column_check(first_element="min_angle_degree", second_element="max_angle_degree"),
     pa.Check(
         create_column_group_dependency_validation_func(tap_columns),
         error=f"trafo3w tap configuration columns have dependency violations. Please ensure {tap_columns} are present in the dataframe.",

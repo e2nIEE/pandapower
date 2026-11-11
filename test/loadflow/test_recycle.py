@@ -5,19 +5,19 @@ import pytest
 
 from pandapower.create import (
     create_bus,
+    create_ext_grid,
+    create_gen,
+    create_line,
     create_line_from_parameters,
     create_load,
-    create_gen,
     create_transformer,
-    create_ext_grid,
-    create_line,
     create_transformer_from_parameters,
 )
 from pandapower.network import pandapowerNet
-from pandapower.run import set_user_pf_options, runpp, rundcpp
-from test.consistency_checks import runpp_with_consistency_checks, rundcpp_with_consistency_checks
-from test.helper_functions import add_grid_connection
+from pandapower.run import rundcpp, runpp, set_user_pf_options
 from pandapower.toolbox.comparison import nets_equal
+from test.consistency_checks import rundcpp_with_consistency_checks, runpp_with_consistency_checks
+from test.helper_functions import add_grid_connection
 
 
 @pytest.fixture

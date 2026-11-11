@@ -9,11 +9,11 @@
 
 from time import perf_counter
 
-from numpy import zeros, c_, shape
+from numpy import c_, shape, zeros
+
 from pandapower.pypower.idx_brch import MU_ANGMAX
 from pandapower.pypower.idx_bus import MU_VMIN
 from pandapower.pypower.idx_gen import MU_QMIN
-
 from pandapower.pypower.opf_args import opf_args2
 from pandapower.pypower.opf_execute import opf_execute
 from pandapower.pypower.opf_setup import opf_setup

@@ -2,18 +2,18 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import logging
-from typing import Literal, Any
 from collections.abc import Callable
+from typing import Any, Literal
 
-from pandapower.network import ADict
-from pandapower.diagnostic.diagnostic_functions import default_diagnostic_functions, default_argument_values
+from pandapower.diagnostic.diagnostic_functions import default_argument_values, default_diagnostic_functions
 from pandapower.diagnostic.diagnostic_helpers import (
-    logger,
     DiagnosticFunction,
+    LogCount,
     NotCompactFilter,
     NotDetailedFilter,
-    LogCount,
+    logger,
 )
+from pandapower.network import ADict
 
 # LOGGER:
 # there is no local logger here because it requires the custom log levels from diagnostic_helpers
@@ -60,7 +60,10 @@ class Diagnostic:
         "Dictionary storing the errors raised by the DiagnosticFunctions"
 
     def register_function(
-        self, diagnostic_function: DiagnosticFunction, argument_names: list[str] | None, name: str | None
+        self,
+        diagnostic_function: DiagnosticFunction,
+        argument_names: list[str] | None = None,
+        name: str | None = None,
     ):
         """
         register a diagnostic function to run when running network diagnostics and the associated report function.
@@ -150,7 +153,7 @@ class Diagnostic:
                 diag_result = diag_class.diagnostic(net, **args)
                 if diag_result is not None:
                     self.diag_results[name] = diag_result
-            except Exception as e:
+            except Exception as e:  # noqa: BLE001
                 self.diag_errors[name] = e
 
         if report_style is not None:

@@ -8,7 +8,7 @@
 
 """Solves a DC power flow."""
 
-from numpy import copy, r_, transpose, real, array
+from numpy import array, copy, r_, real, transpose
 from scipy.sparse.linalg import spsolve
 
 
@@ -39,6 +39,6 @@ def dcpf(B, Pbus, Va0, ref, pv, pq):
         pvpq = array(pvpq).flatten()
     pvpq_matrix = B[pvpq.T, :].tocsc()[:, pvpq]
     ref_matrix = transpose(Pbus[pvpq] - B[pvpq.T, :].tocsc()[:, ref] * Va0[ref])
-    Va[pvpq] = real(spsolve(pvpq_matrix, ref_matrix))
+    Va[pvpq] = spsolve(real(pvpq_matrix), real(ref_matrix))
 
     return Va

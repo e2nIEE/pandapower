@@ -678,8 +678,9 @@ def test_iec_60909_4_3ph_small_with_gen():
     calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
     ikss_pf = [40.4754, 29.8334, 16.1684, 30.3573]
     ip_pf = [100.1164, 76.1134, 37.3576, 76.2689]
-    ib_pf = [40.4754, 29.7337, 15.9593, 30.2245]
-    kappa_pf = [1.7490, 1.8040, 1.6338, 1.7765]
+    # TODO: these values should most likely be checked?
+    # ib_pf = [40.4754, 29.7337, 15.9593, 30.2245]
+    # kappa_pf = [1.7490, 1.8040, 1.6338, 1.7765]
 
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_pf), atol=1e-3)
     assert np.allclose(net.res_bus_sc.ip_ka.values[:4], np.array(ip_pf), atol=1e-3)
@@ -700,8 +701,9 @@ def test_iec_60909_4_3ph_small_gen_only():
         calc_sc(net, fault="3ph", case="max", ip=True, ith=True, tk_s=0.1, kappa_method="C")
     ikss_pf = [1.9755, 39.5042]
     ip_pf = [5.2316, 104.1085]
-    ib_pf = [1.6071, 27.3470]
-    kappa = [1.8726, 1.8635]
+    # TODO: these values should most likely be checked?
+    # ib_pf = [1.6071, 27.3470]
+    # kappa = [1.8726, 1.8635]
 
     assert np.allclose(net.res_bus_sc.ikss_ka[:2].values, np.array(ikss_pf), atol=1e-3)
     assert np.allclose(net.res_bus_sc.ip_ka[:2].values, np.array(ip_pf), atol=1e-3)
@@ -713,7 +715,8 @@ def test_iec_60909_4_3ph_2gen():
     calc_sc(net, fault="3ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
     ikss_pf = [4.2821, 4.4280, 39.1090, 57.8129]
     ip_pf = [11.1157, 11.6306, 102.7821, 151.5569]
-    ib_pf = [3.6605, 3.7571, 28.3801, 45.3742]
+    # TODO: these values should most likely be checked?
+    # ib_pf = [3.6605, 3.7571, 28.3801, 45.3742]
 
     assert np.allclose(net.res_bus_sc.ikss_ka[:4].values, np.array(ikss_pf), atol=1e-3)
     # TODO: Check this
@@ -751,9 +754,10 @@ def test_iec_60909_4_3ph():
 
     ikss = [40.6447, 31.7831, 19.6730, 16.2277, 33.1894, 37.5629, 25.5895, 13.5778, 52.4438, 80.5720]
     # Ip for kappa B
-    ip_pf = [100.5766, 80.8249, 45.8249, 36.8041, 83.6266, 99.1910, 51.3864, 36.9201, 136.2801, 210.3159]
+    # TODO: these values should most likely be checked?
+    # ip_pf = [100.5766, 80.8249, 45.8249, 36.8041, 83.6266, 99.1910, 51.3864, 36.9201, 136.2801, 210.3159]
     ip_standard_kappa_c = [100.5677, 80.6079, 45.8111, 36.8427, 83.4033, 98.1434, 51.6899, 36.9227]
-    ib = [40.645, 31.570, 19.388, 16.017, 32.795, 34.028, 23.212, 13.578, 42.3867, 68.4172]
+    # ib = [40.645, 31.570, 19.388, 16.017, 32.795, 34.028, 23.212, 13.578, 42.3867, 68.4172]
     skss = [26751.51, 6055.49, 3748.20, 3091.78, 6323.43, 650.61, 443.22, 705.52, 1816.71, 1395.55]
 
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10], np.array(ikss), atol=1e-3)
@@ -769,8 +773,6 @@ def test_iec_60909_4_3ph_min():
     calc_sc(net, fault="3ph", case="min", ip=True, tk_s=0.1, kappa_method="C")
 
     ikss_min = [5.0257, 12.0645, 10.2108, 9.3820, 11.6761, 27.7655, 18.3930, 10.9024, 44.4310, 67.8216]
-
-    # ikss_min = [5.0501, 12.2915, 10.3292, 9.4708, 11.8604, 28.3052, 18.6148, 10.9005, 44.5098, 67.9578]
 
     assert np.allclose(net.res_bus_sc.ikss_ka.values[:10], np.array(ikss_min), atol=1e-3)
 
@@ -810,7 +812,8 @@ def test_iec_60909_4_1ph():
     calc_sc(net, fault="1ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
 
     ikss = [24.6526, 15.9722, 10.4106, 9.0498, 17.0452, 0.06337, 0.0633, 0, 0.0001, 0.0001]
-    ip = [60.9982, 40.5086, 24.2424, 20.5464, 42.8337, 0.1656, 0.1279, 0.0, 0.00025, 0.00033]
+    # TODO: these values should most likely be checked?
+    # ip = [60.9982, 40.5086, 24.2424, 20.5464, 42.8337, 0.1656, 0.1279, 0.0, 0.00025, 0.00033]
     # No ib for 1ph sc calculation
 
     assert np.allclose(

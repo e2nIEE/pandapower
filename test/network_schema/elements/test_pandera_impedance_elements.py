@@ -413,15 +413,69 @@ class TestImpedanceForeignKey:
         validate_network(net)
 
 
+class TestImpedanceAngleLimits:
+    """Tests for the OPF branch angle difference limits"""
+
+    @staticmethod
+    def _net():
+        net = pandapowerNet(name="test_impedance_angle_limits")
+        b0, b1 = create_buses(net, 2, 0.4)
+        create_impedance(
+            net,
+            from_bus=b0,
+            to_bus=b1,
+            rft_pu=0.01,
+            xft_pu=0.02,
+            rtf_pu=0.03,
+            xtf_pu=0.04,
+            gf_pu=0.0,
+            bf_pu=0.0,
+            gt_pu=0.0,
+            bt_pu=0.0,
+            sn_mva=100.0,
+        )
+        return net
+
+    def test_min_less_equal_max_passes(self):
+        net = self._net()
+        net.impedance["min_angle_degree"] = -30.0
+        net.impedance["max_angle_degree"] = 30.0
+        validate_network(net)
+
+    def test_min_greater_than_max_fails(self):
+        net = self._net()
+        net.impedance["min_angle_degree"] = 30.0
+        net.impedance["max_angle_degree"] = -30.0
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_nan_passes(self):
+        net = self._net()
+        net.impedance["min_angle_degree"] = float(np.nan)
+        net.impedance["max_angle_degree"] = float(np.nan)
+        validate_network(net)
+
+    def test_columns_are_optional(self):
+        net = self._net()
+        assert "min_angle_degree" not in net.impedance.columns
+        assert "max_angle_degree" not in net.impedance.columns
+        validate_network(net)
+
+    @pytest.mark.parametrize("parameter", ["min_angle_degree", "max_angle_degree"])
+    def test_non_float_fails(self, parameter):
+        net = self._net()
+        net.impedance[parameter] = "not a float"
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+
 class TestImpedanceResults:
     """Tests for impedance results after calculations"""
 
     @pytest.mark.skip(reason="Not yet implemented")
     def test_impedance_power_results(self):
         """Test: Power results are consistent"""
-        pass
 
     @pytest.mark.skip(reason="Not yet implemented")
     def test_impedance_currents_results(self):
         """Test: Currents results are within valid range"""
-        pass

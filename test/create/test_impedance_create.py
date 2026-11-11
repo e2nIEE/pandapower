@@ -10,8 +10,8 @@ from pandapower.create import (
     create_ext_grid,
     create_impedance,
     create_impedances,
-    create_tcsc,
     create_series_reactor_as_impedance,
+    create_tcsc,
 )
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
@@ -161,6 +161,48 @@ def test_create_impedances():
     assert np.isclose(net.impedance.at[idx3[0], "xft0_pu"], 0.02)
     assert np.isclose(net.impedance.at[idx3[0], "rtf0_pu"], 0.01)  # defaults to rft0_pu
     assert np.isclose(net.impedance.at[idx3[0], "xtf0_pu"], 0.02)  # defaults to xft0_pu
+
+    validate_network(net)
+
+
+def test_create_impedances_angle_limits():
+    net = pandapowerNet(name="test_create_impedances_angle_limits")
+    buses = create_buses(net, 3, 110)
+
+    # default: no column is created at all
+    create_impedances(net, from_buses=[buses[0]], to_buses=[buses[1]], rft_pu=0.1, xft_pu=0.1, sn_mva=100)
+    assert "min_angle_degree" not in net.impedance.columns
+    assert "max_angle_degree" not in net.impedance.columns
+
+    # explicit NaN also must not create the columns
+    create_impedances(
+        net,
+        from_buses=[buses[1]],
+        to_buses=[buses[2]],
+        rft_pu=0.1,
+        xft_pu=0.1,
+        sn_mva=100,
+        min_angle_degree=np.nan,
+        max_angle_degree=np.nan,
+    )
+    assert "min_angle_degree" not in net.impedance.columns
+    assert "max_angle_degree" not in net.impedance.columns
+
+    idx = create_impedances(
+        net,
+        from_buses=[buses[0], buses[1]],
+        to_buses=[buses[1], buses[2]],
+        rft_pu=0.1,
+        xft_pu=0.1,
+        sn_mva=100,
+        min_angle_degree=[-30.0, np.nan],
+        max_angle_degree=30.0,
+    )
+    assert net.impedance["min_angle_degree"].dtype == np.float64
+    assert net.impedance["max_angle_degree"].dtype == np.float64
+    assert np.isclose(net.impedance.at[idx[0], "min_angle_degree"], -30.0)
+    assert np.isnan(net.impedance.at[idx[1], "min_angle_degree"])
+    assert np.allclose(net.impedance.loc[idx, "max_angle_degree"], 30.0)
 
     validate_network(net)
 

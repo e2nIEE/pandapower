@@ -2,30 +2,28 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import sys
 import time
+from importlib.util import find_spec
 from typing import overload
-from typing_extensions import deprecated
 
 import numpy as np
 import pandas as pd
 from pandas import Index
+from typing_extensions import deprecated
 
-from pandapower.auxiliary import soft_dependency_error, ensure_iterability
-from pandapower.control.util.characteristic import SplineCharacteristic, Characteristic
+from pandapower.auxiliary import ensure_iterability, soft_dependency_error
+from pandapower.control.util.characteristic import Characteristic, SplineCharacteristic
 from pandapower.create._utils import add_column_to_df
 
-try:
+if find_spec("matplotlib"):
     import matplotlib.pyplot as plt
 
     MATPLOTLIB_INSTALLED = True
-except ImportError:
+else:
     MATPLOTLIB_INSTALLED = False
 
-try:
-    import pandaplan.core.pplog as pplog
-except ImportError:
-    import logging as pplog
+import logging
 
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def asarray(val, dtype=np.float64):
@@ -47,19 +45,23 @@ def asarray(val, dtype=np.float64):
     return np_val
 
 
-def get_controller_index_by_type(net, ctrl_type, idx=[]):
+def get_controller_index_by_type(net, ctrl_type, idx=None):
     """
     Returns controller indices of a given type as list.
     """
+    if idx is None:
+        idx = []
     idx = idx if len(idx) else net.controller.index
     is_of_type = net.controller.object.apply(lambda x: isinstance(x, ctrl_type))
     return list(net.controller.index.values[net.controller.index.isin(idx) & is_of_type])
 
 
-def get_controller_index_by_typename(net, typename, idx=[], case_sensitive=False):
+def get_controller_index_by_typename(net, typename, idx=None, case_sensitive=False):
     """
     Returns controller indices of a given name of type as list.
     """
+    if idx is None:
+        idx = []
     idx = idx if len(idx) else net.controller.index
     if case_sensitive:
         return [i for i in idx if str(net.controller.object.at[i]).split(" ")[0] == typename]
@@ -73,7 +75,7 @@ def _controller_attributes_query(controller, parameters):
     """
     complete_match = True
     element_index_match = True
-    for key in parameters.keys():
+    for key in parameters:
         if key not in controller.__dict__:
             logger.debug(str(key) + " is no attribute of controller object " + str(controller))
             return False
@@ -94,16 +96,12 @@ def _controller_attributes_query(controller, parameters):
             ensure_iterability(parameters["element_index"])
         )
         if len(intersect_elms):
-            logger.debug(
-                "'element_index' has an intersection of "
-                + str(intersect_elms)
-                + " with Controller %i" % controller.index
-            )
+            logger.debug(f"'element_index' has an intersection of {intersect_elms} with Controller {controller.index}")
 
     return complete_match & element_index_match
 
 
-def get_controller_index(net, ctrl_type=None, parameters=None, idx=[]):
+def get_controller_index(net, ctrl_type=None, parameters=None, idx=None):
     """Returns indices of searched controllers. Parameters can specify the search query.
 
     Parameters:
@@ -116,6 +114,8 @@ def get_controller_index(net, ctrl_type=None, parameters=None, idx=[]):
         idx (list): index / indices of controllers in net.controller which are in idx and matches given ctrl_type or
             parameters
     """
+    if idx is None:
+        idx = []
     #    logger.debug(ctrl_type, parameters, idx)
     idx = idx if len(idx) else net.controller.index
     if ctrl_type is not None:
@@ -124,7 +124,7 @@ def get_controller_index(net, ctrl_type=None, parameters=None, idx=[]):
         else:
             idx = get_controller_index_by_type(net, ctrl_type, idx)
     if isinstance(parameters, dict):
-        df_keys = [k for k in parameters.keys() if k in net.controller.columns]
+        df_keys = [k for k in parameters if k in net.controller.columns]
         attributes_keys = list(set(parameters.keys()) - set(df_keys))
         attributes_dict = {k: parameters[k] for k in attributes_keys}
         # query of parameters in net.controller dataframe
@@ -164,16 +164,13 @@ def log_same_type_existing_controllers(net, this_ctrl_type, index=None, matching
         same_type_existing_ctrl = get_controller_index(net, ctrl_type=this_ctrl_type, parameters=matching_params)
         if len(same_type_existing_ctrl):
             logger.info(
-                "Controller "
-                + index
-                + " has same type and matching parameters like "
-                + "controllers "
-                + str(["%i" % idx for idx in same_type_existing_ctrl])
+                f"Controller {index} has same type and matching parameters like controllers "
+                f"{[f'{idx}' for idx in same_type_existing_ctrl]}"
             )
     else:
-        logger.info("Creating controller " + index + " of type %s " % this_ctrl_type)
+        logger.info(f"Creating controller {index} of type {this_ctrl_type}")
         logger.debug(
-            "no matching parameters are given to check whether problematic, " + "same type controllers already exist."
+            "no matching parameters are given to check whether problematic, same type controllers already exist."
         )
 
 
@@ -199,20 +196,13 @@ def drop_same_type_existing_controllers(net, this_ctrl_type, index=None, matchin
         if len(same_type_existing_ctrl):
             net.controller = net.controller.drop(same_type_existing_ctrl)
             logger.debug(
-                "Controllers "
-                + str(["%i" % idx for idx in same_type_existing_ctrl])
-                + "got removed because of same type and matching parameters as new "
-                + "controller "
-                + index
-                + "."
+                f"Controllers {[f'{idx}' for idx in same_type_existing_ctrl]} got removed because of same type and "
+                f"matching parameters as new controller {index}."
             )
     else:
         logger.info(
-            "Creating controller "
-            + index
-            + " of type %s, " % this_ctrl_type
-            + "no matching parameters are given to check which "
-            + "same type controllers should be dropped."
+            f"Creating controller {index} of type {this_ctrl_type}, no matching parameters are given to check which "
+            f"same type controllers should be dropped."
         )
 
 
@@ -342,7 +332,7 @@ def _create_trafo_characteristics(net, trafotable, trafo_index, variable, x_poin
         col = f"{var}_characteristic"
         # check if the variable is a valid attribute of the trafo table
         if col not in supported_columns[trafotable]:
-            raise UserWarning("Variable %s is not supported for table %s" % (var, trafotable))
+            raise UserWarning(f"Variable {var} is not supported for table {trafotable}")
 
         # check inputs, check if 1 trafo or multiple, verify shape of x_points and y_points and trafo_index
         if hasattr(trafo_index, "__iter__"):
@@ -418,7 +408,7 @@ def _create_shunt_characteristics(net, shunt_index, variable, x_points, y_points
         col = f"{var}_characteristic"
         # check if the variable is a valid attribute of the shunt table
         if col not in supported_columns:
-            raise UserWarning("Variable %s is not supported for table shunt" % var)
+            raise UserWarning(f"Variable {var} is not supported for table shunt")
 
         # check inputs, check if 1 shunt or multiple, verify shape of x_points and y_points and shunt_index
         if hasattr(shunt_index, "__iter__"):
@@ -476,7 +466,7 @@ def create_q_capability_characteristics_object(net):
         del net["q_capability_characteristic"]
 
     # create characteristics
-    if "q_capability_curve_table" in net.keys() and net["q_capability_curve_table"].index.size > 0:
+    if "q_capability_curve_table" in net and net["q_capability_curve_table"].index.size > 0:
         time_start = time.time()
 
         # Set flag reactive_capability_curve
@@ -516,7 +506,7 @@ def create_q_capability_characteristics_object(net):
             element_ids.append(element_id)
             q_min_indices.append(q_min_index)
             q_max_indices.append(q_max_index)
-            logger.debug("Adding characteristic objects for id_q_capability_curve %d" % element_id)
+            logger.debug(f"Adding characteristic objects for id_q_capability_curve {element_id}")
 
         characteristic_df = pd.DataFrame(
             {

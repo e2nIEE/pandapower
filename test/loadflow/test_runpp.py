@@ -2,108 +2,84 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import copy
+import logging
 import os
 import re
+from importlib.util import find_spec
 
 import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower.auxiliary import _check_connectivity, _add_ppc_options, lightsim2grid_available
+from pandapower.auxiliary import (
+    _add_ppc_options,
+    _check_connectivity,
+    _check_if_numba_is_installed,
+    lightsim2grid_available,
+)
+from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
 from pandapower.create import (
     create_bus,
-    create_ext_grid,
+    create_buses,
     create_dcline,
+    create_ext_grid,
+    create_gen,
+    create_impedance,
+    create_line,
+    create_line_from_parameters,
     create_load,
+    create_poly_cost,
     create_sgen,
+    create_shunt,
+    create_storage,
     create_switch,
     create_transformer,
-    create_xward,
     create_transformer3w,
-    create_gen,
-    create_shunt,
-    create_line_from_parameters,
-    create_line,
-    create_impedance,
-    create_storage,
-    create_buses,
-    create_transformer_from_parameters,
     create_transformer3w_from_parameters,
-    create_poly_cost,
+    create_transformer_from_parameters,
+    create_xward,
 )
 from pandapower.create._utils import add_column_to_df
 from pandapower.file_io import from_json
 from pandapower.network import pandapowerNet
 from pandapower.networks import (
-    create_cigre_network_mv,
-    four_loads_with_branches_out,
-    example_simple,
-    simple_four_bus_system,
-    example_multivoltage,
     case118,
+    create_cigre_network_mv,
+    example_multivoltage,
+    example_simple,
+    four_loads_with_branches_out,
+    simple_four_bus_system,
 )
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.create_jacobian import _create_J_without_numba
 from pandapower.pf.run_newton_raphson_pf import _get_pf_variables_from_ppci
 from pandapower.powerflow import LoadflowNotConverged
-from pandapower.pypower.idx_brch import BR_R, BR_X, BR_B, BR_G
-from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
+from pandapower.pypower.idx_brch import BR_B, BR_G, BR_R, BR_X
+from pandapower.pypower.make_y_bus import makeYbus as makeYbus_pypower
 from pandapower.results import reset_results
-from pandapower.run import set_user_pf_options, runpp, runopp
-from test.consistency_checks import runpp_with_consistency_checks
-from test.control.test_shunt_control import simple_test_net_shunt_control
-from test.helper_functions import add_grid_connection, create_test_line, assert_net_equal, assert_res_equal
-from test.loadflow.result_test_network_generator import (
-    add_test_xward,
-    add_test_trafo3w,
-    add_test_line,
-    add_test_oos_bus_with_is_element,
-    result_test_network_generator,
-    add_test_trafo,
-)
+from pandapower.run import runopp, runpp, set_user_pf_options
 from pandapower.toolbox.comparison import nets_equal
 from pandapower.toolbox.grid_modification import drop_elements
-from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
-
-import logging
-
-logger = logging.getLogger(__name__)
-
-from pandapower.auxiliary import _check_if_numba_is_installed
+from test import test_path
+from test.consistency_checks import runpp_with_consistency_checks
+from test.control.test_shunt_control import simple_test_net_shunt_control
+from test.helper_functions import add_grid_connection, assert_net_equal, assert_res_equal, create_test_line
+from test.loadflow.result_test_network_generator import (
+    add_test_line,
+    add_test_oos_bus_with_is_element,
+    add_test_trafo,
+    add_test_trafo3w,
+    add_test_xward,
+    result_test_network_generator,
+)
 
 numba_installed = _check_if_numba_is_installed()
 if numba_installed:
-    from pandapower.pf.makeYbus_numba import makeYbus as makeYbus_numba
+    from pandapower.pf.make_y_bus_numba import makeYbus as makeYbus_numba
 
-try:
-    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
+helmpy_available = find_spec("helmpy") is not None
 
-    helmpy_available = True
-except ImportError:
-    helmpy_available = False
-
-try:
-    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
-
-    helmpy_available = True
-except ImportError:
-    helmpy_available = False
-
-try:
-    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
-
-    helmpy_available = True
-except ImportError:
-    helmpy_available = False
-
-try:
-    from helmpy.core import helm  # type: ignore[import-not-found, import-untyped]
-
-    helmpy_available = True
-except ImportError:
-    helmpy_available = False
-
-from test import test_path
+logger = logging.getLogger(__name__)
 
 
 def test_minimal_net(**kwargs):
@@ -140,7 +116,7 @@ def test_set_user_pf_options():
 
     # check if 'hello' is added to net._options, but other options are untouched
     runpp(net)
-    assert "hello" in net._options.keys() and net._options["hello"] == "world"
+    assert "hello" in net._options and net._options["hello"] == "world"
     net._options.pop("hello")
     assert net._options == old_options
 
@@ -149,7 +125,7 @@ def test_set_user_pf_options():
     set_user_pf_options(net, overwrite=True)
     assert net.user_pf_options == {}
     runpp(net)
-    assert "hello" not in net._options.keys()
+    assert "hello" not in net._options
 
     # see if user arguments overrule user_pf_options, but other user_pf_options still have the
     # priority
@@ -523,8 +499,8 @@ def test_isolated_in_service_bus_at_oos_line():
     net = pandapowerNet(name="test_isolated_in_service_bus_at_oos_line")
     _, b2, _ = add_grid_connection(net)
     b = create_bus(net, vn_kv=135)
-    l = create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
-    net.line.loc[l, "in_service"] = False
+    line_idx = create_line(net, b2, b, 0.1, std_type="NAYY 4x150 SE")
+    net.line.loc[line_idx, "in_service"] = False
     assert runpp_with_consistency_checks(net, init="flat")
 
 
@@ -571,8 +547,8 @@ def test_test_sn_mva():
         runpp(net2)
         try:
             assert_net_equal(net1, net2, exclude_elms=["sn_mva"])
-        except:
-            raise UserWarning("Result difference due to sn_mva after adding %s" % net1.last_added_case)
+        except AssertionError:
+            raise UserWarning(f"Result difference due to sn_mva after adding {net1.last_added_case}")
 
 
 def test_bsfw_algorithm():
@@ -701,9 +677,9 @@ def test_pypower_algorithms_iter():
                 runpp_with_consistency_checks(net, enforce_q_lims=True, algorithm=alg, calculate_voltage_angles="auto")
                 runpp_with_consistency_checks(net, enforce_q_lims=False, algorithm=alg, calculate_voltage_angles="auto")
             except AssertionError:
-                raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
+                raise UserWarning(f"Consistency Error after adding {net.last_added_case}")
             except LoadflowNotConverged:
-                raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
+                raise UserWarning(f"Power flow did not converge after adding {net.last_added_case}")
 
 
 @pytest.mark.xfail
@@ -1338,6 +1314,29 @@ def test_dc_with_ext_grid_at_one_bus():
     assert np.allclose(net.res_ext_grid.p_mw.values, [0, 0])
 
 
+@pytest.mark.parametrize("island_side", ["from", "to"])
+def test_dcline_terminal_in_island(island_side):
+    # a dcline terminal at an unsupplied bus (island without slack) has no voltage, like the bus in res_bus
+    net = pandapowerNet(name="test_dcline_terminal_in_island")
+    b = create_buses(net, nr_buses=4, vn_kv=110)
+    create_ext_grid(net, b[0])
+    create_line(net, b[0], b[1], length_km=10, std_type="149-AL1/24-ST1A 110.0")
+    create_line(net, b[2], b[3], length_km=10, std_type="149-AL1/24-ST1A 110.0")  # island without slack
+    create_load(net, b[3], p_mw=5)
+    from_bus, to_bus = (b[1], b[2]) if island_side == "to" else (b[2], b[1])
+    create_dcline(net, from_bus, to_bus, p_mw=10, loss_percent=0, loss_mw=0, vm_from_pu=1.0, vm_to_pu=1.0)
+
+    runpp(net)
+
+    supplied_side = "from" if island_side == "to" else "to"
+    supplied_bus = from_bus if island_side == "to" else to_bus
+    assert np.all(pd.isnull(net.res_bus.loc[[b[2], b[3]], "vm_pu"]))
+    assert pd.isnull(net.res_dcline.at[0, f"vm_{island_side}_pu"])
+    assert pd.isnull(net.res_dcline.at[0, f"va_{island_side}_degree"])
+    assert np.isclose(net.res_dcline.at[0, f"vm_{supplied_side}_pu"], net.res_bus.at[supplied_bus, "vm_pu"])
+    assert np.isclose(net.res_dcline.at[0, f"va_{supplied_side}_degree"], net.res_bus.at[supplied_bus, "va_degree"])
+
+
 def test_no_branches():
     net = pandapowerNet(name="test_no_branches")
     create_buses(net, 3, 110)
@@ -1733,7 +1732,7 @@ def test_tap_table_order():
 
     tol = 0.001
 
-    assert net.converged == True
+    assert net.converged
     assert np.isclose(net.res_bus.at[4, "va_degree"], -1 * (150 - 2 + 0.03717), 0, tol, False)
     assert np.isclose(net.res_bus.at[5, "va_degree"], -1 * (150 - 0 + 0.03810), 0, tol, False)
     assert np.isclose(net.res_bus.at[4, "vm_pu"], 1.03144595, tol, False)
@@ -1768,9 +1767,9 @@ def test_lightsim2grid():
             runpp_with_consistency_checks(net, lightsim2grid=True, voltage_depend_loads=False)
             assert_res_equal(net, net_ref)
         except AssertionError:
-            raise UserWarning("Consistency Error after adding %s" % net.last_added_case)
+            raise UserWarning(f"Consistency Error after adding {net.last_added_case}")
         except LoadflowNotConverged:
-            raise UserWarning("Power flow did not converge after adding %s" % net.last_added_case)
+            raise UserWarning(f"Power flow did not converge after adding {net.last_added_case}")
         except NotImplementedError as err:
             assert len(net.ext_grid) > 1
             assert "multiple ext_grids are found" in str(err)
@@ -2045,15 +2044,15 @@ def test_q_capability_curve_for_sgen():
     assert net.res_sgen.q_mvar.loc[0] < 255
     assert net.res_sgen.q_mvar.loc[0] > -255
     logger.info("------------general limit------------------")
-    logger.info("res_sgen:\n%s" % net.res_sgen)
-    logger.info("res_bus.vm_pu: \n%s" % net.res_bus)
+    logger.info(f"res_sgen:\n{net.res_sgen}")
+    logger.info(f"res_bus.vm_pu: \n{net.res_bus}")
 
     logger.info("------------given maximum limit------------------\n")
     net.sgen.loc[0, "max_q_mvar"] = 261.01001
     net.sgen.loc[0, "min_q_mvar"] = -323.01001
     runopp(net, init="pf", calculate_voltage_angles=False)
-    logger.info("res_sgen:\n%s" % net.res_sgen)
-    logger.info("res_bus.vm_pu: \n%s" % net.res_bus)
+    logger.info(f"res_sgen:\n{net.res_sgen}")
+    logger.info(f"res_bus.vm_pu: \n{net.res_bus}")
     assert max(net.res_bus.vm_pu) < 1.02
     assert min(net.res_bus.vm_pu) > 0.96
     assert net.res_sgen.q_mvar.loc[0] < 261.01001
@@ -2100,8 +2099,8 @@ def test_q_capability_curve_for_sgen():
     create_q_capability_characteristics_object(net)
 
     runopp(net, init="pf", calculate_voltage_angles=False)
-    logger.info("res_sgen:\n%s" % net.res_sgen)
-    logger.info("res_bus.vm_pu: \n%s" % net.res_bus)
+    logger.info(f"res_sgen:\n{net.res_sgen}")
+    logger.info(f"res_bus.vm_pu: \n{net.res_bus}")
     assert max(net.res_bus.vm_pu) < 1.02
     assert min(net.res_bus.vm_pu) > 0.96
     assert net.res_sgen.q_mvar.loc[0] < 218.0099945068

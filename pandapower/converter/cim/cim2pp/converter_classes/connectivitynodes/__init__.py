@@ -1,1 +1,3 @@
-from . import connectivityNodesCim16
+__all__ = ["connectivity_nodes_cim16"]
+
+from . import connectivity_nodes_cim16

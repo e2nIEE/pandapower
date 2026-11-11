@@ -1,9 +1,29 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "ellipse_patches",
+    "ext_grid_patches",
+    "gen_patches",
+    "load_patches",
+    "node_patches",
+    "polygon_patches",
+    "pv_patch",
+    "rectangle_patches",
+    "sgen_patches",
+    "storage_patches",
+    "trafo_patches",
+    "vsc_patches",
+    "ward_patches",
+    "wp_patch",
+    "wye_patch",
+    "xward_patches",
+]
+
 import logging
 import math
 import sys
+from importlib.util import find_spec
 from typing import TYPE_CHECKING
 
 import geojson
@@ -11,15 +31,6 @@ import geojson.utils
 import numpy as np
 from geojson import Point
 
-try:
-    from matplotlib.patches import Arc, Circle, Ellipse, Patch, PathPatch, Polygon, Rectangle, RegularPolygon
-    from matplotlib.path import Path
-    from matplotlib.textpath import TextPath
-    from matplotlib.transforms import Affine2D
-
-    MATPLOTLIB_INSTALLED = True
-except ImportError:
-    MATPLOTLIB_INSTALLED = False
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.plotting.plotting_toolbox import (
     _rotate_dim2,
@@ -30,12 +41,19 @@ from pandapower.plotting.plotting_toolbox import (
     safe_geojson_loads,
 )
 
-if TYPE_CHECKING:
-    from matplotlib.patches import Patch
+if find_spec("matplotlib"):
+    from matplotlib.patches import Arc, Circle, Ellipse, Patch, PathPatch, Polygon, Rectangle, RegularPolygon
     from matplotlib.path import Path
+    from matplotlib.textpath import TextPath
+    from matplotlib.transforms import Affine2D
+
+    MATPLOTLIB_INSTALLED = True
+else:
+    MATPLOTLIB_INSTALLED = False
 
 if TYPE_CHECKING:
-    from matplotlib.path import Path
+    from matplotlib.patches import Patch
+    from matplotlib.path import Path  # noqa: TC004
 
 logger = logging.getLogger(__name__)
 
@@ -43,7 +61,7 @@ logger = logging.getLogger(__name__)
 def wye_patch(node_geo, offset, size, r_triangle, angle, facecolor, edgecolor) -> tuple[list["Patch"], list]:
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-    polys: list["Patch"] = []
+    polys: list[Patch] = []
     lines = []
     mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
     circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angle)
@@ -103,7 +121,7 @@ def wp_patch(
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-    polys: list["Patch"] = []
+    polys: list[Patch] = []
     lines = []
     mid_circ = node_geo + _rotate_dim2(np.array([0, offset + size]), angle)
     circ_edge = node_geo + _rotate_dim2(np.array([0, offset]), angle)
@@ -178,7 +196,7 @@ def pv_patch(node_geo, offset, size, angle, pv_rect_size, pv_tri_size, facecolor
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-    polys: list["Patch"] = []
+    polys: list[Patch] = []
     lines = []
     mid_rect = node_geo + _rotate_dim2(np.array([0, 2 * size]), angle)
     rect_lbottom = (mid_rect[0] - (pv_rect_size / 4), mid_rect[1])
@@ -458,7 +476,7 @@ def sgen_patches(node_coords, size, angles, patch_type, draw_by_type: bool = Tru
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
     lines = []
-    polys: list["Patch"] = []
+    polys: list[Patch] = []
     offset = kwargs.get("offset", 2 * size)
     r_triangle = kwargs.get("r_triangles", size * 0.4)
     hub_size = size * 0.15  # Hub size
@@ -616,7 +634,7 @@ def trafo_patches(coords, size, **kwargs):
     circles, lines = [], []
 
     # load and extract the coords from the geojson object
-    coords = list(map(lambda x: list(geojson.utils.coords(safe_geojson_loads(x))), coords))
+    coords = [list(geojson.utils.coords(safe_geojson_loads(x))) for x in coords]
 
     for i, (p1, p2) in enumerate(coords):
         p1 = np.array(p1)
@@ -764,7 +782,7 @@ def vsc_patches(coords, size, **kwargs):
     squares, lines = [], []
 
     # load and extract the coords from the geojson object
-    coords = list(map(lambda x: list(geojson.utils.coords(safe_geojson_loads(x))), coords))
+    coords = [list(geojson.utils.coords(safe_geojson_loads(x))) for x in coords]
 
     for i, (p1, p2) in enumerate(coords):
         p1 = np.array(p1)

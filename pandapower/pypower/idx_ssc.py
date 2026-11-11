@@ -38,4 +38,4 @@ SSC_X_CONTROL_VA = 7  # va degrees TODO: check
 SSC_X_CONTROL_VM = 8  # (p.u)  vm
 SSC_Q = 9  # result for Q
 
-ssc_cols = 10
+SSC_COLS = 10

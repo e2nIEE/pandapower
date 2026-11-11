@@ -4,17 +4,17 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_buses,
     create_bus,
+    create_buses,
+    create_ext_grid,
     create_line_from_parameters,
     create_load,
-    create_ext_grid,
     create_ssc,
 )
 from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 from test.consistency_checks import runpp_with_consistency_checks
-from test.loadflow.test_facts import copy_with_impedance, facts_case_study_grid, compare_ssc_impedance_gen
+from test.loadflow.test_facts import compare_ssc_impedance_gen, copy_with_impedance, facts_case_study_grid
 
 
 def test_ssc_minimal():
@@ -48,7 +48,6 @@ def test_ssc_controllable():
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
     create_line_from_parameters(net, 0, 2, 30, 0.0487, 0.13823, 160, 0.664)
 
-    z_base = np.square(110) / net.sn_mva
     x = 5
     # both not controllable
     net1 = copy.deepcopy(net)
@@ -81,7 +80,6 @@ def test_2_sscs():
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
     create_line_from_parameters(net, 0, 2, 30, 0.0487, 0.13823, 160, 0.664)
 
-    z_base = np.square(110) / net.sn_mva
     x = 5
     # both not controllable
     net1 = copy.deepcopy(net)

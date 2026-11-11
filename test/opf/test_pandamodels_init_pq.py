@@ -2,9 +2,9 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower.network import pandapowerNet
 from pandapower.converter.pandamodels.to_pm import add_pm_gen_start_values_from_results
-from pandapower.runpm import runpm, runpm_dc_opf, runpm_ac_opf
+from pandapower.network import pandapowerNet
+from pandapower.runpm import runpm, runpm_ac_opf, runpm_dc_opf
 
 
 def test_add_pm_gen_start_values_from_results():

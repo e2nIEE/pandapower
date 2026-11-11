@@ -4,13 +4,14 @@
 
 """Evaluates objective function, gradient and Hessian for OPF."""
 
-from numpy import array, ones, zeros, arange, r_, dot, flatnonzero as find
-from scipy.sparse import issparse, csr_matrix as sparse
+from numpy import arange, array, dot, ones, r_, zeros
+from numpy import flatnonzero as find
+from scipy.sparse import csr_matrix as sparse
+from scipy.sparse import issparse
 
 from pandapower.pypower.idx_cost import MODEL, POLYNOMIAL
-
-from pandapower.pypower.totcost import totcost
 from pandapower.pypower.polycost import polycost
+from pandapower.pypower.totcost import totcost
 
 
 def opf_costfcn(x, om, return_hessian=False):

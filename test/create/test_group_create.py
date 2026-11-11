@@ -7,10 +7,10 @@ from pandapower.create import (
     create_buses,
     create_ext_grid,
     create_gen,
-    create_load,
-    create_line,
     create_group,
     create_group_from_dict,
+    create_line,
+    create_load,
 )
 from pandapower.network import pandapowerNet
 

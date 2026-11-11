@@ -7,12 +7,12 @@ import pytest
 
 from pandapower.toolbox.element_selection import pp_elements
 from pandapower.toolbox.power_factor import (
-    signing_system_value,
-    cosphi_pos_neg_from_pq,
-    pq_from_cosphi,
-    cosphi_to_pos,
-    cosphi_from_pq,
     cosphi_from_pos,
+    cosphi_from_pq,
+    cosphi_pos_neg_from_pq,
+    cosphi_to_pos,
+    pq_from_cosphi,
+    signing_system_value,
 )
 
 

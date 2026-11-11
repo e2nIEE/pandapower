@@ -10,23 +10,22 @@ import pytest
 from pandapower.create import (
     create_bus,
     create_ext_grid,
-    create_line_from_parameters,
-    create_measurement,
-    create_load,
-    create_transformer,
     create_line,
+    create_line_from_parameters,
+    create_load,
+    create_measurement,
     create_sgen,
-    create_transformer3w,
     create_switch,
+    create_transformer,
+    create_transformer3w,
 )
-from pandapower.estimation import chi2_analysis, remove_bad_data, estimate
+from pandapower.estimation import chi2_analysis, estimate, remove_bad_data
 from pandapower.file_io import from_json
 from pandapower.network import pandapowerNet
 from pandapower.networks.cigre_networks import create_cigre_network_mv
 from pandapower.networks.power_system_test_cases import case9
 from pandapower.run import runpp
 from pandapower.std_types import create_std_type
-
 from test import test_path
 
 
@@ -45,7 +44,7 @@ def test_2bus():
     create_measurement(net, "v", "bus", 1.04, 0.01, 1)  # u2
 
     # 2. Do state estimation
-    if not estimate(net, init="flat"):
+    if not estimate(net, init="flat")["success"]:
         raise AssertionError("Estimation failed!")
 
     v_result = net.res_bus_est.vm_pu.values
@@ -81,7 +80,7 @@ def test_3bus():
     create_measurement(net, "v", "bus", 1.015, 0.05, 2)  # u3
 
     # 2. Do state estimation
-    if not estimate(net, init="flat"):
+    if not estimate(net, init="flat")["success"]:
         raise AssertionError("Estimation failed!")
     v_result = net.res_bus_est.vm_pu.values
     delta_result = net.res_bus_est.va_degree.values
@@ -178,7 +177,7 @@ def test_3bus_with_out_of_service_bus():
     create_measurement(net, "q", "line", 0.663, 0.008, 1, "from")  # Qline (bus 1 -> bus 3) at bus 1
 
     # 2. Do state estimation
-    if not estimate(net, init="flat"):
+    if not estimate(net, init="flat")["success"]:
         raise AssertionError("Estimation failed!")
 
     v_result = net.res_bus_est.vm_pu.values
@@ -260,7 +259,7 @@ def test_3bus_with_transformer():
     )  # at hv side
 
     # 2. Do state estimation
-    if not estimate(net, init="slack", tolerance=1e-6, maximum_iterations=10):
+    if not estimate(net, init="slack", tolerance=1e-6, maximum_iterations=10)["success"]:
         raise AssertionError("Estimation failed!")
     v_result = net.res_bus_est.vm_pu.values
     delta_result = net.res_bus_est.va_degree.values
@@ -306,7 +305,7 @@ def test_3bus_with_2_slacks():
     create_measurement(net, "q", "line", 0.663, 0.008, 4, "from")  # Qline (bus 5 -> bus 7) at bus 5
 
     # 2. Do state estimation
-    if not estimate(net, init="flat", maximum_iterations=10):
+    if not estimate(net, init="flat", maximum_iterations=10)["success"]:
         raise AssertionError("Estimation failed!")
     v_result = net.res_bus_est.vm_pu.values
     delta_result = net.res_bus_est.va_degree.values
@@ -372,7 +371,7 @@ def test_3bus_with_i_line_measurements():
         side="from",
     )
 
-    if not estimate(net, init="flat"):
+    if not estimate(net, init="flat")["success"]:
         raise AssertionError("Estimation failed!")
 
     assert np.nanmax(abs(net.res_bus_est.vm_pu.values - net.res_bus.vm_pu.values)) < 0.045
@@ -429,7 +428,7 @@ def test_3bus_with_pq_line_from_to_measurements():
         side="to",
     )
 
-    if not estimate(net, init="flat"):
+    if not estimate(net, init="flat")["success"]:
         raise AssertionError("Estimation failed!")
 
     assert np.nanmax(abs(net.res_bus_est.vm_pu.values - net.res_bus.vm_pu.values)) < 0.023
@@ -486,7 +485,7 @@ def test_3bus_with_side_names():
         side="to",
     )
 
-    if not estimate(net, init="flat"):
+    if not estimate(net, init="flat")["success"]:
         raise AssertionError("Estimation failed!")
 
     assert np.nanmax(abs(net.res_bus_est.vm_pu.values - net.res_bus.vm_pu.values)) < 0.023
@@ -509,7 +508,7 @@ def test_cigre_network(init="flat"):
         create_measurement(net, "q", "bus", row.q_mvar * r(), max(0.001, abs(0.03 * row.q_mvar)), bus)
 
     # 2. Do state estimation
-    if not estimate(net, init="flat"):
+    if not estimate(net, init="flat")["success"]:
         raise AssertionError("Estimation failed!")
 
     v_result = net.res_bus_est.vm_pu.values
@@ -540,7 +539,7 @@ def test_cigre_with_bad_data():
         create_measurement(net, "q", "bus", row.q_mvar * r(), max(0.03, abs(0.03 * row.q_mvar)), bus)
 
     # 2. Do state estimation
-    success_SE = estimate(net, init="slack")
+    success_SE = estimate(net, init="slack")["success"]
     v_est_SE = net.res_bus_est.vm_pu.values
     delta_SE = net.res_bus_est.va_degree.values
 
@@ -624,7 +623,7 @@ def test_init_slack_with_multiple_transformers():
     create_measurement(net, "q", "line", net.res_line.q_from_mvar[2], 0.01, side="from", element=2)
     create_measurement(net, "p", "line", net.res_line.p_from_mw[3], 0.01, side="from", element=3)
     create_measurement(net, "q", "line", net.res_line.q_from_mvar[3], 0.01, side="from", element=3)
-    success = estimate(net, init="slack", tolerance=1e-9)
+    success = estimate(net, init="slack", tolerance=1e-9)["success"]
 
     # pretty high error for vm_pu (half percent!)
     assert success
@@ -638,12 +637,12 @@ def test_check_existing_measurements():
     create_bus(net, 10.0)
     create_bus(net, 10.0)
     create_line(net, 0, 1, 0.5, std_type="149-AL1/24-ST1A 10.0")
-    m1 = create_measurement(net, "v", "bus", 1.006, 0.004, 0)
-    m2 = create_measurement(net, "v", "bus", 1.006, 0.004, 0)
+    create_measurement(net, "v", "bus", 1.006, 0.004, 0)
+    create_measurement(net, "v", "bus", 1.006, 0.004, 0)
 
     # assert m1 == m2
     assert len(net.measurement) == 2
-    m3 = create_measurement(net, "v", "bus", 1.006, 0.004, 0, check_existing=False)
+    create_measurement(net, "v", "bus", 1.006, 0.004, 0, check_existing=False)
     # assert m3 != m2
     assert len(net.measurement) == 3
 
@@ -695,7 +694,7 @@ def test_network_with_trafo3w_pq():
     create_measurement(net, "v", "bus", net.res_bus.vm_pu[0], 0.01, 0)
     create_measurement(net, "v", "bus", net.res_bus.vm_pu[1], 0.01, 1)
 
-    if not estimate(net):
+    if not estimate(net)["success"]:
         raise AssertionError("Estimation failed!")
 
     if (
@@ -705,7 +704,7 @@ def test_network_with_trafo3w_pq():
         raise AssertionError("Estimation failed")
 
     # Try estimate with results initialization
-    if not estimate(net, init="results"):
+    if not estimate(net, init="results")["success"]:
         raise AssertionError("Estimation failed!")
 
 
@@ -748,7 +747,7 @@ def test_network_with_trafo3w_with_disabled_branch():
     create_measurement(net, "v", "bus", net.res_bus.vm_pu[0], 0.01, 0)
     create_measurement(net, "v", "bus", net.res_bus.vm_pu[1], 0.01, 1)
 
-    success = estimate(net)
+    success = estimate(net)["success"]
     assert success
     assert np.nanmax(np.abs(net.res_bus.vm_pu.values - net.res_bus_est.vm_pu.values)) < 0.006
     assert np.nanmax(np.abs(net.res_bus.va_degree.values - net.res_bus_est.va_degree.values)) < 0.006
@@ -802,7 +801,7 @@ def create_net_with_bb_switch():
 
 def test_net_with_bb_switch_no_fusing():
     net = create_net_with_bb_switch()
-    success_none = estimate(net, tolerance=1e-5, fuse_buses_with_bb_switch=None)
+    success_none = estimate(net, tolerance=1e-5, fuse_buses_with_bb_switch=None)["success"]
     runpp(net, calculate_voltage_angles=True)
     assert success_none
     assert np.allclose(net.res_bus.va_degree.values, net.res_bus_est.va_degree.values, 1e-2)
@@ -814,7 +813,7 @@ def test_net_with_bb_switch_no_fusing():
 
 def test_net_with_bb_switch_fuse_one():
     net = create_net_with_bb_switch()
-    success = estimate(net, tolerance=1e-5, fuse_buses_with_bb_switch=[1])
+    success = estimate(net, tolerance=1e-5, fuse_buses_with_bb_switch=[1])["success"]
     runpp(net, calculate_voltage_angles=True)
     assert success
     assert np.allclose(net.res_bus.va_degree.values, net.res_bus_est.va_degree.values, 1e-2)
@@ -881,7 +880,7 @@ def test_net_with_zero_injection():
     assert np.abs(net.res_bus_est.at[b2, "q_mvar"]) < 1e-8
 
     net_given_bus = deepcopy(net)
-    success = estimate(net, tolerance=1e-6, zero_injection="no_inj_bus")
+    success = estimate(net, tolerance=1e-6, zero_injection="no_inj_bus")["success"]
     assert success
     assert np.allclose(net.res_bus_est.va_degree.values, net_given_bus.res_bus_est.va_degree.values, 1e-3)
     assert np.allclose(net.res_bus_est.vm_pu.values, net_given_bus.res_bus_est.vm_pu.values, 1e-3)
@@ -928,11 +927,11 @@ def test_zero_injection_aux_bus():
     net_noinj_bus = deepcopy(net)
     net_aux = deepcopy(net)
 
-    success_none = estimate(net, tolerance=1e-5, zero_injection=None)
+    success_none = estimate(net, tolerance=1e-5, zero_injection=None)["success"]
 
     # In this case zero_injection in mode "aux_bus" and "no_inj_bus" should be exact the same
-    success_aux = estimate(net_aux, tolerance=1e-5, zero_injection="aux_bus")
-    success_noinj_bus = estimate(net_noinj_bus, tolerance=1e-5, zero_injection="no_inj_bus")
+    success_aux = estimate(net_aux, tolerance=1e-5, zero_injection="aux_bus")["success"]
+    success_noinj_bus = estimate(net_noinj_bus, tolerance=1e-5, zero_injection="no_inj_bus")["success"]
     assert success_none and success_aux and success_noinj_bus
     assert np.allclose(
         net_noinj_bus.res_bus_est.va_degree.values, net_aux.res_bus_est.va_degree.values, 1e-4, equal_nan=True
@@ -980,7 +979,7 @@ def test_net_unobserved_island():
     create_measurement(net, "p", "trafo", r2(net.res_trafo.p_hv_mw.iloc[0], 0.001), 0.01, side="hv", element=0)
     create_measurement(net, "q", "trafo", r2(net.res_trafo.q_hv_mvar.iloc[0], 0.001), 0.01, side="hv", element=0)
 
-    if not estimate(net, tolerance=1e-6, zero_injection=None):
+    if not estimate(net, tolerance=1e-6, zero_injection=None)["success"]:
         raise AssertionError("Estimation failed!")
 
 
@@ -998,7 +997,7 @@ def test_net_oos_line():
     for bus_ix in net.bus.index:
         create_measurement(net, "v", "bus", net.res_bus.at[bus_ix, "vm_pu"], 0.01, element=bus_ix)
 
-    if not estimate(net, tolerance=1e-6, zero_injection=None):
+    if not estimate(net, tolerance=1e-6, zero_injection=None)["success"]:
         raise AssertionError("Estimation failed!")
 
 

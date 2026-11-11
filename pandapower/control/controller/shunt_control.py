@@ -1,7 +1,10 @@
+import logging
+
 import numpy as np
+
 from pandapower.control.basic_controller import Controller
 
-import logging
+logger = logging.getLogger(__name__)
 
 
 class ShuntController(Controller):
@@ -69,7 +72,7 @@ class ShuntController(Controller):
 
         ext_grid_buses = net.ext_grid.loc[net.ext_grid.in_service, "bus"].values
         if self.controlled_bus in ext_grid_buses:
-            logging.warning("Controlled Bus is Slack Bus - deactivating controller")
+            logger.warning("Controlled Bus is Slack Bus - deactivating controller")
             self.set_active(net, False)
 
 
@@ -168,13 +171,19 @@ class DiscreteShuntController(ShuntController):
 
         if self.check_step_bounds:
             if net.shunt.at[self.shunt_index, "q_mvar"] >= 0:
-                if vm_pu < self.vm_set_pu and self.step == self.step_min:
-                    return True
-                elif vm_pu > self.vm_set_pu and self.step == self.step_max:
+                if (
+                    vm_pu < self.vm_set_pu
+                    and self.step == self.step_min
+                    or vm_pu > self.vm_set_pu
+                    and self.step == self.step_max
+                ):
                     return True
             else:
-                if vm_pu < self.vm_set_pu and self.step == self.step_max:
-                    return True
-                elif vm_pu > self.vm_set_pu and self.step == self.step_min:
+                if (
+                    vm_pu < self.vm_set_pu
+                    and self.step == self.step_max
+                    or vm_pu > self.vm_set_pu
+                    and self.step == self.step_min
+                ):
                     return True
         return False

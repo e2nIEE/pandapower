@@ -1,17 +1,17 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import os
 import logging
-import pytest
+import os
+
 import numpy as np
 import pandas as pd
+import pytest
 
-from pandapower import pandapowerNet
+import pandapower.converter.ucte as ucte_converter
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 from pandapower.toolbox.element_selection import count_elements
-import pandapower.converter.ucte as ucte_converter
-
 from test import test_path
 
 logger = logging.getLogger(__name__)
@@ -151,14 +151,12 @@ def test_from_ucte(test_case):
 
         # --- compare the results itself
         all_close = all(
-            [
-                np.allclose(
-                    df_after_conversion[col].to_numpy(),
-                    df_target.loc[df_after_conversion.index, col].to_numpy(),
-                    atol=atol,
-                )
-                for col, atol in atol_dict[res_et].items()
-            ]
+            np.allclose(
+                df_after_conversion[col].to_numpy(),
+                df_target.loc[df_after_conversion.index, col].to_numpy(),
+                atol=atol,
+            )
+            for col, atol in atol_dict[res_et].items()
         )
         if not all_close:
             logger.error(f"{res_et=} comparison fails due to different values.\n{df_str}")

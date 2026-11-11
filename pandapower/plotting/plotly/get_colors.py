@@ -1,13 +1,13 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = ["get_plotly_cmap", "get_plotly_color", "get_plotly_color_palette"]
 
 import sys
+
 import numpy as np
 
 try:
-    import matplotlib.pyplot as plt
-    import matplotlib.cm as cm
     import matplotlib.colors as mplc
     from matplotlib import colormaps as mpl_colormaps
 
@@ -89,4 +89,4 @@ def get_plotly_cmap(values, cmap_name="jet", cmin=None, cmax=None):
         cmax = values.max()
     norm = mplc.Normalize(vmin=cmin, vmax=cmax)
     bus_fill_colors_rgba = cmap(norm(values).data)[:, 0:3] * 255.0
-    return ["rgb({0},{1},{2})".format(r, g, b) for r, g, b in bus_fill_colors_rgba]
+    return [f"rgb({r},{g},{b})" for r, g, b in bus_fill_colors_rgba]

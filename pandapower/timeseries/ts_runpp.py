@@ -1,27 +1,27 @@
 import inspect
+import logging
 
 import numpy as np
 from numpy import complex128, zeros
 
 from pandapower.auxiliary import _clean_up
-from pandapower.build_branch import _calc_trafo_parameter, _calc_trafo3w_parameter
+from pandapower.build_branch import _calc_trafo3w_parameter, _calc_trafo_parameter
 from pandapower.build_bus import _calc_pq_elements_and_add_on_ppc
 from pandapower.control.controller.const_control import ConstControl
 from pandapower.control.controller.trafo_control import TrafoController
 from pandapower.pd2ppc import _pd2ppc
-from pandapower.pf.pfsoln_numba import pfsoln as pfsoln_full, pf_solution_single_slack
-from pandapower.pf.run_newton_raphson_pf import newtonpf, _get_pf_variables_from_ppci, _get_Y_bus, makeYbus_numba
+from pandapower.pf.pfsoln_numba import pf_solution_single_slack
+from pandapower.pf.pfsoln_numba import pfsoln as pfsoln_full
+from pandapower.pf.run_newton_raphson_pf import _get_pf_variables_from_ppci, _get_Y_bus, makeYbus_numba, newtonpf
 from pandapower.powerflow import LoadflowNotConverged, _add_auxiliary_elements
 from pandapower.pypower.idx_bus import PD, QD
 from pandapower.pypower.idx_bus_dc import DC_PD
-from pandapower.pypower.makeSbus import makeSbus
+from pandapower.pypower.make_s_bus import makeSbus
 from pandapower.results import _copy_results_ppci_to_ppc, _extract_results, _get_aranged_lookup
 from pandapower.results_branch import _get_branch_flows, _get_line_results, _get_trafo3w_results, _get_trafo_results
-from pandapower.results_bus import _get_bus_results, _get_bus_dc_results
+from pandapower.results_bus import _get_bus_dc_results, _get_bus_results
 from pandapower.results_gen import _get_gen_results
 from pandapower.run import runpp
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -167,7 +167,7 @@ class TimeSeriesRunpp:
         self.ppc, self.ppci = _pd2ppc(net)
         net["_ppc"] = self.ppc
 
-        self.baseMVA, bus, gen, branch, self.ref, self.pv, self.pq, _, _, self.V, self.ref_gens = (
+        self.baseMVA, bus, _, branch, self.ref, self.pv, self.pq, _, _, self.V, self.ref_gens = (
             _get_pf_variables_from_ppci(self.ppci)
         )
         self.ppci, self.Ybus, self.Yf, self.Yt = _get_Y_bus(
@@ -252,7 +252,7 @@ class TimeSeriesRunpp:
 
         # update Ybus based on this
         options = net._options
-        baseMVA, bus, gen, branch, svc, tcsc, ssc, vsc, ref, pv, pq, _, _, V, _ = _get_pf_variables_from_ppci(ppci)
+        baseMVA, bus, _, branch, *_ = _get_pf_variables_from_ppci(ppci)
         self.ppci, self.Ybus, self.Yf, self.Yt = _get_Y_bus(ppci, options, makeYbus_numba, baseMVA, bus, branch)
 
     def get_update_ctrl(self):
@@ -266,7 +266,7 @@ class TimeSeriesRunpp:
             elif TrafoController in controller.__class__.__bases__:
                 update_trafo = True
             else:
-                raise TypeError("controller class not supported for recycle %s" % controller.__class__)
+                raise TypeError(f"controller class not supported for recycle {controller.__class__}")
 
         self.update_pq = update_pq
         self.update_trafo = update_trafo

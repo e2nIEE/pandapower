@@ -1,17 +1,17 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-
 import copy
+from itertools import pairwise
+
 import networkx as nx
 import numpy as np
 from scipy.sparse.linalg import factorized
 
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_R, BR_X
-from pandapower.pypower.idx_bus import BUS_I, GS, BS, BASE_KV
-
-from pandapower.pypower.idx_bus_sc import KAPPA, R_EQUIV, X_EQUIV, GS_P, BS_P, K_G
-from pandapower.shortcircuit.impedance import _calc_ybus, _calc_zbus, _calc_rx
+from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS, T_BUS
+from pandapower.pypower.idx_bus import BASE_KV, BS, BUS_I, GS
+from pandapower.pypower.idx_bus_sc import BS_P, GS_P, K_G, KAPPA, R_EQUIV, X_EQUIV
+from pandapower.shortcircuit.impedance import _calc_rx, _calc_ybus, _calc_zbus
 
 
 def _add_kappa_to_ppc(net, ppc):
@@ -26,7 +26,7 @@ def _add_kappa_to_ppc(net, ppc):
     elif kappa_method in ["B", "b"]:
         kappa = _kappa_method_b(net, ppc)
     else:
-        raise ValueError("Unknown kappa method %s - specify B or C" % kappa_method)
+        raise ValueError(f"Unknown kappa method {kappa_method} - specify B or C")
     # ppc["bus"][:, KAPPA] = kappa
     # if kappa is already defined in a previous step (e.g. for sgen DFIG kappa is provided by the manufacturer)
     ppc["bus"][:, KAPPA] = np.where(np.isnan(ppc["bus"][:, KAPPA]), kappa, ppc["bus"][:, KAPPA])
@@ -93,8 +93,8 @@ def _kappa_method_b(net, ppc):
             if len(paths) > 1:
                 kappa_korr[bidx] = 1.15
                 for path in paths:
-                    r = sum([mg[b1][b2][0]["r"] for b1, b2 in zip(path, path[1:])])
-                    x = sum([mg[b1][b2][0]["x"] for b1, b2 in zip(path, path[1:])])
+                    r = sum([mg[b1][b2][0]["r"] for b1, b2 in pairwise(path)])
+                    x = sum([mg[b1][b2][0]["x"] for b1, b2 in pairwise(path)])
                     if r / x < 0.3:
                         kappa_korr[bidx] = 1.0
                         break

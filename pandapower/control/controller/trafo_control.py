@@ -1,12 +1,12 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-import pandas as pd
-import numpy as np
-
-from pandapower.auxiliary import read_from_net, _detect_read_write_flag
-from pandapower.control.basic_controller import Controller
-
 import logging
+
+import numpy as np
+import pandas as pd
+
+from pandapower.auxiliary import _detect_read_write_flag, read_from_net
+from pandapower.control.basic_controller import Controller
 
 logger = logging.getLogger(__name__)
 
@@ -85,26 +85,22 @@ class TrafoController(Controller):
         self.controlled = np.logical_and(
             np.logical_and(element_in_service, element_index_in_net), np.logical_not(ext_grid_bus)
         )
-        if isinstance(self.element_index, np.int64) or isinstance(self.element_index, int):
+        if isinstance(self.element_index, (np.int64, int)):
             # if the controller shouldn't do anything, return True
-            if (
+            return bool(
                 not element_in_service
                 or ext_grid_bus
                 or not element_index_in_net
                 or (self._read_write_flag != "single_index" and len(self.element_index) == 0)
-            ):
-                return True
-            return False
+            )
         else:
             # if the controller shouldn't do anything, return True
-            if (
+            return bool(
                 np.all(~element_in_service[self.controlled])
                 or np.all(ext_grid_bus[self.controlled])
                 or np.all(~element_index_in_net[self.controlled])
                 or (self._read_write_flag != "single_index" and len(self.element_index) == 0)
-            ):
-                return True
-            return False
+            )
 
     def _set_tap_side_coeff(self, net):
         tap_side = read_from_net(net, self.element, self.element_index, "tap_side", self._read_write_flag)
@@ -115,8 +111,8 @@ class TrafoController(Controller):
             or (len(np.setdiff1d(tap_side, ["hv", "lv", "mv"])) > 0 and self.element == "trafo3w")
         ):
             raise ValueError(
-                "Trafo tap side (in net.%s) has to be either hv or lv, "
-                "but received: %s for trafo %s" % (self.element, tap_side, self.element_index)
+                f"Trafo tap side (in net.{self.element}) has to be either hv or lv, "
+                f"but received: {tap_side} for trafo {self.element_index}"
             )
 
         if self._read_write_flag == "single_index":
@@ -133,12 +129,12 @@ class TrafoController(Controller):
     def _set_side(self, side):
         if self.element == "trafo":
             if side not in ["hv", "lv"]:
-                raise UserWarning("side has to be 'hv' or 'lv' for high/low voltage, received %s" % side)
+                raise UserWarning(f"side has to be 'hv' or 'lv' for high/low voltage, received {side}")
         elif self.element == "trafo3w":
             if side not in ["hv", "mv", "lv"]:
-                raise UserWarning("side has to be 'hv', 'mv' or 'lv' for high/middle/low voltage, received %s" % side)
+                raise UserWarning(f"side has to be 'hv', 'mv' or 'lv' for high/middle/low voltage, received {side}")
         else:
-            raise UserWarning("unknown trafo type, received %s" % self.element)
+            raise UserWarning(f"unknown trafo type, received {self.element}")
 
         self.side = side
 

@@ -1,5 +1,5 @@
-import pandera as pa
 import numpy as np
+import pandera as pa
 
 
 def create_lower_equals_column_check(first_element: str, second_element: str) -> pa.Check:

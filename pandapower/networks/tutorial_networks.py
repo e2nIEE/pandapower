@@ -4,18 +4,19 @@
 """
 Networks that are used for tutorials AND tests are located here so that both tutorials and tests have access to them.
 """
+
 import numpy as np
 
 from pandapower.create import (
     create_buses,
     create_ext_grid,
+    create_gen,
     create_line,
     create_lines,
-    create_transformer_from_parameters,
-    create_gen,
     create_load,
-    create_transformer,
     create_sgen,
+    create_transformer,
+    create_transformer_from_parameters,
 )
 from pandapower.network import pandapowerNet
 from pandapower.pf.create_jacobian_tdpf import ALPHA_TDPF
@@ -103,6 +104,7 @@ def facts_case_study_grid():
 
     return net
 
+
 def simplest_test_grid(generator_type, step_up_trafo=False):
     net = pandapowerNet(name="simplest_test_grid", sn_mva=6)
     if step_up_trafo:
@@ -185,7 +187,6 @@ def simple_test_grid(load_scaling=1.0, sgen_scaling=1.0, with_gen=False, distrib
     return net
 
 
-
 def vde_232():
     net = pandapowerNet(name="vde_232", sn_mva=12)
     # hv buses
@@ -232,13 +233,4 @@ def vde_232():
         net, 1, 150, 1, 150, vn_kv=21, xdss_pu=0.14, rdss_ohm=0.002, cos_phi=0.85, power_station_trafo=0, pg_percent=5
     )
 
-    # z_q
-    u_nq = 110
-    i_kqss = 13.61213
-    z_q = 1.1 * u_nq / (np.sqrt(3) * i_kqss)
-    rx_max = 0.20328
-    x_q = z_q / np.sqrt(1 + rx_max**2)
-    x_0q = x_q * 3.47927
-    r_0q = x_0q * 3.03361 * 0.20328 / 3.47927
-    z_0q = r_0q + 1j * x_0q
     return net

@@ -1,17 +1,17 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pytest
 import numpy as np
+import pytest
 
 from pandapower.create import (
     create_bus,
     create_bus_dc,
     create_shunt,
-    create_shunts,
     create_shunt_as_capacitor,
-    create_svc,
+    create_shunts,
     create_ssc,
+    create_svc,
     create_vsc,
     create_vsc_bipolar,
     create_vsc_stacked,
@@ -53,9 +53,9 @@ def test_create_shunt():
     assert net.shunt.at[idx2, "step"] == 2
     assert net.shunt.at[idx2, "max_step"] == 5
     assert net.shunt.at[idx2, "name"] == "test_shunt"
-    assert net.shunt.at[idx2, "step_dependency_table"] == True
+    assert net.shunt.at[idx2, "step_dependency_table"]
     assert net.shunt.at[idx2, "id_characteristic_table"] == 1
-    assert net.shunt.at[idx2, "in_service"] == False
+    assert not net.shunt.at[idx2, "in_service"]
     assert net.shunt.at[idx2, "test_kwargs"] == "dummy_string"
 
     # Test that vn_kv defaults to bus voltage when not provided
@@ -104,12 +104,12 @@ def test_create_shunts():
     assert net.shunt.at[indices2[0], "step"] == 1
     assert net.shunt.at[indices2[0], "max_step"] == 5
     assert net.shunt.at[indices2[0], "name"] == "shunt1"
-    assert net.shunt.at[indices2[0], "step_dependency_table"] == True
-    assert net.shunt.at[indices2[0], "in_service"] == True
+    assert net.shunt.at[indices2[0], "step_dependency_table"]
+    assert net.shunt.at[indices2[0], "in_service"]
     assert net.shunt.at[indices2[0], "test_kwargs"] == "dummy1"
 
     assert np.isclose(net.shunt.at[indices2[1], "q_mvar"], -15.0)
-    assert net.shunt.at[indices2[1], "in_service"] == False
+    assert not net.shunt.at[indices2[1], "in_service"]
     assert net.shunt.at[indices2[1], "test_kwargs"] == "dummy2"
 
     assert np.isclose(net.shunt.at[indices2[2], "vn_kv"], 20.0)  # defaults to bus voltage
@@ -155,7 +155,7 @@ def test_create_shunt_as_capacitor():
     assert np.isclose(net.shunt.at[idx3, "vn_kv"], 20.0)
     assert net.shunt.at[idx3, "step"] == 3
     assert net.shunt.at[idx3, "max_step"] == 10
-    assert net.shunt.at[idx3, "in_service"] == False
+    assert not net.shunt.at[idx3, "in_service"]
     assert net.shunt.at[idx3, "test_kwargs"] == "dummy_string"
 
     # Test with different loss factors
@@ -235,8 +235,8 @@ def test_create_svc():
     assert np.isclose(net.svc.at[idx2, "set_vm_pu"], 1.02)
     assert np.isclose(net.svc.at[idx2, "thyristor_firing_angle_degree"], 135.0)
     assert net.svc.at[idx2, "name"] == "test_svc"
-    assert net.svc.at[idx2, "controllable"] == False
-    assert net.svc.at[idx2, "in_service"] == False
+    assert not net.svc.at[idx2, "controllable"]
+    assert not net.svc.at[idx2, "in_service"]
     assert np.isclose(net.svc.at[idx2, "min_angle_degree"], 100.0)
     assert np.isclose(net.svc.at[idx2, "max_angle_degree"], 170.0)
     assert net.svc.at[idx2, "test_kwargs"] == "dummy_string"
@@ -244,8 +244,8 @@ def test_create_svc():
     # Test default values
     b3 = create_bus(net, 20)
     idx3 = create_svc(net, bus=b3, x_l_ohm=2.0, x_cvar_ohm=-5.0, set_vm_pu=1.0, thyristor_firing_angle_degree=90.0)
-    assert net.svc.at[idx3, "controllable"] == True  # default
-    assert net.svc.at[idx3, "in_service"] == True  # default
+    assert net.svc.at[idx3, "controllable"]  # default
+    assert net.svc.at[idx3, "in_service"]  # default
     assert np.isclose(net.svc.at[idx3, "min_angle_degree"], 90.0)  # default
     assert np.isclose(net.svc.at[idx3, "max_angle_degree"], 180.0)  # default
 
@@ -290,8 +290,8 @@ def test_create_ssc():
     assert np.isclose(net.ssc.at[idx2, "vm_internal_pu"], 1.05)
     assert np.isclose(net.ssc.at[idx2, "va_internal_degree"], 5.0)
     assert net.ssc.at[idx2, "name"] == "test_ssc"
-    assert net.ssc.at[idx2, "controllable"] == False
-    assert net.ssc.at[idx2, "in_service"] == False
+    assert not net.ssc.at[idx2, "controllable"]
+    assert not net.ssc.at[idx2, "in_service"]
     assert net.ssc.at[idx2, "test_kwargs"] == "dummy_string"
 
     # Test default values
@@ -300,8 +300,8 @@ def test_create_ssc():
     assert np.isclose(net.ssc.at[idx3, "set_vm_pu"], 1.0)
     assert np.isclose(net.ssc.at[idx3, "vm_internal_pu"], 1.0)
     assert np.isclose(net.ssc.at[idx3, "va_internal_degree"], 0.0)
-    assert net.ssc.at[idx3, "controllable"] == True
-    assert net.ssc.at[idx3, "in_service"] == True
+    assert net.ssc.at[idx3, "controllable"]
+    assert net.ssc.at[idx3, "in_service"]
 
     # Test custom index
     idx4 = create_ssc(net, bus=b1, r_ohm=0.2, x_ohm=-3.0, index=15)
@@ -413,8 +413,8 @@ def test_create_vsc_stacked():
     assert net.vsc_stacked.at[idx2, "control_mode_dc"] == "p_mw"
     assert np.isclose(net.vsc_stacked.at[idx2, "control_value_dc"], 50.0)
     assert net.vsc_stacked.at[idx2, "name"] == "test_vsc_stacked"
-    assert net.vsc_stacked.at[idx2, "controllable"] == False
-    assert net.vsc_stacked.at[idx2, "in_service"] == False
+    assert not net.vsc_stacked.at[idx2, "controllable"]
+    assert not net.vsc_stacked.at[idx2, "in_service"]
     assert net.vsc_stacked.at[idx2, "test_kwargs"] == "dummy_string"
 
     # Test default values
@@ -427,8 +427,8 @@ def test_create_vsc_stacked():
     assert np.isclose(net.vsc_stacked.at[idx3, "control_value_ac"], 1.0)  # default
     assert net.vsc_stacked.at[idx3, "control_mode_dc"] == "p_mw"  # default
     assert np.isclose(net.vsc_stacked.at[idx3, "control_value_dc"], 0.0)  # default
-    assert net.vsc_stacked.at[idx3, "controllable"] == True  # default
-    assert net.vsc_stacked.at[idx3, "in_service"] == True  # default
+    assert net.vsc_stacked.at[idx3, "controllable"]  # default
+    assert net.vsc_stacked.at[idx3, "in_service"]  # default
 
     # Test custom index
     idx4 = create_vsc_stacked(
@@ -440,6 +440,9 @@ def test_create_vsc_stacked():
 
 
 def test_create_vsc_bipolar():
+    """
+    Creation of bipolar VSC with the required, all optional and the default parameters.
+    """
     net = pandapowerNet(name="test_create_vsc_bipolar")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
@@ -467,9 +470,10 @@ def test_create_vsc_bipolar():
         x_ohm=5.0,
         r_dc_ohm=0.2,
         pl_dc_mw=0.1,
-        control_mode="Vac_phi",
-        control_value_1=1.02,
-        control_value_2=5.0,
+        control_mode_ac="vm_pu",
+        control_value_ac=1.02,
+        control_mode_dc="p_mw",
+        control_value_dc=5.0,
         name="test_vsc_bipolar",
         controllable=False,
         in_service=False,
@@ -480,12 +484,13 @@ def test_create_vsc_bipolar():
     assert np.isclose(net.vsc_bipolar.at[idx2, "x_ohm"], 5.0)
     assert np.isclose(net.vsc_bipolar.at[idx2, "r_dc_ohm"], 0.2)
     assert np.isclose(net.vsc_bipolar.at[idx2, "pl_dc_mw"], 0.1)
-    assert net.vsc_bipolar.at[idx2, "control_mode"] == "Vac_phi"
-    assert np.isclose(net.vsc_bipolar.at[idx2, "control_value_1"], 1.02)
-    assert np.isclose(net.vsc_bipolar.at[idx2, "control_value_2"], 5.0)
+    assert net.vsc_bipolar.at[idx2, "control_mode_ac"] == "vm_pu"
+    assert np.isclose(net.vsc_bipolar.at[idx2, "control_value_ac"], 1.02)
+    assert net.vsc_bipolar.at[idx2, "control_mode_dc"] == "p_mw"
+    assert np.isclose(net.vsc_bipolar.at[idx2, "control_value_dc"], 5.0)
     assert net.vsc_bipolar.at[idx2, "name"] == "test_vsc_bipolar"
-    assert net.vsc_bipolar.at[idx2, "controllable"] == False
-    assert net.vsc_bipolar.at[idx2, "in_service"] == False
+    assert not net.vsc_bipolar.at[idx2, "controllable"]
+    assert not net.vsc_bipolar.at[idx2, "in_service"]
     assert net.vsc_bipolar.at[idx2, "test_kwargs"] == "dummy_string"
 
     # Test default values
@@ -494,11 +499,12 @@ def test_create_vsc_bipolar():
         net, bus=b3, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus, r_ohm=0.1, x_ohm=2.0, r_dc_ohm=0.1
     )
     assert np.isclose(net.vsc_bipolar.at[idx3, "pl_dc_mw"], 0.0)  # default
-    assert net.vsc_bipolar.at[idx3, "control_mode"] == "Vac_phi"  # default
-    assert np.isclose(net.vsc_bipolar.at[idx3, "control_value_1"], 1.0)  # default
-    assert np.isclose(net.vsc_bipolar.at[idx3, "control_value_2"], 0.0)  # default
-    assert net.vsc_bipolar.at[idx3, "controllable"] == True  # default
-    assert net.vsc_bipolar.at[idx3, "in_service"] == True  # default
+    assert net.vsc_bipolar.at[idx3, "control_mode_ac"] == "vm_pu"  # default
+    assert np.isclose(net.vsc_bipolar.at[idx3, "control_value_ac"], 1.0)  # default
+    assert net.vsc_bipolar.at[idx3, "control_mode_dc"] == "p_mw"  # default
+    assert np.isclose(net.vsc_bipolar.at[idx3, "control_value_dc"], 0.0)  # default
+    assert net.vsc_bipolar.at[idx3, "controllable"]  # default
+    assert net.vsc_bipolar.at[idx3, "in_service"]  # default
 
     # Test custom index
     idx4 = create_vsc_bipolar(
@@ -553,8 +559,8 @@ def test_create_vsc():
     assert net.vsc.at[idx2, "control_mode_dc"] == "p_mw"
     assert np.isclose(net.vsc.at[idx2, "control_value_dc"], 50.0)
     assert net.vsc.at[idx2, "name"] == "test_vsc"
-    assert net.vsc.at[idx2, "controllable"] == False
-    assert net.vsc.at[idx2, "in_service"] == False
+    assert not net.vsc.at[idx2, "controllable"]
+    assert not net.vsc.at[idx2, "in_service"]
     assert net.vsc.at[idx2, "ref_bus"] == 0
     assert net.vsc.at[idx2, "test_kwargs"] == "dummy_string"
 
@@ -566,8 +572,8 @@ def test_create_vsc():
     assert np.isclose(net.vsc.at[idx3, "control_value_ac"], 1.0)  # default
     assert net.vsc.at[idx3, "control_mode_dc"] == "p_mw"  # default
     assert np.isclose(net.vsc.at[idx3, "control_value_dc"], 0.0)  # default
-    assert net.vsc.at[idx3, "controllable"] == True  # default
-    assert net.vsc.at[idx3, "in_service"] == True  # default
+    assert net.vsc.at[idx3, "controllable"]  # default
+    assert net.vsc.at[idx3, "in_service"]  # default
 
     # Test custom index
     idx4 = create_vsc(net, bus=b1, bus_dc=b_dc, r_ohm=0.2, x_ohm=3.0, r_dc_ohm=0.1, index=10)
@@ -661,6 +667,43 @@ def test_create_vsc_stacked_index_conflict():
         net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus, r_ohm=0.2, x_ohm=3.0, r_dc_ohm=0.1, index=5
     )
     assert idx2 == 5
+
+
+def test_create_vsc_bipolar_legacy_control_kwargs():
+    """
+    The former control parameters raise a TypeError, other additional keywords are still stored.
+    """
+    net = pandapowerNet(name="test_create_vsc_bipolar_legacy_control_kwargs")
+    b1 = create_bus(net, 110)
+    b_dc_plus = create_bus_dc(net, 100)
+    b_dc_minus = create_bus_dc(net, 100)
+
+    for legacy in ({"control_mode": "Vac_phi"}, {"control_value_1": 1.0}, {"control_value_2": 5.0}):
+        with pytest.raises(TypeError, match=next(iter(legacy))):
+            create_vsc_bipolar(
+                net,
+                bus=b1,
+                bus_dc_plus=b_dc_plus,
+                bus_dc_minus=b_dc_minus,
+                r_ohm=1.0,
+                x_ohm=10.0,
+                r_dc_ohm=0.5,
+                **legacy,
+            )
+    assert len(net.vsc_bipolar) == 0
+
+    # other additional keywords are still stored
+    idx = create_vsc_bipolar(
+        net,
+        bus=b1,
+        bus_dc_plus=b_dc_plus,
+        bus_dc_minus=b_dc_minus,
+        r_ohm=1.0,
+        x_ohm=10.0,
+        r_dc_ohm=0.5,
+        test_kwargs="dummy_string",
+    )
+    assert net.vsc_bipolar.at[idx, "test_kwargs"] == "dummy_string"
 
 
 def test_create_vsc_bipolar_index_conflict():

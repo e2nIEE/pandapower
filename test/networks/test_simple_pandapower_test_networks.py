@@ -5,8 +5,8 @@
 import pytest
 
 from pandapower.networks.simple_pandapower_test_networks import (
-    panda_four_load_branch,
     four_loads_with_branches_out,
+    panda_four_load_branch,
     simple_four_bus_system,
     simple_mv_open_ring_net,
 )

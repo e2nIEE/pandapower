@@ -3,47 +3,43 @@
 
 import copy
 import logging
+from importlib.util import find_spec
 
 import numpy as np
 import pandas as pd
-from pandas.testing import assert_frame_equal
 import pytest
+from pandas.testing import assert_frame_equal
 
-from pandapower.control import ConstControl
-from pandapower.run import set_user_pf_options, runpp
-from pandapower.toolbox.grid_modification import replace_ext_grid_by_gen
-from pandapower.toolbox.data_modification import reindex_elements, create_continuous_bus_index
 from pandapower.contingency.contingency import (
     _convert_trafo_phase_shifter,
-    get_element_limits,
-    run_contingency,
-    report_contingency_results,
     check_elements_within_limits,
+    get_element_limits,
+    report_contingency_results,
+    run_contingency,
     run_contingency_ls2g,
 )
 from pandapower.contingency.contingency_parallel import run_contingency_parallel
-from pandapower.network import pandapowerNet
-from pandapower.networks.power_system_test_cases import case9, case118, case14
+from pandapower.control import ConstControl
 from pandapower.create import (
     create_buses,
     create_ext_grid,
-    create_lines,
-    create_transformer_from_parameters,
-    create_load,
-    create_lines_from_parameters,
-    create_transformers_from_parameters,
     create_gen,
+    create_lines,
+    create_lines_from_parameters,
+    create_load,
+    create_transformer_from_parameters,
+    create_transformers_from_parameters,
 )
+from pandapower.network import pandapowerNet
+from pandapower.networks.power_system_test_cases import case9, case14, case118
+from pandapower.run import runpp, set_user_pf_options
+from pandapower.timeseries.data_sources.frame_data import DFData
 from pandapower.timeseries.output_writer import OutputWriter
 from pandapower.timeseries.run_time_series import run_timeseries
-from pandapower.timeseries.data_sources.frame_data import DFData
+from pandapower.toolbox.data_modification import create_continuous_bus_index, reindex_elements
+from pandapower.toolbox.grid_modification import replace_ext_grid_by_gen
 
-try:
-    import lightsim2grid
-
-    lightsim2grid_installed = True
-except ImportError:
-    lightsim2grid_installed = False
+lightsim2grid_installed = find_spec("lightsim2grid")
 
 logger = logging.getLogger(__name__)
 
@@ -336,14 +332,10 @@ def test_lightsim2grid_phase_shifters():
 
     runpp(net)
     bus_res = net.res_bus.copy()
-    if "tap_phase_shifter" in net.trafo.columns:
-        _convert_trafo_phase_shifter(net, "trafo", "tap_phase_shifter")
-    if "tap_changer_type" in net.trafo.columns:
-        if np.any(net.trafo.tap_changer_type == "Ideal"):
-            _convert_trafo_phase_shifter(net, "trafo", "tap_changer_type")
-    if "tap_changer_type" in net.trafo3w.columns:
-        if np.any(net.trafo3w.tap_changer_type == "Ideal"):
-            _convert_trafo_phase_shifter(net, "trafo3w", "tap_changer_type")
+    if "tap_changer_type" in net.trafo.columns and np.any(net.trafo.tap_changer_type == "Ideal"):
+        _convert_trafo_phase_shifter(net, "trafo")
+    if "tap_changer_type" in net.trafo3w.columns and np.any(net.trafo3w.tap_changer_type == "Ideal"):
+        _convert_trafo_phase_shifter(net, "trafo3w")
     runpp(net)
     assert_frame_equal(bus_res, net.res_bus)
 
@@ -598,6 +590,18 @@ def get_net(request):
         net.line.max_i_ka = 1
 
     return net
+
+
+@pytest.mark.parametrize("column", ["max_loading_percent_nminus1", "max_loading_nminus1_percent"])
+def test_get_element_limits_nminus1_column(column):
+    net = case9()
+    net.line["max_loading_percent"] = 100.0
+    assert np.all(get_element_limits(net)["line"]["max_limit_nminus1"] == 100.0)
+    net.line[column] = 80.0
+    limits = get_element_limits(net)["line"]
+    assert np.all(limits["max_limit_nminus1"] == 80.0)
+    assert np.all(limits["min_limit_nminus1"] == -80.0)
+    assert np.all(limits["max_limit"] == 100.0)
 
 
 if __name__ == "__main__":

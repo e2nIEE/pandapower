@@ -6,9 +6,10 @@
 
 import sys
 
-from numpy import zeros, arange, flatnonzero as find, int64
+from numpy import arange, int64, zeros
+from numpy import flatnonzero as find
 
-from pandapower.pypower.idx_cost import MODEL, NCOST, PW_LINEAR, COST
+from pandapower.pypower.idx_cost import COST, MODEL, NCOST, PW_LINEAR
 
 
 def polycost(gencost, Pg, der=0):

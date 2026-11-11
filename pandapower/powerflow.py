@@ -1,32 +1,40 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from numpy import nan_to_num, array, allclose, int64, concatenate
+__all__ = []
 
-from pandapower.auxiliary import LoadflowNotConverged, AlgorithmUnknown, _clean_up, _add_auxiliary_elements
-from pandapower.build_branch import _calc_trafo_parameter, _calc_trafo3w_parameter
+import logging
+
+from numpy import allclose, array, concatenate, int64, nan_to_num
+
+from pandapower.auxiliary import (
+    AlgorithmUnknown,
+    LoadflowNotConverged,
+    _add_auxiliary_elements,
+    _clean_up,
+    _remove_vsc_bipolar_aux,
+)
+from pandapower.build_branch import _calc_trafo3w_parameter, _calc_trafo_parameter
 from pandapower.build_gen import _build_gen_ppc
-from pandapower.pd2ppc import _pd2ppc, _calc_pq_elements_and_add_on_ppc, _ppc2ppci
+from pandapower.pd2ppc import _calc_pq_elements_and_add_on_ppc, _pd2ppc, _ppc2ppci
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.pf.run_bfswpf import _run_bfswpf
 from pandapower.pf.run_dc_pf import _run_dc_pf
+from pandapower.pf.run_helmpy_pf import _runpf_helmpy_pf
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.pf.runpf_pypower import _runpf_pypower
-from pandapower.pf.run_helmpy_pf import _runpf_helmpy_pf
 from pandapower.pypower.bustypes import bustypes
 from pandapower.pypower.idx_bus import VM
-from pandapower.pypower.makeYbus import makeYbus as makeYbus_pypower
+from pandapower.pypower.make_y_bus import makeYbus as makeYbus_pypower
 from pandapower.pypower.pfsoln import pfsoln as pfsoln_pypower
 from pandapower.results import (
-    _extract_results,
     _copy_results_ppci_to_ppc,
-    init_results,
-    verify_results,
+    _extract_results,
     _ppci_bus_to_ppc,
     _ppci_other_to_ppc,
+    init_results,
+    verify_results,
 )
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -35,14 +43,24 @@ def _powerflow(net, **kwargs):
     """
     Gets called by runpp or rundcpp with different arguments.
     """
-
-    # get infos from options
-    ac = net["_options"]["ac"]
-    algorithm = net["_options"]["algorithm"]
-
     net["converged"] = False
     net["OPF_converged"] = False
     _add_auxiliary_elements(net)  # create gen elements for start and end buses of dcline
+    try:
+        _powerflow_with_auxiliary_elements(net, **kwargs)
+    except Exception:
+        # the auxiliary VSC of bipolar VSC must not stay in net.vsc if the power flow fails
+        _remove_vsc_bipolar_aux(net)
+        raise
+
+
+def _powerflow_with_auxiliary_elements(net, **kwargs):
+    """
+    Runs the power flow after the auxiliary elements were added to net (see _powerflow).
+    """
+    # get infos from options
+    ac = net["_options"]["ac"]
+    algorithm = net["_options"]["algorithm"]
 
     if not ac or net["_options"]["init_results"]:
         verify_results(net, mode="pf" if ac else "dc")
@@ -107,11 +125,11 @@ def _recycled_powerflow(net, **kwargs):
     ppc["iterations"] = 0.0
     ppc["et"] = 0.0
 
-    if "bus_pq" in recycle and recycle["bus_pq"]:
+    if recycle.get("bus_pq"):
         # update pq values in bus
         _calc_pq_elements_and_add_on_ppc(net, ppc)
 
-    if "trafo" in recycle and recycle["trafo"]:
+    if recycle.get("trafo"):
         # update trafo in branch and Ybus
         lookup = net._pd2ppc_lookups["branch"]
         if "trafo" in lookup:
@@ -122,7 +140,7 @@ def _recycled_powerflow(net, **kwargs):
         if "trafo3w" in lookup:
             _calc_trafo3w_parameter(net, ppc)
 
-    if "gen" in recycle and recycle["gen"]:
+    if recycle.get("gen"):
         # updates the ppc["gen"] part
         _build_gen_ppc(net, ppc)
         ppc["gen"] = nan_to_num(ppc["gen"])
@@ -177,7 +195,7 @@ def _run_pf_algorithm(ppci, options, **kwargs):
         elif algorithm == "helm":
             result = _runpf_helmpy_pf(ppci, options, **kwargs)
         else:
-            raise AlgorithmUnknown("Algorithm {0} is unknown!".format(algorithm))
+            raise AlgorithmUnknown(f"Algorithm {algorithm} is unknown!")
     else:
         result = _run_dc_pf(ppci, options["recycle"])
 
@@ -197,9 +215,7 @@ def _ppci_to_net(result, net):
         _clean_up(net, res=False)
         algorithm = net["_options"]["algorithm"]
         max_iteration = net["_options"]["max_iteration"]
-        raise LoadflowNotConverged(
-            "Power Flow {0} did not converge after {1} iterations!".format(algorithm, max_iteration)
-        )
+        raise LoadflowNotConverged(f"Power Flow {algorithm} did not converge after {max_iteration} iterations!")
     else:
         net["_ppc"] = result
         net["converged"] = True

@@ -11,27 +11,27 @@ Here are a few examples of what you can do:
 
 .. code:: python
 
-    from pandapower.create import create_bus, create_ext_grid, create_line, create_transformer_from_parameters, create_load, create_switch
+    from pandapower.create import (
+        create_buses,
+        create_ext_grid,
+        create_lines,
+        create_transformer_from_parameters,
+        create_load,
+        create_switch,
+    )
     from pandapower.network import pandapowerNet
 
     net = pandapowerNet(name="basic example network")
 
-    create_bus(net, name = "110 kV bar", vn_kv = 110, type = 'b')
-    create_bus(net, name = "20 kV bar", vn_kv = 20, type = 'b')
-    create_bus(net, name = "bus 2", vn_kv = 20, type = 'b')
-    create_bus(net, name = "bus 3", vn_kv = 20, type = 'b')
-    create_bus(net, name = "bus 4", vn_kv = 20, type = 'b')
-    create_bus(net, name = "bus 5", vn_kv = 20, type = 'b')
-    create_bus(net, name = "bus 6", vn_kv = 20, type = 'b')
+    create_buses(net, 1, name = "110 kV bar", vn_kv = 110, type = 'b')
+    create_buses(net, 6, name = ["20 kV bar","bus 2", "bus 3", "bus 4", "bus 5", "bus 6"], vn_kv = 20, type = 'b')
 
     create_ext_grid(net, 0, vm_pu = 1)
 
-    create_line(net, name = "line 0", from_bus = 1, to_bus = 2, length_km = 1, std_type = "NAYY 4x150 SE")
-    create_line(net, name = "line 1", from_bus = 2, to_bus = 3, length_km = 1, std_type = "NAYY 4x150 SE")
-    create_line(net, name = "line 2", from_bus = 3, to_bus = 4, length_km = 1, std_type = "NAYY 4x150 SE")
-    create_line(net, name = "line 3", from_bus = 4, to_bus = 5, length_km = 1, std_type = "NAYY 4x150 SE")
-    create_line(net, name = "line 4", from_bus = 5, to_bus = 6, length_km = 1, std_type = "NAYY 4x150 SE")
-    create_line(net, name = "line 5", from_bus = 6, to_bus = 1, length_km = 1, std_type = "NAYY 4x150 SE")
+    names = [f"line {i}" for i in range(6)]
+    from_buses = list(range(1, 7))
+    to_buses = from_buses[1:] + [1]
+    create_lines(net, name=names, from_buses=from_buses, to_buses=to_buses, length_km=1, std_type="NAYY 4x150 SE")
 
     create_transformer_from_parameters(net, hv_bus=0, lv_bus=1, i0_percent=0.038, pfe_kw=11.6,
         vkr_percent=0.322, sn_mva=40, vn_lv_kv=22.0, vn_hv_kv=110.0, vk_percent=17.8)
@@ -215,11 +215,9 @@ This is a small extension for the example network:
 
 .. code:: python
 
-    pp.create_bus(net, name = "bus 7", vn_kv = 20, type = 'b')
-    pp.create_bus(net, name = "bus 8", vn_kv = 20, type = 'b')
+    pp.create_buses(net, 2, name = ["bus 7", "bus 8"], vn_kv = 20, type = 'b')
 
-    pp.create_line(net, name = "line 6", from_bus = 6, to_bus = 7, length_km = 1, std_type = "NAYY 4x150 SE")
-    pp.create_line(net, name = "line 7", from_bus = 7, to_bus = 8, length_km = 1, std_type = "NAYY 4x150 SE")
+    pp.create_lines(net, name=["line 6", "line 7"], from_buses=[6, 7], to_buses=[7, 8], length_km=1, std_type="NAYY 4x150 SE")
 
     pp.create_load(net, 7, p_mw = 1, q_mvar = 0.2, name = "load 5")
     pp.create_load(net, 8, p_mw = 1, q_mvar = 0.2, name = "load 6")

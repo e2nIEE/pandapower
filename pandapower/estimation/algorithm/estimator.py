@@ -2,8 +2,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
+from scipy import sparse
 from scipy.stats import chi2
-import scipy.sparse as sparse
 
 from pandapower.auxiliary import version_check
 
@@ -27,7 +27,7 @@ def get_estimator(base_class, estimator_name):
         estm_cls.__name__.split("Estimator")[0].lower(): estm_cls for estm_cls in base_class.__subclasses__()
     }
     if estimator_name.lower() not in available_estimators:
-        raise Exception("Estimator not available! Try another one!")
+        raise AttributeError("Estimator not available! Try another one!")
     else:
         return available_estimators[estimator_name.lower()]
 
@@ -35,7 +35,7 @@ def get_estimator(base_class, estimator_name):
 class BaseEstimatorIRWLS(BaseAlgebra):
     def __init__(self, eppci: ExtendedPPCI, **hyperparameters):
         # Initilize BaseAlgebra object for calculation of relevant matrix
-        super(BaseEstimatorIRWLS, self).__init__(eppci)
+        super().__init__(eppci)
 
     def create_phi(self, E):  # pragma: no cover
         # Must be implemented for subclasses!
@@ -44,7 +44,7 @@ class BaseEstimatorIRWLS(BaseAlgebra):
 
 class BaseEstimatorOpt(BaseAlgebra):
     def __init__(self, eppci, **hyperparameters):
-        super(BaseEstimatorOpt, self).__init__(eppci)
+        super().__init__(eppci)
         # Hyperparameters for estimator should be added here
 
     def cost_function(self, E):  # pragma: no cover
@@ -59,7 +59,7 @@ class BaseEstimatorOpt(BaseAlgebra):
 
 class WLSEstimator(BaseEstimatorOpt, BaseEstimatorIRWLS):
     def __init__(self, eppci, **hyperparameters):
-        super(WLSEstimator, self).__init__(eppci, **hyperparameters)
+        super().__init__(eppci, **hyperparameters)
 
     def cost_function(self, E):
         rx = self.create_rx(E)
@@ -85,7 +85,7 @@ class WLSEstimator(BaseEstimatorOpt, BaseEstimatorIRWLS):
 
 class SHGMEstimatorIRWLS(BaseEstimatorIRWLS):
     def __init__(self, eppci: ExtendedPPCI, **hyperparameters):
-        super(SHGMEstimatorIRWLS, self).__init__(eppci, **hyperparameters)
+        super().__init__(eppci, **hyperparameters)
         if "a" not in hyperparameters:
             raise AssertionError("a is not in hyperparameters")
         self.a = hyperparameters.get("a")
@@ -168,7 +168,7 @@ class LAVEstimator(BaseEstimatorOpt):
 
 class QCEstimatorOpt(BaseEstimatorOpt):
     def __init__(self, eppci, **hyperparameters):
-        super(QCEstimatorOpt, self).__init__(eppci, **hyperparameters)
+        super().__init__(eppci, **hyperparameters)
         if "a" not in hyperparameters:
             raise AssertionError("a is not in hyperparameters")
         self.a = hyperparameters["a"]
@@ -199,7 +199,7 @@ class QCEstimatorOpt(BaseEstimatorOpt):
 
 class QLEstimatorOpt(BaseEstimatorOpt):
     def __init__(self, eppci, **hyperparameters):
-        super(QLEstimatorOpt, self).__init__(eppci, **hyperparameters)
+        super().__init__(eppci, **hyperparameters)
         if "a" not in hyperparameters:
             raise AssertionError("a is not in hyperparameters")
         self.a = hyperparameters["a"]
@@ -213,13 +213,17 @@ class QLEstimatorOpt(BaseEstimatorOpt):
         return np.sum(cost)
 
     def create_cost_jacobian(self, E):
+        """
+        Gradient of the quadratic-linear cost function w.r.t. the state E: quadratic for residuals up to a * sigma, linear
+        for larger residuals.
+        """
         # dr/dE = drho / dr * d(z-hx) / dE
         # dr/dE = (drho/dr) * - (d(hx)/dE)
         # 2 * rx * -(dhx/dE) if np.abs(rx/sigma) < a
         # 2 * drho/dr * -(dhx/dE) else
         rx = self.create_rx(E)
         hx_jac = self.create_hx_jacobian(E)
-        drho_dr = 2 * (rx * (1 / self.sigma) ** 2)
+        # drho_dr = 2 * (rx * (1 / self.sigma) ** 2)
         large_dev_mask = np.abs(rx / self.sigma) > self.a
         # if np.any(large_dev_mask):
         #    drho_dr[large_dev_mask] = (np.sign(rx)* (1/self.sigma))[large_dev_mask]

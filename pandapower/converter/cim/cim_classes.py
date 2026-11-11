@@ -14,7 +14,7 @@ import pandas as pd
 from lxml import etree
 
 from .cim_tools import get_cim_schema
-from .other_classes import ReportContainer, Report, LogLevel, ReportCode
+from .other_classes import LogLevel, Report, ReportCode, ReportContainer
 
 
 class CimParser:
@@ -119,7 +119,7 @@ class CimParser:
                 for col in item.columns:
                     # skip elements which are not available in the schema like FullModel
                     if cim_element_type not in cim_schema[profile]:
-                        self.logger.debug("Skipping CIM element type %s from profile %s." % (cim_element_type, profile))
+                        self.logger.debug(f"Skipping CIM element type {cim_element_type} from profile {profile}.")
                         continue
                     if (
                         col in cim_schema[profile][cim_element_type]["fields"]
@@ -150,7 +150,7 @@ class CimParser:
                             self.cim[profile][cim_element_type][col] = self.cim[profile][cim_element_type][col].astype(
                                 data_type_col
                             )  # type: ignore[call-overload]
-                        except Exception as e:
+                        except Exception as e:  # noqa: BLE001
                             self.logger.warning(
                                 f"Couldn't set the datatype to {data_type_col_str} for field {col} "
                                 f"at CIM type {cim_element_type} in profile {profile}!"
@@ -187,7 +187,7 @@ class CimParser:
                     else:
                         # this cim element type is not used by the converter, drop it
                         del self.cim[profile][cim_element_type]
-                    self.logger.warning("%s isn't a DataFrame! The data won't be used!" % cim_element_type)
+                    self.logger.warning(f"{cim_element_type} isn't a DataFrame! The data won't be used!")
 
         # append missing columns to the CIM net
         for profile in cim_data_structure:
@@ -200,7 +200,7 @@ class CimParser:
                     continue
                 for column in item.columns:
                     if column not in self.cim[profile][cim_element_type].columns:
-                        self.logger.info("Adding missing column %s to CIM element %s" % (column, cim_element_type))
+                        self.logger.info(f"Adding missing column {column} to CIM element {cim_element_type}")
                         self.cim[profile][cim_element_type][column] = np.nan
 
         # now remove columns which are not needed by the converter (to avoid renaming problems when merging DataFrames)
@@ -780,19 +780,19 @@ class CimParser:
         full_model_profile = full_model[:-9] + "Model.profile"  # type: ignore[operator]
         full_model_df = self._get_df(root.findall(".//" + full_model))  # type: ignore[arg-type,operator]
         if full_model_df.index.size == 0 and self.ignore_errors:
-            self.logger.warning("The FullModel is not given in the XML tree, returning %s" % default_profile)
+            self.logger.warning(f"The FullModel is not given in the XML tree, returning {default_profile}")
             return default_profile
         elif full_model_df.index.size == 0:
-            raise Exception("The FullModel is not given in the XML tree.")
+            raise RuntimeError("The FullModel is not given in the XML tree.")
         if full_model_df.index.size > 1 and self.ignore_errors:
             self.logger.warning("It is more than one FullModel given, returning the profile from the first FullModel.")
         elif full_model_df.index.size > 1:
-            raise Exception("It is more than one FullModel given.")
+            raise RuntimeError("It is more than one FullModel given.")
         if full_model_profile not in full_model_df.columns and self.ignore_errors:
-            self.logger.warning("The profile is not given in the FullModel, returning %s" % default_profile)
+            self.logger.warning(f"The profile is not given in the FullModel, returning {default_profile}")
             return default_profile
         elif full_model_profile not in full_model_df.columns:
-            raise Exception("The profile is not given in the FullModel.")
+            raise RuntimeError("The profile is not given in the FullModel.")
         profile_list = full_model_df[full_model_profile].values[0]
         if not isinstance(profile_list, list):
             profile_list = [profile_list]
@@ -830,12 +830,12 @@ class CimParser:
             elif "/Dynamics/" in one_profile:
                 return "dy"
         if self.ignore_errors:
-            self.logger.warning("The CGMES profile could not be parsed from the XML, returning %s" % default_profile)
+            self.logger.warning(f"The CGMES profile could not be parsed from the XML, returning {default_profile}")
             self.report_container.add_log(
                 Report(
                     level=LogLevel.ERROR,
                     code=ReportCode.ERROR_PARSING,
-                    message="The CGMES profile could not be parsed from the XML, returning %s" % default_profile,
+                    message=f"The CGMES profile could not be parsed from the XML, returning {default_profile}",
                 )
             )
             return default_profile
@@ -847,7 +847,7 @@ class CimParser:
                     message="The CGMES profile could not be parsed from the XML.",
                 )
             )
-            raise Exception("The CGMES profile could not be parsed from the XML.")
+            raise RuntimeError("The CGMES profile could not be parsed from the XML.")
 
     def _parse_source_file(self, file: str, output: dict, encoding: str | None):
         self.logger.info(f"Parsing file: {file}")
@@ -931,22 +931,19 @@ class CimParser:
         else:
             for ele, df in prf_content.items():  # type: ignore[assignment]
                 if ele not in output[prf]:
-                    concat_list = [prf_content[ele]]  # type: ignore[index]
+                    concat_list = [df]  # type: ignore[index]
                 else:
-                    concat_list = [output[prf][ele], prf_content[ele]]  # type: ignore[index]
+                    concat_list = [output[prf][ele], df]  # type: ignore[index]
                 output[prf][ele] = pd.concat(concat_list, ignore_index=True, sort=False)  # type: ignore[index]
 
     def _check_file(self, file: str) -> bool:
         if not os.path.isfile(file):
-            self.logger.error("%s is not a valid file!" % file)
+            self.logger.error(f"{file} is not a valid file!")
             self.report_container.add_log(
-                Report(level=LogLevel.ERROR, code=ReportCode.ERROR_PARSING, message="%s is not a valid file!" % file)
+                Report(level=LogLevel.ERROR, code=ReportCode.ERROR_PARSING, message=f"{file} is not a valid file!")
             )
             return False
-        elif file.lower().endswith("xml") or file.lower().endswith("rdf") or file.lower().endswith("zip"):
-            return True
-        else:
-            return False
+        return bool(file.lower().endswith("xml") or file.lower().endswith("rdf") or file.lower().endswith("zip"))
 
     def get_cim_dict(self) -> dict[str, dict[str, pd.DataFrame]]:
         return self.cim

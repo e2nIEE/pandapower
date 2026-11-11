@@ -1,1 +1,6 @@
-from . import acLineSegmentsCim16, dcLineSegmentsCim16
+__all__ = [
+    "ac_line_segments_cim16",
+    "dc_line_segments_cim16",
+]
+
+from . import ac_line_segments_cim16, dc_line_segments_cim16

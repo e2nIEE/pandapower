@@ -1,9 +1,20 @@
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
+__all__ = [
+    "compare_arrays",
+    "dataframes_equal",
+    "nets_equal",
+    "nets_equal_keys",
+]
+
 from io import StringIO
+
 import networkx as nx
 import numpy as np
 import pandas as pd
-from pandas import testing as pdt
 from deepdiff import DeepDiff
+from pandas import testing as pdt
 
 from pandapower.network import pandapowerNet
 
@@ -66,8 +77,8 @@ def dataframes_equal(df1, df2, ignore_index_order=True, assume_geojson_strings=T
             return False
 
         # create DataFrames from geo information
-        df1_geo = pd.concat([pd.read_json(StringIO(df1.geo.at[idx])).assign(**{"idx": idx}) for idx in notnull1])
-        df2_geo = pd.concat([pd.read_json(StringIO(df2.geo.at[idx])).assign(**{"idx": idx}) for idx in notnull2])
+        df1_geo = pd.concat([pd.read_json(StringIO(df1.geo.at[idx])).assign(idx=idx) for idx in notnull1])
+        df2_geo = pd.concat([pd.read_json(StringIO(df2.geo.at[idx])).assign(idx=idx) for idx in notnull2])
 
         # check equal columns and reorder columns of df2_geo
         if len(df1_geo.columns.symmetric_difference(df2_geo.columns)):
@@ -148,10 +159,10 @@ def nets_equal(
         **kwargs,
     )
     if len(not_checked_keys) > 0:
-        logger.warning("These keys were ignored by the comparison of the networks: %s" % (", ".join(not_checked_keys)))
+        logger.warning(f"These keys were ignored by the comparison of the networks: {', '.join(not_checked_keys)}")
 
     if len(not_equal) > 0:
-        logger.warning("Networks do not match in DataFrame(s): %s" % (", ".join(not_equal)))
+        logger.warning(f"Networks do not match in DataFrame(s): {', '.join(not_equal)}")
         return False
     else:
         return True
@@ -230,7 +241,7 @@ def nets_equal_keys(
                 if not np.array_equal(net1[key], net2[key], equal_nan=True):
                     not_equal.append(key)
 
-        elif isinstance(net1[key], int) or isinstance(net1[key], float) or isinstance(net1[key], complex):
+        elif isinstance(net1[key], (int, float, complex)):
             if not np.isclose(net1[key], net2[key]):
                 not_equal.append(key)
 
@@ -252,6 +263,6 @@ def nets_equal_keys(
                 is_eq = net1[key] == net2[key]
                 if not is_eq:
                     not_equal.append(key)
-            except:
+            except Exception:  # noqa: BLE001
                 not_checked_keys.append(key)
     return not_equal, not_checked_keys

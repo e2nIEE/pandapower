@@ -1,8 +1,8 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import pytest
 import numpy as np
+import pytest
 
 from pandapower.create import create_bus, create_buses, create_gen, create_gens
 from pandapower.network import pandapowerNet
@@ -131,7 +131,7 @@ def test_create_gen_nonexistent_bus():
     # Test that creating a generator with non-existent bus raises an error
     net = pandapowerNet(name="test_create_gen_nonexistent_bus")
 
-    with pytest.raises(Exception):
+    with pytest.raises(UserWarning, match="Cannot attach to bus 0, 0 does not exist"):
         create_gen(
             net,
             bus=0,  # Bus doesn't exist

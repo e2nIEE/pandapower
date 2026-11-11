@@ -1,11 +1,11 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = ["result_test_network", "simple_network"]
 
 import numpy as np
 import pytest
 
-from pandapower import pandapowerNet
 from pandapower.create import (
     create_bus,
     create_ext_grid,
@@ -15,6 +15,7 @@ from pandapower.create import (
     create_sgen,
     create_transformer,
 )
+from pandapower.network import pandapowerNet
 from test.loadflow.result_test_network_generator import (
     result_test_network_generator,
 )

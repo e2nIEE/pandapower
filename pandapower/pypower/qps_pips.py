@@ -6,8 +6,7 @@
 programming) problems.
 """
 
-from numpy import inf, zeros, dot, full
-
+from numpy import dot, full, inf, zeros
 from scipy.sparse import csr_matrix as sparse
 
 from pandapower.pypower.pips import pips
@@ -137,7 +136,7 @@ def qps_pips(H, c, A, l, u, xmin=None, xmax=None, x0=None, opt=None):
         if opt is not None:
             p["opt"] = opt
 
-    if "H" not in p or p["H"] == None:  # p['H'].nnz == 0:
+    if "H" not in p or p["H"] is None:  # p['H'].nnz == 0:
         if p["A"] is None or p["A"].nnz == 0 and "xmin" not in p and "xmax" not in p:
             #           'xmin' not in p or len(p['xmin']) == 0 and \
             #           'xmax' not in p or len(p['xmax']) == 0:

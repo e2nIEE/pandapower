@@ -1,65 +1,109 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "AlgorithmUnknown",
+    "ControllerNotConverged",
+    "GeoAccessor",
+    "I0_from_V012",
+    "I1_from_V012",
+    "I2_from_V012",
+    "I_from_SV_elementwise",
+    "I_from_V",
+    "LoadflowNotConverged",
+    "NetCalculationNotConverged",
+    "OPFNotConverged",
+    "SVabc_from_SV012",
+    "S_from_VI_elementwise",
+    "V1_from_ppc",
+    "V_from_I",
+    "X012_to_X0",
+    "X012_to_X1",
+    "X012_to_X2",
+    "combine_X012",
+    "element_types_to_ets",
+    "empty_defaults_per_dtype",
+    "ensure_iterability",
+    "ets_to_element_types",
+    "get_free_id",
+    "get_indices",
+    "get_vsc_stacked_names",
+    "log_to_level",
+    "phase_shift_unit_operator",
+    "phase_to_sequence",
+    "ppException",
+    "read_from_net",
+    "sequence_to_phase",
+    "soft_dependency_error",
+    "version_check",
+    "warn_and_fix_parameter_renaming",
+    "write_to_net",
+]
+
 import numbers
 import warnings
-from collections.abc import Iterable, Collection
+from collections.abc import Collection, Iterable
 from importlib.metadata import PackageNotFoundError
 from importlib.metadata import version as version_str
+from importlib.util import find_spec
 from typing import (
+    TYPE_CHECKING,
     Any,
+    Final,
     Literal,
     TypeVar,
     overload,
-    Final,
-    TYPE_CHECKING,
 )
 
 import numpy as np
 import pandas as pd
 import pandera.typing as pdt
 import scipy as sp
-from geojson import loads, GeoJSON
+from geojson import GeoJSON, loads
 from numpy.typing import NDArray
 from packaging.version import Version
-from pandas.api.types import is_numeric_dtype, is_string_dtype, is_object_dtype
+from pandas.api.types import is_numeric_dtype, is_object_dtype, is_string_dtype
 
 from pandapower.network import pandapowerNet
-from pandapower.pypower.idx_brch import F_BUS, T_BUS, BR_STATUS
+from pandapower.pypower.idx_brch import BR_STATUS, F_BUS, T_BUS
 from pandapower.pypower.idx_brch_dc import DC_BR_STATUS, DC_F_BUS, DC_T_BUS
-from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, QD, VM, VA, REF, PQ, VMIN, VMAX, PV
-from pandapower.pypower.idx_bus_dc import DC_VMAX, DC_VMIN, DC_BUS_I, DC_BUS_TYPE, DC_NONE, DC_REF, DC_B2B
-from pandapower.pypower.idx_gen import PMIN, PMAX, QMIN, QMAX
-from pandapower.pypower.idx_ssc import SSC_STATUS, SSC_BUS, SSC_INTERNAL_BUS
-from pandapower.pypower.idx_tcsc import TCSC_STATUS, TCSC_F_BUS, TCSC_T_BUS
-from pandapower.pypower.idx_vsc import VSC_STATUS, VSC_BUS, VSC_INTERNAL_BUS, VSC_BUS_DC, VSC_INTERNAL_BUS_DC
+from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, PQ, PV, QD, REF, VA, VM, VMAX, VMIN
+from pandapower.pypower.idx_bus_dc import DC_B2B, DC_BUS_I, DC_BUS_TYPE, DC_NONE, DC_REF, DC_VMAX, DC_VMIN
+from pandapower.pypower.idx_gen import PMAX, PMIN, QMAX, QMIN
+from pandapower.pypower.idx_ssc import SSC_BUS, SSC_INTERNAL_BUS, SSC_STATUS
+from pandapower.pypower.idx_tcsc import TCSC_F_BUS, TCSC_STATUS, TCSC_T_BUS
+from pandapower.pypower.idx_vsc import (
+    VSC_BUS,
+    VSC_BUS_DC,
+    VSC_BUS_DC_MINUS,
+    VSC_INTERNAL_BUS,
+    VSC_INTERNAL_BUS_DC,
+    VSC_STATUS,
+)
 
-try:
-    from lightsim2grid.newtonpf import newtonpf_new as newtonpf_ls
-
+if find_spec("lightsim2gird") is not None:
     lightsim2grid_available = True
-except ImportError:
+else:
     lightsim2grid_available = False
 
 import logging
 
-try:
+if find_spec("geopandas") is not None and find_spec("shapely") is not None:
     from geopandas import GeoSeries
     from shapely import from_geojson
 
     geopandas_available = True
-except ImportError:
+else:
     geopandas_available = False
 
 
 if TYPE_CHECKING:
     if not geopandas_available:
         raise ImportError("GeoPandas required for type checking!")
-    from geopandas import GeoSeries
 
 
 PyPowerNetwork = dict[str, Any]
-NumpyDType = TypeVar("NumpyDType", bound=np.generic, covariant=True)
+NumpyDType_co = TypeVar("NumpyDType_co", bound=np.generic, covariant=True)
 
 logger = logging.getLogger(__name__)
 
@@ -178,15 +222,12 @@ class GeoAccessor:
 
     def __init__(self, pandas_obj: "pdt.Series[str]") -> None:
         self._validate(pandas_obj)
-        self._obj: "pdt.Series[str]" = pandas_obj
+        self._obj: pdt.Series[str] = pandas_obj
 
     @staticmethod
     def _validate(obj: "pdt.Series[str]") -> None:
-        try:
-            if not obj.dropna().apply(loads).apply(isinstance, args=(GeoJSON,)).all():
-                raise AttributeError("Can only use .geojson accessor with geojson string values!")
-        except Exception as e:
-            raise AttributeError(f"Can only use .geojson accessor with geojson string values!: {e}")
+        if not obj.dropna().apply(loads).apply(isinstance, args=(GeoJSON,)).all():
+            raise AttributeError("Can only use .geojson accessor with geojson string values!")
         if not geopandas_available:
             soft_dependency_error("GeoAccessor", "geopandas")
 
@@ -318,7 +359,7 @@ def empty_defaults_per_dtype(dtype: np.dtype[Any]) -> Any:
 def _preserve_dtypes(df: pd.DataFrame, dtypes: pdt.Series[np.dtype[Any]]) -> None:
     for item, dtype in dtypes.items():
         if df.dtypes.at[item] != dtype:
-            if (dtype == bool or dtype == np.bool_) and np.any(df[item].isnull()):
+            if (dtype is bool or dtype is np.bool_) and np.any(df[item].isnull()):
                 df[item] = df[item].fillna(pd.NA).astype("boolean")
             try:
                 df[item] = df[item].astype(dtype)
@@ -339,15 +380,11 @@ class ppException(Exception):
     General pandapower custom parent exception.
     """
 
-    pass
-
 
 class AlgorithmUnknown(ppException):
     """
     Exception being raised in case optimal powerflow did not converge.
     """
-
-    pass
 
 
 class LoadflowNotConverged(ppException):
@@ -355,15 +392,11 @@ class LoadflowNotConverged(ppException):
     Exception being raised in case loadflow did not converge.
     """
 
-    pass
-
 
 class ControllerNotConverged(ppException):
     """
     Exception being raised in case a controller does not converge.
     """
-
-    pass
 
 
 class NetCalculationNotConverged(ppException):
@@ -371,15 +404,11 @@ class NetCalculationNotConverged(ppException):
     Exception being raised in case a controller does not converge.
     """
 
-    pass
-
 
 class OPFNotConverged(ppException):
     """
     Exception being raised in case optimal powerflow did not converge.
     """
-
-    pass
 
 
 def _sum_by_group(
@@ -720,7 +749,7 @@ def _set_isolated_nodes_out_of_service(
 ) -> tuple[NDArray[bool], int, int, PyPowerNetwork]:
     isolated_nodes = np.nonzero(bus_not_reachable)[0]
     if len(isolated_nodes) > 0:
-        logger.debug("There are isolated buses in the network! (%i nodes in the PPC)" % len(isolated_nodes))
+        logger.debug(f"There are isolated buses in the network! ({len(isolated_nodes)} nodes in the PPC)")
         # set buses in ppc out of service
         if dc:
             ppc["bus_dc"][isolated_nodes, DC_BUS_TYPE] = DC_NONE
@@ -731,7 +760,7 @@ def _set_isolated_nodes_out_of_service(
             pus = abs(ppc["bus"][isolated_nodes, PD] * 1e3).sum()
             qus = abs(ppc["bus"][isolated_nodes, QD] * 1e3).sum()
             if pus > 0 or qus > 0:
-                logger.debug("%.0f kW active and %.0f kVar reactive power are unsupplied" % (pus, qus))
+                logger.debug(f"{pus:.0f} kW active and {qus:.0f} kVar reactive power are unsupplied")
     else:
         pus = qus = 0
 
@@ -833,9 +862,14 @@ def _check_connectivity(ppc: PyPowerNetwork) -> tuple[NDArray[bool], int, int, N
         bus_from_dc = ppc["branch_dc"][br_dc_status, DC_F_BUS].real.astype(np.int64)
         bus_to_dc = ppc["branch_dc"][br_dc_status, DC_T_BUS].real.astype(np.int64)
 
-        bus_from_dc = np.hstack([bus_from_dc, bus_from_vsc_dc, slacks_dc])
-        bus_to_dc = np.hstack([bus_to_dc, bus_to_vsc_dc, np.ones(len(slacks_dc)) * nobus_dc])
-        nolinks_dc = nobranch_dc + novsc + len(slacks_dc)
+        # minus terminal of bipolar VSC (-1 for VSC connected to ground):
+        vsc_minus_dc = ppc["vsc"][vsc_status, VSC_BUS_DC_MINUS].real.astype(np.int64)
+        bus_from_vsc_minus_dc = bus_from_vsc_dc[vsc_minus_dc >= 0]
+        bus_to_vsc_minus_dc = vsc_minus_dc[vsc_minus_dc >= 0]
+
+        bus_from_dc = np.hstack([bus_from_dc, bus_from_vsc_dc, bus_from_vsc_minus_dc, slacks_dc])
+        bus_to_dc = np.hstack([bus_to_dc, bus_to_vsc_dc, bus_to_vsc_minus_dc, np.ones(len(slacks_dc)) * nobus_dc])
+        nolinks_dc = nobranch_dc + novsc + len(bus_to_vsc_minus_dc) + len(slacks_dc)
 
         adj_matrix_dc = sp.sparse.coo_matrix(
             (np.ones(nolinks_dc), (bus_from_dc, bus_to_dc)), shape=(nobus_dc + 1, nobus_dc + 1)
@@ -973,7 +1007,7 @@ def _select_is_elements_numba(
         ppc_bus_dc_isolated[isolated_nodes_dc] = True
         set_isolated_buses_oos(bus_dc_in_service, ppc_bus_dc_isolated, net["_pd2ppc_lookups"]["bus_dc"])
     if isolated_nodes is not None and len(isolated_nodes) > 0:
-        ppc = net["_ppc"] if sequence is None else net["_ppc%s" % sequence]
+        ppc = net["_ppc"] if sequence is None else net[f"_ppc{sequence}"]
         ppc_bus_isolated = np.zeros(ppc["bus"].shape[0], dtype=bool)
         ppc_bus_isolated[isolated_nodes] = True
         set_isolated_buses_oos(bus_in_service, ppc_bus_isolated, net["_pd2ppc_lookups"]["bus"])
@@ -1005,15 +1039,25 @@ def _select_is_elements_numba(
                 element_df = net[element_table]
                 set_elements_oos(element_df[bus_table].values, element_df["in_service"].values, bis, element_in_service)
             # load, sgen, storage only in elements_ac so this will only be executed once:
-            if net["_options"]["mode"] == "opf" and element_table in ["load", "sgen", "storage"]:
-                if "controllable" in net[element_table]:
-                    controllable = net[element_table].controllable.fillna(False).values.astype(bool)
-                    controllable_in_service = controllable & element_in_service
-                    if controllable_in_service.any():
-                        is_elements["%s_controllable" % element_table] = controllable_in_service
-                        element_in_service = element_in_service & ~controllable_in_service
+            if (
+                net["_options"]["mode"] == "opf"
+                and element_table in ["load", "sgen", "storage"]
+                and "controllable" in net[element_table]
+            ):
+                controllable = net[element_table].controllable.fillna(False).values.astype(bool)
+                controllable_in_service = controllable & element_in_service
+                if controllable_in_service.any():
+                    is_elements[f"{element_table}_controllable"] = controllable_in_service
+                    element_in_service = element_in_service & ~controllable_in_service
             # if element_table has both bus and bus_dc e.g. "vsc":
             is_elements[element_table] = is_elements.get(element_table, True) & element_in_service
+
+    # the auxiliary VSC of bipolar VSC are also out of service if their minus terminal bus is out of service
+    # (bus_dc_minus is NaN for VSC connected to ground)
+    if len(net.vsc) > 0 and "bus_dc_minus" in net.vsc.columns:
+        bus_dc_minus = net.vsc["bus_dc_minus"].values
+        has_minus = pd.notna(bus_dc_minus)
+        is_elements["vsc"][has_minus] &= bus_dc_in_service[bus_dc_minus[has_minus].astype(np.int64)]
 
     if len(net.vsc) > 0 and "aux" in net["_pd2ppc_lookups"] and "vsc" in net["_pd2ppc_lookups"]["aux"]:
         # reasoning: it can be that there are isolated DC buses. But they are only discovered
@@ -1026,16 +1070,6 @@ def _select_is_elements_numba(
         #                    ppc_bus_isolated[net["_pd2ppc_lookups"]["aux"]["vsc"]] |
         #                    ppc_bus_isolated[net._ppc["vsc"][:, VSC_BUS].astype(np.int64)]]
         net._ppc["bus"][vsc_aux_isolated, BUS_TYPE] = NONE  # type: ignore[index]
-
-        # if there are no in service VSC that define the DC slack node, we must change the DC slack to type P
-        bus_dc_slack = net._ppc["bus_dc"][:, DC_BUS_TYPE] == DC_REF  # type: ignore[index]
-        bus_dc_with_vsc = np.r_[
-            net._ppc["vsc"][is_elements["vsc"], VSC_BUS_DC],  # type: ignore[index]
-            net._ppc["vsc"][is_elements["vsc"], VSC_INTERNAL_BUS_DC],  # type: ignore[index]
-        ]
-        bus_dc_to_change = bus_dc_slack & (~np.isin(net._ppc["bus_dc"][:, DC_BUS_I], bus_dc_with_vsc))  # type: ignore[index]
-        # TODO: changing this will also delete all voltage sources but there seems to be a problem
-        # net._ppc["bus_dc"][bus_dc_to_change, DC_BUS_TYPE] = DC_P
 
         # if the AC bus is defined as REF only because it is connected to a vsc, and the vsc is out of service,
         # it cannot be a REF bus any more
@@ -1119,9 +1153,8 @@ def _check_bus_index_and_print_warning_if_high(net: pandapowerNet, n_max: int = 
     max_bus = max(net.bus.index.values)
     if max_bus >= n_max > len(net["bus"]):
         logger.warning(
-            "Maximum bus index is high (%i). You should avoid high bus indices because "
-            "of perfomance reasons. Try resetting the bus indices with the toolbox "
-            "function create_continuous_bus_index()" % max_bus
+            f"Maximum bus index is high ({max_bus}). You should avoid high bus indices because of performance reasons. "
+            f"Try resetting the bus indices with the toolbox function create_continuous_bus_index()"
         )
 
 
@@ -1131,9 +1164,9 @@ def _check_gen_index_and_print_warning_if_high(net: pandapowerNet, n_max: int = 
     max_gen = max(net.gen.index.values)
     if max_gen >= n_max > len(net["gen"]):
         logger.warning(
-            "Maximum generator index is high (%i). You should avoid high generator "
-            "indices because of perfomance reasons. Try resetting the bus indices with "
-            "the toolbox function create_continuous_elements_index()" % max_gen
+            f"Maximum generator index is high ({max_gen}). You should avoid high generator indices because of "
+            f"performance reasons. Try resetting the bus indices with the toolbox function "
+            f"create_continuous_elements_index()"
         )
 
 
@@ -1225,8 +1258,7 @@ def _add_options(net: pandapowerNet, options: dict[str, Any]) -> None:
     double_parameters = set(net._options.keys()) & set(options.keys())
     if len(double_parameters) > 0:
         raise UserWarning(
-            "Parameters always have to be unique! The following parameters where specified "
-            + "twice: %s" % double_parameters
+            f"Parameters always have to be unique! The following parameters where specified twice: {double_parameters}"
         )
     net._options.update(options)
 
@@ -1237,6 +1269,14 @@ def get_vsc_stacked_names(elements: NDArray):
 
 
 def _clean_up(net: pandapowerNet, res: bool = True) -> None:
+    """
+    Removes the auxiliary elements of the power flow from net: the gens of the dclines and the auxiliary VSC of
+    vsc_stacked and vsc_bipolar (see _add_auxiliary_elements).
+
+    Parameters:
+        net: the pandapower network
+        res: if True, the results of the dcline gens are removed from net.res_gen as well
+    """
     # mode = net.__internal_options["mode"]
 
     # set internal selected _is_elements to None. This way it is not stored (saves disk space)
@@ -1272,8 +1312,30 @@ def _clean_up(net: pandapowerNet, res: bool = True) -> None:
         # drop the vsc's
         net.vsc.drop(vsc_idx.index, axis=0, inplace=True)
 
+    _remove_vsc_bipolar_aux(net)
+
+
+def _remove_vsc_bipolar_aux(net: pandapowerNet) -> None:
+    """
+    Removes the auxiliary net.vsc entries of the bipolar VSC (see _add_vsc_bipolar). Can be called several times.
+    """
+    aux = net.pop("_vsc_bipolar_aux", None)
+    if aux is None:
+        return
+    net.vsc.drop(aux["vsc_index"], axis=0, inplace=True)
+    if "res_vsc" in net:
+        net.res_vsc.drop(net.res_vsc.index.intersection(aux["vsc_index"]), axis=0, inplace=True)
+    drop_columns = [c for c in aux["drop_columns"] if c in net.vsc.columns]
+    if drop_columns:
+        net.vsc.drop(columns=drop_columns, inplace=True)
+
 
 def _set_isolated_buses_out_of_service(net: pandapowerNet, ppc: PyPowerNetwork) -> None:
+    """
+    Sets the AC buses that are not connected to an in-service branch and the DC buses that are not connected to an
+    in-service DC line or VSC terminal (plus or minus) out of service (bus type NONE), unless they are reference buses.
+    The isolated buses are stored in net._isolated_buses and net._isolated_buses_dc.
+    """
     # set disconnected buses out of service
     # first check if buses are connected to branches
     # I don't know why this dance with [X, :][:, [Y, Z]] (instead of [X, [Y, Z]]) is necessary:
@@ -1287,13 +1349,15 @@ def _set_isolated_buses_out_of_service(net: pandapowerNet, ppc: PyPowerNetwork) 
     ppc["bus"][net._isolated_buses, BUS_TYPE] = NONE
 
     # check DC buses - not connected to DC lines and not connected to VSC DC side
+    # (VSC_BUS_DC_MINUS is -1 for VSC connected to ground)
+    vsc_dc_buses = ppc["vsc"][ppc["vsc"][:, VSC_STATUS] == 1][:, [VSC_BUS_DC, VSC_BUS_DC_MINUS]].real.astype(np.int64)
     disco_dc = np.setxor1d(
         ppc["bus_dc"][:, DC_BUS_I].astype(np.int64),
         np.union1d(
             ppc["branch_dc"][ppc["branch_dc"][:, DC_BR_STATUS] == 1, :][:, [DC_F_BUS, DC_T_BUS]]
             .real.astype(np.int64)
             .flatten(),
-            ppc["vsc"][ppc["vsc"][:, VSC_STATUS] == 1, VSC_BUS_DC].real.astype(np.int64),
+            vsc_dc_buses[vsc_dc_buses >= 0],
         ),
     )
 
@@ -1504,15 +1568,15 @@ def _check_tdpf_parameters(net: pandapowerNet, tdpf_update_r_theta: bool, tdpf_d
 # =============================================================================
 
 
-def X012_to_X0(X012: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
+def X012_to_X0(X012: NDArray[NumpyDType_co]) -> NDArray[NumpyDType_co]:
     return np.transpose(X012[0, :])
 
 
-def X012_to_X1(X012: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
+def X012_to_X1(X012: NDArray[NumpyDType_co]) -> NDArray[NumpyDType_co]:
     return np.transpose(X012[1, :])
 
 
-def X012_to_X2(X012: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
+def X012_to_X2(X012: NDArray[NumpyDType_co]) -> NDArray[NumpyDType_co]:
     return np.transpose(X012[2, :])
 
 
@@ -1521,7 +1585,9 @@ def X012_to_X2(X012: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
 # =============================================================================
 
 
-def combine_X012(X0: NDArray[NumpyDType], X1: NDArray[NumpyDType], X2: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
+def combine_X012(
+    X0: NDArray[NumpyDType_co], X1: NDArray[NumpyDType_co], X2: NDArray[NumpyDType_co]
+) -> NDArray[NumpyDType_co]:
     comb = np.vstack((X0, X1, X2))
     return comb
 
@@ -1544,11 +1610,11 @@ Tabc = np.array([[1, 1, 1], [1, asq, a], [1, a, asq]])
 T012 = np.divide(np.array([[1, 1, 1], [1, a, asq], [1, asq, a]]), 3)
 
 
-def sequence_to_phase(X012: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
+def sequence_to_phase(X012: NDArray[NumpyDType_co]) -> NDArray[NumpyDType_co]:
     return np.asarray(np.matmul(Tabc, X012))
 
 
-def phase_to_sequence(Xabc: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
+def phase_to_sequence(Xabc: NDArray[NumpyDType_co]) -> NDArray[NumpyDType_co]:
     return np.asarray(np.matmul(T012, Xabc))
 
 
@@ -1559,7 +1625,7 @@ def phase_to_sequence(Xabc: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
 # =============================================================================
 
 
-def I0_from_V012(V012: NDArray[NumpyDType], Y: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
+def I0_from_V012(V012: NDArray[NumpyDType_co], Y: NDArray[NumpyDType_co]) -> NDArray[NumpyDType_co]:
     V0 = X012_to_X0(V012)
     if type(Y) in [sp.sparse.csr_matrix, sp.sparse.csc_matrix]:
         return np.asarray(np.matmul(Y.todense(), V0))
@@ -1567,7 +1633,7 @@ def I0_from_V012(V012: NDArray[NumpyDType], Y: NDArray[NumpyDType]) -> NDArray[N
         return np.asarray(np.matmul(Y, V0))
 
 
-def I1_from_V012(V012: NDArray[NumpyDType], Y: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
+def I1_from_V012(V012: NDArray[NumpyDType_co], Y: NDArray[NumpyDType_co]) -> NDArray[NumpyDType_co]:
     V1 = X012_to_X1(V012)[:, np.newaxis]
     if type(Y) in [sp.sparse.csr_matrix, sp.sparse.csc_matrix]:
         i1 = np.asarray(np.matmul(Y.todense(), V1))
@@ -1577,7 +1643,7 @@ def I1_from_V012(V012: NDArray[NumpyDType], Y: NDArray[NumpyDType]) -> NDArray[N
         return np.transpose(i1)
 
 
-def I2_from_V012(V012: NDArray[NumpyDType], Y: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
+def I2_from_V012(V012: NDArray[NumpyDType_co], Y: NDArray[NumpyDType_co]) -> NDArray[NumpyDType_co]:
     V2 = X012_to_X2(V012)
     if type(Y) in [sp.sparse.csr_matrix, sp.sparse.csc_matrix]:
         return np.asarray(np.matmul(Y.todense(), V2))
@@ -1585,15 +1651,15 @@ def I2_from_V012(V012: NDArray[NumpyDType], Y: NDArray[NumpyDType]) -> NDArray[N
         return np.asarray(np.matmul(Y, V2))
 
 
-def V1_from_ppc(ppc: PyPowerNetwork) -> NDArray[NumpyDType]:
+def V1_from_ppc(ppc: PyPowerNetwork) -> NDArray[NumpyDType_co]:
     return np.transpose(np.array(ppc["bus"][:, VM] * np.exp(1j * np.deg2rad(ppc["bus"][:, VA]))))
 
 
-def V_from_I(Y: NDArray[NumpyDType], I: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
+def V_from_I(Y: NDArray[NumpyDType_co], I: NDArray[NumpyDType_co]) -> NDArray[NumpyDType_co]:
     return np.transpose(np.array(sp.sparse.linalg.spsolve(Y, I)))
 
 
-def I_from_V(Y: Any, V: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
+def I_from_V(Y: Any, V: NDArray[NumpyDType_co]) -> NDArray[NumpyDType_co]:
     if type(Y) in [sp.sparse.csr.csr_matrix, sp.sparse.csc.csc_matrix]:
         return np.asarray(np.matmul(Y.todense(), V))
     else:
@@ -1605,20 +1671,20 @@ def I_from_V(Y: Any, V: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
 # =============================================================================
 
 
-def S_from_VI_elementwise(V: NDArray[NumpyDType], I: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
+def S_from_VI_elementwise(V: NDArray[NumpyDType_co], I: NDArray[NumpyDType_co]) -> NDArray[NumpyDType_co]:
     return np.multiply(V, I.conjugate())
 
 
-def I_from_SV_elementwise(S: NDArray[NumpyDType], V: NDArray[NumpyDType]) -> NDArray[NumpyDType]:
+def I_from_SV_elementwise(S: NDArray[NumpyDType_co], V: NDArray[NumpyDType_co]) -> NDArray[NumpyDType_co]:
     return np.conjugate(np.divide(S, V, out=np.zeros_like(S), where=V != 0))  # Return zero if div by zero
 
 
 def SVabc_from_SV012(
-    S012: NDArray[NumpyDType],
-    V012: NDArray[NumpyDType],
+    S012: NDArray[NumpyDType_co],
+    V012: NDArray[NumpyDType_co],
     n_res: int | None = None,
     idx: NDArray[bool] | None = None,
-) -> tuple[NDArray[NumpyDType], NDArray[NumpyDType]]:
+) -> tuple[NDArray[NumpyDType_co], NDArray[NumpyDType_co]]:
     if n_res is None:
         n_res = S012.shape[1]
     if idx is None:
@@ -1763,6 +1829,42 @@ def _add_vsc_stacked(net: pandapowerNet):
         )
 
 
+def _add_vsc_bipolar(net: pandapowerNet):
+    """
+    Adds one auxiliary net.vsc entry for every net.vsc_bipolar entry. The auxiliary VSC is connected between
+    bus_dc (= bus_dc_plus) and bus_dc_minus instead of between bus_dc and ground. The indices of the auxiliary
+    entries are stored in net["_vsc_bipolar_aux"] and the entries are removed in _clean_up.
+    """
+    from pandapower.create import create_vsc
+
+    _remove_vsc_bipolar_aux(net)
+    columns_before = net.vsc.columns
+    vsc_index = []
+    for _, vb in net.vsc_bipolar.iterrows():
+        vsc_index.append(
+            create_vsc(
+                net,
+                vb.bus,
+                vb.bus_dc_plus,
+                vb.r_ohm,
+                vb.x_ohm,
+                vb.r_dc_ohm,
+                pl_dc_mw=vb.pl_dc_mw,
+                control_mode_ac=vb.control_mode_ac,
+                control_value_ac=vb.control_value_ac,
+                control_mode_dc=vb.control_mode_dc,
+                control_value_dc=vb.control_value_dc,
+                name=vb.get("name", None),
+                controllable=vb.controllable,
+                in_service=vb.in_service,
+                bus_dc_minus=vb.bus_dc_minus,
+            )
+        )
+    # columns that only the auxiliary entries introduce have to be dropped again afterwards
+    drop_columns = list(net.vsc.columns.difference(columns_before))
+    net["_vsc_bipolar_aux"] = {"vsc_index": np.array(vsc_index, dtype=np.int64), "drop_columns": drop_columns}
+
+
 def _add_auxiliary_elements(net: pandapowerNet):
     """
     Add auxiliary elements to net, convert the HVDC links to a gen pair and
@@ -1773,11 +1875,28 @@ def _add_auxiliary_elements(net: pandapowerNet):
     Returns:
 
     """
-    if len(net.dcline) > 0:
-        _add_dcline_gens(net)
+    # The auxiliary elements are added to net.gen and net.vsc. If adding them fails halfway (e.g. a create_vsc call
+    # for a bipolar VSC raises), all rows and columns added so far are removed again. Otherwise they would stay in the
+    # net, because the cleanup metadata is only recorded after a successful creation, and be added again by the next
+    # power flow.
+    tables = ("gen", "vsc")
+    before = {table: (net[table].index, net[table].columns) for table in tables}
+    try:
+        if len(net.dcline) > 0:
+            _add_dcline_gens(net)
 
-    if len(net.vsc_stacked) > 0:
-        _add_vsc_stacked(net)
+        if len(net.vsc_stacked) > 0:
+            _add_vsc_stacked(net)
+
+        if len(net.vsc_bipolar) > 0:
+            _add_vsc_bipolar(net)
+    except Exception:
+        net.pop("_vsc_bipolar_aux", None)
+        for table, (index_before, columns_before) in before.items():
+            net[table] = net[table].drop(
+                index=net[table].index.difference(index_before), columns=net[table].columns.difference(columns_before)
+            )
+        raise
 
 
 def _replace_nans_with_default_limits(net: pandapowerNet, ppc: PyPowerNetwork) -> None:
@@ -1825,7 +1944,7 @@ def _init_runpp_options(
     """
     overrule_options = {}
     if passed_parameters is not None:
-        overrule_options = {key: val for key, val in net.user_pf_options.items() if key not in passed_parameters.keys()}
+        overrule_options = {key: val for key, val in net.user_pf_options.items() if key not in passed_parameters}
 
     kwargs.update(overrule_options)
 
@@ -1865,11 +1984,13 @@ def _init_runpp_options(
     cols = {"const_z_p_percent", "const_i_p_percent", "const_z_q_percent", "const_i_q_percent"}
     if not cols.issubset(net.load.columns) or net.load[list(cols)].isna().any().any():
         raise AttributeError(f"Network is missing one or more of net.load columns: {cols}")
-    
-    if not (np.any(net["load"]["const_z_p_percent"].values)
-                or np.any(net["load"]["const_i_p_percent"].values)
-                or np.any(net["load"]["const_z_q_percent"].values)
-                or np.any(net["load"]["const_i_q_percent"].values)):
+
+    if not (
+        np.any(net["load"]["const_z_p_percent"].values)
+        or np.any(net["load"]["const_i_p_percent"].values)
+        or np.any(net["load"]["const_z_q_percent"].values)
+        or np.any(net["load"]["const_i_q_percent"].values)
+    ):
         voltage_depend_loads = False
 
     lightsim2grid = _check_lightsim2grid_compatibility(
@@ -1922,15 +2043,22 @@ def _init_runpp_options(
         if init_va_degree is None or (isinstance(init_va_degree, str) and init_va_degree == "auto"):
             init_va_degree = "dc" if calculate_voltage_angles and not with_facts else "flat"
         if init_vm_pu is None or (isinstance(init_vm_pu, str) and init_vm_pu == "auto"):
-            init_vm_pu = (
-                net.ext_grid.query("in_service").vm_pu.to_numpy().sum()
-                + net.gen.query("in_service").vm_pu.to_numpy().sum()
-                + net.vsc.query("in_service & (control_mode_ac == 'slack')").control_value_ac.to_numpy().sum()
-            ) / (
-                len(net.ext_grid.query("in_service"))
-                + len(net.gen.query("in_service"))
-                + len(net.vsc.query("in_service & (control_mode_ac == 'slack')"))
+            eg_tbl = net["ext_grid"]
+            gen_tbl = net["gen"]
+            vsc_tbl = net["vsc"]
+
+            eg = eg_tbl["in_service"].to_numpy()
+            gen = gen_tbl["in_service"].to_numpy()
+            vsc_mask = vsc_tbl["in_service"].to_numpy() & (vsc_tbl["control_mode_ac"].to_numpy() == "slack")
+
+            total = (
+                eg_tbl["vm_pu"].to_numpy()[eg].sum()
+                + gen_tbl["vm_pu"].to_numpy()[gen].sum()
+                + vsc_tbl["control_value_ac"].to_numpy()[vsc_mask].sum()
             )
+            count = eg.sum() + gen.sum() + vsc_mask.sum()
+
+            init_vm_pu = total / count
     elif init == "dc":
         init_vm_pu = "flat"
         init_va_degree = "dc"
@@ -1941,7 +2069,7 @@ def _init_runpp_options(
     if distributed_slack:
         false_slack_weight_elms = [
             elm
-            for elm in {"asymmetric_load", "asymmetric_sgen", "load", "sgen", "shunt", "storage", "ward"}
+            for elm in ("asymmetric_load", "asymmetric_sgen", "load", "sgen", "shunt", "storage", "ward")
             if "slack_weight" in net[elm].columns and net[elm].slack_weight.sum() > 0
         ]
         if len(false_slack_weight_elms):

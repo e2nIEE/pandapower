@@ -1,47 +1,62 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "NumpyEncoder",
+    "add_params_to_pm",
+    "add_pm_gen_start_values_from_results",
+    "add_pm_options",
+    "add_redispatch_params",
+    "add_time_series_to_pm",
+    "allow_multi_ext_grids",
+    "build_ne_branch",
+    "convert_pp_to_pm",
+    "convert_to_pm_structure",
+    "create_pm_lookups",
+    "dump_pm_json",
+    "get_branch_angles",
+    "init_ne_line",
+    "ppc_to_pm",
+]
 
 import json
-import math
+import logging
 import os
 import tempfile
-
+from collections import OrderedDict
 from os import remove
 from os.path import isfile
-from collections import OrderedDict
+
 import numpy as np
 import pandas as pd
 
-from pandapower.auxiliary import _add_ppc_options, _add_opf_options, _add_auxiliary_elements
+from pandapower.auxiliary import _add_auxiliary_elements, _add_opf_options, _add_ppc_options
 from pandapower.build_branch import _calc_line_parameter
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pypower.idx_brch import (
-    ANGMIN,
     ANGMAX,
-    BR_R,
-    BR_X,
+    ANGMIN,
     BR_B,
     BR_G,
+    BR_R,
+    BR_STATUS,
+    BR_X,
+    BRANCH_COLS,
+    F_BUS,
     RATE_A,
     RATE_B,
     RATE_C,
-    TAP,
     SHIFT,
-    branch_cols,
-    F_BUS,
     T_BUS,
-    BR_STATUS,
+    TAP,
 )
-from pandapower.pypower.idx_bus import ZONE, VA, BASE_KV, BS, GS, BUS_I, BUS_TYPE, VMAX, VMIN, VM, PD, QD
-from pandapower.pypower.idx_cost import MODEL, NCOST, COST
-from pandapower.pypower.idx_gen import PG, QG, GEN_BUS, VG, GEN_STATUS, QMAX, QMIN, PMIN, PMAX
+from pandapower.pypower.idx_bus import BASE_KV, BS, BUS_I, BUS_TYPE, GS, PD, QD, VA, VM, VMAX, VMIN, ZONE
+from pandapower.pypower.idx_cost import COST, MODEL, NCOST
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, PG, PMAX, PMIN, QG, QMAX, QMIN, VG
 from pandapower.results import init_results, verify_results
 
-
-# const value in branch for tnep
-CONSTRUCTION_COST = 23
-import logging
+# extra column in ne_branch (tnep), behind the regular ppc branch columns
+CONSTRUCTION_COST = BRANCH_COLS
 
 
 class NumpyEncoder(json.JSONEncoder):
@@ -202,6 +217,11 @@ logger = logging.getLogger(__name__)
 
 
 def convert_to_pm_structure(net, from_time_step=None, to_time_step=None, **kwargs):
+    """
+    Converts the pandapower net to the PowerModels data structure with the options in net._options.
+
+    Returns the net, the PowerModels dict, the ppc and the ppci.
+    """
     if net["_options"]["voltage_depend_loads"] and not (
         np.allclose(net.load.const_z_p_percent.values, 0)
         and np.allclose(net.load.const_i_p_percent.values, 0)
@@ -216,6 +236,10 @@ def convert_to_pm_structure(net, from_time_step=None, to_time_step=None, **kwarg
         verify_results(net, mode=net["_options"]["mode"])
     else:
         init_results(net)
+    # clear the lookups of a previous run, they could refer to elements which are not in this ppc
+    net._pd2ppc_lookups = {
+        key: np.array([], dtype=np.int64) for key in ["bus", "bus_dc", "ext_grid", "gen", "branch", "branch_dc"]
+    }
     ppc, ppci = _pd2ppc(net)
     ppci = build_ne_branch(net, ppci)
     net["_ppc_opf"] = ppci
@@ -236,7 +260,7 @@ def convert_to_pm_structure(net, from_time_step=None, to_time_step=None, **kwarg
 def add_pm_gen_start_values_from_results(net, pm):
     pm_gens = pm.get("gen", {})
     if not pm_gens:
-        return None
+        return
 
     lookup_table_name = {"ext_grid": "res_ext_grid", "gen": "res_gen", "sgen_controllable": "res_sgen"}
     for lookup_name, table_name in lookup_table_name.items():
@@ -265,7 +289,7 @@ def add_pm_gen_start_values_from_results(net, pm):
             if q_mvar is not None:
                 pm_gen["qg_start"] = q_mvar
 
-    return None
+    return
 
 
 def dump_pm_json(pm, buffer_file=None):
@@ -274,7 +298,7 @@ def dump_pm_json(pm, buffer_file=None):
         # if no buffer file is provided a random file name is generated
         temp_name = next(tempfile._get_candidate_names())
         buffer_file = os.path.join(tempfile.gettempdir(), "pp_to_pm_" + temp_name + ".json")
-    logger.debug("writing PowerModels data structure to %s" % buffer_file)
+    logger.debug(f"writing PowerModels data structure to {buffer_file}")
     with open(buffer_file, "w") as outfile:
         json.dump(pm, outfile, indent=4, sort_keys=True, cls=NumpyEncoder)
     return buffer_file
@@ -330,19 +354,45 @@ def get_branch_angles(row, correct_pm_network_data):
     # himself)
     if correct_pm_network_data:
         if angmin < -60.0:
-            logger.debug(
-                "changed voltage angle minimum of branch {}, to -60 from {} degrees".format(int(row[0].real), angmin)
-            )
+            logger.debug(f"changed voltage angle minimum of branch {int(row[0].real)}, to -60 from {angmin} degrees")
             angmin = -60.0
         if angmax > 60.0:
-            logger.debug(
-                "changed voltage angle maximum of branch {} to 60. from {} degrees".format(int(row[0].real), angmax)
-            )
+            logger.debug(f"changed voltage angle maximum of branch {int(row[0].real)} to 60. from {angmax} degrees")
             angmax = 60.0
-    # convert to rad (per unit value)
-    angmin = math.radians(angmin)  # / (360/(2*np.pi))
-    angmax = math.radians(angmax)  # / (360/(2*np.pi))
+    # degrees, PandaModels.jl converts to rad
     return angmin, angmax
+
+
+def _branch_to_pm(row, idx, opf_flow_lim, correct_pm_network_data, z_scale=1.0):
+    # MATPOWER units: impedances in per unit on baseMVA, ratings in MVA, angles in degrees.
+    # z_scale converts the ppci per unit values (on net.sn_mva) to the PowerModels baseMVA
+    branch = {
+        "index": idx,
+        "br_r": row[BR_R].real * z_scale,
+        "br_x": row[BR_X].real * z_scale,
+        "g_fr": row[BR_G].real / 2.0 / z_scale,
+        "g_to": row[BR_G].real / 2.0 / z_scale,
+        "b_fr": row[BR_B].real / 2.0 / z_scale,
+        "b_to": row[BR_B].real / 2.0 / z_scale,
+    }
+    rate_a = row[RATE_A].real if row[RATE_A].real > 0 else row[RATE_B].real
+    if opf_flow_lim == "S":
+        branch["rate_a"] = rate_a
+        branch["rate_b"] = row[RATE_B].real
+        branch["rate_c"] = row[RATE_C].real
+    elif opf_flow_lim == "I":  # current limit in MVA at 1 p.u. voltage (_solve_opf_cl in PowerModels)
+        branch["c_rating_a"] = rate_a
+        branch["c_rating_b"] = row[RATE_B].real
+        branch["c_rating_c"] = row[RATE_C].real
+    else:
+        logger.error("Branch flow limit %s not understood", opf_flow_lim)
+    branch["f_bus"] = int(row[F_BUS].real) + 1
+    branch["t_bus"] = int(row[T_BUS].real) + 1
+    branch["br_status"] = int(row[BR_STATUS].real)
+    branch["angmin"], branch["angmax"] = get_branch_angles(row, correct_pm_network_data)
+    branch["tap"] = row[TAP].real
+    branch["shift"] = row[SHIFT].real
+    return branch
 
 
 def create_pm_lookups(net, pm_lookup):
@@ -351,8 +401,8 @@ def create_pm_lookups(net, pm_lookup):
             # lookup is something like "branch" with dict as val -> iterate over the subdicts
             pm_val = {}
             for subkey, subval in val.items():
-                pm_val[subkey] = tuple((v + 1 for v in subval))
-        elif isinstance(val, int) or isinstance(val, np.ndarray):
+                pm_val[subkey] = tuple(v + 1 for v in subval)
+        elif isinstance(val, (int, np.ndarray)):
             # lookup is a numpy array
             # julia starts counting at 1 instead of 0
             pm_val = val + 1
@@ -366,10 +416,16 @@ def create_pm_lookups(net, pm_lookup):
     return net
 
 
+def pm_base_mva(net, ppci):
+    """power base (MVA) of the PowerModels data, independent of net.sn_mva"""
+    base_mva = net._options.get("pm_base_mva")
+    return float(ppci["baseMVA"] if base_mva is None else base_mva)
+
+
 def ppc_to_pm(net, ppci):
     # create power models dict. Similar to matpower case file. ne_branch is for a tnep case
-    # "per_unit == True" means that the grid data in PowerModels are per-unit values. In this
-    # ppc-to-pm process, the grid data schould be transformed according to baseMVA = 1.
+    # "per_unit == False": the data is in MATPOWER units (MW, MVAr, degrees, impedances in per unit
+    # on baseMVA). PandaModels.jl converts it to per unit and returns the results in MW / degrees.
     pm = {
         "gen": {},
         "branch": {},
@@ -379,14 +435,14 @@ def ppc_to_pm(net, ppci):
         "storage": {},
         "ne_branch": {},
         "switch": {},
-        "baseMVA": ppci["baseMVA"],
+        "baseMVA": pm_base_mva(net, ppci),
         "source_version": "2.0.0",
         "shunt": {},
         "sourcetype": "matpower",
-        "per_unit": True,
+        "per_unit": False,
         "name": net.name,
     }
-    baseMVA = ppci["baseMVA"]
+    z_scale = pm["baseMVA"] / ppci["baseMVA"]
     load_idx = 1
     shunt_idx = 1
     # PowerModels has a load model -> add loads and sgens to pm["load"]
@@ -411,7 +467,7 @@ def ppc_to_pm(net, ppci):
         bus["bus_type"] = int(row[BUS_TYPE])
         bus["vmax"] = row[VMAX]
         bus["vmin"] = row[VMIN]
-        bus["va"] = math.radians(row[VA])  # PowerModels uses radians
+        bus["va"] = row[VA]
         bus["vm"] = row[VM]
         bus["base_kv"] = row[BASE_KV]
 
@@ -427,7 +483,7 @@ def ppc_to_pm(net, ppci):
         pq_mismatch = not np.allclose(pd_value, 0.0) or not np.allclose(qd_value, 0.0)
         if pq_mismatch:
             # This will be called if ppc PQ != sum at bus.
-            logger.info("PQ mismatch. Adding another load at idx {}".format(load_idx))
+            logger.info(f"PQ mismatch. Adding another load at idx {load_idx}")
             pm["load"][str(load_idx)] = {
                 "pd": pd_value,
                 "qd": qd_value,
@@ -436,43 +492,19 @@ def ppc_to_pm(net, ppci):
                 "index": load_idx,
             }
             load_idx += 1
-        # if bs or gs != 0. -> shunt element at this bus
-        bs = row[BS] / baseMVA  # to be validated
-        gs = row[GS] / baseMVA  # to be validated
+        # if bs or gs != 0. -> shunt element at this bus (MVAr / MW at 1 p.u. voltage)
+        bs = row[BS]
+        gs = row[GS]
         if not np.allclose(bs, 0.0) or not np.allclose(gs, 0.0):
             pm["shunt"][str(shunt_idx)] = {"gs": gs, "bs": bs, "shunt_bus": idx, "status": True, "index": shunt_idx}
             shunt_idx += 1
         pm["bus"][str(idx)] = bus
 
     n_lines = net.line.in_service.sum()
+    opf_flow_lim = net._options["opf_flow_lim"]
     for idx, row in enumerate(ppci["branch"], start=1):
-        branch = {}
-        branch["index"] = idx
+        branch = _branch_to_pm(row, idx, opf_flow_lim, correct_pm_network_data, z_scale)
         branch["transformer"] = bool(idx > n_lines)
-        branch["br_r"] = row[BR_R].real / baseMVA
-        branch["br_x"] = row[BR_X].real / baseMVA
-        branch["g_fr"] = row[BR_G] / 2.0 / baseMVA
-        branch["g_to"] = row[BR_G] / 2.0 / baseMVA
-        branch["b_fr"] = row[BR_B] / 2.0 * baseMVA
-        branch["b_to"] = row[BR_B] / 2.0 * baseMVA
-
-        if net._options["opf_flow_lim"] == "S":  # or branch["transformer"]:
-            branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
-            branch["rate_b"] = row[RATE_B].real
-            branch["rate_c"] = row[RATE_C].real
-        elif net._options["opf_flow_lim"] == "I":  # need to call _run_opf_cl from PowerModels
-            branch["c_rating_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
-            branch["c_rating_b"] = row[RATE_B].real
-            branch["c_rating_c"] = row[RATE_C].real
-        else:
-            logger.error("Branch flow limit %s not understood", net._options["opf_flow_lim"])
-
-        branch["f_bus"] = int(row[F_BUS].real) + 1
-        branch["t_bus"] = int(row[T_BUS].real) + 1
-        branch["br_status"] = int(row[BR_STATUS].real)
-        branch["angmin"], branch["angmax"] = get_branch_angles(row, correct_pm_network_data)
-        branch["tap"] = row[TAP].real
-        branch["shift"] = math.radians(row[SHIFT].real)
         pm["branch"][str(idx)] = branch
 
     #### create pm["gen"]
@@ -515,35 +547,8 @@ def ppc_to_pm(net, ppci):
 
     if "ne_branch" in ppci:
         for idx, row in enumerate(ppci["ne_branch"], start=1):
-            branch = {}
-            branch["index"] = idx
+            branch = _branch_to_pm(row, idx, opf_flow_lim, correct_pm_network_data, z_scale)
             branch["transformer"] = False
-            branch["br_r"] = row[BR_R].real / baseMVA
-            branch["br_x"] = row[BR_X].real / baseMVA
-            branch["g_fr"] = -row[BR_B].imag / 2.0 / baseMVA
-            branch["g_to"] = -row[BR_B].imag / 2.0 / baseMVA
-            branch["b_fr"] = row[BR_B].real / 2.0 * baseMVA
-            branch["b_to"] = row[BR_B].real / 2.0 * baseMVA
-
-            if net._options["opf_flow_lim"] == "S":  # --> Rate_a is always needed for the TNEP problem, right?
-                branch["rate_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
-                branch["rate_b"] = row[RATE_B].real
-                branch["rate_c"] = row[RATE_C].real
-            elif net._options["opf_flow_lim"] == "I":
-                f = int(row[F_BUS].real)  # from bus of this line
-                vr = ppci["bus"][f][BASE_KV]
-                row[RATE_A] = row[RATE_A] / (vr * np.sqrt(3))
-
-                branch["c_rating_a"] = row[RATE_A].real if row[RATE_A] > 0 else row[RATE_B].real
-                branch["c_rating_b"] = row[RATE_B].real
-                branch["c_rating_c"] = row[RATE_C].real
-
-            branch["f_bus"] = int(row[F_BUS].real) + 1
-            branch["t_bus"] = int(row[T_BUS].real) + 1
-            branch["br_status"] = int(row[BR_STATUS].real)
-            branch["angmin"], branch["angmax"] = get_branch_angles(row, correct_pm_network_data)
-            branch["tap"] = row[TAP].real
-            branch["shift"] = math.radians(row[SHIFT].real)
             branch["construction_cost"] = row[CONSTRUCTION_COST].real
             pm["ne_branch"][str(idx)] = branch
 
@@ -552,12 +557,12 @@ def ppc_to_pm(net, ppci):
 
 def add_pm_options(pm, net):
     # read values from net_options if present else use default values
-    pm["pm_solver"] = net._options["pm_solver"] if "pm_solver" in net._options else "ipopt"
-    pm["pm_mip_solver"] = net._options["pm_mip_solver"] if "pm_mip_solver" in net._options else "cbc"
-    pm["pm_nl_solver"] = net._options["pm_nl_solver"] if "pm_nl_solver" in net._options else "ipopt"
-    pm["pm_model"] = net._options["pm_model"] if "pm_model" in net._options else "DCPPowerModel"
-    pm["pm_log_level"] = net._options["pm_log_level"] if "pm_log_level" in net._options else 0
-    pm["pm_tol"] = net._options["pm_tol"] if "pm_tol" in net._options else 1e-8
+    pm["pm_solver"] = net._options.get("pm_solver", "ipopt")
+    pm["pm_mip_solver"] = net._options.get("pm_mip_solver", "cbc")
+    pm["pm_nl_solver"] = net._options.get("pm_nl_solver", "ipopt")
+    pm["pm_model"] = net._options.get("pm_model", "DCPPowerModel")
+    pm["pm_log_level"] = net._options.get("pm_log_level", 0)
+    pm["pm_tol"] = net._options.get("pm_tol", 1e-08)
     if "pm_time_limits" in net._options and isinstance(net._options["pm_time_limits"], dict):
         # write time limits to power models data structure
         for key, val in net._options["pm_time_limits"].items():
@@ -574,7 +579,7 @@ def build_ne_branch(net, ppc):
     # this is only used by pm tnep
     if "ne_line" in net:
         length = len(net["ne_line"])
-        ppc["ne_branch"] = np.zeros(shape=(length, branch_cols + 1), dtype=np.complex128)
+        ppc["ne_branch"] = np.zeros(shape=(length, BRANCH_COLS + 1), dtype=np.complex128)
         ppc["ne_branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -60, 60])
         # create branch array ne_branch like the common branch array in the ppc
         net._pd2ppc_lookups["ne_branch"] = {}
@@ -650,7 +655,7 @@ def add_params_to_pm(net, pm):
 
         if elm in ["line", "trafo"]:
             for bp in br_param:
-                for k in pm["user_defined_params"]["side"].keys():
+                for k in pm["user_defined_params"]["side"]:
                     side = pm["user_defined_params"]["side"][k]["value"]
                     pd_idx = pm["user_defined_params"]["side"][k]["element_pp_index"]
                     ppcidx = net._pd2pm_lookups["branch"][elm][0] - 1 + pd_idx
@@ -668,9 +673,9 @@ def add_params_to_pm(net, pm):
 
     # add controllable sgen:
     dic = {}
-    if "user_defined_params" in pm.keys():
+    if "user_defined_params" in pm:
         for elm in ["gen", "sgen_controllable"]:
-            if elm in net._pd2pm_lookups.keys():
+            if elm in net._pd2pm_lookups:
                 pm_idxs = net._pd2pm_lookups[elm]
                 for k in pm_idxs[pm_idxs != -1]:
                     dic[str(k)] = k
@@ -678,7 +683,7 @@ def add_params_to_pm(net, pm):
             pm["user_defined_params"]["gen_and_controllable_sgen"] = dic
 
     # add objective factors for multi optimization
-    if "obj_factors" in net.keys():
+    if "obj_factors" in net:
         if not isinstance(net.obj_factors, list):
             raise AssertionError("net.obj_factors is not a list")
         if sum(net.obj_factors) > 1:
@@ -758,8 +763,8 @@ def _redispatch_base_p_mw(net, elm, pp_idx, res_lookup):
     res_table = res_lookup[elm]
     if res_table not in net or pp_idx not in net[res_table].index:
         raise ValueError(
-            "redispatch base dispatch requires a prior power flow result: "
-            "%s[%d] missing. Run a power flow or use init_pq='results'." % (res_table, pp_idx)
+            f"redispatch base dispatch requires a prior power flow result: "
+            f"{res_table}[{pp_idx:.0f}] missing. Run a power flow or use init_pq='results'."
         )
     return float(net[res_table].at[pp_idx, "p_mw"])
 
@@ -781,7 +786,6 @@ def add_redispatch_params(net, ppci, pm, redispatch_cost=False):
     if "user_defined_params" not in pm:
         pm["user_defined_params"] = {}
 
-    baseMVA = pm["baseMVA"]
     res_lookup = {"gen": "res_gen", "sgen": "res_sgen"}
 
     # participating (priced) redispatch generators -> free pg, driven towards pg0
@@ -797,8 +801,8 @@ def add_redispatch_params(net, ppci, pm, redispatch_cost=False):
             )
             continue
         p_mw = _redispatch_base_p_mw(net, elm, pp_idx, res_lookup)
-        # PowerModels works in per unit (baseMVA), same convention as pg in ppci->pm conversion
-        base_pg[str(pm_idx)] = p_mw / baseMVA
+        # MW, PandaModels.jl converts to per unit
+        base_pg[str(pm_idx)] = p_mw
         cost_up[str(pm_idx)] = c_up
         cost_down[str(pm_idx)] = c_down
         participating.add(pm_idx)
@@ -810,7 +814,7 @@ def add_redispatch_params(net, ppci, pm, redispatch_cost=False):
         if pm_idx is None or pm_idx in participating:
             continue
         p_mw = _redispatch_base_p_mw(net, elm, pp_idx, res_lookup)
-        fixed_pg[str(pm_idx)] = p_mw / baseMVA
+        fixed_pg[str(pm_idx)] = p_mw
 
     pm["user_defined_params"]["base_pg"] = base_pg
     if fixed_pg:
@@ -839,7 +843,7 @@ def add_time_series_to_pm(net, pm, from_time_step, to_time_step):
             "to_time_step": to_time_step + 1,
         }
         for idx, content in net.controller.iterrows():
-            if type(content["object"]) != ConstControl:
+            if not isinstance(content["object"], ConstControl):
                 continue
             else:
                 element = content["object"].__dict__["matching_params"]["element"]
