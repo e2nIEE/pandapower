@@ -58,6 +58,68 @@ default_argument_values = {
 }
 
 
+class SchemaValidation(DiagnosticFunction[pandapowerNet, dict[str, list[Any]]]):
+    """
+    Validates the element dataframes against the pandera schemas of the network_schema package.
+
+    Unlike the other diagnostic functions this one does not look at the electrical plausibility
+    of a network, but at its data structure: missing columns, wrong data types, values that
+    violate the documented ranges, nulls in non-nullable columns and references to element
+    indices that do not exist.
+
+    All elements are validated and every issue is collected, so that a report of one run shows
+    everything that is wrong instead of only the first problem.
+    """
+
+    def diagnostic(self, net: pandapowerNet, **kwargs) -> dict[str, list[Any]] | None:
+        """
+        Parameters:
+            net: pandapower network
+
+        Keyword Arguments:
+            groups_to_validate (str | set[str] | None): optional schema groups to validate in
+                addition to the base schema (e.g. "opf", "sc", "3ph"). Defaults to None.
+
+        Returns:
+            dict that contains all validation issues grouped by element (keys)
+            Format: {'element': [ValidationIssue, ...]}
+
+        """
+        # imported lazily: network_schema.tools.validation imports pandapowerNet from the
+        # pandapower package, which is not yet bound when this module is imported
+        from pandapower.network_schema.tools.validation.network_validation import validate_network
+
+        groups_to_validate = kwargs.pop("groups_to_validate", None)
+        return validate_network(net, groups_to_validate=groups_to_validate, collect_errors=True) or None
+
+    def report(self, error: Exception | None, results: dict[str, list[Any]] | None) -> None:
+        # error and success checks
+        if error is not None:
+            self.out.warning("Check for schema validation failed due to the following error:")
+            self.out.warning(error)
+            return
+        if results is None:
+            self.out.info("PASSED: No schema violations found.")
+            return
+        # message header
+        self.out.compact("schema_validation:\n")
+        self.out.detailed("Checking the element tables against the network schemas...\n")
+
+        # message body
+        # the issue messages already describe the problem precisely, so the compact and the
+        # detailed report show the same text
+        element_counter = 0
+        for element, issues in results.items():
+            element_counter += len(issues)
+            self.out.warning(f"{element}:")
+            for issue in issues:
+                self.out.compact(f"  {issue.message}")
+                self.out.detailed(f"  {issue.message}")
+
+        # message summary
+        self.out.detailed(f"\nSUMMARY: {element_counter} schema violations found.")
+
+
 class InvalidValues(DiagnosticFunction[pandapowerNet, dict[str, Any]]):
     """
     Applies type check functions to find violations of input type restrictions.
@@ -2162,6 +2224,7 @@ class ParallelSwitches(DiagnosticFunction[pandapowerNet, list[list]]):
 
 # (name in result_dict, instance of class, list of arguments: None = all kwargs / [] = no arguments)
 default_diagnostic_functions: list[tuple[str, DiagnosticFunction, list[str] | None]] = [
+    ("schema_validation", SchemaValidation(), None),
     ("missing_bus_indices", MissingBusIndices(), []),
     ("disconnected_elements", DisconnectedElements(), []),
     ("different_voltage_levels_connected", DifferentVoltageLevelsConnected(), []),
