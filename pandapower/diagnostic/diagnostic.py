@@ -60,7 +60,10 @@ class Diagnostic:
         "Dictionary storing the errors raised by the DiagnosticFunctions"
 
     def register_function(
-        self, diagnostic_function: DiagnosticFunction, argument_names: list[str] | None, name: str | None
+        self,
+        diagnostic_function: DiagnosticFunction,
+        argument_names: list[str] | None = None,
+        name: str | None = None,
     ):
         """
         register a diagnostic function to run when running network diagnostics and the associated report function.
