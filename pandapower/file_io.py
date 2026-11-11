@@ -123,21 +123,23 @@ def to_json(
     be saved in ascending order. net elements which name begins with "_" (internal elements)
     will not be saved. Std types will also not be saved.
 
-    :param pandapowerNet net: The pandapower format network
-    :param filename: The absolute or relative path to the output file or a file-like object,
-        if 'None' the function returns a json string, default None
-    :type filename: str or file
-    :param encryption_key: If given, the pandapower network is stored as an encrypted json string, default None
-    :type encryption_key: str or None
-    :param indent: indentation to use for the json. String or amount of spaces to use, defaut 2
-    :type indent: int or str or None
-    :param sort_keys: sort dictionaries by key, default False
-    :type sort_keys: bool
+    Parameters:
+        net: The pandapower format network
+        filename: The absolute or relative path to the output file or a file-like object,
+            if 'None' the function returns a json string, default None
+        encryption_key: If given, the pandapower network is stored as an encrypted json string, default None
+        indent: indentation to use for the json. String or amount of spaces to use, default 2
+        sort_keys: sort dictionaries by key, default False
 
-    :example:
+    Returns:
+        the json string if no filename was given
+
+    Example:
          >>> from pandapower.file_io import to_json
          >>> to_json(net, "example.json")
     """
+    if not isinstance(net, pandapowerNet):
+        raise TypeError("to_json only supports pandapowerNet")
 
     json_string = json.dumps(net, cls=PPJSONEncoder, indent=indent, sort_keys=sort_keys)
     if encryption_key is not None:
@@ -463,6 +465,9 @@ def from_json_string(
             DeprecationWarning,
         )
         net = from_json_dict(net)
+
+    if not isinstance(net, pandapowerNet):
+        raise TypeError("JSON could not be loaded as pandapowerNet.")
 
     if convert:
         convert_format(

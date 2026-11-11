@@ -64,5 +64,32 @@ def test_obj_factors(net_3w_trafo_opf):
     assert pm["user_defined_params"]["gen_and_controllable_sgen"]["3"] == 3
 
 
+def test_to_pm_angle_limits(net_3w_trafo_opf):
+    """The branch angle limits of the net must reach the PowerModels data structure."""
+    net = deepcopy(net_3w_trafo_opf)
+    create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=100)
+    net.line["min_angle_degree"] = -30.0
+    net.line["max_angle_degree"] = 20.0
+    net.trafo3w["min_angle_degree"] = -5.0
+    net.trafo3w["max_angle_degree"] = 5.0
+
+    pm = convert_pp_to_pm(net, correct_pm_network_data=False)
+
+    line_limits = {
+        (round(branch["angmin"], 9), round(branch["angmax"], 9))
+        for branch in pm["branch"].values()
+        if not branch["transformer"]
+    }
+    trafo_limits = {
+        (round(branch["angmin"], 9), round(branch["angmax"], 9))
+        for branch in pm["branch"].values()
+        if branch["transformer"]
+    }
+    # MATPOWER units: angles in degrees, PandaModels.jl converts them to rad
+    assert not pm["per_unit"]
+    assert line_limits == {(-30.0, 20.0)}
+    assert trafo_limits == {(-5.0, 5.0)}
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

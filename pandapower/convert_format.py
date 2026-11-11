@@ -22,7 +22,7 @@ from pandapower.create import create_poly_cost
 from pandapower.create._utils import add_column_to_df
 from pandapower.create.trafo_characteristic_create import create_trafo_characteristic
 from pandapower.network import pandapowerNet
-from pandapower.network_structure import get_structure_dict
+from pandapower.network_structure import get_default_value, get_structure_dict
 from pandapower.plotting.geo import _is_valid_number, convert_geodata_to_geojson
 from pandapower.results import reset_results
 
@@ -375,6 +375,11 @@ def _create_seperate_cost_tables(net, elements_to_deserialize):
 
 
 def _rename_columns(net, elements_to_deserialize):
+    """
+    Renames the columns of networks stored with older pandapower versions to the current names (e.g. of line, load, gen,
+    trafo, measurement, controller, vsc_bipolar and some result tables). If elements_to_deserialize is given, only these
+    elements are considered.
+    """
     if _check_elements_to_deserialize("line", elements_to_deserialize):
         net.line = net.line.rename(columns={"imax_ka": "max_i_ka"})
     if _check_elements_to_deserialize("load", elements_to_deserialize) and (
@@ -391,6 +396,19 @@ def _rename_columns(net, elements_to_deserialize):
         )
     if _check_elements_to_deserialize("gen", elements_to_deserialize):
         net.gen = net.gen.rename(columns={"qmin_mvar": "min_q_mvar", "qmax_mvar": "max_q_mvar"})
+    if _check_elements_to_deserialize("vsc_bipolar", elements_to_deserialize) and "vsc_bipolar" in net:
+        # the single control_mode was split into an AC and a DC control mode (same as in vsc)
+        net.vsc_bipolar = net.vsc_bipolar.rename(
+            columns={"control_value_1": "control_value_ac", "control_value_2": "control_value_dc"}
+        )
+        if "control_mode" in net.vsc_bipolar.columns:
+            net.vsc_bipolar = net.vsc_bipolar.rename(columns={"control_mode": "control_mode_ac"})
+            net.vsc_bipolar.insert(
+                net.vsc_bipolar.columns.get_loc("control_value_ac") + 1,
+                "control_mode_dc",
+                get_default_value("vsc_bipolar", "control_mode_dc"),
+            )
+            net.vsc_bipolar["control_mode_ac"] = get_default_value("vsc_bipolar", "control_mode_ac")
     for typ, data in net.std_types["line"].items():
         if "imax_ka" in data:
             net.std_types["line"][typ]["max_i_ka"] = net.std_types["line"][typ].pop("imax_ka")
@@ -842,7 +860,19 @@ def convert_trafo_pst_logic(net):
             for t in ("", "2"):
                 # drop old tap_phase_shifter flag
                 if f"tap{t}_phase_shifter" in net[trafotable]:
-                    net[trafotable] = net[trafotable].drop(columns=f"tap{t}_phase_shifter")
+                    df = net[trafotable]
+                    percent_col, degree_col = f"tap{t}_step_percent", f"tap{t}_step_degree"
+                    if percent_col in df:
+                        ideal = df[f"tap{t}_phase_shifter"].eq(True)
+                        to_degree = ideal & df[percent_col].notna() & (df[percent_col] != 0)
+                        if to_degree.any():
+                            if degree_col not in df:
+                                df[degree_col] = np.nan
+                            no_degree = to_degree & (df[degree_col].isna() | (df[degree_col] == 0))
+                            percent = df.loc[no_degree, percent_col]
+                            df.loc[no_degree, degree_col] = np.rad2deg(2 * np.arcsin(percent / 200))
+                            df.loc[to_degree, percent_col] = np.nan
+                    net[trafotable] = df.drop(columns=f"tap{t}_phase_shifter")
                 if (f"tap{t}_step_degree" in net[trafotable]) or (f"tap{t}_step_percent" in net[trafotable]):
                     # no phase shifters - check if both tap_step_percent & tap_step_degree are 0 or nan
                     mask_na = (

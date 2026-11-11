@@ -72,7 +72,14 @@ from pandapower.pypower.idx_bus_dc import DC_B2B, DC_BUS_I, DC_BUS_TYPE, DC_NONE
 from pandapower.pypower.idx_gen import PMAX, PMIN, QMAX, QMIN
 from pandapower.pypower.idx_ssc import SSC_BUS, SSC_INTERNAL_BUS, SSC_STATUS
 from pandapower.pypower.idx_tcsc import TCSC_F_BUS, TCSC_STATUS, TCSC_T_BUS
-from pandapower.pypower.idx_vsc import VSC_BUS, VSC_BUS_DC, VSC_INTERNAL_BUS, VSC_INTERNAL_BUS_DC, VSC_STATUS
+from pandapower.pypower.idx_vsc import (
+    VSC_BUS,
+    VSC_BUS_DC,
+    VSC_BUS_DC_MINUS,
+    VSC_INTERNAL_BUS,
+    VSC_INTERNAL_BUS_DC,
+    VSC_STATUS,
+)
 
 if find_spec("lightsim2gird") is not None:
     lightsim2grid_available = True
@@ -855,9 +862,14 @@ def _check_connectivity(ppc: PyPowerNetwork) -> tuple[NDArray[bool], int, int, N
         bus_from_dc = ppc["branch_dc"][br_dc_status, DC_F_BUS].real.astype(np.int64)
         bus_to_dc = ppc["branch_dc"][br_dc_status, DC_T_BUS].real.astype(np.int64)
 
-        bus_from_dc = np.hstack([bus_from_dc, bus_from_vsc_dc, slacks_dc])
-        bus_to_dc = np.hstack([bus_to_dc, bus_to_vsc_dc, np.ones(len(slacks_dc)) * nobus_dc])
-        nolinks_dc = nobranch_dc + novsc + len(slacks_dc)
+        # minus terminal of bipolar VSC (-1 for VSC connected to ground):
+        vsc_minus_dc = ppc["vsc"][vsc_status, VSC_BUS_DC_MINUS].real.astype(np.int64)
+        bus_from_vsc_minus_dc = bus_from_vsc_dc[vsc_minus_dc >= 0]
+        bus_to_vsc_minus_dc = vsc_minus_dc[vsc_minus_dc >= 0]
+
+        bus_from_dc = np.hstack([bus_from_dc, bus_from_vsc_dc, bus_from_vsc_minus_dc, slacks_dc])
+        bus_to_dc = np.hstack([bus_to_dc, bus_to_vsc_dc, bus_to_vsc_minus_dc, np.ones(len(slacks_dc)) * nobus_dc])
+        nolinks_dc = nobranch_dc + novsc + len(bus_to_vsc_minus_dc) + len(slacks_dc)
 
         adj_matrix_dc = sp.sparse.coo_matrix(
             (np.ones(nolinks_dc), (bus_from_dc, bus_to_dc)), shape=(nobus_dc + 1, nobus_dc + 1)
@@ -1039,6 +1051,13 @@ def _select_is_elements_numba(
                     element_in_service = element_in_service & ~controllable_in_service
             # if element_table has both bus and bus_dc e.g. "vsc":
             is_elements[element_table] = is_elements.get(element_table, True) & element_in_service
+
+    # the auxiliary VSC of bipolar VSC are also out of service if their minus terminal bus is out of service
+    # (bus_dc_minus is NaN for VSC connected to ground)
+    if len(net.vsc) > 0 and "bus_dc_minus" in net.vsc.columns:
+        bus_dc_minus = net.vsc["bus_dc_minus"].values
+        has_minus = pd.notna(bus_dc_minus)
+        is_elements["vsc"][has_minus] &= bus_dc_in_service[bus_dc_minus[has_minus].astype(np.int64)]
 
     if len(net.vsc) > 0 and "aux" in net["_pd2ppc_lookups"] and "vsc" in net["_pd2ppc_lookups"]["aux"]:
         # reasoning: it can be that there are isolated DC buses. But they are only discovered
@@ -1250,6 +1269,14 @@ def get_vsc_stacked_names(elements: NDArray):
 
 
 def _clean_up(net: pandapowerNet, res: bool = True) -> None:
+    """
+    Removes the auxiliary elements of the power flow from net: the gens of the dclines and the auxiliary VSC of
+    vsc_stacked and vsc_bipolar (see _add_auxiliary_elements).
+
+    Parameters:
+        net: the pandapower network
+        res: if True, the results of the dcline gens are removed from net.res_gen as well
+    """
     # mode = net.__internal_options["mode"]
 
     # set internal selected _is_elements to None. This way it is not stored (saves disk space)
@@ -1285,8 +1312,30 @@ def _clean_up(net: pandapowerNet, res: bool = True) -> None:
         # drop the vsc's
         net.vsc.drop(vsc_idx.index, axis=0, inplace=True)
 
+    _remove_vsc_bipolar_aux(net)
+
+
+def _remove_vsc_bipolar_aux(net: pandapowerNet) -> None:
+    """
+    Removes the auxiliary net.vsc entries of the bipolar VSC (see _add_vsc_bipolar). Can be called several times.
+    """
+    aux = net.pop("_vsc_bipolar_aux", None)
+    if aux is None:
+        return
+    net.vsc.drop(aux["vsc_index"], axis=0, inplace=True)
+    if "res_vsc" in net:
+        net.res_vsc.drop(net.res_vsc.index.intersection(aux["vsc_index"]), axis=0, inplace=True)
+    drop_columns = [c for c in aux["drop_columns"] if c in net.vsc.columns]
+    if drop_columns:
+        net.vsc.drop(columns=drop_columns, inplace=True)
+
 
 def _set_isolated_buses_out_of_service(net: pandapowerNet, ppc: PyPowerNetwork) -> None:
+    """
+    Sets the AC buses that are not connected to an in-service branch and the DC buses that are not connected to an
+    in-service DC line or VSC terminal (plus or minus) out of service (bus type NONE), unless they are reference buses.
+    The isolated buses are stored in net._isolated_buses and net._isolated_buses_dc.
+    """
     # set disconnected buses out of service
     # first check if buses are connected to branches
     # I don't know why this dance with [X, :][:, [Y, Z]] (instead of [X, [Y, Z]]) is necessary:
@@ -1300,13 +1349,15 @@ def _set_isolated_buses_out_of_service(net: pandapowerNet, ppc: PyPowerNetwork) 
     ppc["bus"][net._isolated_buses, BUS_TYPE] = NONE
 
     # check DC buses - not connected to DC lines and not connected to VSC DC side
+    # (VSC_BUS_DC_MINUS is -1 for VSC connected to ground)
+    vsc_dc_buses = ppc["vsc"][ppc["vsc"][:, VSC_STATUS] == 1][:, [VSC_BUS_DC, VSC_BUS_DC_MINUS]].real.astype(np.int64)
     disco_dc = np.setxor1d(
         ppc["bus_dc"][:, DC_BUS_I].astype(np.int64),
         np.union1d(
             ppc["branch_dc"][ppc["branch_dc"][:, DC_BR_STATUS] == 1, :][:, [DC_F_BUS, DC_T_BUS]]
             .real.astype(np.int64)
             .flatten(),
-            ppc["vsc"][ppc["vsc"][:, VSC_STATUS] == 1, VSC_BUS_DC].real.astype(np.int64),
+            vsc_dc_buses[vsc_dc_buses >= 0],
         ),
     )
 
@@ -1778,6 +1829,42 @@ def _add_vsc_stacked(net: pandapowerNet):
         )
 
 
+def _add_vsc_bipolar(net: pandapowerNet):
+    """
+    Adds one auxiliary net.vsc entry for every net.vsc_bipolar entry. The auxiliary VSC is connected between
+    bus_dc (= bus_dc_plus) and bus_dc_minus instead of between bus_dc and ground. The indices of the auxiliary
+    entries are stored in net["_vsc_bipolar_aux"] and the entries are removed in _clean_up.
+    """
+    from pandapower.create import create_vsc
+
+    _remove_vsc_bipolar_aux(net)
+    columns_before = net.vsc.columns
+    vsc_index = []
+    for _, vb in net.vsc_bipolar.iterrows():
+        vsc_index.append(
+            create_vsc(
+                net,
+                vb.bus,
+                vb.bus_dc_plus,
+                vb.r_ohm,
+                vb.x_ohm,
+                vb.r_dc_ohm,
+                pl_dc_mw=vb.pl_dc_mw,
+                control_mode_ac=vb.control_mode_ac,
+                control_value_ac=vb.control_value_ac,
+                control_mode_dc=vb.control_mode_dc,
+                control_value_dc=vb.control_value_dc,
+                name=vb.get("name", None),
+                controllable=vb.controllable,
+                in_service=vb.in_service,
+                bus_dc_minus=vb.bus_dc_minus,
+            )
+        )
+    # columns that only the auxiliary entries introduce have to be dropped again afterwards
+    drop_columns = list(net.vsc.columns.difference(columns_before))
+    net["_vsc_bipolar_aux"] = {"vsc_index": np.array(vsc_index, dtype=np.int64), "drop_columns": drop_columns}
+
+
 def _add_auxiliary_elements(net: pandapowerNet):
     """
     Add auxiliary elements to net, convert the HVDC links to a gen pair and
@@ -1788,11 +1875,28 @@ def _add_auxiliary_elements(net: pandapowerNet):
     Returns:
 
     """
-    if len(net.dcline) > 0:
-        _add_dcline_gens(net)
+    # The auxiliary elements are added to net.gen and net.vsc. If adding them fails halfway (e.g. a create_vsc call
+    # for a bipolar VSC raises), all rows and columns added so far are removed again. Otherwise they would stay in the
+    # net, because the cleanup metadata is only recorded after a successful creation, and be added again by the next
+    # power flow.
+    tables = ("gen", "vsc")
+    before = {table: (net[table].index, net[table].columns) for table in tables}
+    try:
+        if len(net.dcline) > 0:
+            _add_dcline_gens(net)
 
-    if len(net.vsc_stacked) > 0:
-        _add_vsc_stacked(net)
+        if len(net.vsc_stacked) > 0:
+            _add_vsc_stacked(net)
+
+        if len(net.vsc_bipolar) > 0:
+            _add_vsc_bipolar(net)
+    except Exception:
+        net.pop("_vsc_bipolar_aux", None)
+        for table, (index_before, columns_before) in before.items():
+            net[table] = net[table].drop(
+                index=net[table].index.difference(index_before), columns=net[table].columns.difference(columns_before)
+            )
+        raise
 
 
 def _replace_nans_with_default_limits(net: pandapowerNet, ppc: PyPowerNetwork) -> None:
@@ -1939,15 +2043,22 @@ def _init_runpp_options(
         if init_va_degree is None or (isinstance(init_va_degree, str) and init_va_degree == "auto"):
             init_va_degree = "dc" if calculate_voltage_angles and not with_facts else "flat"
         if init_vm_pu is None or (isinstance(init_vm_pu, str) and init_vm_pu == "auto"):
-            init_vm_pu = (
-                net.ext_grid.query("in_service").vm_pu.to_numpy().sum()
-                + net.gen.query("in_service").vm_pu.to_numpy().sum()
-                + net.vsc.query("in_service & (control_mode_ac == 'slack')").control_value_ac.to_numpy().sum()
-            ) / (
-                len(net.ext_grid.query("in_service"))
-                + len(net.gen.query("in_service"))
-                + len(net.vsc.query("in_service & (control_mode_ac == 'slack')"))
+            eg_tbl = net["ext_grid"]
+            gen_tbl = net["gen"]
+            vsc_tbl = net["vsc"]
+
+            eg = eg_tbl["in_service"].to_numpy()
+            gen = gen_tbl["in_service"].to_numpy()
+            vsc_mask = vsc_tbl["in_service"].to_numpy() & (vsc_tbl["control_mode_ac"].to_numpy() == "slack")
+
+            total = (
+                eg_tbl["vm_pu"].to_numpy()[eg].sum()
+                + gen_tbl["vm_pu"].to_numpy()[gen].sum()
+                + vsc_tbl["control_value_ac"].to_numpy()[vsc_mask].sum()
             )
+            count = eg.sum() + gen.sum() + vsc_mask.sum()
+
+            init_vm_pu = total / count
     elif init == "dc":
         init_vm_pu = "flat"
         init_va_degree = "dc"

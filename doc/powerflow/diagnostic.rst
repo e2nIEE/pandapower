@@ -50,6 +50,7 @@ These will be added to Diagnostic instances by default.
 .. autoclass:: pandapower.diagnostic.diagnostic_functions.OptimisticPowerflow
 .. autoclass:: pandapower.diagnostic.diagnostic_functions.Overload
 .. autoclass:: pandapower.diagnostic.diagnostic_functions.ParallelSwitches
+.. autoclass:: pandapower.diagnostic.diagnostic_functions.SchemaValidation
 .. autoclass:: pandapower.diagnostic.diagnostic_functions.SlackGenPlacement
 .. autoclass:: pandapower.diagnostic.diagnostic_functions.SubNetProblemTest
 .. autoclass:: pandapower.diagnostic.diagnostic_functions.TestContinuousBusIndices
