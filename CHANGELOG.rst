@@ -3,16 +3,60 @@ Change Log
 
 [upcoming 4.0.0] - 2026-..-..
 -------------------------------
+- [FIXED] fix symmetrical PST: before they were handled as asymmetric tap changer, now as proper symmetrical according to UCTE-DEF
+- [ADDED] transformer documentation: overview table of the tap changer models with the columns to set
+- [FIXED] fix PF2pp converter to work with pandapower 4.0: added init_results into it and fixed std_type saving
+- [CHANGED] ideal phase shifters only use ``tap_step_degree`` as angle per tap step. ``tap_step_percent`` must be NaN or 0
+- [REMOVED] ``tap_phase_shifter`` / ``tap2_phase_shifter``: phase shifters are only defined by ``tap_changer_type`` / ``tap2_changer_type``
+- [ADDED] added a sensitivity package, it provides LODF, PSDF and PTDF calculation based on the DC power flow
+- [FIXED] ``res_dcline``: a terminal at an unsupplied bus (island without slack) now has ``NaN`` as voltage magnitude and angle, consistent with ``res_bus``, instead of ``0``
+- [FIXED] branch voltage angle difference constraints (MATPOWER ``ANGMIN``/``ANGMAX``) were lost in the pypower/matpower converters and ignored by the OPF: the new optional columns ``min_angle_degree`` and ``max_angle_degree`` in ``net.line``, ``net.trafo``, ``net.trafo3w`` and ``net.impedance`` are considered by ``runopp``/``rundcopp`` and by ``to_pm``, and ``from_ppc``/``to_ppc``/``to_mpc`` preserve them (#2385). For ``net.trafo3w`` the limit bounds each internal star branch (hv -> star and star -> mv/lv) separately, so the terminal difference can reach twice the configured value. OPF results of networks imported from MATPOWER/PYPOWER cases with angle limits change accordingly; pass ``OPF_IGNORE_ANG_LIM=True`` to ``runopp`` to ignore the limits.
+- [FIXED] matpower/pypower converter: transformers without a tap changer (tap ratio 1) were converted to impedance elements by a to_mpc/from_mpc (and to_ppc/from_ppc) round trip, since a tap ratio of 1 was not recognized as a transformer when importing. The converters now follow the matpower convention (a tap ratio of 0 denotes "no transformer", any other ratio denotes a transformer): ``to_mpc`` keeps the tap ratio of transformer branches, ``from_mpc`` no longer rewrites tap ratios of 0, ``to_ppc`` marks branches of impedance elements with a tap ratio of 0, and ``from_ppc`` only imports branches without a tap ratio and without a phase shift that connect different voltage levels as impedances. The tap ratio marking also stays correct when branches are filtered out of the internal ppc (out-of-service or disconnected branches). A transformer with a tap ratio of 1 between buses of the same voltage level still cannot be distinguished from a line in the ppc/matpower format and keeps being converted to a line on the way back, as before (#2620)
+- [FIXED] short-circuit tutorial and docs: explain why meshed and radial results are equal with kappa method C in the example ring, show method B, complete the method C description and document ``kappa_method`` in ``calc_sc`` (#2621)
+- [FIXED] ``runpp_3ph``: ``gen`` results failed with an ``IndexError`` if the ``gen`` index was not ``0, 1, 2, ...``, and the results of an in-service ``ext_grid`` were written to an out-of-service ``ext_grid`` listed before it (#1474)
+- [FIXED] ``runpp_3ph`` ignored loads and sgens whose ``type`` is not "wye" or "delta", such as an sgen created by ``create_sgen`` without a type, and failed when the ``type`` column had missing values; they are now wye elements, as in ``runpp``
+- [FIXED] ``runpp_3ph`` returned NaN results for a ``gen`` with ``vm_pu=1.0`` and failed with ``xward`` elements, and ``calc_sc`` failed for 1ph faults with ``xward`` elements: the zero and negative sequence voltages of gen and xward buses are no longer initialised with the voltage set point, the xward impedance uses the 3ph base impedance, and the xward branch is added to the zero sequence system
+- [FIXED] get_element_limits now reads the N-1 loading limit from "max_loading_percent_nminus1" (as run_contingency does), keeping "max_loading_nminus1_percent" as fallback
+- [FIXED] docstrings of detect_power_station_unit and elements_on_path now match their parameters
+- [CHANGED] ran ruff format for whole project
+- [CHANGED] moved test module to top level
 - [ADDED] pandera network validation
 - [CHANGED] removed deprecated trafo support characteristics table (replaced by trafo_characteristc_table)
 - [ADDED] create function for trafo characteristic entries
 - [ADDED] converter for trafo characteristics
 - [ADDED] Added ``solver_tolerance`` as a unitless power-flow solver tolerance option while keeping ``tolerance_mva`` as a backward-compatible alias.
+- [FIXED] create_gen and create_gens now use connected bus voltage limits as generator voltage-limit defaults.
+- [ADDED] runpp: bipolar VSC (create_vsc_bipolar) connected between a plus and a minus DC bus instead of ground, enables bipolar HVDC systems with dedicated metallic return (DMR); the DMR current is calculated by the power flow
+- [CHANGED] vsc_bipolar: control parameters changed to control_mode_ac, control_value_ac, control_mode_dc, control_value_dc (same as vsc); the element was not considered in the power flow before; networks stored in the old format are converted on load by convert_format
+- [CHANGED] runpp: the DC grid is solved with current balance equations and a revised Jacobian; several VSC in DC voltage control at the same DC bus share the current equally
+- [DEPRECATED] create_vsc_stacked and DmrControl, use create_vsc_bipolar instead
+- [FIXED] runpp: out of service VSC in AC slack mode defined a slack bus
+- [CHANGED] State Estimation: estimate() returns a dict with "success", "num_iterations" and "time" (ISO 8601, UTC) instead of a bool; the dict is always truthy, use result["success"] to detect a failed estimation
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [CHANGED] PandaModels.jl interface: the network is sent in MATPOWER units (MW, MVAr, degrees, ``per_unit=False``) and converted to per unit by PandaModels.jl, which is now required in version >= 0.10. The new keyword ``pm_base_mva`` (default ``net.sn_mva``) sets the per unit base; Ipopt is much faster on a base fitting the grid (e.g. case118: 0.1 s at 100 MVA instead of 2.2 s at 1 MVA).
+- [CHANGED] time series optimizations (``runpm_storage_opf``, ``runpm_multi_vstab``, ``runpm_multi_qflex``) store their results in ``net.res_ts_opt`` as dict ``"res_<table>.<column>"`` -> DataFrame (index: time steps, columns: element indices) instead of one copy of the net per time step. Reading the results is several times faster.
+- [CHANGED] ``juliapkg.json`` is shipped with the pandapower package; PandaModels.jl is no longer installed or built at runtime. ``pdm_dev_mode`` is deprecated; a local checkout is registered with ``juliapkg.add(..., path=..., dev=True)``.
+- [ADDED] new ``runpm_redispatch`` function: keeps generators close to a base dispatch while respecting network constraints; supports both squared-deviation and cost-weighted objectives.
+- [FIXED] PandaModels.jl interface: bus shunts and branch conductances were scaled wrongly for ``sn_mva != 1``.
+- [FIXED] PandaModels.jl interface: ``ne_line`` construction costs overwrote the ``BR_G`` column; ``opf_flow_lim="I"`` used a different current rating for ``ne_line`` than for lines.
+- [FIXED] PandaModels.jl interface: time series optimizations with ``from_time_step != 0`` used the time series values of the wrong time steps.
+- [FIXED] PandaModels.jl interface: ``read_pm_storage_results`` treated the stored energy as a fraction; ``soc_mwh`` and ``soc_percent`` were only correct for 1 MWh storages.
+- [FIXED] PandaModels.jl interface: the native power flows (``pm_model="ACNative"/"DCNative"``) were reported as not converged; SOC models wrote ``w = vm^2`` as ``vm``.
+- [FIXED] contingency limit checks now align results by constrained element index, including partial or reordered limits.
+- [FIXED] ``ConstControl`` now raises a ``ValueError`` if ``element_index`` contains indices that are not in the element table. Previously a missing single index silently added a row with NaN values, and the time series failed later with an unclear numba error (#1857)
+- [FIXED] ``compute_switch_flows`` read ``z_ohm`` by row position instead of by switch index, so with a non-default ``net.switch`` index it raised ``IndexError``, left zero-impedance switches without results or overwrote the results of switches with ``z_ohm > 0``
+- [FIXED] ``create_load_dc`` now allocates and validates indexes against ``load_dc``, preventing overwrites and false ``source_dc`` conflicts.
+- [FIXED] OPF cleaned up in case of non convergence
+- [FIXED] ``create_continuous_bus_index`` (and other toolbox functions relying on ``element_bus_tuples``) now also update the ``bus`` column of the ``ssc`` element table; it was previously missing from the list of bus-referencing elements
+- [FIXED] speedup dump_to_geojson_node_branch
+- [FIXED] added the LV Schutterwald network to the network documentation.
 - [FIXED] restored ``OpenDSSDirect.py`` to the ``all``/``dev`` extras so the OpenDSS converter is exercised (and its coverage reported) in CI again; it was dropped in #3062 because installing it alongside ``pytest~=9.1`` crashed the pytest process on Windows. Root cause (see `dss-extensions/OpenDSSDirect.py#148 <https://github.com/dss-extensions/OpenDSSDirect.py/issues/148>`_): pytest enables Python's ``faulthandler`` by default, which intercepts a first-chance Windows structured exception that OpenDSSDirect.py's native backend raises -- and normally handles itself -- during import, and misreports it as fatal. Bracketing the import with ``faulthandler.disable()``/``.enable()`` avoids the false crash while leaving ``faulthandler`` protecting the rest of the test run; the converter now runs on Windows instead of merely skipping there.
 - [ADDED] OpenDSS converter: series (bus-to-bus) ``Reactor`` elements are now imported as a fixed-impedance ``line``, the pattern some feeder libraries (e.g. EPRI's Ckt5/Ckt7) use to model the substation's Thevenin-equivalent source impedance instead of a ``Transformer``.
+- [FIXED] impedance element docs: the ``z_tf`` equation used ``rft_pu`` instead of ``rtf_pu``, and the ``gt_pu``/``bt_pu``/``gt0_pu``/``bt0_pu`` shunt parameters were described as being at the ``from_bus`` instead of the ``to_bus``.
+- [FIXED] fixed tutorial for plotting with pyqt
+- [FIXED] ``PPJSONEncoder.default`` passed ``self`` twice to ``json.JSONEncoder.default``, so unserializable objects raised ``TypeError: JSONEncoder.default() takes 2 positional arguments but 3 were given`` instead of ``Object of type X is not JSON serializable``
 
 [3.5.4] - 2026-07-08
 -------------------------------
@@ -72,6 +116,7 @@ Change Log
 - [FIXED] pf2pp: :code:`app.GetActiveScenario().loc_name` can be :code:`None`
 - [FIXED] pf2pp: static generator without a bus does not cause import errors (it is ignored)
 - [ADDED] plotting: added a toggleable colormap feature to :code:`simple_plot`
+- [ADDED] introducing pypowsybl to pandapower converter
 - [ADDED] cim2pp: mapping SV data to the assets with flag use_sv_data_for_assets=True
 
 [3.4.0] - 2026-02-09

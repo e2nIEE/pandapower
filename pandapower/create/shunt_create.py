@@ -3,14 +3,25 @@
 
 from __future__ import annotations
 
+__all__ = [
+    "create_shunt",
+    "create_shunt_as_capacitor",
+    "create_shunts",
+    "create_ssc",
+    "create_svc",
+    "create_vsc",
+    "create_vsc_bipolar",
+    "create_vsc_stacked",
+]
+
 import logging
-from typing import Iterable, Sequence, Literal
+from collections.abc import Iterable, Sequence
+from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
+from typing_extensions import deprecated
 
-from pandapower import pandapowerNet
-from pandapower.pp_types import Int
 from pandapower.create._utils import (
     _check_element,
     _check_multiple_elements,
@@ -20,7 +31,9 @@ from pandapower.create._utils import (
     _set_multiple_entries,
     _set_value_if_not_nan,
 )
+from pandapower.network import pandapowerNet
 from pandapower.network_structure import get_default_value
+from pandapower.pp_types import Int
 
 logger = logging.getLogger(__name__)
 
@@ -76,7 +89,7 @@ def create_shunt(
     index = _get_index_with_check(net, "shunt", index)
 
     if vn_kv is None:
-        vn_kv = net.bus.vn_kv.at[bus]
+        vn_kv = net.bus.vn_kv.at[bus]  # type: ignore[assignment]
 
     entries = {
         "bus": bus,
@@ -85,7 +98,7 @@ def create_shunt(
         "q_mvar": q_mvar,
         "vn_kv": vn_kv,
         "step": step,
-        "max_step": max_step,
+        "max_step": max_step,  # TODO: check max_step > step or set max(max_step, step)
         "in_service": in_service,
         "step_dependency_table": step_dependency_table,
         "id_characteristic_table": id_characteristic_table,
@@ -318,6 +331,7 @@ def create_ssc(
     return index
 
 
+@deprecated("Use create_vsc_bipolar instead.")  # v4.0.0
 def create_vsc_stacked(
     net: pandapowerNet,
     bus: Int,
@@ -404,9 +418,10 @@ def create_vsc_bipolar(
     x_ohm: float,
     r_dc_ohm: float,
     pl_dc_mw: float = get_default_value("vsc_bipolar", "pl_dc_mw"),
-    control_mode: str = get_default_value("vsc_bipolar", "control_mode"),
-    control_value_1: float = get_default_value("vsc_bipolar", "control_value_1"),
-    control_value_2: float = get_default_value("vsc_bipolar", "control_value_2"),
+    control_mode_ac: Literal["vm_pu", "q_mvar", "slack"] = get_default_value("vsc_bipolar", "control_mode_ac"),
+    control_value_ac: float = get_default_value("vsc_bipolar", "control_value_ac"),
+    control_mode_dc: Literal["vm_pu", "p_mw"] = get_default_value("vsc_bipolar", "control_mode_dc"),
+    control_value_dc: float = get_default_value("vsc_bipolar", "control_value_dc"),
     name: str | None = None,
     controllable: bool = get_default_value("vsc_bipolar", "controllable"),
     in_service: bool = get_default_value("vsc_bipolar", "in_service"),
@@ -414,23 +429,32 @@ def create_vsc_bipolar(
     **kwargs,
 ) -> Int:
     """
-    Creates an VSC converter element - a shunt element with adjustable VSC internal voltage used to connect the \
-    AC grid and the DC grid. The element implements several control modes.
+    Creates a VSC converter element whose DC side is connected between two DC buses (plus and minus terminal)
+    instead of between one DC bus and ground. The current of the converter flows out of the plus terminal and
+    returns into the minus terminal.
+
+    A bipolar HVDC station with metallic return (DMR) is modelled with two of these elements: the positive pole
+    between the positive DC bus and the neutral bus, the negative pole between the neutral bus and the negative DC
+    bus. The neutral buses of the stations are connected with a DC line (the DMR), which then carries the unbalance
+    current of the poles. Exactly one bus of the DC system has to be grounded, e.g. the neutral bus of one station
+    with create_source_dc(net, bus_dc=neutral_bus, vm_pu=0.).
 
     Does not work if connected to "PV" bus (gen bus, ext_grid bus)
 
     Parameters:
         net: The pandapower network in which the element is created
-        bus: connection bus of the VSC
-        bus_dc_plus: connection dc bus of the VSC
-        bus_dc_minus: connection dc bus of the VSC
+        bus: AC connection bus of the VSC
+        bus_dc_plus: DC bus of the plus terminal of the VSC
+        bus_dc_minus: DC bus of the minus terminal of the VSC
         r_ohm: resistance of the coupling transformer component of VSC
         x_ohm: reactance of the coupling transformer component of VSC
         r_dc_ohm: resistance of the internal dc resistance component of VSC
-        pl_dc_mw: no-load losses of the VSC on the DC side for the shunt R representing the no load losses
-        control_mode: the control mode of the ac side of the VSC. it could be "vm_pu", "q_mvar" or "slack"
-        control_value_1: the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
-        control_value_2: the value of the controlled parameter at the dc bus in "p.u." or "MW"
+        pl_dc_mw: no-load losses of the VSC on the DC side, modelled as a conductance between plus and minus terminal
+        control_mode_ac: the control mode of the ac side of the VSC. it could be "vm_pu", "q_mvar" or "slack"
+        control_value_ac: the value of the controlled parameter at the ac bus in "p.u." or "MVAr"
+        control_mode_dc: the control mode of the dc side of the VSC. it could be "vm_pu" (voltage difference between
+            plus and minus terminal) or "p_mw" (DC power flowing from the DC grid into the VSC)
+        control_value_dc: the value of the controlled parameter at the dc side in "p.u." or "MW"
         name: element name
         controllable: whether the element is considered as actively controlling or as a fixed voltage source connected
             via shunt impedance
@@ -439,12 +463,29 @@ def create_vsc_bipolar(
             index is selected.
 
     Returns:
-        The ID of the created ssc
+        The ID of the created VSC
+
+    Example:
+        >>> # positive and negative pole of a station, neutral bus n is grounded
+        >>> create_vsc_bipolar(net, bus=1, bus_dc_plus=p, bus_dc_minus=n, r_ohm=0.2, x_ohm=10, r_dc_ohm=0.3,
+        ...                    control_mode_dc="vm_pu", control_value_dc=1.)
+        >>> create_vsc_bipolar(net, bus=1, bus_dc_plus=n, bus_dc_minus=m, r_ohm=0.2, x_ohm=10, r_dc_ohm=0.3,
+        ...                    control_mode_dc="vm_pu", control_value_dc=1.)
+        >>> create_source_dc(net, bus_dc=n, vm_pu=0.)
     """
 
+    # the former control parameters would otherwise be stored as additional columns and silently be ignored
+    legacy_kwargs = sorted({"control_mode", "control_value_1", "control_value_2"}.intersection(kwargs))
+    if legacy_kwargs:
+        raise TypeError(
+            f"create_vsc_bipolar() does not support {', '.join(legacy_kwargs)} any more, use control_mode_ac, "
+            "control_value_ac, control_mode_dc and control_value_dc instead"
+        )
     _check_element(net, bus)
     _check_element(net, bus_dc_plus, "bus_dc")
     _check_element(net, bus_dc_minus, "bus_dc")
+    if bus_dc_plus == bus_dc_minus:
+        raise UserWarning("bus_dc_plus and bus_dc_minus of a bipolar VSC must be different buses")
 
     index = _get_index_with_check(net, "vsc_bipolar", index)
 
@@ -457,9 +498,10 @@ def create_vsc_bipolar(
         "x_ohm": x_ohm,
         "r_dc_ohm": r_dc_ohm,
         "pl_dc_mw": pl_dc_mw,
-        "control_mode": control_mode,
-        "control_value_1": control_value_1,
-        "control_value_2": control_value_2,
+        "control_mode_ac": control_mode_ac,
+        "control_value_ac": control_value_ac,
+        "control_mode_dc": control_mode_dc,
+        "control_value_dc": control_value_dc,
         "controllable": controllable,
         "in_service": in_service,
         **kwargs,

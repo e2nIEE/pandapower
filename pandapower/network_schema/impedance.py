@@ -1,6 +1,8 @@
 import pandas as pd
 import pandera.pandas as pa
 
+from pandapower.network_schema.tools.validation.column_condition import create_lower_equals_column_check
+
 impedance_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(
@@ -10,13 +12,13 @@ impedance_schema = pa.DataFrameSchema(
             int,
             pa.Check.ge(0),
             description="index of bus where the impedance starts",
-            metadata={"foreign_key": "bus.index"},
+            metadata={"foreign_key": "bus"},
         ),
         "to_bus": pa.Column(
             int,
             pa.Check.ge(0),
             description="index of bus where the impedance ends",
-            metadata={"foreign_key": "bus.index"},
+            metadata={"foreign_key": "bus"},
         ),
         "rft_pu": pa.Column(float, description="resistance of the impedance from ‘from’ to ‘to’ bus [p.u.]"),
         "xft_pu": pa.Column(float, description="reactance of the impedance from ‘from’ to ‘to’ bus [p.u.]"),
@@ -107,11 +109,31 @@ impedance_schema = pa.DataFrameSchema(
         "sn_mva": pa.Column(
             float, pa.Check.gt(0), description="reference apparent power for the impedance per unit values [MVA]"
         ),
+        "min_angle_degree": pa.Column(
+            float,
+            nullable=True,
+            required=False,
+            description="minimum voltage angle difference between from_bus and to_bus (va_from - va_to) [degree], "
+            "considered in the OPF; NaN means unconstrained",
+            metadata={"opf": True},
+        ),
+        "max_angle_degree": pa.Column(
+            float,
+            nullable=True,
+            required=False,
+            description="maximum voltage angle difference between from_bus and to_bus (va_from - va_to) [degree], "
+            "considered in the OPF; NaN means unconstrained",
+            metadata={"opf": True},
+        ),
         "in_service": pa.Column(
             bool, description="specifies if the impedance is in service.", metadata={"default": True}
         ),
         "origin_id": pa.Column(
-            pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+            pd.StringDtype,
+            nullable=True,
+            required=False,
+            description="element rdfId from CIM",
+            metadata={"cim": True, "doc": False},
         ),
         "origin_class": pa.Column(
             pd.StringDtype,
@@ -142,6 +164,7 @@ impedance_schema = pa.DataFrameSchema(
             metadata={"cim": True, "doc": False},
         ),
     },
+    checks=[create_lower_equals_column_check(first_element="min_angle_degree", second_element="max_angle_degree")],
     name="impedance",
     strict=False,
 )

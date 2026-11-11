@@ -1,1 +1,6 @@
-from . import equivalentBranchesCim16, seriesCompensatorsCim16
+__all__ = [
+    "equivalent_branches_cim16",
+    "series_compensators_cim16",
+]
+
+from . import equivalent_branches_cim16, series_compensators_cim16

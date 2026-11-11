@@ -1,25 +1,59 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "EmptyResults",
+    "empty_res_element",
+    "get_relevant_elements",
+    "get_result_tables",
+    "init_results",
+    "reset_results",
+    "verify_results",
+]
+from typing import ClassVar
+
 import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import get_vsc_stacked_names, pandapowerNet
-from pandapower.results_branch import _get_branch_results, _get_branch_results_3ph
-from pandapower.results_bus import _get_bus_results, _get_bus_dc_results, _set_buses_out_of_service, \
-    _get_shunt_results, _get_p_q_results, _get_bus_v_results, _get_bus_v_results_3ph, _get_p_q_results_3ph, \
-    _get_bus_results_3ph, _get_bus_dc_v_results, _get_p_dc_results, _set_dc_buses_out_of_service
-from pandapower.results_gen import _get_gen_results, _get_gen_results_3ph, _get_dc_slack_results
 from pandapower.network_structure import get_results_structure_dict
+from pandapower.pypower.idx_bus_dc import DC_BASE_KV
+from pandapower.pypower.idx_vsc import VSC_I_DC, VSC_P_DC, VSC_P_DC_MINUS
+from pandapower.results_branch import _get_branch_results, _get_branch_results_3ph
+from pandapower.results_bus import (
+    _get_bus_dc_results,
+    _get_bus_dc_v_results,
+    _get_bus_results,
+    _get_bus_results_3ph,
+    _get_bus_v_results,
+    _get_bus_v_results_3ph,
+    _get_p_dc_results,
+    _get_p_q_results,
+    _get_p_q_results_3ph,
+    _get_shunt_results,
+    _set_buses_out_of_service,
+    _set_dc_buses_out_of_service,
+)
+from pandapower.results_gen import _get_dc_slack_results, _get_gen_results, _get_gen_results_3ph
 
-BRANCH_RESULTS_KEYS = ("branch_ikss_f", "branch_ikss_t",
-                       "branch_ikss_angle_f", "branch_ikss_angle_t",
-                       "branch_pkss_f", "branch_pkss_t",
-                       "branch_qkss_f", "branch_qkss_t",
-                       "branch_vkss_f", "branch_vkss_t",
-                       "branch_vkss_angle_f", "branch_vkss_angle_t",
-                       "branch_ip_f", "branch_ip_t",
-                       "branch_ith_f", "branch_ith_t")
+BRANCH_RESULTS_KEYS = (
+    "branch_ikss_f",
+    "branch_ikss_t",
+    "branch_ikss_angle_f",
+    "branch_ikss_angle_t",
+    "branch_pkss_f",
+    "branch_pkss_t",
+    "branch_qkss_f",
+    "branch_qkss_t",
+    "branch_vkss_f",
+    "branch_vkss_t",
+    "branch_vkss_angle_f",
+    "branch_vkss_angle_t",
+    "branch_ip_f",
+    "branch_ip_t",
+    "branch_ith_f",
+    "branch_ith_t",
+)
 
 suffix_mode = {"sc": "sc", "se": "est", "pf_3ph": "3ph"}
 
@@ -40,19 +74,20 @@ class EmptyResults(metaclass=_EmptyResultsMeta):
 
     Will be created on first call, all subsequent calls will be faster
     """
-    _instance: "EmptyResults | None" = None
-    _data: dict[str, pd.DataFrame] = {}
+
+    _instance: "ClassVar[EmptyResults | None]" = None
+    _data: ClassVar[dict[str, pd.DataFrame]] = {}
 
     def __new__(cls):
         if cls._instance is None:
-            cls._instance = super(EmptyResults, cls).__new__(cls)
+            cls._instance = super().__new__(cls)
             # Initialization:
             # create dataframes from results_structure_dict
             dataframes = pandapowerNet.create_dataframes(get_results_structure_dict())
             # set data on instance
             for key, value in dataframes.items():
                 if not isinstance(value, pd.DataFrame):
-                    raise ValueError(f"EmptyResults got {type(value)} for {key}, expected pandas.DataFrame")
+                    raise TypeError(f"EmptyResults got {type(value)} for {key}, expected pandas.DataFrame")
                 cls._instance._data[key] = value
         return cls._instance
 
@@ -72,6 +107,7 @@ class EmptyResults(metaclass=_EmptyResultsMeta):
     def __str__(self):
         return f"EmptyResults({self._data})"
 
+
 def _overwrite_out_of_service(net: pandapowerNet) -> None:
     for elem in ["bus", "bus_dc"]:  # TODO: add other out of service elements
         if f"res_{elem}" in net:
@@ -79,6 +115,10 @@ def _overwrite_out_of_service(net: pandapowerNet) -> None:
 
 
 def _extract_results(net, ppc):
+    """
+    Writes the results of the power flow in ppc to the result tables of net (res_bus, res_line, res_vsc, res_vsc_bipolar,
+    ...).
+    """
     _set_buses_out_of_service(ppc)  # for NaN results in net.res_bus for inactive buses
     _set_dc_buses_out_of_service(ppc)  # for NaN results in net.res_bus_dc for inactive buses
     bus_lookup_aranged = _get_aranged_lookup(net)
@@ -96,6 +136,7 @@ def _extract_results(net, ppc):
     _get_bus_dc_results(net, bus_p_dc)
     _get_vsc_stacked_results(net)
     _overwrite_out_of_service(net)
+    _get_vsc_bipolar_results(net, ppc)
     if net._options["mode"] == "opf":
         _get_costs(net, ppc)
     else:
@@ -113,29 +154,71 @@ def _get_vsc_stacked_results(net):
         # create an index of the stacked_vsc's
         indices = net.vsc_stacked.index.values
         # naming scheme is stacked_0+, stacked_0-, stacked_1+, stacked_1-, ...
-        vsc_idx = net.vsc[net.vsc['name'].isin(get_vsc_stacked_names(indices))].index
+        vsc_idx = net.vsc[net.vsc["name"].isin(get_vsc_stacked_names(indices))].index
         res_vsc = net.res_vsc.loc[vsc_idx]
 
         # Add a grouping index to split rows into pairs (0,1), (2,3), etc.
-        res_vsc['group'] = res_vsc.index // 2
+        res_vsc["group"] = res_vsc.index // 2
 
-        net.res_vsc_stacked = res_vsc.groupby('group').agg(
-            p_mw=('p_mw', 'sum'),                               # p_mw gets summed since this is the AC power
-            q_mvar=('q_mvar', 'sum'),                           # q_mvar also gets summed
-            p_dc_mw_p=('p_dc_mw', 'first'),                     # MW of the plus DC bus
-            p_dc_mw_m=('p_dc_mw', 'last'),                      # MW of the minus DC bus
-            vm_internal_pu=('vm_internal_pu', 'mean'),          # The internal vm_pu is the average of both vsc
-            va_internal_degree=('va_internal_degree', 'mean'),  # Same for the angle
-            vm_pu=('vm_pu', 'mean'),                            # Mean of the vm_pu set point
-            va_degree = ('va_degree', 'mean'),                  # Mean of the va_degree set point
-            vm_internal_dc_pu_p=('vm_internal_dc_pu', 'first'), # Internal dc set point for the plus bus
-            vm_internal_dc_pu_m=('vm_internal_dc_pu', 'last'),  # Same for the minus bus
-            vm_dc_pu_p=('vm_dc_pu', 'first'),                   # And also for the external pu set point
-            vm_dc_pu_m=('vm_dc_pu', 'last'),                    # also for the minus bus
+        net.res_vsc_stacked = res_vsc.groupby("group").agg(
+            p_mw=("p_mw", "sum"),  # p_mw gets summed since this is the AC power
+            q_mvar=("q_mvar", "sum"),  # q_mvar also gets summed
+            p_dc_mw_p=("p_dc_mw", "first"),  # MW of the plus DC bus
+            p_dc_mw_m=("p_dc_mw", "last"),  # MW of the minus DC bus
+            vm_internal_pu=("vm_internal_pu", "mean"),  # The internal vm_pu is the average of both vsc
+            va_internal_degree=("va_internal_degree", "mean"),  # Same for the angle
+            vm_pu=("vm_pu", "mean"),  # Mean of the vm_pu set point
+            va_degree=("va_degree", "mean"),  # Mean of the va_degree set point
+            vm_internal_dc_pu_p=("vm_internal_dc_pu", "first"),  # Internal dc set point for the plus bus
+            vm_internal_dc_pu_m=("vm_internal_dc_pu", "last"),  # Same for the minus bus
+            vm_dc_pu_p=("vm_dc_pu", "first"),  # And also for the external pu set point
+            vm_dc_pu_m=("vm_dc_pu", "last"),  # also for the minus bus
         )
 
         # remove the vsc_stacked results from the res table
         net.res_vsc.drop(vsc_idx, axis=0, inplace=True)
+
+
+def _get_vsc_bipolar_results(net, ppc):
+    """
+    Writes the results of the auxiliary net.vsc entries (see _add_vsc_bipolar) to net.res_vsc_bipolar.
+    The auxiliary entries are removed from net.res_vsc in _clean_up.
+    """
+    if len(net.vsc_bipolar) == 0:
+        # results of bipolar VSC that were removed since the last power flow must not remain
+        if "res_vsc_bipolar" in net and len(net.res_vsc_bipolar) > 0:
+            empty_res_element(net, "vsc_bipolar")
+        return
+    aux = net.get("_vsc_bipolar_aux", None)
+    if aux is None:
+        return
+    vsc_index = aux["vsc_index"]
+    res_vsc = net.res_vsc.loc[vsc_index]
+    rows = net.vsc.index.get_indexer(vsc_index)
+    p_dc_p = ppc["vsc"][rows, VSC_P_DC]
+    p_dc_m = ppc["vsc"][rows, VSC_P_DC_MINUS]
+    bus_dc_lookup = net._pd2ppc_lookups["bus_dc"]
+    base_i_ka = ppc["baseMVA"] / ppc["bus_dc"][bus_dc_lookup[net.vsc_bipolar.bus_dc_plus.values], DC_BASE_KV]
+    vm_dc_m = net.res_bus_dc.loc[net.vsc_bipolar.bus_dc_minus.values, "vm_pu"].values
+    in_service = net._is_elements["vsc"][rows]
+
+    res = pd.DataFrame(index=net.vsc_bipolar.index)
+    res["p_mw"] = res_vsc["p_mw"].values
+    res["q_mvar"] = res_vsc["q_mvar"].values
+    res["p_dc_mw"] = p_dc_p + p_dc_m
+    res["p_dc_mw_p"] = p_dc_p
+    res["p_dc_mw_m"] = p_dc_m
+    res["i_dc_ka"] = ppc["vsc"][rows, VSC_I_DC] * base_i_ka
+    res["vm_internal_pu"] = res_vsc["vm_internal_pu"].values
+    res["va_internal_degree"] = res_vsc["va_internal_degree"].values
+    res["vm_pu"] = res_vsc["vm_pu"].values
+    res["va_degree"] = res_vsc["va_degree"].values
+    res["vm_internal_dc_pu"] = res_vsc["vm_internal_dc_pu"].values
+    res["vm_dc_pu_p"] = res_vsc["vm_dc_pu"].values
+    res["vm_dc_pu_m"] = np.where(in_service, vm_dc_m, np.nan)
+    res.loc[~in_service, ["p_dc_mw", "p_dc_mw_p", "p_dc_mw_m", "i_dc_ka"]] = 0.0
+    net.res_vsc_bipolar = res
+
 
 def _extract_results_3ph(net, ppc0, ppc1, ppc2):
     # reset_results(net, False)
@@ -161,11 +244,11 @@ def _extract_results_se(net, ppc):
 
 
 def _get_costs(net, ppc):
-    net.res_cost = ppc['obj']
+    net.res_cost = ppc["obj"]
 
 
 def _remove_costs(net):
-    if "res_cost" in net.keys():
+    if "res_cost" in net:
         del net["res_cost"]
 
 
@@ -191,8 +274,10 @@ def verify_results(net, mode="pf"):
             if net["_options"]["init_results"] and element == "bus":
                 # if the indices of bus and res_bus are not equal, but init_results is set, the voltage vector
                 # is wrong. A UserWarning is raised in this case. For all other elements the result table is emptied.
-                raise UserWarning("index of result table '{}' is not equal to the element table '{}'. The init result"
-                                  " option may lead to a non-converged power flow.".format(res_element, element))
+                raise UserWarning(
+                    f"index of result table '{res_element}' is not equal to the element table '{element}'. The init result"
+                    " option may lead to a non-converged power flow."
+                )
             # init result table for
             init_element(net, element)
             if element == "bus":
@@ -213,9 +298,7 @@ def empty_res_element(net, element, suffix=None):
     try:
         net[res_element] = EmptyResults[res_element]
     except KeyError:
-        net[res_element] = pd.DataFrame(
-            columns=pd.Index([], dtype=object), index=pd.Index([], dtype=np.int64)
-        )
+        net[res_element] = pd.DataFrame(columns=pd.Index([], dtype=object), index=pd.Index([], dtype=np.int64))
 
 
 def init_element(net, element, suffix=None):
@@ -279,10 +362,15 @@ def get_relevant_elements(net, mode="pf"):
     return [elem for elem in elements.get(mode, []) if not net[elem].empty]
 
 
-def init_results(net, mode="pf"):
+def init_results(net, mode="pf", exclude_result_tables=None):
+    exclude = set() if exclude_result_tables is None else set(exclude_result_tables)
     elements = get_relevant_elements(net, mode)
     suffix = suffix_mode.get(mode, None)
     for element in elements:
+        res_element = get_result_tables(element, suffix)
+        if res_element in exclude and res_element in net:
+            net[res_element] = net[res_element].reindex(net[element].index)
+            continue
         init_element(net, element, suffix)
 
 
@@ -291,7 +379,7 @@ def reset_results(net, mode="pf"):
     suffix = suffix_mode.get(mode, None)
     for element in elements:
         empty_res_element(net, element, suffix)
-    if "res_cost" in net.keys():
+    if "res_cost" in net:
         del net["res_cost"]
 
 
@@ -310,35 +398,34 @@ def _ppci_bus_to_ppc(result, ppc):
             updated_bus[n_rows_result:, :bus_cols] = ppc[bus_table][n_rows_result:, :]
         ppc[bus_table] = updated_bus
 
-    ppc['svc'][result["internal"]['svc_is'], :] = result['svc'][:, :]
-    ppc['ssc'][result["internal"]['ssc_is'], :] = result['ssc'][:, :]
-    ppc['vsc'][result["internal"]['vsc_is'], :] = result['vsc'][:, :]
+    ppc["svc"][result["internal"]["svc_is"], :] = result["svc"][:, :]
+    ppc["ssc"][result["internal"]["ssc_is"], :] = result["ssc"][:, :]
+    ppc["vsc"][result["internal"]["vsc_is"], :] = result["vsc"][:, :]
 
 
 def _ppci_branch_to_ppc(result, ppc):
     # in service branches and gens are taken from 'internal'
-    branch_cols = np.shape(ppc['branch'])[1]
-    ppc['branch'][result["internal"]['branch_is'], :branch_cols] = result['branch'][:, :branch_cols]
+    branch_cols = np.shape(ppc["branch"])[1]
+    ppc["branch"][result["internal"]["branch_is"], :branch_cols] = result["branch"][:, :branch_cols]
 
-    ppc['tcsc'][result["internal"]['tcsc_is'], :] = result['tcsc'][:, :]
+    ppc["tcsc"][result["internal"]["tcsc_is"], :] = result["tcsc"][:, :]
 
-    ppc['branch_dc'][result["internal"]['branch_dc_is'], :] = result['branch_dc'][:, :]
+    ppc["branch_dc"][result["internal"]["branch_dc_is"], :] = result["branch_dc"][:, :]
 
 
 def _ppci_gen_to_ppc(result, ppc):
-    gen_cols = np.shape(ppc['gen'])[1]
-    ppc['gen'][result["internal"]['gen_is'], :gen_cols] = result['gen'][:, :gen_cols]
+    gen_cols = np.shape(ppc["gen"])[1]
+    ppc["gen"][result["internal"]["gen_is"], :gen_cols] = result["gen"][:, :gen_cols]
 
 
 def _ppci_other_to_ppc(result, ppc, mode):
-
     if mode != "sc" and mode != "se":
-        ppc['success'] = result['success']
-        ppc['et'] = result['et']
+        ppc["success"] = result["success"]
+        ppc["et"] = result["et"]
 
-    if mode == 'opf':
-        ppc['obj'] = result['f']
-        ppc['internal_gencost'] = result['gencost']
+    if mode == "opf":
+        ppc["obj"] = result["f"]
+        ppc["internal_gencost"] = result["gencost"]
 
     if "iterations" in result:
         ppc["iterations"] = result["iterations"]
@@ -350,21 +437,20 @@ def _ppci_internal_to_ppc(result, ppc):
         # if branch current matrices have been stored they need to include out of service elements
         if key in BRANCH_RESULTS_KEYS:
             # n_buses = np.shape(ppc['bus'])[0]
-            n_branches = np.shape(ppc['branch'])[0]
+            n_branches = np.shape(ppc["branch"])[0]
             # n_rows_result = np.shape(result['bus'])[0]
             # update_matrix = np.empty((n_branches, n_buses)) * np.nan
             # update_matrix[result["internal"]['branch_is'], :n_rows_result] = result["internal"][key]
 
             # To select only required buses and pad one column of nan value for oos bus
-            update_matrix = np.empty((n_branches, value.shape[1]+1)) * 0.0
-            update_matrix[result["internal"]['branch_is'],
-                          :value.shape[1]] = result["internal"][key]
-            ppc['internal'][key] = update_matrix
+            update_matrix = np.empty((n_branches, value.shape[1] + 1)) * 0.0
+            update_matrix[result["internal"]["branch_is"], : value.shape[1]] = result["internal"][key]
+            ppc["internal"][key] = update_matrix
             if "br_res_ks_ppci_bus" in result["internal"]:
                 br_res_ks_ppci_bus = np.r_[result["internal"]["br_res_ks_ppci_bus"], [-1]]
             else:
                 br_res_ks_ppci_bus = np.r_[np.arange(value.shape[1]), [-1]]
-            ppc['internal'][key] = pd.DataFrame(data=update_matrix, columns=br_res_ks_ppci_bus)
+            ppc["internal"][key] = pd.DataFrame(data=update_matrix, columns=br_res_ks_ppci_bus)
         else:
             ppc["internal"][key] = value
 

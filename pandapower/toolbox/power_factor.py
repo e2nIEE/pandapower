@@ -1,18 +1,21 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "cosphi_from_pos",
+    "cosphi_from_pq",
+    "cosphi_pos_neg_from_pq",
+    "cosphi_to_pos",
+    "pq_from_cosphi",
+    "signing_system_value",
+]
+
+import logging
+
 import numpy as np
 
 from pandapower.auxiliary import ensure_iterability
 from pandapower.toolbox.element_selection import pp_elements
-
-try:
-    from networkx.utils.misc import graphs_equal
-    GRAPHS_EQUAL_POSSIBLE = True
-except ImportError:
-    GRAPHS_EQUAL_POSSIBLE = False
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -28,8 +31,7 @@ def signing_system_value(element_type):
     elif element_type in pp_elements(bus=False, other_elements=False):
         return 1
     else:
-        raise ValueError("This function is defined for bus and branch elements, not for "
-                         f"'{element_type}'.")
+        raise ValueError(f"This function is defined for bus and branch elements, not for '{element_type}'.")
 
 
 def pq_from_cosphi(s, cosphi, qmode, pmode):
@@ -62,27 +64,31 @@ def pq_from_cosphi(s, cosphi, qmode, pmode):
 
 def _pq_from_cosphi(s, cosphi, qmode, pmode):
     if qmode in ("ind", "cap"):
-        logger.warning('capacitive or inductive behavior will be replaced by more clear terms ' +
-                       '"underexcited" (Q absorption, decreases voltage) and "overexcited" ' +
-                       '(Q injection, increases voltage). Please use "underexcited" ' +
-                       'in place of "ind" and "overexcited" in place of "cap".')
+        logger.warning(
+            "capacitive or inductive behavior will be replaced by more clear terms "
+            + '"underexcited" (Q absorption, decreases voltage) and "overexcited" '
+            + '(Q injection, increases voltage). Please use "underexcited" '
+            + 'in place of "ind" and "overexcited" in place of "cap".'
+        )
     if qmode == "ind" or qmode == "underexcited":
         qsign = 1
     elif qmode == "cap" or qmode == "overexcited":
         qsign = -1
     else:
-        raise ValueError('Unknown mode %s - specify "underexcited" (Q absorption, decreases voltage'
-                         ') or "overexcited" (Q injection, increases voltage)' % qmode)
+        raise ValueError(
+            f'Unknown mode {qmode} - specify "underexcited" (Q absorption, decreases voltage) or '
+            f'"overexcited" (Q injection, increases voltage)'
+        )
 
     if pmode == "load":
         psign = 1
     elif pmode == "gen":
         psign = -1
     else:
-        raise ValueError('Unknown mode %s - specify "load" or "gen"' % pmode)
+        raise ValueError(f'Unknown mode {pmode} - specify "load" or "gen"')
 
     p = s * cosphi
-    q = psign * qsign * np.sqrt(s ** 2 - p ** 2)
+    q = psign * qsign * np.sqrt(s**2 - p**2)
     return p, q
 
 
@@ -100,10 +106,12 @@ def _pq_from_cosphi_bulk(s, cosphi, qmode, pmode, len_=None):
     is_ind = qmode == "ind"
     is_cap = qmode == "cap"
     if any(is_ind) or any(is_cap):
-        logger.warning('capacitive or inductive behavior will be replaced by more clear terms ' +
-                       '"underexcited" (Q absorption, decreases voltage) and "overexcited" ' +
-                       '(Q injection, increases voltage). Please use "underexcited" ' +
-                       'in place of "ind" and "overexcited" in place of "cap".')
+        logger.warning(
+            "capacitive or inductive behavior will be replaced by more clear terms "
+            + '"underexcited" (Q absorption, decreases voltage) and "overexcited" '
+            + '(Q injection, increases voltage). Please use "underexcited" '
+            + 'in place of "ind" and "overexcited" in place of "cap".'
+        )
     qmode[is_ind] = "underexcited"
     qmode[is_cap] = "overexcited"
 
@@ -123,7 +131,7 @@ def _pq_from_cosphi_bulk(s, cosphi, qmode, pmode, len_=None):
 
     # calculate p and q
     p = s * cosphi
-    q = psign * qsign * np.sqrt(s ** 2 - p ** 2)
+    q = psign * qsign * np.sqrt(s**2 - p**2)
 
     return p, q
 
@@ -149,7 +157,7 @@ def _cosphi_from_pq(p, q):
         logger.warning("A cosphi from p=0 is undefined.")
     else:
         cosphi = np.cos(np.arctan(q / p))
-    s = (p ** 2 + q ** 2) ** 0.5
+    s = (p**2 + q**2) ** 0.5
     pmode = ["undef", "load", "gen"][int(np.sign(p))]
     qmode = ["underexcited", "underexcited", "overexcited"][int(np.sign(q))]
     return cosphi, s, qmode, pmode
@@ -168,10 +176,11 @@ def _cosphi_from_pq_bulk(p, q, len_=None):
         cosphi[p_is_zero] = np.nan
         logger.warning("A cosphi from p=0 is undefined.")
     cosphi[~p_is_zero] = np.cos(np.arctan(q[~p_is_zero] / p[~p_is_zero]))
-    s = (p ** 2 + q ** 2) ** 0.5
+    s = (p**2 + q**2) ** 0.5
     pmode = np.array(["undef", "load", "gen"])[np.sign(p).astype(np.int64)]
     qmode = np.array(["underexcited", "underexcited", "overexcited"])[np.sign(q).astype(np.int64)]
     return cosphi, s, qmode, pmode
+
 
 # -------------------------------------------------------------------------------------------------
 """
@@ -223,9 +232,8 @@ def cosphi_pos_neg_from_pq(p, q):
     return np.copysign(cosphis, q)
 
 
-
 def cosphi_to_pos(cosphi):
-    """ Signed cosphi values are converted into positive cosphi values from 0 to 1 and 1 to 2.
+    """Signed cosphi values are converted into positive cosphi values from 0 to 1 and 1 to 2.
 
     Examples
     --------
@@ -243,7 +251,7 @@ def cosphi_to_pos(cosphi):
     pandapower.toolbox.cosphi_from_pos
     pandapower.toolbox.cosphi_pos_neg_from_pq
     """
-    multiple = not (isinstance(cosphi, float) or isinstance(cosphi, int))
+    multiple = not isinstance(cosphi, (float, int))
     cosphi = np.array(ensure_iterability(cosphi))
     cosphi[cosphi < 0] += 2
     if multiple:
@@ -253,7 +261,7 @@ def cosphi_to_pos(cosphi):
 
 
 def cosphi_from_pos(cosphi):
-    """ All positive cosphi values are converted back to signed cosphi values
+    """All positive cosphi values are converted back to signed cosphi values
 
     Examples
     --------
@@ -271,7 +279,7 @@ def cosphi_from_pos(cosphi):
     pandapower.toolbox.cosphi_to_pos
     pandapower.toolbox.cosphi_pos_neg_from_pq
     """
-    multiple = not (isinstance(cosphi, float) or isinstance(cosphi, int))
+    multiple = not isinstance(cosphi, (float, int))
     cosphi = np.array(ensure_iterability(cosphi))
     cosphi[cosphi > 1] -= 2
     if multiple:

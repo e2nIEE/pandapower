@@ -2,7 +2,6 @@ import pandas as pd
 import pandera.pandas as pa
 
 from pandapower.network_schema.tools.validation.column_condition import create_lower_equals_column_check
-from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
 
 _gen_columns = {
     "name": pa.Column(
@@ -15,7 +14,7 @@ _gen_columns = {
         description="type variable to classify generators naming conventions: “sync” - synchronous generator “async” - asynchronous generator",
         metadata={"cim": True},
     ),
-    "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}),
+    "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus"}),
     "p_mw": pa.Column(float, description="active power of the generator [MW]"),
     "vm_pu": pa.Column(
         float, pa.Check.gt(0), description="voltage set point of the generator [p.u.]", metadata={"default": 1.0}
@@ -30,14 +29,14 @@ _gen_columns = {
     ),
     "max_q_mvar": pa.Column(
         float,
-        nullable=True,
+        nullable=False,
         required=False,
         description="maximum reactive power of the generator [MVAr]",
         metadata={"opf": True, "q_lim_enforced": True, "cim": True},
     ),
     "min_q_mvar": pa.Column(
         float,
-        nullable=True,
+        nullable=False,
         required=False,
         description="minimum reactive power of the generator [MVAr]",
         metadata={"opf": True, "q_lim_enforced": True, "cim": True},
@@ -46,10 +45,10 @@ _gen_columns = {
         float, pa.Check.ge(0), description="scaling factor for the active power", metadata={"default": 1.0}
     ),
     "max_p_mw": pa.Column(
-        float, nullable=True, required=False, description="maximum active power", metadata={"opf": True, "cim": True}
+        float, nullable=False, required=False, description="maximum active power", metadata={"opf": True, "cim": True}
     ),
     "min_p_mw": pa.Column(
-        float, nullable=True, required=False, description="minimum active power", metadata={"opf": True, "cim": True}
+        float, nullable=False, required=False, description="minimum active power", metadata={"opf": True, "cim": True}
     ),
     "vn_kv": pa.Column(
         float,
@@ -132,25 +131,33 @@ _gen_columns = {
     ),
     "min_vm_pu": pa.Column(
         float,
-        pa.Check.gt(0),
-        nullable=True,
+        pa.Check.ge(0),
+        nullable=False,
         required=False,
         description="Minimum voltage magnitude. If not set, the bus voltage limit is taken - necessary for OPF.",
         metadata={"opf": True, "default": 0.0},
     ),
     "max_vm_pu": pa.Column(
         float,
-        pa.Check.gt(0),
-        nullable=True,
+        checks=[pa.Check.gt(0), pa.Check.le(2)],
+        nullable=False,
         required=False,
         description="Maximum voltage magnitude. If not set, the bus voltage limit is taken - necessary for OPF",
         metadata={"opf": True, "default": 2.0},
     ),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="element rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="origin_class rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "terminal": pa.Column(
         pd.StringDtype,
@@ -202,18 +209,12 @@ _gen_columns = {
         metadata={"cim": True, "doc": False},
     ),
 }
-gen_checks = create_column_dependency_checks_from_metadata(
-    [
-        "opf",
-        # "sc",
-        "q_lim_enforced",
-        "qcc",
-    ],
-    _gen_columns,
-)
-gen_checks.append(create_lower_equals_column_check(first_element="min_q_mvar", second_element="max_q_mvar"))
-gen_checks.append(create_lower_equals_column_check(first_element="min_p_mw", second_element="max_p_mw"))
-gen_checks.append(create_lower_equals_column_check(first_element="min_vm_pu", second_element="max_vm_pu"))
+
+gen_checks = [
+    create_lower_equals_column_check(first_element="min_q_mvar", second_element="max_q_mvar"),
+    create_lower_equals_column_check(first_element="min_p_mw", second_element="max_p_mw"),
+    create_lower_equals_column_check(first_element="min_vm_pu", second_element="max_vm_pu"),
+]
 gen_schema = pa.DataFrameSchema(
     _gen_columns,
     name="gen",

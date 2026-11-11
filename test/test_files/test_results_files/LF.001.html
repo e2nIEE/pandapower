@@ -1,0 +1,197 @@
+﻿<!DOCTYPE HTML>
+<html><head>
+<title>Lastfluss</title>
+<style type="text/css">body { font: menu }
+table { font: menu }
+a:link { color: #0066cc; text-decoration: none }
+a:visited { color: #0066cc; text-decoration: none }
+a:hover { text-decoration: underline }
+.title { font-size: 13.5pt; padding-top:0px }
+.erg { border:solid 1px #CDCDCD; border-collapse:collapse; }
+.erg td { border-left:solid 1px #CDCDCD; padding: 2px 6px 2px 6px; text-align:right }
+.erg th { border-left:solid 1px #CDCDCD; padding: 2px 6px 2px 6px; background-color: #EEEEEE }
+.erg tr:nth-child(2n) { background-color: #FaFaFa; }
+.info { border:solid 1px #CDCDCD; border-collapse:collapse; }
+.info td { border-left:solid 1px #CDCDCD; padding: 2px 6px 2px 6px; text-align:left }
+.info th { border-left:solid 1px #CDCDCD; padding: 2px 6px 2px 6px; background-color: #EEEEEE }
+.sep { border-bottom:solid 1px #CDCDCD; padding:0px }
+h1 { color: #224998; font-size: 12pt;padding-top:10px }
+h2 { color: #224998; font-size: 9pt }
+.legende { border:solid 1px white; min-width: 350px; width:400px }
+.legende td { background:#EEEEEE;border-left:solid 1px white; }
+.legende th { background:#CDCDCD;border-color:white;font-weight:bold; }
+.legende .cellRight{ text-align:right; }
+.timelegend{ min-width: 100px; width:150px }
+.timelegend .cellRight{ text-align:right; }
+.alternate { background-color: #FaFaFa; }
+.inhalt {}
+.header {}
+.red{ color:#FF0000; }
+.darkred{ color:#DF0101; }
+pre { font:Arial; font-size:100%; } 
+.lheader{ background-color:#848484; border-bottom:solid 2px black; font-weight: bold; }.theader{ font-weight: bold; }.code { margin:0; font-family:Courier; font-size:8.0pt; }
+.ListHeader{ font-size:105%; text-decoration: underline; font-weight: bold; }
+.highlight{ text-decoration: underline; font-weight: bold; }
+.error{ color:#FF0000; font-size: 110%; padding:10px; }
+.errorListItem{ color:#FF0000; }
+.nobotspace{ margin-bottom:0px; padding-bottom:0px } 
+.notopspace{ margin-top:0px; padding-top:0px } 
+ul { margin-left:0px; padding-left:16px }
+.togglebutton {color:#0066cc;cursor:pointer; }
+.togglesection { margin-left:16px; }</style><script type="text/javascript">
+function alternate() {
+   var tables = document.getElementsByTagName("table");
+   for( i = 0; i < tables.length; ++i ) {
+      if( tables[i].className != "erg" )
+         continue;
+      var rows = tables[i].getElementsByTagName("tr");
+      var iCnt = 0
+      for( j = 0; j < rows.length; j++ ) {
+         if( rows[j].className == "sep" || rows[j].className == "header" )
+            continue;
+         if(iCnt % 2 != 0)
+            rows[j].className = "alternate";
+         iCnt = iCnt + 1;
+      }
+   }
+}
+function getElementsByClassName( clsName ) {
+    var retVal = new Array();
+    var elements = document.getElementsByTagName("*");
+    for(var i = 0;i < elements.length; ++i){
+        if(elements[i].className.indexOf(" ") >= 0){
+            var classes = elements[i].className.split(" ");
+            for(var j = 0;j < classes.length; ++j){
+                if(classes[j] == clsName)
+                    retVal.push(elements[i]);
+            }
+        }
+        else if(elements[i].className == clsName)
+            retVal.push(elements[i]);
+    }
+    return retVal;
+}
+function toggleItemsByClassName( className ) {
+    var retElemArray = getElementsByClassName( className );
+    if( retElemArray.length == 0 ) return -1;
+    var hide = retElemArray[0].style.display != 'none' ? 1 : 0;
+    for( var i = 0; i < retElemArray.length; ++i )
+        retElemArray[i].style.display = hide ? 'none' : '';
+    return hide;
+}
+function toggleItemById( id ) {
+    var element = document.getElementById(id);
+    if( element == null || element == undefined ) return -1;
+    var hide = element.style.display != 'none' ? 1 : 0;
+    element.style.display = hide ? 'none' : '';
+    return hide;
+}
+function toggleText( element, retVal, textShow, textHide ) {
+     switch( retVal ) {
+     case -1: break;
+     case 0: element.innerHTML = textHide; break;
+     case 1: element.innerHTML = textShow; break;
+     }
+}
+</script>
+</head><body onload="alternate()"><h1 class="title">Lastfluss</h1><table class="legende"><tr>
+<td>Netzname</td>
+<td>test_results</td>
+</tr>
+<tr>
+<td>Variante</td>
+<td></td>
+</tr>
+<tr>
+<td>Berechnungsparameter</td>
+<td>LF</td>
+</tr>
+<tr>
+<td>Berechnungszeitpunkt</td>
+<td>Thu Dec 15 2016, 18:31:02</td>
+</tr>
+<tr>
+<td>Programmversion</td>
+<td>PSS SINCAL Platform 12.0 Update3</td>
+</tr>
+</table><h1>Simulation log</h1><p style="margin-bottom:0;font-weight:bold;">Initializing</p>
+<p style="margin:0;">Initialize electro calculation...</p>
+<p style="margin:0;">Initialize done!</p>
+<p style="margin-bottom:0;font-weight:bold;">Loading</p>
+Load electro database&nbsp;&nbsp;<span class="togglebutton" onclick="toggleText( this, toggleItemById('Loading'), '[expand]', '[hide]' )" onmouseover="style.textDecoration='underline';" onmouseout="style.textDecoration='none';">[expand]</span>
+<div id="Loading" class="togglesection" style="display:none">
+<p style="margin:0;">Load records for DB: "D:\Python\pandapower\pandapower\test\test_files\test_results_files\database.mdb"</p>
+<p style="margin:0;">Loading table "Version" succeeded! Loaded records: 1</p>
+<p style="margin:0;">Loading table "CalcParameter" succeeded! Loaded records: 1</p>
+<p style="margin:0;">Loading table "VoltageLevel" succeeded! Loaded records: 2</p>
+<p style="margin:0;">Loading table "NetworkGroup" succeeded! Loaded records: 1</p>
+<p style="margin:0;">Loading table "Node" succeeded! Loaded records: 3</p>
+<p style="margin:0;">Loading table "Element" succeeded! Loaded records: 6</p>
+<p style="margin:0;">Loading table "Terminal" succeeded! Loaded records: 10</p>
+<p style="margin:0;">Loading table "Infeeder" succeeded! Loaded records: 1</p>
+<p style="margin:0;">Loading table "TwoWindingTransformer" succeeded! Loaded records: 3</p>
+<p style="margin:0;">Loading table "Load" succeeded! Loaded records: 1</p>
+<p style="margin:0;">Loading table "Line" succeeded! Loaded records: 1</p>
+<p style="margin:0;">29 records successfully loaded!</p>
+</div>
+<p class="" style="margin:0;">Loading succeeded!</p>
+<p class="" style="margin-bottom:0;font-weight:bold;">Calculation</p>
+Lastfluss&nbsp;&nbsp;<span class="togglebutton" onclick="toggleText( this, toggleItemById('LF1'), '[expand]', '[hide]' )" onmouseover="style.textDecoration='underline';" onmouseout="style.textDecoration='none';">[expand]</span>
+<div id="LF1" class="togglesection" style="display:none">
+<p class="" style="margin-bottom:0;font-weight:bold;">Newton Raphson</p>
+<BR><table><tr><td align="left" style="border:none">Loadflow Method</td><td style="border:none">Newton Raphson</td></tr>
+</table>
+<BR><table class="erg"><tr class="header">
+<th>Iteration</th>
+<th>Voltage Accuracy</th>
+<th>Power Accuracy</th>
+<th>Control used</th>
+</tr>
+<tr class="sep"><td class="sep" colspan="4" style="padding:0px;"></td></tr><tr>
+<td>0</td>
+<td>  0.00000000</td>
+<td>  0.00000000</td>
+<td></td>
+</tr>
+<tr>
+<td>1</td>
+<td>  0.00444456</td>
+<td>  0.00000000</td>
+<td></td>
+</tr>
+<tr>
+<td>2</td>
+<td>  0.04013740</td>
+<td>  0.00000000</td>
+<td></td>
+</tr>
+<tr>
+<td>3</td>
+<td>  0.00166850</td>
+<td>  0.00000000</td>
+<td></td>
+</tr>
+<tr>
+<td>4</td>
+<td>  0.00000293</td>
+<td>  0.00000000</td>
+<td></td>
+</tr>
+</table></div>
+<BR><p class="" style="margin:0;">Calculation done!</p>
+<p class="" style="margin-bottom:0;font-weight:bold;">Storing</p>
+Store results&nbsp;&nbsp;<span class="togglebutton" onclick="toggleText( this, toggleItemById('Storing'), '[expand]', '[hide]' )" onmouseover="style.textDecoration='underline';" onmouseout="style.textDecoration='none';">[expand]</span>
+<div id="Storing" class="togglesection" style="display:none">
+<p class="" style="margin:0;">Store results for DB: "D:\Python\pandapower\pandapower\test\test_files\test_results_files\database.mdb" ...</p>
+<p class="" style="margin:0;">Writing table "LFAccurResult" succeeded! Stored results: 1</p>
+<p class="" style="margin:0;">Writing table "LFBranchResult" succeeded! Stored results: 8</p>
+<p class="" style="margin:0;">Writing table "LFGroupResult" succeeded! Stored results: 1</p>
+<p class="" style="margin:0;">Writing table "LFParNetLossesResult" succeeded! Stored results: 2</p>
+<p class="" style="margin:0;">Writing table "LFPowBalanceResult" succeeded! Stored results: 1</p>
+<p class="" style="margin:0;">Writing table "LFPowDataResult" succeeded! Stored results: 1</p>
+<p class="" style="margin:0;">Writing table "LFTranTapPosResult" succeeded! Stored results: 2</p>
+<p class="" style="margin:0;">19 results successfully stored!</p>
+</div>
+<p class="" style="margin:0;">Storing done!</p>
+</body>
+</html>

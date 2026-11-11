@@ -15,6 +15,7 @@ Refer to :ref:`time series overview <timeseriesloop>` for details and to :ref:`e
     timeseries/run_function
     timeseries/data_source
     timeseries/output_writer
+    timeseries/output_streamer
 
 
 Jupyter Notebooks

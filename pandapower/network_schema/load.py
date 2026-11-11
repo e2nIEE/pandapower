@@ -1,13 +1,11 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
-
 _load_columns = {
     "name": pa.Column(
         pd.StringDtype, nullable=True, required=False, description="name of the load", metadata={"cim": True}
     ),
-    "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}),
+    "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus"}),
     "p_mw": pa.Column(float, description="active power of the load [MW], a positiv value means power consumption"),
     "q_mvar": pa.Column(
         float,
@@ -56,7 +54,6 @@ _load_columns = {
     "in_service": pa.Column(bool, description="specifies if the load is in service.", metadata={"default": True}),
     "type": pa.Column(
         pd.StringDtype,
-        pa.Check.isin(["wye", "delta"]),
         nullable=True,
         required=False,
         description="Connection Type of 3 Phase Load(Valid for three phase load flow only) Naming convention: wye, delta",
@@ -79,10 +76,18 @@ _load_columns = {
     "max_q_mvar": pa.Column(float, nullable=True, required=False, description="Maximum reactive power"),
     "min_q_mvar": pa.Column(float, nullable=True, required=False, description="Minimum reactive power"),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="element rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="origin_class rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "terminal": pa.Column(
         pd.StringDtype,
@@ -101,7 +106,6 @@ _load_columns = {
 }
 load_schema = pa.DataFrameSchema(
     _load_columns,
-    checks=create_column_dependency_checks_from_metadata(["zip"], _load_columns),
     name="load",
     strict=False,
 )

@@ -6,9 +6,9 @@ pandapower combines the data analysis library `pandas <https://pandas.pydata.org
 `PYPOWER <https://pypi.org/project/PYPOWER/>`_ to create an easy to use network calculation program
 aimed at automation of analysis and optimization in power systems.
 
-.. image:: /pics/pandapower_color.png
+.. image:: /pics/pandapower_color.svg
     :target: http://pandapower.org/
-    :width: 30em
+    :width: 250em
     :align: left
 
 |
@@ -49,6 +49,7 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
     std_types
     powerflow
     contingency
+    sensitivity
     opf
     shortcircuit
     estimation

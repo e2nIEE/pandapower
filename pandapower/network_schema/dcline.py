@@ -1,8 +1,6 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
-
 _dcline_columns = {
     "name": pa.Column(
         pd.StringDtype, nullable=True, required=False, description="name of the generator", metadata={"cim": True}
@@ -11,13 +9,13 @@ _dcline_columns = {
         int,
         pa.Check.ge(0),
         description="Index of bus where the dc line starts",
-        metadata={"foreign_key": "bus.index"},
+        metadata={"foreign_key": "bus"},
     ),
     "to_bus": pa.Column(
         int,
         pa.Check.ge(0),
         description="Index of bus where the dc line ends",
-        metadata={"foreign_key": "bus.index"},
+        metadata={"foreign_key": "bus"},
     ),
     "p_mw": pa.Column(float, description="Active power transmitted from ‘from_bus’ to ‘to_bus’"),
     "loss_percent": pa.Column(
@@ -72,10 +70,18 @@ _dcline_columns = {
     ),
     "in_service": pa.Column(bool, description="specifies if the line is in service.", metadata={"default": True}),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="element rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="origin_class rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "description": pa.Column(
         pd.StringDtype,
@@ -101,7 +107,6 @@ _dcline_columns = {
 }
 dcline_schema = pa.DataFrameSchema(
     _dcline_columns,
-    checks=create_column_dependency_checks_from_metadata(["opf"], _dcline_columns),
     name="dcline",
     strict=False,
 )

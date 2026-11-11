@@ -3,15 +3,20 @@
 
 from __future__ import annotations
 
+__all__ = [
+    "create_impedance",
+    "create_impedances",
+    "create_series_reactor_as_impedance",
+    "create_tcsc",
+]
+
 import logging
-from typing import Iterable, Sequence
+from collections.abc import Iterable, Sequence
 
 import numpy as np
 import numpy.typing as npt
+from numpy import nan
 
-from pandapower.network import pandapowerNet
-from pandapower.network_structure import get_default_value
-from pandapower.pp_types import Int
 from pandapower.create._utils import (
     _add_to_entries_if_not_nan,
     _check_branch_element,
@@ -22,6 +27,9 @@ from pandapower.create._utils import (
     _set_multiple_entries,
     _set_value_if_not_nan,
 )
+from pandapower.network import pandapowerNet
+from pandapower.network_structure import get_default_value
+from pandapower.pp_types import Int
 
 logger = logging.getLogger(__name__)
 
@@ -50,6 +58,8 @@ def create_impedance(
     bf0_pu: float | None = None,
     gt0_pu: float | None = None,
     bt0_pu: float | None = None,
+    min_angle_degree: float = nan,
+    max_angle_degree: float = nan,
     **kwargs,
 ) -> Int:
     """
@@ -86,6 +96,14 @@ def create_impedance(
 
     in_service : bool, optional
         The service status of the impedance element. Default is True.
+
+    min_angle_degree : float, optional
+        Minimum voltage angle difference between from_bus and to_bus (va_from - va_to) in degree, considered in the
+        OPF. NaN means unconstrained.
+
+    max_angle_degree : float, optional
+        Maximum voltage angle difference between from_bus and to_bus (va_from - va_to) in degree, considered in the
+        OPF. NaN means unconstrained.
 
     index : int, optional
         The index of the impedance element. Default is None.
@@ -200,6 +218,9 @@ def create_impedance(
         _set_value_if_not_nan(net, index, gt0_pu, "gt0_pu", "impedance")
         _set_value_if_not_nan(net, index, bt0_pu, "bt0_pu", "impedance")
 
+    _set_value_if_not_nan(net, index, min_angle_degree, "min_angle_degree", "impedance")
+    _set_value_if_not_nan(net, index, max_angle_degree, "max_angle_degree", "impedance")
+
     return index
 
 
@@ -227,6 +248,8 @@ def create_impedances(
     bf0_pu: float | Iterable[float] | None = None,
     gt0_pu: float | Iterable[float] | None = None,
     bt0_pu: float | Iterable[float] | None = None,
+    min_angle_degree: float | Iterable[float] = nan,
+    max_angle_degree: float | Iterable[float] = nan,
     **kwargs,
 ) -> npt.NDArray[np.array]:
     """
@@ -263,6 +286,14 @@ def create_impedances(
 
     in_service : bool, optional
         The service status of the impedance element. Default is True.
+
+    min_angle_degree : float, optional
+        Minimum voltage angle difference between from_bus and to_bus (va_from - va_to) in degree, considered in the
+        OPF. NaN means unconstrained.
+
+    max_angle_degree : float, optional
+        Maximum voltage angle difference between from_bus and to_bus (va_from - va_to) in degree, considered in the
+        OPF. NaN means unconstrained.
 
     index : int, optional
         The index of the impedance element. Default is None.
@@ -375,6 +406,9 @@ def create_impedances(
         _add_to_entries_if_not_nan(net, "impedance", entries, index, "gt0_pu", gt0_pu)
         _add_to_entries_if_not_nan(net, "impedance", entries, index, "bt0_pu", bt0_pu)
 
+    _add_to_entries_if_not_nan(net, "impedance", entries, index, "min_angle_degree", min_angle_degree)
+    _add_to_entries_if_not_nan(net, "impedance", entries, index, "max_angle_degree", max_angle_degree)
+
     _set_multiple_entries(net, "impedance", index, entries=entries)
 
     return index
@@ -483,20 +517,19 @@ def create_series_reactor_as_impedance(
         index of the created element
     """
     if net.bus.at[from_bus, "vn_kv"] == net.bus.at[to_bus, "vn_kv"]:
-        vn_kv = net.bus.at[from_bus, "vn_kv"]
+        vn_kv: float = net.bus.at[from_bus, "vn_kv"]  # type: ignore[assignment]
     else:
         raise UserWarning(
-            "Unable to infer rated voltage vn_kv for series reactor %s due to "
-            "different rated voltages of from_bus %d (%.3f p.u.) and "
-            "to_bus %d (%.3f p.u.)"
-            % (name, from_bus, net.bus.at[from_bus, "vn_kv"], to_bus, net.bus.at[to_bus, "vn_kv"])
+            f"Unable to infer rated voltage vn_kv for series reactor {name} due to different rated voltages of "
+            f"from_bus {from_bus} ({net.bus.at[from_bus, 'vn_kv']:.3f} p.u.) and "
+            f"to_bus {to_bus} ({net.bus.at[to_bus, 'vn_kv']:.3f} p.u.)"
         )
 
-    base_z_ohm = vn_kv**2 / sn_mva
-    rft_pu = r_ohm / base_z_ohm
-    xft_pu = x_ohm / base_z_ohm
-    rft0_pu = r0_ohm / base_z_ohm if r0_ohm is not None else None
-    xft0_pu = x0_ohm / base_z_ohm if x0_ohm is not None else None
+    base_z_ohm: float = vn_kv**2 / sn_mva
+    rft_pu: float = r_ohm / base_z_ohm
+    xft_pu: float = x_ohm / base_z_ohm
+    rft0_pu: float | None = r0_ohm / base_z_ohm if r0_ohm is not None else None
+    xft0_pu: float | None = x0_ohm / base_z_ohm if x0_ohm is not None else None
 
     index = create_impedance(
         net,

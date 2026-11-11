@@ -1,7 +1,48 @@
+import importlib.util
+import logging
+import os
+from pathlib import Path
+
 import pandera as pa
 
+logger = logging.getLogger()
 
-def get_dtypes(schema: pa.DataFrameSchema, required_only: bool = True, metadata: list = []) -> dict:
+
+def get_element_schema(element_name: str) -> pa.DataFrameSchema | None:
+    """
+    get the pandera DataFrameSchema for an element by its name.
+
+    Parameters:
+        element_name: the name of the element
+
+    Returns:
+         the pandera DataFrameSchema for the element or None if it can't be found.
+    """
+
+    def _dynamic_import(element, schema_path):
+        # Dynamic import for schemata from files
+        spec = importlib.util.spec_from_file_location(element, schema_path)
+        if spec is None:
+            logger.warning(f"Schema for {element} not found, no spec")
+            return None
+        schema_module = importlib.util.module_from_spec(spec)
+        loader = spec.loader
+        if loader is None:
+            logger.warning(f"Schema for {element} not found, no loader")
+            return None
+        loader.exec_module(schema_module)
+        return schema_module
+
+    schema_path = Path(Path(__file__).parents[1], f"{element_name}.py")
+    if not os.path.exists(schema_path):
+        return None
+    schema_module = _dynamic_import(element_name, schema_path)
+    if schema_module is None:
+        return None
+    return getattr(schema_module, f"{element_name}_schema", None)
+
+
+def get_dtypes(schema: pa.DataFrameSchema, required_only: bool = True, metadata: list | None = None) -> dict:
     """
     Extract column data types from a Pandera DataFrame schema.
 
@@ -39,6 +80,9 @@ def get_dtypes(schema: pa.DataFrameSchema, required_only: bool = True, metadata:
         When metadata parameter is provided, columns with matching metadata keys
         having truthy values will be included regardless of required_only setting.
     """
+
+    if metadata is None:
+        metadata = []
     return {
         name: col.dtype.type
         for name, col in schema.columns.items()
@@ -50,8 +94,9 @@ def get_dtypes(schema: pa.DataFrameSchema, required_only: bool = True, metadata:
 
 
 def create_docu_csv_from_schema(schema: pa.DataFrameSchema):
-    import pandas as pd
     import json
+
+    import pandas as pd
 
     schema_json = schema.to_json()
     schema_dict = json.loads(schema_json)
@@ -80,7 +125,7 @@ def create_docu_csv_from_schema(schema: pa.DataFrameSchema):
     def _get_metadata(schema: pa.DataFrameSchema, name: str, kind: str):
         try:
             return schema.columns[name].metadata[kind]
-        except:
+        except Exception:  # noqa: BLE001
             return False
 
     for col_name, col_details in schema_dict["columns"].items():

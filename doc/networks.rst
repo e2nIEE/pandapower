@@ -8,10 +8,11 @@ Besides creating your own grids using pandapower functions, pandapower provides 
 benchmark grids through the networks module.
 
 The pandapower networks module contains example grids, simple test grids, randomly generated grids, CIGRE test grids,
-IEEE case files (including 3-phase grids) and synthetic low voltage grids from Georg Kerber, Lindner et. al. and Dickert
-et. al. If you want to evaluate your algorithms on benchmark grids with corresponding full-year load, generation, and
-storage profiles or want to publish your results in a reproducible manner, we recommend the SimBench repository
-(`SimBench Homepage <https://simbench.de/en/>`__, `SimBench GitHub Repository <https://github.com/e2nIEE/simbench>`__).
+IEEE case files (including 3-phase grids), the LV Schutterwald network and synthetic low voltage grids from Georg
+Kerber, Lindner et. al. and Dickert et. al. If you want to evaluate your algorithms on benchmark grids with
+corresponding full-year load, generation, and storage profiles or want to publish your results in a reproducible
+manner, we recommend the SimBench repository (`SimBench Homepage <https://simbench.de/en/>`__, `SimBench GitHub
+Repository <https://github.com/e2nIEE/simbench>`__).
 
 You can find documentation for the individual network modules of pandapower here:
 
@@ -22,6 +23,7 @@ You can find documentation for the individual network modules of pandapower here
     networks/test
     networks/cigre
     networks/mv_oberrhein
+    networks/lv_schutterwald
     networks/power_system_test_cases
     networks/kerber
     networks/synthetic_voltage_control_lv_networks

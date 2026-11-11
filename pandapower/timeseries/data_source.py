@@ -1,14 +1,11 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-try:
-    import pandaplan.core.pplog as pplog
-except:
-    import logging as pplog
+import logging
 
 from pandapower.io_utils import JSONSerializableClass
 
-logger = pplog.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 class DataSource(JSONSerializableClass):

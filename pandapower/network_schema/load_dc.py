@@ -5,7 +5,7 @@ load_dc_schema = pa.DataFrameSchema(
     {
         "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the load"),
         "bus_dc": pa.Column(
-            int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus_dc.index"}
+            int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus_dc"}
         ),
         "p_dc_mw": pa.Column(float, description="active power of the load [MW] positive value means consumption"),
         "scaling": pa.Column(

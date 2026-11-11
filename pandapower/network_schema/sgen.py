@@ -1,8 +1,6 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
-
 _sgen_columns = {
     "name": pa.Column(
         pd.StringDtype,
@@ -11,7 +9,7 @@ _sgen_columns = {
         description="name of the static generator",
         metadata={"cim": True},
     ),
-    "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}),
+    "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus"}),
     "p_mw": pa.Column(float, description="active power of the static generator [MW]"),
     "q_mvar": pa.Column(float, description="reactive power of the static generator [MVAr]", metadata={"default": 0.0}),
     "sn_mva": pa.Column(
@@ -132,10 +130,18 @@ _sgen_columns = {
         metadata={"sc": True},
     ),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="element rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="origin_class rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "terminal": pa.Column(
         pd.StringDtype,
@@ -205,14 +211,6 @@ sgen_schema = pa.DataFrameSchema(
     _sgen_columns,
     name="sgen",
     strict=False,
-    checks=create_column_dependency_checks_from_metadata(
-        [
-            "opf",
-            # "sc",
-            "qcc",
-        ],
-        _sgen_columns,
-    ),
 )
 
 res_sgen_schema = res_sgen_3ph_schema = pa.DataFrameSchema(

@@ -1,5 +1,6 @@
 import pandas as pd
 import pandera.pandas as pa
+
 from pandapower.network_schema.tools.validation.column_condition import create_lower_equals_column_check
 
 tcsc_schema = pa.DataFrameSchema(
@@ -9,13 +10,13 @@ tcsc_schema = pa.DataFrameSchema(
             int,
             pa.Check.ge(0),
             description="index of the from bus where the TCSC is connected",
-            metadata={"foreign_key": "bus.index"},
+            metadata={"foreign_key": "bus"},
         ),
         "to_bus": pa.Column(
             int,
             pa.Check.ge(0),
             description="index of the to bus where the TCSC is connected",
-            metadata={"foreign_key": "bus.index"},
+            metadata={"foreign_key": "bus"},
         ),
         "x_l_ohm": pa.Column(float, pa.Check.ge(0), description="impedance of the reactor component of TCSC"),
         "x_cvar_ohm": pa.Column(

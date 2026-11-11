@@ -35,38 +35,46 @@ This structure is saved to a ``*.csv`` file and can be read by pandas and passed
 
     from pandapower.control import ConstControl
     from pandapower.networks import mv_oberrhein
-    from pandapower.timeseries import run_timeseries, OutputWriter
+    from pandapower.timeseries import run_timeseries, OutputWriter, OutputStreamer
     from pandapower.timeseries.data_sources.frame_data import DFData
 
     # load a pandapower network
     net = mv_oberrhein(scenario='generation')
-    # number of time steps
-    n_ts = 95
-    # load your timeseries from a file (here csv file)
-    # df = pd.read_csv("sgen_timeseries.csv")
-    # or create a DataFrame with some random time series as an example
-    df = pd.DataFrame(np.random.normal(1., 0.1, size=(n_ts, len(net.sgen.index))),
-                      index=list(range(n_ts)), columns=net.sgen.index) * net.sgen.p_mw.values
-    # create the data source from it
-    ds = DFData(df)
+    # number of time steps equals to one day
+    # -> 96 x 15 min values
+    n_ts = 96
 
-    # initialising ConstControl controller to update values of the regenerative generators ("sgen" elements)
-    # the element_index specifies which elements to update (here all sgens in the net since net.sgen.index is passed)
-    # the controlled variable is "p_mw"
-    # the profile_name are the columns in the csv file (here this is also equal to the sgen indices 0-N )
-    const_sgen = ConstControl(net, element='sgen', element_index=net.sgen.index,
-                              variable='p_mw', data_source=ds, profile_name=net.sgen.index)
+    def initialize_static_generators(n_timesteps: int):
+        # load your timeseries from a file (here csv file)
+        # df = pd.read_csv("sgen_timeseries.csv")
+        # or create a DataFrame with some random time series as an example
+        df = pd.DataFrame(np.random.normal(1., 0.1, size=(n_ts, len(net.sgen.index))),
+                            index=list(range(n_ts)), columns=net.sgen.index) * net.sgen.p_mw.values
+        # create the data source from it
+        ds = DFData(df)
 
-    # do the same for loads
-    # df = pd.read_csv("load_timeseries.csv")
-    # create a DataFrame with some random time series as an example
-    df = pd.DataFrame(np.random.normal(1., 0.1, size=(n_ts, len(net.load.index))),
-                      index=list(range(n_ts)), columns=net.load.index) * net.load.p_mw.values
-    ds = DFData(df)
-    const_load = ConstControl(net, element='load', element_index=net.load.index,
-                              variable='p_mw', data_source=ds, profile_name=net.load.index)
+        # initialising ConstControl controller to update values of the regenerative generators ("sgen" elements)
+        # the element_index specifies which elements to update (here all sgens in the net since net.sgen.index is passed)
+        # the controlled variable is "p_mw"
+        # the profile_name are the columns in the csv file (here this is also equal to the sgen indices 0-N )
+        const_sgen = ConstControl(net, element='sgen', element_index=net.sgen.index,
+                                    variable='p_mw', data_source=ds, profile_name=net.sgen.index)
+    # initialize static generators
+    initialize_static_generators(n_ts)
 
-    # starting the timeseries simulation for one day -> 96 15 min values.
+    def initialize_loads(n_timesteps: int):
+        # do the same for loads
+        # df = pd.read_csv("load_timeseries.csv")
+        # create a DataFrame with some random time series as an example
+        df = pd.DataFrame(np.random.normal(1., 0.1, size=(n_ts, len(net.load.index))),
+                            index=list(range(n_ts)), columns=net.load.index) * net.load.p_mw.values
+        ds = DFData(df)
+        const_load = ConstControl(net, element='load', element_index=net.load.index,
+                                    variable='p_mw', data_source=ds, profile_name=net.load.index)
+    # initialize loads
+    initialize_loads(n_ts)
+
+    # starting the timeseries simulation for one day -> 96 x 15 min values.
     run_timeseries(net)
 
 
@@ -81,9 +89,63 @@ P-profile. To get the time series calculation results and save it to separate fi
     ow.log_variable('res_bus', 'vm_pu')
     ow.log_variable('res_line', 'loading_percent')
 
-    # starting the timeseries simulation for one day -> 96 15 min values.
+    # starting the timeseries simulation for one day -> 96 x 15 min values.
     run_timeseries(net)
     # now checkout the folders res_bus and res_line in your current working dir
 
 We created an ``OutputWriter`` and stored the voltage magnitude **vm_pu** for each bus and the line loading in percent
 **loading_percent** for every line to separate excel files.
+
+
+Running Long Time Series Simulations
+=======================================
+Sometimes it can be necessary to run simulations over a long time, which can produce a large amount of data.
+In the previous example the ``OutputWriter`` stores the data at the end of the simulation.
+This can lead to long storage times since the write speed is limited.
+A solution to this is the ``OutputStreamer``, which stores the data cyclically during the simulation with small amounts of delay.
+The following example extends the previous one by a simulation with the ``OutputStreamer``:
+
+
+::
+
+    import numpy as np
+    import pandas as pd
+
+    from pandapower.control import ConstControl
+    from pandapower.networks import mv_oberrhein
+    from pandapower.timeseries import run_timeseries, OutputStreamer
+    from pandapower.timeseries.data_sources.frame_data import DFData
+
+    # load a pandapower network
+    net = mv_oberrhein(scenario='generation')
+    # number of time steps equal to 2 weeks of simulation
+    # 14 x 96 x 15 min values
+    n_ts = 96*14
+
+    # initialize static generators from previous example
+    initialize_static_generators(n_ts)
+
+    # initialize loads from previous example
+    initialize_loads(n_ts)
+
+
+We created a ``DataSource`` and passed it to the ``ConstControl``, while also providing the name of the
+P-profile. To get the time series calculation results and stream it to separate files we build an ``OutputStreamer``.
+
+::
+
+    # initialising the outputstreamer to save data to excel files in the current folder. Currently the only supported format is .csv
+    # in this example the save interval is set to one simulated day
+    ow = OutputStreamer(net, save_interval=96, output_path="./", output_file_type=".csv")
+    # adding vm_pu of all buses and line_loading in percent of all lines as outputs to be stored
+    ow.log_variable('res_bus', 'vm_pu')
+    ow.log_variable('res_line', 'loading_percent')
+
+    # starting the timeseries simulation for two weeks -> 14 x 96 x 15 min values.
+    run_timeseries(net)
+    # now checkout the folders res_bus and res_line in your current working dir
+
+We created an ``OutputStreamer`` and cyclically stored the voltage magnitude **vm_pu** for each bus and the line loading in percent
+**loading_percent** for every line to separate csv files.
+
+

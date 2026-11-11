@@ -8,12 +8,12 @@ ssc_schema = pa.DataFrameSchema(
             int,
             pa.Check.ge(0),
             description="index of bus where the SSC is connected",
-            metadata={"foreign_key": "bus.index"},
+            metadata={"foreign_key": "bus"},
         ),
         "r_ohm": pa.Column(
             float, pa.Check.ge(0), description="resistance of the coupling transformer component of SSC"
         ),
-        "x_ohm": pa.Column(float, pa.Check.le(0), description="reactance of the coupling transformer component of SSC"),
+        "x_ohm": pa.Column(float, description="reactance of the coupling transformer component of SSC"),
         "set_vm_pu": pa.Column(
             float,
             description="set-point for the bus voltage magnitude at the connection bus",

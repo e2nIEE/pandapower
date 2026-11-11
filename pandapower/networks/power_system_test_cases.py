@@ -1,11 +1,43 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "GBnetwork",
+    "GBreducednetwork",
+    "case4gs",
+    "case5",
+    "case6ww",
+    "case9",
+    "case11_iwamoto",
+    "case14",
+    "case24_ieee_rts",
+    "case30",
+    "case33bw",
+    "case39",
+    "case57",
+    "case89pegase",
+    "case118",
+    "case145",
+    "case300",
+    "case1354pegase",
+    "case1888rte",
+    "case2848rte",
+    "case2869pegase",
+    "case3120sp",
+    "case6470rte",
+    "case6495rte",
+    "case6515rte",
+    "case9241pegase",
+    "case_ieee30",
+    "case_illinois200",
+    "iceland",
+    "sorted_from_json",
+]
 
 import os
 
 from pandapower.__init__ import pp_dir
-from pandapower.create import create_gen, create_ext_grid, create_sgen
+from pandapower.create import create_ext_grid, create_gen, create_sgen
 from pandapower.file_io import from_json
 from pandapower.plotting.geo import convert_geodata_to_geojson
 from pandapower.toolbox.element_selection import pp_elements
@@ -30,32 +62,50 @@ def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
         ext_grid_p = [ext_grid_p]
     for i in ref_bus_idx:
         if i not in net.gen.bus.values and i not in net.ext_grid.bus.values:
-            raise ValueError("Index %i is not in net.gen.bus or net.ext_grid.bus." % i)
+            raise ValueError(f"Index {i} is not in net.gen.bus or net.ext_grid.bus.")
     # determine indices of ext_grid and gen connected to ref_bus_idx
     gen_idx = net.gen.index[net.gen.bus.isin(ref_bus_idx)]
     ext_grid_idx = net.ext_grid.index[~net.ext_grid.bus.isin(ref_bus_idx)]
     # old ext_grid -> gen
-    j = 0
-    for i in ext_grid_idx:
+    for j, i in enumerate(ext_grid_idx):
         ext_grid_data = net.ext_grid.loc[i]
         net.ext_grid = net.ext_grid.drop(i)
-        create_gen(net, ext_grid_data.bus, ext_grid_p[j],
-                   vm_pu=ext_grid_data.vm_pu, controllable=True,
-                   min_q_mvar=ext_grid_data.min_q_mvar, max_q_mvar=ext_grid_data.max_q_mvar,
-                   min_p_mw=ext_grid_data.min_p_mw, max_p_mw=ext_grid_data.max_p_mw)
-        j += 1
+        create_gen(
+            net,
+            ext_grid_data.bus,
+            ext_grid_p[j],
+            vm_pu=ext_grid_data.vm_pu,
+            controllable=True,
+            min_q_mvar=ext_grid_data.min_q_mvar,
+            max_q_mvar=ext_grid_data.max_q_mvar,
+            min_p_mw=ext_grid_data.min_p_mw,
+            max_p_mw=ext_grid_data.max_p_mw,
+        )
     # old gen at ref_bus -> ext_grid (and sgen)
     for i in gen_idx:
         gen_data = net.gen.loc[i]
         net.gen = net.gen.drop(i)
         if gen_data.bus not in net.ext_grid.bus.values:
-            create_ext_grid(net, gen_data.bus, vm_pu=gen_data.vm_pu, va_degree=0.,
-                            min_q_mvar=gen_data.min_q_mvar, max_q_mvar=gen_data.max_q_mvar,
-                            min_p_mw=gen_data.min_p_mw, max_p_mw=gen_data.max_p_mw)
+            create_ext_grid(
+                net,
+                gen_data.bus,
+                vm_pu=gen_data.vm_pu,
+                va_degree=0.0,
+                min_q_mvar=gen_data.min_q_mvar,
+                max_q_mvar=gen_data.max_q_mvar,
+                min_p_mw=gen_data.min_p_mw,
+                max_p_mw=gen_data.max_p_mw,
+            )
         else:
-            create_sgen(net, gen_data.bus, p_mw=gen_data.p_mw,
-                        min_q_mvar=gen_data.min_q_mvar, max_q_mvar=gen_data.max_q_mvar,
-                        min_p_mw=gen_data.min_p_mw, max_p_mw=gen_data.max_p_mw)
+            create_sgen(
+                net,
+                gen_data.bus,
+                p_mw=gen_data.p_mw,
+                min_q_mvar=gen_data.min_q_mvar,
+                max_q_mvar=gen_data.max_q_mvar,
+                min_p_mw=gen_data.min_p_mw,
+                max_p_mw=gen_data.max_p_mw,
+            )
 
 
 def sorted_from_json(path, **kwargs):
@@ -280,8 +330,9 @@ def case39(**kwargs):
     return case39
 
 
-def case57(vn_kv_area1=115, vn_kv_area2=500, vn_kv_area3=138, vn_kv_area4=345, vn_kv_area5=230,
-           vn_kv_area6=161, **kwargs):
+def case57(
+    vn_kv_area1=115, vn_kv_area2=500, vn_kv_area3=138, vn_kv_area4=345, vn_kv_area5=230, vn_kv_area6=161, **kwargs
+):
     """
     This function provides the ieee case57 network with the data origin
     `PYPOWER case 57 <https://pypi.org/project/PYPOWER/>`__.
@@ -457,7 +508,7 @@ def case1888rte(ref_bus_idx=1246, **kwargs):
          >>> net = case1888rte()
     """
     case1888rte = sorted_from_json(_get_cases_path("case1888rte.json"), **kwargs)
-    case1888rte.ext_grid.loc[0, ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar']] *= 2
+    case1888rte.ext_grid.loc[0, ["min_p_mw", "max_p_mw", "min_q_mvar", "max_q_mvar"]] *= 2
 
     if ref_bus_idx != 1246:  # change reference bus
         _change_ref_bus(case1888rte, ref_bus_idx, ext_grid_p=[-89.5])
@@ -555,7 +606,7 @@ def case6470rte(ref_bus_idx=5988, **kwargs):
          >>> net = case6470rte()
     """
     case6470rte = sorted_from_json(_get_cases_path("case6470rte.json"), **kwargs)
-    case6470rte.ext_grid.loc[0, ['min_p_mw', 'max_p_mw', 'min_q_mvar', 'max_q_mvar']] *= 2
+    case6470rte.ext_grid.loc[0, ["min_p_mw", "max_p_mw", "min_q_mvar", "max_q_mvar"]] *= 2
     if ref_bus_idx != 5988:  # change reference bus
         _change_ref_bus(case6470rte, ref_bus_idx, ext_grid_p=[-169.41])
     return case6470rte
@@ -589,8 +640,7 @@ def case6495rte(ref_bus_idx=None, **kwargs):
     ref_bus_idx = ref_bus_idx or [6077, 6161, 6305, 6306, 6307, 6308]
     case6495rte = sorted_from_json(_get_cases_path("case6495rte.json"), **kwargs)
     if ref_bus_idx != [6077, 6161, 6305, 6306, 6307, 6308]:  # change reference bus
-        _change_ref_bus(case6495rte, ref_bus_idx, ext_grid_p=[1382.35, 2894.13, 1498.32,
-                                                              1498.32, 1493.11, 1493.12])
+        _change_ref_bus(case6495rte, ref_bus_idx, ext_grid_p=[1382.35, 2894.13, 1498.32, 1498.32, 1493.11, 1493.12])
     return case6495rte
 
 

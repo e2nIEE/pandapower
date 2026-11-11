@@ -1,17 +1,46 @@
 from typing import Any
 
-from numpy import dtype
 import pandas as pd
+from numpy import dtype
 from pandera import DataFrameSchema
 
-from pandapower._version import __version__, __format_version__
-from pandapower.network_schema.tools.helper import get_dtypes
 import pandapower.network_schema as _schema_module
-from pandapower.network_schema import *  # noqa: F403
+from pandapower._version import __format_version__, __version__
+from pandapower.network_schema import (
+    asymmetric_load_schema,
+    asymmetric_sgen_schema,
+    bus_dc_schema,
+    bus_schema,
+    dcline_schema,
+    ext_grid_schema,
+    gen_schema,
+    impedance_schema,
+    line_dc_schema,
+    line_schema,
+    load_dc_schema,
+    load_schema,
+    measurement_schema,
+    motor_schema,
+    sgen_schema,
+    shunt_schema,
+    source_dc_schema,
+    ssc_schema,
+    storage_schema,
+    svc_schema,
+    switch_schema,
+    tcsc_schema,
+    trafo3w_schema,
+    trafo_schema,
+    vsc_bipolar_schema,
+    vsc_schema,
+    vsc_stacked_schema,
+    ward_schema,
+    xward_schema,
+)
+from pandapower.network_schema.tools.helper import get_dtypes
 
 
 def get_table_schema() -> dict[str, DataFrameSchema]:
-    # ruff: noqa: F405
     return {
         "bus": bus_schema,
         "bus_dc": bus_dc_schema,
@@ -92,11 +121,20 @@ def get_column_info(table: str, column: str) -> dict[str, str | bool | dict] | N
         return column
     return column.__dict__
 
+
 def get_default_value(table: str, column: str) -> Any:
     column_info: dict[str, Any] | None = get_column_info(table, column)
-    if column_info is not None and 'metadata' in column_info and 'default' in column_info['metadata']:
+    if (
+        column_info is not None
+        and "metadata" in column_info
+        and column_info["metadata"] is not None
+        and "default" in column_info["metadata"]
+    ):
         return column_info["metadata"]["default"]
+    if get_structure_dict(False)[table][column] in [float]:  # TODO: get this from the already present column_info?
+        return float("nan")
     return pd.NA
+
 
 def get_structure_dict(required_only: bool = True, metadata: list | None = None) -> dict:
     """
@@ -104,7 +142,9 @@ def get_structure_dict(required_only: bool = True, metadata: list | None = None)
     """
     if metadata is None:
         metadata = []
-    dtypes_dict: dict[str, Any] = {key: get_dtypes(val, required_only, metadata) for key, val in get_table_schema().items()}
+    dtypes_dict: dict[str, Any] = {
+        key: get_dtypes(val, required_only, metadata) for key, val in get_table_schema().items()
+    }
     # TODO: convert to pandera
     additional_schema = {
         "pwl_cost": {
@@ -138,7 +178,7 @@ def get_structure_dict(required_only: bool = True, metadata: list | None = None)
             "element_type": dtype(object),
             "element_index": dtype(object),
             "reference_column": pd.StringDtype(),
-        }
+        },
     }
     internal_values = {
         # internal

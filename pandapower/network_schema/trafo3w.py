@@ -1,11 +1,14 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import (
-    create_column_group_dependency_validation_func,
-    create_column_dependency_checks_from_metadata,
+from pandapower.network_schema.tools.validation.column_condition import (
+    create_lower_equals_column_check,
+    create_lower_than_column_check,
 )
-from pandapower.network_schema.tools.validation.column_condition import create_lower_than_column_check
+from pandapower.network_schema.tools.validation.group_dependency import (
+    create_column_dependency_checks_from_metadata,
+    create_column_group_dependency_validation_func,
+)
 
 _trafo3w_columns = {
     "name": pa.Column(
@@ -22,19 +25,19 @@ _trafo3w_columns = {
         int,
         pa.Check.ge(0),
         description="high voltage bus index of the transformer",
-        metadata={"foreign_key": "bus.index"},
+        metadata={"foreign_key": "bus"},
     ),
     "mv_bus": pa.Column(
         int,
         pa.Check.ge(0),
         description="medium voltage bus index of the transformer",
-        metadata={"foreign_key": "bus.index"},
+        metadata={"foreign_key": "bus"},
     ),
     "lv_bus": pa.Column(
         int,
         pa.Check.ge(0),
         description="low voltage bus index of the transformer",
-        metadata={"foreign_key": "bus.index"},
+        metadata={"foreign_key": "bus"},
     ),
     "vn_hv_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage at high voltage bus [kV]"),
     "vn_mv_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage at medium voltage bus [kV]"),
@@ -140,6 +143,24 @@ _trafo3w_columns = {
         description="maximum current loading (only needed for OPF)",
         metadata={"opf": True},
     ),
+    "min_angle_degree": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="minimum voltage angle difference per internal star branch (hv -> star, star -> mv/lv) [degree], "
+        "considered in the OPF; NaN means unconstrained. The terminal difference va_hv - va_mv/lv can reach twice "
+        "this value",
+        metadata={"opf": True},
+    ),
+    "max_angle_degree": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="maximum voltage angle difference per internal star branch (hv -> star, star -> mv/lv) [degree], "
+        "considered in the OPF; NaN means unconstrained. The terminal difference va_hv - va_mv/lv can reach twice "
+        "this value",
+        metadata={"opf": True},
+    ),
     "vector_group": pa.Column(
         pd.StringDtype,
         nullable=True,
@@ -163,10 +184,18 @@ _trafo3w_columns = {
         bool, description="specifies if the transformer is in service.", metadata={"default": True}
     ),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="element rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="origin_class rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "terminal_hv": pa.Column(
         pd.StringDtype,
@@ -347,22 +376,17 @@ _trafo3w_columns = {
 # FIXME: either tap_step_percent or tap_step_degree for each row
 tap_columns = ["tap_pos", "tap_neutral", "tap_side"]  # , "tap_step_percent", "tap_step_degree"]
 trafo3w_checks = [
+    create_lower_equals_column_check(first_element="tap_min", second_element="tap_max"),
+    create_lower_equals_column_check(first_element="min_angle_degree", second_element="max_angle_degree"),
     pa.Check(
         create_column_group_dependency_validation_func(tap_columns),
         error=f"trafo3w tap configuration columns have dependency violations. Please ensure {tap_columns} are present in the dataframe.",
     ),
+    *create_column_dependency_checks_from_metadata(["tdt"], _trafo3w_columns),
+    create_lower_than_column_check(first_element="vkr_hv_percent", second_element="vk_hv_percent"),
+    create_lower_than_column_check(first_element="vkr_mv_percent", second_element="vk_mv_percent"),
+    create_lower_than_column_check(first_element="vkr_lv_percent", second_element="vk_lv_percent"),
 ]
-trafo3w_checks += create_column_dependency_checks_from_metadata(
-    [
-        # "sc",
-        "tdt",
-        "opf",
-    ],
-    _trafo3w_columns,
-)
-trafo3w_checks.append(create_lower_than_column_check(first_element="vkr_hv_percent", second_element="vk_hv_percent"))
-trafo3w_checks.append(create_lower_than_column_check(first_element="vkr_mv_percent", second_element="vk_mv_percent"))
-trafo3w_checks.append(create_lower_than_column_check(first_element="vkr_lv_percent", second_element="vk_lv_percent"))
 trafo3w_schema = pa.DataFrameSchema(
     _trafo3w_columns,
     checks=trafo3w_checks,

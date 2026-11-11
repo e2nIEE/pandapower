@@ -1,11 +1,9 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
-
 _storage_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="Name of the storage unit"),
-    "bus": pa.Column(int, pa.Check.ge(0), description="Index of connected bus", metadata={"foreign_key": "bus.index"}),
+    "bus": pa.Column(int, pa.Check.ge(0), description="Index of connected bus", metadata={"foreign_key": "bus"}),
     "p_mw": pa.Column(
         float,
         description="Momentary real power of the storage (positive for charging, negative for discharging)",
@@ -58,10 +56,18 @@ _storage_columns = {
         pd.StringDtype, nullable=True, required=False, description="type variable to classify the storage"
     ),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="element rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="origin_class rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "terminal": pa.Column(
         pd.StringDtype,
@@ -80,7 +86,6 @@ _storage_columns = {
 }
 storage_schema = pa.DataFrameSchema(
     _storage_columns,
-    checks=create_column_dependency_checks_from_metadata(["opf"], _storage_columns),
     name="storage",
     strict=False,
 )

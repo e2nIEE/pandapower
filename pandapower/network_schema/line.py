@@ -1,7 +1,7 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
+from pandapower.network_schema.tools.validation.column_condition import create_lower_equals_column_check
 
 _line_columns = {
     "name": pa.Column(
@@ -18,10 +18,10 @@ _line_columns = {
         description="standard type which can be used to easily define line parameters with the pandapower standard type library",
     ),
     "from_bus": pa.Column(
-        int, pa.Check.ge(0), description="Index of bus where the line starts", metadata={"foreign_key": "bus.index"}
+        int, pa.Check.ge(0), description="Index of bus where the line starts", metadata={"foreign_key": "bus"}
     ),
     "to_bus": pa.Column(
-        int, pa.Check.ge(0), description="Index of bus where the line ends", metadata={"foreign_key": "bus.index"}
+        int, pa.Check.ge(0), description="Index of bus where the line ends", metadata={"foreign_key": "bus"}
     ),
     "length_km": pa.Column(float, pa.Check.gt(0), description="length of the line [km]"),
     "r_ohm_per_km": pa.Column(float, pa.Check.ge(0), description="resistance of the line [Ohm per km]"),
@@ -87,6 +87,22 @@ _line_columns = {
         nullable=True,
         required=False,
         description="Maximum loading of the line",
+        metadata={"opf": True},
+    ),
+    "min_angle_degree": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="minimum voltage angle difference between from_bus and to_bus (va_from - va_to) [degree], "
+        "considered in the OPF; NaN means unconstrained",
+        metadata={"opf": True},
+    ),
+    "max_angle_degree": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="maximum voltage angle difference between from_bus and to_bus (va_from - va_to) [degree], "
+        "considered in the OPF; NaN means unconstrained",
         metadata={"opf": True},
     ),
     "endtemp_degree": pa.Column(
@@ -199,10 +215,18 @@ _line_columns = {
         metadata={"tdpf": True},
     ),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="element rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="origin_class rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "description": pa.Column(
         pd.StringDtype,
@@ -242,17 +266,9 @@ _line_columns = {
 }
 line_schema = pa.DataFrameSchema(
     _line_columns,
+    checks=[create_lower_equals_column_check(first_element="min_angle_degree", second_element="max_angle_degree")],
     name="line",
     strict=False,
-    checks=create_column_dependency_checks_from_metadata(
-        [
-            "opf",
-            # "sc",
-            "tdpf",
-            # "3ph",
-        ],
-        _line_columns,
-    ),
 )
 
 res_line_schema = res_line_est_schema = pa.DataFrameSchema(

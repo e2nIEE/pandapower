@@ -3,25 +3,35 @@
 
 from __future__ import annotations
 
+__all__ = [
+    "add_column_to_df",
+    "add_tag_group",
+    "add_tag_group_to_df",
+]
+
 import logging
 import warnings
-from typing import Iterable, Any
+from collections.abc import Collection, Iterable
+from typing import Any
 
-import pandas as pd
-from numpy import isnan, arange, isin, any as np_any, all as np_all, intersect1d, unique as uni, c_
 import numpy.typing as npt
-from pandas import isnull
+import pandas as pd
+from numpy import all as np_all
+from numpy import any as np_any
+from numpy import arange, c_, intersect1d, isin, issubdtype
+from numpy import unique as uni
+from pandas import isna, isnull
 from pandas.api.types import is_object_dtype
 
 from pandapower.auxiliary import (
-    get_free_id,
     _preserve_dtypes,
-    ensure_iterability,
     empty_defaults_per_dtype,
+    ensure_iterability,
+    get_free_id,
 )
-from pandapower.network import pandapowerNet, ADict
+from pandapower.network import ADict, pandapowerNet
+from pandapower.network_structure import get_column_info, get_default_value, get_structure_dict
 from pandapower.pp_types import Int
-from pandapower.network_structure import get_structure_dict, get_column_info
 
 logger = logging.getLogger(__name__)
 
@@ -52,16 +62,57 @@ def add_column_to_df(net: ADict, table_name: str, column_name: str) -> None:
     # Add Optional Column:
     net_struct_dict = get_structure_dict(False)
     dtype = net_struct_dict[table_name][column_name]
-    net[table_name][column_name] = pd.Series(dtype=dtype)
+    default_value = get_default_value(table_name, column_name)
+    if net[table_name].empty:
+        net[table_name][column_name] = pd.Series(dtype=dtype)
+    else:  # only add value if table is not empty otherwise a single entry will be generated
+        net[table_name][column_name] = pd.Series(default_value, dtype=dtype)
     # Ensure column order:
     desired_order = list(net_struct_dict[table_name].keys())
     struct_columns = [col for col in desired_order if col in net[table_name].columns]
     custom_columns = [col for col in net[table_name].columns if col not in desired_order]
-    net[table_name] = net[table_name][struct_columns+custom_columns]
+    net[table_name] = net[table_name][struct_columns + custom_columns]
+
+
+def add_tag_group_to_df(net: ADict, table_name: str, tag_name: str) -> None:
+    """
+    A function that adds multiple columns to a dataframe based on the metadata tag in the schema
+
+    Parameters:
+        net: the pandapower Network
+        table_name: the table in the pandapower Network where the columns should be added.
+        tag_name: the metadata tag that should be added
+    """
+    net_struct_dict = get_structure_dict(False)
+    if table_name not in net_struct_dict:
+        raise ValueError(f"Table {table_name} has no definition in network structure.")
+    for col_name in net_struct_dict[table_name]:
+        col_info = get_column_info(table_name, col_name)
+        if col_info is None:
+            logger.warning(f"could not get column information for {table_name}.{col_name}")
+            continue
+        col_metadata = col_info["metadata"]
+        if col_metadata is None:
+            continue
+        if tag_name in col_metadata:  # type: ignore[operator]
+            add_column_to_df(net, table_name, col_name)
+
+
+def add_tag_group(net: pandapowerNet, tag_names: set[str] | str):
+    if isinstance(tag_names, str):
+        tag_names = {
+            tag_names,
+        }
+
+    for element in net:
+        if isinstance(net[element], pd.DataFrame):
+            for tag_name in tag_names:
+                add_tag_group_to_df(net, element, tag_name)
 
 
 def _geodata_to_geo_series(data: Iterable[tuple[float, float]] | tuple[int, int], nr_buses: int) -> list[str]:
     from pandapower.plotting.geo import _is_valid_number
+
     geo = []
     for g in data:
         if isinstance(g, tuple):
@@ -75,7 +126,7 @@ def _geodata_to_geo_series(data: Iterable[tuple[float, float]] | tuple[int, int]
                 x, y = g
                 geo.append(f'{{"coordinates": [{x}, {y}], "type": "Point"}}')
         else:
-            raise ValueError("geodata must be iterable of tuples of (x, y) coordinates")
+            raise TypeError("geodata must be iterable of tuples of (x, y) coordinates")
     if len(geo) == 1:
         geo = [geo[0]] * nr_buses
     if len(geo) != nr_buses:
@@ -176,12 +227,12 @@ def _get_multiple_index_with_check(net, table, index, number, name=None):
         return arange(bid, bid + number, 1)
     u, c = uni(index, return_counts=True)
     if np_any(c > 1):
-        raise UserWarning("Passed indexes %s exist multiple times" % (u[c > 1]))
+        raise UserWarning(f"Passed indexes {u[c > 1]} exist multiple times")
     intersect = intersect1d(index, net[table].index.values)
     if len(intersect) > 0:
         if name is None:
             name = table.capitalize() + "s"
-        raise UserWarning("%s with indexes %s already exist." % (name, intersect))
+        raise UserWarning(f"{name} with indexes {intersect} already exist.")
     return index
 
 
@@ -189,7 +240,7 @@ def _check_element(net, element_index, element="bus"):
     if element not in net:
         raise UserWarning(f"Node table {element} does not exist")
     if element_index not in net[element].index.values:
-        raise UserWarning("Cannot attach to %s %s, %s does not exist" % (element, element_index, element_index))
+        raise UserWarning(f"Cannot attach to {element} {element_index}, {element_index} does not exist")
 
 
 def _check_multiple_elements(net, element_indices, element="bus", name="buses"):
@@ -206,8 +257,7 @@ def _check_branch_element(net, element_name, index, from_node, to_node, node_nam
     missing_nodes = {from_node, to_node} - set(net[node_name].index.values)
     if len(missing_nodes) > 0:
         raise UserWarning(
-            "%s %d tries to attach to non-existing %s(%s) %s"
-            % (element_name.capitalize(), index, node_name, plural, missing_nodes)
+            f"{element_name.capitalize()} {index} tries to attach to non-existing {node_name}({plural}) {missing_nodes}"
         )
 
 
@@ -217,9 +267,7 @@ def _check_multiple_branch_elements(net, from_nodes, to_nodes, element_name, nod
     all_nodes = set(from_nodes) | set(to_nodes)
     node_not_exist = all_nodes - set(net[node_name].index)
     if len(node_not_exist) > 0:
-        raise UserWarning(
-            "%s trying to attach to non existing %s%s %s" % (element_name, node_name, plural, node_not_exist)
-        )
+        raise UserWarning(f"{element_name} trying to attach to non existing {node_name}{plural} {node_not_exist}")
 
 
 def _not_nan(value, all_=True):
@@ -229,11 +277,11 @@ def _not_nan(value, all_=True):
         if all_:
             if is_object_dtype(value):
                 return not all(isnull(value))
-            return not all(isnan(value))
+            return not all(isna(value))
         else:
             if is_object_dtype(value):
                 return not any(isnull(value))
-            return not any(isnan(value))
+            return not any(isna(value))
     else:
         try:
             return pd.notna(value)
@@ -241,15 +289,15 @@ def _not_nan(value, all_=True):
             return True
 
 
-def _try_astype(df, column, dtyp):
+def _try_astype(df, column, dtype):
     try:
-        df[column] = df[column].astype(dtyp)
+        df[column] = df[column].astype(dtype)
     except TypeError:
         pass
 
 
 def _set_value_if_not_nan(
-    net: pandapowerNet, index: int, value: Any, column: str, element_type: str, default_val=pd.NA
+    net: pandapowerNet, index: Int, value: Any, column: str, element_type: str, default_val=pd.NA
 ):
     """Sets the given value to the dataframe net[element_type]. If the value is nan, default_val
     is assumed if this is not nan.
@@ -272,7 +320,7 @@ def _set_value_if_not_nan(
     col_info = get_column_info(element_type, column)
     if col_info is not None and pd.isna(default_val) and not col_info["nullable"] and col_info["default"] is not None:
         default_val = col_info["default"]
-    if dtype == "float" and pd.isna(default_val):
+    if dtype == "float" and pd.isna(default_val):  # type: ignore[arg-type]
         default_val = float("nan")
     if _not_nan(value):
         if not column_exists:
@@ -286,9 +334,13 @@ def _set_value_if_not_nan(
 
 
 def _add_to_entries_if_not_nan(
-    net: pandapowerNet, element_type, entries, index: int, column, values, dtype=None, default_val=pd.NA
+    net: pandapowerNet, element_type, entries, index: Collection[Int], column, values, dtype=None, default_val=pd.NA
 ):
     """
+    If the column exists in the network the values will be added to the entries dict.
+
+    For ease of use if the column has dtype float it will use 'nan' as default_val without explicitly setting it.
+
 
     See Also
     --------
@@ -297,20 +349,27 @@ def _add_to_entries_if_not_nan(
     column_exists = column in net[element_type].columns
     dtype = get_structure_dict(required_only=False)[element_type][column]
     col_info = get_column_info(element_type, column)
-    if col_info is not None and pd.isna(default_val) and not col_info["nullable"] and col_info["default"] is not None:
-        default_val = col_info["default"]
+    # if dtype is not from pandas (pandas dtypes are pd.NA capable) check if subdtype of float and default_val is pd.NA
+    if not getattr(dtype, "__module__", "").startswith("pandas") and issubdtype(dtype, float) and pd.isna(default_val):
+        default_val = float("nan")
+    if col_info is not None and pd.isna(default_val) and not col_info["nullable"]:
+        if col_info["default"] is not None:
+            default_val = col_info["default"]
+        elif col_info["metadata"] is not None and "default" in col_info["metadata"]:
+            default_val = col_info["metadata"]["default"]
     if _not_nan(values):
         entries[column] = pd.Series(values, index=index)
         if _not_nan(default_val):
             entries[column] = entries[column].fillna(default_val)
         _try_astype(entries, column, dtype)
-    elif column_exists:
+    elif column_exists and column not in entries:
         entries[column] = pd.Series(data=default_val, index=index)
         _try_astype(entries, column, dtype)
 
 
 def _branch_geodata(geodata: Iterable[list[float] | tuple[float, float]]) -> list[list[float]]:
     from pandapower.plotting.geo import _is_valid_number
+
     geo: list[list[float]] = []
     for x, y in geodata:
         if (not _is_valid_number(x)) | (not _is_valid_number(y)):
@@ -374,7 +433,7 @@ def _set_entries(net, table, index, preserve_dtypes=True, entries: dict | None =
             if col in dtype_dict:
                 dtype = dtype_dict[col]
                 # default value for bool entries
-                if dtype == bool and net[table][col].isna().any(): # TODO: check if wanted behaviour
+                if dtype is bool and net[table][col].isna().any():  # TODO: check if wanted behaviour
                     net[table][col] = net[table][col].astype(pd.BooleanDtype()).fillna(False)
                 net[table][col] = net[table][col].astype(dtype)
 
@@ -463,11 +522,10 @@ def _set_const_percent_values(const_percent_values_list, kwargs_input):
         )
         warnings.warn(msg, DeprecationWarning)
         return const_z_p_percent, const_i_p_percent, const_z_q_percent, const_i_q_percent, kwargs_input
-    elif ("const_z_percent" in kwargs_input or "const_i_percent" in kwargs_input) and (
-        const_percent_values_default_initials == False
-    ):
-        raise UserWarning("Definition of voltage dependecies is faulty, please check the parameters again.")
-    elif ("const_z_percent" in kwargs_input or "const_i_percent" not in kwargs_input) or (
-        "const_z_percent" not in kwargs_input or "const_i_percent" in kwargs_input
+    elif (
+        ("const_z_percent" in kwargs_input or "const_i_percent" in kwargs_input)
+        and not const_percent_values_default_initials
+        or ("const_z_percent" in kwargs_input or "const_i_percent" not in kwargs_input)
+        or ("const_z_percent" not in kwargs_input or "const_i_percent" in kwargs_input)
     ):
         raise UserWarning("Definition of voltage dependecies is faulty, please check the parameters again.")

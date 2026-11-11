@@ -1,8 +1,6 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
-
 _line_dc_columns = {
     "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the dc line"),
     "std_type": pa.Column(
@@ -15,13 +13,13 @@ _line_dc_columns = {
         int,
         pa.Check.ge(0),
         description="Index of dc bus where the dc line starts",
-        metadata={"foreign_key": "bus_dc.index"},
+        metadata={"foreign_key": "bus_dc"},
     ),
     "to_bus_dc": pa.Column(
         int,
         pa.Check.ge(0),
         description="Index of dc bus where the dc line ends",
-        metadata={"foreign_key": "bus_dc.index"},
+        metadata={"foreign_key": "bus_dc"},
     ),
     "length_km": pa.Column(float, pa.Check.gt(0), description="length of the line [km]"),
     "r_ohm_per_km": pa.Column(float, pa.Check.ge(0), description="resistance of the line [Ohm per km]"),
@@ -151,7 +149,6 @@ _line_dc_columns = {
 }
 line_dc_schema = pa.DataFrameSchema(
     _line_dc_columns,
-    checks=create_column_dependency_checks_from_metadata(["tdpf"], _line_dc_columns),
     name="line_dc",
     strict=False,
 )

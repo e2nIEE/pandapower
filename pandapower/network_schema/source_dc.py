@@ -6,7 +6,7 @@ source_dc_schema = pa.DataFrameSchema(  # TODO: docu hat sehr viele fehler...
         "name": pa.Column(pd.StringDtype, nullable=True, required=False, description="name of the static generator"),
         "type": pa.Column(pd.StringDtype, nullable=True, required=False, description="type of source"),
         "bus_dc": pa.Column(
-            int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus_dc.index"}
+            int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus_dc"}
         ),
         "vm_pu": pa.Column(
             float,

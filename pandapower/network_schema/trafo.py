@@ -1,11 +1,11 @@
 import pandas as pd
 import pandera.pandas as pa
 
+from pandapower.network_schema.tools.validation.column_condition import create_lower_equals_column_check
 from pandapower.network_schema.tools.validation.group_dependency import (
-    create_column_group_dependency_validation_func,
     create_column_dependency_checks_from_metadata,
+    create_column_group_dependency_validation_func,
 )
-from pandapower.network_schema.tools.validation.column_condition import create_lower_than_column_check
 
 _trafo_columns = {
     "name": pa.Column(
@@ -26,7 +26,7 @@ _trafo_columns = {
         int,
         pa.Check.ge(0),
         description="high voltage bus index of the transformer",
-        metadata={"foreign_key": "bus.index"},
+        metadata={"foreign_key": "bus"},
     ),
     "lv_bus": pa.Column(
         int, pa.Check.ge(0), description="low voltage bus index of the transformer", metadata={"foreign_key": "bus"}
@@ -157,6 +157,22 @@ _trafo_columns = {
         nullable=True,
         required=False,
         description="Maximum loading of the transformer with respect to sn_mva and its corresponding current at 1.0 p.u.",
+        metadata={"opf": True},
+    ),
+    "min_angle_degree": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="minimum voltage angle difference between hv_bus and lv_bus (va_hv - va_lv) [degree], "
+        "considered in the OPF; NaN means unconstrained",
+        metadata={"opf": True},
+    ),
+    "max_angle_degree": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="maximum voltage angle difference between hv_bus and lv_bus (va_hv - va_lv) [degree], "
+        "considered in the OPF; NaN means unconstrained",
         metadata={"opf": True},
     ),
     "parallel": pa.Column(int, pa.Check.ge(1), description="number of parallel transformers", metadata={"default": 1}),
@@ -396,6 +412,9 @@ tap_columns = [
     "tap_step_degree",
 ]
 trafo_checks = [
+    create_lower_equals_column_check(first_element="tap_min", second_element="tap_max"),
+    create_lower_equals_column_check(first_element="tap2_min", second_element="tap2_max"),
+    create_lower_equals_column_check(first_element="min_angle_degree", second_element="max_angle_degree"),
     pa.Check(
         create_column_group_dependency_validation_func(tap_columns),
         error=f"trafo tap configuration columns have dependency violations. Please ensure {tap_columns} are present in the dataframe.",
@@ -404,17 +423,8 @@ trafo_checks = [
         create_column_group_dependency_validation_func(tap2_columns),
         error=f"trafo tap2 configuration columns have dependency violations. Please ensure {tap2_columns} are present in the dataframe.",
     ),
+    *create_column_dependency_checks_from_metadata(["tdt"], _trafo_columns),
 ]
-trafo_checks += create_column_dependency_checks_from_metadata(
-    [
-        "opf",
-        # "sc",
-        # "3ph",
-        "tdt",
-    ],
-    _trafo_columns,
-)
-trafo_checks.append(create_lower_than_column_check(first_element="min_angle_degree", second_element="max_angle_degree"))
 trafo_schema = pa.DataFrameSchema(
     _trafo_columns,
     checks=trafo_checks,

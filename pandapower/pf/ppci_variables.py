@@ -1,17 +1,19 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from pandapower.pypower.idx_bus import VM, VA
-from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, VG
-from pandapower.pypower.idx_brch import branch_cols
+from numpy import exp, float64, hstack, int64, pi, zeros
+from numpy import flatnonzero as find
+
 from pandapower.pypower.bustypes import bustypes
-from numpy import flatnonzero as find, pi, exp, int64, hstack, zeros, float64
+from pandapower.pypower.idx_brch import BRANCH_COLS
+from pandapower.pypower.idx_bus import VA, VM
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_STATUS, VG
 
 
 def _get_pf_variables_from_ppci(ppci, vsc_ref=False):
     ## default arguments
     if ppci is None:
-        raise ValueError('ppci is empty')
+        raise ValueError("ppci is empty")
 
     # get data for calc
     bus, gen, vsc = ppci["bus"], ppci["gen"], ppci["vsc"]
@@ -20,8 +22,8 @@ def _get_pf_variables_from_ppci(ppci, vsc_ref=False):
     # because it is lacking BR_R_ASYM, BR_X_ASYM, BR_G, BR_G_ASYM, BR_B_ASYM, and it is OK to use 0 as default values
     branch = ppci["branch"]
     br_shape = branch.shape
-    if br_shape[1] < branch_cols:
-        branch = hstack([branch, zeros(shape=(br_shape[0], branch_cols - br_shape[1]), dtype=float64)])
+    if br_shape[1] < BRANCH_COLS:
+        branch = hstack([branch, zeros(shape=(br_shape[0], BRANCH_COLS - br_shape[1]), dtype=float64)])
 
     ## get bus index lists of each type of bus
     ref, pv, pq = bustypes(bus, gen, vsc if vsc_ref else None)
@@ -32,12 +34,27 @@ def _get_pf_variables_from_ppci(ppci, vsc_ref=False):
 
     ## initial state
     # V0    = ones(bus.shape[0])            ## flat start
-    V0 = bus[:, VM] * exp(1j * pi / 180. * bus[:, VA])
+    V0 = bus[:, VM] * exp(1j * pi / 180.0 * bus[:, VA])
     V0[gbus] = gen[on, VG] / abs(V0[gbus]) * V0[gbus]
 
     ref_gens = ppci["internal"]["ref_gens"]
-    return ppci["baseMVA"], bus, gen, branch, ppci["svc"], ppci["tcsc"], ppci["ssc"], ppci["vsc"], \
-        ref, pv, pq, on, gbus, V0, ref_gens
+    return (
+        ppci["baseMVA"],
+        bus,
+        gen,
+        branch,
+        ppci["svc"],
+        ppci["tcsc"],
+        ppci["ssc"],
+        ppci["vsc"],
+        ref,
+        pv,
+        pq,
+        on,
+        gbus,
+        V0,
+        ref_gens,
+    )
 
 
 def _store_results_from_pf_in_ppci(ppci, bus, gen, branch, success, iterations, et):

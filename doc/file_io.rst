@@ -41,15 +41,15 @@ Json
 SQL
 -----------
 
-.. autofunction:: pandapower.to_sqlite
+.. autofunction:: pandapower.sql_io.to_sqlite
 
-.. autofunction:: pandapower.from_sqlite
+.. autofunction:: pandapower.sql_io.from_sqlite
 
 PostgreSQL
 -----------
 
-.. autofunction:: pandapower.to_postgresql
+.. autofunction:: pandapower.sql_io.to_postgresql
 
-.. autofunction:: pandapower.from_postgresql
+.. autofunction:: pandapower.sql_io.from_postgresql
 
-.. autofunction:: pandapower.delete_postgresql_net
+.. autofunction:: pandapower.sql_io.delete_postgresql_net

@@ -1,13 +1,11 @@
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower.network_schema.tools.validation.group_dependency import create_column_dependency_checks_from_metadata
-
 _ext_grid_columns = {
     "name": pa.Column(
         pd.StringDtype, nullable=True, required=False, description="name of the external grid", metadata={"cim": True}
     ),
-    "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus.index"}),
+    "bus": pa.Column(int, pa.Check.ge(0), description="index of connected bus", metadata={"foreign_key": "bus"}),
     "vm_pu": pa.Column(float, pa.Check.gt(0), description="voltage set point [p.u]", metadata={"default": 1.0}),
     "va_degree": pa.Column(float, description="voltage angle set point [degree]", metadata={"default": 0.0}),
     "max_p_mw": pa.Column(
@@ -84,10 +82,18 @@ _ext_grid_columns = {
         metadata={"default": False},
     ),
     "origin_id": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="element rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="element rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "origin_class": pa.Column(
-        pd.StringDtype, nullable=True, required=False, description="origin_class rdfId from CIM", metadata={"cim": True, "doc": False}
+        pd.StringDtype,
+        nullable=True,
+        required=False,
+        description="origin_class rdfId from CIM",
+        metadata={"cim": True, "doc": False},
     ),
     "substation": pa.Column(
         pd.StringDtype,
@@ -125,7 +131,7 @@ _ext_grid_columns = {
         metadata={"cim": True, "doc": False},
     ),
     "RegulatingControl.enabled": pa.Column(
-        float,
+        pd.BooleanDtype,
         nullable=True,
         required=False,
         description="RegulatingControl.enabled from converter, not relevant for calculations",
@@ -139,17 +145,22 @@ _ext_grid_columns = {
         metadata={"cim": True, "doc": False},
     ),
     "p_mw": pa.Column(
-        float, nullable=True, description="p from converter, not relevant for calculations", metadata={"cim": True, "doc": False}
+        float,
+        nullable=True,
+        description="p from converter, not relevant for calculations",
+        metadata={"cim": True, "doc": False},
     ),
     "q_mvar": pa.Column(
-        float, nullable=True, description="q from converter, not relevant for calculations", metadata={"cim": True, "doc": False}
+        float,
+        nullable=True,
+        description="q from converter, not relevant for calculations",
+        metadata={"cim": True, "doc": False},
     ),
 }
 ext_grid_schema = pa.DataFrameSchema(
     _ext_grid_columns,
     name="ext_grid",
     strict=False,
-    checks=create_column_dependency_checks_from_metadata(["opf", "sc", "3ph"], _ext_grid_columns),
 )
 
 res_ext_grid_schema = pa.DataFrameSchema(

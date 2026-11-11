@@ -1,6 +1,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = ["lv_schutterwald"]
 
 import os
 
@@ -22,19 +23,16 @@ def lv_schutterwald(separation_by_sub=False, include_heat_pumps=False, **kwargs)
 
     Source: https://doi.org/10.3390/en13164052
 
-    OPTIONAL:
-        **separation_by_sub** - (bool, False): if True, the network gets separated into 14
-        sections, referring to their substations
+    Parameters:
+        separation_by_sub (bool, False): if True, returns the network as 14 separate sections,
+            one for each substation
+        include_heat_pumps (bool, False): if True, includes the heat pumps from the study
 
-        **include_heat_pumps** - (bool, False): if True, the heat pumps from the study are
-        included in the network
+    Returns:
+        pandapowerNet or list: the complete network, or its 14 sections if ``separation_by_sub``
+        is True
 
-    OUTPUT:
-         **net** - pandapower network
-
-         **subnets** (list) - all sections of the pandapower network
-
-    EXAMPLE:
+    Example:
 
         >>> from pandapower.networks import lv_schutterwald
         >>> net = lv_schutterwald()
@@ -65,13 +63,14 @@ def lv_schutterwald(separation_by_sub=False, include_heat_pumps=False, **kwargs)
         # clustering connected buses
         zones = [list(area) for area in connected_components(mg)]
         for i, zone in enumerate(zones):
-            net1 = select_subnet(net, buses=zone, include_switch_buses=False,
-                                 include_results=True, keep_everything_else=True)
+            net1 = select_subnet(
+                net, buses=zone, include_switch_buses=False, include_results=True, keep_everything_else=True
+            )
             runpp(net1)
-            net1.name = f'LV Schutterwald {i}'
+            net1.name = f"LV Schutterwald {i}"
             subnets.append(net1)
         return subnets
 
     runpp(net)
-    net.name = 'LV Schutterwald'
+    net.name = "LV Schutterwald"
     return net
