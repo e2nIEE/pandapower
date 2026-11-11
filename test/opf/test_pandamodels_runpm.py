@@ -693,6 +693,15 @@ def test_storage_opt():
     assert net._pm["pm_mip_solver"] == "cbc"
     assert list(net.res_ts_opt["res_bus.vm_pu"].index) == list(range(5))
     assert list(storage_results_1[0].columns) == ["p_mw", "q_mvar", "soc_mwh", "soc_percent"]
+    # the bus results contain the optimized storage power
+    res = net.res_ts_opt
+    bus = net.storage.at[0, "bus"]
+    bus_p = (
+        res["res_load.p_mw"].loc[:, net.load.index[net.load.bus == bus]].sum(axis=1)
+        - res["res_sgen.p_mw"].loc[:, net.sgen.index[net.sgen.bus == bus]].sum(axis=1)
+        + res["res_storage.p_mw"][0]
+    )
+    assert np.allclose(res["res_bus.p_mw"][bus], bus_p)
 
     net2 = create_cigre_grid_with_time_series(json_path)
     net2.sn_mva = 100.0

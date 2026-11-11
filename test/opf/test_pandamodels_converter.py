@@ -7,6 +7,7 @@ from copy import deepcopy
 from importlib.util import find_spec
 
 import numpy as np
+import pandas as pd
 import pytest
 
 import test
@@ -14,7 +15,7 @@ from pandapower.converter.pandamodels import convert_pp_to_pm
 from pandapower.converter.pandamodels.from_pm import read_pm_results_to_net
 from pandapower.create import create_poly_cost, create_storage
 from pandapower.networks.cigre_networks import create_cigre_network_mv
-from pandapower.opf.pm_storage import add_storage_opf_settings
+from pandapower.opf.pm_storage import add_storage_opf_settings, read_pm_storage_results
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.run import runopp
 from test.opf.test_basic import (
@@ -137,6 +138,45 @@ def test_storage_opf_settings():
     st = pm["storage"][str(s2 + 1)]
     assert (st["charge_rating"], st["discharge_rating"], st["thermal_rating"]) == (0.3, 0.2, 0.4)
     assert (st["qmin"], st["qmax"]) == (-0.05, 0.1)
+
+
+def test_storage_opf_settings_limits(caplog):
+    net = create_cigre_network_mv("pv_wind")
+    net.switch["closed"] = True
+    # discharging set point without limits -> the limits are |p_mw| and |q_mvar|
+    s0 = create_storage(net, 10, p_mw=-0.5, max_e_mwh=1.0, soc_percent=50.0, q_mvar=-0.1, controllable=True)
+    create_poly_cost(net, s0, "storage", cp1_eur_per_mw=10)
+    pm = convert_pp_to_pm(net)
+    net._options["n_time_steps"] = 1
+    net._options["time_elapsed"] = 1.0
+    with caplog.at_level("WARNING", logger="pandapower.opf.pm_storage"):
+        add_storage_opf_settings(net, net._ppc_opf, pm)
+    # the storage model has no costs
+    assert "poly_cost of the storages [0] are ignored" in caplog.text
+    st = pm["storage"][str(s0 + 1)]
+    assert (st["charge_rating"], st["discharge_rating"]) == (0.5, 0.5)
+    assert (st["qmin"], st["qmax"]) == (-0.1, 0.1)
+
+    # a minimum charging power cannot be modeled
+    net.storage["min_p_mw"] = 0.1
+    net.storage["max_p_mw"] = 0.5
+    pm = convert_pp_to_pm(net)
+    net._options["n_time_steps"] = 1
+    net._options["time_elapsed"] = 1.0
+    with pytest.raises(ValueError, match="min_p_mw"):
+        add_storage_opf_settings(net, net._ppc_opf, pm)
+
+
+def test_read_pm_storage_results_without_soc():
+    net = create_cigre_network_mv("pv_wind")
+    create_storage(net, 10, p_mw=0.1, max_e_mwh=1.0, controllable=False)
+    p = pd.DataFrame({0: [0.1, 0.1]}, index=[3, 4])
+    net.res_ts_opt = {"res_storage.p_mw": p, "res_storage.q_mvar": p * 0}
+    res = read_pm_storage_results(net)[0]
+    assert list(res.columns) == ["p_mw", "q_mvar", "soc_mwh", "soc_percent"]
+    assert list(res.index) == [3, 4]
+    assert np.allclose(res.p_mw, 0.1)
+    assert res.soc_mwh.isna().all() and res.soc_percent.isna().all()
 
 
 if __name__ == "__main__":
