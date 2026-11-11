@@ -16,6 +16,9 @@ Change Log
 - [CHANGED] ran ruff format for whole project
 - [CHANGED] moved test module to top level
 - [ADDED] pandera network validation
+- [ADDED] ``validate_network`` with ``collect_errors=True`` collects all validation issues of a network instead of raising on the first one, and returns human readable ``ValidationIssue`` objects that can be printed or formatted with ``format_validation_errors``
+- [ADDED] diagnostic: new default check ``schema_validation`` (``SchemaValidation``) that validates all element tables against the pandera ``network_schema`` schemas and reports every structural, data type and value range violation of the network at once
+- [FIXED] ``Diagnostic.register_function``: the ``argument_names`` and ``name`` parameters are now optional as documented, so ``register_function(some_function())`` no longer raises ``TypeError``
 - [CHANGED] removed deprecated trafo support characteristics table (replaced by trafo_characteristc_table)
 - [ADDED] create function for trafo characteristic entries
 - [ADDED] converter for trafo characteristics
