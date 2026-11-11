@@ -362,10 +362,15 @@ def get_relevant_elements(net, mode="pf"):
     return [elem for elem in elements.get(mode, []) if not net[elem].empty]
 
 
-def init_results(net, mode="pf"):
+def init_results(net, mode="pf", exclude_result_tables=None):
+    exclude = set() if exclude_result_tables is None else set(exclude_result_tables)
     elements = get_relevant_elements(net, mode)
     suffix = suffix_mode.get(mode, None)
     for element in elements:
+        res_element = get_result_tables(element, suffix)
+        if res_element in exclude and res_element in net:
+            net[res_element] = net[res_element].reindex(net[element].index)
+            continue
         init_element(net, element, suffix)
 
 
