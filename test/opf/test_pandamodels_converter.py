@@ -12,7 +12,9 @@ import pytest
 import test
 from pandapower.converter.pandamodels import convert_pp_to_pm
 from pandapower.converter.pandamodels.from_pm import read_pm_results_to_net
-from pandapower.create import create_poly_cost
+from pandapower.create import create_poly_cost, create_storage
+from pandapower.networks.cigre_networks import create_cigre_network_mv
+from pandapower.opf.pm_storage import add_storage_opf_settings
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.run import runopp
 from test.opf.test_basic import (
@@ -89,6 +91,52 @@ def test_to_pm_angle_limits(net_3w_trafo_opf):
     assert not pm["per_unit"]
     assert line_limits == {(-30.0, 20.0)}
     assert trafo_limits == {(-5.0, 5.0)}
+
+
+def test_storage_opf_settings():
+    """
+    A controllable storage is optimized by the PowerModels storage model only, its ppc generator (with
+    unlimited power) must be deactivated (PandaModels.jl#124). Non-controllable storages stay fixed loads.
+    """
+    net = create_cigre_network_mv("pv_wind")
+    net.switch["closed"] = True
+    s0 = create_storage(net, 10, p_mw=0.5, max_e_mwh=0.2, soc_percent=0.0, q_mvar=0.0, controllable=True)
+    s1 = create_storage(net, 11, p_mw=0.1, max_e_mwh=1.0, soc_percent=50.0, q_mvar=0.0, controllable=False)
+    s2 = create_storage(
+        net,
+        12,
+        p_mw=0.0,
+        max_e_mwh=1.0,
+        soc_percent=50.0,
+        q_mvar=0.0,
+        max_p_mw=0.3,
+        min_p_mw=-0.2,
+        max_q_mvar=0.1,
+        min_q_mvar=-0.05,
+        sn_mva=0.4,
+        controllable=True,
+    )
+    pm = convert_pp_to_pm(net)
+    net._options["n_time_steps"] = 1
+    net._options["time_elapsed"] = 1.0
+    add_storage_opf_settings(net, net._ppc_opf, pm)
+
+    storage_gens = {str(net._pd2pm_lookups["storage_controllable"][s]) for s in [s0, s2]}
+    assert len(storage_gens) == 2
+    for idx, gen in pm["gen"].items():
+        assert gen["gen_status"] == (0 if idx in storage_gens else 1)
+
+    # only the controllable storages are optimized, the other one keeps its fixed power as a load
+    assert set(pm["storage"]) == {str(s0 + 1), str(s2 + 1)}
+    assert pm["load"][str(net._pd2pm_lookups["storage"][s1])]["pd"] == 0.1
+
+    # without power limits the storage power is limited by p_mw / q_mvar
+    st = pm["storage"][str(s0 + 1)]
+    assert (st["charge_rating"], st["discharge_rating"], st["thermal_rating"]) == (0.5, 0.5, 0.5)
+    assert (st["qmin"], st["qmax"]) == (0.0, 0.0)
+    st = pm["storage"][str(s2 + 1)]
+    assert (st["charge_rating"], st["discharge_rating"], st["thermal_rating"]) == (0.3, 0.2, 0.4)
+    assert (st["qmin"], st["qmax"]) == (-0.05, 0.1)
 
 
 if __name__ == "__main__":
