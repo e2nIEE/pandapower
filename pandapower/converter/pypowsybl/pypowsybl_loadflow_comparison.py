@@ -1,5 +1,3 @@
-# -*- coding: utf-8 -*-
-
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
@@ -11,6 +9,7 @@ from typing import Any
 
 import numpy as np
 import pandas as pd
+
 from pandapower import runpp
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.converter.pypowsybl.pypowsybl_comparison_utils import (
@@ -216,7 +215,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
 
             return {"success": success, "message": message, "results": results}
 
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             self.powsybl_loadflow_result = None
             return {
                 "success": False,
@@ -248,7 +247,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
                 "message": "converged" if converged else "pandapower load flow did not converge",
             }
 
-        except Exception as exc:
+        except Exception as exc:  # noqa: BLE001
             self.pandapower_loadflow_result = None
             return {"success": False, "message": f"pandapower load flow failed: {exc}"}
 
@@ -583,10 +582,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
                     if pyp_prefix == "i":
                         pyp_value = self._comparison_ampere_to_kiloampere(pyp_value)
 
-                    if pyp_prefix.startswith("p"):
-                        abs_tol = 5e-3
-                        rel_tol = 3e-2
-                    elif pyp_prefix.startswith("q"):
+                    if pyp_prefix.startswith(("p", "q")):
                         abs_tol = 5e-3
                         rel_tol = 3e-2
                     else:

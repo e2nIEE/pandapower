@@ -2,8 +2,9 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import logging
-from pathlib import Path
 import time
+from pathlib import Path
+
 from pandapower.converter.ucte.ucte_converter import UCTE2pandapower
 from pandapower.converter.ucte.ucte_parser import UCTEParser
 from pandapower.network import pandapowerNet

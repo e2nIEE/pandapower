@@ -1,17 +1,32 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import warnings
-from packaging.version import Version
+__all__ = [
+    "check_elements_within_limits",
+    "get_element_limits",
+    "pp_to_ls2g",
+    "report_contingency_results",
+    "run_contingency",
+    "run_contingency_ls2g",
+]
+
 import logging
-from typing import Callable
+import warnings
+from collections.abc import Callable
+from importlib.util import find_spec
 
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
+from packaging.version import Version
+
+from pandapower.create._utils import add_column_to_df
+from pandapower.network import pandapowerNet
+from pandapower.run import runpp
 
 logger = logging.getLogger(__name__)
-try:
+
+if find_spec("lightsim2grid"):
     import lightsim2grid
 
     ls2g_version = Version(lightsim2grid.__version__)
@@ -19,16 +34,16 @@ try:
         logger.warning("Only lightsim2grid version 0.9.0 or newer is supported - please update ligtsim2grid")
         raise ImportError
 
-    from lightsim2grid.gridmodel.from_pandapower import init as init_ls2g
     from lightsim2grid.contingencyAnalysis import ContingencyAnalysisCPP
+    from lightsim2grid.gridmodel.from_pandapower import init as init_ls2g
 
     if ls2g_version < Version("0.13.0"):
-        from lightsim2grid_cpp import SolverType, GridModel
+        from lightsim2grid_cpp import GridModel, SolverType
     else:
-        from lightsim2grid.lightsim2grid_cpp import SolverType, GridModel
+        from lightsim2grid.lightsim2grid_cpp import GridModel, SolverType
 
     lightsim2grid_installed = True
-except ImportError:
+else:
     lightsim2grid_installed = False
 
 try:
@@ -38,15 +53,11 @@ try:
     if ls2g_version < Version("0.13.0"):
         from lightsim2grid_cpp import KLUSolver, KLUSolverSingleSlack
     else:
-        from lightsim2grid.lightsim2grid_cpp import KLUSolver, KLUSolverSingleSlack
+        from lightsim2grid.lightsim2grid_cpp import KLUSolver, KLUSolverSingleSlack  # noqa: F401
 
     KLU_solver_available = True
 except ImportError:
     KLU_solver_available = False
-
-from pandapower.network import pandapowerNet
-from pandapower.create._utils import add_column_to_df
-from pandapower.run import runpp
 
 
 def pp_to_ls2g(net: pandapowerNet) -> "GridModel":
@@ -65,10 +76,9 @@ def pp_to_ls2g(net: pandapowerNet) -> "GridModel":
     try:
         ls2g_model = init_ls2g(net)
         return ls2g_model
-    except Exception as e:
-        logger.error(f"Failed to create lightsim2grid model for network: {net.name}")
-        logger.exception(e)
-        raise e
+    except Exception:
+        logger.exception(f"Failed to create lightsim2grid model for network: {net.name}")
+        raise
 
 
 def run_contingency(
@@ -122,18 +132,18 @@ def run_contingency(
         pf_options_nminus1 = net.user_pf_options.get("pf_options_nminus1", net.user_pf_options)
     if kwargs is not None:
         # avoid duplicate passing keys to contingency_evaluation_function()
-        pf_options = {key: val for key, val in pf_options.items() if key not in kwargs.keys()}
-        pf_options_nminus1 = {key: val for key, val in pf_options_nminus1.items() if key not in kwargs.keys()}
+        pf_options = {key: val for key, val in pf_options.items() if key not in kwargs}
+        pf_options_nminus1 = {key: val for key, val in pf_options_nminus1.items() if key not in kwargs}
 
     contingency_results = {
         element: {"index": net[element].index.values}
         for element in ("bus", "line", "trafo", "trafo3w")
         if len(net[element]) > 0
     }
-    for element in contingency_results.keys():
+    for element, results in contingency_results.items():
         if element == "bus":
             continue
-        contingency_results[element].update(
+        results.update(
             {
                 "causes_overloading": np.zeros_like(net[element].index.values, dtype=bool),
                 "cause_element": np.empty_like(net[element].index.values, dtype=object),
@@ -141,7 +151,7 @@ def run_contingency(
             }
         )
     result_variables = {
-        **{"bus": ["vm_pu"]},
+        "bus": ["vm_pu"],
         **{key: ["loading_percent"] for key in ("line", "trafo", "trafo3w") if len(net[key]) > 0},
     }
     if len(net.line) > 0 and (
@@ -165,7 +175,7 @@ def run_contingency(
             except Exception as err:
                 logger.error(f"{element} {i} causes {err}")
                 if raise_errors:
-                    raise err
+                    raise
             finally:
                 net[element].at[i, "in_service"] = True
 
@@ -236,25 +246,16 @@ def run_contingency_ls2g(
         raise UserWarning("bus index must be continuous and start with 0 (use pandapower.create_continuous_bus_index)")
     contingency_evaluation_function(net, **kwargs)
 
-    tps_flag = False
-    tps, tps_tap_pos, tps_shift_degree = None, None, None
-    if "tap_phase_shifter" in net.trafo.columns:
-        if np.any(net.trafo.tap_phase_shifter):
-            tps_flag = True
-            tps, tps_tap_pos, tps_shift_degree = _convert_trafo_phase_shifter(net, "trafo", "tap_phase_shifter")
-
     tct2w_flag = False
     tct2w, tct2w_tap_pos, tct2w_shift_degree = None, None, None
     tct3w_flag = False
     tct3w, tct3w_tap_pos, tct3w_shift_degree = None, None, None
-    if "tap_changer_type" in net.trafo.columns:
-        if np.any(net.trafo.tap_changer_type == "Ideal"):
-            tct2w_flag = True
-            tct2w, tct2w_tap_pos, tct2w_shift_degree = _convert_trafo_phase_shifter(net, "trafo", "tap_changer_type")
-    if "tap_changer_type" in net.trafo3w.columns:
-        if np.any(net.trafo3w.tap_changer_type == "Ideal"):
-            tct3w_flag = True
-            tct3w, tct3w_tap_pos, tct3w_shift_degree = _convert_trafo_phase_shifter(net, "trafo3w", "tap_changer_type")
+    if "tap_changer_type" in net.trafo.columns and np.any(net.trafo.tap_changer_type == "Ideal"):
+        tct2w_flag = True
+        tct2w, tct2w_tap_pos, tct2w_shift_degree = _convert_trafo_phase_shifter(net, "trafo")
+    if "tap_changer_type" in net.trafo3w.columns and np.any(net.trafo3w.tap_changer_type == "Ideal"):
+        tct3w_flag = True
+        tct3w, tct3w_tap_pos, tct3w_shift_degree = _convert_trafo_phase_shifter(net, "trafo3w")
 
     # setting "slack" back-and-forth is due to the difference in interpretation of generators as "distributed slack"
     if net._options.get("distributed_slack", False):
@@ -273,10 +274,6 @@ def run_contingency_ls2g(
         lightsim_grid_model = pp_to_ls2g(net)
         solver_type = SolverType.KLUSingleSlack if KLU_solver_available else SolverType.SparseLUSingleSlack
 
-    if tps_flag:
-        net.trafo["tap_phase_shifter"] = tps
-        net.trafo["tap_pos"] = tps_tap_pos
-        net.trafo["shift_degree"] = tps_shift_degree
     if tct2w_flag:
         net.trafo["tap_changer_type"] = tct2w
         net.trafo["tap_pos"] = tct2w_tap_pos
@@ -390,29 +387,22 @@ def run_contingency_ls2g(
             ] = congestion_caused
 
 
-def _convert_trafo_phase_shifter(net, trafotable="trafo", tap_param="tap_changer_type"):
+def _convert_trafo_phase_shifter(net, trafotable="trafo"):
     """
-    Moves tap_step_degree values for ideal phase shifters to the shift_degree values.
-    Works both for old implementation (tap_phase_shifter) and for new implementation (tap_changer_type).
+    Moves tap_step_degree values for ideal phase shifters (tap_changer_type "Ideal") to the shift_degree values.
     """
-    tap_changer = net[trafotable][tap_param].values.copy()
+    tap_changer = net[trafotable]["tap_changer_type"].values.copy()
     shift_degree = net[trafotable].shift_degree.values.copy()
 
     tap_pos = net[trafotable].tap_pos.values
     tap_neutral = net[trafotable].tap_neutral.values
     tap_diff = tap_pos - tap_neutral
     tap_step_degree = net[trafotable].tap_step_degree.values.copy()
+    direction = np.where(net[trafotable].tap_side.values == "lv", -1, 1)
 
-    if tap_param == "tap_changer_type":
-        net.trafo.loc[tap_changer == "Ideal", "shift_degree"] += (
-            tap_diff[tap_changer == "Ideal"] * tap_step_degree[tap_changer == "Ideal"]
-        )
-        net[trafotable][tap_param] = None
-    elif tap_param == "tap_phase_shifter":
-        net.trafo.loc[tap_changer, "shift_degree"] += tap_diff[tap_changer] * tap_step_degree[tap_changer]
-        net[trafotable][tap_param] = False
-    else:
-        raise ValueError("tap_param argument not recognized")
+    ideal = tap_changer == "Ideal"
+    net.trafo.loc[ideal, "shift_degree"] += direction[ideal] * tap_diff[ideal] * tap_step_degree[ideal]
+    net[trafotable]["tap_changer_type"] = None
 
     net[trafotable]["tap_pos"] = 0
 
@@ -508,16 +498,22 @@ def get_element_limits(net):
         d = {element: {"index": element_index}}
 
         if "max_loading_percent" in net[element].columns:
+            # run_contingency uses "max_loading_percent_nminus1"; the older spelling is kept as a fallback
+            nminus1_col = next(
+                (
+                    c
+                    for c in ("max_loading_percent_nminus1", "max_loading_nminus1_percent")
+                    if c in net[element].columns
+                ),
+                "max_loading_percent",
+            )
+            nminus1_limit = net[element].loc[element_index, nminus1_col].values
             d[element].update(
                 {
                     "max_limit": net[element].loc[element_index, "max_loading_percent"].values,
                     "min_limit": -net[element].loc[element_index, "max_loading_percent"].values,
-                    "max_limit_nminus1": net[element].loc[element_index, "max_loading_nminus1_percent"].values
-                    if "max_loading_nminus1_percent" in net[element].columns
-                    else net[element].loc[element_index, "max_loading_percent"].values,
-                    "min_limit_nminus1": -net[element].loc[element_index, "max_loading_nminus1_percent"].values
-                    if "max_loading_nminus1_percent" in net[element].columns
-                    else -net[element].loc[element_index, "max_loading_percent"].values,
+                    "max_limit_nminus1": nminus1_limit,
+                    "min_limit_nminus1": -nminus1_limit,
                 }
             )
 
@@ -536,7 +532,10 @@ def get_element_limits(net):
 
 def check_elements_within_limits(element_limits, contingency_results, nminus1=False, branch_tol=1e-3, bus_tol=1e-6):
     """
-    Check if elements are within limits
+    Check if the indexed elements with extracted constraints are within limits.
+
+    Elements without extracted constraints are not checked. Missing constrained
+    elements or result groups raise ValueError.
 
     :param dict element_limits:
     :param dict contingency_results:
@@ -547,31 +546,39 @@ def check_elements_within_limits(element_limits, contingency_results, nminus1=Fa
     :return: True if all within limits (no violations), False if any limits violated
     :rtype: bool
     """
-    for element, values in contingency_results.items():
-        limit = element_limits[element]
+    for element, limit in element_limits.items():
+        if element not in contingency_results:
+            raise ValueError(f"Missing contingency results for constrained {element} elements")
+        values = contingency_results[element]
+        positions = pd.Index(values["index"]).get_indexer(limit["index"])
+        if np.any(positions < 0):
+            raise ValueError(f"A constrained {element} element is missing from contingency results")
         if "max_temperature_degree_celsius" in limit and "temperature_degree_celsius" in values:
-            if np.any(values["temperature_degree_celsius"] > limit["max_temperature_degree_celsius"] + branch_tol):
+            if np.any(
+                values["temperature_degree_celsius"][positions] > limit["max_temperature_degree_celsius"] + branch_tol
+            ):
                 return False
             if nminus1 and np.any(
-                values["max_temperature_degree_celsius"] > limit["max_temperature_degree_celsius"] + branch_tol
+                values["max_temperature_degree_celsius"][positions]
+                > limit["max_temperature_degree_celsius"] + branch_tol
             ):
                 return False
         if "max_limit" not in limit:
             continue
         if element == "bus":
-            if np.any(values["vm_pu"] > limit["max_limit"] + bus_tol) or np.any(
-                values["vm_pu"] < limit["min_limit"] - bus_tol
+            if np.any(values["vm_pu"][positions] > limit["max_limit"] + bus_tol) or np.any(
+                values["vm_pu"][positions] < limit["min_limit"] - bus_tol
             ):
                 return False
             if nminus1 and (
-                np.any(values["max_vm_pu"] > limit["max_limit_nminus1"] + bus_tol)
-                or np.any(values["min_vm_pu"] < limit["min_limit_nminus1"] - bus_tol)
+                np.any(values["max_vm_pu"][positions] > limit["max_limit_nminus1"] + bus_tol)
+                or np.any(values["min_vm_pu"][positions] < limit["min_limit_nminus1"] - bus_tol)
             ):
                 return False
             continue
-        if np.any(values["loading_percent"] > limit["max_limit"] + branch_tol):
+        if np.any(values["loading_percent"][positions] > limit["max_limit"] + branch_tol):
             return False
-        if nminus1 and np.any(values["max_loading_percent"] > limit["max_limit_nminus1"] + branch_tol):
+        if nminus1 and np.any(values["max_loading_percent"][positions] > limit["max_limit_nminus1"] + branch_tol):
             return False
     return True
 

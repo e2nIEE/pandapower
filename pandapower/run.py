@@ -1,26 +1,33 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "rundcopp",
+    "rundcpp",
+    "runopp",
+    "runpp",
+    "runpp_pgm",
+    "set_user_pf_options",
+]
 
 import inspect
+import logging
 
 from pandapower.auxiliary import (
     _check_bus_index_and_print_warning_if_high,
     _check_gen_index_and_print_warning_if_high,
-    _init_runpp_options,
     _init_rundcopp_options,
     _init_rundcpp_options,
     _init_runopp_options,
+    _init_runpp_options,
     _internal_stored,
 )
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
-from pandapower.powerflow import _powerflow, _recycled_powerflow
 from pandapower.optimal_powerflow import _optimal_powerflow
-
-import logging
+from pandapower.powerflow import _powerflow, _recycled_powerflow
 
 try:
-    from power_grid_model import PowerGridModel, CalculationType, CalculationMethod
+    from power_grid_model import CalculationMethod, CalculationType, PowerGridModel
     from power_grid_model.errors import PowerGridError
     from power_grid_model.validation import validate_input_data
     from power_grid_model_io.converters import PandaPowerConverter
@@ -87,7 +94,7 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
 
     # this part is to inform user and to make typos in parameters visible
     if len(additional_kwargs) > 0:
-        logger.info("parameters %s are not in the list of standard options" % list(additional_kwargs.keys()))
+        logger.info(f"parameters {list(additional_kwargs.keys())} are not in the list of standard options")
 
         net.user_pf_options.update(additional_kwargs)
 
@@ -381,7 +388,7 @@ def runpp_pgm(net, algorithm="nr", max_iterations=20, error_tolerance_vm_pu=1e-8
 
     # 5. Convert the Power Grid Model output data back to the pandapower format and update the pandapower net
     converted_output_data = pgm_converter.convert(data=output_data)
-    for table in converted_output_data.keys():
+    for table in converted_output_data:
         net[table] = converted_output_data[table]
 
 
@@ -504,6 +511,15 @@ def runopp(
     - net.line.max_loading_percent
     - net.trafo.max_loading_percent
     - net.trafo3w.max_loading_percent
+    - net.line.min_angle_degree / net.line.max_angle_degree
+    - net.trafo.min_angle_degree / net.trafo.max_angle_degree
+    - net.trafo3w.min_angle_degree / net.trafo3w.max_angle_degree
+    - net.impedance.min_angle_degree / net.impedance.max_angle_degree
+
+    The angle difference limits constrain ``va_from - va_to`` (for trafos ``va_hv - va_lv``). For ``trafo3w`` the limit
+    applies to each internal star branch (``va_hv - va_star`` and ``va_star - va_mv`` resp. ``va_star - va_lv``)
+    separately, so the terminal difference ``va_hv - va_mv`` resp. ``va_hv - va_lv`` can reach twice the limit.
+    The limits can be ignored by passing ``OPF_IGNORE_ANG_LIM=True``.
 
     If the external grid ist controllable, the voltage setpoint of the external grid can be optimized within the
     voltage constraints by the OPF. The same applies to the voltage setpoints of the controllable generator
@@ -592,6 +608,15 @@ def rundcopp(
     - net.line.max_loading_percent
     - net.trafo.max_loading_percent
     - net.trafo3w.max_loading_percent
+    - net.line.min_angle_degree / net.line.max_angle_degree
+    - net.trafo.min_angle_degree / net.trafo.max_angle_degree
+    - net.trafo3w.min_angle_degree / net.trafo3w.max_angle_degree
+    - net.impedance.min_angle_degree / net.impedance.max_angle_degree
+
+    The angle difference limits constrain ``va_from - va_to`` (for trafos ``va_hv - va_lv``). For ``trafo3w`` the limit
+    applies to each internal star branch (``va_hv - va_star`` and ``va_star - va_mv`` resp. ``va_star - va_lv``)
+    separately, so the terminal difference ``va_hv - va_mv`` resp. ``va_hv - va_lv`` can reach twice the limit.
+    The limits can be ignored by passing ``OPF_IGNORE_ANG_LIM=True``.
 
     Parameters:
         net: The pandapower format network
@@ -632,7 +657,7 @@ def _passed_runpp_parameters(local_parameters):
     :return: dictionary of explicitly passed parameters
     """
     net = local_parameters.pop("net")
-    if "user_pf_options" not in net.keys() or len(net.user_pf_options) == 0:
+    if "user_pf_options" not in net or len(net.user_pf_options) == 0:
         return None
     # default_parameters contains the parameters that are specified for the runpp function by default in its definition
     args, _, _, defaults, *_ = inspect.getfullargspec(runpp)
@@ -645,7 +670,7 @@ def _passed_runpp_parameters(local_parameters):
     passed_parameters = {
         key: val
         for key, val in local_parameters.items()
-        if key not in default_parameters.keys() or val != default_parameters.get(key, None)
+        if key not in default_parameters or val != default_parameters.get(key, None)
     }
     # passed_parameters should have the "kwargs" parameters in the same level as other parameters
     # (not nested in "kwargs: {...}") for them to be considered later on, otherwise they will be ignored

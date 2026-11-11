@@ -1,15 +1,18 @@
-import time
-from pandapower.grid_equivalents.auxiliary import (
-    drop_internal_branch_elements,
-    _runpp_except_voltage_angles,
-    impedance_columns,
-)
-import pandas as pd
-import numpy as np
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import logging
+import time
 
-from pandapower.create import create_shunt, create_impedance, create_switch, create_ward, create_xward
+import numpy as np
+import pandas as pd
+
+from pandapower.create import create_impedance, create_shunt, create_switch, create_ward, create_xward
+from pandapower.grid_equivalents.auxiliary import (
+    _runpp_except_voltage_angles,
+    drop_internal_branch_elements,
+    impedance_columns,
+)
 from pandapower.toolbox.grid_modification import drop_buses
 
 logger = logging.getLogger(__name__)
@@ -203,7 +206,7 @@ def _replace_external_area_by_wards(
         drop_buses(net_external, net_external.bus.index.tolist()[-(len(ext_buses_with_xward)) :])
     t_end = time.perf_counter()
     if show_computing_time:
-        logger.info('"replace_external_area_by_wards" finished in %s seconds:' % round((t_end - t_start), 2))
+        logger.info(f'"replace_external_area_by_wards" finished in {round((t_end - t_start), 2)} seconds:')
 
 
 def subtract_concat_of_p_and_q_from_first_input(eq_power, net_external, slack_gen):
@@ -316,4 +319,4 @@ def _replace_external_area_by_xwards(
         drop_buses(net_external, net_external.bus.index.tolist()[-(len(ext_buses_with_xward)) :])
     t_end = time.perf_counter()
     if show_computing_time:
-        logger.info('"replace_external_area_by_xwards" finished in %s seconds:' % round((t_end - t_start), 2))
+        logger.info(f'"replace_external_area_by_xwards" finished in {round((t_end - t_start), 2)} seconds:')

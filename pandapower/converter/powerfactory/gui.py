@@ -1,12 +1,11 @@
-import os
 import logging
-from typing_extensions import deprecated
-
+import os
 import tkinter as tk
 
-from pandapower.network import ADict
-from pandapower.converter.powerfactory.main_pf import exit_gracefully
+from typing_extensions import deprecated
 
+from pandapower.converter.powerfactory.main_pf import exit_gracefully
+from pandapower.network import ADict
 
 logger = logging.getLogger(__name__)
 
@@ -35,7 +34,7 @@ def conf_var_graphics(app, opt_grf, var_graphics):
     dia_folder = app.GetProjectFolder("dia")
     dia_grid = [d.loc_name for d in dia_folder.GetContents("*.IntGrfnet")]
     dia_grid.sort()
-    logger.info("found network diagrams in project: %s" % dia_grid)
+    logger.info(f"found network diagrams in project: {dia_grid}")
     menu_options = ["no geodata", "GPS"]
     menu_options.extend(dia_grid)
 
@@ -121,8 +120,8 @@ def make_gui(app, project_name, browse_dst, calc):
     # refresh graphics option menu
     try:
         conf_var_graphics(app, opt_grf, var_graphics)
-    except Exception as err:
-        logger.error("could not find network diagrams: %s" % err)
+    except Exception as err:  # noqa: BLE001
+        logger.error(f"could not find network diagrams: {err}")
 
     params.flag_graphics = var_graphics.get
 

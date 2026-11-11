@@ -4,7 +4,6 @@
 import logging
 import math
 import time
-from typing import Dict, Union
 
 import numpy as np
 import pandas as pd
@@ -26,7 +25,7 @@ class UCTE2pandapower:
         self.slack_as_gen = slack_as_gen
         self.clip_small_x_values = clip_small_x_values
 
-    def convert(self, ucte_dict: Dict) -> pandapowerNet:
+    def convert(self, ucte_dict: dict) -> pandapowerNet:
         self.logger.info("Converting UCTE data to a pandapower network.")
         time_start = time.time()
         # create a temporary copy from the origin input data
@@ -34,7 +33,7 @@ class UCTE2pandapower:
         for ucte_element, items in ucte_dict.items():
             self.u_d[ucte_element] = items.copy()
         # first reset the index to get indices for pandapower
-        for ucte_element in self.u_d.keys():
+        for ucte_element in self.u_d:
             if ucte_element == "R":
                 continue
             self.u_d[ucte_element] = self.u_d[ucte_element].reset_index(level=0)
@@ -83,13 +82,13 @@ class UCTE2pandapower:
         cols_in_order = list(pd.Series(self.net.bus.columns).replace("node_name", "ucte_name"))
         self.net.bus = self.net.bus.rename(columns={"name": "ucte_name", "node_name": "name"})[cols_in_order]
 
-        self.logger.info("Finished converting the input data to pandapower in %ss." % (time.time() - time_start))
+        self.logger.info(f"Finished converting the input data to pandapower in {time.time() - time_start}s.")
         return self.net
 
     def _copy_to_pp(self, pp_type: str, input_df: pd.DataFrame):
-        self.logger.debug("Copy %s datasets to pandapower network with type %s" % (input_df.index.size, pp_type))
-        if pp_type not in self.net.keys():
-            self.logger.warning("Missing pandapower type %s in the pandapower network!" % pp_type)
+        self.logger.debug(f"Copy {input_df.index.size} datasets to pandapower network with type {pp_type}")
+        if pp_type not in self.net:
+            self.logger.warning(f"Missing pandapower type {pp_type} in the pandapower network!")
             return
         self.net[pp_type] = pd.concat(
             [
@@ -221,7 +220,7 @@ class UCTE2pandapower:
         # get the lines
         # status 9 & 1 stands for equivalent line that can be interpreted as impedance
         # status 7 & 2 stands for busbar coupler that can be interpreted as switches
-        lines = self.u_d["L"].loc[self.u_d["L"].status.isin([9, 1, 7, 2]) == False, :]
+        lines = self.u_d["L"].loc[~self.u_d["L"].status.isin([9, 1, 7, 2]), :]
         # definition of busbar coupler is if r, x, b are all zero, but some statuses are wrong, check for those
         lines = lines.drop(lines.loc[(lines.r == 0) & (lines.x == 0) & (lines.b == 0)].index)
         # also drop lines with x < 0 as they will be modeled as impedances
@@ -522,11 +521,10 @@ class UCTE2pandapower:
     def _set_column_to_type(self, input_df: pd.DataFrame, column: str, data_type):
         try:
             input_df[column] = input_df[column].astype(data_type)
-        except Exception as e:
-            self.logger.error("Couldn't set data type %s for column %s!" % (data_type, column))
-            self.logger.exception(e)
+        except Exception:
+            self.logger.exception(f"Couldn't set data type {data_type} for column {column}!")
 
-    def _fill_empty_names(self, input_df: pd.DataFrame, input_column: Union[str, int] = 0):
+    def _fill_empty_names(self, input_df: pd.DataFrame, input_column: str | int = 0):
         """Fills empty names with node1_node2_order-code"""
 
         def get_name_from_ucte_string(ucte_string: str) -> str:
@@ -537,7 +535,7 @@ class UCTE2pandapower:
         )
         input_df.loc[input_df["name"] == "", "name"] = new_names
 
-    def _fill_amica_names(self, input_df: pd.DataFrame, suffix: str, input_column: Union[str, int] = 0) -> None:
+    def _fill_amica_names(self, input_df: pd.DataFrame, suffix: str, input_column: str | int = 0) -> None:
         def get_name_from_ucte_string(ucte_string: str) -> str:
             node1 = ucte_string[:7].replace(" ", "_")
             node2 = ucte_string[9:16].replace(" ", "_")

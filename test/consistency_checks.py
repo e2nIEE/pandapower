@@ -1,11 +1,11 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import numpy as np
 import pandas as pd
 from numpy import allclose, isclose
-import numpy as np
 
-from pandapower import runpp, rundcpp, runpp_pgm
+from pandapower import rundcpp, runpp, runpp_pgm
 from pandapower.build_branch import _calc_tap_from_dataframe
 from pandapower.pf.runpp_3ph import runpp_3ph
 from pandapower.results import get_relevant_elements
@@ -161,6 +161,10 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
     for idx, tab in net.ssc.iterrows():
         bus_q.at[tab.bus] += net.res_ssc.q_mvar.at[idx]
 
+    for idx, tab in net.vsc_bipolar.iterrows():
+        bus_p.at[tab.bus] += net.res_vsc_bipolar.p_mw.at[idx]
+        bus_q.at[tab.bus] += net.res_vsc_bipolar.q_mvar.at[idx]
+
     assert allclose(net.res_bus.p_mw.values, bus_p.values, equal_nan=True, rtol=rtol)
     if test_q:
         assert allclose(net.res_bus.q_mvar.values, bus_q.values, equal_nan=True, rtol=rtol)
@@ -175,6 +179,10 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
         for idx, tab in net.vsc_stacked.iterrows():
             bus_p_dc.at[tab.bus_dc_plus] += net.res_vsc_stacked.p_dc_mw_p.at[idx]
             bus_p_dc.at[tab.bus_dc_minus] += net.res_vsc_stacked.p_dc_mw_m.at[idx]
+
+        for idx, tab in net.vsc_bipolar.iterrows():
+            bus_p_dc.at[tab.bus_dc_plus] += net.res_vsc_bipolar.p_dc_mw_p.at[idx]
+            bus_p_dc.at[tab.bus_dc_minus] += net.res_vsc_bipolar.p_dc_mw_m.at[idx]
 
         assert allclose(net.res_bus_dc.p_mw.values, bus_p_dc.values, equal_nan=True, rtol=rtol)
 
@@ -191,8 +199,8 @@ def indices_consistent_3ph(net):
     for element in elements:
         e_idx = net[element].index
         res_idx = net["res_" + element + "_3ph"].index
-        assert len(e_idx) == len(res_idx), "length of %s bus and res_%s indices do not match" % (element, element)
-        assert all(e_idx == res_idx), "%s bus and res_%s indices do not match" % (element, element)
+        assert len(e_idx) == len(res_idx), f"length of {element} bus and res_{element} indices do not match"
+        assert all(e_idx == res_idx), f"{element} bus and res_{element} indices do not match"
 
 
 def branch_loss_consistent_with_bus_feed_in_3ph(net, atol=1e-2):
@@ -214,15 +222,15 @@ def branch_loss_consistent_with_bus_feed_in_3ph(net, atol=1e-2):
         assert isclose(bus_surplus_p, branch_loss_p, atol=atol)
     except AssertionError:
         raise AssertionError(
-            "Branch losses are %.4f MW, but power generation at the buses exceeds the feedin by %.4f MW"
-            % (branch_loss_p, bus_surplus_p)
+            f"Branch losses are {branch_loss_p:.4f} MW, but power generation at the buses exceeds the feedin "
+            f"by {bus_surplus_p:.4f} MW"
         )
     try:
         assert isclose(bus_surplus_q, branch_loss_q, atol=atol)
     except AssertionError:
         raise AssertionError(
-            "Branch losses are %.4f MVar, but power generation at the buses exceeds the feedin by %.4f MVar"
-            % (branch_loss_q, bus_surplus_q)
+            f"Branch losses are {branch_loss_q:.4f} MVar, but power generation at the buses exceeds the feedin "
+            f"by {bus_surplus_p:.4f} MVar"
         )
 
 

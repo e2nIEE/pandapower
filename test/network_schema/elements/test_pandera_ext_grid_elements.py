@@ -360,9 +360,7 @@ class TestExtGridResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_ext_grid_result_totals(self):
         """Test: aggregated p_mw / q_mvar results are consistent"""
-        pass
 
     @pytest.mark.skip(reason="Not yet implemented")
     def test_ext_grid_3ph_results(self):
         """Test: 3-phase results contain valid values per phase"""
-        pass

@@ -1,6 +1,13 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = [
+    "create_dcline",
+    "create_lines",
+    "create_lines_dc",
+    "create_lines_dc_from_parameters",
+]
+
 import logging
 from collections.abc import Iterable, Sequence
 from operator import itemgetter
@@ -10,8 +17,7 @@ import numpy.typing as npt
 from numpy import nan
 from typing_extensions import deprecated
 
-from pandapower import ensure_iterability, pandapowerNet
-from pandapower.auxiliary import warn_and_fix_parameter_renaming
+from pandapower.auxiliary import ensure_iterability, warn_and_fix_parameter_renaming
 from pandapower.create._utils import (
     _add_multiple_branch_geodata,
     _add_to_entries_if_not_nan,
@@ -22,6 +28,7 @@ from pandapower.create._utils import (
     _set_entries,
     _set_multiple_entries,
 )
+from pandapower.network import pandapowerNet
 from pandapower.network_structure import get_default_value
 from pandapower.pp_types import Int, LineType
 from pandapower.std_types import load_std_type
@@ -80,6 +87,8 @@ def create_lines(
     alpha: float | Iterable[float] = nan,
     temperature_degree_celsius: float | Iterable[float] = nan,
     skip_validation: bool = False,
+    min_angle_degree: float | Iterable[float] = nan,
+    max_angle_degree: float | Iterable[float] = nan,
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
@@ -104,6 +113,10 @@ def create_lines(
         df: derating factor: maximum current of line in relation to nominal current of line (from 0 to 1)
         parallel: number of parallel line systems
         max_loading_percent: maximum current loading (only needed for OPF)
+        min_angle_degree: minimum voltage angle difference between from_bus and to_bus (va_from - va_to) in degree,
+            considered in the OPF. NaN means unconstrained.
+        max_angle_degree: maximum voltage angle difference between from_bus and to_bus (va_from - va_to) in degree,
+            considered in the OPF. NaN means unconstrained.
         alpha: temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))
             .. attention::
                 This column will only be filled from std_type if the column already exists in the line DataFrame
@@ -197,6 +210,8 @@ def create_lines(
         raise TypeError(f"line_params is not a valid type: {type(line_params)}")
 
     _add_to_entries_if_not_nan(net, "line", entries, index, "max_loading_percent", max_loading_percent)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "min_angle_degree", min_angle_degree)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "max_angle_degree", max_angle_degree)
     _add_to_entries_if_not_nan(net, "line", entries, index, "alpha", alpha)
     _add_to_entries_if_not_nan(net, "line", entries, index, "temperature_degree_celsius", temperature_degree_celsius)
 

@@ -2,15 +2,17 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import logging
 import time
-from typing import Dict
-import pandas as pd
+
 import numpy as np
+import pandas as pd
+
 from pandapower import pandapowerNet
+
 from .. import cim_tools
 
 
 class CreateMeasurements:
-    def __init__(self, net: pandapowerNet, cim: Dict):
+    def __init__(self, net: pandapowerNet, cim: dict):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.net = net
         self.cim = cim
@@ -20,9 +22,9 @@ class CreateMeasurements:
 
     def _copy_to_measurement(self, input_df: pd.DataFrame):
         pp_type = "measurement"
-        self.logger.debug("Copy %s datasets to pandapower network with type %s" % (input_df.index.size, pp_type))
+        self.logger.debug(f"Copy {input_df.index.size} datasets to pandapower network with type {pp_type}")
         if pp_type not in self.net:
-            self.logger.warning("Missing pandapower type %s in the pandapower network!" % pp_type)
+            self.logger.warning(f"Missing pandapower type {pp_type} in the pandapower network!")
             return
         if input_df.empty:
             return

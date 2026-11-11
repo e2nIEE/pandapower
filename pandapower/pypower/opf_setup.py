@@ -8,23 +8,26 @@
 
 """Constructs an OPF model object from a PYPOWER case dict."""
 
-from sys import stdout, stderr
+from sys import stderr, stdout
 
-from numpy import array, any, delete, unique, arange, nonzero, pi, r_, ones, inf, flatnonzero as find, int64, full
-from scipy.sparse import hstack, csr_matrix as sparse
+from numpy import any, arange, array, delete, full, inf, int64, nonzero, ones, pi, r_, unique
+from numpy import flatnonzero as find
+from scipy.sparse import csr_matrix as sparse
+from scipy.sparse import hstack
+
 from pandapower.pypower.idx_brch import RATE_A
-from pandapower.pypower.idx_bus import BUS_TYPE, REF, VA, VM, PD, GS, VMAX, VMIN
-from pandapower.pypower.idx_cost import MODEL, NCOST, PW_LINEAR, COST, POLYNOMIAL
-from pandapower.pypower.idx_gen import GEN_BUS, VG, PG, QG, PMAX, PMIN, QMAX, QMIN
-from pandapower.pypower.makeAang import makeAang
-from pandapower.pypower.makeApq import makeApq
-from pandapower.pypower.makeAvl import makeAvl
-from pandapower.pypower.makeAy import makeAy
-from pandapower.pypower.makeBdc import makeBdc
+from pandapower.pypower.idx_bus import BUS_TYPE, GS, PD, REF, VA, VM, VMAX, VMIN
+from pandapower.pypower.idx_cost import COST, MODEL, NCOST, POLYNOMIAL, PW_LINEAR
+from pandapower.pypower.idx_gen import GEN_BUS, PG, PMAX, PMIN, QG, QMAX, QMIN, VG
+from pandapower.pypower.make_a_ang import makeAang
+from pandapower.pypower.make_a_pq import makeApq
+from pandapower.pypower.make_a_vl import makeAvl
+from pandapower.pypower.make_a_y import makeAy
+from pandapower.pypower.make_b_dc import makeBdc
 from pandapower.pypower.opf_args import opf_args
+from pandapower.pypower.opf_model import opf_model
 from pandapower.pypower.pqcost import pqcost
 from pandapower.pypower.run_userfcn import run_userfcn
-from pandapower.pypower.opf_model import opf_model
 
 
 def opf_setup(ppc, ppopt):
@@ -109,18 +112,16 @@ def opf_setup(ppc, ppopt):
         ]  # changed from ppc['gencost'][pwl1, COST:COST + 2] = r_[m, b] because we need to make sure, that m and b have the same shape, resulted in a value error due to shape mismatch before
 
     ## create (read-only) copies of individual fields for convenience
-    baseMVA, bus, gen, branch, gencost, _, lbu, ubu, ppopt, _, fparm, H, Cw, z0, zl, zu, userfcn, _ = opf_args(
-        ppc, ppopt
-    )
+    baseMVA, bus, gen, branch, gencost, _, _, _, ppopt, *_, userfcn, _ = opf_args(ppc, ppopt)
 
     ## warn if there is more than one reference bus
     refs = find(bus[:, BUS_TYPE] == REF)
     if len(refs) > 1 and verbose > 0:
         errstr = (
-            "\nopf_setup: Warning: Multiple reference buses.\n"
-            + "           For a system with islands, a reference bus in each island\n"
-            + "           may help convergence, but in a fully connected system such\n"
-            + "           a situation is probably not reasonable.\n\n"
+            f"\nopf_setup: Warning: Multiple reference buses."
+            f"\n{'':11}For a system with islands, a reference bus in each island"
+            f"\n{'':11}may help convergence, but in a fully connected system such"
+            f"\n{'':11}a situation is probably not reasonable.\n\n"
         )
         stdout.write(errstr)
 
@@ -136,7 +137,8 @@ def opf_setup(ppc, ppopt):
     Qmin = gen[:, QMIN] / baseMVA
     Qmax = gen[:, QMAX] / baseMVA
 
-    if dc:  ## DC model
+    if dc:
+        ## DC model
         ## more problem dimensions
         nv = 0  ## number of voltage magnitude vars
         nq = 0  ## number of Qg vars
@@ -155,9 +157,10 @@ def opf_setup(ppc, ppopt):
         upf = branch[il, RATE_A] / baseMVA - Pfinj[il]
         upt = branch[il, RATE_A] / baseMVA + Pfinj[il]
 
-        user_vars = ["Va", "Pg"]
+        # user_vars = ["Va", "Pg"]
         ycon_vars = ["Pg", "y"]
-    else:  ## AC model
+    else:
+        ## AC model
         ## more problem dimensions
         nv = nb  ## number of voltage magnitude vars
         nq = ng  ## number of Qg vars
@@ -169,7 +172,7 @@ def opf_setup(ppc, ppopt):
         ## generator PQ capability curve constraints
         Apqh, ubpqh, Apql, ubpql, Apqdata = makeApq(baseMVA, gen)
 
-        user_vars = ["Va", "Vm", "Pg", "Qg"]
+        # user_vars = ["Va", "Vm", "Pg", "Qg"]
         ycon_vars = ["Pg", "Qg", "y"]
 
     ## voltage angle reference constraints
@@ -199,12 +202,9 @@ def opf_setup(ppc, ppopt):
     if nusr:  # pragma: no cover
         nz = ppc["A"].shape[1] - nx  ## number of user z variables
         if nz < 0:
-            stderr.write("opf_setup: user supplied A matrix must have at least %d columns.\n" % nx)
-    else:
-        nz = 0  ## number of user z variables
-        if nw:  ## still need to check number of columns of N
-            if ppc["N"].shape[1] != nx:
-                stderr.write("opf_setup: user supplied N matrix must have %d columns.\n" % nx)
+            stderr.write(f"opf_setup: user supplied A matrix must have at least {nx} columns.\n")
+    elif nw and ppc["N"].shape[1] != nx:
+        stderr.write(f"opf_setup: user supplied N matrix must have {nx} columns.\n")
 
     ## construct OPF model object
     om = opf_model(ppc)

@@ -1,10 +1,9 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import json
 import logging
 import os
-import json
-from typing import Dict
 
 import pandas as pd
 
@@ -13,7 +12,7 @@ from pandapower import pandapowerNet
 logger = logging.getLogger(__name__)
 
 
-def get_pp_net_special_columns_dict() -> Dict[str, str]:
+def get_pp_net_special_columns_dict() -> dict[str, str]:
     """
     Get a dictionary with the special CIM fields, used as columns in a pandapower network.
     :return Dict[str, str]: The dictionary with the special CIM fields.
@@ -82,7 +81,7 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
     return net
 
 
-def get_cim_schema(cgmes_version: str = "2.4.15") -> Dict[str, Dict[str, Dict[str, str | Dict[str, Dict[str, str]]]]]:
+def get_cim_schema(cgmes_version: str = "2.4.15") -> dict[str, dict[str, dict[str, str | dict[str, dict[str, str]]]]]:
     """
     Parses the CIM schema from the serialized CIM schema json files which have been created from the RDF schema files.
     The schema is parsed for the serializer from the CIM data structure used by the cim2pp and pp2cim converters.
@@ -96,12 +95,12 @@ def get_cim_schema(cgmes_version: str = "2.4.15") -> Dict[str, Dict[str, Dict[st
     for one_file in os.listdir(path_with_serialized_schemas):
         path_to_schema = path_with_serialized_schemas + os.sep + one_file
         if one_file.lower().startswith("cim16_") and cgmes_version == "2.4.15":
-            logger.info("Parsing the schema from CIM 16 from disk: %s" % path_to_schema)
+            logger.info(f"Parsing the schema from CIM 16 from disk: {path_to_schema}")
             with open(path_to_schema, encoding="UTF-8", mode="r") as f:
                 cim_schema = json.load(f)
             return cim_schema
         elif one_file.lower().startswith("cim100_") and (cgmes_version == "3.0" or cgmes_version.lower() == "ltds"):
-            logger.info("Parsing the schema from CIM 100 from disk: %s" % path_to_schema)
+            logger.info(f"Parsing the schema from CIM 100 from disk: {path_to_schema}")
             with open(path_to_schema, encoding="UTF-8", mode="r") as f:
                 cim_schema = json.load(f)
             return cim_schema

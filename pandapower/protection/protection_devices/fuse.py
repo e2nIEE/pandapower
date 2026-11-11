@@ -1,4 +1,4 @@
-from pandapower import std_type_exists, load_std_type
+from pandapower import load_std_type, std_type_exists
 
 try:
     import matplotlib.pyplot as plt
@@ -8,6 +8,7 @@ except ImportError:
     MATPLOTLIB_INSTALLED = False
 
 import numpy as np
+
 from pandapower.control.util.characteristic import LogSplineCharacteristic
 from pandapower.protection.basic_protection_device import ProtectionDevice
 
@@ -152,7 +153,7 @@ class Fuse(ProtectionDevice):
         plt.grid(True, which="both", ls="-")
 
     def __str__(self):
-        return "Protection Device: %s \nType: %s \nName: %s" % (self.__class__.__name__, self.fuse_type, self.name)
+        return f"Protection Device: {self.__class__.__name__} \nType: {self.fuse_type} \nName: {self.name}"
 
     def __eq__(self, other):
         if self.__class__ is not other.__class__:

@@ -11,6 +11,7 @@ from scipy.sparse import issparse
 
 from pandapower.pypower._compat import PY2
 from pandapower.pypower.ppoption import ppoption
+
 # from pandapower.pypower.loadcase import loadcase
 
 
@@ -130,9 +131,8 @@ def opf_args(ppc, ppopt):
             stderr.write("opf_args.m: dimension mismatch between N and fparm in generalized cost parameters\n")
         if (H is not None) and (H.shape[0] != nw | H.shape[0] != nw):
             stderr.write("opf_args.m: dimension mismatch between N and H in generalized cost parameters\n")
-        if Au is not None:
-            if Au.shape[0] > 0 and N.shape[1] != Au.shape[1]:
-                stderr.write("opf_args.m: A and N must have the same number of columns\n")
+        if Au is not None and Au.shape[0] > 0 and N.shape[1] != Au.shape[1]:
+            stderr.write("opf_args.m: A and N must have the same number of columns\n")
         ## make sure N and H are sparse
         if not issparse(N):
             stderr.write("opf_args.m: N must be sparse in generalized cost parameters\n")
@@ -141,7 +141,7 @@ def opf_args(ppc, ppopt):
 
     if Au is not None and not issparse(Au):
         stderr.write("opf_args.m: Au must be sparse\n")
-    if ppopt == None or len(ppopt) == 0:
+    if ppopt is None or len(ppopt) == 0:
         ppopt = ppoption()
 
     return baseMVA, bus, gen, branch, gencost, Au, lbu, ubu, ppopt, N, fparm, H, Cw, z0, zl, zu, userfcn, areas

@@ -1,10 +1,21 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import sys
-import math
+__all__ = [
+    "bus_info",
+    "calculate_unique_angles",
+    "hover",
+    "line_info",
+    "simple_plot",
+    "trafo3w_info",
+    "trafo_info",
+]
+
 import logging
+import math
+import sys
 from collections import defaultdict
+
 import pandas as pd
 
 try:
@@ -14,24 +25,24 @@ try:
 except ImportError:
     MATPLOTLIB_INSTALLED = False
 
-from pandapower.auxiliary import soft_dependency_error, pandapowerNet
-from pandapower.plotting.plotting_toolbox import get_collection_sizes
+from pandapower.auxiliary import pandapowerNet, soft_dependency_error
 from pandapower.plotting.collections import (
-    create_bus_collection,
-    create_line_collection,
-    create_trafo_collection,
-    create_trafo3w_collection,
-    create_line_switch_collection,
-    draw_collections,
     create_bus_bus_switch_collection,
-    create_ext_grid_collection,
-    create_sgen_collection,
-    create_gen_collection,
-    create_load_collection,
+    create_bus_collection,
     create_dcline_collection,
+    create_ext_grid_collection,
+    create_gen_collection,
+    create_line_collection,
+    create_line_switch_collection,
+    create_load_collection,
+    create_sgen_collection,
+    create_trafo3w_collection,
+    create_trafo_collection,
     create_vsc_collection,
+    draw_collections,
 )
 from pandapower.plotting.generic_geodata import create_generic_coordinates
+from pandapower.plotting.plotting_toolbox import get_collection_sizes
 
 logger = logging.getLogger(__name__)
 
@@ -152,21 +163,30 @@ def hover(event, ax, net, hover_text):
         # Append loadflow results when available
         if element == "bus" and idx is not None:
             res_bus = getattr(net, "res_bus", None)
-            if res_bus is not None and not res_bus.empty and idx in res_bus.index:
-                if "vm_pu" in res_bus.columns and "va_degree" in res_bus.columns:
-                    hover_info += (
-                        f"\nV_m = {res_bus.vm_pu.at[idx]:.2f} p.u."
-                        f"\nV_m = {(res_bus.vm_pu.at[idx] * net.bus.vn_kv.at[idx]):.2f} kV"
-                        f"\nV_a = {res_bus.va_degree.at[idx]:.2f} deg"
-                    )
+            if (
+                res_bus is not None
+                and not res_bus.empty
+                and idx in res_bus.index
+                and "vm_pu" in res_bus.columns
+                and "va_degree" in res_bus.columns
+            ):
+                hover_info += (
+                    f"\nV_m = {res_bus.vm_pu.at[idx]:.2f} p.u."
+                    f"\nV_m = {(res_bus.vm_pu.at[idx] * net.bus.vn_kv.at[idx]):.2f} kV"
+                    f"\nV_a = {res_bus.va_degree.at[idx]:.2f} deg"
+                )
         elif element == "line" and idx is not None:
             res_line = getattr(net, "res_line", None)
-            if res_line is not None and not res_line.empty and idx in res_line.index:
-                if "loading_percent" in res_line.columns and "i_ka" in res_line.columns:
-                    hover_info += (
-                        f"\nLoading: {res_line.at[idx, 'loading_percent']:.2f} %"
-                        f"\nI_kA: {res_line.at[idx, 'i_ka']:.2f} kA"
-                    )
+            if (
+                res_line is not None
+                and not res_line.empty
+                and idx in res_line.index
+                and "loading_percent" in res_line.columns
+                and "i_ka" in res_line.columns
+            ):
+                hover_info += (
+                    f"\nLoading: {res_line.at[idx, 'loading_percent']:.2f} %\nI_kA: {res_line.at[idx, 'i_ka']:.2f} kA"
+                )
 
         hover_text.set_text(hover_info)
         hover_text.set_ha("left")
@@ -597,7 +617,7 @@ def simple_plot(
 
             runpp(net)
 
-        from pandapower.plotting.colormaps import cmap_discrete, cmap_continuous
+        from pandapower.plotting.colormaps import cmap_continuous, cmap_discrete
 
         if colormap_type == "discrete":
             if has_lines:
@@ -627,7 +647,7 @@ def simple_plot(
 
         colormap_ready = cmap_buses_ready or cmap_lines_ready
 
-    except Exception as exc:
+    except Exception as exc:  # noqa: BLE001
         logger.warning(
             f"Colormap setup failed ({exc!r}). Mode buttons will not be shown; plotting in Normal mode only."
         )

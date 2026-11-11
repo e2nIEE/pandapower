@@ -15,7 +15,7 @@ from pandapower.pypower.idx_brch import F_BUS, MU_SF, MU_ST, PF, PT, QF, QT, RAT
 from pandapower.pypower.idx_bus import BUS_TYPE, LAM_P, LAM_Q, MU_VMAX, MU_VMIN, REF, VA, VM
 from pandapower.pypower.idx_cost import MODEL, NCOST, PW_LINEAR
 from pandapower.pypower.idx_gen import GEN_BUS, MU_PMAX, MU_PMIN, MU_QMAX, MU_QMIN, PG, QG, VG
-from pandapower.pypower.makeYbus import makeYbus
+from pandapower.pypower.make_y_bus import makeYbus
 from pandapower.pypower.opf_consfcn import opf_consfcn
 from pandapower.pypower.opf_costfcn import opf_costfcn
 from pandapower.pypower.opf_hessfcn import opf_hessfcn
@@ -136,9 +136,14 @@ def pipsopf_solver(om, ppopt, out_opt=None):
     nl2 = len(il)  ## number of constrained lines
 
     ##-----  run opf  -----
-    f_fcn = lambda x, return_hessian=False: opf_costfcn(x, om, return_hessian)
-    gh_fcn = lambda x: opf_consfcn(x, om, Ybus, Yf[il, :], Yt[il, :], ppopt, il)
-    hess_fcn = lambda x, lmbda, cost_mult: opf_hessfcn(x, lmbda, om, Ybus, Yf[il, :], Yt[il, :], ppopt, il, cost_mult)
+    def f_fcn(x, return_hessian=False):
+        return opf_costfcn(x, om, return_hessian)
+
+    def gh_fcn(x):
+        return opf_consfcn(x, om, Ybus, Yf[il, :], Yt[il, :], ppopt, il)
+
+    def hess_fcn(x, lmbda, cost_mult):
+        return opf_hessfcn(x, lmbda, om, Ybus, Yf[il, :], Yt[il, :], ppopt, il, cost_mult)
 
     solution = pips(f_fcn, x0, A, l, u, xmin, xmax, gh_fcn, hess_fcn, opt)
     x, f, info, lmbda, output = solution["x"], solution["f"], solution["eflag"], solution["lmbda"], solution["output"]

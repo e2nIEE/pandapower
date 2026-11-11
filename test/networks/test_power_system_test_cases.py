@@ -2,9 +2,12 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+import numpy as np
 import pytest
 
 from pandapower.networks.power_system_test_cases import (
+    GBnetwork,
+    GBreducednetwork,
     case4gs,
     case5,
     case6ww,
@@ -12,14 +15,12 @@ from pandapower.networks.power_system_test_cases import (
     case14,
     case24_ieee_rts,
     case30,
-    case_ieee30,
     case33bw,
     case39,
     case57,
     case89pegase,
     case118,
     case145,
-    case_illinois200,
     case300,
     case1354pegase,
     case1888rte,
@@ -30,12 +31,11 @@ from pandapower.networks.power_system_test_cases import (
     case6495rte,
     case6515rte,
     case9241pegase,
-    GBnetwork,
-    GBreducednetwork,
+    case_ieee30,
+    case_illinois200,
     iceland,
 )  # missing test for case11_iwamoto
 from pandapower.run import runpp
-import numpy as np
 
 
 def _compare_arrays(arr1, arr2, tolerance=0.1):

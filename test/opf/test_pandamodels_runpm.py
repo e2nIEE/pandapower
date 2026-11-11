@@ -4,6 +4,7 @@
 import copy
 import os
 from copy import deepcopy
+from importlib.util import find_spec
 
 import numpy as np
 import pandas as pd
@@ -11,12 +12,13 @@ import pytest
 
 from pandapower.control import ConstControl
 from pandapower.converter.pandamodels import convert_pp_to_pm
+from pandapower.converter.pandamodels.from_pm import add_time_series_data_to_net
 from pandapower.converter.pandamodels.to_pm import init_ne_line
 from pandapower.create import (
-    create_bus,
+    create_buses,
     create_ext_grid,
     create_gen,
-    create_line,
+    create_lines,
     create_load,
     create_poly_cost,
     create_pwl_cost,
@@ -57,26 +59,13 @@ from pandapower.runpm import (
     runpm_tnep,
     runpm_vstab,
 )
+from pandapower.timeseries import DFData, run_timeseries
+from test import test_path
 from test.consistency_checks import consistency_checks
 from test.helper_functions import add_grid_connection, create_test_line
+from test.opf.test_basic import net_3w_trafo_opf as _net_3w_trafo_opf  # noqa: F401
 
-# reexported with "as" to prevent ruff removing it as unused
-from test.opf.test_basic import net_3w_trafo_opf as net_3w_trafo_opf
-from pandapower.timeseries import DFData, run_timeseries
-
-try:
-    from juliacall import JuliaError as UnsupportedPythonError  # type: ignore
-except ImportError:
-    UnsupportedPythonError = Exception
-
-try:
-    from juliacall import Main
-
-    julia_installed = True
-except (ImportError, RuntimeError, UnsupportedPythonError):
-    julia_installed = False
-
-from test import test_path
+julia_installed = find_spec("juliacall") is not None
 
 
 def create_cigre_grid_with_time_series(json_path, net=None, add_ts_constaints=False):
@@ -254,8 +243,8 @@ def test_pm_dc_powerflow_tap():
 
 @pytest.mark.slow
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
-def test_compare_pwl_and_poly(net_3w_trafo_opf):
-    net = deepcopy(net_3w_trafo_opf)
+def test_compare_pwl_and_poly(_net_3w_trafo_opf):
+    net = deepcopy(_net_3w_trafo_opf)
     net.ext_grid.loc[:, "min_p_mw"] = -999.0
     net.ext_grid.loc[:, "max_p_mw"] = 999.0
     net.ext_grid.loc[:, "max_q_mvar"] = 999.0
@@ -302,13 +291,10 @@ def test_pwl():
     net = pandapowerNet(name="test_pwl")
 
     # create buses
-    bus1 = create_bus(net, vn_kv=110.0, min_vm_pu=0.9, max_vm_pu=1.1)
-    bus2 = create_bus(net, vn_kv=110.0, min_vm_pu=0.9, max_vm_pu=1.1)
-    bus3 = create_bus(net, vn_kv=110.0, min_vm_pu=0.9, max_vm_pu=1.1)
+    bus1, bus2, bus3 = create_buses(net, 3, vn_kv=110.0, min_vm_pu=0.9, max_vm_pu=1.1)
 
     # create 110 kV lines
-    create_line(net, bus1, bus2, length_km=50.0, std_type="149-AL1/24-ST1A 110.0")
-    create_line(net, bus2, bus3, length_km=50.0, std_type="149-AL1/24-ST1A 110.0")
+    create_lines(net, [bus1, bus2], [bus2, bus3], length_km=50.0, line_params="149-AL1/24-ST1A 110.0")
 
     # create loads
     create_load(net, bus2, p_mw=80, controllable=False)
@@ -365,11 +351,10 @@ def test_without_ext_grid():
     max_vm_pu = 1.05
 
     # create buses
-    bus1 = create_bus(net, vn_kv=220.0, geodata=(5, 9))
-    bus2 = create_bus(net, vn_kv=110.0, geodata=(6, 10), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
-    bus3 = create_bus(net, vn_kv=110.0, geodata=(10, 9), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
-    bus4 = create_bus(net, vn_kv=110.0, geodata=(8, 8), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
-    bus5 = create_bus(net, vn_kv=110.0, geodata=(6, 8), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
+    bus1 = create_buses(net, 1, vn_kv=220.0, geodata=(5, 9))
+    bus2, bus3, bus4, bus5 = create_buses(
+        net, 4, vn_kv=110.0, geodata=[(6, 10), (10, 9), (8, 8), (6, 8)], min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu
+    )
 
     # create 220/110/110 kV 3W-transformer
     create_transformer3w_from_parameters(
@@ -396,10 +381,13 @@ def test_without_ext_grid():
     )
 
     # create 110 kV lines
-    create_line(net, bus2, bus3, length_km=70.0, std_type="149-AL1/24-ST1A 110.0")
-    create_line(net, bus3, bus4, length_km=50.0, std_type="149-AL1/24-ST1A 110.0")
-    create_line(net, bus4, bus2, length_km=40.0, std_type="149-AL1/24-ST1A 110.0")
-    create_line(net, bus4, bus5, length_km=30.0, std_type="149-AL1/24-ST1A 110.0")
+    create_lines(
+        net,
+        [bus2, bus3, bus4, bus4],
+        [bus3, bus4, bus2, bus5],
+        length_km=[70.0, 50.0, 40.0, 30.0],
+        line_params="149-AL1/24-ST1A 110.0",
+    )
 
     # create loads
     create_load(net, bus2, p_mw=60, controllable=False)
@@ -500,9 +488,7 @@ def test_multiple_ext_grids():
 def test_voltage_angles():
     net = pandapowerNet(name="test_voltage_angles")
     b1, b2, _ = add_grid_connection(net, vn_kv=110.0)
-    b3 = create_bus(net, vn_kv=20.0)
-    b4 = create_bus(net, vn_kv=10.0)
-    b5 = create_bus(net, vn_kv=10.0, in_service=False)
+    b3, b4, b5 = create_buses(net, 3, vn_kv=[20.0, 10.0, 10.0], in_service=[True, True, False])
     tidx = create_transformer3w(net, b2, b3, b4, std_type="63/25/38 MVA 110/20/10 kV", max_loading_percent=120)
     create_load(net, b3, p_mw=5, controllable=False)
     load_id = create_load(
@@ -542,15 +528,14 @@ def tnep_grid():
     max_vm_pu = 1.05
 
     # create buses
-    bus1 = create_bus(net, vn_kv=110.0, geodata=(5, 9), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
-    bus2 = create_bus(net, vn_kv=110.0, geodata=(6, 10), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
-    bus3 = create_bus(net, vn_kv=110.0, geodata=(10, 9), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
-    bus4 = create_bus(net, vn_kv=110.0, geodata=(8, 8), min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu)
+    bus1, bus2, bus3, bus4 = create_buses(
+        net, 4, vn_kv=110.0, geodata=[(5, 9), (6, 10), (10, 9), (8, 8)], min_vm_pu=min_vm_pu, max_vm_pu=max_vm_pu
+    )
 
     # create 110 kV lines
-    create_line(net, bus1, bus2, length_km=70.0, std_type="149-AL1/24-ST1A 110.0")
-    create_line(net, bus1, bus3, length_km=50.0, std_type="149-AL1/24-ST1A 110.0")
-    create_line(net, bus1, bus4, length_km=100.0, std_type="149-AL1/24-ST1A 110.0")
+    create_lines(
+        net, [bus1] * 3, [bus2, bus3, bus4], length_km=[70.0, 50.0, 100.0], line_params="149-AL1/24-ST1A 110.0"
+    )
 
     # create loads
     create_load(net, bus2, p_mw=60)
@@ -570,43 +555,13 @@ def tnep_grid():
     net.line["max_loading_percent"] = 20
 
     # possible new lines (set out of service in line DataFrame)
-    l1 = create_line(
+    l1, l2, l3, l4 = create_lines(
         net,
-        bus1,
-        bus4,
-        10.0,
-        std_type="305-AL1/39-ST1A 110.0",
-        name="new_line1",
-        max_loading_percent=20.0,
-        in_service=False,
-    )
-    l2 = create_line(
-        net,
-        bus2,
-        bus4,
-        20.0,
+        [bus1, bus2, bus3, bus3],
+        [bus4] * 4,
+        [10.0, 20.0, 30.0, 40.0],
         std_type="149-AL1/24-ST1A 110.0",
-        name="new_line2",
-        max_loading_percent=20.0,
-        in_service=False,
-    )
-    l3 = create_line(
-        net,
-        bus3,
-        bus4,
-        30.0,
-        std_type="149-AL1/24-ST1A 110.0",
-        name="new_line3",
-        max_loading_percent=20.0,
-        in_service=False,
-    )
-    l4 = create_line(
-        net,
-        bus3,
-        bus4,
-        40.0,
-        std_type="149-AL1/24-ST1A 110.0",
-        name="new_line4",
+        name=["new_line1", "new_line2", "new_line3", "new_line4"],
         max_loading_percent=20.0,
         in_service=False,
     )
@@ -719,6 +674,7 @@ def test_runpm_vstab():
 @pytest.mark.slow
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_storage_opt():
+    """multinetwork storage optimization: results format, bus results and independence of sn_mva"""
     json_path = os.path.join(test_path, "opf", "cigre_timeseries_15min.json")
 
     net = create_cigre_grid_with_time_series(json_path)
@@ -736,19 +692,32 @@ def test_storage_opt():
     assert net._pm_org_result["multinetwork"]
     assert net._pm["pm_solver"] == "juniper"
     assert net._pm["pm_mip_solver"] == "cbc"
-    assert len(net.res_ts_opt) == 5
+    assert list(net.res_ts_opt["res_bus.vm_pu"].index) == list(range(5))
+    assert list(storage_results_1[0].columns) == ["p_mw", "q_mvar", "soc_mwh", "soc_percent"]
+    # the bus results contain the optimized storage power
+    res = net.res_ts_opt
+    bus = net.storage.at[0, "bus"]
+    bus_p = (
+        res["res_load.p_mw"].loc[:, net.load.index[net.load.bus == bus]].sum(axis=1)
+        - res["res_sgen.p_mw"].loc[:, net.sgen.index[net.sgen.bus == bus]].sum(axis=1)
+        + res["res_storage.p_mw"][0]
+    )
+    assert np.allclose(res["res_bus.p_mw"][bus], bus_p)
 
     net2 = create_cigre_grid_with_time_series(json_path)
     net2.sn_mva = 100.0
     runpm_storage_opf(net2, from_time_step=0, to_time_step=5, pm_mip_solver="cbc")
     storage_results_100 = read_pm_storage_results(net2)
 
-    assert abs(storage_results_100[0].values - storage_results_1[0].values).max() < 1e-6
+    # the storage schedule is not unique (no storage costs), only the optimum is independent of sn_mva
+    assert np.isclose(net2.res_cost, net.res_cost, rtol=1e-6)
+    storage = net.storage.loc[0]
+    for res in [storage_results_1[0], storage_results_100[0]]:
+        assert (res.p_mw.abs() <= storage.p_mw + 1e-6).all()
+        assert (res.soc_mwh >= -1e-6).all() and (res.soc_mwh <= storage.max_e_mwh + 1e-6).all()
 
 
-@pytest.mark.slow
-@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
-def test_runpm_multi_vstab():
+def _create_multi_vstab_net():
     net = create_cigre_network_mv(with_der="pv_wind")
     net.load["controllable"] = False
     net.sgen["controllable"] = True
@@ -763,10 +732,10 @@ def test_runpm_multi_vstab():
     net.ext_grid["min_p_mw"] = -10000.0
 
     # lower and upper bounds for DERs
-    net.sgen["max_p_mw"] = net.sgen.p_mw
-    net.sgen["min_p_mw"] = net.sgen.p_mw
-    net.sgen["max_q_mvar"] = net.sgen.p_mw * 0.328
-    net.sgen["min_q_mvar"] = -net.sgen.p_mw * 0.328
+    net.sgen["max_p_mw"] = net.sgen.p_mw.values
+    net.sgen["min_p_mw"] = net.sgen.p_mw.values
+    net.sgen["max_q_mvar"] = net.sgen.p_mw.values * 0.328
+    net.sgen["min_q_mvar"] = -net.sgen.p_mw.values * 0.328
 
     net.trafo["max_loading_percent"] = 100.0
     net.line["max_loading_percent"] = 100.0
@@ -777,18 +746,39 @@ def test_runpm_multi_vstab():
     # load time series data for 96 time steps
     json_path = os.path.join(test_path, "opf", "cigre_timeseries_15min.json")
     create_cigre_grid_with_time_series(json_path, net, True)
+    return net
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
+def test_runpm_multi_vstab():
+    net = _create_multi_vstab_net()
 
     # run time series opf
     runpm_multi_vstab(net, from_time_step=0, to_time_step=96)
-    assert len(net.res_ts_opt) == 96
+    vm_pu = net.res_ts_opt["res_bus.vm_pu"]
+    assert list(vm_pu.index) == list(range(96))
 
     # get opf-results
-    y_multi = []
-    for t in range(96):
-        y_multi.append(net.res_ts_opt[str(t)].res_bus.vm_pu[net.sgen.bus].values.mean() - 0.96)
+    y_multi = vm_pu[net.sgen.bus].values.mean(axis=1) - 0.96
 
-    assert np.array(y_multi).max() < 0.018
-    assert np.array(y_multi).min() > -0.002
+    assert y_multi.max() < 0.018
+    assert y_multi.min() > -0.002
+
+
+@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
+def test_runpm_multi_vstab_from_time_step():
+    # a time series that does not start at 0 must use the time series values of its own time steps
+    net = _create_multi_vstab_net()
+    runpm_multi_vstab(net, from_time_step=40, to_time_step=43)
+    vm_multi = net.res_ts_opt["res_bus.vm_pu"]
+    assert list(vm_multi.index) == [40, 41, 42]
+
+    # the time steps are independent of each other -> same result as a single optimization
+    net_single = _create_multi_vstab_net()
+    add_time_series_data_to_net(net_single, net_single.controller, 42)
+    runpm_vstab(net_single)
+    assert np.allclose(vm_multi.loc[42].values, net_single.res_bus.vm_pu.values, atol=1e-6)
 
 
 @pytest.mark.slow
@@ -834,10 +824,10 @@ def test_runpm_qflex_and_multi_qflex():
     create_cigre_grid_with_time_series(json_path, net, True)
     runpm_multi_qflex(net, from_time_step=0, to_time_step=96)
     # get opf-results
-    y_multi = []
-    for t in range(96):
-        y_multi.append(abs(abs(net.res_ts_opt[str(t)].res_trafo.q_lv_mvar[0]) - 5))
-    assert np.array(y_multi).max() < 1e-6
+    q_lv_mvar = net.res_ts_opt["res_trafo.q_lv_mvar"]
+    assert list(q_lv_mvar.index) == list(range(96))
+    y_multi = (q_lv_mvar[0].abs() - 5).abs()
+    assert y_multi.max() < 1e-6
 
 
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
@@ -889,7 +879,9 @@ def test_runpm_ploss_loading():
         case39,
         case57,
         case118,
-        case145,
+        # infeasible with its large bus shunts (pandapower's rundcopp fails as well), converged before only
+        # because the shunts were scaled by 1 / sn_mva
+        pytest.param(case145, marks=pytest.mark.xfail(reason="infeasible")),
         case300,
     ],
 )
@@ -900,15 +892,38 @@ def test_convergence_dc_opf(net_func, cpnd):
 
 
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
-def test_ac_opf_differnt_snmva():
-    net = case9()
-    res = pd.DataFrame(columns=net.bus.index.tolist())
-    for i, snmva in enumerate([1, 13, 45, 78, 98, 100]):
+@pytest.mark.parametrize("net_func", [case9, case30])
+def test_ac_opf_differnt_snmva(net_func):
+    # case30 has bus shunts
+    net = net_func()
+    vm_pu, cost = [], []
+    for snmva in [1, 13, 45, 78, 98, 100]:
         net.sn_mva = snmva
         runpm_ac_opf(net)
-        res.loc[i] = net.res_bus.vm_pu.values
-    for i in res.columns:
-        assert res[i].values.min() - res[i].values.max() < 1e-10
+        vm_pu.append(net.res_bus.vm_pu.values)
+        cost.append(net.res_cost)
+    assert np.ptp(np.array(vm_pu), axis=0).max() < 1e-6
+    assert np.ptp(cost) < 1e-6 * max(cost)
+
+
+@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
+@pytest.mark.parametrize("sn_mva, pm_base_mva", [(1.0, None), (13.0, None), (100.0, None), (1.0, 100.0)])
+@pytest.mark.parametrize("net_func", (case30, create_cigre_network_mv))
+def test_pm_ac_powerflow_sn_mva(net_func, sn_mva, pm_base_mva):
+    # unit conversion of bus shunts (case30), branch conductances and impedances for different bases.
+    # PowerModels' Newton power flow, the Ipopt power flow can fail numerically on some bases
+    net = net_func()
+    if len(net.trafo):
+        net.trafo["pfe_kw"] = 30.0
+        net.trafo["i0_percent"] = 0.5
+        net.line["g_us_per_km"] = 1.0
+    net.sn_mva = sn_mva
+    runpm_pf(net, pm_model="ACNative", pm_base_mva=pm_base_mva)
+    vm_pm = net.res_bus.vm_pu.values.copy()
+    va_pm = net.res_bus.va_degree.values.copy()
+    runpp(net, calculate_voltage_angles=True)
+    assert np.allclose(vm_pm, net.res_bus.vm_pu.values)
+    assert np.allclose(va_pm, net.res_bus.va_degree.values)
 
 
 def _create_redispatch_net():
@@ -918,15 +933,14 @@ def _create_redispatch_net():
     overloads the line - so redispatch has to shift generation to the expensive gen.
     """
     net = pandapowerNet(name="_create_redispatch_net")
-    b0 = create_bus(net, vn_kv=110.0, min_vm_pu=0.9, max_vm_pu=1.1)  # slack
-    b1 = create_bus(net, vn_kv=110.0, min_vm_pu=0.9, max_vm_pu=1.1)  # cheap gen
-    b2 = create_bus(net, vn_kv=110.0, min_vm_pu=0.9, max_vm_pu=1.1)  # load + expensive gen
+    b0, b1, b2 = create_buses(
+        net, 3, vn_kv=110.0, min_vm_pu=0.9, max_vm_pu=1.1
+    )  # slack, cheap gen, load + expensive gen
 
     create_ext_grid(net, b0, min_p_mw=-100.0, max_p_mw=100.0, min_q_mvar=-100.0, max_q_mvar=100.0)  # ext_grid at b0
 
     # weakly rated line from the cheap-gen side to the load; a strong line elsewhere
-    l_weak = create_line(net, b1, b2, length_km=10.0, std_type="149-AL1/24-ST1A 110.0")
-    create_line(net, b0, b1, length_km=10.0, std_type="149-AL1/24-ST1A 110.0")
+    l_weak, _ = create_lines(net, [b1, b0], [b2, b1], length_km=10.0, std_type="149-AL1/24-ST1A 110.0")
     net.line.loc[:, "max_loading_percent"] = 100.0
     net.line.loc[l_weak, "max_loading_percent"] = 25.0
 
@@ -996,7 +1010,7 @@ def test_runpm_redispatch_cost():
 @pytest.mark.slow
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_runpm_redispatch_dc():
-    net, l_weak = _create_redispatch_net()
+    net, _l_weak = _create_redispatch_net()
     runpp(net)
 
     create_poly_cost(net, 0, "gen", cp1_eur_per_mw=1.0, redispatch_up_eur_per_mw=1.0, redispatch_down_eur_per_mw=1.0)
@@ -1012,7 +1026,7 @@ def test_runpm_redispatch_dc():
 def test_runpm_redispatch_unpriced_gen_stays_fixed():
     # a controllable gen without redispatch costs must keep its base dispatch (pg == pg0),
     # only the priced gen participates in the redispatch
-    net, l_weak = _create_redispatch_net()
+    net, _l_weak = _create_redispatch_net()
     # add a third controllable gen at the load bus that we do NOT price for redispatch
     b2 = net.load.bus.iloc[0]
     g_unpriced = create_gen(

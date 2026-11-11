@@ -87,4 +87,4 @@ SL_FAC = 25  # Slack contribution factor
 # it's P and Q components and combined with the appropriate MU_Pxxx and
 # MU_Qxxx values. Likewise for the lower Q limits.
 
-gen_cols = 26
+GEN_COLS = 26

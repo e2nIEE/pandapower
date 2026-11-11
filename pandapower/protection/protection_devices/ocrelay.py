@@ -1,11 +1,12 @@
 import copy
+
 import numpy as np
 import pandas as pd
 
 from pandapower.protection.basic_protection_device import ProtectionDevice
 from pandapower.protection.utility_functions import (
-    create_sc_bus,
     bus_path_multiple_ext_bus,
+    create_sc_bus,
     get_line_path,
     parallel_lines,
 )
@@ -168,12 +169,12 @@ class OCRelay(ProtectionDevice):
         # protection function
         net_sc = copy.deepcopy(net)
 
-        if (net.switch.closed.at[self.switch_index] == True) and (net.switch.et.at[self.switch_index] == "l"):
+        if (net.switch.closed.at[self.switch_index]) and (net.switch.et.at[self.switch_index] == "l"):
             line_idx = int(net.switch.element.at[self.switch_index])
             net_sc = create_sc_bus(net_sc, line_idx, self.sc_fraction)
             bus_idx = max(net_sc.bus.index)
 
-        elif (net.switch.closed.at[self.switch_index] == True) and (net.switch.et.at[self.switch_index] == "t" or "b"):
+        elif (net.switch.closed.at[self.switch_index]) and (net.switch.et.at[self.switch_index] == "t" or "b"):
             bus_idx = net.switch.bus.at[self.switch_index]
             line_idx = None
         else:
@@ -340,11 +341,7 @@ class OCRelay(ProtectionDevice):
         plt.grid(True, which="both", ls="-")
 
     def __str__(self):
-        return "Protection Device: %s \nType: %s \nIndex: %s" % (
-            self.__class__.__name__,
-            self.oc_relay_type,
-            self.switch_index,
-        )
+        return f"Protection Device: {self.__class__.__name__} \nType: {self.oc_relay_type} \nIndex: {self.switch_index}"
 
     def __hash__(self):
         return hash(
@@ -406,10 +403,8 @@ class OCRelay(ProtectionDevice):
 def time_grading(net, time_settings):
     # Automated time grading calculation
     if isinstance(time_settings, list):
-        if len(time_settings) == 3:
-            time_settings = time_settings
         if len(time_settings) == 2:
-            time_settings = [time_settings[0], time_settings[1], time_settings[1]]
+            time_settings.append(time_settings[1])
 
         # Get the bus path to each lines from all the ext buses
         bus_paths = bus_path_multiple_ext_bus(net)
@@ -424,7 +419,7 @@ def time_grading(net, time_settings):
 
         # assign tg based on longest line path
         line_length_time = {}
-        for line_length in range(0, len(sorted_line_path[-1])):
+        for line_length in range(len(sorted_line_path[-1])):
             distance_counter = len(sorted_line_path[-1]) - line_length
             t_g = time_settings[1] + (line_length) * time_settings[2]
             line_length_time[distance_counter] = t_g
@@ -433,9 +428,9 @@ def time_grading(net, time_settings):
         line_time = {}
         for line in sorted_line_path:
             line_length = len(line)
-            for length in line_length_time:
+            for length, time in line_length_time.items():
                 if line_length == length:
-                    line_time[line[-1]] = line_length_time[length]
+                    line_time[line[-1]] = time
         parallel_line = parallel_lines(net)
 
         # find the missing lines in line time (due to parallel lines)
@@ -474,8 +469,8 @@ def time_grading(net, time_settings):
         # Assign time setting to switches
         time_switches = {}
         tg_sw_setting = []
-        for switch in net.switch[net.switch.closed == True].index:
-            line_id = net.switch[net.switch.closed == True].element.at[switch]
+        for switch in net.switch[net.switch.closed].index:
+            line_id = net.switch[net.switch.closed].element.at[switch]
 
             tg = line_time[line_id]
             time_switches[switch] = tg

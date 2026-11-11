@@ -1,1 +1,3 @@
-from . import equivalentInjectionsCim16
+__all__ = ["equivalent_injections_cim16"]
+
+from . import equivalent_injections_cim16

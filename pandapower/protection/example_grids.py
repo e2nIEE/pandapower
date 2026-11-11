@@ -3,7 +3,7 @@ This file included various test network for modelling and simulation different p
 
 """
 
-from pandapower.create import create_buses, create_ext_grid, create_lines, create_switches, create_loads
+from pandapower.create import create_buses, create_ext_grid, create_lines, create_loads, create_switches
 from pandapower.network import pandapowerNet
 
 

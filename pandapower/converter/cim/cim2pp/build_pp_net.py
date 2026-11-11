@@ -2,19 +2,17 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 import logging
 import traceback
-from typing import Dict, List
 
 import pandas as pd
 
-from pandapower.toolbox.grid_modification import fuse_buses
-from pandapower.run import runpp
-from pandapower.network import pandapowerNet
-from .convert_measurements import CreateMeasurements
-from .. import cim_classes
-from .. import cim_tools
-from .. import pp_tools
-from ..other_classes import ReportContainer, Report, LogLevel, ReportCode
 from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
+from pandapower.network import pandapowerNet
+from pandapower.run import runpp
+from pandapower.toolbox.grid_modification import fuse_buses
+
+from .. import cim_classes, cim_tools, pp_tools
+from ..other_classes import LogLevel, Report, ReportCode, ReportContainer
+from .convert_measurements import CreateMeasurements
 
 logger = logging.getLogger("cim.cim2pp.build_pp_net")
 
@@ -23,16 +21,15 @@ sc = cim_tools.get_pp_net_special_columns_dict()
 
 class CimConverter:
     def __init__(
-        self, cim_parser: cim_classes.CimParser, converter_classes: Dict, cim_version: str | None = None, **kwargs
+        self, cim_parser: cim_classes.CimParser, converter_classes: dict, cim_version: str | None = None, **kwargs
     ):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.cim_parser: cim_classes.CimParser = cim_parser
         self.cim_version = cim_version.lower() if cim_version is not None else "2.4.15"
         self.kwargs = kwargs
-        self.cim: Dict[str, Dict[str, pd.DataFrame]] = self.cim_parser.get_cim_dict()
+        self.cim: dict[str, dict[str, pd.DataFrame]] = self.cim_parser.get_cim_dict()
         name = self.cim_parser.file_names.get("eq", "CimConverter")
-        if name.endswith("_eq"):
-            name = name[:-3]
+        name = name.removesuffix("_eq")
         self.net: pandapowerNet = pandapowerNet(name=name, metadata=["cim"])
         self.bus_merge: pd.DataFrame = pd.DataFrame()
         self.power_trafo2w: pd.DataFrame = pd.DataFrame()
@@ -48,7 +45,7 @@ class CimConverter:
         return self.merge_eq_other_profiles(["sc"], cim_type, add_cim_type_column)
 
     def merge_eq_other_profiles(
-        self, other_profiles: List[str], cim_type: str, add_cim_type_column: bool = False
+        self, other_profiles: list[str], cim_type: str, add_cim_type_column: bool = False
     ) -> pd.DataFrame:
         df = self.cim["eq"][cim_type]
         for other_profile in other_profiles:
@@ -61,14 +58,14 @@ class CimConverter:
         return df
 
     def copy_to_pp(self, pp_type: str, input_df: pd.DataFrame):
-        self.logger.debug("Copy %s datasets to pandapower network with type %s" % (input_df.index.size, pp_type))
+        self.logger.debug(f"Copy {input_df.index.size} datasets to pandapower network with type {pp_type}")
         if pp_type not in self.net:
-            self.logger.warning("Missing pandapower type %s in the pandapower network!" % pp_type)
+            self.logger.warning(f"Missing pandapower type {pp_type} in the pandapower network!")
             self.report_container.add_log(
                 Report(
                     level=LogLevel.WARNING,
                     code=ReportCode.WARNING_CONVERTING,
-                    message="Missing pandapower type %s in the pandapower network!" % pp_type,
+                    message=f"Missing pandapower type {pp_type} in the pandapower network!",
                 )
             )
             return
@@ -157,9 +154,8 @@ class CimConverter:
         if self.cim["gl"]["Location"].index.size > 0 and self.cim["gl"]["PositionPoint"].index.size > 0:
             try:
                 self.classes_dict["geoCoordinatesFromGLCim16"](cimConverter=self).add_geo_coordinates_from_gl_cim16()
-            except Exception as e:
-                self.logger.warning("Creating the geo coordinates failed, returning the net without geo coordinates!")
-                self.logger.exception(e)
+            except Exception:
+                self.logger.exception("Creating the geo coordinates failed, returning the net without geo coordinates!")
                 self.report_container.add_log(
                     Report(
                         level=LogLevel.WARNING,
@@ -181,9 +177,8 @@ class CimConverter:
                 self.classes_dict["coordinatesFromDLCim16"](cimConverter=self).add_coordinates_from_dl_cim16(
                     diagram_name=kwargs.get("diagram_name", None)
                 )
-            except Exception as e:
-                self.logger.warning("Creating the coordinates failed, returning the net without coordinates!")
-                self.logger.exception(e)
+            except Exception:
+                self.logger.exception("Creating the coordinates failed, returning the net without coordinates!")
                 self.report_container.add_log(
                     Report(
                         level=LogLevel.WARNING,
@@ -213,9 +208,8 @@ class CimConverter:
         if kwargs.get("run_powerflow", False):
             try:
                 runpp(self.net)
-            except Exception as e:
-                self.logger.error("Failed running a powerflow.")
-                self.logger.exception(e)
+            except Exception:
+                self.logger.exception("Failed running a powerflow.")
                 self.report_container.add_log(
                     Report(level=LogLevel.ERROR, code=ReportCode.ERROR, message="Failed running a powerflow.")
                 )
@@ -223,7 +217,7 @@ class CimConverter:
                     Report(level=LogLevel.EXCEPTION, code=ReportCode.EXCEPTION, message=traceback.format_exc())
                 )
                 if not self.ignore_errors:
-                    raise e
+                    raise
             else:
                 self.logger.info("Power flow solved normal.")
                 self.report_container.add_log(
@@ -248,9 +242,8 @@ class CimConverter:
                 raise ValueError(
                     "Not supported value for argument 'create_measurements', check method signature forvalid values!"
                 )
-        except Exception as e:
-            self.logger.error("Creating the measurements failed, returning the net without measurements!")
-            self.logger.exception(e)
+        except Exception:
+            self.logger.exception("Creating the measurements failed, returning the net without measurements!")
             self.report_container.add_log(
                 Report(
                     level=LogLevel.ERROR,
@@ -263,7 +256,7 @@ class CimConverter:
             )
             self.net.measurement = self.net.measurement[0:0]
             if not self.ignore_errors:
-                raise e
+                raise
         # a special fix for BB and NB mixed networks:
         # fuse boundary ConnectivityNodes with their TopologicalNodes
         bus_t = self.net.bus.reset_index(level=0, drop=False)
@@ -278,7 +271,7 @@ class CimConverter:
         )
         if bus_drop.index.size > 0:
             for b1, b2 in bus_drop[["b1", "b2"]].itertuples(index=False):
-                self.logger.info("Fusing buses: b1: %s, b2: %s" % (b1, b2))
+                self.logger.info(f"Fusing buses: b1: {b1}, b2: {b2}")
                 fuse_buses(self.net, b1, b2, drop=True, fuse_bus_measurements=True)
         # finally a fix for EquivalentInjections: If an EquivalentInjection is attached to boundary node, check if the
         # network behind this boundary node is attached. In this case, disable the EquivalentInjection.

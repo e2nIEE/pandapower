@@ -1,21 +1,24 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import copy
+import logging
+from importlib.util import find_spec
 
 import numpy as np
 import pandas as pd
 import pytest
-import copy
+
 from pandapower.control import ContinuousTapControl
 from pandapower.create import (
-    create_buses,
-    create_gen,
-    create_load,
-    create_ext_grid,
-    create_line_from_parameters,
-    create_xward,
     create_bus,
+    create_buses,
+    create_ext_grid,
+    create_gen,
+    create_line_from_parameters,
+    create_load,
     create_shunt,
+    create_xward,
 )
 from pandapower.network import pandapowerNet
 from pandapower.networks.create_examples import example_multivoltage
@@ -23,17 +26,11 @@ from pandapower.networks.power_system_test_cases import case9, case2848rte
 from pandapower.pypower.idx_brch import PF
 from pandapower.pypower.idx_bus import PD, VM
 from pandapower.run import runpp, set_user_pf_options
-from test.helper_functions import assert_res_equal
 from pandapower.toolbox.element_selection import get_connected_elements_dict
+from test.helper_functions import assert_res_equal
 
-try:
-    import numba
+numba_installed = find_spec("numba") is not None
 
-    numba_installed = True
-except ImportError:
-    numba_installed = False
-
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -80,7 +77,6 @@ def _get_xward_result(net):
         )
         for e, idx in connected.items():
             # first, count the total slack weights per bus, and obtain the variable part of the active power
-            total_weight = 0
             if e in ["xward", "ext_grid"]:
                 continue
             p_bus -= net[e].loc[idx, "p_mw"].values.sum()
@@ -500,8 +496,8 @@ def test_multivoltage_example_with_controller():
     assert_results_correct(net)
 
     if do_output:
-        logger.info("grid losses: %.6f" % -net.res_bus.p_mw.sum())
-        logger.info("slack generator p results: %.6f    %.6f" % (net.res_ext_grid.p_mw.at[0], net.res_gen.p_mw.at[0]))
+        logger.info(f"grid losses: {-net.res_bus.p_mw.sum():.6f}")
+        logger.info(f"slack generator p results: {net.res_ext_grid.p_mw.at[0]:.6f}    {net.res_gen.p_mw.at[0]:.6f}")
         net.res_bus.vm_pu.plot()
 
     assert np.isclose(net.res_ext_grid.p_mw.at[0], net.res_gen.p_mw.at[0] - gen_p_disp)
@@ -523,8 +519,8 @@ def test_multivoltage_example_with_controller():
     assert np.isclose(net.res_gen.p_mw.at[0], expected_slack_power / 2 + gen_p_disp, atol=1e-5)
 
     if do_output:
-        logger.info("grid losses: %.6f" % -net.res_bus.p_mw.sum())
-        logger.info("slack generator p results: %.6f    %.6f" % (net.res_ext_grid.p_mw.at[0], net.res_gen.p_mw.at[0]))
+        logger.info(f"grid losses: {-net.res_bus.p_mw.sum():.6f}")
+        logger.info(f"slack generator p results: {net.res_ext_grid.p_mw.at[0]:.6f}    {net.res_gen.p_mw.at[0]: .6f}")
         net.res_bus.vm_pu.plot()
 
 

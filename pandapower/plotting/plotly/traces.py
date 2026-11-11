@@ -1,36 +1,51 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 from __future__ import annotations
 
-import sys
+__all__ = [
+    "create_bus_trace",
+    "create_dcline_trace",
+    "create_edge_center_trace",
+    "create_line_trace",
+    "create_scale_trace",
+    "create_trafo_trace",
+    "create_weighted_marker_trace",
+    "draw_traces",
+    "get_line_neutral",
+    "sum_line_length",
+]
+
+import logging
 import math
-from collections.abc import Iterable, Callable
+import sys
+from collections.abc import Callable, Iterable
+from importlib.util import find_spec
+from itertools import pairwise
 from typing import Any
 
+import geojson
 import numpy as np
 import pandas as pd
-import geojson
 
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.network import ADict
-from pandapower.plotting.plotly.get_colors import get_plotly_color, get_plotly_cmap
+from pandapower.plotting.plotly.get_colors import get_plotly_cmap, get_plotly_color
 from pandapower.plotting.plotly.mapbox_plot import _on_map_test
 
-import logging
-
-logger = logging.getLogger(__name__)
-
-try:
-    from plotly.graph_objs.scatter.marker import ColorBar
+if find_spec("plotly"):
     from plotly.graph_objs import Figure, Layout
     from plotly.graph_objs.layout import XAxis, YAxis
     from plotly.graph_objs.scatter import Line, Marker
+    from plotly.graph_objs.scatter.marker import ColorBar
     from plotly.graph_objs.scattermap import Line as scmLine
     from plotly.graph_objs.scattermap import Marker as scmMarker
 
     PLOTLY_INSTALLED = True
-except ImportError:
+else:
     PLOTLY_INSTALLED = False
+
+logger = logging.getLogger(__name__)
 
 
 def _in_ipynb():
@@ -46,8 +61,10 @@ def _in_ipynb():
 
 
 def sum_line_length(pts):
-    pt_diff = lambda p: (p[0][0] - p[1][0], p[0][1] - p[1][1])
-    diffs = map(pt_diff, zip(pts[:-1], pts[1:]))
+    def pt_diff(p):
+        return (p[0][0] - p[1][0], p[0][1] - p[1][1])
+
+    diffs = map(pt_diff, pairwise(pts))
     line_length = sum(math.hypot(d1, d2) for d1, d2 in diffs)
     return line_length
 
@@ -299,9 +316,8 @@ def _create_node_trace(
                     )
                 else:
                     logger.error(
-                        "There are no simulation results which are default for %s colormap coloring..."
-                        "set cmap_vals input argument if you want colormap according to some "
-                        "specific values..." % node_element
+                        f"There are no simulation results which are default for {node_element} colormap coloring..."
+                        f"set cmap_vals input argument if you want colormap according to some specific values..."
                     )
             cmap_vals = net["res_" + node_element].loc[node_plot_index, colormap_column].values
 
@@ -581,7 +597,7 @@ def _create_branch_trace(
 
     color = get_plotly_color(color)
 
-    # defining branches (lines) to be plot
+    # defining branches (lines) to be plotted
     branches = net[branch_element].index.tolist() if branches is None else list(branches)
     if len(branches) == 0:
         return []
@@ -634,10 +650,10 @@ def _create_branch_trace(
         else:
             if net["res_" + branch_element].shape[0] == 0:
                 logger.error(
-                    "There are no simulation results for branches which are default for {}"
+                    f"There are no simulation results for branches which are default for {branch_element}"
                     "colormap coloring..."
                     "set cmap_vals input argument if you want colormap according to some specific "
-                    "values...".format(branch_element)
+                    "values..."
                 )
             cmap_vals = net["res_" + branch_element].loc[branches_to_plot.index, cmap_vals_category].values
 
@@ -671,13 +687,22 @@ def _create_branch_trace(
             "line": Line(width=width, color=line_color, dash=dash),
             "showlegend": False,
             "legendgroup": legendgroup,
+            "x": (
+                _get_branch_geodata_plotly(
+                    net, branches_to_plot.loc[idx:idx], use_branch_geodata, branch_element, node_element
+                )
+            )[0],
+            "y": (
+                _get_branch_geodata_plotly(
+                    net, branches_to_plot.loc[idx:idx], use_branch_geodata, branch_element, node_element
+                )
+            )[1],
         }
 
-        line_trace["x"], line_trace["y"] = _get_branch_geodata_plotly(
-            net, branches_to_plot.loc[idx:idx], use_branch_geodata, branch_element, node_element
-        )
-
         branch_traces.append(line_trace)
+
+    if not branch_traces:
+        return []
 
     # enable legend for one element to make the legend group show up in the legend:
     branch_traces[0]["showlegend"] = True
@@ -714,7 +739,7 @@ def _create_branch_trace(
             branches_cbar["marker"]["colorbar"]["title"]["side"] = "right"
 
             branch_traces.append(branches_cbar)
-        except:
+        except Exception:  # noqa: BLE001, S110
             pass
     if len(no_go_branches) > 0:
         ng_traces = []
@@ -756,7 +781,7 @@ def _create_branch_trace(
         ):
             infofunc = pd.Series(index=net[branch_element].index, data=infofunc)
         assert isinstance(infofunc, pd.Series), (
-            "infofunc should be a pandas series with the net.{}.index to the infofunc contents".format(branch_element)
+            f"infofunc should be a pandas series with the net.{branch_element}.index to the infofunc contents"
         )
         sorted_idx = branches_to_plot.index.tolist()
         if no_go_branches_to_plot is not None:
@@ -1170,9 +1195,9 @@ def draw_traces(
         # change traces for mapLibre
         # change trace_type to scattermap and rename x to lat and y to lon
         for trace in traces:
-            if "x" in trace.keys():
+            if "x" in trace:
                 trace["lon"] = trace.pop("x")
-            if "y" in trace.keys():
+            if "y" in trace:
                 trace["lat"] = trace.pop("y")
             trace["type"] = "scattermap"
             if "line" in trace and isinstance(trace["line"], Line):
@@ -1256,12 +1281,13 @@ def draw_traces(
 
     # check if called from ipynb or not in order to consider appropriate plot function
     if _in_ipynb() and auto_open:
-        from plotly.offline import init_notebook_mode, iplot as plot
+        from plotly.offline import init_notebook_mode
+        from plotly.offline import iplot as plot
 
         init_notebook_mode()
         plot(fig, filename=filename)
     elif filename is not None:
-        from plotly.offline import plot as plot
+        from plotly.offline import plot
 
         plot(fig, filename=filename, auto_open=auto_open)
     return fig

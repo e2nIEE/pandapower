@@ -1,13 +1,23 @@
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
+__all__ = [
+    "append_set_to_dict",
+    "get_boundaries_by_bus_zone_with_boundary_branches",
+    "get_connected_switch_buses_groups",
+    "set_bus_zone_by_boundary_branches",
+]
+
 import logging
 from copy import deepcopy
+
 import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import ensure_iterability
-from pandapower.toolbox.element_selection import pp_elements, element_bus_tuples
+from pandapower.toolbox.element_selection import element_bus_tuples, pp_elements
 from pandapower.topology.create_graph import create_nxgraph
 from pandapower.topology.graph_searches import connected_component, connected_components
-
 
 logger = logging.getLogger(__name__)
 
@@ -55,8 +65,8 @@ def set_bus_zone_by_boundary_branches(net, all_boundary_branches):
             The dict keys must be pandapower elements, e.g. "line" or "trafo"
     """
     include = {"line": None, "trafo": None, "trafo3w": None, "impedance": None}
-    for elm in include.keys():
-        if elm in all_boundary_branches.keys():
+    for elm in include:
+        if elm in all_boundary_branches:
             include[elm] = net[elm].index.difference(all_boundary_branches[elm])
         else:
             include[elm] = True
@@ -174,14 +184,14 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
         )
         boundaries = deepcopy(net[elm][buses].loc[idx])  # copy relevant info from net[elm]
 
-        zone_cols = list()
+        zone_cols = []
         for i, bus_col in enumerate(buses):
             # add to which zones the connected buses belong to
-            boundaries["zone%i" % i] = net.bus.zone.loc[boundaries[bus_col].values].values
-            zone_cols.append("zone%i" % i)
+            boundaries[f"zone{i}"] = net.bus.zone.loc[boundaries[bus_col].values].values
+            zone_cols.append(f"zone{i}")
             # compare the zones and conclude if the branches can be boundaries
             if i > 0:
-                boundaries["is_boundary"] |= boundaries["zone%i" % i] != boundaries["zone0"]
+                boundaries["is_boundary"] |= boundaries[f"zone{i}"] != boundaries["zone0"]
             else:
                 boundaries["is_boundary"] = False
         # reduce the DataFrame 'boundaries' to those branches which actually are boundaries
@@ -227,7 +237,7 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
                     append_boundary_buses_externals_per_zone(boundary_buses, boundaries, zone, other_zone_col2)
 
     # check for missing zone connections
-    zones_without_connection = list()
+    zones_without_connection = []
     for zone, bra in boundary_branches.items():
         if zone != "all" and not bra:
             zones_without_connection.append(zone)

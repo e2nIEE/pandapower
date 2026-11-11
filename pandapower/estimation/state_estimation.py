@@ -1,23 +1,32 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from datetime import datetime
+__all__ = [
+    "ALGORITHM_MAPPING",
+    "ALLOWED_OPT_VAR",
+    "StateEstimation",
+    "chi2_analysis",
+    "estimate",
+    "remove_bad_data",
+]
+
+import datetime
+import logging
+
 import numpy as np
 from scipy.stats import chi2
 
 from pandapower.estimation.algorithm.base import (
+    AFWLSAlgorithm,
+    IRWLSAlgorithm,
     WLSAlgorithm,
     WLSZeroInjectionConstraintsAlgorithm,
-    IRWLSAlgorithm,
-    AFWLSAlgorithm,
 )
 from pandapower.estimation.algorithm.lp import LPAlgorithm
 from pandapower.estimation.algorithm.optimization import OptAlgorithm
-from pandapower.estimation.ppc_conversion import pp2eppci, _initialize_voltage
+from pandapower.estimation.ppc_conversion import _initialize_voltage, pp2eppci
 from pandapower.estimation.results import eppci2pp
-from pandapower.estimation.util import set_bb_switch_impedance, reset_bb_switch_impedance
-
-import logging
+from pandapower.estimation.util import reset_bb_switch_impedance, set_bb_switch_impedance
 
 std_logger = logging.getLogger(__name__)
 
@@ -40,7 +49,6 @@ def estimate(
     maximum_iterations=50,
     zero_injection="aux_bus",
     fuse_buses_with_bb_switch="all",
-    debug_mode=False,
     **opt_vars,
 ):
     """
@@ -81,10 +89,12 @@ def estimate(
                     still be fused
 
     Returns:
-        bool: Was the state estimation successful?
+        dict: "success" (bool, whether the state estimation was successful), "num_iterations" (int) and "time" (str,
+        ISO 8601 time stamp of the estimation in UTC). The dict itself is always truthy, so use result["success"] to
+        detect a failed estimation, e.g. ``if not estimate(net)["success"]:``
     """
     if algorithm not in ALGORITHM_MAPPING:
-        raise UserWarning("Algorithm {} is not a valid estimator".format(algorithm))
+        raise UserWarning(f"Algorithm {algorithm} is not a valid estimator")
 
     se = StateEstimation(net, tolerance, maximum_iterations, algorithm=algorithm)
     v_start, delta_start = _initialize_voltage(net, init)
@@ -94,7 +104,6 @@ def estimate(
         zero_injection=zero_injection,
         fuse_buses_with_bb_switch=fuse_buses_with_bb_switch,
         algorithm=algorithm,
-        debug_mode=debug_mode,
         **opt_vars,
     )
 
@@ -164,7 +173,6 @@ class StateEstimation:
         self.logger = logger
         if self.logger is None:
             self.logger = std_logger
-            # self.logger.setLevel(logging.DEBUG)
         self.net = net
         self.solver = ALGORITHM_MAPPING[algorithm](tolerance, maximum_iterations, self.logger)
         self.ppc = None
@@ -183,7 +191,6 @@ class StateEstimation:
         zero_injection=None,
         fuse_buses_with_bb_switch="all",
         algorithm="wls",
-        debug_mode=False,
         **opt_vars,
     ):
         """
@@ -232,18 +239,20 @@ class StateEstimation:
                 if one of the bus among the buses connected through bb switch is given, then all of them will still
                 be fused
         OUTPUT:
-            **successful** (boolean) - True if the estimation process was successful
+            **se_results** (dict) - "success" (bool, True if the estimation process was successful),
+            "num_iterations" (int) and "time" (str, ISO 8601 time stamp of the estimation in UTC). The dict itself
+            is always truthy, so use se_results["success"] to detect a failed estimation.
         Optional estimation variables:
             The bus power injections can be accessed with *se.s_node_powers* and the estimated
             values corresponding to the (noisy) measurement values with *se.hx*. (*hx* denotes h(x))
         EXAMPLE:
-            success = estimate(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]))
+            success = estimate(np.array([1.0, 1.0, 1.0]), np.array([0.0, 0.0, 0.0]))["success"]
         """
         # check if all parameter are allowed
-        for var_name in opt_vars.keys():
+        for var_name in opt_vars:
             if var_name not in ALLOWED_OPT_VAR:
                 self.logger.warning(
-                    "Caution! %s is not allowed as parameter" % var_name + " for estimate and will be ignored!"
+                    f"Caution! {var_name} is not allowed as parameter for estimate and will be ignored!"
                 )
 
         if self.net is None:
@@ -271,7 +280,7 @@ class StateEstimation:
         )
 
         # Estimate voltage magnitude and angle with the given estimator
-        self.eppci = self.solver.estimate(self.eppci, debug_mode=debug_mode, **opt_vars)
+        self.eppci = self.solver.estimate(self.eppci, **opt_vars)
 
         if self.solver.successful:
             self.net = eppci2pp(self.net, self.ppc, self.eppci)
@@ -288,16 +297,18 @@ class StateEstimation:
         if not self.recycle:
             self.ppc, self.eppci = None, None
 
-        if algorithm == "wls" or algorithm == "af-wls":
-            now = datetime.now()
-            se_results = {
-                "success": self.solver.successful,
-                "num_iterations": self.solver.iterations,
-                "objective_function_value": self.solver.obj_func,
-                "time": now.strftime("%Y-%m-%d %H:%M:%S"),
-            }
-        else:
-            se_results = self.solver.successful
+        now = datetime.datetime.now(tz=datetime.UTC)
+        num_iterations = 0
+        if hasattr(self.solver, "cur_it"):
+            num_iterations = self.solver.cur_it
+        elif hasattr(self.solver, "iterations"):
+            num_iterations = self.solver.iterations
+
+        se_results = {
+            "success": self.solver.successful,
+            "num_iterations": num_iterations,
+            "time": now.isoformat(),
+        }
 
         return se_results
 
@@ -351,10 +362,10 @@ class StateEstimation:
 
         # Print results
         self.logger.debug("Result of Chi^2 test:")
-        self.logger.debug("Number of measurements: %d" % m)
-        self.logger.debug("Number of state variables: %d" % n)
-        self.logger.debug("Performance index: %.2f" % J.item())
-        self.logger.debug("Chi^2 test threshold: %.2f" % test_thresh)
+        self.logger.debug(f"Number of measurements: {m}")
+        self.logger.debug(f"Number of state variables: {n}")
+        self.logger.debug(f"Performance index: {J.item():.2f}")
+        self.logger.debug(f"Chi^2 test threshold: {test_thresh:.2f}")
 
         if J <= test_thresh:
             self.bad_data_present = False

@@ -1,43 +1,43 @@
 import copy
+import logging
 import sys
 from collections import defaultdict
 from functools import partial
-import logging
 from typing import Any
 
 import numpy as np
 import pandas as pd
 
-from pandapower.toolbox import (
-    select_subnet,
-    replace_xward_by_ward,
-    create_continuous_bus_index,
-    get_connected_buses_at_element,
-    get_connected_elements,
-)
-from pandapower.network import ADict, pandapowerNet
-from pandapower.create import create_impedance, create_switch
-from pandapower.run import runpp, rundcpp
 from pandapower.auxiliary import (
-    LoadflowNotConverged,
-    OPFNotConverged,
     ControllerNotConverged,
+    LoadflowNotConverged,
     NetCalculationNotConverged,
+    OPFNotConverged,
 )
+from pandapower.create import create_impedance, create_switch
 from pandapower.diagnostic.diagnostic_helpers import (
     DiagnosticFunction,
     check_boolean,
-    check_less_zero,
-    check_number,
+    check_greater_equal_zero,
+    check_greater_zero,
+    check_greater_zero_less_equal_one,
     check_less_15,
     check_less_20,
-    check_pos_int,
-    check_greater_zero,
-    check_greater_equal_zero,
-    check_switch_type,
     check_less_equal_zero,
-    check_greater_zero_less_equal_one,
+    check_less_zero,
+    check_number,
+    check_pos_int,
+    check_switch_type,
     check_vkr_larger,
+)
+from pandapower.network import ADict, pandapowerNet
+from pandapower.run import rundcpp, runpp
+from pandapower.toolbox import (
+    create_continuous_bus_index,
+    get_connected_buses_at_element,
+    get_connected_elements,
+    replace_xward_by_ward,
+    select_subnet,
 )
 
 logger = logging.getLogger(__name__)
@@ -56,6 +56,68 @@ default_argument_values = {
     "nominal_voltage_tolerance": 0.3,
     "numba_tolerance": 1e-05,
 }
+
+
+class SchemaValidation(DiagnosticFunction[pandapowerNet, dict[str, list[Any]]]):
+    """
+    Validates the element dataframes against the pandera schemas of the network_schema package.
+
+    Unlike the other diagnostic functions this one does not look at the electrical plausibility
+    of a network, but at its data structure: missing columns, wrong data types, values that
+    violate the documented ranges, nulls in non-nullable columns and references to element
+    indices that do not exist.
+
+    All elements are validated and every issue is collected, so that a report of one run shows
+    everything that is wrong instead of only the first problem.
+    """
+
+    def diagnostic(self, net: pandapowerNet, **kwargs) -> dict[str, list[Any]] | None:
+        """
+        Parameters:
+            net: pandapower network
+
+        Keyword Arguments:
+            groups_to_validate (str | set[str] | None): optional schema groups to validate in
+                addition to the base schema (e.g. "opf", "sc", "3ph"). Defaults to None.
+
+        Returns:
+            dict that contains all validation issues grouped by element (keys)
+            Format: {'element': [ValidationIssue, ...]}
+
+        """
+        # imported lazily: network_schema.tools.validation imports pandapowerNet from the
+        # pandapower package, which is not yet bound when this module is imported
+        from pandapower.network_schema.tools.validation.network_validation import validate_network
+
+        groups_to_validate = kwargs.pop("groups_to_validate", None)
+        return validate_network(net, groups_to_validate=groups_to_validate, collect_errors=True) or None
+
+    def report(self, error: Exception | None, results: dict[str, list[Any]] | None) -> None:
+        # error and success checks
+        if error is not None:
+            self.out.warning("Check for schema validation failed due to the following error:")
+            self.out.warning(error)
+            return
+        if results is None:
+            self.out.info("PASSED: No schema violations found.")
+            return
+        # message header
+        self.out.compact("schema_validation:\n")
+        self.out.detailed("Checking the element tables against the network schemas...\n")
+
+        # message body
+        # the issue messages already describe the problem precisely, so the compact and the
+        # detailed report show the same text
+        element_counter = 0
+        for element, issues in results.items():
+            element_counter += len(issues)
+            self.out.warning(f"{element}:")
+            for issue in issues:
+                self.out.compact(f"  {issue.message}")
+                self.out.detailed(f"  {issue.message}")
+
+        # message summary
+        self.out.detailed(f"\nSUMMARY: {element_counter} schema violations found.")
 
 
 class InvalidValues(DiagnosticFunction[pandapowerNet, dict[str, Any]]):
@@ -179,9 +241,9 @@ class InvalidValues(DiagnosticFunction[pandapowerNet, dict[str, Any]]):
             "vkr_percent_larger": check_vkr_larger,
         }
 
-        for key in important_values:
+        for key, values in important_values.items():
             if len(net[key]) > 0:
-                for value in important_values[key]:
+                for value in values:
                     # every element is checked separately, TODO: implement vector based checks
                     for i, element in net[key].iterrows():
                         check_result = type_checks[value[1]](element, i, value[0])
@@ -385,8 +447,8 @@ class Overload(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
             net.gen["scaling"] = gen_scaling
             net.load["scaling"] = load_scaling
         except Exception as e:
-            self.out.error(f"Overload check failed: {str(e)}")
-            raise e
+            self.out.error(f"Overload check failed: {e!s}")
+            raise
 
         return check_result if check_result else None
 
@@ -452,8 +514,8 @@ class CheckDCPowerflow(DiagnosticFunction[pandapowerNet, bool]):
             check_result = False
 
         except Exception as e:
-            self.out.error(f"rundcpp failed: {str(e)}")
-            raise e
+            self.out.error(f"rundcpp failed: {e!s}")
+            raise
 
         return check_result
 
@@ -504,8 +566,8 @@ class DisableVoltageDependentLoads(DiagnosticFunction[pandapowerNet, bool]):
             check_result = False
 
         except Exception as e:
-            self.out.error(f"voltage_depend_loads check failed: {str(e)}")
-            raise e
+            self.out.error(f"voltage_depend_loads check failed: {e!s}")
+            raise
 
         return check_result
 
@@ -569,8 +631,8 @@ class WrongLineCapacitance(DiagnosticFunction[pandapowerNet, bool]):
                 self.out.debug("Line capacitance check failed.")
 
         except Exception as e:
-            self.out.error(f"Line capacitance check failed: {str(e)}")
-            raise e
+            self.out.error(f"Line capacitance check failed: {e!s}")
+            raise
 
         # teardown
         net.line["c_nf_per_km"] = line_capacitance
@@ -649,8 +711,8 @@ class WrongLineReactance(DiagnosticFunction[pandapowerNet, bool]):
                 self.out.debug("Line reactance check failed.")
 
         except Exception as e:
-            self.out.error(f"Line reactance check failed: {str(e)}")
-            raise e
+            self.out.error(f"Line reactance check failed: {e!s}")
+            raise
 
         # teardown
         net.line.x_ohm_per_km = line_reactance
@@ -729,8 +791,8 @@ class WrongLineResistance(DiagnosticFunction[pandapowerNet, bool]):
                 self.out.debug("Line resistance check failed.")
 
         except Exception as e:
-            self.out.error(f"Line resistance check failed: {str(e)}")
-            raise e
+            self.out.error(f"Line resistance check failed: {e!s}")
+            raise
 
         # teardown
         net.line.r_ohm_per_km = line_resistance
@@ -809,8 +871,8 @@ class SubNetProblemTest(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
                 check_result[zone] = False
                 self.out.debug(f"Calculation on zone: {zone} failed.")
             except Exception as e:
-                self.out.error(f"Calculation on subnets failed: {str(e)}")
-                raise e
+                self.out.error(f"Calculation on subnets failed: {e!s}")
+                raise
 
         return check_result if not all(check_result.values()) else None
 
@@ -898,8 +960,8 @@ class OptimisticPowerflow(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
                     )
 
         except Exception as e:
-            self.out.error(f"Optimistic calculation on failed: {str(e)}")
-            raise e
+            self.out.error(f"Optimistic calculation on failed: {e!s}")
+            raise
 
         return check_result if check_result else None
 
@@ -965,7 +1027,7 @@ class SlackGenPlacement(DiagnosticFunction[pandapowerNet, dict[str, float]]):
         orig_gen = copy.copy(net.gen)
 
         def _calculate_losses(net):
-            idx = net.gen.loc[net.gen.slack == True].index
+            idx = net.gen.loc[net.gen.slack].index
             res = np.linalg.norm(net.res_gen.loc[idx].p_mw + net.res_gen.loc[idx].q_mvar * 1j)
             res += np.linalg.norm(net.res_ext_grid.p_mw + net.res_ext_grid.q_mvar * 1j)
             return res
@@ -979,8 +1041,8 @@ class SlackGenPlacement(DiagnosticFunction[pandapowerNet, dict[str, float]]):
             self.out.debug("Base case did not converge, trying different combinations")
             check_result["base_case"] = sys.float_info.max
         except Exception as e:
-            self.out.error(f"Slack gen placement calculation failed: {str(e)}")
-            raise e
+            self.out.error(f"Slack gen placement calculation failed: {e!s}")
+            raise
 
         # disable all slack gen
         net.gen["slack"] = False
@@ -998,8 +1060,8 @@ class SlackGenPlacement(DiagnosticFunction[pandapowerNet, dict[str, float]]):
                 self.out.debug(f"Gen[{idx}]=Slack did not converge, trying different one")
                 check_result[idx] = sys.float_info.max  # type: ignore[index]
             except Exception as e:
-                self.out.error(f"Slack gen placement calculation failed: {str(e)}")
-                raise e
+                self.out.error(f"Slack gen placement calculation failed: {e!s}")
+                raise
 
             net.gen.loc[idx, "slack"] = False
 
@@ -1057,8 +1119,8 @@ class TestContinuousBusIndices(DiagnosticFunction[pandapowerNet, bool]):
         except expected_exceptions:
             return False
         except Exception as e:
-            self.out.error(f"Continuous bus index calculation failed: {str(e)}")
-            raise e
+            self.out.error(f"Continuous bus index calculation failed: {e!s}")
+            raise
 
     def report(self, error: Exception | None, results: bool | None) -> None:
         # error and success checks
@@ -1106,8 +1168,8 @@ class WrongSwitchConfiguration(DiagnosticFunction[pandapowerNet, bool]):
             except expected_exceptions:
                 net.switch["closed"] = switch_configuration
                 return False
-        except Exception as e:
-            self.out.error(f"Switch check failed: {str(e)}")
+        except Exception as e:  # noqa: BLE001
+            self.out.error(f"Switch check failed: {e!s}")
         return None
 
     def report(self, error: Exception | None, results: bool | None) -> None:
@@ -1161,9 +1223,11 @@ class MissingBusIndices(DiagnosticFunction[pandapowerNet, dict]):
             element_check = []
             for i, row in net[element].iterrows():
                 for bus_name in columns:
-                    if row[bus_name] not in bus_indices:
-                        if not ((element == "switch") and (bus_name == "element") and (row.et in ["l", "t", "t3"])):
-                            element_check.append((i, bus_name, row[bus_name]))
+                    if not (
+                        row[bus_name] in bus_indices
+                        or ((element == "switch") and (bus_name == "element") and (row.et in ["l", "t", "t3"]))
+                    ):
+                        element_check.append((i, bus_name, row[bus_name]))
             if element_check:
                 check_results[element] = element_check
 
@@ -1426,8 +1490,7 @@ class ImplausibleImpedanceValues(DiagnosticFunction[pandapowerNet, list[dict]]):
                 run(net)
             except (*expected_exceptions, FloatingPointError):
                 try:
-                    for key in implausible_elements:
-                        implausible_idx = implausible_elements[key]
+                    for key, implausible_idx in implausible_elements.items():
                         if key == "vsc":
                             net.vsc.x_ohm = np.fmax(net.vsc.x_ohm, 0.5)
                             net.vsc.r_dc_ohm = np.fmax(net.vsc.r_dc_ohm, 0.5)
@@ -1481,8 +1544,8 @@ class ImplausibleImpedanceValues(DiagnosticFunction[pandapowerNet, list[dict]]):
                 except expected_exceptions:
                     switch_replacement = False
                 check_results.append({"loadflow_converges_with_switch_replacement": switch_replacement})
-            except Exception as e:
-                self.out.error(f"Impedance values check failed: {str(e)}")
+            except Exception as e:  # noqa: BLE001
+                self.out.error(f"Impedance values check failed: {e!s}")
             net.switch = switch_copy
             net.line = line_copy
             net.impedance = impedance_copy
@@ -1603,7 +1666,7 @@ class NominalVoltagesMismatch(DiagnosticFunction[pandapowerNet, dict]):
             if abs(1 - (trafo.vn_lv_kv / lv_bus_vn_kv)) > nom_voltage_tolerance:
                 lv_bus_violation = True
             if hv_bus_violation and lv_bus_violation:
-                trafo_voltages = np.array(([trafo.vn_hv_kv, trafo.vn_lv_kv]))
+                trafo_voltages = np.array([trafo.vn_hv_kv, trafo.vn_lv_kv])
                 bus_voltages = np.array([hv_bus_vn_kv, lv_bus_vn_kv])
                 trafo_voltages.sort()
                 bus_voltages.sort()
@@ -1643,7 +1706,7 @@ class NominalVoltagesMismatch(DiagnosticFunction[pandapowerNet, dict]):
             if abs(1 - (trafo3w.vn_lv_kv / lv_bus_vn_kv)) > nom_voltage_tolerance:
                 lv_bus_violation = True
             if hv_bus_violation and mv_bus_violation and lv_bus_violation:
-                trafo_voltages = np.array(([trafo3w.vn_hv_kv, trafo3w.vn_mv_kv, trafo3w.vn_lv_kv]))
+                trafo_voltages = np.array([trafo3w.vn_hv_kv, trafo3w.vn_mv_kv, trafo3w.vn_lv_kv])
                 bus_voltages = np.array([hv_bus_vn_kv, mv_bus_vn_kv, lv_bus_vn_kv])
                 trafo_voltages.sort()
                 bus_voltages.sort()
@@ -1779,7 +1842,7 @@ class DisconnectedElements(DiagnosticFunction[pandapowerNet, list]):
                      disconnected_gen_indices,
                      disconnected_sgen_indices]
         """
-        from pandapower.topology import create_nxgraph, connected_components
+        from pandapower.topology import connected_components, create_nxgraph
 
         mg = create_nxgraph(net)
         sections = connected_components(mg)
@@ -1831,7 +1894,7 @@ class DisconnectedElements(DiagnosticFunction[pandapowerNet, list]):
 
         open_trafo_switches = net.switch[(net.switch.et == "t") & (net.switch.closed == 0)]
         isolated_trafos = set(open_trafo_switches.groupby("element").count().query("bus > 1").index)
-        isolated_trafos_is = isolated_trafos.intersection((set(net.trafo[net.trafo.in_service].index)))
+        isolated_trafos_is = isolated_trafos.intersection(set(net.trafo[net.trafo.in_service].index))
         if isolated_trafos_is:
             disc_elements.append({"isolated_trafos": list(isolated_trafos_is)})
 
@@ -2161,6 +2224,7 @@ class ParallelSwitches(DiagnosticFunction[pandapowerNet, list[list]]):
 
 # (name in result_dict, instance of class, list of arguments: None = all kwargs / [] = no arguments)
 default_diagnostic_functions: list[tuple[str, DiagnosticFunction, list[str] | None]] = [
+    ("schema_validation", SchemaValidation(), None),
     ("missing_bus_indices", MissingBusIndices(), []),
     ("disconnected_elements", DisconnectedElements(), []),
     ("different_voltage_levels_connected", DifferentVoltageLevelsConnected(), []),

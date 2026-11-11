@@ -8,7 +8,6 @@ from __future__ import annotations
 import datetime
 import enum
 import json
-from typing import List, Dict
 
 from . import interfaces
 
@@ -55,14 +54,14 @@ class LogLevel(enum.Enum):
 
 class Report:
     def __init__(self, message: str, code: ReportCode, level: LogLevel, timestamp: datetime.datetime | None = None):
-        self.timestamp = datetime.datetime.now()
+        self.timestamp = datetime.datetime.now(tz=datetime.UTC)
         if timestamp is not None:
             self.timestamp = timestamp
         self.message = message
         self.code = code
         self.level = level
 
-    def to_dict(self) -> Dict:
+    def to_dict(self) -> dict:
         return {
             "timestamp": self.timestamp.isoformat(),
             "message": self.message,
@@ -72,8 +71,8 @@ class Report:
 
 
 class ReportContainer(interfaces.ReportContainer):
-    def __init__(self, logs: List[Report] | None = None):
-        if logs is not None and isinstance(logs, List):
+    def __init__(self, logs: list[Report] | None = None):
+        if logs is not None and isinstance(logs, list):
             self.logs = logs
         else:
             self.logs = []
@@ -81,7 +80,7 @@ class ReportContainer(interfaces.ReportContainer):
     def add_log(self, log: Report):
         self.logs.append(log)
 
-    def get_logs(self) -> List[Report]:
+    def get_logs(self) -> list[Report]:
         return self.logs
 
     def extend_log(self, report_container: ReportContainer):

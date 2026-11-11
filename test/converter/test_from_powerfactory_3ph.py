@@ -1,75 +1,32 @@
-import os
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import json
-import pytest
+import logging
+import os
+from importlib.util import find_spec
+
 import numpy as np
 import pandas as pd
-
-from pandapower.pf.runpp_3ph import runpp_3ph
-from pandapower.file_io import from_json
-
-try:
-    from pandaplan.core import pplog as logging
-except ImportError:
-    import logging
-
-
-logger = logging.getLogger(__name__)
-
-try:
-    import powerfactory as pf
-
-    PF_INSTALLED = True
-except ImportError:
-    PF_INSTALLED = False
-    logger.info("could not import powerfactory, unbalanced load flow comparsion between pf and pp not possible")
+import pytest
 
 from pandapower.converter.powerfactory.pf_export_functions import run_load_flow as run_powerfactory_load_flow
 from pandapower.converter.powerfactory.validate import _get_pf_results_unbalanced, _set_pf_results_unbalanced
-
+from pandapower.file_io import from_json
+from pandapower.pf.runpp_3ph import runpp_3ph
 from test import test_path
 
+logger = logging.getLogger(__name__)
+
+if find_spec("powerfactory"):
+    import powerfactory as pf
+
+    PF_INSTALLED = True
+else:
+    PF_INSTALLED = False
+    logger.info("could not import powerfactory, unbalanced load flow comparison between pf and pp not possible")
+
 testfiles_path = os.path.join(test_path, "converter", "testfiles")
-
-# @pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
-# def test_trafo_asym():
-#     if not PF_INSTALLED:
-#         return
-#     # Only works with PowerFactory installed and configured
-#     # and Yyn needs to be corrected, so there will be xfail atm
-#     prj_name= "\\e2n049.IntUser\\Transformer 2 bus_trafo_11.03.20.IntPrj"
-#     app = initialize_powerfactory(prj_name)
-#     net = from_json(os.path.join(this_file_path, "test_trafo_3ph.json"))
-#     for loadtype in ["delta", "wye", "bal_wye"]:
-#         for vector_group in [ "Dyn", "YNyn","Yzn"]:
-#             print(loadtype, vector_group)
-#             analyse_3ph_loadtypes_and_vectorgroups(app, net, loadtype, vector_group)
-
-# @pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
-# def test_line_asym():
-#     if not PF_INSTALLED:
-#         return
-#     # Only works with PowerFactory installed and configured atm
-#     prj_name= "\\e2n049.IntUser\\2 bus_line_load_25.02.20.IntPrj"
-#     app = initialize_powerfactory(prj_name)
-#     net = from_json(os.path.join(this_file_path, "test_line_3ph.json"))
-#     runpp_3ph(net)
-#     get_pf_results(app, net)
-#     compare_3ph_pp_pf_results(net)
-#     return net
-
-# @pytest.mark.skipif(not PF_INSTALLED, reason='powerfactory must be installed')
-# def test_net_asym():
-#     if not PF_INSTALLED:
-#         return
-#     # Only works with PowerFactory installed and configured
-#     # and Yyn needs to be corrected, so there will be xfail atm
-#     prj_name= "\\e2n049.IntUser\\3 bus_trafo_line_load_22.06.20.IntPrj"
-#     app = initialize_powerfactory(prj_name)
-#     net = from_json(os.path.join(this_file_path, "test_net_3ph.json"))
-#     for loadtype in ["delta", "wye", "bal_wye"]:
-#         for vector_group in [ "Dyn", "YNyn","Yzn"]:
-#             print(loadtype, vector_group)
-#             analyse_3ph_loadtypes_and_vectorgroups(app, net, loadtype, vector_group)
 
 
 def test_trafo_asym():
@@ -130,7 +87,7 @@ def analyse_3ph_loadtypes_and_vectorgroups(app, net, loadtype, vector_group):
         net.asymmetric_load.type = loadtype
         net.trafo.vector_group = vector_group
         runpp_3ph(net)
-        study_case_name = "Study Case_%s_%s" % (vector_group, loadtype)
+        study_case_name = f"Study Case_{vector_group}_{loadtype}"
         activate_study_case(app, study_case_name)
         get_pf_results(app, net)
         compare_3ph_pp_pf_results(net)
@@ -149,41 +106,37 @@ def compare_3ph_pp_pf_results(net):
 
     for phase in ["a", "b", "c"]:
         # bus
-        diff_vm_pu = abs(net.res_bus_3ph["vm_%s_pu" % phase] - net.res_bus_3ph["pf_vm_%s_pu" % phase])
-        logger.debug("vm_pu difference (phase %s):\n%s\n" % (phase, diff_vm_pu))
+        diff_vm_pu = abs(net.res_bus_3ph[f"vm_{phase}_pu"] - net.res_bus_3ph[f"pf_vm_{phase}_pu"])
+        logger.debug(f"vm_pu difference (phase {phase}):\n{diff_vm_pu}\n")
         assert all(diff_vm_pu < vm_tol)
-        diff_va_degree = abs(net.res_bus_3ph["va_%s_degree" % phase] - net.res_bus_3ph["pf_va_%s_degree" % phase])
-        logger.debug("va_degree difference (phase %s):\n%s\n" % (phase, diff_va_degree))
+        diff_va_degree = abs(net.res_bus_3ph[f"va_{phase}_degree"] - net.res_bus_3ph[f"pf_va_{phase}_degree"])
+        logger.debug(f"va_degree difference (phase {phase}):\n{diff_va_degree}\n")
         assert all(diff_va_degree < va_tol)
 
         # trafo
-        diff_i_hv_ka = abs(net.res_trafo_3ph["i_%s_hv_ka" % phase] - net.res_trafo_3ph["pf_i_%s_hv_ka" % phase])
-        logger.debug("i_hv_ka difference:\n%s\n" % diff_i_hv_ka)
+        diff_i_hv_ka = abs(net.res_trafo_3ph[f"i_{phase}_hv_ka"] - net.res_trafo_3ph[f"pf_i_{phase}_hv_ka"])
+        logger.debug(f"i_hv_ka difference:\n{diff_i_hv_ka}\n")
         assert all(diff_i_hv_ka < i_trafo_tol)
-        diff_i_lv_ka = abs(net.res_trafo_3ph["i_%s_lv_ka" % phase] - net.res_trafo_3ph["pf_i_%s_lv_ka" % phase])
-        logger.debug("i_lv_ka difference:\n%s\n" % diff_i_lv_ka)
+        diff_i_lv_ka = abs(net.res_trafo_3ph[f"i_{phase}_lv_ka"] - net.res_trafo_3ph[f"pf_i_{phase}_lv_ka"])
+        logger.debug(f"i_lv_ka difference:\n{diff_i_lv_ka}\n")
         assert all(diff_i_lv_ka < i_trafo_tol)
 
         # load
-        diff_p_mw = abs(net.res_asymmetric_load_3ph["p_%s_mw" % phase] - net.res_asymmetric_load_3ph["pf_p_%s" % phase])
-        logger.debug("p_mw difference:\n%s\n" % diff_p_mw)
+        diff_p_mw = abs(net.res_asymmetric_load_3ph[f"p_{phase}_mw"] - net.res_asymmetric_load_3ph[f"pf_p_{phase}"])
+        logger.debug(f"p_mw difference:\n{diff_p_mw}\n")
         assert all(diff_p_mw < p_load_tol)
-        diff_q_mvar = abs(
-            net.res_asymmetric_load_3ph["q_%s_mvar" % phase] - net.res_asymmetric_load_3ph["pf_q_%s" % phase]
-        )
-        logger.debug("q_mvar difference:\n%s\n" % diff_q_mvar)
+        diff_q_mvar = abs(net.res_asymmetric_load_3ph[f"q_{phase}_mvar"] - net.res_asymmetric_load_3ph[f"pf_q_{phase}"])
+        logger.debug(f"q_mvar difference:\n{diff_q_mvar}\n")
         assert all(diff_q_mvar < q_load_tol)
 
     # line
     for phase in ["a", "b", "c", "n"]:
-        diff_i_from_ka = abs(net.res_line_3ph["i_%s_from_ka" % phase] - net.res_line_3ph["pf_i_%s_from_ka" % phase])
-        logger.debug("i_from_ka difference:\n%s\n" % diff_i_from_ka)
-        assert all(
-            abs(net.res_line_3ph["i_%s_from_ka" % phase] - net.res_line_3ph["pf_i_%s_from_ka" % phase]) < i_line_tol
-        )
-        diff_i_to_ka = abs(net.res_line_3ph["i_%s_to_ka" % phase] - net.res_line_3ph["pf_i_%s_to_ka" % phase])
-        logger.debug("i_to_ka difference:\n%s\n" % diff_i_to_ka)
-        assert all(abs(net.res_line_3ph["i_%s_to_ka" % phase] - net.res_line_3ph["pf_i_%s_to_ka" % phase]) < i_line_tol)
+        diff_i_from_ka = abs(net.res_line_3ph[f"i_{phase}_from_ka"] - net.res_line_3ph[f"pf_i_{phase}_from_ka"])
+        logger.debug(f"i_from_ka difference:\n{diff_i_from_ka}\n")
+        assert all(abs(net.res_line_3ph[f"i_{phase}_from_ka"] - net.res_line_3ph[f"pf_i_{phase}_from_ka"]) < i_line_tol)
+        diff_i_to_ka = abs(net.res_line_3ph[f"i_{phase}_to_ka"] - net.res_line_3ph[f"pf_i_{phase}_to_ka"])
+        logger.debug(f"i_to_ka difference:\n{diff_i_to_ka}\n")
+        assert all(abs(net.res_line_3ph[f"i_{phase}_to_ka"] - net.res_line_3ph[f"pf_i_{phase}_to_ka"]) < i_line_tol)
 
 
 def get_pf_results(app, net):
@@ -245,7 +198,7 @@ def get_pf_results(app, net):
     }
 
     for element_type, variables in pf_result_variables.items():
-        for pp_pf_variable in variables.keys():
+        for pp_pf_variable in variables:
             net["res_" + element_type + "_3ph"][pp_pf_variable] = np.nan
         for idx, element in net[element_type].iterrows():
             pp_name = element["name"]
@@ -261,7 +214,7 @@ def write_pf_results_to_file(app, net, filename, combinations):
         pf_results = {}
         for loadtype in ["delta", "wye"]:
             for vector_group in ["Dyn", "YNyn", "Yzn"]:
-                study_case_name = "Study Case_%s_%s" % (vector_group, loadtype)
+                study_case_name = f"Study Case_{vector_group}_{loadtype}"
                 activate_study_case(app, study_case_name)
                 get_pf_results(app, net)
                 pf_res = _get_pf_results_unbalanced(net)

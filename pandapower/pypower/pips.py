@@ -8,17 +8,30 @@
 
 """Python Interior Point Solver (PIPS)."""
 
-from numpy import array, inf, any, isnan, ones, r_, finfo, zeros, dot, absolute, log, flatnonzero as find, full
+from numpy import absolute, any, array, dot, finfo, full, inf, isnan, ones, r_, zeros
+from numpy import flatnonzero as find
 from numpy.linalg import norm
-from pandapower.pypower.pipsver import pipsver
-from scipy.sparse import vstack, hstack, eye, csr_matrix as sparse
+from scipy.sparse import csr_matrix as sparse
+from scipy.sparse import eye, hstack, vstack
 from scipy.sparse.linalg import spsolve
 
+from pandapower.pypower.pipsver import pipsver
 
 EPS = finfo(float).eps  # type: ignore[var-annotated]
 
 
-def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None, gh_fcn=None, hess_fcn=None, opt=None):
+def pips(
+    f_fcn,
+    x0=None,
+    A=None,
+    l=None,
+    u=None,
+    xmin=None,
+    xmax=None,
+    gh_fcn=None,
+    hess_fcn=None,
+    opt=None,
+):
     """Primal-dual interior point method for NLP (nonlinear programming).
     Minimize a function F(X) beginning from a starting point M{x0}, subject to
     optional linear and nonlinear constraints and variable bounds::
@@ -238,8 +251,8 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None, gh_fcn=No
     sigma = 0.1
     z0 = 1
     alpha_min = 1e-8
-    rho_min = 0.95
-    rho_max = 1.05
+    # rho_min = 0.95
+    # rho_max = 1.05
     mu_threshold = 1e-5
 
     # initialize
@@ -332,8 +345,6 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None, gh_fcn=No
 
     # check tolerance
     f0 = f
-    if opt["step_control"]:
-        L = f + dot(lam, g) + dot(mu, h + z) - gamma * sum(log(z))
 
     Lx = df.copy()
     Lx = Lx + dg * lam if dg is not None else Lx
@@ -368,13 +379,14 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None, gh_fcn=No
     if opt["verbose"]:  # pragma: no cover
         s = "-sc" if opt["step_control"] else ""
         v = pipsver("all")
-        print("Python Interior Point Solver - PIPS%s, Version %s, %s" % (s, v["Version"], v["Date"]))
+        print("Python Interior Point Solver - PIPS{}, Version {}, {}".format(s, v["Version"], v["Date"]))
         if opt["verbose"] > 1:
             print(" it    objective   step size   feascond     gradcond     compcond     costcond  ")
             print("----  ------------ --------- ------------ ------------ ------------ ------------")
             print(
-                "%3d  %12.8g %10s %12g %12g %12g %12g"
-                % (i, (f / opt["cost_mult"]), "", feascond, gradcond, compcond, costcond)
+                "{:3d}  {:12.8g} {:10s} {:12g} {:12g} {:12g} {:12g}".format(
+                    i, (f / opt["cost_mult"]), "", feascond, gradcond, compcond, costcond
+                )
             )
 
     if (
@@ -517,8 +529,9 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None, gh_fcn=No
 
         if opt["verbose"] > 1:
             print(
-                "%3d  %12.8g %10.5g %12g %12g %12g %12g"
-                % (i, (f / opt["cost_mult"]), norm(dx), feascond, gradcond, compcond, costcond)
+                "{:3d}  {:12.8g} {:10.5g} {:12g} {:12g} {:12g} {:12g}".format(
+                    i, (f / opt["cost_mult"]), norm(dx), feascond, gradcond, compcond, costcond
+                )
             )
 
         if (
@@ -538,25 +551,22 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None, gh_fcn=No
                 break
             f0 = f
 
-            if opt["step_control"]:
-                L = f + dot(lam, g) + dot(mu, (h + z)) - gamma * sum(log(z))
-
-    if opt["verbose"]:
-        if not converged:
-            print("Did not converge in %d iterations." % i)
+    if opt["verbose"] and not converged:
+        print(f"Did not converge in {i} iterations.")
 
     # package results
     if eflag != -1:
         eflag = converged
 
-    if eflag == 0:
-        message = "Did not converge"
-    elif eflag == 1:
-        message = "Converged"
-    elif eflag == -1:
-        message = "Numerically failed"
-    else:
-        raise
+    match eflag:
+        case 0:
+            message = "Did not converge"
+        case 1:
+            message = "Converged"
+        case -1:
+            message = "Numerically failed"
+        case _:
+            raise ValueError(f"eflag has unexpected value: {eflag}")
 
     output = {"iterations": i, "hist": hist, "message": message}
 
@@ -584,17 +594,13 @@ def pips(f_fcn, x0=None, A=None, l=None, u=None, xmin=None, xmax=None, gh_fcn=No
     mu_u[ilt] = mu_lin[:nlt]
     mu_u[ibx] = mu_lin[nlt + ngt : nlt + ngt + nbx]
 
-    lmbda = {"mu_l": mu_l[nx:], "mu_u": mu_u[nx:], "lower": mu_l[:nx], "upper": mu_u[:nx]}
+    lambda_ = {"mu_l": mu_l[nx:], "mu_u": mu_u[nx:], "lower": mu_l[:nx], "upper": mu_u[:nx]}
 
     if niqnln > 0:
-        lmbda["ineqnonlin"] = mu[:niqnln]
+        lambda_["ineqnonlin"] = mu[:niqnln]
     if neqnln > 0:
-        lmbda["eqnonlin"] = lam[:neqnln]
+        lambda_["eqnonlin"] = lam[:neqnln]
 
-    #    lmbda = {"eqnonlin": lam[:neqnln], 'ineqnonlin': mu[:niqnln],
-    #             "mu_l": mu_l[nx:], "mu_u": mu_u[nx:],
-    #             "lower": mu_l[:nx], "upper": mu_u[:nx]}
-
-    solution = {"x": x, "f": f, "eflag": converged, "output": output, "lmbda": lmbda}
+    solution = {"x": x, "f": f, "eflag": converged, "output": output, "lmbda": lambda_}
 
     return solution

@@ -5,57 +5,57 @@ and Energy System Technology (IEE), Kassel. All rights reserved.
 """
 
 import math
-import numpy as np
 from itertools import product
 
+import numpy as np
+
 from pandapower.auxiliary import _select_is_elements_numba, _sum_by_group
-from pandapower.pypower.idx_bus_dc import DC_NONE, DC_BUS_TYPE
+from pandapower.build_branch import (
+    _branches_with_oos_buses,
+    _build_branch_dc_ppc,
+    _build_tcsc_ppc,
+    _calc_branch_values_from_trafo_df,
+    _calc_impedance_parameters_from_dataframe,
+    _calc_nominal_ratio_from_dataframe,
+    _calc_switch_parameter,
+    _calc_tap_from_dataframe,
+    _calc_xward_parameter,
+    _end_temperature_correction_factor,
+    _initialize_branch_lookup,
+    _switch_branches,
+    _trafo_df_from_trafo3w,
+    _transformer_correction_factor,
+    get_trafo_values,
+)
 from pandapower.build_bus import (
-    _build_bus_ppc,
-    _build_svc_ppc,
-    _build_ssc_ppc,
-    _build_vsc_ppc,
     _build_bus_dc_ppc,
+    _build_bus_ppc,
+    _build_ssc_ppc,
+    _build_svc_ppc,
+    _build_vsc_ppc,
 )
 from pandapower.build_gen import _build_gen_ppc
+from pandapower.pd2ppc import _init_ppc, _ppc2ppci
 from pandapower.pypower.idx_brch import (
-    BR_G,
     BR_B,
-    BR_R,
-    BR_X,
-    F_BUS,
-    T_BUS,
-    branch_cols,
-    BR_STATUS,
-    SHIFT,
-    TAP,
-    BR_R_ASYM,
-    BR_X_ASYM,
-    BR_G_ASYM,
     BR_B_ASYM,
+    BR_G,
+    BR_G_ASYM,
+    BR_R,
+    BR_R_ASYM,
+    BR_STATUS,
+    BR_X,
+    BR_X_ASYM,
+    BRANCH_COLS,
+    F_BUS,
+    SHIFT,
+    T_BUS,
+    TAP,
 )
-from pandapower.pypower.idx_bus import BASE_KV, BS, GS, BUS_TYPE, NONE
-from pandapower.pypower.idx_brch_sc import branch_cols_sc
+from pandapower.pypower.idx_brch_sc import BRANCH_COLS_SC
+from pandapower.pypower.idx_bus import BASE_KV, BS, BUS_TYPE, GS, NONE
+from pandapower.pypower.idx_bus_dc import DC_BUS_TYPE, DC_NONE
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN
-from pandapower.build_branch import (
-    _calc_tap_from_dataframe,
-    _transformer_correction_factor,
-    _calc_nominal_ratio_from_dataframe,
-    get_trafo_values,
-    _trafo_df_from_trafo3w,
-    _calc_branch_values_from_trafo_df,
-    _calc_switch_parameter,
-    _calc_impedance_parameters_from_dataframe,
-    _build_tcsc_ppc,
-    _build_branch_dc_ppc,
-)
-from pandapower.build_branch import (
-    _switch_branches,
-    _branches_with_oos_buses,
-    _initialize_branch_lookup,
-    _end_temperature_correction_factor,
-)
-from pandapower.pd2ppc import _ppc2ppci, _init_ppc
 
 
 def _pd2ppc_zero(net, k_st, sequence=0):
@@ -118,9 +118,9 @@ def _build_branch_ppc_zero(net, ppc, k_st=None):
     length = _initialize_branch_lookup(net)
     lookup = net._pd2ppc_lookups["branch"]
     mode = net._options["mode"]
-    ppc["branch"] = np.zeros(shape=(length, branch_cols), dtype=np.complex128)
+    ppc["branch"] = np.zeros(shape=(length, BRANCH_COLS), dtype=np.complex128)
     if mode == "sc":
-        branch_sc = np.empty(shape=(length, branch_cols_sc), dtype=float)
+        branch_sc = np.empty(shape=(length, BRANCH_COLS_SC), dtype=float)
         branch_sc.fill(np.nan)
         ppc["branch"] = np.hstack((ppc["branch"], branch_sc))
     ppc["branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])
@@ -128,6 +128,10 @@ def _build_branch_ppc_zero(net, ppc, k_st=None):
     _add_line_sc_impedance_zero(net, ppc)
     _add_impedance_sc_impedance_zero(net, ppc)
     _add_trafo_sc_impedance_zero(net, ppc, k_st=k_st)
+    if "xward" in lookup:
+        # the internal bus of an xward has no connection to earth in the zero sequence system, so no zero
+        # sequence current flows over its impedance. Without it, the branch would have zero impedance.
+        _calc_xward_parameter(net, ppc)
     if "switch" in lookup:
         _calc_switch_parameter(net, ppc)
     if mode == "sc":
@@ -447,14 +451,14 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
 
         elif vector_group[-1].isdigit():
             raise ValueError(
-                "Unknown transformer vector group %s - "
+                f"Unknown transformer vector group {vector_group} - "
                 "please specify vector group without "
                 "phase shift number. Phase shift can be "
-                "specified in net.trafo.shift_degree" % vector_group
+                "specified in net.trafo.shift_degree"
             )
         else:
             raise ValueError(
-                "Transformer vector group %s is unknown / not implemented for three phase load flow" % vector_group
+                f"Transformer vector group {vector_group} is unknown / not implemented for three phase load flow"
             )
         ppc["branch"][ppc_idx, BR_G] = y_sym.astype(complex).real
         ppc["branch"][ppc_idx, BR_B] = y_sym.astype(complex).imag
@@ -500,12 +504,12 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
         c = ppc["bus"][eg_buses_ppc, C_MAX] if case == "max" else ppc["bus"][eg_buses_ppc, C_MIN]
     else:
         c = 1.1
-    if "s_sc_%s_mva" % case not in eg:
-        raise ValueError("short circuit apparent power s_sc_%s_mva needs to be specified for " % case + "external grid")
-    s_sc = eg["s_sc_%s_mva" % case].values
-    if "rx_%s" % case not in eg:
-        raise ValueError("short circuit R/X rate rx_%s needs to be specified for external grid" % case)
-    rx = eg["rx_%s" % case].values
+    if f"s_sc_{case}_mva" not in eg:
+        raise ValueError(f"short circuit apparent power s_sc_{case}_mva needs to be specified for " + "external grid")
+    s_sc = eg[f"s_sc_{case}_mva"].values
+    if f"rx_{case}" not in eg:
+        raise ValueError(f"short circuit R/X rate rx_{case} needs to be specified for external grid")
+    rx = eg[f"rx_{case}"].values
 
     z_grid = c / s_sc
     if mode == "pf_3ph":
@@ -516,8 +520,8 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     eg["x"] = x_grid
 
     # ext_grid zero sequence impedance
-    x0_grid = net.ext_grid[is_egs]["x0x_%s" % case].values * x_grid
-    r0_grid = net.ext_grid[is_egs]["r0x0_%s" % case].values * x0_grid
+    x0_grid = net.ext_grid[is_egs][f"x0x_{case}"].values * x_grid
+    r0_grid = net.ext_grid[is_egs][f"r0x0_{case}"].values * x0_grid
     y0_grid = 1 / (r0_grid + x0_grid * 1j)
 
     buses, gs, bs = _sum_by_group(eg_buses_ppc, y0_grid.real, y0_grid.imag)
@@ -545,10 +549,9 @@ def _add_line_sc_impedance_zero(net, ppc):
     ppc["branch"][f:t, F_BUS] = fb
     ppc["branch"][f:t, T_BUS] = tb
     ppc["branch"][f:t, BR_R] = line["r0_ohm_per_km"].values * length / baseR / parallel
-    if mode == "sc":
+    if mode == "sc" and net["_options"]["case"] == "min":
         # temperature correction
-        if net["_options"]["case"] == "min":
-            ppc["branch"][f:t, BR_R] *= _end_temperature_correction_factor(net, short_circuit=True)
+        ppc["branch"][f:t, BR_R] *= _end_temperature_correction_factor(net, short_circuit=True)
     ppc["branch"][f:t, BR_X] = line["x0_ohm_per_km"].values * length / baseR / parallel
     ppc["branch"][f:t, BR_B] = (
         2 * net["f_hz"] * math.pi * line["c0_nf_per_km"].values * 1e-9 * baseR * length * parallel

@@ -2,12 +2,12 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 import numpy as np
-from numpy import conj, arange, int64
-from scipy.sparse import vstack, hstack
-from scipy.sparse import eye, csr_matrix as sparse
-from pandapower.pypower.idx_brch import F_BUS, T_BUS
+from numpy import arange, conj, int64
+from scipy.sparse import csr_matrix as sparse
+from scipy.sparse import eye, hstack, vstack
 
 from pandapower.estimation.ppc_conversion import ExtendedPPCI
+from pandapower.pypower.idx_brch import F_BUS, T_BUS
 
 try:
     from numpy import isin
@@ -205,12 +205,12 @@ class BaseAlgebra:
             Y = self.Yt
             s = t
 
-        I = Y * V
+        i = Y * V
         Vnorm = V / abs(V)
 
         diagVs = sparse((V[s], (il, il)))
         diagVs2 = diagVs[maskS, :]
-        diagI = sparse((I, (il, il)))
+        diagI = sparse((i, (il, il)))
         diagI2 = diagI[maskS, :]
         diagV = sparse((V, (ib, ib)))
         diagVnorm = sparse((Vnorm, (ib, ib)))
@@ -268,14 +268,14 @@ class BaseAlgebra:
             Y = self.Yt
 
         # Compute branch currents.
-        I = Y * V
+        i = Y * V
 
         diagV = sparse((V, (vb, vb)))
         diagVnorm = sparse((V / abs(V), (vb, vb)))
-        idx = abs(I) != 0
-        I = I[idx]
+        idx = abs(i) != 0
+        i = i[idx]
         il = il[idx]
-        diagInorm = sparse((conj(I) / abs(I), (il, il)), shape=(nl, nl))
+        diagInorm = sparse((conj(i) / abs(i), (il, il)), shape=(nl, nl))
         diagInorm2 = diagInorm[maskI, :]
         a = diagInorm2 @ Y @ diagV
         b = diagInorm2 @ Y @ diagVnorm

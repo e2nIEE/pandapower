@@ -11,29 +11,29 @@ import pytest
 
 from pandapower.converter.powerfactory.validate import validate_pf_conversion
 from pandapower.create import (
-    create_impedance,
-    create_shunts,
-    create_buses,
-    create_gens,
     create_bus,
-    create_line_from_parameters,
-    create_gen,
-    create_load,
-    create_ext_grid,
-    create_vsc,
-    create_line_dc_from_parameters,
-    create_buses_dc,
     create_bus_dc,
+    create_buses,
+    create_buses_dc,
+    create_ext_grid,
+    create_gen,
+    create_gens,
+    create_impedance,
     create_line_dc,
-    create_lines_from_parameters,
+    create_line_dc_from_parameters,
+    create_line_from_parameters,
     create_lines_dc,
+    create_lines_from_parameters,
+    create_load,
+    create_shunts,
+    create_source_dc,
+    create_vsc,
     create_vsc_bipolar,
 )
 from pandapower.file_io import from_json
 from pandapower.network import pandapowerNet
-from pandapower.pf.makeYbus_facts import calc_y_svc_pu
+from pandapower.pf.make_y_bus_facts import calc_y_svc_pu
 from pandapower.run import runpp
-
 from test import test_path
 from test.consistency_checks import runpp_with_consistency_checks
 from test.loadflow.test_facts import compare_ssc_impedance_gen
@@ -59,7 +59,6 @@ def xtcsc(x, x_l, x_c):
 def copy_with_impedance(net):
     baseMVA = net.sn_mva  # MVA
     baseV = net.bus.vn_kv.values  # kV
-    baseI = baseMVA / (baseV * np.sqrt(3))
     baseZ = baseV**2 / baseMVA
 
     net_ref = copy.deepcopy(net)
@@ -225,13 +224,16 @@ def test_vsc_hvdc():
 
 
 def test_vsc_bipolar_hvdc():
+    """
+    HVDC link with two conductors: the VSC are connected between A-B and C-D (not to ground), B is grounded.
+    """
     net = pandapowerNet(name="test_vsc_bipolar_hvdc")
     # AC part
-    create_buses(net, 4, 380, geodata=[(0, 0), (100, 0), (200, 0), (300, 0)])
+    create_buses(net, 3, 380, geodata=[(0, 0), (100, 0), (200, 0)])
     create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
-    create_line_from_parameters(net, 2, 3, 30, 0.0487, 0.13823, 160, 0.664)
+    create_line_from_parameters(net, 0, 2, 30, 0.0487, 0.13823, 160, 0.664)
     create_ext_grid(net, 0)
-    create_load(net, 3, 100, 0)
+    create_load(net, 2, 100, 0)
 
     # DC part
     A = create_bus_dc(net, 380, "A", geodata=(120, 10))
@@ -242,7 +244,19 @@ def test_vsc_bipolar_hvdc():
     create_line_dc_from_parameters(net, A, C, 100, 0.1, 1)
     create_line_dc_from_parameters(net, B, D, 100, 0.1, 1)
 
-    create_vsc_bipolar(net, 1, A, B, 0.1, 5, 0.15, control_mode="Vdc_Qac", control_value_1=1.0, control_value_2=1.0)
+    create_vsc_bipolar(
+        net,
+        1,
+        A,
+        B,
+        0.1,
+        5,
+        0.15,
+        control_mode_ac="q_mvar",
+        control_value_ac=0.0,
+        control_mode_dc="vm_pu",
+        control_value_dc=1.0,
+    )
     create_vsc_bipolar(
         net,
         2,
@@ -254,11 +268,101 @@ def test_vsc_bipolar_hvdc():
         control_mode_ac="vm_pu",
         control_value_ac=1.0,
         control_mode_dc="p_mw",
-        control_value_dc=5,
+        control_value_dc=50,
+    )
+    create_source_dc(net, B, vm_pu=0.0)
+
+    runpp_with_consistency_checks(net)
+
+    assert np.allclose(net.res_bus_dc.loc[[A, B], "vm_pu"].values, [1.0, 0.0], rtol=0, atol=1e-9)
+    assert np.isclose(net.res_vsc_bipolar.at[1, "p_dc_mw"], 50.0, rtol=0, atol=1e-6)
+    assert np.isclose(net.res_vsc_bipolar.at[0, "q_mvar"], 0.0, rtol=0, atol=1e-6)
+    # the current of the plus conductor returns through the minus conductor, not through ground
+    assert np.isclose(net.res_line_dc.at[0, "i_from_ka"], -net.res_line_dc.at[1, "i_from_ka"], rtol=0, atol=1e-9)
+    assert np.isclose(net.res_source_dc.at[0, "p_dc_mw"], 0.0, rtol=0, atol=1e-9)
+    assert np.isclose(net.res_vsc_bipolar.at[1, "i_dc_ka"], net.res_line_dc.at[0, "i_ka"], rtol=0, atol=1e-9)
+    # minus conductor has a voltage drop
+    assert net.res_bus_dc.at[D, "vm_pu"] > 0.0
+    assert np.isclose(
+        net.res_vsc_bipolar.at[1, "vm_dc_pu_p"] - net.res_vsc_bipolar.at[1, "vm_dc_pu_m"],
+        net.res_bus_dc.at[C, "vm_pu"] - net.res_bus_dc.at[D, "vm_pu"],
+        rtol=0,
+        atol=1e-9,
     )
 
-    runpp(net)
+
+def _vsc_hvdc_net(non_controllable_vsc=False):
+    """
+    HVDC link A-B with one VSC in DC voltage control and one in DC power control. Optionally, a non-controllable VSC
+    is created first, so that it is the first VSC in the internal arrays.
+    """
+    net = pandapowerNet(name="vsc_hvdc_net")
+    create_buses(net, 3, 380)
+    create_line_from_parameters(net, 0, 1, 30, 0.0487, 0.13823, 160, 0.664)
+    create_line_from_parameters(net, 0, 2, 30, 0.0487, 0.13823, 160, 0.664)
+    create_ext_grid(net, 0)
+    create_load(net, 2, 10, 4)
+    a = create_bus_dc(net, 380, "A")
+    b = create_bus_dc(net, 380, "B")
+    create_line_dc_from_parameters(net, a, b, 100, 0.1, 1)
+    if non_controllable_vsc:
+        create_vsc(
+            net,
+            2,
+            b,
+            0.1,
+            5,
+            0.15,
+            control_mode_ac="vm_pu",
+            control_value_ac=1.0,
+            control_mode_dc="p_mw",
+            control_value_dc=0.0,
+            controllable=False,
+        )
+    create_vsc(
+        net,
+        1,
+        a,
+        0.1,
+        5,
+        0.15,
+        control_mode_ac="q_mvar",
+        control_value_ac=0.0,
+        control_mode_dc="vm_pu",
+        control_value_dc=1.02,
+    )
+    create_vsc(
+        net,
+        2,
+        b,
+        0.1,
+        5,
+        0.15,
+        control_mode_ac="vm_pu",
+        control_value_ac=1.0,
+        control_mode_dc="p_mw",
+        control_value_dc=10.0,
+    )
+    return net
+
+
+def test_vsc_hvdc_with_non_controllable_vsc():
+    """
+    A non-controllable VSC in the net must not shift the control modes and set-points of the controllable VSC.
+    """
+    net = _vsc_hvdc_net(non_controllable_vsc=True)
     runpp_with_consistency_checks(net)
+    reference = _vsc_hvdc_net()
+    runpp_with_consistency_checks(reference)
+
+    columns = ["p_mw", "q_mvar", "p_dc_mw", "vm_internal_pu", "vm_pu", "vm_dc_pu"]
+    controllable = net.vsc.index[net.vsc.controllable]
+    assert np.allclose(
+        net.res_vsc.loc[controllable, columns].values, reference.res_vsc[columns].values, rtol=0, atol=1e-6
+    )
+    assert np.allclose(net.res_bus_dc.vm_pu.values, reference.res_bus_dc.vm_pu.values, rtol=0, atol=1e-9)
+    assert np.isclose(net.res_vsc.at[1, "p_dc_mw"], -net.res_vsc.at[2, "p_dc_mw"], rtol=0, atol=0.1)
+    assert np.isclose(net.res_vsc.at[2, "p_dc_mw"], 10.0, rtol=0, atol=1e-6)
 
 
 def test_vsc_hvdc_control_q():
@@ -2457,7 +2561,7 @@ def test_2vsc_1ac_1dc(control_mode_ac, control_mode_dc):
 
 def test_vsc_slack_minimal_wrong():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=2)
-    # from pandapower.test.loadflow.test_facts import *
+    # from test.loadflow.test_facts import *
     net = pandapowerNet(name="test_vsc_slack_minimal_wrong")
     # AC part
     create_buses(net, 2, 110, geodata=[(200, 0), (400, 0)])
@@ -2496,7 +2600,7 @@ def test_vsc_slack_minimal_wrong():
 
 def test_vsc_slack_minimal_wrong2():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=2)
-    # from pandapower.test.loadflow.test_facts import *
+    # from test.loadflow.test_facts import *
     net = pandapowerNet(name="test_vsc_slack_minimal_wrong2")
     # AC part
     create_buses(net, 2, 110, geodata=[(200, 0), (400, 0)])
@@ -2534,7 +2638,7 @@ def test_vsc_slack_minimal_wrong2():
 @pytest.mark.xfail(reason="AC bus same as ext_grid bus not implemented")
 def test_vsc_slack_minimal():  # todo: fix that FACTS elements can be connected to ext_grid buses
     # np.set_printoptions(linewidth=1000, suppress=True, precision=2)
-    # from pandapower.test.loadflow.test_facts import *
+    # from test.loadflow.test_facts import *
     net = pandapowerNet(name="test_vsc_slack_minimal")
     # AC part
     create_buses(net, 2, 110, geodata=[(200, 0), (400, 0)])
@@ -2572,7 +2676,7 @@ def test_vsc_slack_minimal():  # todo: fix that FACTS elements can be connected 
 
 def test_vsc_slack():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
-    # from pandapower.test.loadflow.test_facts import *
+    # from test.loadflow.test_facts import *
     net = pandapowerNet(name="test_vsc_slack")
     # AC part
     create_buses(net, 4, 110, geodata=[(0, 0), (200, 0), (400, 0), (600, 0)])
@@ -2619,7 +2723,7 @@ def test_vsc_slack():
 
 def test_vsc_slack2():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
-    # from pandapower.test.loadflow.test_facts import *
+    # from test.loadflow.test_facts import *
     net = pandapowerNet(name="test_vsc_slack2")
     # AC part
     create_buses(net, 3, 110, geodata=[(0, 0), (200, 0), (400, 0)])
@@ -2665,7 +2769,7 @@ def test_vsc_slack2():
 
 def test_vsc_slack_oos():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
-    # from pandapower.test.loadflow.test_facts import *
+    # from test.loadflow.test_facts import *
     net = pandapowerNet(name="test_vsc_slack_oos")
     # AC part
     create_buses(net, 4, 110, geodata=[(0, 0), (200, 0), (400, 0), (600, 0)])
@@ -2711,7 +2815,7 @@ def test_vsc_slack_oos():
 
 def test_vsc_dc_r():
     # np.set_printoptions(linewidth=1000, suppress=True, precision=3)
-    # from pandapower.test.loadflow.test_facts import *
+    # from test.loadflow.test_facts import *
     net = pandapowerNet(name="test_vsc_dc_r")
     # AC part
     create_buses(net, 3, 110, geodata=[(0, 0), (200, 0), (400, 0)])
@@ -2754,7 +2858,7 @@ def test_vsc_dc_r():
 
 
 def test_vsc_hvdc_dc_rl():
-    # from pandapower.test.loadflow.test_facts import *
+    # from test.loadflow.test_facts import *
     net = pandapowerNet(name="test_vsc_hvdc_dc_rl")
     # AC part
     create_buses(net, 3, 110)

@@ -5,7 +5,7 @@
 import numpy as np
 import pytest
 
-from pandapower.plotting.colormaps import cmap_discrete, cmap_continuous, cmap_logarithmic
+from pandapower.plotting.colormaps import cmap_continuous, cmap_discrete, cmap_logarithmic
 
 matplotlib = pytest.importorskip("matplotlib.colors", reason="colormaps require matplotlib")
 

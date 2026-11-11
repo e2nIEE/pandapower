@@ -9,42 +9,42 @@ import pandas.testing as pdt
 import pytest
 
 from pandapower.create import (
-    create_group_from_dict,
-    create_group,
     create_buses,
-    create_lines,
     create_ext_grid,
+    create_group,
+    create_group_from_dict,
+    create_lines,
     create_loads,
     create_switches,
 )
-from pandapower.file_io import to_json, from_json_string
+from pandapower.file_io import from_json_string, to_json
 from pandapower.groups import (
-    set_group_out_of_service,
-    set_group_in_service,
-    group_element_lists,
     attach_to_group,
-    detach_from_groups,
+    check_unique_group_rows,
     compare_group_elements,
+    count_group_elements,
+    detach_from_groups,
+    drop_group_and_elements,
+    element_associated_groups,
+    elements_connected_to_group,
+    ensure_lists_in_group_element_column,
+    group_element_index,
+    group_element_lists,
     group_res_p_mw,
     group_res_power_per_bus,
     group_res_q_mvar,
-    count_group_elements,
-    isin_group,
-    element_associated_groups,
-    elements_connected_to_group,
-    group_element_index,
     groups_equal,
-    return_group_as_net,
-    set_group_reference_column,
+    isin_group,
     remove_not_existing_group_members,
-    ensure_lists_in_group_element_column,
-    check_unique_group_rows,
-    drop_group_and_elements,
+    return_group_as_net,
+    set_group_in_service,
+    set_group_out_of_service,
+    set_group_reference_column,
 )
 from pandapower.network import pandapowerNet
 from pandapower.networks import case24_ieee_rts, create_cigre_network_mv
 from pandapower.run import runpp
-from pandapower.toolbox import pp_elements, dataframes_equal, drop_lines, drop_trafos, drop_buses, drop_elements_simple
+from pandapower.toolbox import dataframes_equal, drop_buses, drop_elements_simple, drop_lines, drop_trafos, pp_elements
 
 
 def typed_list(iterable, dtype):

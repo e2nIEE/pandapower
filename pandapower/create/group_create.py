@@ -3,17 +3,22 @@
 
 from __future__ import annotations
 
+__all__ = [
+    "create_group",
+    "create_group_from_dict",
+]
+
 import logging
 
 import numpy as np
 
-from pandapower import pandapowerNet
 from pandapower.create._utils import (
     _check_elements_existence,
     _get_index_with_check,
     _group_parameter_list,
     _set_multiple_entries,
 )
+from pandapower.network import pandapowerNet
 
 logger = logging.getLogger(__name__)
 

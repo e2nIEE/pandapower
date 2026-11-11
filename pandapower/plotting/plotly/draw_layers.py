@@ -1,6 +1,9 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+__all__ = ["draw_layers", "version_check"]
+
+import logging
 
 import numpy as np
 import pandas as pd
@@ -9,15 +12,10 @@ from packaging import version
 from pandapower.plotting.plotly.mapbox_plot import _on_map_test
 from pandapower.plotting.plotly.traces import _in_ipynb
 
-try:
-    import pandaplan.core.pplog as logging
-except ImportError:
-    import logging
 logger = logging.getLogger(__name__)
 
 try:
     from plotly import __version__ as plotly_version
-    from plotly.graph_objs.scatter.marker import ColorBar
     from plotly.graph_objs import Figure, Layout
     from plotly.graph_objs.layout import XAxis, YAxis
     from plotly.graph_objs.scatter import Line, Marker
@@ -93,7 +91,7 @@ def draw_layers(
     if on_map:
         try:
             on_map = _on_map_test(traces[0]["x"][0], traces[0]["y"][0])
-        except:
+        except Exception:  # noqa: BLE001
             logger.warning(
                 "Test if geo-data are in lat/long cannot be performed using geopy -> eventual plot errors are possible."
             )
@@ -109,9 +107,9 @@ def draw_layers(
         # change traces for mapbox
         # change trace_type to scattermapbox and rename x to lat and y to lon
         for trace in traces:
-            if "x" in trace.keys():
+            if "x" in trace:
                 trace["lon"] = trace.pop("x")
-            if "y" in trace.keys():
+            if "y" in trace:
                 trace["lat"] = trace.pop("y")
             trace["type"] = "scattermapbox"
             if "line" in trace and isinstance(trace["line"], Line):
@@ -182,7 +180,8 @@ def draw_layers(
 
     # check if called from ipynb or not in order to consider appropriate plot function
     if _in_ipynb():
-        from plotly.offline import init_notebook_mode, iplot as plot
+        from plotly.offline import init_notebook_mode
+        from plotly.offline import iplot as plot
 
         init_notebook_mode()
         if filename is not None:
@@ -190,7 +189,7 @@ def draw_layers(
         else:
             plot(fig, filename=f"Layers_{num_layers}.html")
     else:
-        from plotly.offline import plot as plot
+        from plotly.offline import plot
 
         if filename is not None:
             plot(fig, filename=filename, auto_open=auto_open)

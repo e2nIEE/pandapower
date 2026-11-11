@@ -376,9 +376,7 @@ class TestAsymmetricLoadResults:
     @pytest.mark.skip(reason="Not yet implemented")
     def test_asymmetric_load_result_totals(self):
         """Test: aggregated p_mw / q_mvar results are consistent"""
-        pass
 
     @pytest.mark.skip(reason="Not yet implemented")
     def test_asymmetric_load_3ph_results(self):
         """Test: 3-phase results contain valid values per phase"""
-        pass

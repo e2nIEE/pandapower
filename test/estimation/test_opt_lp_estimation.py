@@ -1,11 +1,11 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-import sys
+import copy
 
 import numpy as np
 import pytest
-import copy
+
 from pandapower.estimation import estimate
 from pandapower.estimation.algorithm.base import WLSAlgorithm
 from pandapower.estimation.algorithm.lp import LPAlgorithm
@@ -57,7 +57,7 @@ def test_lp_scipy_lav():
     net, ppc, eppci = pp2eppci(net)
     estimation_ortools_lp = LPAlgorithm(1e-3, 5)
 
-    estimation_ortools = estimation_ortools_lp.estimate(eppci, with_ortools=False)
+    estimation_ortools_lp.estimate(eppci, with_ortools=False)
 
     net = eppci2pp(net, ppc, eppci)
 
@@ -80,7 +80,7 @@ def test_lp_ortools_lav():
     net, ppc, eppci = pp2eppci(net)
     estimation_ortools_lp = LPAlgorithm(1e-3, 5)
 
-    estimation_ortools = estimation_ortools_lp.estimate(eppci, with_ortools=True)
+    estimation_ortools_lp.estimate(eppci, with_ortools=True)
 
     net = eppci2pp(net, ppc, eppci)
 
@@ -127,10 +127,6 @@ def test_opt_lav():
         raise AssertionError("Estimation failed!")
 
 
-@pytest.mark.skipif(
-    (sys.version_info[0] == 3) & (sys.version_info[1] <= 7),
-    reason="This test can fail under Python 3.7 dependingon the processing power of the hardware used.",
-)
 def test_ql_qc():
     net = case9()
     net.sn_mva = 1.0

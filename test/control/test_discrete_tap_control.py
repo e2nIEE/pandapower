@@ -1,27 +1,28 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import logging as log
 import math
 from copy import deepcopy
-import numpy as np
-from pandapower.control import DiscreteTapControl
-import pytest
-import logging as log
 
-from pandapower.run import runpp, set_user_pf_options
+import numpy as np
+import pytest
+
+from pandapower.control import DiscreteTapControl
 from pandapower.create import (
+    create_bus,
     create_buses,
     create_ext_grid,
-    create_lines,
-    create_transformer,
-    create_load,
-    create_bus,
     create_line,
+    create_lines,
+    create_load,
+    create_transformer,
     create_transformer3w,
 )
 from pandapower.network import pandapowerNet
 from pandapower.networks.mv_oberrhein import mv_oberrhein
 from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_system
+from pandapower.run import runpp, set_user_pf_options
 
 logger = log.getLogger(__name__)
 
@@ -52,15 +53,15 @@ def test_discrete_tap_control_lv():
 
     logger.info("case1: low voltage")
     logger.info(
-        "before control: trafo voltage at low voltage bus is %f, tap position is %u"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
     runpp(net, run_control=True)
     logger.info(
-        "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"after DiscreteTapControl: trafo voltage at low voltage bus is "
+        f"{net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, tap position is {net.trafo.tap_pos.values.item():f}"
     )
     assert net.trafo.tap_pos.at[0] == -1
 
@@ -72,15 +73,15 @@ def test_discrete_tap_control_lv():
 
     logger.info("case2: high voltage")
     logger.info(
-        "before control: trafo voltage at low voltage bus is %f, tap position is %u"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
     runpp(net, run_control=True)
     logger.info(
-        "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"after DiscreteTapControl: trafo voltage at low voltage bus is "
+        f"{net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, tap position is {net.trafo.tap_pos.values.item():f}"
     )
     assert net.trafo.tap_pos.at[0] == -2
     # reduce voltage from 1.03 pu to 0.949 pu
@@ -91,15 +92,15 @@ def test_discrete_tap_control_lv():
 
     logger.info("case2: high voltage")
     logger.info(
-        "before control: trafo voltage at low voltage bus is %f, tap position is %u"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
     runpp(net, run_control=True)
     logger.info(
-        "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"after DiscreteTapControl: trafo voltage at low voltage bus is "
+        f"{net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, tap position is {net.trafo.tap_pos.values.item():f}"
     )
     assert net.trafo.tap_pos.at[0] == 1
 
@@ -122,15 +123,15 @@ def test_discrete_tap_control_hv():
 
     logger.info("case1: low voltage")
     logger.info(
-        "before control: trafo voltage at low voltage bus is %f, tap position is %u"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
     runpp(net, run_control=True)
     logger.info(
-        "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"after DiscreteTapControl: trafo voltage at low voltage bus is "
+        f"{net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, tap position is {net.trafo.tap_pos.values.item():f}"
     )
     assert net.trafo.tap_pos.at[0] == 1
     # increase voltage from 1.0 pu to 1.03 pu
@@ -141,15 +142,15 @@ def test_discrete_tap_control_hv():
 
     logger.info("case2: high voltage")
     logger.info(
-        "before control: trafo voltage at low voltage bus is %f, tap position is %u"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
     runpp(net, run_control=True)
     logger.info(
-        "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"after DiscreteTapControl: trafo voltage at low voltage bus is "
+        f"{net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, tap position is {net.trafo.tap_pos.values.item():f}"
     )
     assert net.trafo.tap_pos.at[0] == 2
     # increase voltage from 1.0 pu to 1.03 pu
@@ -160,15 +161,15 @@ def test_discrete_tap_control_hv():
 
     logger.info("case2: high voltage")
     logger.info(
-        "before control: trafo voltage at low voltage bus is %f, tap position is %u"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
     runpp(net, run_control=True)
     logger.info(
-        "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"after DiscreteTapControl: trafo voltage at low voltage bus is "
+        f"{net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, tap position is {net.trafo.tap_pos.values.item():f}"
     )
     assert net.trafo.tap_pos.at[0] == -1
 
@@ -191,15 +192,15 @@ def test_discrete_tap_control_lv_from_tap_step_percent():
 
     logger.info("case1: low voltage")
     logger.info(
-        "before control: trafo voltage at low voltage bus is %f, tap position is %u"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
     runpp(net, run_control=True)
     logger.info(
-        "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"after DiscreteTapControl: trafo voltage at low voltage bus is "
+        f"{net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, tap position is {net.trafo.tap_pos.values.item():f}"
     )
     assert net.trafo.tap_pos.at[0] == -1
 
@@ -221,15 +222,15 @@ def test_discrete_tap_control_lv_from_tap_step_percent():
 
     logger.info("case2: high voltage")
     logger.info(
-        "before control: trafo voltage at low voltage bus is %f, tap position is %u"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
     runpp(net, run_control=True)
     logger.info(
-        "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"after DiscreteTapControl: trafo voltage at low voltage bus is "
+        f"{net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, tap position is {net.trafo.tap_pos.values.item():f}"
     )
     assert net.trafo.tap_pos.at[0] == -2
     # reduce voltage from 1.03 pu to 0.969 pu
@@ -240,15 +241,15 @@ def test_discrete_tap_control_lv_from_tap_step_percent():
 
     logger.info("case2: high voltage")
     logger.info(
-        "before control: trafo voltage at low voltage bus is %f, tap position is %u"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
     runpp(net, run_control=True)
     logger.info(
-        "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"after DiscreteTapControl: trafo voltage at low voltage bus is "
+        f"{net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, tap position is {net.trafo.tap_pos.values.item():f}"
     )
     assert net.trafo.tap_pos.at[0] == 1
 
@@ -273,15 +274,15 @@ def test_discrete_tap_control_hv_from_tap_step_percent(tap_step_percent):
 
     logger.info("case1: low voltage")
     logger.info(
-        "before control: trafo voltage at low voltage bus is %f, tap position is %u"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
     runpp(net, run_control=True)
     logger.info(
-        "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"after DiscreteTapControl: trafo voltage at low voltage bus is "
+        f"{net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, tap position is {net.trafo.tap_pos.values.item():f}"
     )
     assert net.trafo.tap_pos.at[0] == (1 * tap_step_sign)
 
@@ -303,15 +304,15 @@ def test_discrete_tap_control_hv_from_tap_step_percent(tap_step_percent):
 
     logger.info("case2: high voltage")
     logger.info(
-        "before control: trafo voltage at low voltage bus is %f, tap position is %u"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
     runpp(net, run_control=True)
     logger.info(
-        "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"after DiscreteTapControl: trafo voltage at low voltage bus is "
+        f"{net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, tap position is {net.trafo.tap_pos.values.item():f}"
     )
     assert net.trafo.tap_pos.at[0] == (2 * tap_step_sign)
     # reduce voltage from 1.03 pu to 0.969 pu
@@ -322,15 +323,15 @@ def test_discrete_tap_control_hv_from_tap_step_percent(tap_step_percent):
 
     logger.info("case2: high voltage")
     logger.info(
-        "before control: trafo voltage at low voltage bus is %f, tap position is %u"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"before control: trafo voltage at low voltage bus is {net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, "
+        f"tap position is {net.trafo.tap_pos.values.item():d}"
     )
 
     # run control
     runpp(net, run_control=True)
     logger.info(
-        "after DiscreteTapControl: trafo voltage at low voltage bus is %f, tap position is %f"
-        % (net.res_bus.vm_pu[net.trafo.lv_bus].values.item(), net.trafo.tap_pos.values.item())
+        f"after DiscreteTapControl: trafo voltage at low voltage bus is "
+        f"{net.res_bus.vm_pu[net.trafo.lv_bus].values.item():f}, tap position is {net.trafo.tap_pos.values.item():f}"
     )
     assert net.trafo.tap_pos.at[0] == (-1 * tap_step_sign)
 

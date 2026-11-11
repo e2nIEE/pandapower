@@ -1,12 +1,12 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
-import logging
-from typing import Dict
 import json
-from . import cim_tools
+import logging
 
-from pandapower.diagnostic import diagnostic
 from pandapower import pandapowerNet
+from pandapower.diagnostic import diagnostic
+
+from . import cim_tools
 
 
 class PandapowerDiagnostic:
@@ -17,7 +17,7 @@ class PandapowerDiagnostic:
     :return: The pandapower diagnostic with CIM IDs.
     """
 
-    def __init__(self, net: pandapowerNet, diagnostic_: Dict | None = None):
+    def __init__(self, net: pandapowerNet, diagnostic_: dict | None = None):
         self.logger = logging.getLogger(self.__class__.__name__)
         self.net = net
         self.diagnostic = diagnostic_
@@ -65,7 +65,7 @@ class PandapowerDiagnostic:
         if isinstance(input_obj, list):
             return_obj: list = []
             for one_input_obj in input_obj:
-                if isinstance(one_input_obj, list) or isinstance(one_input_obj, dict):
+                if isinstance(one_input_obj, (list, dict)):
                     return_obj.append(self._rec_replace_pp_diagnostic_with_cim_ids(one_input_obj, element_type))
                 elif element_type is not None and isinstance(one_input_obj, int):
                     # get the RDF ID direct
@@ -92,7 +92,7 @@ class PandapowerDiagnostic:
             return_obj = input_obj
         return return_obj
 
-    def replace_pp_diagnostic_with_cim_ids(self) -> Dict:
+    def replace_pp_diagnostic_with_cim_ids(self) -> dict:
         """
         Create a pandapower diagnostic dictionary with CIM IDs instead of pandapower IDs.
         :param net: The pandapower network.
@@ -111,13 +111,13 @@ class PandapowerDiagnostic:
                 result_diagnostic["CGMES_IDs"][one_prf] = list(one_prf_item.keys())
         return result_diagnostic
 
-    def serialize(self, diagnostic: Dict, path_to_store: str):
+    def serialize(self, diagnostic: dict, path_to_store: str):
         """
         Serialize a pandapower diagnostic as json to disk.
         :param diagnostic: The pandapower diagnostic dictionary.
         :param path_to_store: The path to store the json on the disk.
         :return:
         """
-        self.logger.info("Storing diagnostic to path: %s" % path_to_store)
+        self.logger.info(f"Storing diagnostic to path: {path_to_store}")
         with open(path_to_store, mode="w", encoding="UTF-8") as fp:
             json.dump(diagnostic, fp, indent=2, sort_keys=True)

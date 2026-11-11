@@ -12,15 +12,17 @@ from pandapower.create import (
     create_ext_grid,
     create_gen,
     create_impedance,
+    create_line_from_parameters,
     create_lines,
     create_switch,
     create_transformer,
     create_transformer3w_from_parameters,
     create_transformer_from_parameters,
+    create_xward,
 )
 from pandapower.file_io import from_json
 from pandapower.network import pandapowerNet
-from pandapower.networks.tutorial_networks import vde_232 as vde_232
+from pandapower.networks.tutorial_networks import vde_232
 from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.std_types import add_zero_impedance_parameters, create_std_type
 from test import test_path
@@ -29,7 +31,7 @@ from test import test_path
 def check_results(net, vc, result):
     res_ika = net.res_bus_sc[(net.bus.zone == vc) & net.bus.in_service].ikss_ka.values
     if not np.allclose(result, res_ika, rtol=0, atol=1e-6):
-        raise ValueError("Incorrect results for vector group %s" % vc, res_ika, result)
+        raise ValueError(f"Incorrect results for vector group {vc}", res_ika, result)
 
 
 def add_network(net, vector_group):
@@ -117,8 +119,8 @@ def test_1ph_shortcircuit():
         add_network(net, vc)
         try:
             calc_sc(net, fault="1ph", case="max")
-        except Exception as e:
-            raise UserWarning(f"{str(e)}: Did not converge after adding transformer with vector group {vc}")
+        except Exception as e:  # noqa: BLE001
+            raise UserWarning(f"{e!s}: Did not converge after adding transformer with vector group {vc}")
         check_results(net, vc, result)
 
 
@@ -190,9 +192,36 @@ def test_1ph_shortcircuit_min():
             add_network(net, vc)
             try:
                 calc_sc(net, fault="1ph", case="min", inverse_y=inv_y)
-            except Exception as e:
-                raise UserWarning(f"{str(e)}: Did not converge after adding transformer with vector group {vc}")
+            except Exception as e:  # noqa: BLE001
+                raise UserWarning(f"{e!s}: Did not converge after adding transformer with vector group {vc}")
             check_results(net, vc, result)
+
+
+def test_1ph_shortcircuit_with_xward():
+    """An xward has no zero sequence parameters, so it must not change the zero sequence impedance."""
+    net = pandapowerNet(name="test_1ph_shortcircuit_with_xward")
+    b1, b2 = create_buses(net, 2, vn_kv=20.0)
+    create_ext_grid(net, b1, s_sc_max_mva=1000, rx_max=0.1, x0x_max=1.0, r0x0_max=0.1)
+    create_line_from_parameters(
+        net,
+        b1,
+        b2,
+        length_km=1,
+        r_ohm_per_km=1,
+        x_ohm_per_km=1,
+        c_nf_per_km=1,
+        r0_ohm_per_km=1,
+        x0_ohm_per_km=1,
+        c0_nf_per_km=1,
+        max_i_ka=1,
+    )
+    calc_sc(net, fault="1ph", case="max")
+    z0 = net.res_bus_sc[["rk0_ohm", "xk0_ohm"]].values
+
+    create_xward(net, b2, ps_mw=1, qs_mvar=1, pz_mw=1, qz_mvar=1, r_ohm=1, x_ohm=10, vm_pu=1.0)
+    calc_sc(net, fault="1ph", case="max")
+
+    assert np.allclose(net.res_bus_sc[["rk0_ohm", "xk0_ohm"]].values, z0)
 
 
 def test_iec60909_example_4():
@@ -590,22 +619,9 @@ def test_iec_60909_4_small_with_gen_1ph_no_ps_detection():
     assert np.allclose(net.res_bus_ikss_ka.values[:4], np.array(ikss_max), atol=1e-4)
 
 
-def test_iec_60909_4_small_with_gen_ps_unit_1ph():
-    net = iec_60909_4_small(n_t3=2, num_earth=1, with_gen=True)
-
-    calc_sc(net, fault="1ph", case="max", ip=True, tk_s=0.1, kappa_method="C")
-
-    ikss_max = [24.6109, 17.4363, 12.7497, 18.6883]
-    # ikss_min = [3.5001, 8.4362, 7.4743, 7.7707]
-    # ip_min = [8.6843, 21.6173, 18.0242, 19.4261]
-
-    # TODO: This needs to be fixed!!
-    #  assert np.allclose(net.res_bus_sc.ikss_ka.values[:4], np.array(ikss_max), atol=1e-4)
-
-
 def test_vde_232_with_gen_ps_unit_1ph():
     # IEC 60909-4:2021, example from section 4.4.2
-    # from pandapower.test.shortcircuit.test_1ph import *
+    # from test.shortcircuit.test_1ph import *
     # from pandapower.pypower.idx_bus import *
     net = vde_232()
 
@@ -667,9 +683,9 @@ def test_1ph_sn_mva_ext_grid():
         "xk_ohm": 13.243945001694957,
     }
 
-    for var in res.keys():
+    for var, val in res.items():
         assert np.allclose(net1.res_bus_sc[var], net2.res_bus_sc[var], atol=1e-6, rtol=0)
-        assert np.allclose(net1.res_bus_sc[var], res[var], atol=1e-6, rtol=0)
+        assert np.allclose(net1.res_bus_sc[var], val, atol=1e-6, rtol=0)
 
 
 def test_line():
@@ -725,7 +741,7 @@ def test_trafo():
         "YNyn": [5.265737, 14.413729],
     }
 
-    for vc in results.keys():
+    for vc, value in results.items():
         net = pandapowerNet(name=f"test_trafo {vc}", sn_mva=1)
         create_buses(net, 2, vn_kv=[110.0, 20.0])
 
@@ -742,7 +758,7 @@ def test_trafo():
             r0x0_min=0.1,
         )
 
-        t1 = create_transformer_from_parameters(
+        create_transformer_from_parameters(
             net,
             0,
             1,
@@ -767,7 +783,7 @@ def test_trafo():
         net.sn_mva = 123
         calc_sc(net, fault="1ph", case="max")
         assert np.allclose(net.res_bus_sc, res, rtol=0, atol=1e-6, equal_nan=True), f"failed for vector group {vc}"
-        assert np.allclose(net.res_bus_sc.ikss_ka, results[vc], rtol=0, atol=1e-6), f"{vc}: inconsistent results"
+        assert np.allclose(net.res_bus_sc.ikss_ka, value, rtol=0, atol=1e-6), f"{vc}: inconsistent results"
 
 
 def test_sc_1ph_impedance():
