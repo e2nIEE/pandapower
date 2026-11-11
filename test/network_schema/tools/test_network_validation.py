@@ -104,6 +104,55 @@ class TestValidateNetworkCollectErrors:
         assert "KeyError" in str(errors["line"][0])
 
 
+class TestGroupsToValidate:
+    """
+    Tests for the ``groups_to_validate`` argument, which accepts a single group name as a
+    string or several groups as a list or set.
+    """
+
+    def test_single_group_as_string(self, net):
+        # ext_grid has no sc columns in example_simple, so requiring the sc group fails
+        with pytest.raises(pa_errors.SchemaError):
+            validate_network(net, groups_to_validate="sc")
+
+    def test_groups_as_list_raises_on_missing_sc_columns(self, net):
+        with pytest.raises(pa_errors.SchemaError):
+            validate_network(net, groups_to_validate=["sc", "3ph"])
+
+    def test_groups_as_set_raises_on_missing_sc_columns(self, net):
+        with pytest.raises(pa_errors.SchemaError):
+            validate_network(net, groups_to_validate={"sc", "3ph"})
+
+    def test_groups_as_list_is_collected_not_reported_as_preparation_error(self, net):
+        """A list must not raise a TypeError, but report the missing group columns."""
+        errors = validate_network(net, groups_to_validate=["sc", "3ph"], collect_errors=True)
+
+        messages = format_validation_errors(errors)
+        assert "could not be performed" not in messages
+        assert "TypeError" not in messages
+        # the sc group makes the sc columns required, so they are reported as missing
+        assert "required column 's_sc_max_mva' is missing" in messages
+
+    def test_groups_as_list_checks_the_requested_groups(self, net):
+        """The requested groups must actually be validated, not silently ignored."""
+        base_errors = validate_network(net, collect_errors=True)
+        group_errors = validate_network(net, groups_to_validate=["sc", "3ph"], collect_errors=True)
+
+        assert base_errors == {}
+        assert group_errors != {}
+        assert "ext_grid" in group_errors
+        assert "line" in group_errors
+
+    def test_groups_as_list_equals_groups_as_set(self, net):
+        as_list = validate_network(net, groups_to_validate=["sc", "3ph"], collect_errors=True)
+        as_set = validate_network(net, groups_to_validate={"sc", "3ph"}, collect_errors=True)
+
+        assert format_validation_errors(as_list) == format_validation_errors(as_set)
+
+    def test_no_groups_validates_base_schema_only(self, net):
+        assert validate_network(net, groups_to_validate=None, collect_errors=True) == {}
+
+
 class TestFormatValidationErrors:
     def test_empty_errors_format_to_empty_string(self):
         assert format_validation_errors({}) == ""

@@ -223,7 +223,7 @@ def format_validation_errors(errors: dict[str, list[ValidationIssue]]) -> str:
 
 def validate_network(
     net: pandapowerNet,
-    groups_to_validate: str | set[str] | None = None,
+    groups_to_validate: str | list[str] | set[str] | None = None,
     collect_errors: bool = False,
 ) -> dict[str, list[ValidationIssue]] | None:
     """
@@ -245,10 +245,11 @@ def validate_network(
         net (pandapowerNet): A pandapower network object containing various
                            electrical network elements (buses, lines, loads, etc.)
                            to be validated.
-        groups_to_validate (str | list[str] | None): Optional group(s) to validate.
+        groups_to_validate (str | list[str] | set[str] | None): Optional group(s) to validate.
             If provided, validates the specified dependency groups in addition to
             the base schema. Valid groups depend on the element schema (e.g., "opf",
-            "sc", "3ph" for ext_grid). If None, validates only the base schema.
+            "sc", "3ph" for ext_grid). A single group can be passed as a string, several
+            groups as a list or set. If None, validates only the base schema.
         collect_errors (bool): If False (default) the first element that fails validation
             raises a ``SchemaError``. If True, all elements are validated and all issues
             are collected instead of raising, so that a complete picture of the network
@@ -295,7 +296,7 @@ def validate_network(
             groups_to_validate,
         }
     else:
-        groups_set = groups_to_validate
+        groups_set = set(groups_to_validate)
 
     collected_errors: dict[str, list[ValidationIssue]] = {}
 
