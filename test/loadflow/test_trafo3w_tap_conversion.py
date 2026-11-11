@@ -4,8 +4,8 @@
 import numpy as np
 import pandas as pd
 
+from pandapower.auxiliary import pandapowerNet
 from pandapower.build_branch import _calculate_3w_tap_changers
-from pandapower.create import create_empty_network
 
 
 def test_three_winding_star_tap_nullable_type():
@@ -20,7 +20,7 @@ def test_three_winding_star_tap_nullable_type():
             "tap_changer_type": pd.Series(["Ideal", pd.NA, "Ratio", "Symmetrical"], dtype="string"),
         }
     )
-    net = create_empty_network()
+    net = pandapowerNet()
     net.trafo3w = trafos
     symmetrical = trafos.iloc[[3]].copy()
     net.trafo3w = symmetrical
