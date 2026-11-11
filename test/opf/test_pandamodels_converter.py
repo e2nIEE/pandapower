@@ -141,6 +141,7 @@ def test_storage_opf_settings():
 
 
 def test_storage_opf_settings_limits():
+    """the storage power limits fall back to |p_mw| / |q_mvar|, ranges the storage model cannot represent raise"""
     net = create_cigre_network_mv("pv_wind")
     net.switch["closed"] = True
     # discharging set point without limits -> the limits are |p_mw| and |q_mvar|
@@ -161,6 +162,33 @@ def test_storage_opf_settings_limits():
     net._options["time_elapsed"] = 1.0
     with pytest.raises(ValueError, match="min_p_mw"):
         add_storage_opf_settings(net, net._ppc_opf, pm)
+
+    # an out of service storage is not optimized -> no error, but valid (non-negative) ratings
+    net.storage["in_service"] = False
+    pm = convert_pp_to_pm(net)
+    net._options["n_time_steps"] = 1
+    net._options["time_elapsed"] = 1.0
+    add_storage_opf_settings(net, net._ppc_opf, pm)
+    st = pm["storage"][str(s0 + 1)]
+    assert (st["status"], st["charge_rating"], st["discharge_rating"]) == (0, 0.5, 0.0)
+
+
+def test_storage_opf_settings_previous_lookup():
+    """the storage gen lookup of a previous conversion must not deactivate a gen of the current one"""
+    net = create_cigre_network_mv("pv_wind")
+    net.switch["closed"] = True
+    create_storage(net, 10, p_mw=0.5, max_e_mwh=1.0, soc_percent=0.0, q_mvar=0.0, controllable=True)
+    convert_pp_to_pm(net)
+    assert "storage_controllable" in net._pd2ppc_lookups
+
+    net.storage["controllable"] = False
+    net.sgen["controllable"] = True
+    pm = convert_pp_to_pm(net)
+    assert "storage_controllable" not in net._pd2ppc_lookups
+    net._options["n_time_steps"] = 1
+    net._options["time_elapsed"] = 1.0
+    add_storage_opf_settings(net, net._ppc_opf, pm)
+    assert all(gen["gen_status"] == 1 for gen in pm["gen"].values())
 
 
 def test_storage_opf_settings_costs():
@@ -187,6 +215,7 @@ def test_storage_opf_settings_costs():
 
 
 def test_read_pm_storage_results_without_soc():
+    """the storage results contain the state of charge columns (NaN) if no storage is optimized"""
     net = create_cigre_network_mv("pv_wind")
     create_storage(net, 10, p_mw=0.1, max_e_mwh=1.0, controllable=False)
     p = pd.DataFrame({0: [0.1, 0.1]}, index=[3, 4])

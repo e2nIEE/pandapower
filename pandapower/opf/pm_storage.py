@@ -30,14 +30,16 @@ def add_storage_opf_settings(net, ppci, pm):
         # charging: p_mw > 0, discharging: p_mw < 0. Without limits, |p_mw| and |q_mvar| are the limits
         max_p_mw = _value(storage, idx, "max_p_mw", abs(ps))
         min_p_mw = _value(storage, idx, "min_p_mw", -abs(ps))
-        if min_p_mw > 0 or max_p_mw < 0:
+        in_service = bool(storage.at[idx, "in_service"])
+        if in_service and (min_p_mw > 0 or max_p_mw < 0):
             # charge and discharge ratings are upper limits only, a minimum charge / discharge cannot be modeled
             raise ValueError(
                 f"storage {idx}: min_p_mw ({min_p_mw}) <= 0 <= max_p_mw ({max_p_mw}) is required by the "
                 f"PowerModels storage model"
             )
-        charge_rating = max_p_mw
-        discharge_rating = -min_p_mw
+        # PowerModels rejects negative ratings of out of service storages as well
+        charge_rating = max(max_p_mw, 0.0)
+        discharge_rating = max(-min_p_mw, 0.0)
         max_q_mvar = _value(storage, idx, "max_q_mvar", abs(qs))
         min_q_mvar = _value(storage, idx, "min_q_mvar", -abs(qs))
         # apparent power limit: the rated power or, if not given, the active and reactive power limits
@@ -63,7 +65,7 @@ def add_storage_opf_settings(net, ppci, pm):
             "x": 0.0,
             "p_loss": -1e-8,
             "q_loss": -1e-8,
-            "status": int(storage.at[idx, "in_service"]),
+            "status": int(in_service),
             "standby_loss": 0.0,
         }
         pm["storage"][str(pm_idx)].update(_storage_cost(net, idx))
@@ -97,6 +99,7 @@ def _storage_cost(net, idx):
 
 
 def _controllable(storage):
+    """boolean mask of the controllable storages (missing values: not controllable)"""
     if "controllable" not in storage.columns:
         return pd.Series(False, index=storage.index)
     return storage["controllable"].fillna(False).astype(bool)

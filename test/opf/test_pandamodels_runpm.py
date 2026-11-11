@@ -674,6 +674,7 @@ def test_runpm_vstab():
 @pytest.mark.slow
 @pytest.mark.skipif(not julia_installed, reason="requires julia installation")
 def test_storage_opt():
+    """multinetwork storage optimization: results format, bus results and independence of sn_mva"""
     json_path = os.path.join(test_path, "opf", "cigre_timeseries_15min.json")
 
     net = create_cigre_grid_with_time_series(json_path)
