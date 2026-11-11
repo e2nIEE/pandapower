@@ -42,6 +42,27 @@ from pandapower.std_types import load_std_type
 logger = logging.getLogger(__name__)
 
 
+def _ignore_tap_phase_shifter(kwargs: dict) -> None:
+    """
+    Removes the deprecated parameters tap_phase_shifter / tap2_phase_shifter from kwargs and warns that they are
+    ignored, since phase shifters are only defined by tap_changer_type / tap2_changer_type.
+
+    Parameters:
+        kwargs: the additional keyword arguments of the create function, modified in place
+    """
+    ignored = [key for key in ("tap_phase_shifter", "tap2_phase_shifter") if key in kwargs]
+    if not ignored:
+        return
+    for key in ignored:
+        del kwargs[key]
+    warnings.warn(
+        DeprecationWarning(
+            f"The parameter(s) {', '.join(ignored)} are deprecated and have no effect: phase shifters are only defined "
+            f"by tap_changer_type / tap2_changer_type ('Ratio', 'Symmetrical', 'Ideal' or 'Tabular')."
+        )
+    )
+
+
 def create_transformer(
     net: pandapowerNet,
     hv_bus: Int,
@@ -111,7 +132,7 @@ def create_transformer(
     Example:
         >>> create_transformer(net, hv_bus=0, lv_bus=1, std_type="0.4 MVA 10/0.4 kV", name="trafo1")
     """
-    from pandapower.convert_format import convert_trafo_pst_logic
+    _ignore_tap_phase_shifter(kwargs)
 
     index = _get_index_with_check(net, "trafo", index, name="transformer")
 
@@ -180,15 +201,6 @@ def create_transformer(
             )
 
     _set_entries(net, "trafo", index, entries=entries)
-
-    if any(key in kwargs for key in ["tap_phase_shifter", "tap2_phase_shifter"]):
-        convert_trafo_pst_logic(net)
-        warnings.warn(
-            DeprecationWarning(
-                "The tap_phase_shifter/tap2_phase_shifter parameters are not supported in pandapower as of version 3.0. "
-                f"The transformer parameters (index {index}) have been updated to the new format."
-            )
-        )
 
     _set_value_if_not_nan(net, index, max_loading_percent, "max_loading_percent", "trafo")
     _set_value_if_not_nan(net, index, id_characteristic_table, "id_characteristic_table", "trafo")
@@ -449,8 +461,7 @@ def create_transformer_from_parameters(
         >>>     vkr_percent=0.3, pfe_kw=30, i0_percent=0.1, shift_degree=30
         >>> )
     """
-
-    from pandapower.convert_format import convert_trafo_pst_logic
+    _ignore_tap_phase_shifter(kwargs)
 
     # Check if bus exist to attach the trafo to
     _check_branch_element(net, "Trafo", index, hv_bus, lv_bus)
@@ -522,15 +533,6 @@ def create_transformer_from_parameters(
     _set_value_if_not_nan(net, index, tap2_step_degree, "tap2_step_degree", "trafo")
     _set_value_if_not_nan(net, index, tap2_pos if pd.notnull(tap2_pos) else tap2_neutral, "tap2_pos", "trafo")
     _set_value_if_not_nan(net, index, tap2_changer_type, "tap2_changer_type", "trafo")
-
-    if any(key in kwargs for key in ["tap_phase_shifter", "tap2_phase_shifter"]):
-        convert_trafo_pst_logic(net)
-        warnings.warn(
-            DeprecationWarning(
-                "The tap_phase_shifter/tap2_phase_shifter parameter is not supported in pandapower version 3.0 or later. "
-                f"The transformer parameters (index {index}) have been updated to the new format."
-            )
-        )
 
     if not (
         isnan(vk0_percent)
@@ -680,8 +682,7 @@ def create_transformers_from_parameters(  # index missing ?
         >>>     vkr_percent=0.3, pfe_kw=30, i0_percent=0.1, shift_degree=30
         >>> )
     """
-
-    from pandapower.convert_format import convert_trafo_pst_logic
+    _ignore_tap_phase_shifter(kwargs)
 
     _check_multiple_branch_elements(net, hv_buses, lv_buses, "Transformers")
 
@@ -757,15 +758,6 @@ def create_transformers_from_parameters(  # index missing ?
             )
 
     _set_multiple_entries(net, "trafo", index, entries=entries)
-
-    if any(key in kwargs for key in ["tap_phase_shifter", "tap2_phase_shifter"]):
-        convert_trafo_pst_logic(net)
-        warnings.warn(
-            DeprecationWarning(
-                "The tap_phase_shifter/tap2_phase_shifter parameter is not supported in pandapower version 3.0 or later. "
-                f"The transformer parameters (index {index}) have been updated to the new format."
-            )
-        )
 
     return index
 
