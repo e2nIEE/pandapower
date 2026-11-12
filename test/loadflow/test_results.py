@@ -591,7 +591,7 @@ def _bus_phasor(net, bus):
 @pytest.mark.parametrize("tap_side", ("hv", "mv", "lv"))
 @pytest.mark.parametrize("tap_at_star_point", (False, True))
 @pytest.mark.parametrize("tap_pos", (2, 4, 6))
-@pytest.mark.parametrize("tap_step_degree,tap_step_percent", ((7, 0), (-7, 0), (0, 12), (0, -12)))
+@pytest.mark.parametrize("tap_step_degree,tap_step_percent", ((7, 0), (-7, 0)))
 def test_ideal_trafo3w_tap_phase(tap_side, tap_at_star_point, tap_pos, tap_step_degree, tap_step_percent):
     net, (hv_bus, mv_bus, lv_bus) = _ideal_trafo3w_net(
         tap_side, tap_at_star_point, tap_pos, tap_step_degree, tap_step_percent
@@ -599,10 +599,8 @@ def test_ideal_trafo3w_tap_phase(tap_side, tap_at_star_point, tap_pos, tap_step_
     runpp(net, calculate_voltage_angles=True, trafo3w_losses="star")
 
     tap_diff = tap_pos - 4
-    if tap_step_degree:
-        alpha = tap_diff * tap_step_degree
-    else:
-        alpha = np.rad2deg(2 * np.arcsin(tap_diff * tap_step_percent / 200))
+    alpha = tap_diff * tap_step_degree
+
     expected_angles = {
         "hv": (-alpha, -alpha),
         "mv": (alpha, 0),
@@ -616,9 +614,10 @@ def test_ideal_trafo3w_tap_phase(tap_side, tap_at_star_point, tap_pos, tap_step_
 
 
 @pytest.mark.parametrize("tap_at_star_point", (False, True))
-def test_ideal_trafo3w_rejects_two_phase_step_values(tap_at_star_point):
-    net, _ = _ideal_trafo3w_net("hv", tap_at_star_point, 5, 7, 12)
-    with pytest.raises(UserWarning, match="Both tap_step_degree and tap_step_percent"):
+@pytest.mark.parametrize("tap_step_degree,tap_step_percent", ((0, 12), (0, -12), (7, 12)))
+def test_ideal_trafo3w_rejects_percentage_step(tap_at_star_point, tap_step_degree, tap_step_percent):
+    net, _ = _ideal_trafo3w_net("hv", tap_at_star_point, 5, tap_step_degree, tap_step_percent)
+    with pytest.raises(UserWarning, match="tap_step_percent is set to a non-zero value"):
         runpp(net, calculate_voltage_angles=True, trafo3w_losses="star")
 
 
