@@ -1314,6 +1314,29 @@ def test_dc_with_ext_grid_at_one_bus():
     assert np.allclose(net.res_ext_grid.p_mw.values, [0, 0])
 
 
+@pytest.mark.parametrize("island_side", ["from", "to"])
+def test_dcline_terminal_in_island(island_side):
+    # a dcline terminal at an unsupplied bus (island without slack) has no voltage, like the bus in res_bus
+    net = pandapowerNet(name="test_dcline_terminal_in_island")
+    b = create_buses(net, nr_buses=4, vn_kv=110)
+    create_ext_grid(net, b[0])
+    create_line(net, b[0], b[1], length_km=10, std_type="149-AL1/24-ST1A 110.0")
+    create_line(net, b[2], b[3], length_km=10, std_type="149-AL1/24-ST1A 110.0")  # island without slack
+    create_load(net, b[3], p_mw=5)
+    from_bus, to_bus = (b[1], b[2]) if island_side == "to" else (b[2], b[1])
+    create_dcline(net, from_bus, to_bus, p_mw=10, loss_percent=0, loss_mw=0, vm_from_pu=1.0, vm_to_pu=1.0)
+
+    runpp(net)
+
+    supplied_side = "from" if island_side == "to" else "to"
+    supplied_bus = from_bus if island_side == "to" else to_bus
+    assert np.all(pd.isnull(net.res_bus.loc[[b[2], b[3]], "vm_pu"]))
+    assert pd.isnull(net.res_dcline.at[0, f"vm_{island_side}_pu"])
+    assert pd.isnull(net.res_dcline.at[0, f"va_{island_side}_degree"])
+    assert np.isclose(net.res_dcline.at[0, f"vm_{supplied_side}_pu"], net.res_bus.at[supplied_bus, "vm_pu"])
+    assert np.isclose(net.res_dcline.at[0, f"va_{supplied_side}_degree"], net.res_bus.at[supplied_bus, "va_degree"])
+
+
 def test_no_branches():
     net = pandapowerNet(name="test_no_branches")
     create_buses(net, 3, 110)

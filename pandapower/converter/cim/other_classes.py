@@ -54,7 +54,7 @@ class LogLevel(enum.Enum):
 
 class Report:
     def __init__(self, message: str, code: ReportCode, level: LogLevel, timestamp: datetime.datetime | None = None):
-        self.timestamp = datetime.datetime.now()
+        self.timestamp = datetime.datetime.now(tz=datetime.UTC)
         if timestamp is not None:
             self.timestamp = timestamp
         self.message = message

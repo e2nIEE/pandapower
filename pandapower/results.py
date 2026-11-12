@@ -17,6 +17,8 @@ import pandas as pd
 
 from pandapower.auxiliary import get_vsc_stacked_names, pandapowerNet
 from pandapower.network_structure import get_results_structure_dict
+from pandapower.pypower.idx_bus_dc import DC_BASE_KV
+from pandapower.pypower.idx_vsc import VSC_I_DC, VSC_P_DC, VSC_P_DC_MINUS
 from pandapower.results_branch import _get_branch_results, _get_branch_results_3ph
 from pandapower.results_bus import (
     _get_bus_dc_results,
@@ -113,6 +115,10 @@ def _overwrite_out_of_service(net: pandapowerNet) -> None:
 
 
 def _extract_results(net, ppc):
+    """
+    Writes the results of the power flow in ppc to the result tables of net (res_bus, res_line, res_vsc, res_vsc_bipolar,
+    ...).
+    """
     _set_buses_out_of_service(ppc)  # for NaN results in net.res_bus for inactive buses
     _set_dc_buses_out_of_service(ppc)  # for NaN results in net.res_bus_dc for inactive buses
     bus_lookup_aranged = _get_aranged_lookup(net)
@@ -130,6 +136,7 @@ def _extract_results(net, ppc):
     _get_bus_dc_results(net, bus_p_dc)
     _get_vsc_stacked_results(net)
     _overwrite_out_of_service(net)
+    _get_vsc_bipolar_results(net, ppc)
     if net._options["mode"] == "opf":
         _get_costs(net, ppc)
     else:
@@ -170,6 +177,47 @@ def _get_vsc_stacked_results(net):
 
         # remove the vsc_stacked results from the res table
         net.res_vsc.drop(vsc_idx, axis=0, inplace=True)
+
+
+def _get_vsc_bipolar_results(net, ppc):
+    """
+    Writes the results of the auxiliary net.vsc entries (see _add_vsc_bipolar) to net.res_vsc_bipolar.
+    The auxiliary entries are removed from net.res_vsc in _clean_up.
+    """
+    if len(net.vsc_bipolar) == 0:
+        # results of bipolar VSC that were removed since the last power flow must not remain
+        if "res_vsc_bipolar" in net and len(net.res_vsc_bipolar) > 0:
+            empty_res_element(net, "vsc_bipolar")
+        return
+    aux = net.get("_vsc_bipolar_aux", None)
+    if aux is None:
+        return
+    vsc_index = aux["vsc_index"]
+    res_vsc = net.res_vsc.loc[vsc_index]
+    rows = net.vsc.index.get_indexer(vsc_index)
+    p_dc_p = ppc["vsc"][rows, VSC_P_DC]
+    p_dc_m = ppc["vsc"][rows, VSC_P_DC_MINUS]
+    bus_dc_lookup = net._pd2ppc_lookups["bus_dc"]
+    base_i_ka = ppc["baseMVA"] / ppc["bus_dc"][bus_dc_lookup[net.vsc_bipolar.bus_dc_plus.values], DC_BASE_KV]
+    vm_dc_m = net.res_bus_dc.loc[net.vsc_bipolar.bus_dc_minus.values, "vm_pu"].values
+    in_service = net._is_elements["vsc"][rows]
+
+    res = pd.DataFrame(index=net.vsc_bipolar.index)
+    res["p_mw"] = res_vsc["p_mw"].values
+    res["q_mvar"] = res_vsc["q_mvar"].values
+    res["p_dc_mw"] = p_dc_p + p_dc_m
+    res["p_dc_mw_p"] = p_dc_p
+    res["p_dc_mw_m"] = p_dc_m
+    res["i_dc_ka"] = ppc["vsc"][rows, VSC_I_DC] * base_i_ka
+    res["vm_internal_pu"] = res_vsc["vm_internal_pu"].values
+    res["va_internal_degree"] = res_vsc["va_internal_degree"].values
+    res["vm_pu"] = res_vsc["vm_pu"].values
+    res["va_degree"] = res_vsc["va_degree"].values
+    res["vm_internal_dc_pu"] = res_vsc["vm_internal_dc_pu"].values
+    res["vm_dc_pu_p"] = res_vsc["vm_dc_pu"].values
+    res["vm_dc_pu_m"] = np.where(in_service, vm_dc_m, np.nan)
+    res.loc[~in_service, ["p_dc_mw", "p_dc_mw_p", "p_dc_mw_m", "i_dc_ka"]] = 0.0
+    net.res_vsc_bipolar = res
 
 
 def _extract_results_3ph(net, ppc0, ppc1, ppc2):
@@ -314,10 +362,15 @@ def get_relevant_elements(net, mode="pf"):
     return [elem for elem in elements.get(mode, []) if not net[elem].empty]
 
 
-def init_results(net, mode="pf"):
+def init_results(net, mode="pf", exclude_result_tables=None):
+    exclude = set() if exclude_result_tables is None else set(exclude_result_tables)
     elements = get_relevant_elements(net, mode)
     suffix = suffix_mode.get(mode, None)
     for element in elements:
+        res_element = get_result_tables(element, suffix)
+        if res_element in exclude and res_element in net:
+            net[res_element] = net[res_element].reindex(net[element].index)
+            continue
         init_element(net, element, suffix)
 
 
@@ -389,8 +442,7 @@ def _ppci_internal_to_ppc(result, ppc):
             # update_matrix = np.empty((n_branches, n_buses)) * np.nan
             # update_matrix[result["internal"]['branch_is'], :n_rows_result] = result["internal"][key]
 
-            # To select only required buses and pad one column of nan value for oos bus
-            update_matrix = np.empty((n_branches, value.shape[1] + 1)) * 0.0
+            update_matrix = np.zeros((n_branches, value.shape[1] + 1))
             update_matrix[result["internal"]["branch_is"], : value.shape[1]] = result["internal"][key]
             ppc["internal"][key] = update_matrix
             if "br_res_ks_ppci_bus" in result["internal"]:

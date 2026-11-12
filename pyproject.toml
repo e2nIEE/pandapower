@@ -64,6 +64,26 @@ Download = "https://pypi.org/project/pandapower/#files"
 Changelog = "https://github.com/e2nIEE/pandapower/blob/develop/CHANGELOG.rst"
 
 [project.optional-dependencies]
+plotting = ["plotly~=6.8", "matplotlib~=3.11", "igraph", "geopandas~=1.1"]
+performance = ["ortools~=9.15", "numba~=0.66", "lightsim2grid~=0.13.0"]
+fileio = ["xlsxwriter~=3.2", "openpyxl~=3.1", "cryptography~=49.0", "geopandas~=1.1", "psycopg~=3.2", "lxml~=6.1"]
+converter = ["matpowercaseframes~=2.1", "lxml~=6.1", "pypowsybl~=1.15"]
+pgm = ["power-grid-model-io~=1.2; python_version <= '3.11'", "power-grid-model-io~=1.3.87; python_version > '3.11'"]
+control = ["shapely~=2.1"]
+pandamodels = ["juliacall<=0.9.32"]
+opendss = ["OpenDSSDirect.py~=0.9"]
+helm = ["fast-helmpy"]
+
+all = ["pandapower[plotting,performance,fileio,converter,pgm,control,helm,opendss]"]
+
+[dependency-groups]
+tutorials = [
+    "julia",
+    "juliacall<=0.9.32",
+    "seaborn",
+    "jupyter",
+    "notebook"
+]
 docs = [
     "numpydoc~=1.10",
     "matplotlib~=3.11",
@@ -73,20 +93,8 @@ docs = [
     "sphinx-pyproject~=0.3",
     "sphinxcontrib-imagesvg~=0.1",
     "pandapower[converter]",
-    "geopandas~=1.1"
+    "geopandas~=1.1",
 ]
-plotting = ["plotly~=6.8", "matplotlib~=3.11", "igraph", "geopandas~=1.1"]
-test = ["pytest~=9.1", "nbmake~=1.5", "pytest-timeout~=2.4", "pytest-split~=0.11"]
-performance = ["ortools~=9.15", "numba~=0.66", "lightsim2grid~=0.13.0"]
-fileio = ["xlsxwriter~=3.2", "openpyxl~=3.1", "cryptography~=49.0", "geopandas~=1.1", "psycopg~=3.2", "lxml~=6.1"]
-converter = ["matpowercaseframes~=2.1", "lxml~=6.1", "pypowsybl~=1.15"]
-pgm = ["power-grid-model-io~=1.2; python_version <= '3.11'", "power-grid-model-io~=1.3.87; python_version > '3.11'"]
-control = ["shapely~=2.1"]
-pandamodels = ["juliacall<=0.9.32"]
-opendss = ["OpenDSSDirect.py~=0.9"]
-tutorials = ["julia", "juliacall<=0.9.32", "seaborn", "jupyter", "notebook"]
-helm = ["fast-helmpy"]
-
 typing = [
     "mypy~=2.1",
     "pandas-stubs~=3.0.5",
@@ -102,11 +110,25 @@ typing = [
     "types-python-dateutil",
     "types-seaborn",
     "types-xlrd",
-    "lxml-stubs"
+    "lxml-stubs",
 ]
-
-all = ["pandapower[plotting,performance,fileio,converter,pgm,control,helm,opendss]"]
-dev = ["pandapower[all,docs,test,typing,pandamodels,tutorials]"]
+test = [
+    "pandapower[all]",
+    "pytest~=9.1",
+    "nbmake~=1.5",
+    "pytest-timeout~=2.4",
+    "pytest-split~=0.11",
+    "pytest-cov",
+    "pypower",
+]
+dev = [
+    {include-group = "docs"},
+    {include-group = "test"},
+    {include-group = "typing"},
+    "ruff",
+    "pytest-xdist",
+    "pre-commit",
+]
 # "shapely", "pyproj", "Pyogrio" are dependencies of geopandas and should be already available ("Fiona" got dropped)
 # "hashlib", "zlib", "base64" produce install problems, so they are not included
 
@@ -170,3 +192,6 @@ line-ending = "lf"
 [tool.ruff.lint.extend-per-file-ignores]
 # F811 is redefinition of symbol because ruff does not understand pytest fixtures and will complain
 "test/**/*.py" = ["F811"]
+
+[tool.uv]
+default-groups = ["dev"]
