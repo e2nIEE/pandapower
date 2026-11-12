@@ -136,18 +136,18 @@ Transformer temperatures
 
 In addition to the conductor temperature of the lines, TDPF reports the top-oil and hot-spot temperature
 of every in-service transformer (:code:`net.trafo` and :code:`net.trafo3w`). The calculation is based on
-the IEC 60076-7 loading guide and follows
-`transformer-thermal-model <https://github.com/alliander-opensource/transformer-thermal-model>`__.
+the IEC 60076-7 loading guide and utilizes the python package
+`transformer-thermal-model <https://github.com/alliander-opensource/transformer-thermal-model>`__ developed by Alliander.
 
-This is an optional feature with an optional dependency. Install it with:
+This is an optional feature and requires an optional dependency. Install it with:
 
 .. code-block:: bash
 
     pip install pandapower[tdpf]
 
-If the package is not installed, TDPF logs a warning and skips the transformer temperatures. The line
-TDPF is not affected and keeps working exactly as before. The temperature result columns are then not
-created at all, so nothing is filled with NaN for line-only TDPF users.
+If the package is not installed, TDPF logs a warning and skips transformer temperature calculations.
+Line TDPF continues to work as before. Transformer temperature result columns are not created,
+so line-only TDPF users do not see columns filled with NaN values.
 
 Two additional input columns are read from :code:`net.trafo` and :code:`net.trafo3w`:
 
@@ -195,6 +195,20 @@ power flow parameter, the same parameter that controls the thermal inertia of th
     The ONAN and ONAF cooling types share the same steady state temperature. They only differ in the
     transient behaviour: an ONAF transformer has shorter oil and winding time constants and therefore
     reaches its final temperature faster, not at a lower temperature.
+
+.. note::
+
+    Only the nameplate data that pandapower already stores is passed to the thermal model: the no-load
+    loss, the load loss, the rated apparent power and the rated voltages of each winding, which yield
+    the nominal currents. The optional specifications of the loading guide -- above all
+    :code:`winding_oil_gradient`, :code:`hot_spot_fac` and the winding and oil time constants -- are
+    left at the IEC 60076-7 defaults of the library (17 K, 1.3 and the values for the selected cooling
+    type).
+
+    The top-oil temperature depends only on the nameplate data and therefore matches a calculation with
+    modified optional specifications exactly. The hot-spot temperature does depend on them, so it will
+    differ from a calculation that uses a transformer-specific winding-oil gradient or hot-spot factor.
+    A wider set of input columns is not part of this implementation.
 
 .. autofunction:: pandapower.run.runpp
 

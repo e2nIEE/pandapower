@@ -1540,14 +1540,17 @@ def _check_tdpf_parameters(net: pandapowerNet, tdpf_update_r_theta: bool, tdpf_d
     if len(net.line) > 0:
         missing_columns = []
         for col in required_columns:
-            if col not in net.line.columns or np.any(net.line.loc[tdpf_lines, col].isnull()):
+            # `tdpf` selects the lines and therefore has to exist for the branch conversion, but only
+            # the values of the selected lines are relevant. An ordinary line that did not opt in must
+            # not trigger a missing-value warning for a column it never needed.
+            if col not in net.line.columns or (len(tdpf_lines) > 0 and np.any(net.line.loc[tdpf_lines, col].isnull())):
                 missing_columns.append(col)
 
         if len(missing_columns) > 0:
             raise UserWarning(f"TDPF: required columns {missing_columns} are missing or have missing values")
 
-    # check if unsupported elements are included
-    if len(net.line) > 0 and len(net.line.loc[net.line.index.isin(tdpf_lines) & (net.line.type == "cs")]) > 0:
+    # check if unsupported elements are included; the "type" column is optional in the line schema
+    if len(tdpf_lines) > 0 and "type" in net.line.columns and (net.line.loc[tdpf_lines, "type"].dropna() == "cs").any():
         logger.warning("TDPF: temperature dependent power flow is only implemented for overhead lines")
 
     # now fill in the default values

@@ -26,7 +26,11 @@ import pandas as pd
 
 logger = logging.getLogger(__name__)
 
-try:
+from importlib.util import find_spec
+
+TRANSFORMER_THERMAL_AVAILABLE = find_spec("transformer_thermal_model") is not None
+
+if TRANSFORMER_THERMAL_AVAILABLE:
     from transformer_thermal_model.cooler import CoolerType
     from transformer_thermal_model.model import Model
     from transformer_thermal_model.schemas import (
@@ -36,12 +40,14 @@ try:
         UserTransformerSpecifications,
         WindingSpecifications,
     )
-    from transformer_thermal_model.schemas.thermal_model.initial_state import ColdStart, InitialTopOilTemp
-    from transformer_thermal_model.transformer import PowerTransformer, ThreeWindingTransformer
-
-    TRANSFORMER_THERMAL_AVAILABLE = True
-except ImportError:
-    TRANSFORMER_THERMAL_AVAILABLE = False
+    from transformer_thermal_model.schemas.thermal_model.initial_state import (
+        ColdStart,
+        InitialTopOilTemp,
+    )
+    from transformer_thermal_model.transformer import (
+        PowerTransformer,
+        ThreeWindingTransformer,
+    )
 
 
 # Result columns written to net.res_trafo / net.res_trafo3w. They are only created when the thermal
@@ -263,7 +269,9 @@ def _calculate_trafo(net, indices, datetime_index, initial_top_oil_temperature) 
             continue
         try:
             specs = specs_from_trafo(net, index)
-            transformer = PowerTransformer(user_specs=specs, cooling_type=_cooling_type(row.cooling_type))
+            transformer = PowerTransformer(
+                user_specs=specs, cooling_type=_cooling_type(row.get("cooling_type", "ONAN"))
+            )
             current_a = _current_a(net.res_trafo.at[index, "i_lv_ka"], row.get("parallel", 1.0))
             profile = InputProfile.create(
                 datetime_index=datetime_index,
@@ -306,7 +314,9 @@ def _calculate_trafo3w(net, indices, datetime_index, initial_top_oil_temperature
             continue
         try:
             specs = specs_from_trafo3w(net, index)
-            transformer = ThreeWindingTransformer(user_specs=specs, cooling_type=_cooling_type(row.cooling_type))
+            transformer = ThreeWindingTransformer(
+                user_specs=specs, cooling_type=_cooling_type(row.get("cooling_type", "ONAN"))
+            )
             # i_hv_ka / i_mv_ka / i_lv_ka are already attributed to the individual windings by
             # _get_trafo3w_results. `.abs()` for the same reason as in `_trafo_current_a`; there is no
             # `parallel` column in net.trafo3w.

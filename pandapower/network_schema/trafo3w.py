@@ -377,7 +377,7 @@ _trafo3w_columns = {
         pa.Check.isin(["ONAN", "ONAF"]),
         nullable=True,
         required=False,
-        description="cooling type of the transformer for the thermal calculation (TDPF), ONAN or ONAF",
+        description="cooling type of the transformer for the thermal calculation (TDPF), ONAN (Oil Natural, Air Natural) or ONAF (Oil Natural, Air Forced)",
         metadata={"tdpf": True, "default": "ONAN"},
     ),
     "air_temperature_degree_celsius": pa.Column(

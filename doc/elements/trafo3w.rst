@@ -46,7 +46,7 @@ Table Structure
 
 .. note:: The columns ``cooling_type`` and ``air_temperature_degree_celsius`` are only used by the
     transformer thermal calculation of the temperature dependent power flow, see
-    :ref:`Transformer temperatures <tdpf_transformer_temperatures>`. They default to ``"ONAN"`` and
+    :ref:`Transformer temperatures <tdpf_transformer_temperatures>`. They default to ``"ONAN"`` (Oil Natural, Air Natural) and
     ``35`` °C, so they can be left empty.
 
 .. _trafo3w_model:
