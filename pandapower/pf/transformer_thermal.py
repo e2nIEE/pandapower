@@ -183,11 +183,15 @@ def _ambient_temperature(trafo) -> float:
     return 35.0 if not np.isfinite(air_temperature) else air_temperature
 
 
-def _ensure_columns(res_df: pd.DataFrame, columns) -> None:
-    """Create missing result columns, filled with NaN."""
+def _reset_columns(res_df: pd.DataFrame, columns) -> None:
+    """Create missing result columns and clear all existing values to NaN.
+
+    The thermal columns are post-processing results that are only written for the rows whose
+    calculation succeeded. Clearing them first prevents a row that is skipped in this step (e.g.
+    because its nameplate data became invalid) from reporting the temperature of an earlier step.
+    """
     for column in columns:
-        if column not in res_df.columns:
-            res_df[column] = np.nan
+        res_df[column] = np.nan
 
 
 def _current_a(i_ka, parallel=1.0) -> float:
@@ -236,6 +240,14 @@ def calculate_transformer_temperatures(net, dt_minutes: float | None = None, ini
 
     trafo_idx = net.trafo.index[net.trafo.in_service.values] if len(net.trafo) else net.trafo.index[:0]
     trafo3w_idx = net.trafo3w.index[net.trafo3w.in_service.values] if len(net.trafo3w) else net.trafo3w.index[:0]
+
+    # Clear the thermal columns of every transformer that exists, even if it is out of service or is
+    # skipped below. Stale values from a previous time step must never be reported as the current one.
+    if len(net.trafo):
+        _reset_columns(net.res_trafo, [TOP_OIL_COLUMN, HOT_SPOT_COLUMN, TEMPERATURE_COLUMN])
+    if len(net.trafo3w):
+        _reset_columns(net.res_trafo3w, [TOP_OIL_COLUMN, *HOT_SPOT_3W_COLUMNS, TEMPERATURE_COLUMN])
+
     if len(trafo_idx) == 0 and len(trafo3w_idx) == 0:
         return {}
 
@@ -257,7 +269,6 @@ def calculate_transformer_temperatures(net, dt_minutes: float | None = None, ini
 def _calculate_trafo(net, indices, datetime_index, initial_top_oil_temperature) -> dict:
     """Two winding transformers."""
     res_trafo = net.res_trafo
-    _ensure_columns(res_trafo, [TOP_OIL_COLUMN, HOT_SPOT_COLUMN, TEMPERATURE_COLUMN])
 
     top_oil_temperatures = {}
     for index in indices:
@@ -298,7 +309,6 @@ def _calculate_trafo(net, indices, datetime_index, initial_top_oil_temperature) 
 def _calculate_trafo3w(net, indices, datetime_index, initial_top_oil_temperature) -> dict:
     """Three winding transformers."""
     res_trafo3w = net.res_trafo3w
-    _ensure_columns(res_trafo3w, [TOP_OIL_COLUMN, *HOT_SPOT_3W_COLUMNS, TEMPERATURE_COLUMN])
 
     top_oil_temperatures = {}
     for index in indices:

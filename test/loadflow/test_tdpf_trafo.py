@@ -541,6 +541,70 @@ def test_out_of_service_trafo_gets_nan():
     assert np.isnan(net.res_trafo.at[1, TEMPERATURE_COLUMN])
 
 
+def test_stale_temperature_is_not_reported_when_a_step_is_skipped():
+    """A transformer that is skipped in one step must not keep the temperature of the previous step.
+
+    The result columns are not reset by the recycled result extraction, so the values of the previous
+    time step would survive and be reported as the current one. Every step has to start from NaN.
+    """
+    net = _two_bus_net()
+    runpp(net, tdpf=True)
+    previous = net.res_trafo.at[0, TOP_OIL_COLUMN]
+    assert np.isfinite(previous)
+
+    # the nameplate data becomes invalid, so this row is skipped by the thermal calculation
+    net.trafo.at[0, "sn_mva"] = 0.0
+    calculate_transformer_temperatures(net)
+
+    assert np.isnan(net.res_trafo.at[0, TOP_OIL_COLUMN])
+    assert np.isnan(net.res_trafo.at[0, HOT_SPOT_COLUMN])
+    assert np.isnan(net.res_trafo.at[0, TEMPERATURE_COLUMN])
+
+
+def test_skipped_step_temperature_recovers_afterwards():
+    """Clearing the columns must not prevent a later successful step from writing its result."""
+    net = _two_bus_net()
+    runpp(net, tdpf=True)
+    expected = net.res_trafo.at[0, TOP_OIL_COLUMN]
+
+    net.trafo.at[0, "sn_mva"] = 0.0
+    calculate_transformer_temperatures(net)
+    assert np.isnan(net.res_trafo.at[0, TEMPERATURE_COLUMN])
+
+    net.trafo.at[0, "sn_mva"] = TRAFO_PARAMS["sn_mva"]
+    calculate_transformer_temperatures(net)
+    assert net.res_trafo.at[0, TOP_OIL_COLUMN] == pytest.approx(expected, rel=1e-12)
+
+
+def test_stale_temperature_is_cleared_for_all_out_of_service_trafos():
+    """Even when nothing is left to calculate, the previous temperatures must be cleared."""
+    net = _two_bus_net()
+    runpp(net, tdpf=True)
+    assert np.isfinite(net.res_trafo.at[0, TEMPERATURE_COLUMN])
+
+    net.trafo.at[0, "in_service"] = False
+    calculate_transformer_temperatures(net)
+
+    assert np.isnan(net.res_trafo.at[0, TOP_OIL_COLUMN])
+    assert np.isnan(net.res_trafo.at[0, HOT_SPOT_COLUMN])
+    assert np.isnan(net.res_trafo.at[0, TEMPERATURE_COLUMN])
+
+
+def test_stale_temperature_is_cleared_for_trafo3w():
+    """The three winding columns are cleared the same way."""
+    net = _three_bus_net()
+    runpp(net, tdpf=True)
+    assert np.isfinite(net.res_trafo3w.at[0, TOP_OIL_COLUMN])
+
+    net.trafo3w.at[0, "sn_hv_mva"] = 0.0
+    calculate_transformer_temperatures(net)
+
+    assert np.isnan(net.res_trafo3w.at[0, TOP_OIL_COLUMN])
+    assert np.isnan(net.res_trafo3w.at[0, TEMPERATURE_COLUMN])
+    for column in HOT_SPOT_3W_COLUMNS:
+        assert np.isnan(net.res_trafo3w.at[0, column])
+
+
 def test_warm_start_chains_previous_top_oil_temperature():
     """The time series tracker must feed the previous top-oil temperature into the next step."""
     tracker = transformer_thermal.TransformerThermalTracker()
