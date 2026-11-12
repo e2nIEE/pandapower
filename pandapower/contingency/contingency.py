@@ -304,7 +304,7 @@ def run_contingency_ls2g(
 
     # s.add_multiple_n1(net.line.index.values.astype(int))
     v_init = net._ppc["internal"]["V"]  # type: ignore[index]
-    s.compute(v_init, net._options["max_iteration"], net._options["tolerance_mva"])
+    s.compute(v_init, net._options["max_iteration"], net._options["tolerance"])
     v_res = s.get_voltages()
     s.compute_flows()
     kamps_all = s.get_flows()

@@ -24,7 +24,7 @@ Change Log
 - [CHANGED] removed deprecated trafo support characteristics table (replaced by trafo_characteristc_table)
 - [ADDED] create function for trafo characteristic entries
 - [ADDED] converter for trafo characteristics
-- [ADDED] Added ``solver_tolerance`` as a unitless power-flow solver tolerance option while keeping ``tolerance_mva`` as a backward-compatible alias.
+- [CHANGED] tolerance_mva now called tolerance as it is a unitless value.
 - [FIXED] create_gen and create_gens now use connected bus voltage limits as generator voltage-limit defaults.
 - [ADDED] runpp: bipolar VSC (create_vsc_bipolar) connected between a plus and a minus DC bus instead of ground, enables bipolar HVDC systems with dedicated metallic return (DMR); the DMR current is calculated by the power flow
 - [CHANGED] vsc_bipolar: control parameters changed to control_mode_ac, control_value_ac, control_mode_dc, control_value_dc (same as vsc); the element was not considered in the power flow before; networks stored in the old format are converted on load by convert_format

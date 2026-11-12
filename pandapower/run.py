@@ -21,6 +21,7 @@ from pandapower.auxiliary import (
     _init_runopp_options,
     _init_runpp_options,
     _internal_stored,
+    warn_and_fix_parameter_renaming,
 )
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.optimal_powerflow import _optimal_powerflow
@@ -49,7 +50,7 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
 
     :param net: pandaPower network
     :param overwrite: specifies whether the user_pf_options is removed before setting new options
-    :param kwargs: load flow options, e.g. solver_tolerance = 1e-3
+    :param kwargs: load flow options, e.g. tolerance = 1e-3
     :return: None
     """
     standard_parameters = [
@@ -70,8 +71,7 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
         "init_vm_pu",
         "init_va_degree",
         "init_results",
-        "tolerance_mva",
-        "solver_tolerance",
+        "tolerance",
         "trafo_loading",
         "numba",
         "ac",
@@ -90,15 +90,6 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
         net["user_pf_options"] = {}
 
     net.user_pf_options.update({key: val for key, val in kwargs.items() if key in standard_parameters})
-
-    # tolerance_mva and solver_tolerance are aliases of the same option: drop the stale alias so
-    # that the alias supplied with this call takes effect in the power flow. solver_tolerance=None
-    # means the alias was not set, so the stored tolerance_mva must stay effective.
-    if kwargs.get("solver_tolerance") is not None:
-        net.user_pf_options.pop("tolerance_mva", None)
-    elif "tolerance_mva" in kwargs:
-        net.user_pf_options.pop("solver_tolerance", None)
-
     additional_kwargs = {key: val for key, val in kwargs.items() if key not in standard_parameters}
 
     # this part is to inform user and to make typos in parameters visible
@@ -114,7 +105,7 @@ def runpp(
     calculate_voltage_angles=True,
     init="auto",
     max_iteration="auto",
-    tolerance_mva=1e-8,
+    tolerance=1e-8,
     trafo_model="t",
     trafo_loading="current",
     enforce_p_lims=False,
@@ -126,7 +117,6 @@ def runpp(
     distributed_slack=False,
     tdpf=False,
     tdpf_delay_s=None,
-    solver_tolerance=None,
     **kwargs,
 ):
     """
@@ -182,9 +172,7 @@ def runpp(
             - 30 for "nr" with "tdpf"
             - 40 for "helm"
 
-        solver_tolerance (float, 1e-8): unitless internal solver termination tolerance for the power-flow mismatch equations.
-            Note: the "helm" algorithm ignores this option and always uses a fixed mismatch value of 1e-8.
-        tolerance_mva (float, 1e-8): deprecated alias for solver_tolerance. The name is kept for backward compatibility, but the value is treated as a unitless solver tolerance, not as an MVA quantity.
+        tolerance (float, 1e-8): loadflow termination condition referring to P / Q mismatch of node power in MVA
         trafo_model (str, "t"): transformer equivalent circuit model
             pandapower provides two equivalent circuit models for the transformer:
 
@@ -276,11 +264,11 @@ def runpp(
         tdpf_update_r_theta (bool, True): TDPF parameter, whether to update R_Theta in Newton-Raphson or to assume a constant R_Theta (either from net.line.r_theta, if set, or from a calculation based on the thermal model of Ngoko et.al.)
     """
 
+    tolerance, kwargs = warn_and_fix_parameter_renaming("tolerance_mva", "tolerance", tolerance, 1e-8, kwargs)
+
     # if dict 'user_pf_options' is present in net, these options overrule the net._options
     # except for parameters that are passed by user
     if isinstance(kwargs.get("recycle", None), dict) and _internal_stored(net):
-        if solver_tolerance is not None:
-            net["_options"]["tolerance_mva"] = solver_tolerance
         _recycled_powerflow(net, **kwargs)
         return
 
@@ -292,8 +280,6 @@ def runpp(
         parameters["run_control"] = False
         run_control(**parameters)
     else:
-        if solver_tolerance is not None:
-            tolerance_mva = solver_tolerance
         passed_parameters = _passed_runpp_parameters(locals())
         _init_runpp_options(
             net,
@@ -301,7 +287,7 @@ def runpp(
             calculate_voltage_angles=calculate_voltage_angles,
             init=init,
             max_iteration=max_iteration,
-            tolerance_mva=tolerance_mva,
+            tolerance=tolerance,
             trafo_model=trafo_model,
             trafo_loading=trafo_loading,
             enforce_p_lims=enforce_p_lims,

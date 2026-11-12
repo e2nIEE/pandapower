@@ -24,9 +24,12 @@ from pandapower.toolbox.data_modification import reindex_buses
 from test import test_path
 
 if find_spec("pypower"):
-    import pypower.case24_ieee_rts as c24
-
-    pypower_installed = True
+    try:
+        import pypower.case24_ieee_rts as c24
+    except ImportError:
+        pypower_installed = False
+    else:
+        pypower_installed = True
 else:
     pypower_installed = False
 

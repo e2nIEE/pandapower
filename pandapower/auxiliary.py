@@ -1172,7 +1172,7 @@ def _check_gen_index_and_print_warning_if_high(net: pandapowerNet, n_max: int = 
 
 def _add_pf_options(
     net: pandapowerNet,
-    tolerance_mva: float | None,
+    tolerance: float | None,
     trafo_loading: Literal["current", "power"],
     numba: bool,
     ac: bool,
@@ -1184,8 +1184,10 @@ def _add_pf_options(
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
 
+    tolerance, kwargs = warn_and_fix_parameter_renaming("tolerance_mva", "tolerance", tolerance, 1e-8, kwargs)
+
     options = {
-        "tolerance_mva": tolerance_mva,
+        "tolerance": tolerance,
         "trafo_loading": trafo_loading,
         "numba": numba,
         "ac": ac,
@@ -1924,7 +1926,7 @@ def _init_runpp_options(
     calculate_voltage_angles: Literal["auto"] | bool,
     init: Literal["auto", "dc", "flat", "results"] | float,
     max_iteration: Literal["auto"] | int,
-    tolerance_mva: float,
+    tolerance: float,
     trafo_model: Literal["t", "pi"],
     trafo_loading: Literal["current", "power"],
     enforce_p_lims: bool,
@@ -1944,20 +1946,9 @@ def _init_runpp_options(
     """
     overrule_options = {}
     if passed_parameters is not None:
-        excluded_parameters = set(passed_parameters)
-        # solver_tolerance and tolerance_mva are aliases, so an explicitly passed value for either name
-        # must also suppress a stored value of the other name
-        if excluded_parameters & {"solver_tolerance", "tolerance_mva"}:
-            excluded_parameters |= {"solver_tolerance", "tolerance_mva"}
-        overrule_options = {key: val for key, val in net.user_pf_options.items() if key not in excluded_parameters}
+        overrule_options = {key: val for key, val in net.user_pf_options.items() if key not in passed_parameters}
 
     kwargs.update(overrule_options)
-    solver_tolerance = kwargs.pop("solver_tolerance", None)
-    if solver_tolerance is not None:
-        # solver_tolerance and tolerance_mva are aliases of the same option, so the newer
-        # solver_tolerance name takes precedence over a stored tolerance_mva
-        tolerance_mva = solver_tolerance
-        overrule_options.pop("tolerance_mva", None)
 
     trafo3w_losses = kwargs.get("trafo3w_losses", "hv")
     v_debug = kwargs.get("v_debug", False)
@@ -1987,7 +1978,7 @@ def _init_runpp_options(
     tdpf_update_r_theta = overrule_options.get("tdpf_update_r_theta", tdpf_update_r_theta)
     tdpf_delay_s = overrule_options.get("tdpf_delay_s", tdpf_delay_s)
     # the other parameters do not need to be collected manually:
-    # tolerance_mva, trafo_model, trafo_loading, enforce_p_lims, enforce_q_lims, check_connectivity, consider_line_temperature
+    # tolerance, trafo_model, trafo_loading, enforce_p_lims, enforce_q_lims, check_connectivity, consider_line_temperature
 
     # check if numba is available and the corresponding flag
     numba &= _check_if_numba_is_installed()
@@ -2124,7 +2115,7 @@ def _init_runpp_options(
     )
     _add_pf_options(
         net,
-        tolerance_mva=tolerance_mva,
+        tolerance=tolerance,
         trafo_loading=trafo_loading,
         numba=numba,
         ac=ac,
@@ -2180,7 +2171,7 @@ def _init_rundcpp_options(
     enforce_q_lims: bool = False
     algorithm = None
     max_iteration = None
-    tolerance_mva = None
+    tolerance = None
     only_v_results = kwargs.get("only_v_results", False)
     net._options = {}
     _add_ppc_options(
@@ -2201,7 +2192,7 @@ def _init_rundcpp_options(
     )
     _add_pf_options(
         net,
-        tolerance_mva=tolerance_mva,
+        tolerance=tolerance,
         trafo_loading=trafo_loading,
         numba=numba,
         ac=ac,
@@ -2347,7 +2338,7 @@ def _init_runse_options(
     )
     _add_pf_options(
         net,
-        tolerance_mva=1e-8,
+        tolerance=1e-8,
         trafo_loading="power",
         numba=True,
         ac=True,
