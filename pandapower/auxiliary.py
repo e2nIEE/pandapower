@@ -1500,6 +1500,10 @@ def _check_tdpf_parameters(net: pandapowerNet, tdpf_update_r_theta: bool, tdpf_d
     if len(tdpf_lines) == 0:
         logger.info("TDPF: no relevant lines found")
 
+    # transformers are always included in the thermal calculation when tdpf=True (no opt-in flag)
+    trafo_idx = net.trafo.index[net.trafo.in_service.values] if len(net.trafo) else net.trafo.index[:0]
+    trafo3w_idx = net.trafo3w.index[net.trafo3w.in_service.values] if len(net.trafo3w) else net.trafo3w.index[:0]
+
     # required for simplified approach if r_theta_kelvin_per_mw is provided, can be filled with simplified values:
     default_values = {
         "temperature_degree_celsius": 20,  # starting temperature of lines
@@ -1533,20 +1537,22 @@ def _check_tdpf_parameters(net: pandapowerNet, tdpf_update_r_theta: bool, tdpf_d
     # if np.any(np.setdiff1d(net.line.columns, required_columns)):
     #     raise UserWarning(f"TDPF: required columns missing in net.line: {required_columns}")
 
-    missing_columns = []
-    for col in required_columns:
-        if col not in net.line.columns or np.any(net.line.loc[tdpf_lines, col].isnull()):
-            missing_columns.append(col)
+    # The line columns are only validated if the network contains lines at all. A network with only
+    # transformers (no lines) still gets transformer temperatures, so there is nothing to check here.
+    if len(net.line) > 0:
+        missing_columns = []
+        for col in required_columns:
+            # `tdpf` selects the lines and therefore has to exist for the branch conversion, but only
+            # the values of the selected lines are relevant. An ordinary line that did not opt in must
+            # not trigger a missing-value warning for a column it never needed.
+            if col not in net.line.columns or (len(tdpf_lines) > 0 and np.any(net.line.loc[tdpf_lines, col].isnull())):
+                missing_columns.append(col)
 
-    if len(missing_columns) > 0:
-        raise UserWarning(f"TDPF: required columns {missing_columns} are missing or have missing values")
+        if len(missing_columns) > 0:
+            raise UserWarning(f"TDPF: required columns {missing_columns} are missing or have missing values")
 
-    # check if unsupported elements are included
-    if (
-        len(net.line.loc[net.line.index.isin(tdpf_lines) & (net.line.type == "cs")]) > 0
-        or "tdpf" in net.trafo
-        or "tdpf" in net.trafo3w
-    ):
+    # check if unsupported elements are included; the "type" column is optional in the line schema
+    if len(tdpf_lines) > 0 and "type" in net.line.columns and (net.line.loc[tdpf_lines, "type"].dropna() == "cs").any():
         logger.warning("TDPF: temperature dependent power flow is only implemented for overhead lines")
 
     # now fill in the default values
@@ -1557,8 +1563,45 @@ def _check_tdpf_parameters(net: pandapowerNet, tdpf_update_r_theta: bool, tdpf_d
             logger.info(f"TDPF: filling nan values in {col} with a default assumption of {val}")
             net.line.loc[tdpf_lines, col] = net.line.loc[tdpf_lines, col].fillna(val)
 
-    if len(net.line.loc[net.line.index.isin(tdpf_lines) & (net.line.r_ohm_per_km == 0)]) > 0:
+    if len(net.line) > 0 and len(net.line.loc[net.line.index.isin(tdpf_lines) & (net.line.r_ohm_per_km == 0)]) > 0:
         raise UserWarning("TDPF: temperature dependent power flow cannot be applied to lines that have r_ohm_per_km=0")
+
+    _check_tdpf_trafo_parameters(net, trafo_idx, trafo3w_idx)
+
+
+def _check_tdpf_trafo_parameters(net: pandapowerNet, trafo_idx, trafo3w_idx) -> None:
+    """Default and validate the transformer input columns of the transformer thermal calculation.
+
+    Every in-service transformer takes part in the thermal calculation when ``tdpf=True``; there is no
+    per transformer opt-in flag. Only ``cooling_type`` and ``air_temperature_degree_celsius`` are
+    required inputs, everything else is derived from the nameplate data.
+    """
+    trafo_defaults = {"cooling_type": "ONAN", "air_temperature_degree_celsius": 35}
+    for element, indices in (("trafo", trafo_idx), ("trafo3w", trafo3w_idx)):
+        if len(indices) == 0:
+            continue
+        table = net[element]
+        if "cooling_type" not in table.columns:
+            table["cooling_type"] = pd.Series(pd.NA, index=table.index, dtype="string")
+        if "air_temperature_degree_celsius" not in table.columns:
+            table["air_temperature_degree_celsius"] = np.nan
+        for col, val in trafo_defaults.items():
+            if np.any(pd.isnull(table.loc[indices, col])):
+                logger.info(f"TDPF: filling nan values in {element}.{col} with a default assumption of {val}")
+        # normalise the cooling type, so that the library mapping is unambiguous
+        table["cooling_type"] = table["cooling_type"].astype("string")
+        table.loc[indices, "cooling_type"] = table.loc[indices, "cooling_type"].str.strip().str.upper().fillna("ONAN")
+        table.loc[indices, "air_temperature_degree_celsius"] = (
+            table.loc[indices, "air_temperature_degree_celsius"].astype(float).fillna(35.0)
+        )
+        invalid = ~table.loc[indices, "cooling_type"].isin(["ONAN", "ONAF"])
+        if invalid.any():
+            raise UserWarning(
+                f"TDPF: invalid cooling_type in {element} for indices {table.loc[indices].index[invalid].tolist()}, "
+                "must be 'ONAN' or 'ONAF'"
+            )
+        if (table.loc[indices, "air_temperature_degree_celsius"] <= -273).any():
+            raise UserWarning(f"TDPF: air_temperature_degree_celsius in {element} must be greater than -273 °C")
 
 
 # =============================================================================

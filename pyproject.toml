@@ -73,8 +73,9 @@ control = ["shapely~=2.1"]
 pandamodels = ["juliacall<=0.9.32"]
 opendss = ["OpenDSSDirect.py~=0.9"]
 helm = ["fast-helmpy"]
+tdpf = ["transformer-thermal-model~=0.6"]
 
-all = ["pandapower[plotting,performance,fileio,converter,pgm,control,helm,opendss]"]
+all = ["pandapower[plotting,performance,fileio,converter,pgm,control,helm,opendss,tdpf]"]
 
 [dependency-groups]
 tutorials = [
