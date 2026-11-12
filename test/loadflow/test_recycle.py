@@ -137,7 +137,7 @@ def test_recycle_trafo_bus_gen(recycle_net):
 
 def test_result_index_unsorted():
     net = pandapowerNet(name="test_result_index_unsorted")
-    set_user_pf_options(net, tolerance_mva=1e-9)
+    set_user_pf_options(net, tolerance=1e-9)
 
     b1 = create_bus(net, vn_kv=0.4, index=4)
     b2 = create_bus(net, vn_kv=0.4, index=2)
