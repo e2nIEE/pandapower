@@ -714,7 +714,8 @@ def _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net_sn_mva) -> ND
     ym_mva = i0 / 100 * trafo_sn_mva
     b_mva_squared = np.square(ym_mva) - np.square(pfe_mw)
     b_mva_squared[b_mva_squared < 0] = 0
-    b_mva = -np.sqrt(b_mva_squared)
+    # the magnetizing susceptance is inductive, a negative i0_percent denotes a capacitive susceptance
+    b_mva = np.where(i0 < 0, 1.0, -1.0) * np.sqrt(b_mva_squared)
 
     g_pu = g_mva / vnl_squared * baseZ * parallel / np.square(vn_trafo_lv / vn_lv_kv)
     b_pu = b_mva / vnl_squared * baseZ * parallel / np.square(vn_trafo_lv / vn_lv_kv)

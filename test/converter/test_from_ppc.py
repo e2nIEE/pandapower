@@ -184,24 +184,25 @@ def test_from_ppc_trafo_tap_at_lv_bus(tap_side):
 
 def test_from_ppc_trafo_positive_susceptance():
     """
-    A positive (capacitive) susceptance of a transformer branch is converted to shunts, since pandapower
-    transformers are inductive (pandapower#1740).
+    A positive (capacitive) susceptance of a transformer branch is converted to a negative i0_percent, which
+    denotes a capacitive magnetizing susceptance, so that the charging is part of the transformer branch
+    (pandapower#1740).
     """
     ppc = get_testgrids("pypower_cases", "case9.json")
     ppc["branch"][0, [TAP, BR_B]] = [1.05, 0.3]
     ppc["branch"][3, [TAP, SHIFT, BR_B]] = [0.97, 5.0, 0.2]
     net = from_ppc(deepcopy(ppc), f_hz=60)
     assert len(net.trafo) == 2
-    assert np.allclose(net.trafo.i0_percent, 0)
-    assert len(net.shunt) == 4
+    assert np.all(net.trafo.i0_percent < 0)
+    assert len(net.shunt) == 0
     runpp(net, calculate_voltage_angles=True, trafo_model="pi")
 
     # the converted net has the same bus admittance matrix as the ppc
     ybus, yf, yt, bus_pos, ppc_branch = _ppc_ybus(ppc)
     assert np.allclose(ybus, _net_ybus(net, ppc), atol=1e-8)
 
-    # validate_from_ppc considers the charging shunts in the transformer branch flows: the pandapower
-    # results are a power flow solution of the ppc, since the admittance matrices are equal
+    # the transformer flows contain the charging: the pandapower results are a power flow solution of the ppc,
+    # since the admittance matrices are equal, and they match the ppc branch flows
     vm = net.res_bus.loc[ppc["bus"][:, BUS_I], "vm_pu"].values
     va = net.res_bus.loc[ppc["bus"][:, BUS_I], "va_degree"].values
     v = vm * np.exp(1j * np.deg2rad(va))
@@ -213,6 +214,24 @@ def test_from_ppc_trafo_positive_susceptance():
     ppc["gen"] = ppc["gen"].astype(np.float64)
     ppc["gen"][:, QG] = (v * np.conj(ybus @ v)).imag[gen_bus] * ppc["baseMVA"] + ppc["bus"][gen_bus, QD]
     assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
+
+
+def test_from_ppc_trafo_positive_susceptance_follows_tap():
+    """
+    The charging of a converted transformer branch with positive susceptance follows tap changes as in the pi
+    model of the ppc branch, in which the susceptance at the from bus is divided by the squared tap ratio.
+    """
+    ppc = get_testgrids("pypower_cases", "case9.json")
+    ppc["branch"][0, [TAP, BR_B]] = [1.05, 0.3]
+    ppc["branch"][3, [TAP, SHIFT, BR_B]] = [0.97, 5.0, 0.2]
+    net = from_ppc(deepcopy(ppc), f_hz=60)
+    assert list(net.trafo.tap_pos) == [1, -1]
+
+    # two tap steps of the converted transformers are the doubled tap deviations of the ppc
+    net.trafo["tap_pos"] = [2, -2]
+    ppc["branch"][[0, 3], TAP] = [1.10, 0.94]
+    runpp(net, calculate_voltage_angles=True, trafo_model="pi")
+    assert np.allclose(_ppc_ybus(ppc)[0], _net_ybus(net, ppc), atol=1e-8)
 
 
 def test_to_and_from_ppc():

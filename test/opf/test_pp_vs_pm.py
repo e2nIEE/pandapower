@@ -175,7 +175,7 @@ def test_opf_angle_limits_imported():
     assert np.allclose(net.line.max_angle_degree, 30.0)
 
     runopp(net, delta=1e-12)
-    # the capacitive susceptance of the transformer branches 4 and 5 is converted to shunts (#1740)
+    # the transformer branches 4 and 5 have a capacitive susceptance (negative i0_percent, #1740)
     assert np.isclose(net.res_cost, 17082.781, atol=1e-3)
     assert _max_va_diff(net) < 5.0
 

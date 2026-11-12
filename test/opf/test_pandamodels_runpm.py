@@ -949,7 +949,8 @@ def test_ac_opf_from_ppc_trafo_positive_susceptance(tmp_path):
     """
     runpm_ac_opf of a converted MATPOWER case gives the result of PowerModels.solve_ac_opf for the case, also with
     capacitive transformer branches (pandapower#1740). The slack of MATPOWER is a dispatchable generator with
-    voltage limits, so the ext_grid must be controllable.
+    voltage limits, so the ext_grid must be controllable, and the transformers need the pi model of MATPOWER,
+    since their magnetizing susceptance contains the branch charging (negative i0_percent).
     """
     ppc = get_testgrids("pypower_cases", "case9.json")
     ppc["branch"][0, [TAP, BR_B]] = [1.05, 0.3]
@@ -959,7 +960,7 @@ def test_ac_opf_from_ppc_trafo_positive_susceptance(tmp_path):
 
     net = from_ppc(deepcopy(ppc), f_hz=60)
     net.ext_grid["controllable"] = True
-    runpm_ac_opf(net)
+    runpm_ac_opf(net, trafo_model="pi")
 
     from juliacall import Main as jl
 
