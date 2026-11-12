@@ -1971,7 +1971,7 @@ def _run_conversion_roundtrip_cycle(
         calculate_voltage_angles=True,
         init="dc",
         max_iteration=50,
-        tolerance_mva=1e-7,
+        tolerance=1e-7,
     )
 
     assert bool(pandapower_network.converged)
@@ -2130,7 +2130,7 @@ def _run_conversion_pandapower_cycle(
         calculate_voltage_angles=True,
         init="dc",
         max_iteration=50,
-        tolerance_mva=1e-7,
+        tolerance=1e-7,
     )
 
     assert bool(original_pp_net.converged)
@@ -2158,7 +2158,7 @@ def _run_conversion_pandapower_cycle(
         calculate_voltage_angles=True,
         init="dc",
         max_iteration=50,
-        tolerance_mva=1e-7,
+        tolerance=1e-7,
     )
 
     assert bool(roundtrip_pp_net.converged)

@@ -158,7 +158,7 @@ def _create_net_zpbn(
         load_separate: flag if all the loads are reserved integrally
         sgen_separate: flag if all the DER are reserved separately
         gen_separate: flag if all the gens are reserved separately
-        tolerance_mva: loadflow termination condition referring to P / Q mismatch of node power in MVA.
+        tolerance: loadflow termination condition referring to P / Q mismatch of node power in MVA.
             The loadflow hier is to get the admittance matrix of the zpbn network
 
     OPTIONAL:
@@ -171,7 +171,7 @@ def _create_net_zpbn(
         **gen_separate** (bool, True) - flag if all the gens are
             reserved separately
 
-        **tolerance_mva** (float, 1e-3) - loadflow termination
+        **tolerance** (float, 1e-3) - loadflow termination
             condition referring to P / Q mismatch of node power
             in MVA. The loadflow hier is to get the admittance
             matrix of the zpbn network
@@ -529,7 +529,7 @@ def _create_net_zpbn(
             net_zpbn[cost_elm] = df
 
     drop_and_edit_cost_functions(net_zpbn, [], False, True)
-    runpp_fct(net_zpbn, calculate_voltage_angles=calc_volt_angles, tolerance_mva=1e-3, max_iteration=100, **kwargs)
+    runpp_fct(net_zpbn, calculate_voltage_angles=calc_volt_angles, tolerance=1e-3, max_iteration=100, **kwargs)
     return net_zpbn, net_internal, net_external
 
 
@@ -754,7 +754,7 @@ def _replace_ext_area_by_impedances_and_shunts(
     drop_buses(net_eq, eg_buses_pd)
 
     try:
-        runpp_fct(net_eq, calculate_voltage_angles=calc_volt_angles, tolerance_mva=1e-6, max_iteration=100, **kwargs)
+        runpp_fct(net_eq, calculate_voltage_angles=calc_volt_angles, tolerance=1e-6, max_iteration=100, **kwargs)
     except LoadflowNotConverged:
         logger.error("The power flow did not converge.")
 
@@ -829,7 +829,7 @@ def _replace_ext_area_by_impedances_and_shunts(
         msg = f"{n_disconnected_new_eq_shunts=}, missing buses: {new_shunts.bus.loc[~isin_sh]}"
         raise ValueError(msg)
 
-    runpp_fct(net_eq, calculate_voltage_angles=calc_volt_angles, tolerance_mva=1e-6, max_iteration=100, **kwargs)
+    runpp_fct(net_eq, calculate_voltage_angles=calc_volt_angles, tolerance=1e-6, max_iteration=100, **kwargs)
 
 
 def _integrate_power_elements_connected_with_switch_buses(net, net_external, all_external_buses):

@@ -1172,7 +1172,7 @@ def _check_gen_index_and_print_warning_if_high(net: pandapowerNet, n_max: int = 
 
 def _add_pf_options(
     net: pandapowerNet,
-    tolerance_mva: float | None,
+    tolerance: float | None,
     trafo_loading: Literal["current", "power"],
     numba: bool,
     ac: bool,
@@ -1184,8 +1184,10 @@ def _add_pf_options(
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
 
+    tolerance, kwargs = warn_and_fix_parameter_renaming("tolerance_mva", "tolerance", tolerance, 1e-8, kwargs)
+
     options = {
-        "tolerance_mva": tolerance_mva,
+        "tolerance": tolerance,
         "trafo_loading": trafo_loading,
         "numba": numba,
         "ac": ac,
@@ -1924,7 +1926,7 @@ def _init_runpp_options(
     calculate_voltage_angles: Literal["auto"] | bool,
     init: Literal["auto", "dc", "flat", "results"] | float,
     max_iteration: Literal["auto"] | int,
-    tolerance_mva: float,
+    tolerance: float,
     trafo_model: Literal["t", "pi"],
     trafo_loading: Literal["current", "power"],
     enforce_p_lims: bool,
@@ -1976,7 +1978,7 @@ def _init_runpp_options(
     tdpf_update_r_theta = overrule_options.get("tdpf_update_r_theta", tdpf_update_r_theta)
     tdpf_delay_s = overrule_options.get("tdpf_delay_s", tdpf_delay_s)
     # the other parameters do not need to be collected manually:
-    # tolerance_mva, trafo_model, trafo_loading, enforce_p_lims, enforce_q_lims, check_connectivity, consider_line_temperature
+    # tolerance, trafo_model, trafo_loading, enforce_p_lims, enforce_q_lims, check_connectivity, consider_line_temperature
 
     # check if numba is available and the corresponding flag
     numba &= _check_if_numba_is_installed()
@@ -2113,7 +2115,7 @@ def _init_runpp_options(
     )
     _add_pf_options(
         net,
-        tolerance_mva=tolerance_mva,
+        tolerance=tolerance,
         trafo_loading=trafo_loading,
         numba=numba,
         ac=ac,
@@ -2169,7 +2171,7 @@ def _init_rundcpp_options(
     enforce_q_lims: bool = False
     algorithm = None
     max_iteration = None
-    tolerance_mva = None
+    tolerance = None
     only_v_results = kwargs.get("only_v_results", False)
     net._options = {}
     _add_ppc_options(
@@ -2190,7 +2192,7 @@ def _init_rundcpp_options(
     )
     _add_pf_options(
         net,
-        tolerance_mva=tolerance_mva,
+        tolerance=tolerance,
         trafo_loading=trafo_loading,
         numba=numba,
         ac=ac,
@@ -2336,7 +2338,7 @@ def _init_runse_options(
     )
     _add_pf_options(
         net,
-        tolerance_mva=1e-8,
+        tolerance=1e-8,
         trafo_loading="power",
         numba=True,
         ac=True,
