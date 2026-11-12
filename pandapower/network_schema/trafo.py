@@ -276,6 +276,22 @@ _trafo_columns = {
         metadata={"sc": True},
     ),
     "pt_percent": pa.Column(float, required=False, description="", metadata={"sc": True}),
+    "cooling_type": pa.Column(
+        pd.StringDtype,
+        pa.Check.isin(["ONAN", "ONAF"]),
+        nullable=True,
+        required=False,
+        description="cooling type of the transformer for the thermal calculation (TDPF), ONAN (Oil Natural, Air Natural) or ONAF (Oil Natural, Air Forced)",
+        metadata={"tdpf": True, "default": "ONAN"},
+    ),
+    "air_temperature_degree_celsius": pa.Column(
+        float,
+        pa.Check.gt(-273),
+        nullable=True,
+        required=False,
+        description="ambient temperature in °C used by the transformer thermal calculation (TDPF)",
+        metadata={"tdpf": True, "default": 35},
+    ),
     "origin_id": pa.Column(
         pd.StringDtype,
         nullable=True,

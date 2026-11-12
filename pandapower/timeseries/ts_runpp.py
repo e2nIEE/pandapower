@@ -47,6 +47,9 @@ class TimeSeriesRunpp:
         # update functions
         self.update_pq = False
         self.update_trafo = False
+        from pandapower.pf.transformer_thermal import TransformerThermalTracker
+
+        self.transformer_thermal_tracker = TransformerThermalTracker()
         self.init_timeseries_newton()
 
     def ts_newtonpf(self, net):
@@ -117,6 +120,14 @@ class TimeSeriesRunpp:
         self.V = V
 
         _extract_results(net, self.ppc)
+
+        # transformer thermal model is post-processing and is not reached through _ppci_to_net here.
+        # The tracker chains the top-oil temperature across the time steps, which is what makes the
+        # recursive IEC 60076-7 model physically meaningful in a time series.
+        if options.get("tdpf", False):
+            from pandapower.pf.transformer_thermal import dt_minutes_from_options
+
+            self.transformer_thermal_tracker.run(net, dt_minutes=dt_minutes_from_options(options))
 
         return net
 

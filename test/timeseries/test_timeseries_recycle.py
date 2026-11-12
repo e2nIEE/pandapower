@@ -1,7 +1,9 @@
 import copy
+import itertools
 import tempfile
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from pandapower.control.controller.trafo.continuous_tap_control import (
@@ -448,6 +450,203 @@ def test_const_pq_out_of_service(simple_test_net, run_function):
     assert np.allclose(vm_pu.loc[:, in_service], ow.output[_v_var(run_function)].loc[:, in_service])
     in_service = net.line.loc[net.line.in_service].index
     assert np.allclose(ll.loc[:, in_service], ow.output["res_line.loading_percent"].loc[:, in_service])
+
+
+def _tdpf_two_bus_net():
+    """A small two winding net whose loading varies with the constant control."""
+    from pandapower.create import create_ext_grid, create_load, create_transformer_from_parameters
+    from pandapower.network import pandapowerNet
+
+    net = pandapowerNet(name="tdpf_recycle")
+    hv_bus, lv_bus = create_buses(net, 2, vn_kv=[110.0, 10.0])
+    create_ext_grid(net, hv_bus)
+    create_transformer_from_parameters(
+        net,
+        hv_bus,
+        lv_bus,
+        sn_mva=40.0,
+        vn_hv_kv=110.0,
+        vn_lv_kv=10.0,
+        vk_percent=10.0,
+        vkr_percent=0.5,
+        pfe_kw=20.0,
+        i0_percent=0.1,
+    )
+    create_load(net, lv_bus, p_mw=10.0)
+    return net
+
+
+def test_recycle_disabled_when_tdpf_is_requested():
+    """The voltage-only recycle path must not be used when TDPF produces transformer temperatures.
+
+    ``_recycled_powerflow`` returns before the results are extracted, so the thermal post-processing
+    never runs. The network would then report the temperature of an earlier step even though the time
+    step completed. This must not depend on whether the output writer happens to log a thermal variable.
+    """
+    pytest.importorskip("transformer_thermal_model")
+    from pandapower.timeseries.run_time_series import get_recycle_settings
+
+    net = _tdpf_two_bus_net()
+    # 2-tuples are required for the voltage-only batch path to be selectable at all
+    OutputWriter(
+        net,
+        output_path=tempfile.gettempdir(),
+        output_file_type=".json",
+        log_variables=[("res_bus", "vm_pu")],
+    )
+
+    # `get_recycle_settings` rewrites `ow.log_variables`, so re-create the writer for the second call
+    assert get_recycle_settings(net, run=runpp)["only_v_results"] is True
+
+    net = _tdpf_two_bus_net()
+    OutputWriter(
+        net,
+        output_path=tempfile.gettempdir(),
+        output_file_type=".json",
+        log_variables=[("res_bus", "vm_pu")],
+    )
+    assert get_recycle_settings(net, run=runpp, tdpf=True)["only_v_results"] is False
+
+
+def test_recycle_disabled_when_tdpf_is_set_in_user_pf_options():
+    """A configured TDPF must be honoured as well, not only the keyword argument."""
+    pytest.importorskip("transformer_thermal_model")
+    from pandapower.run import set_user_pf_options
+    from pandapower.timeseries.run_time_series import get_recycle_settings
+
+    net = _tdpf_two_bus_net()
+    OutputWriter(
+        net,
+        output_path=tempfile.gettempdir(),
+        output_file_type=".json",
+        log_variables=[("res_bus", "vm_pu")],
+    )
+
+    set_user_pf_options(net, tdpf=True)
+    try:
+        assert get_recycle_settings(net, run=runpp)["only_v_results"] is False
+    finally:
+        set_user_pf_options(net)
+
+
+def test_timeseries_trafo_temperature_updates_with_tdpf():
+    """Each time step must produce a new transformer temperature, even when only voltages are logged."""
+    pytest.importorskip("transformer_thermal_model")
+    net = _tdpf_two_bus_net()
+    _, ds = create_data_source(n_timesteps)
+    ConstControl(
+        net,
+        element="load",
+        variable="p_mw",
+        element_index=[0],
+        data_source=ds,
+        profile_name=["load1"],
+    )
+    # only a voltage is logged, so the voltage-only batch path would be chosen without the TDPF gate
+    OutputWriter(
+        net,
+        output_path=tempfile.gettempdir(),
+        output_file_type=".json",
+        log_variables=[("res_bus", "vm_pu")],
+    )
+
+    temperatures = []
+
+    def recording_runpp(inner_net, **kwargs):
+        runpp(inner_net, **kwargs)
+        temperatures.append(float(inner_net.res_trafo.at[0, "temperature_degree_celsius"]))
+
+    run_timeseries(net, time_steps, run_control_fct=recording_runpp, tdpf=True, verbose=False)
+
+    assert len(temperatures) == n_timesteps
+    # the load profile varies, so every step must yield its own temperature
+    assert len({round(value, 6) for value in temperatures}) == n_timesteps
+
+
+def _constant_load_net(p_mw=40.0, n_steps=6):
+    """A two bus net with a constant load, so only the thermal inertia can change the temperature."""
+    from pandapower.create import create_ext_grid, create_load, create_transformer_from_parameters
+    from pandapower.network import pandapowerNet
+
+    net = pandapowerNet(name="tdpf_chaining")
+    hv_bus, lv_bus = create_buses(net, 2, vn_kv=[110.0, 10.0])
+    create_ext_grid(net, hv_bus)
+    create_transformer_from_parameters(
+        net,
+        hv_bus,
+        lv_bus,
+        sn_mva=40.0,
+        vn_hv_kv=110.0,
+        vn_lv_kv=10.0,
+        vk_percent=10.0,
+        vkr_percent=0.5,
+        pfe_kw=20.0,
+        i0_percent=0.1,
+    )
+    create_load(net, lv_bus, p_mw=p_mw)
+    ds = DFData(pd.DataFrame({"p": [p_mw] * n_steps}))
+    ConstControl(net, "load", "p_mw", element_index=[0], data_source=ds, profile_name=["p"])
+    OutputWriter(
+        net,
+        time_steps=range(n_steps),
+        output_path=tempfile.gettempdir(),
+        output_file_type=".json",
+        log_variables=[("res_trafo", "top_oil_temperature_degree_celsius")],
+    )
+    return net
+
+
+def test_timeseries_top_oil_temperature_is_chained_across_steps():
+    """The default runpp path must carry the top-oil temperature from one step into the next.
+
+    Without the tracker every step would restart from the cold start condition, so a constant load
+    would produce the same cold temperature at every step instead of heating up towards the steady
+    state. The thermal inertia only shows up when the previous top-oil temperature is fed back in.
+    """
+    pytest.importorskip("transformer_thermal_model")
+    n_steps = 6
+    net = _constant_load_net(n_steps=n_steps)
+    run_timeseries(net, time_steps=range(n_steps), tdpf=True, tdpf_delay_s=3600.0, verbose=False)
+
+    profile = list(net.output_writer.iat[0, 0].output["res_trafo.top_oil_temperature_degree_celsius"].values.ravel())
+
+    # a steady state solve of the same net is the limit the transient must approach
+    steady = copy.deepcopy(net)
+    for controller in steady.controller["object"]:
+        controller.data_source = None
+    steady.load["p_mw"] = 40.0
+    runpp(steady, tdpf=True)
+    steady_state = float(steady.res_trafo.at[0, "top_oil_temperature_degree_celsius"])
+
+    assert len(profile) == n_steps
+    # strictly heating up towards the steady state instead of staying at the cold start value
+    assert all(later > earlier for earlier, later in itertools.pairwise(profile))
+    assert profile[-1] < steady_state
+    # the cold start value must not repeat, which is what the missing tracker produced
+    assert profile[-1] > profile[0]
+
+
+def test_timeseries_top_oil_temperature_steady_state_without_delay():
+    """Without thermal inertia every step is the steady state, so chaining must not change anything."""
+    pytest.importorskip("transformer_thermal_model")
+    n_steps = 4
+    net = _constant_load_net(n_steps=n_steps)
+    run_timeseries(net, time_steps=range(n_steps), tdpf=True, verbose=False)
+
+    profile = list(net.output_writer.iat[0, 0].output["res_trafo.top_oil_temperature_degree_celsius"].values.ravel())
+
+    assert np.allclose(profile, profile[0])
+    assert np.isfinite(profile[0])
+
+
+def test_timeseries_without_tdpf_has_no_tracker():
+    """A run without TDPF must not create a thermal tracker at all."""
+    from pandapower.timeseries.run_time_series import init_time_series
+
+    net = _constant_load_net(n_steps=2)
+    ts_variables = init_time_series(net, range(2), verbose=False)
+
+    assert ts_variables["transformer_thermal_tracker"] is None
 
 
 if __name__ == "__main__":
