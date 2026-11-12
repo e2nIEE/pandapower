@@ -78,8 +78,16 @@ _PROFILE_START = datetime(2000, 1, 1)
 _COOLING_TYPES = ("ONAN", "ONAF")
 
 
-def _cooling_type(cooling_type: str) -> "CoolerType":
-    """Map a pandapower cooling type string to the library enum."""
+def _cooling_type(cooling_type: str | None) -> "CoolerType":
+    """Map a pandapower cooling type string to the library enum.
+
+    An empty value (``None``, NaN or ``pd.NA``) falls back to ONAN, which is the same default the power
+    flow applies when the ``cooling_type`` column is absent or empty. The defaulting happens here and not
+    only in the caller, because ``calculate_transformer_temperatures`` is also a direct entry point that
+    a partially populated column can reach without ``runpp`` normalising it first.
+    """
+    if pd.isna(cooling_type):
+        return CoolerType.ONAN
     normalised = str(cooling_type).strip().upper()
     if normalised not in _COOLING_TYPES:
         raise ValueError(f"Unknown cooling_type {cooling_type!r}, must be one of {_COOLING_TYPES}")

@@ -25,6 +25,7 @@ checks the value that follows from the pandapower defaults instead.
 """
 
 import numpy as np
+import pandas as pd
 import pytest
 
 from pandapower import pandapowerNet
@@ -681,6 +682,69 @@ def test_direct_call_without_parameter_columns_trafo3w():
 
     calculate_transformer_temperatures(net)
     assert np.isfinite(net.res_trafo3w.at[0, TEMPERATURE_COLUMN])
+
+
+@pytest.mark.parametrize("null_value", [np.nan, pd.NA, None])
+def test_direct_call_with_null_cooling_type_uses_onan(null_value):
+    """A partially populated ``cooling_type`` column must not skip the direct calculation.
+
+    The direct entry point does not run the power flow validation that fills empty cooling types, so a
+    present but empty value reaches `_cooling_type` unchanged and has to fall back to ONAN there.
+    """
+    net = _two_bus_net()
+    runpp(net, tdpf=False)
+    net.trafo["cooling_type"] = pd.Series([null_value], index=net.trafo.index, dtype="object")
+
+    calculate_transformer_temperatures(net)
+
+    assert np.isfinite(net.res_trafo.at[0, TEMPERATURE_COLUMN])
+    # the null value falls back to ONAN, which is the same result as an explicit ONAN
+    onan_net = _two_bus_net()
+    runpp(onan_net, tdpf=False)
+    onan_net.trafo["cooling_type"] = "ONAN"
+    calculate_transformer_temperatures(onan_net)
+    assert net.res_trafo.at[0, TEMPERATURE_COLUMN] == pytest.approx(onan_net.res_trafo.at[0, TEMPERATURE_COLUMN])
+
+
+@pytest.mark.parametrize("null_value", [np.nan, pd.NA])
+def test_direct_call_with_null_cooling_type_trafo3w(null_value):
+    net = _three_bus_net()
+    runpp(net, tdpf=False)
+    net.trafo3w["cooling_type"] = pd.Series([null_value], index=net.trafo3w.index, dtype="object")
+
+    calculate_transformer_temperatures(net)
+
+    assert np.isfinite(net.res_trafo3w.at[0, TEMPERATURE_COLUMN])
+
+
+def test_direct_call_with_partially_populated_cooling_type():
+    """Empty and explicit entries in the same column must be handled independently."""
+    net = pandapowerNet(name="trafo_thermal_partial_cooling")
+    hv_bus, lv_bus_1, lv_bus_2 = create_buses(net, nr_buses=3, vn_kv=[110.0, 10.0, 20.0])
+    create_ext_grid(net, hv_bus)
+    create_transformer_from_parameters(net, hv_bus=hv_bus, lv_bus=lv_bus_1, **TRAFO_PARAMS)
+    create_transformer_from_parameters(net, hv_bus=hv_bus, lv_bus=lv_bus_2, **TRAFO_PARAMS)
+    create_load(net, lv_bus_1, p_mw=20.0, q_mvar=5.0)
+    create_load(net, lv_bus_2, p_mw=20.0, q_mvar=5.0)
+    runpp(net, tdpf=False)
+    net.trafo["cooling_type"] = pd.Series([np.nan, "ONAF"], index=net.trafo.index, dtype="object")
+
+    calculate_transformer_temperatures(net, dt_minutes=60.0)
+
+    # neither transformer is skipped
+    assert np.isfinite(net.res_trafo[TEMPERATURE_COLUMN]).all()
+    # the explicit ONAF is still honoured, i.e. it is not silently replaced by the ONAN default
+    onaf_net = pandapowerNet(name="trafo_thermal_explicit_onaf")
+    hv_bus, lv_bus_1, lv_bus_2 = create_buses(onaf_net, nr_buses=3, vn_kv=[110.0, 10.0, 20.0])
+    create_ext_grid(onaf_net, hv_bus)
+    create_transformer_from_parameters(onaf_net, hv_bus=hv_bus, lv_bus=lv_bus_1, **TRAFO_PARAMS)
+    create_transformer_from_parameters(onaf_net, hv_bus=hv_bus, lv_bus=lv_bus_2, **TRAFO_PARAMS)
+    create_load(onaf_net, lv_bus_1, p_mw=20.0, q_mvar=5.0)
+    create_load(onaf_net, lv_bus_2, p_mw=20.0, q_mvar=5.0)
+    runpp(onaf_net, tdpf=False)
+    onaf_net.trafo["cooling_type"] = "ONAF"
+    calculate_transformer_temperatures(onaf_net, dt_minutes=60.0)
+    assert net.res_trafo.at[1, TEMPERATURE_COLUMN] == pytest.approx(onaf_net.res_trafo.at[1, TEMPERATURE_COLUMN])
 
 
 # --------------------------------------------------------------- documentation examples
