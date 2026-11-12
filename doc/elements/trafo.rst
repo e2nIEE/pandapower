@@ -35,6 +35,11 @@ Table Structure
 
 .. note:: The transformer loading constraint for the optimal power flow corresponds to the option trafo_loading="current":
 
+.. note:: The columns ``cooling_type`` and ``air_temperature_degree_celsius`` are only used by the
+    transformer thermal calculation of the temperature dependent power flow, see
+    :ref:`Transformer temperatures <tdpf_transformer_temperatures>`. They default to ``"ONAN"`` (Oil Natural, Air Natural) and
+    ``35`` °C, so they can be left empty.
+
 .. note:: vkr_percent can be calculated as follow :
 
     .. math::
@@ -403,6 +408,10 @@ Result Tables
     :file: table_structures/res_trafo.csv
     :header-rows: 1
     :delim: ,
+
+.. note:: With ``runpp(tdpf=True)`` the columns ``top_oil_temperature_degree_celsius``,
+    ``hot_spot_temperature_degree_celsius`` and ``temperature_degree_celsius`` are added, see
+    :ref:`Transformer temperatures <tdpf_transformer_temperatures>`.
 
 .. math::
    :nowrap:
