@@ -130,9 +130,38 @@ def run_time_step(
         pf_converged = False
         pf_not_converged(time_step, ts_variables)
 
+    _advance_transformer_thermal_tracker(net, ts_variables, pf_converged)
+
     output_writer_fct(net, time_step, pf_converged, ctrl_converged, ts_variables)
 
     finalize_step(ts_variables["controller_order"], time_step)
+
+
+def _advance_transformer_thermal_tracker(net, ts_variables, pf_converged):
+    """Chain the transformer top-oil temperature from this time step into the next one.
+
+    The thermal model inside ``runpp`` has no memory: it always starts from the cold start condition
+    unless it is given the previous top-oil temperature. In a time series that would make every step
+    start from ambient, so the recursive IEC 60076-7 model must be advanced once per completed step.
+    This runs after the control loop finished, so it sees the final loading of the step.
+    """
+    tracker = ts_variables.get("transformer_thermal_tracker")
+    if tracker is None or not pf_converged:
+        return
+    options = net.get("_options", {})
+    if not options.get("tdpf", False):
+        return
+
+    from pandapower.pf.transformer_thermal import dt_minutes_from_options
+
+    tracker.run(net, dt_minutes=dt_minutes_from_options(options))
+
+
+def _create_transformer_thermal_tracker():
+    """The thermal state tracker, or None if the optional library is not installed."""
+    from pandapower.pf.transformer_thermal import TRANSFORMER_THERMAL_AVAILABLE, TransformerThermalTracker
+
+    return TransformerThermalTracker() if TRANSFORMER_THERMAL_AVAILABLE else None
 
 
 def _check_controller_recyclability(net):
@@ -157,7 +186,20 @@ def _check_controller_recyclability(net):
     return recycle
 
 
-def _check_output_writer_recyclability(net, recycle, run):
+def _tdpf_requested(net, **kwargs):
+    """Whether the requested power flow configuration enables the temperature dependent power flow.
+
+    The thermal model runs inside every solve, but the voltage-only recycle path returns before the
+    results are extracted, so it would skip the transformer temperatures. The decision therefore has to
+    be based on the requested options, not only on the variables the output writer happens to log.
+    """
+    user_options = net.get("user_pf_options", {}) or {}
+    if user_options.get("pf_options"):
+        user_options = user_options["pf_options"]
+    return bool(kwargs.get("tdpf", False) or user_options.get("tdpf", False))
+
+
+def _check_output_writer_recyclability(net, recycle, run, tdpf=False):
     if "output_writer" not in net:
         raise ValueError("OutputWriter not defined")
     ow = net.output_writer.at[0, "object"]
@@ -178,9 +220,13 @@ def _check_output_writer_recyclability(net, recycle, run):
             recycle["only_v_results"] = False
             recycle["batch_read"] = False
             return recycle
-        if table in ("res_trafo", "res_trafo3w") and variable in _TRANSFORMER_THERMAL_VARIABLES:
-            # the transformer temperatures are post-processing results that are not part of the batch
-            # functions, so they must be read from the result tables of each time step
+        if tdpf or (table in ("res_trafo", "res_trafo3w") and variable in _TRANSFORMER_THERMAL_VARIABLES):
+            # The transformer thermal model runs as post-processing in every solve, but the
+            # voltage-only recycle path returns before the results are extracted. It therefore never
+            # produces new temperatures, so it must not be used when tdpf is requested -- even if the
+            # output writer logs no thermal variable, because the network would then keep a stale
+            # temperature. The thermal variables additionally are not part of the batch functions, so
+            # they must be read from the result tables of each time step.
             recycle["only_v_results"] = False
             recycle["batch_read"] = False
             return recycle
@@ -217,7 +263,12 @@ def get_recycle_settings(net, **kwargs):
         recycle = _check_controller_recyclability(net)
         # if still recycle is not None, also check for fast output_writer features
         if recycle is not False:
-            recycle = _check_output_writer_recyclability(net, recycle, kwargs.get("run", kwargs.get("run_control_fct")))
+            recycle = _check_output_writer_recyclability(
+                net,
+                recycle,
+                kwargs.get("run", kwargs.get("run_control_fct")),
+                tdpf=_tdpf_requested(net, **kwargs),
+            )
 
     return recycle
 
@@ -289,6 +340,10 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
     ts_variables["continue_on_divergence"] = continue_on_divergence
     # print settings
     ts_variables["verbose"] = verbose
+    # one tracker for the whole run, so that the top-oil temperature is carried from step to step
+    ts_variables["transformer_thermal_tracker"] = (
+        _create_transformer_thermal_tracker() if _tdpf_requested(net, **kwargs) else None
+    )
 
     if logger.level != 10 and verbose:
         # simple progress bar
