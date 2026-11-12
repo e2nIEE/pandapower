@@ -4,12 +4,12 @@ import pytest
 import pandapower.networks as pn
 from pandapower import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import (
+    NETWORKS_EXCLUDED_FROM_VALIDATION,
     ValidationIssue,
     format_validation_errors,
-    NETWORKS_EXCLUDED_FROM_VALIDATION,
     validate_network,
 )
-from pandapower.networks import example_simple
+from pandapower.networks import example_multivoltage, example_simple
 
 
 @pytest.fixture
@@ -84,9 +84,12 @@ class TestValidateNetworkCollectErrors:
         assert "more" in str(issue)
 
     def test_schema_level_issue_is_readable(self):
-        from pandapower.networks import example_multivoltage
+        net = example_multivoltage()
+        # a single set tap column violates the trafo tap group dependency, which is a
+        # schema level (dataframe) check rather than a column check
+        net.trafo.loc[net.trafo.index[0], "tap_pos"] = 3.0
 
-        errors = validate_network(example_multivoltage(), collect_errors=True)
+        errors = validate_network(net, collect_errors=True)
 
         message = str(errors["trafo"][0])
         assert "tap configuration columns have dependency violations" in message
@@ -178,6 +181,7 @@ class TestValidationIssue:
         assert str(issue) == "line: something is wrong"
         assert repr(issue) == "line: something is wrong"
 
+
 class TestExcludedNetworks:
     """Tests for the NETWORKS_EXCLUDED_FROM_VALIDATION skip list."""
 
@@ -192,6 +196,11 @@ class TestExcludedNetworks:
         net = pn.case11_iwamoto()
         validate_network(net, groups_to_validate="sc")
         validate_network(net, groups_to_validate=["sc", "3ph"])
+
+    def test_excluded_network_returns_empty_dict_with_collect_errors(self):
+        net = pn.case11_iwamoto()
+        assert validate_network(net, collect_errors=True) == {}
+        assert validate_network(net, collect_errors=False) is None
 
     def test_exclusion_is_name_based_not_content_based(self):
         """A net with the same invalid data but a different name must still be validated."""

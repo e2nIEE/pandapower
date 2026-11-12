@@ -81,7 +81,7 @@ class TestTrafoRequiredFields:
                 itertools.product(["hv_bus", "lv_bus"], positiv_ints_plus_zero),
                 itertools.product(["sn_mva", "vn_hv_kv", "vn_lv_kv"], positiv_floats),
                 itertools.product(["pfe_kw"], positiv_floats_plus_zero),
-                itertools.product(["shift_degree","vkr_percent",  "i0_percent", "vk_percent"], all_allowed_floats),
+                itertools.product(["shift_degree", "vkr_percent", "i0_percent", "vk_percent"], all_allowed_floats),
                 itertools.product(["parallel"], positiv_ints),
                 itertools.product(["in_service"], bools),
             )

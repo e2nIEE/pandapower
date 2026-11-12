@@ -116,7 +116,6 @@ def _dtype_name(dtype) -> str:
     return text
 
 
-
 def _build_message(element: str, error: pa.errors.SchemaError) -> str:
     """
     Create a user readable message for a single pandera ``SchemaError``.
@@ -304,7 +303,8 @@ def validate_network(
     net_name = net.get("name")
     if net_name in NETWORKS_EXCLUDED_FROM_VALIDATION:
         logger.info(f"Skipping validation of network '{net_name}': {NETWORKS_EXCLUDED_FROM_VALIDATION[net_name]}")
-        return
+        # nothing is validated, so there are no issues to report
+        return {} if collect_errors else None
 
     # Normalize groups_to_validate to a set
     if groups_to_validate is None:
