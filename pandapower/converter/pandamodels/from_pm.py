@@ -21,6 +21,7 @@ import pandas as pd
 
 from pandapower.auxiliary import _clean_up
 from pandapower.network import pandapowerNet
+from pandapower.opf.pm_storage import storage_ppci_gens
 from pandapower.optimal_powerflow import OPFNotConverged
 from pandapower.pypower.idx_brch import BR_STATUS, PF, PT, QF, QT
 from pandapower.pypower.idx_bus import VA, VM
@@ -75,6 +76,7 @@ def _read_multinetwork_results(net: pandapowerNet, ppc, ppci, sol):
         time_step = from_time_step + int(nw) - 1
         soli = sol["nw"][nw]
         pm_results_to_ppc_results_one_time_step(ppci, soli, va_in_degrees)
+        _storage_results_to_ppci(net, ppci, soli)
         add_time_series_data_to_net(neti, net.controller, time_step)
         _extract_results(neti, _copy_results_ppci_to_ppc(ppci, ppc, net._options["mode"]))
         add_storage_results(neti, soli)
@@ -94,6 +96,21 @@ def _read_multinetwork_results(net: pandapowerNet, ppc, ppci, sol):
         for column in stacked.columns:
             res_ts_opt[f"{table}.{column}"] = stacked[column].unstack()
     return res_ts_opt
+
+
+def _storage_results_to_ppci(net: pandapowerNet, ppci, result_pmi):
+    """
+    The generators of the optimized storages are deactivated in PowerModels. They get the power of the storage
+    model, so the bus results contain the storage power (generator: injection, storage: consumption).
+    """
+    storage = result_pmi.get("storage")
+    if not storage:
+        return
+    for pp_idx, ppci_gen in zip(*storage_ppci_gens(net, ppci)):
+        sol = storage.get(str(pp_idx + 1))
+        if sol is not None:
+            ppci["gen"][ppci_gen, PG] = -_float(sol["ps"])
+            ppci["gen"][ppci_gen, QG] = -_float(sol["qs"])
 
 
 def add_storage_results(net: pandapowerNet, result_pmi):

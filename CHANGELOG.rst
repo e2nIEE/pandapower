@@ -3,6 +3,7 @@ Change Log
 
 [upcoming 4.0.0] - 2026-..-..
 -------------------------------
+- [FIXED] ``runpm_storage_opf``: a controllable storage was optimized twice, by the PowerModels storage model and as an additional generator without power limits at the storage bus. The generator is now deactivated, so only the storage model is optimized. Non-controllable storages are no longer added to the storage model and keep their fixed power. The apparent power limit (``thermal_rating``) of the storage model is ``sn_mva`` or, if not given, derived from the power limits instead of ``max_e_mwh``, and missing or NaN values in ``max_p_mw``, ``min_p_mw``, ``max_q_mvar`` and ``min_q_mvar`` fall back to ``|p_mw|`` / ``|q_mvar|``. Power ranges the storage model cannot represent (``min_p_mw > 0`` or ``max_p_mw < 0``) of in service storages raise an error, the element lookups of a previous run are cleared before a PowerModels conversion, the active power costs (``poly_cost`` / ``pwl_cost``) of the storages are passed in ``pm["storage"]`` in the format of the PowerModels gen costs (``model``, ``ncost``, ``cost`` as a function of the storage power ``ps``), so that PandaModels.jl can add them to the objective, ``res_bus`` contains the optimized storage power and ``read_pm_storage_results`` returns NaN as state of charge of storages which are not optimized (PandaModels.jl#124)
 - [FIXED] fix symmetrical PST: before they were handled as asymmetric tap changer, now as proper symmetrical according to UCTE-DEF
 - [ADDED] transformer documentation: overview table of the tap changer models with the columns to set
 - [FIXED] fix PF2pp converter to work with pandapower 4.0: added init_results into it and fixed std_type saving
@@ -21,6 +22,9 @@ Change Log
 - [CHANGED] ran ruff format for whole project
 - [CHANGED] moved test module to top level
 - [ADDED] pandera network validation
+- [ADDED] ``validate_network`` with ``collect_errors=True`` collects all validation issues of a network instead of raising on the first one, and returns human readable ``ValidationIssue`` objects that can be printed or formatted with ``format_validation_errors``
+- [ADDED] diagnostic: new default check ``schema_validation`` (``SchemaValidation``) that validates all element tables against the pandera ``network_schema`` schemas and reports every structural, data type and value range violation of the network at once
+- [FIXED] ``Diagnostic.register_function``: the ``argument_names`` and ``name`` parameters are now optional as documented, so ``register_function(some_function())`` no longer raises ``TypeError``
 - [CHANGED] removed deprecated trafo support characteristics table (replaced by trafo_characteristc_table)
 - [ADDED] create function for trafo characteristic entries
 - [ADDED] converter for trafo characteristics
@@ -35,6 +39,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] initialized out-of-service short-circuit branch result padding to zero.
 - [CHANGED] PandaModels.jl interface: the network is sent in MATPOWER units (MW, MVAr, degrees, ``per_unit=False``) and converted to per unit by PandaModels.jl, which is now required in version >= 0.10. The new keyword ``pm_base_mva`` (default ``net.sn_mva``) sets the per unit base; Ipopt is much faster on a base fitting the grid (e.g. case118: 0.1 s at 100 MVA instead of 2.2 s at 1 MVA).
 - [CHANGED] time series optimizations (``runpm_storage_opf``, ``runpm_multi_vstab``, ``runpm_multi_qflex``) store their results in ``net.res_ts_opt`` as dict ``"res_<table>.<column>"`` -> DataFrame (index: time steps, columns: element indices) instead of one copy of the net per time step. Reading the results is several times faster.
 - [CHANGED] ``juliapkg.json`` is shipped with the pandapower package; PandaModels.jl is no longer installed or built at runtime. ``pdm_dev_mode`` is deprecated; a local checkout is registered with ``juliapkg.add(..., path=..., dev=True)``.

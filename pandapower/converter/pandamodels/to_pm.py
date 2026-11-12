@@ -217,6 +217,11 @@ logger = logging.getLogger(__name__)
 
 
 def convert_to_pm_structure(net, from_time_step=None, to_time_step=None, **kwargs):
+    """
+    Converts the pandapower net to the PowerModels data structure with the options in net._options.
+
+    Returns the net, the PowerModels dict, the ppc and the ppci.
+    """
     if net["_options"]["voltage_depend_loads"] and not (
         np.allclose(net.load.const_z_p_percent.values, 0)
         and np.allclose(net.load.const_i_p_percent.values, 0)
@@ -231,6 +236,10 @@ def convert_to_pm_structure(net, from_time_step=None, to_time_step=None, **kwarg
         verify_results(net, mode=net["_options"]["mode"])
     else:
         init_results(net)
+    # clear the lookups of a previous run, they could refer to elements which are not in this ppc
+    net._pd2ppc_lookups = {
+        key: np.array([], dtype=np.int64) for key in ["bus", "bus_dc", "ext_grid", "gen", "branch", "branch_dc"]
+    }
     ppc, ppci = _pd2ppc(net)
     ppci = build_ne_branch(net, ppci)
     net["_ppc_opf"] = ppci
