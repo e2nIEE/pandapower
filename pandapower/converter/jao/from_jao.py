@@ -1,9 +1,12 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
+import difflib
 import json
 import logging
 import os
+import re
+import unicodedata
 from copy import deepcopy
 from functools import reduce
 
@@ -155,16 +158,6 @@ def _data_correction(data: dict[str, pd.DataFrame], html_str: str | None, max_i_
     :return: corrected html_str
     :rtype: str
     """
-    # old name -> new name
-    rename_locnames = [
-        ("PSTMIKULOWA", "PST MIKULOWA"),
-        ("Chelm", "CHELM"),
-        ("OLSZTYN-MATK", "OLSZTYN-MATKI"),
-        ("OLSZTYN-MATKII", "OLSZTYN-MATKI"),
-        ("STANISLAWOW", "Stanislawow"),
-        ("VIERRADEN", "Vierraden"),
-    ]
-
     # --- Line and Tieline data ---------------------------
     for key in ["Lines", "Tielines"]:
         # --- correct column names
@@ -189,11 +182,24 @@ def _data_correction(data: dict[str, pd.DataFrame], html_str: str | None, max_i_
         ] + [("Maximum Current Imax (A)", "Fixed")]
         _float_col_comma_correction(data, key, col_names)
 
-        # --- consolidate to one way of name capitalization
-        for loc_name in [(None, "NE_name"), ("Substation_1", "Full_name"), ("Substation_2", "Full_name")]:
-            data[key].loc[:, loc_name] = (
-                data[key].loc[:, loc_name].str.strip().apply(_multi_str_repl, repl=rename_locnames)
-            )
+    # --- consolidate inconsistent location name spellings
+    # Build the raw -> display name mapping from the bus names in the Lines and Tielines sheets.
+    # Names that only differ in case, spacing, punctuation, accents or special characters are
+    # merged onto a single display spelling.
+    bus_name_series: list[pd.Series] = []
+    for key in ["Lines", "Tielines"]:
+        for subst in ["Substation_1", "Substation_2"]:
+            bus_name_series.append(data[key][(subst, "Full_name")])
+    bus_names: pd.Series = pd.concat(bus_name_series, ignore_index=True)
+    locname_mapping = _locname_display_names(bus_names)
+    rename_locnames = sorted(
+        ((raw, disp) for raw, disp in locname_mapping.items() if raw != disp), key=lambda x: len(x[0]), reverse=True
+    )
+
+    for key in ["Lines", "Tielines"]:
+        data[key][(None, "NE_name")] = _replace_substrings(data[key][(None, "NE_name")], rename_locnames)
+        for loc_name in [("Substation_1", "Full_name"), ("Substation_2", "Full_name")]:
+            data[key][loc_name] = _replace_locnames(data[key][loc_name], locname_mapping)
     html_str = _multi_str_repl(html_str, rename_locnames)  # type: ignore[arg-type]
 
     # --- Transformer data --------------------------------
@@ -201,7 +207,7 @@ def _data_correction(data: dict[str, pd.DataFrame], html_str: str | None, max_i_
 
     # --- fix Locations
     loc_name = ("Location", "Full Name")
-    data[key].loc[:, loc_name] = data[key].loc[:, loc_name].str.strip().apply(_multi_str_repl, repl=rename_locnames)
+    data[key][loc_name] = _replace_substrings(data[key][loc_name], rename_locnames)
 
     # --- fix data in nonnull_taps
     taps = (
@@ -838,32 +844,40 @@ def _allocate_trafos_to_buses_and_create_buses(
             f"trafo_{side}_to_bus_deviation",
         )
         name_vn_series = pd.Series(tuple(zip(trafo_location_names, trafo_connections[trafo_vn_col])))
-        isin = name_vn_series.isin(bus_idx.index)
+        isin = name_vn_series.isin(bus_idx.index).to_numpy()
+        has_name = trafo_location_names.notna().to_numpy()
         trafo_connections[has_dev_col] = ~isin
         trafo_connections.loc[isin, bus_col] = bus_idx.loc[name_vn_series.loc[isin]].values
 
-        # --- code to find bus locations with vn deviation
+        # --- unresolved locations: a new bus at the trafo's rated voltage is created later
+        unresolved = ~has_name
+        trafo_connections.loc[unresolved, next_col] = trafo_connections.loc[unresolved, trafo_vn_col].values
+        trafo_connections.loc[unresolved, rel_dev_col] = np.inf
+
+        # --- resolved but no exact (name, vn) match: code to find bus locations with vn deviation
+        need_nearest = ~isin & has_name
         next_vn = np.array(
             [
                 bus_idx.loc[tln.name].index.values[
                     (pd.Series(bus_idx.loc[tln.name].index) - getattr(tln, trafo_vn_col)).abs().idxmin()
                 ]
-                for tln in trafo_connections.loc[~isin, ["name", trafo_vn_col]].itertuples()
+                for tln in trafo_connections.loc[need_nearest, ["name", trafo_vn_col]].itertuples()
             ]
         )
-        trafo_connections.loc[~isin, next_col] = next_vn
-        rel_dev = np.abs(next_vn - trafo_connections.loc[~isin, trafo_vn_col].values) / next_vn
-        trafo_connections.loc[~isin, rel_dev_col] = rel_dev
-        trafo_connections.loc[~isin, bus_col] = bus_idx.loc[
-            list(zip(trafo_connections.loc[~isin, "name"], trafo_connections.loc[~isin, next_col]))
+        trafo_connections.loc[need_nearest, next_col] = next_vn
+        rel_dev = np.abs(next_vn - trafo_connections.loc[need_nearest, trafo_vn_col].values) / next_vn
+        trafo_connections.loc[need_nearest, rel_dev_col] = rel_dev
+        trafo_connections.loc[need_nearest, bus_col] = bus_idx.loc[
+            list(zip(trafo_connections.loc[need_nearest, "name"], trafo_connections.loc[need_nearest, next_col]))
         ].values
 
         # --- create buses to avoid too large vn deviations between nodes and transformers
         need_bus_creation = trafo_connections[rel_dev_col] > rel_deviation_threshold_for_trafo_bus_creation
+        fallback_names = pd.Series(trafo_bus_names.astype(str).str.strip().to_numpy(), index=trafo_connections.index)
         new_bus_data = pd.DataFrame(
             {
                 "vn_kv": trafo_connections.loc[need_bus_creation, trafo_vn_col].values,
-                "name": trafo_connections.loc[need_bus_creation, "name"].values,
+                "name": trafo_connections.loc[need_bus_creation, "name"].fillna(fallback_names).values,
                 "TSO": data[key].loc[need_bus_creation, ("Location", "TSO")].values,
             }
         )
@@ -935,8 +949,23 @@ def _allocate_trafos_to_buses_and_create_buses(
 
 
 def _find_trafo_locations(trafo_bus_names, bus_location_names):
-    # --- split (original and lower case) strings at " " separators to remove impeding parts for
-    # identifying the location names
+    """Identifies the bus location name for each transformer from its "Location / Full Name".
+
+    The transformer names are reduced to the impeding-part-free location (joined and longest part)
+    and compared to the bus location names on normalized keys. Remaining names are resolved by
+    fuzzy matching (only clear best matches) and, if the name contains a voltage level, by matching
+    the name base with that voltage. Unresolved transformers are returned as ``None``; the caller
+    then creates a new bus at the transformer's rated voltage.
+
+    Returns a Series of bus location names (or ``None``) aligned with ``trafo_bus_names``.
+    """
+    bus_location_names = sorted(set(bus_location_names))
+    bus_key_to_name: dict[str, str] = {}
+    for name in bus_location_names:
+        bus_key_to_name.setdefault(_normalize_locname(name), name)
+
+    # --- split strings at " " separators to remove impeding parts for identifying the location
+    # --- names
     trafo_bus_names_expended = (
         trafo_bus_names.str.split(r"[ ]+|-A[0-9]+|-TD[0-9]+|-PF[0-9]+", expand=True).fillna("").replace(" ", "")
     )
@@ -963,23 +992,85 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
     )
     trafo_bus_names_expended[to_drop] = ""
 
-    # --- reconstruct name strings for identification
+    # --- reconstruct name strings for identification and compare on normalized keys
     trafo_bus_names_joined = trafo_bus_names_expended.where(~to_drop).fillna("").agg(" ".join, axis=1).str.strip()
     trafo_bus_names_longest_part = trafo_bus_names_expended.apply(lambda row: max(row, key=len), axis=1)
-    joined_in_buses = trafo_bus_names_joined.isin(bus_location_names)
-    longest_part_in_buses = trafo_bus_names_longest_part.isin(bus_location_names)
+    joined_keys = trafo_bus_names_joined.map(_normalize_locname)
+    longest_keys = trafo_bus_names_longest_part.map(_normalize_locname)
+    joined_in_buses = joined_keys.isin(bus_key_to_name)
+    longest_part_in_buses = longest_keys.isin(bus_key_to_name)
 
-    # --- check whether all name strings point at location names of the buses
-    if n_bus_names_not_found := len(joined_in_buses) - sum(joined_in_buses | longest_part_in_buses):
-        raise ValueError(
-            f"For {n_bus_names_not_found} Tranformers, no suitable bus location names were found, "
-            f"i.e. the algorithm did not find a (part) of Transformers-Location-Full Name that fits"
-            " to Substation_1 or Substation_2 data in Lines or Tielines sheet."
+    # --- resolve glued noise prefixes, e.g. "PSTMIKULOWA" -> "MIKULOWA"
+    def _strip_glued_prefix(part: str) -> str:
+        stripped = re.sub(r"^(?:PST|TR|TFO)(?=[A-Za-z]{3,})", "", part)
+        return stripped if stripped != part else ""
+
+    unresolved = ~(joined_in_buses | longest_part_in_buses)
+    resolved_from_glued = pd.Series("", index=trafo_bus_names_longest_part.index)
+    for idx in trafo_bus_names_longest_part.index[unresolved]:
+        for part in [p for p in trafo_bus_names_expended.loc[idx] if p]:
+            stripped_key = _normalize_locname(_strip_glued_prefix(part))
+            if stripped_key in bus_key_to_name:
+                resolved_from_glued.at[idx] = bus_key_to_name[stripped_key]
+                break
+    glued_in_buses = resolved_from_glued.astype(bool)
+
+    # --- further attempts for still unresolved names: fuzzy matching and voltage-aware matching
+    unresolved = ~(joined_in_buses | longest_part_in_buses | glued_in_buses)
+    bus_by_base: dict[str, list[tuple[int | None, str]]] = {}
+    for bus_key, bus_name in bus_key_to_name.items():
+        base, voltage = _split_name_voltage(bus_key)
+        bus_by_base.setdefault(base, []).append((voltage, bus_name))
+
+    resolved_extra = pd.Series("", index=trafo_bus_names_longest_part.index)
+    unresolved_names: list[str] = []
+    if unresolved.any():
+        bus_keys = list(bus_key_to_name)
+        for idx in trafo_bus_names_longest_part.index[unresolved]:
+            raw_name = trafo_bus_names.at[idx]
+            search_key = longest_keys.at[idx] or _normalize_locname(raw_name)
+
+            # --- fuzzy matching: accept only a clear best match
+            scored = sorted(
+                ((difflib.SequenceMatcher(None, search_key, key).ratio(), key) for key in bus_keys), reverse=True
+            )
+            best_ratio, best_key = scored[0]
+            second_ratio = scored[1][0] if len(scored) > 1 else 0.0
+            if best_ratio >= 0.85 and best_ratio - second_ratio >= 0.03:
+                resolved_extra.at[idx] = bus_key_to_name[best_key]
+                logger.info(
+                    f"Transformer {raw_name!r} was matched to bus location {bus_key_to_name[best_key]!r} "
+                    f"by fuzzy matching (similarity {best_ratio:.3f})."
+                )
+                continue
+
+            # --- voltage-aware matching: same name base, bus voltage equals the voltage in the name
+            voltage = _parse_voltage_kv(raw_name)
+            if voltage is not None:
+                base, _ = _split_name_voltage(search_key)
+                candidates = sorted({name for v, name in bus_by_base.get(base, []) if v == voltage})
+                if len(candidates) == 1:
+                    resolved_extra.at[idx] = candidates[0]
+                    logger.info(
+                        f"Transformer {raw_name!r} was matched to bus location {candidates[0]!r} "
+                        f"by name and voltage level ({voltage} kV)."
+                    )
+                    continue
+
+            unresolved_names.append(raw_name)
+
+    if unresolved_names:
+        logger.warning(
+            f"For {len(unresolved_names)} transformer(s), no bus location could be determined from the "
+            f"transformer location names. A new bus at the transformer's rated voltage will be created for "
+            f"each of them:\n" + "\n".join(f"  {name!r}" for name in unresolved_names)
         )
 
-    # --- set the trafo location names and trafo bus indices respectively
-    trafo_location_names = trafo_bus_names_longest_part
-    trafo_location_names.loc[joined_in_buses] = trafo_bus_names_joined
+    # --- set the trafo location names (actual bus names) to be used for the bus allocation
+    trafo_location_names = longest_keys.map(bus_key_to_name).where(longest_part_in_buses)
+    trafo_location_names = trafo_location_names.where(~joined_in_buses, joined_keys.map(bus_key_to_name))
+    trafo_location_names = trafo_location_names.where(~glued_in_buses, resolved_from_glued)
+    trafo_location_names = trafo_location_names.where(~resolved_extra.astype(bool), resolved_extra)
 
     return trafo_location_names
 
@@ -1058,6 +1149,82 @@ def _fill_geo_at_one_sided_branches_without_geo_extent(net: pandapowerNet):
         geo_avail = _check_geo_availablitiy(net)
 
     set_line_geodata_from_bus_geodata(net)
+
+
+def _normalize_locname(name: object) -> str:
+    """Returns a comparison key for a location name.
+
+    The key is insensitive to case, accents, spacing, punctuation and special characters
+    (e.g. "Rohrsdorf" and "Röhrsdorf", "T HAL-BYC" and "T HAL-BYĆ", "BAULER" and "Bauler" all map
+    to the same key).
+    """
+    if not isinstance(name, str):
+        return ""
+    st = name.replace("\xa0", " ").replace("\u00ad", "")
+    st = st.replace("\ufb00", "ff").replace("\ufb01", "fi").replace("\ufb02", "fl")
+    st = st.replace("\u00df", "ss").replace("\u1e9e", "SS")
+    st = unicodedata.normalize("NFKD", st)
+    st = "".join(char for char in st if not unicodedata.combining(char))
+    return re.sub(r"[^0-9a-z]+", " ", st.casefold()).strip()
+
+
+def _parse_voltage_kv(name: object) -> int | None:
+    """Returns the voltage level (kV) explicitly written in a name, e.g. "TR Ens 380kV TR 404" -> 380.
+
+    Only voltages in the range 60...800 kV are considered, so that transformer numbers such as "441"
+    are not mistaken for a voltage level.
+    """
+    for match in re.findall(r"(\d{2,3})\s*kV", str(name), flags=re.IGNORECASE):
+        if 60 <= int(match) <= 800:
+            return int(match)
+    return None
+
+
+def _split_name_voltage(normalized_name: str) -> tuple[str, int | None]:
+    """Splits a trailing voltage level off a normalized name, e.g. "eemshaven 380" -> ("eemshaven", 380)."""
+    tokens = normalized_name.split()
+    if tokens and tokens[-1].isdigit():
+        return " ".join(tokens[:-1]), int(tokens[-1])
+    return normalized_name, None
+
+
+def _locname_display_names(names: pd.Series) -> dict[str, str]:
+    """Maps each raw location name spelling to the display spelling of its normalized group.
+
+    For each group of spellings that share a normalization key, the display name is the most
+    frequent raw spelling, preferring mixed-case over ALL-CAPS, then alphabetical order.
+    """
+    names = names.dropna().astype(str).str.strip()
+    counts = names.value_counts()
+    groups: dict[str, list[str]] = {}
+    for name in counts.index:
+        groups.setdefault(_normalize_locname(name), []).append(name)
+
+    mapping: dict[str, str] = {}
+    for raws in groups.values():
+        mixed_case = [raw for raw in raws if raw != raw.upper()] or raws
+        display = min(mixed_case, key=lambda raw: (-counts[raw], raw))
+        for raw in raws:
+            mapping[raw] = display
+
+    merged = {key: raws for key, raws in groups.items() if len(raws) > 1}
+    if merged:
+        logger.info(f"Merged {len(merged)} groups of inconsistent location name spellings:")
+        for raws in merged.values():
+            logger.info(f"  {mapping[raws[0]]!r} <- {sorted(raws)}")
+
+    return mapping
+
+
+def _replace_locnames(names: pd.Series, mapping: dict[str, str]) -> pd.Series:
+    """Applies the raw -> display name mapping to a Series, keeping missing values untouched."""
+    stripped = names.where(names.isna(), names.astype(str).str.strip())
+    return stripped.map(lambda name: mapping.get(name, name) if isinstance(name, str) else name)
+
+
+def _replace_substrings(names: pd.Series, repl: list[tuple]) -> pd.Series:
+    """Strips and applies substring replacements to all non-missing string values of a Series."""
+    return names.map(lambda st: _multi_str_repl(st.strip(), repl) if isinstance(st, str) else st)
 
 
 def _multi_str_repl(st: str, repl: list[tuple]) -> str:

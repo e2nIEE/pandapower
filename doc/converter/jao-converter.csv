@@ -1,0 +1,29 @@
+pandapower table,pandapower column,JAO sheet,JAO column (typical, variants),Transformation/notes
+net.line,from_bus,"Lines, Tielines",Substation_1 / Full Name + Voltage_level(kV),Matched to an existing bus by name and VN, fuzzy name normalization applied.
+net.line,to_bus,"Lines, Tielines",Substation_2 / Full Name + Voltage_level(kV),Matched to an existing bus by name and VN, fuzzy name normalization applied.
+net.line,length_km,"Lines, Tielines",Electrical Parameters / Length_(km),"If 0 or NaN, set to 1 km (with log warning)."
+net.line,r_ohm_per_km,"Lines, Tielines","Electrical Parameters / Resistance_R(Ω) or (""resistance r ohm"")",Total R divided by Length (km).
+net.line,x_ohm_per_km,"Lines, Tielines","Electrical Parameters / Reactance_X(Ω) or (""reactance x ohm"")",Total X divided by Length (km).
+net.line,c_nf_per_km,"Lines, Tielines","Susceptance_B(μS) (or ""Susceptance_B (µS)"")",B_total/Length (km) is passed into c_nf_per_km (units μS/km)
+net.line,g_us_per_km,-,-,Not set (no JAO line conductance column used), defaults to 0 in pandapower.
+net.line,max_i_ka,"Lines, Tielines",Maximum Current Imax (A) / Fixed,"Converted A to kA, if missing, filled with max_i_ka_fillna."
+net.line,parallel,-,-,Not provided by JAO - defaults to 1.
+net.line,df,-,-,Not provided by JAO - defaults to 1.
+net.line,in_service,-,-,Not provided by JAO - defaults to True.
+net.bus,vn_kv,"Lines, Tielines","Voltage_level(kV) (Voltage_level (kV), Voltage_level [kV])",Numeric conversion
+net.bus,in_service,-,-,"Not provided by JAO, defaults to True."
+net.transformer,hv_bus,Transformers + Buses,Location / Full Name + Primary/Secondary Voltage,"High-voltage side bus index. Location matched to existing bus at required VN, if no exact VN, nearest VN at location is used or a new bus is created (per converter rules)."
+net.transformer,lv_bus,Transformers + Buses,Location / Full Name + Primary/Secondary Voltage,"Low-voltage side bus index, analogous to hv_bus. Ensured hv_bus != lv_bus (LV duplicated if necessary)."
+net.transformer,sn_mva,Transformers,Maximum Current Imax (A) primary (Fixed/Max) + VN,Rated apparent power [MVA]. Computed: sn_mva = √3 · Imax_primary(A) · vn_hv_kv(kV) / 1e3. Falls back to “Max” or global fill if Fixed is missing.
+net.transformer,vn_hv_kv,Transformers,Voltage level Primary/Secondary,"Rated HV voltage [kV], vn_hv_kv = max(Primary, Secondary)."
+net.transformer,vn_lv_kv,Transformers,Voltage level Primary/Secondary,"Rated LV voltage [kV], vn_lv_kv = min(Primary, Secondary)."
+net.transformer,vk_percent,Transformers,resistance r ohm, reactance x ohm,"Short-circuit voltage [%], compute per-unit r_k = R_ohm/z_base, x_k = X_ohm/z_base with z_base = vn_lv_kv²/s_n, vk% = sign(x_k)·√(r_k² + x_k²)·100."
+net.transformer,vkr_percent,Transformers,resistance r ohm,Real component of short-circuit voltage [%], vkr% = r_k·100 (same base as vk%).
+net.transformer,pfe_kw,Transformers,conductance g (μS),"Iron losses [kW], pfe_kw = g0 · sn_mva · 1e3, where g0 is per-unit conductance from G (μS)."
+net.transformer,i0_percent,Transformers,"susceptance b (μS), conductance g (μS)","No-load current [%], i0% = 100 · √(b0² + g0²) · (system sn_mva) / sn_mva, b0,g0 from B,G (μS) on transformer base."
+net.transformer,shift_degree,Transformers,theta degree,"Phase shift angle [deg], default 0 if missing."
+net.transformer,in_service,-,-,"Not provided by JAO, defaults to True."
+net.transformer,oltc,-,-,Optional in create_transformer_from_parameters. Defaults to False
+net.transformer,power_station_unit,-,-,"Not provided by JAO, defaults to False."
+net.transformer,leakage_resistance_ratio_hv,-,-,Ratio of transformer short-circuit resistance allocated on HV side (default 0.5).
+net.transformer,leakage_reactance_ratio_hv,-,-,Ratio of transformer short-circuit reactance allocated on HV side (default 0.5).
