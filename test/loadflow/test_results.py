@@ -838,7 +838,7 @@ def test_impedance_g_b():
     )
     create_load(net, 1, 20, 4)
 
-    runpp_with_consistency_checks(net, tolerance_mva=1e-12)
+    runpp_with_consistency_checks(net, tolerance=1e-12)
 
     assert np.allclose(net.res_bus.vm_pu, [1.000000, 0.986544], rtol=0, atol=1e-6)
     assert np.allclose(net.res_bus.va_degree, [0.000000, -0.817801], rtol=0, atol=1e-6)
