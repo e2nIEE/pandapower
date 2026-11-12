@@ -36,7 +36,7 @@ class TestShuntRequiredFields:
         list(
             itertools.chain(
                 itertools.product(["bus"], positiv_ints_plus_zero),
-                itertools.product(["p_mw"], positiv_floats_plus_zero),
+                itertools.product(["p_mw"], all_allowed_floats),
                 itertools.product(["q_mvar"], all_allowed_floats),
                 itertools.product(["vn_kv"], positiv_floats),
                 itertools.product(["step"], positiv_floats),
@@ -75,7 +75,7 @@ class TestShuntRequiredFields:
         list(
             itertools.chain(
                 itertools.product(["bus"], [float(np.nan), pd.NA, *negativ_ints, *not_ints_list]),
-                itertools.product(["p_mw"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
+                itertools.product(["p_mw"], [float(np.nan), pd.NA, *not_floats_list]),
                 itertools.product(["q_mvar"], [float(np.nan), pd.NA, *not_floats_list]),
                 itertools.product(["vn_kv"], [float(np.nan), pd.NA, *negativ_floats_plus_zero, *not_floats_list]),
                 itertools.product(
