@@ -22,6 +22,7 @@ from packaging.version import Version
 
 from pandapower.create._utils import add_column_to_df
 from pandapower.network import pandapowerNet
+from pandapower.pf.transformer_thermal import TRANSFORMER_THERMAL_AVAILABLE
 from pandapower.run import runpp
 
 logger = logging.getLogger(__name__)
@@ -154,20 +155,23 @@ def run_contingency(
         "bus": ["vm_pu"],
         **{key: ["loading_percent"] for key in ("line", "trafo", "trafo3w") if len(net[key]) > 0},
     }
-    if len(net.line) > 0 and (
+    tdpf_requested = (
         net.get("_options", {}).get("tdpf", False)
         or pf_options.get("tdpf", False)
         or pf_options_nminus1.get("tdpf", False)
-    ):
-        result_variables["line"].append("temperature_degree_celsius")
+    )
+    if tdpf_requested:
+        if len(net.line) > 0:
+            result_variables["line"].append("temperature_degree_celsius")
 
-    # the transformer temperatures of the thermal model (TDPF) are post-processing results. They are
-    # only collected if the columns actually exist, because the thermal calculation is skipped when its
-    # optional dependency is missing -- in that case the columns must not be reported.
-    for element in ("trafo", "trafo3w"):
-        res_table = net.get(f"res_{element}")
-        if len(net[element]) > 0 and res_table is not None and "temperature_degree_celsius" in res_table.columns:
-            result_variables[element].append("temperature_degree_celsius")
+        # transformer temperatures are post-processing results of the transformer thermal model. They
+        # are produced by every solve once tdpf is on, no matter whether the input network already
+        # carries the result column -- a fresh network does not, so the column cannot be used to
+        # decide this before the first solve.
+        if TRANSFORMER_THERMAL_AVAILABLE:
+            for element in ("trafo", "trafo3w"):
+                if len(net[element]) > 0:
+                    result_variables[element].append("temperature_degree_celsius")
 
     # for n-1
     for element, val in nminus1_cases.items():
@@ -422,7 +426,11 @@ def _update_contingency_results(
 ):
     for element, vars in result_variables.items():
         for var in vars:
-            val = net[f"res_{element}"][var].values
+            res_table = net[f"res_{element}"]
+            if var not in res_table.columns:
+                # e.g. the transformer temperature when no transformer took part in this solve
+                continue
+            val = res_table[var].values
             if nminus1:
                 if var == "loading_percent":
                     s = (
