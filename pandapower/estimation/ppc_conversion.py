@@ -99,31 +99,14 @@ def _initialize_voltage(net, init):
     return v_start, delta_start
 
 
-def _init_ppc(
-        net,
-        v_start,
-        delta_start,
-        calculate_voltage_angles,
-        algorithm="wls",
-        init="flat",
-        tolerance=1e-6,
-        maximum_iterations=50,
-        zero_injection="aux_bus",
-        fuse_buses_with_bb_switch="all",
-        estimator="wls",):
+def _init_ppc(net, v_start, delta_start, calculate_voltage_angles, se_options):
     # select elements in service and convert pandapower ppc to ppc
     _init_runse_options(
         net,
         v_start=v_start,
         delta_start=delta_start,
         calculate_voltage_angles=calculate_voltage_angles,
-        algorithm_se=algorithm,
-        init=init,
-        tolerance=tolerance,
-        maximum_iterations=maximum_iterations,
-        zero_injection=zero_injection,
-        fuse_buses_with_bb_switch=fuse_buses_with_bb_switch,
-        estimator=estimator
+        se_options=se_options
     )
     ppc, ppci = _pd2ppc(net)
 
@@ -763,8 +746,17 @@ def pp2eppci(
     tolerance=1e-6,
     maximum_iterations=50,
     fuse_buses_with_bb_switch="all",
-    estimator="wls"
+    estimator="wls",
 ):
+    se_options = {
+        "algorithm_se": algorithm,
+        "init": init,
+        "tolerance": tolerance,
+        "maximum_iterations": maximum_iterations,
+        "zero_injection": zero_injection,
+        "fuse_buses_with_bb_switch": fuse_buses_with_bb_switch,
+        "estimator": estimator,
+    }
     if isinstance(eppci, ExtendedPPCI):
         eppci.algorithm = algorithm
         eppci.data = _add_measurements_to_ppci(net, eppci.data, zero_injection, algorithm)
@@ -777,13 +769,7 @@ def pp2eppci(
             v_start=v_start,
             delta_start=delta_start,
             calculate_voltage_angles=calculate_voltage_angles,
-            algorithm=algorithm,
-            init=init,
-            tolerance=tolerance,
-            maximum_iterations=maximum_iterations,
-            zero_injection=zero_injection,
-            fuse_buses_with_bb_switch=fuse_buses_with_bb_switch,
-            estimator=estimator
+            se_options=se_options
         )
 
         # add measurements to ppci structure

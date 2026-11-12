@@ -1254,28 +1254,6 @@ def _add_sc_options(
     _add_options(net, options)
 
 
-def _add_se_options(
-        net: pandapowerNet,
-        algorithm_se="wls",
-        init="flat",
-        tolerance=1e-6,
-        maximum_iterations=50,
-        zero_injection="aux_bus",
-        fuse_buses_with_bb_switch="all",
-        estimator="wls"
-) -> None:
-
-    options = {
-        "algorithm_se": algorithm_se,
-        "init": init,
-        "tolerance": tolerance,
-        "maximum_iterations": maximum_iterations,
-        "zero_injection": zero_injection,
-        "fuse_buses_with_bb_switch": fuse_buses_with_bb_switch,
-        "estimator": estimator
-    }
-    _add_options(net, options)
-
 def _add_options(net: pandapowerNet, options: dict[str, Any]) -> None:
     double_parameters = set(net._options.keys()) & set(options.keys())
     if len(double_parameters) > 0:
@@ -2334,17 +2312,11 @@ def _init_runse_options(
     v_start: float | Literal["flat", "results"],
     delta_start: float | Literal["dc", "flat", "results"],
     calculate_voltage_angles: bool,
+    se_options,
     check_connectivity: bool = True,
     trafo_model: Literal["t", "pi"] = "t",
     trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
     switch_rx_ratio: int = 2,
-    algorithm_se="wls",
-    init="flat",
-    tolerance=1e-6,
-    maximum_iterations=50,
-    zero_injection="aux_bus",
-    fuse_buses_with_bb_switch="all",
-    estimator="wls",
     **kwargs: Any,
 ) -> None:
     net._options = {}
@@ -2363,16 +2335,7 @@ def _init_runse_options(
         voltage_depend_loads=False,
         trafo3w_losses=trafo3w_losses,
     )
-    _add_se_options(
-        net,
-        algorithm_se=algorithm_se,
-        init=init,
-        tolerance=tolerance,
-        maximum_iterations=maximum_iterations,
-        zero_injection=zero_injection,
-        fuse_buses_with_bb_switch=fuse_buses_with_bb_switch,
-        estimator=estimator,
-    )
+    _add_options(net, se_options)
     _add_pf_options(
         net,
         tolerance_mva=1e-8,
