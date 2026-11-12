@@ -175,12 +175,16 @@ def _data_correction(data: dict[str, pd.DataFrame], html_str: str | None, max_i_
             .replace("\xa0", max_i_ka_fillna * 1e3)
             .replace("-", max_i_ka_fillna * 1e3)
             .replace(" ", max_i_ka_fillna * 1e3)
+            .infer_objects(copy=False)
         )
         col_names = [
             ("Electrical Parameters", col_level1)
             for col_level1 in ["Length_(km)", "Resistance_R(Ω)", "Reactance_X(Ω)", "Susceptance_B(μS)", "Length_(km)"]
         ] + [("Maximum Current Imax (A)", "Fixed")]
         _float_col_comma_correction(data, key, col_names)
+
+    # --- repair incomplete line data
+    _repair_incomplete_line_data(data)
 
     # --- consolidate inconsistent location name spellings
     # Build the raw -> display name mapping from the bus names in the Lines and Tielines sheets.
@@ -204,6 +208,19 @@ def _data_correction(data: dict[str, pd.DataFrame], html_str: str | None, max_i_
 
     # --- Transformer data --------------------------------
     key = "Transformers"
+
+    # --- correct current data (some files hold non-breaking spaces) and drop rows without any
+    # --- electrical data, which cannot be converted
+    current_cols = [("Maximum Current Imax (A) primary", col) for col in ("Min", "Max", "Fixed")]
+    for col in current_cols:
+        data[key][col] = pd.to_numeric(data[key][col].replace("\xa0", np.nan), errors="coerce")
+    vn_cols = [("Voltage_level(kV)", "Primary"), ("Voltage_level(kV)", "Secondary")]
+    no_data = data[key][vn_cols].isna().all(axis=1) & data[key][current_cols].isna().all(axis=1)
+    if no_data.any():
+        logger.warning(
+            f"Transformers: dropping {no_data.sum()} row(s) without electrical data: {list(data[key].index[no_data])}"
+        )
+        data[key] = data[key].drop(index=data[key].index[no_data])
 
     # --- fix Locations
     loc_name = ("Location", "Full Name")
@@ -326,7 +343,7 @@ def _create_lines(net: pandapowerNet, data: dict[str, pd.DataFrame], max_i_ka_fi
     bus_idx = _get_bus_idx(net)
 
     for key in ["Lines", "Tielines"]:
-        length_km = data[key][("Electrical Parameters", "Length_(km)")].values
+        length_km = data[key][("Electrical Parameters", "Length_(km)")].to_numpy(dtype=float, copy=True)
         zero_length = np.isclose(length_km, 0)
         no_length = np.isnan(length_km)
         if sum(zero_length) or sum(no_length):  # type: ignore[call-overload]
@@ -337,25 +354,14 @@ def _create_lines(net: pandapowerNet, data: dict[str, pd.DataFrame], max_i_ka_fi
             )
             length_km[zero_length | no_length] = 1
         vn_kvs = data[key].loc[:, (None, "Voltage_level(kV)")].values
+        keys_1 = list(zip(data[key].loc[:, ("Substation_1", "Full_name")].values, vn_kvs))  # type: ignore[arg-type]
+        keys_2 = list(zip(data[key].loc[:, ("Substation_2", "Full_name")].values, vn_kvs))  # type: ignore[arg-type]
+        _raise_for_missing_buses(bus_idx, keys_1 + keys_2, key)
 
         _ = create_lines_from_parameters(
             net,
-            bus_idx.loc[
-                list(
-                    zip(
-                        data[key].loc[:, ("Substation_1", "Full_name")].values,  # type: ignore[arg-type]
-                        vn_kvs,
-                    )
-                )
-            ].values,
-            bus_idx.loc[
-                list(
-                    zip(
-                        data[key].loc[:, ("Substation_2", "Full_name")].values,  # type: ignore[arg-type]
-                        vn_kvs,
-                    )
-                )
-            ].values,
+            bus_idx.loc[keys_1].values,
+            bus_idx.loc[keys_2].values,
             length_km,
             data[key][("Electrical Parameters", "Resistance_R(Ω)")].values / length_km,  # type: ignore[operator]
             data[key][("Electrical Parameters", "Reactance_X(Ω)")].values / length_km,  # type: ignore[operator]
@@ -382,9 +388,11 @@ def _create_transformers_and_buses(net: pandapowerNet, data: dict[str, pd.DataFr
     bus_idx = _get_bus_idx(net)
     vn_hv_kv, vn_lv_kv = _get_transformer_voltages(data, bus_idx)
     trafo_connections = _allocate_trafos_to_buses_and_create_buses(net, data, bus_idx, vn_hv_kv, vn_lv_kv, **kwargs)
-    max_i_a = data[key].loc[:, ("Maximum Current Imax (A) primary", "Fixed")]
-    empty_i_idx = max_i_a.index[max_i_a.isnull()]  # type: ignore[call-overload,index]
-    max_i_a.loc[empty_i_idx] = data[key].loc[empty_i_idx, ("Maximum Current Imax (A) primary", "Max")].values
+    max_i_a = (
+        data[key]
+        .loc[:, ("Maximum Current Imax (A) primary", "Fixed")]
+        .fillna(data[key].loc[:, ("Maximum Current Imax (A) primary", "Max")])
+    )
     sn_mva = np.sqrt(3) * max_i_a * vn_hv_kv / 1e3
     z_pu = vn_hv_kv**2 / sn_mva
     rk = data[key].xs("Resistance_R(Ω)", level=1, axis=1).values[:, 0] / z_pu
@@ -757,6 +765,68 @@ def _float_col_comma_correction(data: dict[str, pd.DataFrame], key: str, col_nam
         data[key][col_name] = pd.to_numeric(data[key][col_name].astype(str).str.replace(",", "."), errors="coerce")
 
 
+def _repair_incomplete_line_data(data: dict[str, pd.DataFrame]) -> None:
+    """Drops Lines/Tielines rows without any data and fills missing substation names and voltage
+    levels from unambiguous information of the same file.
+
+    Some JAO releases contain malformed rows, e.g. rows that only repeat an NE_name without any
+    substation or electrical data, lines with one missing substation name, or lines with a missing
+    voltage level. Rows without any information are dropped, the other gaps are filled if the
+    information is unambiguous.
+
+    :param dict[str, pd.DataFrame] data: data provided by the excel file which will be corrected
+    """
+    s1, s2 = ("Substation_1", "Full_name"), ("Substation_2", "Full_name")
+    vn_col, len_col, ne_col = (None, "Voltage_level(kV)"), ("Electrical Parameters", "Length_(km)"), (None, "NE_name")
+
+    # --- names and voltage levels that are known from complete rows of all sheets
+    known_names: set[str] = set()
+    name_vns: dict[str, set] = {}
+    for key in ("Lines", "Tielines"):
+        for subst in (s1, s2):
+            pairs = data[key][[subst, vn_col]].dropna()
+            known_names |= set(pairs[subst].astype(str))
+            for name, vn in pairs.itertuples(index=False):
+                name_vns.setdefault(name, set()).add(vn)
+
+    for key in ("Lines", "Tielines"):
+        df = data[key].copy()
+
+        empty = df[[s1, s2, vn_col, len_col]].isna().all(axis=1)
+        if empty.any():
+            logger.warning(f"{key}: dropping {empty.sum()} row(s) without any data: {list(df.index[empty])}")
+            df = df.drop(index=df.index[empty])
+
+        for idx in df.index[df[s1].isna() | df[s2].isna()]:
+            missing = s1 if pd.isna(df.at[idx, s1]) else s2
+            other = df.at[idx, s2] if missing == s1 else df.at[idx, s1]
+            tokens = [token.strip().upper() for token in re.sub(r"\s*\(.*?\)", "", str(df.at[idx, ne_col])).split("-")]
+            candidates = [
+                name
+                for name in known_names
+                if name != other
+                and any(token == name.upper() or token.startswith(name.upper() + " ") for token in tokens)
+            ]
+            if len(candidates) == 1:
+                df.at[idx, missing] = candidates[0]
+                logger.warning(
+                    f"{key} row {idx}: missing {missing[0]} name set to {candidates[0]!r} "
+                    f"(derived from NE_name {df.at[idx, ne_col]!r})"
+                )
+
+        for idx in df.index[df[vn_col].isna()]:
+            vns = {
+                next(iter(name_vns[name]))
+                for name in (df.at[idx, s1], df.at[idx, s2])
+                if len(name_vns.get(name, ())) == 1
+            }
+            if len(vns) == 1:
+                df.at[idx, vn_col] = vns.pop()
+                logger.warning(f"{key} row {idx}: missing Voltage_level(kV) set to {df.at[idx, vn_col]}")
+
+        data[key] = df
+
+
 def _get_transformer_voltages(data: dict[str, pd.DataFrame], bus_idx: pd.Series) -> tuple[np.ndarray, np.ndarray]:
     key = "Transformers"
     vn = data[key].loc[:, [("Voltage_level(kV)", "Primary"), ("Voltage_level(kV)", "Secondary")]].values
@@ -1086,13 +1156,24 @@ def _drop_duplicates_and_join_TSO(bus_df: pd.DataFrame) -> pd.DataFrame:
 
 
 def _get_float_column(df, col_tuple, fill=0):
-    series = df.loc[:, col_tuple]
+    series = df.loc[:, col_tuple].copy()
     series.loc[series == "\xa0"] = fill
     return series.astype(float).fillna(fill)
 
 
 def _get_bus_idx(net: pandapowerNet) -> pd.Series:
     return net.bus[["name", "vn_kv"]].rename_axis("index").reset_index().set_index(["name", "vn_kv"])["index"]
+
+
+def _raise_for_missing_buses(bus_idx: pd.Series, endpoints: list[tuple], sheet: str) -> None:
+    """Raises a descriptive error if line endpoints do not match any bus (name, vn_kv)."""
+    missing = sorted({endpoint for endpoint in endpoints if endpoint not in bus_idx.index}, key=str)
+    if missing:
+        raise ValueError(
+            f"{len(missing)} endpoint(s) of sheet {sheet!r} have no matching bus (name, vn_kv): "
+            + ", ".join(f"{name!r} at {vn} kV" for name, vn in missing)
+            + ". Rows with missing substation name or voltage level cannot be converted."
+        )
 
 
 def get_grid_groups(net: pandapowerNet, **kwargs) -> pd.DataFrame:
