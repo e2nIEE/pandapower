@@ -79,7 +79,7 @@ def test_excel(net_in, tmp_path):
     assert_net_equal(net_in, net_out)
 
     # test if user_pf_options are equal
-    set_user_pf_options(net_in, tolerance_mva=1e3)
+    set_user_pf_options(net_in, tolerance=1e3)
     to_excel(net_in, filename)
     net_out = from_excel(filename)
     assert_net_equal(net_in, net_out)
