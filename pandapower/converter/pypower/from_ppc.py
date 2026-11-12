@@ -297,6 +297,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         max_angle_degree=max_angle[is_line],
     )
     # --- create transformer
+    charging_branches = np.array([], dtype=np.int64)
     if np.any(is_trafo):
         hv_bus = from_bus[is_trafo]
         vn_hv_kv = from_vn_kv[is_trafo]
@@ -337,21 +338,19 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
         ratio_is_zero = np.isclose(ratio_1, 0)
         ratio_1[~ratio_is_zero & ~tap_side_is_hv] **= -1
         ratio_1[~ratio_is_zero] -= 1
-        br_b = ppc["branch"][is_trafo, BR_B]
-        if np.any(br_b > 0):
-            logger.warning(
-                "some BR_B of transformers in ppc['branch'] are positive, but transformers are inductive, therefore their B should be negative"
-            )
-        i0_percent = np.sqrt(br_b**2 + br_g[is_trafo] ** 2) * 100 * baseMVA / sn
-        # i0_percent = -ppc['branch'][is_trafo, BR_B] * 100 * baseMVA / sn
-        is_neg_i0_percent = i0_percent < 0
-        if np.any(is_neg_i0_percent):
+        br_b = ppc["branch"][is_trafo, BR_B].copy()
+        # the magnetizing admittance of pandapower transformers is inductive, a positive (capacitive)
+        # susceptance is converted to bus shunts instead
+        is_capacitive = br_b > 0
+        if np.any(is_capacitive):
+            charging_branches = np.flatnonzero(is_trafo)[is_capacitive]
             logger.info(
-                "Transformers always behave inductive consumpting but the susceptance of pypower "
-                f"branches {np.arange(len(is_neg_i0_percent), dtype=np.int64)[is_neg_i0_percent]} "
-                f"(hv_bus, lv_bus)=({hv_bus[is_neg_i0_percent]}, {hv_bus[is_neg_i0_percent]}) "
-                "is positive."
+                f"The positive susceptance BR_B of the transformer branches {charging_branches} is converted to "
+                "shunts, since transformers are inductive."
             )
+            shunt_from, shunt_to = _create_trafo_charging_shunts(net, ppc, charging_branches, from_bus, to_bus)
+            br_b[is_capacitive] = 0.0
+        i0_percent = np.sqrt(br_b**2 + br_g[is_trafo] ** 2) * 100 * baseMVA / sn
 
         pfe_kw = br_g[is_trafo] * baseMVA * 1e3
         # pfe_kw = 0.
@@ -439,7 +438,37 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
     branch_lookup["element"] = branch_lookup["element"].astype("float64")
     branch_lookup.loc[is_impedance, "element"] = idx_impedance
     branch_lookup.loc[is_impedance, "element_type"] = "impedance"
+    # shunts with the charging of the branch at the from and to bus (transformers with positive BR_B)
+    branch_lookup["shunt_from"] = np.nan
+    branch_lookup["shunt_to"] = np.nan
+    if len(charging_branches):
+        branch_lookup.loc[charging_branches, "shunt_from"] = shunt_from
+        branch_lookup.loc[charging_branches, "shunt_to"] = shunt_to
     return branch_lookup
+
+
+def _create_trafo_charging_shunts(net, ppc, branches, from_bus, to_bus):
+    """
+    Creates shunts for the susceptance BR_B of transformer branches. In the pi model of the ppc branch, B/2 is
+    connected to the to bus and, referred to the from side of the ideal transformer (TAP), to the from bus.
+    Returns the shunt indices at the from buses and to buses.
+    """
+    base_mva = ppc["baseMVA"]
+    branch = ppc["branch"][branches]
+    tap = np.where(np.isclose(branch[:, TAP], 0), 1.0, branch[:, TAP])
+    q_to_mvar = -branch[:, BR_B] / 2 * base_mva
+    in_service = branch[:, BR_STATUS].astype(bool)
+    buses = net.bus.index[np.concatenate([from_bus[branches], to_bus[branches]])]
+    shunts = create_shunts(
+        net,
+        buses,
+        q_mvar=np.concatenate([q_to_mvar / tap**2, q_to_mvar]),
+        p_mw=0.0,
+        in_service=np.concatenate([in_service, in_service]),
+        name=[f"charging of ppc branch {b} ({side})" for side in ["from", "to"] for b in branches],
+    )
+    shunts = np.asarray(shunts)
+    return shunts[: len(branches)], shunts[len(branches) :]
 
 
 def _get_bus_pos(ppc, bus_names):
@@ -761,6 +790,16 @@ def validate_from_ppc(ppc: dict, net: pandapowerNet, max_diff_values: dict | Non
         raise ValueError("ppc branch from and to buses don't fit to pandapower from and to + hv and lv buses.")
     if np.any(switch_from_to):
         pp_res["branch"][switch_from_to, :] = pp_res["branch"][switch_from_to, :][:, [2, 3, 0, 1]]  # type: ignore[index]
+
+    # the charging of transformer branches with positive BR_B is part of the ppc branch flows
+    branch_lookup = net._from_ppc_lookups["branch"]
+    for side, cols in [("shunt_from", [0, 1]), ("shunt_to", [2, 3])]:
+        if side not in branch_lookup:
+            continue
+        has_shunt = branch_lookup[side].notna().values
+        if np.any(has_shunt):
+            shunts = branch_lookup.loc[has_shunt, side].astype(np.int64).values
+            pp_res["branch"][np.ix_(has_shunt, cols)] += net.res_shunt.loc[shunts, ["p_mw", "q_mvar"]].values  # type: ignore[index]
 
     # --- gen
     pp_res["gen"] = np.zeros(ppc_res["gen"].shape)  # type: ignore[union-attr]

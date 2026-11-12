@@ -4,6 +4,7 @@
 import logging
 import os
 import pickle
+from copy import deepcopy
 from importlib.util import find_spec
 
 import numpy as np
@@ -14,9 +15,23 @@ from pandapower.converter.pypower import from_ppc, to_ppc, validate_from_ppc
 from pandapower.converter.pypower.from_ppc import _branch_to_which, _gen_to_which
 from pandapower.file_io import from_json
 from pandapower.networks.power_system_test_cases import case9, case24_ieee_rts
-from pandapower.pypower.idx_brch import ANGMAX, ANGMIN, PF, PT, QF, QT
-from pandapower.pypower.idx_bus import PD, VA, VM
-from pandapower.pypower.idx_gen import PG, QG
+from pandapower.pypower.idx_brch import (
+    ANGMAX,
+    ANGMIN,
+    BR_B,
+    BRANCH_COLS,
+    F_BUS,
+    PF,
+    PT,
+    QF,
+    QT,
+    SHIFT,
+    T_BUS,
+    TAP,
+)
+from pandapower.pypower.idx_bus import BUS_I, PD, QD, VA, VM
+from pandapower.pypower.idx_gen import GEN_BUS, PG, QG
+from pandapower.pypower.make_y_bus import makeYbus
 from pandapower.results import reset_results
 from pandapower.run import runopp, runpp, set_user_pf_options
 from pandapower.toolbox.comparison import nets_equal
@@ -121,6 +136,53 @@ def test_case9_not_in_matpower():
     ppc = get_testgrids("pypower_cases", "case9.json")
     net = from_ppc(ppc, f_hz=60)
     assert validate_from_ppc(ppc, net, max_diff_values2)
+
+
+def _ybus(base_mva, bus, branch):
+    """bus admittance matrix and branch admittance matrices of a ppc with consecutive bus indices"""
+    branch = np.hstack([branch, np.zeros((branch.shape[0], BRANCH_COLS - branch.shape[1]))])
+    return [y.toarray() for y in makeYbus(base_mva, bus, branch)]
+
+
+def test_from_ppc_trafo_positive_susceptance():
+    """
+    A positive (capacitive) susceptance of a transformer branch is converted to shunts, since pandapower
+    transformers are inductive (pandapower#1740).
+    """
+    ppc = get_testgrids("pypower_cases", "case9.json")
+    ppc["branch"][0, [TAP, BR_B]] = [1.05, 0.3]
+    ppc["branch"][3, [TAP, SHIFT, BR_B]] = [0.97, 5.0, 0.2]
+    net = from_ppc(deepcopy(ppc), f_hz=60)
+    assert len(net.trafo) == 2
+    assert np.allclose(net.trafo.i0_percent, 0)
+    assert len(net.shunt) == 4
+    runpp(net, calculate_voltage_angles=True, trafo_model="pi")
+
+    # the converted net has the same bus admittance matrix as the ppc
+    ppc_bus = ppc["bus"].copy()
+    ppc_bus[:, BUS_I] = np.arange(len(ppc_bus))
+    bus_pos = pd.Series(np.arange(len(ppc_bus)), index=ppc["bus"][:, BUS_I].astype(np.int64))
+    ppc_branch = ppc["branch"].copy()
+    ppc_branch[:, F_BUS] = bus_pos.loc[ppc_branch[:, F_BUS].astype(np.int64)].values
+    ppc_branch[:, T_BUS] = bus_pos.loc[ppc_branch[:, T_BUS].astype(np.int64)].values
+    ybus, yf, yt = _ybus(ppc["baseMVA"], ppc_bus, ppc_branch)
+    pp_bus = net._pd2ppc_lookups["bus"][ppc["bus"][:, BUS_I].astype(np.int64)]
+    ybus_pp = _ybus(net._ppc["baseMVA"], net._ppc["bus"], net._ppc["branch"])[0][np.ix_(pp_bus, pp_bus)]
+    assert np.allclose(ybus, ybus_pp, atol=1e-8)
+
+    # validate_from_ppc considers the charging shunts in the transformer branch flows: the pandapower
+    # results are a power flow solution of the ppc, since the admittance matrices are equal
+    vm = net.res_bus.loc[ppc["bus"][:, BUS_I], "vm_pu"].values
+    va = net.res_bus.loc[ppc["bus"][:, BUS_I], "va_degree"].values
+    v = vm * np.exp(1j * np.deg2rad(va))
+    s_f = v[ppc_branch[:, F_BUS].astype(np.int64)] * np.conj(yf @ v) * ppc["baseMVA"]
+    s_t = v[ppc_branch[:, T_BUS].astype(np.int64)] * np.conj(yt @ v) * ppc["baseMVA"]
+    ppc["branch"][:, [PF, QF, PT, QT]] = np.column_stack([s_f.real, s_f.imag, s_t.real, s_t.imag])
+    ppc["bus"][:, [VM, VA]] = np.column_stack([vm, va])
+    gen_bus = bus_pos.loc[ppc["gen"][:, GEN_BUS].astype(np.int64)].values
+    ppc["gen"] = ppc["gen"].astype(np.float64)
+    ppc["gen"][:, QG] = (v * np.conj(ybus @ v)).imag[gen_bus] * ppc["baseMVA"] + ppc["bus"][gen_bus, QD]
+    assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
 
 
 def test_to_and_from_ppc():

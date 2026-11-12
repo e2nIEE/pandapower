@@ -14,6 +14,7 @@ from pandapower.control import ConstControl
 from pandapower.converter.pandamodels import convert_pp_to_pm
 from pandapower.converter.pandamodels.from_pm import add_time_series_data_to_net
 from pandapower.converter.pandamodels.to_pm import init_ne_line
+from pandapower.converter.pypower import from_ppc
 from pandapower.create import (
     create_buses,
     create_ext_grid,
@@ -43,6 +44,8 @@ from pandapower.networks.power_system_test_cases import (
 )
 from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_system
 from pandapower.opf.pm_storage import read_pm_storage_results
+from pandapower.pypower.idx_brch import BR_B, SHIFT, TAP
+from pandapower.pypower.idx_bus import BUS_I
 from pandapower.run import rundcpp, runpp
 from pandapower.runpm import (
     runpm_ac_opf,
@@ -62,6 +65,7 @@ from pandapower.runpm import (
 from pandapower.timeseries import DFData, run_timeseries
 from test import test_path
 from test.consistency_checks import consistency_checks
+from test.converter.test_from_ppc import get_testgrids
 from test.helper_functions import add_grid_connection, create_test_line
 from test.opf.test_basic import net_3w_trafo_opf as _net_3w_trafo_opf  # noqa: F401
 
@@ -924,6 +928,50 @@ def test_pm_ac_powerflow_sn_mva(net_func, sn_mva, pm_base_mva):
     runpp(net, calculate_voltage_angles=True)
     assert np.allclose(vm_pm, net.res_bus.vm_pu.values)
     assert np.allclose(va_pm, net.res_bus.va_degree.values)
+
+
+def _write_matpower_case(ppc, file):
+    """writes the bus, gen, branch and gencost data of a ppc as MATPOWER case file"""
+
+    def matrix(name, data):
+        rows = "\n".join("\t" + "\t".join(f"{v:.15g}" for v in row) + ";" for row in np.asarray(data, dtype=float))
+        return f"mpc.{name} = [\n{rows}\n];\n"
+
+    with open(file, "w") as f:
+        f.write(f"function mpc = case\nmpc.version = '2';\nmpc.baseMVA = {float(ppc['baseMVA']):.15g};\n")
+        f.write(matrix("bus", ppc["bus"][:, :13]) + matrix("gen", ppc["gen"][:, :10]))
+        f.write(matrix("branch", ppc["branch"][:, :13]) + matrix("gencost", ppc["gencost"]))
+
+
+@pytest.mark.slow
+@pytest.mark.skipif(not julia_installed, reason="requires julia installation")
+def test_ac_opf_from_ppc_trafo_positive_susceptance(tmp_path):
+    """
+    runpm_ac_opf of a converted MATPOWER case gives the result of PowerModels.solve_ac_opf for the case, also with
+    capacitive transformer branches (pandapower#1740). The slack of MATPOWER is a dispatchable generator with
+    voltage limits, so the ext_grid must be controllable.
+    """
+    ppc = get_testgrids("pypower_cases", "case9.json")
+    ppc["branch"][0, [TAP, BR_B]] = [1.05, 0.3]
+    ppc["branch"][3, [TAP, SHIFT, BR_B]] = [0.97, 5.0, 0.2]
+    file = os.path.join(tmp_path, "case9_trafo_charging.m")
+    _write_matpower_case(ppc, file)
+
+    net = from_ppc(deepcopy(ppc), f_hz=60)
+    net.ext_grid["controllable"] = True
+    runpm_ac_opf(net)
+
+    from juliacall import Main as jl
+
+    jl.seval("import PandaModels")
+    result = jl.seval(
+        f'PandaModels._PM.solve_ac_opf(raw"{file}", PandaModels.JuMP.optimizer_with_attributes('
+        'PandaModels.Ipopt.Optimizer, "print_level" => 0))'
+    )
+    assert str(result["termination_status"]) == "LOCALLY_SOLVED"
+    assert np.isclose(net.res_cost, float(result["objective"]), rtol=1e-6)
+    vm_pm = [float(result["solution"]["bus"][str(int(b))]["vm"]) for b in ppc["bus"][:, BUS_I]]
+    assert np.allclose(net.res_bus.loc[ppc["bus"][:, BUS_I], "vm_pu"].values, vm_pm, atol=1e-6)
 
 
 def _create_redispatch_net():
