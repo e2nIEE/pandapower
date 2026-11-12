@@ -217,7 +217,7 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
     :return: power flow result
     """
     enforce_q_lims = options["enforce_q_lims"]
-    tolerance_mva = options["tolerance_mva"]
+    tolerance = options["tolerance"]
     max_iteration = options["max_iteration"]
     voltage_depend_loads = options["voltage_depend_loads"]
     # setting options
@@ -320,7 +320,7 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
             Sbus = makeSbus(baseMVA, bus, gen, vm=abs(V))
         F = _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq)
         # check tolerance
-        converged = _check_for_convergence(F, tolerance_mva)
+        converged = _check_for_convergence(F, tolerance)
 
         if converged and verbose:
             print(f"\nFwd-back sweep power flow converged in {n_iter} iterations.\n")
@@ -333,12 +333,12 @@ def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_o
 
 def _get_options(options):
     enforce_q_lims = options["enforce_q_lims"]
-    tolerance_mva = options["tolerance_mva"]
+    tolerance = options["tolerance"]
     max_iteration = options["max_iteration"]
     calculate_voltage_angles = options["calculate_voltage_angles"]
     numba = options["numba"]
 
-    return enforce_q_lims, tolerance_mva, max_iteration, calculate_voltage_angles, numba
+    return enforce_q_lims, tolerance, max_iteration, calculate_voltage_angles, numba
 
 
 def _run_bfswpf(ppci, options, **kwargs):

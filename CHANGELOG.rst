@@ -3,6 +3,12 @@ Change Log
 
 [upcoming 4.0.0] - 2026-..-..
 -------------------------------
+- [FIXED] ``runpm_storage_opf``: a controllable storage was optimized twice, by the PowerModels storage model and as an additional generator without power limits at the storage bus. The generator is now deactivated, so only the storage model is optimized. Non-controllable storages are no longer added to the storage model and keep their fixed power. The apparent power limit (``thermal_rating``) of the storage model is ``sn_mva`` or, if not given, derived from the power limits instead of ``max_e_mwh``, and missing or NaN values in ``max_p_mw``, ``min_p_mw``, ``max_q_mvar`` and ``min_q_mvar`` fall back to ``|p_mw|`` / ``|q_mvar|``. Power ranges the storage model cannot represent (``min_p_mw > 0`` or ``max_p_mw < 0``) of in service storages raise an error, the element lookups of a previous run are cleared before a PowerModels conversion, the active power costs (``poly_cost`` / ``pwl_cost``) of the storages are passed in ``pm["storage"]`` in the format of the PowerModels gen costs (``model``, ``ncost``, ``cost`` as a function of the storage power ``ps``), so that PandaModels.jl can add them to the objective, ``res_bus`` contains the optimized storage power and ``read_pm_storage_results`` returns NaN as state of charge of storages which are not optimized (PandaModels.jl#124)
+- [FIXED] fix symmetrical PST: before they were handled as asymmetric tap changer, now as proper symmetrical according to UCTE-DEF
+- [ADDED] transformer documentation: overview table of the tap changer models with the columns to set
+- [FIXED] fix PF2pp converter to work with pandapower 4.0: added init_results into it and fixed std_type saving
+- [CHANGED] ideal phase shifters only use ``tap_step_degree`` as angle per tap step. ``tap_step_percent`` must be NaN or 0
+- [REMOVED] ``tap_phase_shifter`` / ``tap2_phase_shifter``: phase shifters are only defined by ``tap_changer_type`` / ``tap2_changer_type``
 - [ADDED] added a sensitivity package, it provides LODF, PSDF and PTDF calculation based on the DC power flow
 - [FIXED] ``res_dcline``: a terminal at an unsupplied bus (island without slack) now has ``NaN`` as voltage magnitude and angle, consistent with ``res_bus``, instead of ``0``
 - [FIXED] branch voltage angle difference constraints (MATPOWER ``ANGMIN``/``ANGMAX``) were lost in the pypower/matpower converters and ignored by the OPF: the new optional columns ``min_angle_degree`` and ``max_angle_degree`` in ``net.line``, ``net.trafo``, ``net.trafo3w`` and ``net.impedance`` are considered by ``runopp``/``rundcopp`` and by ``to_pm``, and ``from_ppc``/``to_ppc``/``to_mpc`` preserve them (#2385). For ``net.trafo3w`` the limit bounds each internal star branch (hv -> star and star -> mv/lv) separately, so the terminal difference can reach twice the configured value. OPF results of networks imported from MATPOWER/PYPOWER cases with angle limits change accordingly; pass ``OPF_IGNORE_ANG_LIM=True`` to ``runopp`` to ignore the limits.
@@ -16,9 +22,13 @@ Change Log
 - [CHANGED] ran ruff format for whole project
 - [CHANGED] moved test module to top level
 - [ADDED] pandera network validation
+- [ADDED] ``validate_network`` with ``collect_errors=True`` collects all validation issues of a network instead of raising on the first one, and returns human readable ``ValidationIssue`` objects that can be printed or formatted with ``format_validation_errors``
+- [ADDED] diagnostic: new default check ``schema_validation`` (``SchemaValidation``) that validates all element tables against the pandera ``network_schema`` schemas and reports every structural, data type and value range violation of the network at once
+- [FIXED] ``Diagnostic.register_function``: the ``argument_names`` and ``name`` parameters are now optional as documented, so ``register_function(some_function())`` no longer raises ``TypeError``
 - [CHANGED] removed deprecated trafo support characteristics table (replaced by trafo_characteristc_table)
 - [ADDED] create function for trafo characteristic entries
 - [ADDED] converter for trafo characteristics
+- [CHANGED] tolerance_mva now called tolerance as it is a unitless value.
 - [FIXED] create_gen and create_gens now use connected bus voltage limits as generator voltage-limit defaults.
 - [ADDED] runpp: bipolar VSC (create_vsc_bipolar) connected between a plus and a minus DC bus instead of ground, enables bipolar HVDC systems with dedicated metallic return (DMR); the DMR current is calculated by the power flow
 - [CHANGED] vsc_bipolar: control parameters changed to control_mode_ac, control_value_ac, control_mode_dc, control_value_dc (same as vsc); the element was not considered in the power flow before; networks stored in the old format are converted on load by convert_format
@@ -29,6 +39,7 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] initialized out-of-service short-circuit branch result padding to zero.
 - [CHANGED] PandaModels.jl interface: the network is sent in MATPOWER units (MW, MVAr, degrees, ``per_unit=False``) and converted to per unit by PandaModels.jl, which is now required in version >= 0.10. The new keyword ``pm_base_mva`` (default ``net.sn_mva``) sets the per unit base; Ipopt is much faster on a base fitting the grid (e.g. case118: 0.1 s at 100 MVA instead of 2.2 s at 1 MVA).
 - [CHANGED] time series optimizations (``runpm_storage_opf``, ``runpm_multi_vstab``, ``runpm_multi_qflex``) store their results in ``net.res_ts_opt`` as dict ``"res_<table>.<column>"`` -> DataFrame (index: time steps, columns: element indices) instead of one copy of the net per time step. Reading the results is several times faster.
 - [CHANGED] ``juliapkg.json`` is shipped with the pandapower package; PandaModels.jl is no longer installed or built at runtime. ``pdm_dev_mode`` is deprecated; a local checkout is registered with ``juliapkg.add(..., path=..., dev=True)``.

@@ -129,10 +129,10 @@ def test_set_user_pf_options():
 
     # see if user arguments overrule user_pf_options, but other user_pf_options still have the
     # priority
-    set_user_pf_options(net, tolerance_mva=1e-6, max_iteration=20)
-    runpp(net, tolerance_mva=1e-2)
-    assert np.isclose(net.user_pf_options["tolerance_mva"], 1e-6)
-    assert np.isclose(net._options["tolerance_mva"], 1e-2)
+    set_user_pf_options(net, tolerance=1e-6, max_iteration=20)
+    runpp(net, tolerance=1e-2)
+    assert np.isclose(net.user_pf_options["tolerance"], 1e-6)
+    assert np.isclose(net._options["tolerance"], 1e-2)
     assert net._options["max_iteration"] == 20
 
 
@@ -911,8 +911,8 @@ def test_zip_loads_out_of_service():
         const_z_q_percent=100,
     )
 
-    runpp(net, tolerance_mva=1e-8)
-    runpp(net1, tolerance_mva=1e-8)
+    runpp(net, tolerance=1e-8)
+    runpp(net1, tolerance=1e-8)
     assert np.allclose(net1.res_load.loc[oos_load].fillna(0), 0)
     net1.res_load = net1.res_load.drop(oos_load)
     assert nets_equal(net, net1, check_only_results=True)
@@ -962,7 +962,7 @@ def test_zip_loads_mixed_voltage_dependencies():
         net.load.at[0, "const_z_p_percent"] = c_z_p
         net.load.at[0, "const_z_q_percent"] = c_z_q
 
-        runpp(net, tolerance_mva=1e-6)
+        runpp(net, tolerance=1e-6)
 
         assert np.allclose(net.res_load.p_mw.at[0], res_load_p)
         assert np.allclose(net.res_load.q_mvar.at[0], res_load_q)
