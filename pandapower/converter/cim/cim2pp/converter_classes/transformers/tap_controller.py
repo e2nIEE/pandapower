@@ -1,4 +1,5 @@
 import logging
+from typing import Literal
 
 import pandas as pd
 
@@ -6,6 +7,7 @@ from pandapower.control.controller.trafo.continuous_tap_control import Continuou
 from pandapower.control.controller.trafo.discrete_tap_control import DiscreteTapControl
 from pandapower.converter.cim import cim_tools
 from pandapower.converter.cim.cim2pp import build_pp_net
+from pandapower.pp_types import HVMVLVType
 
 logger = logging.getLogger("cim.cim2pp.converter_classes.tapController")
 
@@ -23,7 +25,7 @@ class TapController:
         if self.cimConverter.power_trafo3w.index.size > 0:
             self._create_tap_controller(self.cimConverter.power_trafo3w, "trafo3w")
 
-    def _create_tap_controller(self, input_df: pd.DataFrame, trafo_type: str):
+    def _create_tap_controller(self, input_df: pd.DataFrame, trafo_type: Literal["trafo", "trafo3w"]):
         if not self.cimConverter.kwargs.get("create_tap_controller", True):
             self.logger.info(f"Skip creating transformer tap changer controller for transformer type {trafo_type}.")
             return
@@ -34,7 +36,7 @@ class TapController:
                 .index.values[0]
             )
             # get the controlled bus (side), assume "lv" as default
-            side = "lv"
+            side: HVMVLVType = "lv"
             if (
                 sc["t_hv"] in self.cimConverter.net[trafo_type].columns
                 and row["c_Terminal"] in self.cimConverter.net[trafo_type][sc["t_hv"]].values
