@@ -39,7 +39,11 @@ _trafo_columns = {
         float, pa.Check.ge(0), description="real component of short circuit voltage [%]", metadata={"sc": True}
     ),
     "pfe_kw": pa.Column(float, pa.Check.ge(0), description="iron losses [kW]"),
-    "i0_percent": pa.Column(float, pa.Check.ge(0), description="open loop current in [%]"),
+    "i0_percent": pa.Column(
+        float,
+        description="open loop current in [%]; the magnetizing susceptance is inductive, a negative value denotes a "
+        "capacitive susceptance (e.g. the charging of an imported MATPOWER/PYPOWER transformer branch)",
+    ),
     "vk0_percent": pa.Column(
         float,
         pa.Check.ge(0),
