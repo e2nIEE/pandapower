@@ -76,7 +76,11 @@ _trafo3w_columns = {
         metadata={"sc": True},
     ),
     "pfe_kw": pa.Column(float, description="iron losses [kW]"),
-    "i0_percent": pa.Column(float, description="open loop losses [%]"),
+    "i0_percent": pa.Column(
+        float,
+        description="open loop losses [%]; the magnetizing susceptance is inductive, a negative value denotes a "
+        "capacitive susceptance",
+    ),
     "shift_mv_degree": pa.Column(
         float, description="transformer phase shift angle at the MV side", metadata={"default": 0.0}
     ),

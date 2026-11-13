@@ -399,7 +399,8 @@ def create_transformer_from_parameters(
         vkr_percent: real part of relative short-circuit voltage
         vk_percent: relative short-circuit voltage
         pfe_kw: iron losses in kW
-        i0_percent: open loop losses in percent of rated current
+        i0_percent: open loop losses in percent of rated current, a negative value denotes a capacitive
+            magnetizing susceptance
         vector_group: vector group of the transformer HV side is Uppercase letters and LV side is lower case
         vk0_percent: zero sequence relative short-circuit voltage
         vkr0_percent: real part of zero sequence relative short-circuit voltage
@@ -620,7 +621,8 @@ def create_transformers_from_parameters(  # index missing ?
         vkr_percent: real part of relative short-circuit voltage
         vk_percent: relative short-circuit voltage
         pfe_kw: iron losses in kW
-        i0_percent: open loop losses in percent of rated current
+        i0_percent: open loop losses in percent of rated current, a negative value denotes a capacitive
+            magnetizing susceptance
         vector_group: Vector group of the transformer HV side is Uppercase letters and LV side is lower case
         vk0_percent: zero sequence relative short-circuit voltage
         vkr0_percent: real part of zero sequence relative short-circuit voltage
@@ -1097,7 +1099,7 @@ def create_transformer3w_from_parameters(
         vkr_mv_percent: real part of short circuit voltage from medium to low voltage
         vkr_lv_percent: real part of short circuit voltage from high to low voltage
         pfe_kw: iron losses in kW
-        i0_percent: open loop losses
+        i0_percent: open loop losses, a negative value denotes a capacitive magnetizing susceptance
         shift_mv_degree: angle shift to medium voltage side*
         shift_lv_degree: angle shift to low voltage side*
         tap_step_percent: tap step in percent
@@ -1299,7 +1301,7 @@ def create_transformers3w_from_parameters(  # no index ?
         vkr_mv_percent: real part of short circuit voltage from medium to low voltage
         vkr_lv_percent: real part of short circuit voltage from high to low voltage
         pfe_kw: iron losses in kW
-        i0_percent: open loop losses
+        i0_percent: open loop losses, a negative value denotes a capacitive magnetizing susceptance
         shift_mv_degree: angle shift to medium voltage side*
         shift_lv_degree: angle shift to low voltage side*
         tap_step_percent: tap step in percent

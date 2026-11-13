@@ -60,9 +60,18 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs) -> pandapowerNet
 
     Keyword Arguments:
         validate_from_ppc: if validate_conversion is True
-        tap_side:
+        tap_side: side of the taps of the created transformers, "hv" (default) or "lv", or an array per
+            transformer branch. The tap ratio of the ppc is at the from bus of a branch, which can be the hv or the
+            lv bus, the created transformers have the admittances of the ppc branches for both tap sides.
         check_costs: is passed as "check" to create_pwl_costs() and create_poly_costs()
         branch_g_name: name of branch_g column if it exists in ppc. if not given, branch G is set to 0
+
+    Notes:
+        A positive (capacitive) BR_B of a transformer branch is converted to a negative i0_percent, which denotes a
+        capacitive magnetizing susceptance. In this way, the charging is part of the transformer flows, loading and
+        OPF flow limits, and it follows changes of the tap position as in the pi model of the ppc branch.
+        Transformer branches with a susceptance BR_B are reproduced exactly with trafo_model="pi" (as used by
+        validate_from_ppc), the default "t" model splits the series impedance around the magnetizing admittance.
 
     Returns:
         ppc converted to pandapower net structure
@@ -333,32 +342,24 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
             tap_side_is_hv = np.array([tap_side == "hv"] * sum(is_trafo))
         else:
             tap_side_is_hv = np.array(tap_side == "hv")
+        # the ppc tap is at the from bus, which is the lv bus of reversed transformer branches. A pandapower tap at
+        # the other side has the inverse tap ratio, and the impedances refer to the tapped voltage of the lv side
+        tap_at_from_bus = tap_side_is_hv == to_vn_is_leq
         ratio_1 = ppc["branch"][is_trafo, TAP]
         ratio_is_zero = np.isclose(ratio_1, 0)
-        ratio_1[~ratio_is_zero & ~tap_side_is_hv] **= -1
+        ratio_1[~ratio_is_zero & ~tap_at_from_bus] **= -1
         ratio_1[~ratio_is_zero] -= 1
+        tap_scaling = np.where(tap_at_from_bus, 1.0, (1 + ratio_1) ** 2)
         br_b = ppc["branch"][is_trafo, BR_B]
-        if np.any(br_b > 0):
-            logger.warning(
-                "some BR_B of transformers in ppc['branch'] are positive, but transformers are inductive, therefore their B should be negative"
-            )
-        i0_percent = np.sqrt(br_b**2 + br_g[is_trafo] ** 2) * 100 * baseMVA / sn
-        # i0_percent = -ppc['branch'][is_trafo, BR_B] * 100 * baseMVA / sn
-        is_neg_i0_percent = i0_percent < 0
-        if np.any(is_neg_i0_percent):
-            logger.info(
-                "Transformers always behave inductive consumpting but the susceptance of pypower "
-                f"branches {np.arange(len(is_neg_i0_percent), dtype=np.int64)[is_neg_i0_percent]} "
-                f"(hv_bus, lv_bus)=({hv_bus[is_neg_i0_percent]}, {hv_bus[is_neg_i0_percent]}) "
-                "is positive."
-            )
+        # a negative i0_percent denotes a capacitive magnetizing susceptance (positive BR_B, the charging of the branch)
+        i0_sign = np.where(br_b > 0, -1.0, 1.0)
+        i0_percent = i0_sign * np.sqrt(br_b**2 + br_g[is_trafo] ** 2) * 100 * baseMVA / sn * tap_scaling
 
-        pfe_kw = br_g[is_trafo] * baseMVA * 1e3
-        # pfe_kw = 0.
-        vk_percent = np.sign(xk) * zk * sn * 100 / baseMVA
-        vk_percent[~tap_side_is_hv] /= (1 + ratio_1[~tap_side_is_hv]) ** 2
-        vkr_percent = rk * sn * 100 / baseMVA
-        vkr_percent[~tap_side_is_hv] /= (1 + ratio_1[~tap_side_is_hv]) ** 2
+        pfe_kw = br_g[is_trafo] * baseMVA * 1e3 * tap_scaling
+        vk_percent = np.sign(xk) * zk * sn * 100 / baseMVA / tap_scaling
+        vkr_percent = rk * sn * 100 / baseMVA / tap_scaling
+        # the phase shift of the ppc refers to the from bus, the one of pandapower to the hv bus
+        shift_degree = np.where(to_vn_is_leq, 1.0, -1.0) * ppc["branch"][is_trafo, SHIFT]
 
         tap_step_percent = np.abs(ratio_1) * 100
         tap_changer_type = np.where(tap_step_percent > 0, "Ratio", None)
@@ -376,7 +377,7 @@ def _from_ppc_branch(net, ppc, f_hz, **kwargs):
             max_loading_percent=100,
             pfe_kw=pfe_kw,
             i0_percent=i0_percent,
-            shift_degree=ppc["branch"][is_trafo, SHIFT],
+            shift_degree=shift_degree,
             tap_step_percent=tap_step_percent,
             tap_pos=np.sign(ratio_1),
             tap_side=tap_side,
