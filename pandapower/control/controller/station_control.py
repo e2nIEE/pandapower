@@ -6,7 +6,7 @@ from typing import Literal
 
 import numpy as np
 
-from pandapower import pandapowerNet
+from pandapower import ensure_iterability, pandapowerNet
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
 from pandapower.control.basic_controller import Controller
 from pandapower.control.util.auxiliary import get_min_max_q_mvar_from_characteristics_object
@@ -117,7 +117,7 @@ class BinarySearchControl(Controller):
         net: pandapowerNet,
         ctrl_in_service: bool,
         output_element: Literal["gen", "sgen"],
-        output_variable: str | list[str],
+        output_variable: str,
         output_element_index: Int | list[Int],
         output_element_in_service: bool | list[bool],
         output_values_distribution: Int | float | list[float],
@@ -176,16 +176,8 @@ class BinarySearchControl(Controller):
         ###catching errors in variables, allocating
         if input_inverted is None:
             input_inverted = []  # for robustness
-        if isinstance(output_element_index, (list, np.ndarray)):
-            self.output_element_index = [int(item) for item in output_element_index]
-        else:
-            self.output_element_index = []
-            self.output_element_index.append(output_element_index)
-            self.output_element_index = output_element_index
-        if isinstance(output_element_in_service, bool):
-            self.output_element_in_service = [output_element_in_service]
-        else:
-            self.output_element_in_service = output_element_in_service
+        self.output_element_index = [int(item) for item in ensure_iterability(output_element_in_service)]
+        self.output_element_in_service = ensure_iterability(output_element_in_service)
         if isinstance(input_element_index, (list, np.ndarray)):
             for element in input_element_index:
                 self.input_element_index.append(element)
@@ -208,8 +200,6 @@ class BinarySearchControl(Controller):
                 inv_list += [False] * (n - len(inv_list))
             self.input_sign = [-1 if inv else 1 for inv in inv_list]
         self.output_element = output_element
-        self.output_element_index = output_element_index
-        self.output_element_in_service = output_element_in_service
 
         # normalize the values distribution:
         self._normalize_distribution_in_service(initial_pf_distribution=output_values_distribution)

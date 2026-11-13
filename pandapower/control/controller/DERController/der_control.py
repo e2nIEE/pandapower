@@ -93,7 +93,7 @@ class DERController(PQController):
     def __init__(
         self,
         net: pandapowerNet,
-        element_index: list[Int],
+        element_index: Int | list[Int],
         element: str = "sgen",
         q_model=None,
         pqv_area=None,
@@ -105,7 +105,7 @@ class DERController(PQController):
         pq_simultaneity_factor: float = 1.0,
         f_sizing=1.0,
         data_source=None,
-        p_profile: list[str] | None = None,
+        p_profile: str | list[str] | None = None,
         profile_from_name: bool = False,
         profile_scale: float = 1.0,
         in_service: bool = True,
@@ -148,7 +148,7 @@ class DERController(PQController):
         self.damping_coef = damping_coef
 
         if p_profile is not None:
-            p_profile = ensure_iterability(p_profile, len(element_index))
+            p_profile = list(ensure_iterability(p_profile, len(element_index)))
         self.set_p_profile(p_profile, profile_from_name)
 
         # --- log unexpected param values

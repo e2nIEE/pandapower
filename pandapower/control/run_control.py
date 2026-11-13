@@ -108,7 +108,7 @@ def ctrl_variables_default(net, **kwargs):
     return ctrl_variables
 
 
-def prepare_run_ctrl(net: pandapowerNet, ctrl_variables: dict, **kwargs):
+def prepare_run_ctrl(net: pandapowerNet, ctrl_variables: dict | None, **kwargs):
     """
     Prepares run control functions. Internal variables needed:
 

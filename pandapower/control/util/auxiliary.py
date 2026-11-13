@@ -3,13 +3,12 @@
 import sys
 import time
 from importlib.util import find_spec
-from typing import overload
+from typing import Literal
 
 import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 from pandas import Index
-from typing_extensions import deprecated
 
 from pandapower import pandapowerNet
 from pandapower.auxiliary import ensure_iterability, soft_dependency_error
@@ -109,7 +108,7 @@ def _controller_attributes_query(controller, parameters):
 
 def get_controller_index(
     net: pandapowerNet, ctrl_type: str | object = None, parameters: dict | None = None, idx: list | None = None
-) -> Int | list[Int]:
+) -> list[Int]:
     """Returns indices of searched controllers. Parameters can specify the search query.
 
     Parameters:
@@ -119,8 +118,7 @@ def get_controller_index(
         idx: list of indices in net.controller to be searched for. If list is empty all indices are considered.
 
     Returns:
-        index / indices of controllers in net.controller which are in idx and matches given ctrl_type or
-            parameters
+        indices of controllers in net.controller which are in idx and matches given ctrl_type or parameters
     """
     if idx is None:
         idx = []
@@ -143,15 +141,6 @@ def get_controller_index(
         matches = net.controller.object.apply(lambda ctrl: _controller_attributes_query(ctrl, attributes_dict))
         idx = list(net.controller.index.values[net.controller.index.isin(idx) & matches])
     return idx
-
-
-@overload
-def log_same_type_existing_controllers(net, this_ctrl_type, index=None, matching_params=None): ...
-
-
-@overload
-@deprecated("Keyword args are no longer supported for `log_same_type_existing_controllers`")
-def log_same_type_existing_controllers(net, this_ctrl_type, index=None, matching_params=None, **kwargs): ...
 
 
 def log_same_type_existing_controllers(
@@ -544,10 +533,10 @@ def create_q_capability_characteristics_object(net):
 
 
 def get_min_max_q_mvar_from_characteristics_object(
-    net: pandapowerNet, element: str, element_index: Int | list[Int]
-) -> tuple[NDArray, NDArray] | tuple[list, list] | None:
+    net: pandapowerNet, element: Literal["gen", "sgen", "ext_grid"], element_index: list[Int]
+) -> tuple[NDArray, NDArray] | tuple[list, list]:
     """
-    Calculates the minimum and maximum reactive power (q_mvar) for a given element ('gen' or 'sgen') using its Q
+    Calculates the minimum and maximum reactive power (q_mvar) for a given element ('gen', 'sgen' or 'ext_grid') using its Q
     capability characteristic curve.
 
     Parameters:
@@ -559,13 +548,6 @@ def get_min_max_q_mvar_from_characteristics_object(
         qmin: Array of minimum reactive power values for the specified element(s).
         qmax: Array of maximum reactive power values for the specified element(s).
     """
-    if element not in ["gen", "sgen", "ext_grid"]:
-        logger.warning(
-            f"The given element type is not valid for q_min and q_max reactive power capability calculation "
-            f"of the {element}. Please give gen or sgen as an argument of the function"
-        )
-        return None
-
     if len(net[element]) == 0:
         logger.warning(f"No. of {element} elements is zero.")
         return [], []
