@@ -25,8 +25,10 @@ from pandapower.create import (
     create_sgen,
     create_sgens,
     create_shunt,
+    create_storage,
     create_switch,
     create_transformer_from_parameters,
+    create_ward,
     create_xward,
 )
 from pandapower.file_io import from_json
@@ -1136,6 +1138,43 @@ def test_shunt_3ph():
         )
     )
     assert np.max(np.abs(line_power_pp - line_power_expected)) < 1e-5
+
+
+@pytest.mark.parametrize("element", ["ward", "storage"])
+def test_3ph_constant_power_of_ward_and_storage(element):
+    """The 3ph power flow must include the constant power of wards and storages like runpp does (#1919)."""
+    net = pandapowerNet(name="test_3ph_constant_power_of_ward_and_storage")
+    b1 = create_bus(net, 20.0)
+    b2 = create_bus(net, 20.0)
+    create_ext_grid(net, b1, s_sc_max_mva=1000, rx_max=0.1, x0x_max=1.0, r0x0_max=0.1)
+    create_line_from_parameters(
+        net,
+        b1,
+        b2,
+        length_km=1,
+        r_ohm_per_km=1,
+        x_ohm_per_km=1,
+        c_nf_per_km=1,
+        r0_ohm_per_km=1,
+        x0_ohm_per_km=1,
+        c0_nf_per_km=1,
+        max_i_ka=1,
+    )
+    if element == "ward":
+        create_ward(net, b2, ps_mw=1.0, qs_mvar=0.5, pz_mw=0.2, qz_mvar=0.1)
+    else:
+        create_storage(net, b2, p_mw=1.0, q_mvar=0.5, max_e_mwh=10)
+
+    runpp(net)
+    runpp_3ph(net)
+
+    eg_3ph = net.res_ext_grid_3ph.iloc[0]
+    assert np.isclose(eg_3ph[["p_a_mw", "p_b_mw", "p_c_mw"]].sum(), net.res_ext_grid.p_mw.iloc[0])
+    assert np.isclose(eg_3ph[["q_a_mvar", "q_b_mvar", "q_c_mvar"]].sum(), net.res_ext_grid.q_mvar.iloc[0])
+    for phase in "abc":
+        assert np.allclose(net.res_bus_3ph[f"vm_{phase}_pu"], net.res_bus.vm_pu)
+        assert np.isclose(net.res_bus_3ph[f"p_{phase}_mw"].at[b2], 1.0 / 3)
+        assert np.isclose(net.res_bus_3ph[f"q_{phase}_mvar"].at[b2], 0.5 / 3)
 
 
 @pytest.mark.xfail
