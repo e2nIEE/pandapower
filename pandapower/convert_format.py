@@ -499,6 +499,9 @@ def _add_missing_columns(net, elements_to_deserialize):
         if "df" not in net[element]:
             net[element]["df"] = 1.0
 
+    if _check_elements_to_deserialize("ext_grid", elements_to_deserialize) and "controllable" not in net.ext_grid:
+        net.ext_grid["controllable"] = get_default_value("ext_grid", "controllable")
+
     if (
         _check_elements_to_deserialize("bus", elements_to_deserialize)
         and _check_elements_to_deserialize("bus_geodata", elements_to_deserialize)
@@ -860,7 +863,19 @@ def convert_trafo_pst_logic(net):
             for t in ("", "2"):
                 # drop old tap_phase_shifter flag
                 if f"tap{t}_phase_shifter" in net[trafotable]:
-                    net[trafotable] = net[trafotable].drop(columns=f"tap{t}_phase_shifter")
+                    df = net[trafotable]
+                    percent_col, degree_col = f"tap{t}_step_percent", f"tap{t}_step_degree"
+                    if percent_col in df:
+                        ideal = df[f"tap{t}_phase_shifter"].eq(True)
+                        to_degree = ideal & df[percent_col].notna() & (df[percent_col] != 0)
+                        if to_degree.any():
+                            if degree_col not in df:
+                                df[degree_col] = np.nan
+                            no_degree = to_degree & (df[degree_col].isna() | (df[degree_col] == 0))
+                            percent = df.loc[no_degree, percent_col]
+                            df.loc[no_degree, degree_col] = np.rad2deg(2 * np.arcsin(percent / 200))
+                            df.loc[to_degree, percent_col] = np.nan
+                    net[trafotable] = df.drop(columns=f"tap{t}_phase_shifter")
                 if (f"tap{t}_step_degree" in net[trafotable]) or (f"tap{t}_step_percent" in net[trafotable]):
                     # no phase shifters - check if both tap_step_percent & tap_step_degree are 0 or nan
                     mask_na = (

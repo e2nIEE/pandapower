@@ -22,6 +22,7 @@ from packaging.version import Version
 
 from pandapower.create._utils import add_column_to_df
 from pandapower.network import pandapowerNet
+from pandapower.pf.transformer_thermal import TRANSFORMER_THERMAL_AVAILABLE
 from pandapower.run import runpp
 
 logger = logging.getLogger(__name__)
@@ -154,12 +155,23 @@ def run_contingency(
         "bus": ["vm_pu"],
         **{key: ["loading_percent"] for key in ("line", "trafo", "trafo3w") if len(net[key]) > 0},
     }
-    if len(net.line) > 0 and (
+    tdpf_requested = (
         net.get("_options", {}).get("tdpf", False)
         or pf_options.get("tdpf", False)
         or pf_options_nminus1.get("tdpf", False)
-    ):
-        result_variables["line"].append("temperature_degree_celsius")
+    )
+    if tdpf_requested:
+        if len(net.line) > 0:
+            result_variables["line"].append("temperature_degree_celsius")
+
+        # transformer temperatures are post-processing results of the transformer thermal model. They
+        # are produced by every solve once tdpf is on, no matter whether the input network already
+        # carries the result column -- a fresh network does not, so the column cannot be used to
+        # decide this before the first solve.
+        if TRANSFORMER_THERMAL_AVAILABLE:
+            for element in ("trafo", "trafo3w"):
+                if len(net[element]) > 0:
+                    result_variables[element].append("temperature_degree_celsius")
 
     # for n-1
     for element, val in nminus1_cases.items():
@@ -246,22 +258,16 @@ def run_contingency_ls2g(
         raise UserWarning("bus index must be continuous and start with 0 (use pandapower.create_continuous_bus_index)")
     contingency_evaluation_function(net, **kwargs)
 
-    tps_flag = False
-    tps, tps_tap_pos, tps_shift_degree = None, None, None
-    if "tap_phase_shifter" in net.trafo.columns and np.any(net.trafo.tap_phase_shifter):
-        tps_flag = True
-        tps, tps_tap_pos, tps_shift_degree = _convert_trafo_phase_shifter(net, "trafo", "tap_phase_shifter")
-
     tct2w_flag = False
     tct2w, tct2w_tap_pos, tct2w_shift_degree = None, None, None
     tct3w_flag = False
     tct3w, tct3w_tap_pos, tct3w_shift_degree = None, None, None
     if "tap_changer_type" in net.trafo.columns and np.any(net.trafo.tap_changer_type == "Ideal"):
         tct2w_flag = True
-        tct2w, tct2w_tap_pos, tct2w_shift_degree = _convert_trafo_phase_shifter(net, "trafo", "tap_changer_type")
+        tct2w, tct2w_tap_pos, tct2w_shift_degree = _convert_trafo_phase_shifter(net, "trafo")
     if "tap_changer_type" in net.trafo3w.columns and np.any(net.trafo3w.tap_changer_type == "Ideal"):
         tct3w_flag = True
-        tct3w, tct3w_tap_pos, tct3w_shift_degree = _convert_trafo_phase_shifter(net, "trafo3w", "tap_changer_type")
+        tct3w, tct3w_tap_pos, tct3w_shift_degree = _convert_trafo_phase_shifter(net, "trafo3w")
 
     # setting "slack" back-and-forth is due to the difference in interpretation of generators as "distributed slack"
     if net._options.get("distributed_slack", False):
@@ -280,10 +286,6 @@ def run_contingency_ls2g(
         lightsim_grid_model = pp_to_ls2g(net)
         solver_type = SolverType.KLUSingleSlack if KLU_solver_available else SolverType.SparseLUSingleSlack
 
-    if tps_flag:
-        net.trafo["tap_phase_shifter"] = tps
-        net.trafo["tap_pos"] = tps_tap_pos
-        net.trafo["shift_degree"] = tps_shift_degree
     if tct2w_flag:
         net.trafo["tap_changer_type"] = tct2w
         net.trafo["tap_pos"] = tct2w_tap_pos
@@ -314,7 +316,7 @@ def run_contingency_ls2g(
 
     # s.add_multiple_n1(net.line.index.values.astype(int))
     v_init = net._ppc["internal"]["V"]  # type: ignore[index]
-    s.compute(v_init, net._options["max_iteration"], net._options["tolerance_mva"])
+    s.compute(v_init, net._options["max_iteration"], net._options["tolerance"])
     v_res = s.get_voltages()
     s.compute_flows()
     kamps_all = s.get_flows()
@@ -397,29 +399,22 @@ def run_contingency_ls2g(
             ] = congestion_caused
 
 
-def _convert_trafo_phase_shifter(net, trafotable="trafo", tap_param="tap_changer_type"):
+def _convert_trafo_phase_shifter(net, trafotable="trafo"):
     """
-    Moves tap_step_degree values for ideal phase shifters to the shift_degree values.
-    Works both for old implementation (tap_phase_shifter) and for new implementation (tap_changer_type).
+    Moves tap_step_degree values for ideal phase shifters (tap_changer_type "Ideal") to the shift_degree values.
     """
-    tap_changer = net[trafotable][tap_param].values.copy()
+    tap_changer = net[trafotable]["tap_changer_type"].values.copy()
     shift_degree = net[trafotable].shift_degree.values.copy()
 
     tap_pos = net[trafotable].tap_pos.values
     tap_neutral = net[trafotable].tap_neutral.values
     tap_diff = tap_pos - tap_neutral
     tap_step_degree = net[trafotable].tap_step_degree.values.copy()
+    direction = np.where(net[trafotable].tap_side.values == "lv", -1, 1)
 
-    if tap_param == "tap_changer_type":
-        net.trafo.loc[tap_changer == "Ideal", "shift_degree"] += (
-            tap_diff[tap_changer == "Ideal"] * tap_step_degree[tap_changer == "Ideal"]
-        )
-        net[trafotable][tap_param] = None
-    elif tap_param == "tap_phase_shifter":
-        net.trafo.loc[tap_changer, "shift_degree"] += tap_diff[tap_changer] * tap_step_degree[tap_changer]
-        net[trafotable][tap_param] = False
-    else:
-        raise ValueError("tap_param argument not recognized")
+    ideal = tap_changer == "Ideal"
+    net.trafo.loc[ideal, "shift_degree"] += direction[ideal] * tap_diff[ideal] * tap_step_degree[ideal]
+    net[trafotable]["tap_changer_type"] = None
 
     net[trafotable]["tap_pos"] = 0
 
@@ -431,7 +426,11 @@ def _update_contingency_results(
 ):
     for element, vars in result_variables.items():
         for var in vars:
-            val = net[f"res_{element}"][var].values
+            res_table = net[f"res_{element}"]
+            if var not in res_table.columns:
+                # e.g. the transformer temperature when no transformer took part in this solve
+                continue
+            val = res_table[var].values
             if nminus1:
                 if var == "loading_percent":
                     s = (

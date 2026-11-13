@@ -66,15 +66,16 @@ Changelog = "https://github.com/e2nIEE/pandapower/blob/develop/CHANGELOG.rst"
 [project.optional-dependencies]
 plotting = ["plotly~=6.8", "matplotlib~=3.11", "igraph", "geopandas~=1.1"]
 performance = ["ortools~=9.15", "numba~=0.66", "lightsim2grid~=0.13.0"]
-fileio = ["xlsxwriter~=3.2", "openpyxl~=3.1", "cryptography~=49.0", "geopandas~=1.1", "psycopg~=3.2", "lxml~=6.1"]
+fileio = ["xlsxwriter~=3.2", "openpyxl~=3.1", "cryptography~=49.0", "geopandas~=1.1", "psycopg~=3.3", "lxml~=6.1"]
 converter = ["matpowercaseframes~=2.1", "lxml~=6.1", "pypowsybl~=1.15"]
 pgm = ["power-grid-model-io~=1.2; python_version <= '3.11'", "power-grid-model-io~=1.3.87; python_version > '3.11'"]
 control = ["shapely~=2.1"]
 pandamodels = ["juliacall<=0.9.32"]
 opendss = ["OpenDSSDirect.py~=0.9"]
 helm = ["fast-helmpy"]
+tdpf = ["transformer-thermal-model~=0.6"]
 
-all = ["pandapower[plotting,performance,fileio,converter,pgm,control,helm,opendss]"]
+all = ["pandapower[plotting,performance,fileio,converter,pgm,control,helm,opendss,tdpf]"]
 
 [dependency-groups]
 tutorials = [
@@ -105,7 +106,7 @@ typing = [
     "scipy-stubs~=1.18; python_version >= '3.12'",
     "scipy-stubs<1.17; python_version < '3.12'",
     "pandera[mypy]>=0.27.0,<=0.29.0",
-    "psycopg~=3.2",
+    "psycopg~=3.3",
     "matplotlib~=3.10",
     "types-geopandas~=1.1.4",
     "types-python-dateutil",

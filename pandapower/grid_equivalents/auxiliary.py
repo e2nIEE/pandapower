@@ -353,7 +353,7 @@ def build_ppc_and_Ybus(net):
         calculate_voltage_angles="auto",
         init="auto",
         max_iteration="auto",
-        tolerance_mva=1e-8,
+        tolerance=1e-8,
         trafo_model="t",
         trafo_loading="current",
         enforce_p_lims=False,

@@ -76,7 +76,11 @@ _trafo3w_columns = {
         metadata={"sc": True},
     ),
     "pfe_kw": pa.Column(float, description="iron losses [kW]"),
-    "i0_percent": pa.Column(float, description="open loop losses [%]"),
+    "i0_percent": pa.Column(
+        float,
+        description="open loop losses [%]; the magnetizing susceptance is inductive, a negative value denotes a "
+        "capacitive susceptance",
+    ),
     "shift_mv_degree": pa.Column(
         float, description="transformer phase shift angle at the MV side", metadata={"default": 0.0}
     ),
@@ -371,6 +375,22 @@ _trafo3w_columns = {
         required=False,
         description="power_station_unit from converter, not relevant for calculations",
         metadata={"cim": True, "doc": False},
+    ),
+    "cooling_type": pa.Column(
+        pd.StringDtype,
+        pa.Check.isin(["ONAN", "ONAF"]),
+        nullable=True,
+        required=False,
+        description="cooling type of the transformer for the thermal calculation (TDPF), ONAN (Oil Natural, Air Natural) or ONAF (Oil Natural, Air Forced)",
+        metadata={"tdpf": True, "default": "ONAN"},
+    ),
+    "air_temperature_degree_celsius": pa.Column(
+        float,
+        pa.Check.gt(-273),
+        nullable=True,
+        required=False,
+        description="ambient temperature in °C used by the transformer thermal calculation (TDPF)",
+        metadata={"tdpf": True, "default": 35},
     ),
 }
 # FIXME: either tap_step_percent or tap_step_degree for each row

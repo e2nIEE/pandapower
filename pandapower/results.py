@@ -362,10 +362,15 @@ def get_relevant_elements(net, mode="pf"):
     return [elem for elem in elements.get(mode, []) if not net[elem].empty]
 
 
-def init_results(net, mode="pf"):
+def init_results(net, mode="pf", exclude_result_tables=None):
+    exclude = set() if exclude_result_tables is None else set(exclude_result_tables)
     elements = get_relevant_elements(net, mode)
     suffix = suffix_mode.get(mode, None)
     for element in elements:
+        res_element = get_result_tables(element, suffix)
+        if res_element in exclude and res_element in net:
+            net[res_element] = net[res_element].reindex(net[element].index)
+            continue
         init_element(net, element, suffix)
 
 
@@ -437,8 +442,7 @@ def _ppci_internal_to_ppc(result, ppc):
             # update_matrix = np.empty((n_branches, n_buses)) * np.nan
             # update_matrix[result["internal"]['branch_is'], :n_rows_result] = result["internal"][key]
 
-            # To select only required buses and pad one column of nan value for oos bus
-            update_matrix = np.empty((n_branches, value.shape[1] + 1)) * 0.0
+            update_matrix = np.zeros((n_branches, value.shape[1] + 1))
             update_matrix[result["internal"]["branch_is"], : value.shape[1]] = result["internal"][key]
             ppc["internal"][key] = update_matrix
             if "br_res_ks_ppci_bus" in result["internal"]:

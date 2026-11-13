@@ -714,7 +714,8 @@ def _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net_sn_mva) -> ND
     ym_mva = i0 / 100 * trafo_sn_mva
     b_mva_squared = np.square(ym_mva) - np.square(pfe_mw)
     b_mva_squared[b_mva_squared < 0] = 0
-    b_mva = -np.sqrt(b_mva_squared)
+    # the magnetizing susceptance is inductive, a negative i0_percent denotes a capacitive susceptance
+    b_mva = np.where(i0 < 0, 1.0, -1.0) * np.sqrt(b_mva_squared)
 
     g_pu = g_mva / vnl_squared * baseZ * parallel / np.square(vn_trafo_lv / vn_lv_kv)
     b_pu = b_mva / vnl_squared * baseZ * parallel / np.square(vn_trafo_lv / vn_lv_kv)
@@ -755,7 +756,6 @@ def _calc_tap_from_dataframe(
         if tap_pos is None:
             continue
         tap_side = get_trafo_values(trafo_df, f"tap{t}_side", na_replacement="")
-        tap_step_percent = get_trafo_values(trafo_df, f"tap{t}_step_percent", na_replacement=float("nan"))
 
         tap_changer_type = get_trafo_values(trafo_df, f"tap{t}_changer_type", na_replacement="")
         if tap_changer_type is not None:
@@ -812,39 +812,54 @@ def _calc_tap_from_dataframe(
                     trafo_shift[mask] += shift
             if any(tap_no_table):
                 tap_ideal = np.logical_and(tap_changer_type == "Ideal", tap_no_table)
-                tap_complex = np.logical_and(
-                    np.logical_or(tap_changer_type == "Ratio", tap_changer_type == "Symmetrical"), tap_no_table
-                )
-                for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
+                tap_symmetrical = np.logical_and(tap_changer_type == "Symmetrical", tap_no_table)
+                tap_complex = np.logical_and(tap_changer_type == "Ratio", tap_no_table)
+                for side, vn, vn_opposite, direction in [("hv", vnh, vnl, 1), ("lv", vnl, vnh, -1)]:
                     mask_ideal = tap_ideal & (tap_side == side)
+                    mask_symmetrical = tap_symmetrical & (tap_side == side)
                     mask_complex = tap_complex & (tap_side == side)
                     if mask_ideal.any():
                         trafo_shift[mask_ideal] += _get_trafo_shift(trafo_df, t, mask_ideal, direction)[0]
+                    if mask_symmetrical.any():
+                        shift, ratio_tap_side, ratio_opposite_side = _get_symmetrical_tap(trafo_df, t, mask_symmetrical)
+                        vn[mask_symmetrical] *= ratio_tap_side
+                        vn_opposite[mask_symmetrical] *= ratio_opposite_side
+                        trafo_shift[mask_symmetrical] += direction * shift
                     if mask_complex.any():
                         shift, _vn_mask_complex = _get_trafo_shift(trafo_df, t, mask_complex, direction, vn, False)
                         vn[mask_complex] = _vn_mask_complex
                         trafo_shift[mask_complex] += shift
-        elif f"tap{t}_phase_shifter" in trafo_df:
-            warnings.warn(
-                DeprecationWarning(
-                    f"tap{t}_phase_shifter was removed with pandapower 3.0 and replaced by "
-                    f"tap{t}_changer_type. Using old net data will still work, but usage of "
-                    f"tap{t}_phase_shifter is deprecated and will be removed in future releases."
-                )
-            )
-            tap_phase_shifter = get_trafo_values(trafo_df, f"tap{t}_phase_shifter")
-            for side, vn, direction in [("hv", vnh, 1), ("lv", vnl, -1)]:
-                tap_ideal = (tap_phase_shifter & (tap_side == side)).fillna(False)
-                tap_complex = np.isfinite(tap_step_percent) & np.isfinite(tap_pos) & (tap_side == side) & ~tap_ideal
-                # tap_complex = tap_complex.fillna(False)
-                if tap_ideal.any():
-                    trafo_shift[tap_ideal] += _get_trafo_shift(trafo_df, t, tap_ideal, direction)[0]
-                if tap_complex.any():
-                    shift, _vn_tap_complex = _get_trafo_shift(trafo_df, t, tap_complex, direction, vn, False)
-                    vn[tap_complex] = _vn_tap_complex
-                    trafo_shift[tap_complex] += shift
 
     return vnh, vnl, trafo_shift
+
+
+def _get_symmetrical_tap(trafo_df: pd.DataFrame, tap: str, mask) -> tuple[NDArray, NDArray, NDArray]:
+    """
+    Calculate the phase shift and the voltage factors of a symmetrical phase shifter.
+
+    Half of the additional voltage per tap step is added at the tap side and subtracted at the opposite side
+
+        t_tap_side = 1 + (tap_pos - tap_neutral) * tap_step_percent / 100 / 2 * e^(j * phi)
+        t_opposite_side = 1 - (tap_pos - tap_neutral) * tap_step_percent / 100 / 2 * e^(j * phi)
+
+    with phi = tap_step_degree (90 degree if NaN or 0). For phi = 90 degree, the voltage magnitude ratio stays 1 and the
+    angle is 2 * arctan((tap_pos - tap_neutral) * tap_step_percent / 100 / 2).
+    """
+    tap_pos = get_trafo_values(trafo_df, f"tap{tap}_pos")[mask]
+    tap_neutral = get_trafo_values(trafo_df, f"tap{tap}_neutral")[mask]
+    tap_step_percent = get_trafo_values(trafo_df, f"tap{tap}_step_percent")
+    tap_step_degree = get_trafo_values(trafo_df, f"tap{tap}_step_degree")
+
+    step = np.zeros(len(tap_pos)) if tap_step_percent is None else np.nan_to_num(tap_step_percent[mask], nan=0.0)
+    phi = np.full(len(tap_pos), 90.0)
+    if tap_step_degree is not None:
+        phi = np.where(np.nan_to_num(tap_step_degree[mask], nan=0.0) != 0, tap_step_degree[mask], 90.0)
+
+    half_voltage = (tap_pos - tap_neutral) * step / 100 / 2 * np.exp(1j * np.deg2rad(phi))
+    t_tap_side = 1 + half_voltage
+    t_opposite_side = 1 - half_voltage
+    shift = np.rad2deg(np.angle(t_tap_side) - np.angle(t_opposite_side))
+    return shift, np.abs(t_tap_side), np.abs(t_opposite_side)
 
 
 def _get_trafo_shift(
@@ -855,7 +870,7 @@ def _get_trafo_shift(
 
     This function computes the phase shift introduced by transformer tap changers,
     handling both ideal and complex tap changer models. For ideal tap changers,
-    it can handle either degree-based or percent-based tap steps. For complex
+    the angle per tap step is given by tap_step_degree. For complex
     tap changers, it performs more detailed voltage magnitude and angle calculations.
 
     Parameters:
@@ -876,12 +891,12 @@ def _get_trafo_shift(
 
     Raises:
         UserWarning: If vn is not provided when ideal=False
-        UserWarning: If both tap_step_degree and tap_step_percent are set for ideal tap changers
+        UserWarning: If tap_step_percent is set to a non-zero value for ideal tap changers
 
     Notes:
         For ideal tap changers:
-        - If tap_step_degree is set: shift = direction * tap_diff * tap_step_degree
-        - If tap_step_percent is set: shift = direction * 2 * arcsin(tap_diff * tap_step_percent / 100 / 2)
+        - shift = direction * tap_diff * tap_step_degree (NaN is treated as 0)
+        - tap_step_percent must be NaN or 0, the voltage magnitude is not changed
 
         For complex tap changers:
         - Performs detailed voltage triangle calculations considering both magnitude and angle changes
@@ -910,18 +925,6 @@ def _get_trafo_shift(
             the sine of x
         """
         return np.sin(np.deg2rad(x))
-
-    def _arcsin(x: ArrayLike) -> ArrayLike:
-        """
-        get arcsine for x
-
-        Parameters:
-            x: the value to get the arcsine for
-
-        Returns:
-            the arcsine of x
-        """
-        return np.rad2deg(np.arcsin(x))
 
     def _arctan(x: ArrayLike) -> ArrayLike:
         """
@@ -958,16 +961,15 @@ def _get_trafo_shift(
         tap_step_degree = float("nan")
         degree_is_set = np.False_
 
-    # ideal tap changer
+    # ideal tap changer: constant angle per tap step, the voltage magnitude is not changed
     if ideal:
-        if (degree_is_set & percent_is_set).any():
-            raise UserWarning("Both tap_step_degree and tap_step_percent set for ideal phase shifter")
-
-        return np.where(
-            degree_is_set,
-            (direction * tap_diff * tap_step_degree),
-            (direction * 2 * _arcsin(tap_diff * tap_step_percent / 100 / 2)),
-        ), None
+        if np.any(percent_is_set):
+            raise UserWarning(
+                f"tap{tap}_step_percent is set to a non-zero value for an ideal phase shifter "
+                f"(tap{tap}_changer_type 'Ideal'). An ideal phase shifter only changes the voltage angle: define the "
+                f"angle per tap step in tap{tap}_step_degree and set tap{tap}_step_percent to NaN."
+            )
+        return direction * tap_diff * np.where(degree_is_set, tap_step_degree, 0.0), None
 
     # complex tap changer
     tap_steps = tap_step_percent * tap_diff / 100
@@ -1738,7 +1740,6 @@ def _trafo_df_from_trafo3w(net: pandapowerNet, sequence: int = 1) -> dict:
         "tap_changer_type",
         "tap_dependency_table",
         "id_characteristic_table",
-        "tap_phase_shifter",
         "tap_at_star_point",
     ]:
         if param in net.trafo3w:
@@ -1874,6 +1875,9 @@ def _calculate_3w_tap_changers(net, t2, sides):
     tap_arrays["tap_side"] = {side: np.array([None] * nr_trafos) for side in sides}
     at_star_point = net.trafo3w.tap_at_star_point.values
     any_at_star_point = at_star_point.any()
+    ideal_tap = np.zeros(nr_trafos, dtype=bool)
+    if "tap_changer_type" in net.trafo3w:
+        ideal_tap = net.trafo3w.tap_changer_type.eq("Ideal").fillna(False).to_numpy(dtype=bool)
     for side in sides:
         add_column_to_df(net, "trafo3w", "tap_side")
         tap_mask = (net.trafo3w.tap_side.fillna("") == side).to_numpy()
@@ -1888,14 +1892,19 @@ def _calculate_3w_tap_changers(net, t2, sides):
 
         # net.trafo3w with tap changer at star points
         if any_at_star_point & np.any(mask_star_point := (tap_mask & at_star_point)):
-            t = tap_arrays["tap_step_percent"][side][mask_star_point] * np.exp(
-                1j * np.deg2rad(tap_arrays["tap_step_degree"][side][mask_star_point])
-            )
-            tap_pos = tap_arrays["tap_pos"][side][mask_star_point]
-            tap_neutral = tap_arrays["tap_neutral"][side][mask_star_point]
-            t_corrected = 100 * t / (100 + (t * (tap_pos - tap_neutral)))
-            tap_arrays["tap_step_percent"][side][mask_star_point] = np.abs(t_corrected)
             tap_arrays["tap_side"][side][mask_star_point] = "lv" if side == "hv" else "hv"
-            tap_arrays["tap_step_degree"][side][mask_star_point] = np.rad2deg(np.angle(t_corrected))
-            tap_arrays["tap_step_degree"][side][mask_star_point] -= 180
+            ideal_star_point = mask_star_point & ideal_tap
+            tap_arrays["tap_step_percent"][side][ideal_star_point] *= -1
+            tap_arrays["tap_step_degree"][side][ideal_star_point] *= -1
+
+            complex_star_point = mask_star_point & ~ideal_tap
+            t = tap_arrays["tap_step_percent"][side][complex_star_point] * np.exp(
+                1j * np.deg2rad(tap_arrays["tap_step_degree"][side][complex_star_point])
+            )
+            tap_pos = tap_arrays["tap_pos"][side][complex_star_point]
+            tap_neutral = tap_arrays["tap_neutral"][side][complex_star_point]
+            t_corrected = 100 * t / (100 + (t * (tap_pos - tap_neutral)))
+            tap_arrays["tap_step_percent"][side][complex_star_point] = np.abs(t_corrected)
+            tap_arrays["tap_step_degree"][side][complex_star_point] = np.rad2deg(np.angle(t_corrected))
+            tap_arrays["tap_step_degree"][side][complex_star_point] -= 180
     t2.update(tap_arrays)
