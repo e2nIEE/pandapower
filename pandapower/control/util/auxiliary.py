@@ -10,10 +10,10 @@ import pandas as pd
 from numpy.typing import NDArray
 from pandas import Index
 
-from pandapower import pandapowerNet
 from pandapower.auxiliary import ensure_iterability, soft_dependency_error
 from pandapower.control.util.characteristic import Characteristic, SplineCharacteristic
 from pandapower.create._utils import add_column_to_df
+from pandapower.network import pandapowerNet
 from pandapower.pp_types import Int
 
 if find_spec("matplotlib"):
