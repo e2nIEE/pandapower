@@ -1615,10 +1615,11 @@ def _check_tdpf_switch_parameters(net: pandapowerNet) -> None:
     documented assumptions if they are missing.
 
     Only the switches that can actually be calculated are defaulted and validated. A switch without a
-    rated current, with an open state, a bus-trafo3w switch (``et="t3"``) or a fused bus-bus switch
-    (``z_ohm <= 0``) is skipped by the thermal calculation anyway (see
-    ``pandapower.pf.switchgear_thermal``), so an incomplete or invalid value there must not reject a
-    network that TDPF handles fine.
+    rated current, with an open state or a bus-trafo3w switch (``et="t3"``) is skipped by the thermal
+    calculation anyway (see ``pandapower.pf.switchgear_thermal``), so an incomplete or invalid value
+    there must not reject a network that TDPF handles fine. A fused bus-bus switch (``z_ohm <= 0``) is
+    validated like any other switch: its flow is reconstructed from the nodal balance during the
+    thermal step, so it takes part in the calculation.
     """
     if len(net.switch) == 0:
         return
@@ -1637,16 +1638,9 @@ def _check_tdpf_switch_parameters(net: pandapowerNet) -> None:
         if "in_ka" in table.columns
         else pd.Series(np.nan, index=table.index)
     )
-    # A bus-trafo3w switch and a fused bus-bus switch (z_ohm <= 0) have no branch in the power flow
-    # and therefore no current in res_switch, so the thermal calculation skips them. Their thermal
-    # inputs must not reject the run either.
-    element_type = table["et"].astype(str)
-    z_ohm = (
-        pd.to_numeric(table["z_ohm"], errors="coerce")
-        if "z_ohm" in table.columns
-        else pd.Series(0.0, index=table.index)
-    )
-    calculable = (element_type != "t3") & ~((element_type == "b") & ~(z_ohm > 0))
+    # A bus-trafo3w switch has no branch in the power flow and no current in res_switch, so the
+    # thermal calculation skips it. Fused bus-bus switches get their current from the thermal step.
+    calculable = table["et"].astype(str) != "t3"
     relevant = (closed & np.isfinite(rated_current) & (rated_current > 0) & calculable).to_numpy(dtype=bool)
     if not relevant.any():
         return

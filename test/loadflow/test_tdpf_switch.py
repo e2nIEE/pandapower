@@ -341,6 +341,10 @@ def test_fused_switch_flow_is_reconstructed():
     assert net.res_switch.at[index, TEMPERATURE_COLUMN] == pytest.approx(
         _steady_state_temperature(net.res_switch.at[index, "i_ka"]), rel=1e-6
     )
+    # fused switches take part in the calculation, so they receive the same defaults as others
+    assert net.switch.at[index, "thermal_time_constant_minutes"] == pytest.approx(
+        SWITCH_DEFAULTS["thermal_time_constant_minutes"]
+    )
 
 
 def test_fused_switch_cycle_is_skipped_with_a_warning(caplog):
@@ -676,11 +680,11 @@ def test_invalid_values_of_skipped_switches_are_not_validated():
     assert np.isnan(net.res_switch.at[index, TEMPERATURE_COLUMN])
 
 
-def test_invalid_values_of_fused_switch_are_not_validated():
-    """A fused bus-bus switch has no current, so its thermal inputs must not reject the run."""
-    net, index = _switch_net()
+def test_invalid_values_of_fused_switch_are_validated():
+    """A fused bus-bus switch is calculated, so its thermal inputs are validated like any other."""
+    net, _ = _switch_net()
     extra_bus = create_buses(net, nr_buses=1, vn_kv=[110.0])[0]
-    fused = create_switch(
+    create_switch(
         net,
         0,
         extra_bus,
@@ -691,11 +695,22 @@ def test_invalid_values_of_fused_switch_are_not_validated():
         thermal_time_constant_minutes=-1.0,
     )
 
-    runpp(net, tdpf=True)
+    with pytest.raises(UserWarning, match="switch.thermal_time_constant_minutes must be greater than 0"):
+        runpp(net, tdpf=True)
 
-    # the supported line switch is still calculated, the fused switch is only skipped
-    assert np.isfinite(net.res_switch.at[index, TEMPERATURE_COLUMN])
-    assert np.isnan(net.res_switch.at[fused, TEMPERATURE_COLUMN])
+
+def test_non_numeric_value_of_fused_switch_raises():
+    """A non-numeric thermal input on a fused switch must not silently fall back to the default."""
+    net, _ = _switch_net()
+    extra_bus = create_buses(net, nr_buses=1, vn_kv=[110.0])[0]
+    fused = create_switch(net, 0, extra_bus, et="b", closed=True, in_ka=RATED_CURRENT_KA, z_ohm=0.0)
+    net.switch["measured_temperature_rise_kelvin"] = pd.Series(
+        [np.nan] * len(net.switch), index=net.switch.index, dtype="object"
+    )
+    net.switch.at[fused, "measured_temperature_rise_kelvin"] = "hot"
+
+    with pytest.raises(UserWarning, match="switch.measured_temperature_rise_kelvin must be numeric"):
+        runpp(net, tdpf=True)
 
 
 def test_invalid_values_of_t3_switch_are_not_validated():
