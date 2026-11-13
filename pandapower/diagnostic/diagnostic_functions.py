@@ -241,9 +241,11 @@ class InvalidValues(DiagnosticFunction[pandapowerNet, dict[str, Any]]):
 
         for key, values in important_values.items():
             if len(net[key]) > 0:
+                # build the rows once per table instead of once per checked column
+                rows = list(net[key].iterrows())
                 for value in values:
                     # every element is checked separately, TODO: implement vector based checks
-                    for i, element in net[key].iterrows():
+                    for i, element in rows:
                         check_result = type_checks[value[1]](element, i, value[0])
                         if check_result is not None:
                             if key not in check_results:
