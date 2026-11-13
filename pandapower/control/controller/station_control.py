@@ -391,10 +391,11 @@ class BinarySearchControl(Controller):
                 all_idx = np.atleast_1d(self.output_element_index)
                 active_idx = all_idx[in_service_mask].tolist()
                 logger.warning(
-                    f'Reactive Power Distribution for one output element cannot be modified. The active '
-                    f'{self.output_element} at index '
-                    f'{active_idx} will provide 100% of the'
-                    f' reactive power in Controller {self.index}.\n')
+                    f"Reactive Power Distribution for one output element cannot be modified. The active "
+                    f"{self.output_element} at index "
+                    f"{active_idx} will provide 100% of the"
+                    f" reactive power in Controller {self.index}.\n"
+                )
 
         # read input values
         input_values = []  # reactive power q
@@ -672,7 +673,8 @@ class BinarySearchControl(Controller):
         if self.output_values_old is None:  # first step
             self.output_values_old, self.output_values = (
                 np.atleast_1d(self.output_values).astype(np.float64),
-                np.atleast_1d(self.output_values).astype(np.float64) + 1e-3)
+                np.atleast_1d(self.output_values).astype(np.float64) + 1e-3,
+            )
             positions_not_adjustable = [i for i, val in enumerate(self.output_adjustable) if not val]
             for i in positions_not_adjustable:
                 if self.output_values_distribution[i] == 0 or not np.atleast_1d(self.output_element_in_service)[i]:
@@ -817,19 +819,21 @@ class BinarySearchControl(Controller):
             logger.warning(
                 f"Controller {self.index}: length mismatch (idx={len(all_idx)}, "
                 f"values={len(all_values)}, in_service={len(in_service_mask)}). "
-                f"Writing without in-service filtering.")
+                f"Writing without in-service filtering."
+            )
             n_min = min(len(all_idx), len(all_values))
             sel_idx, sel_values = all_idx[:n_min], all_values[:n_min]
 
-        if self.write_flag == 'single_index':
+        if self.write_flag == "single_index":
             output_element_index = sel_idx.tolist()[0]
             output_values = sel_values.tolist()[0]
         else:
             output_element_index = sel_idx.tolist()
             output_values = sel_values.tolist()
 
-        write_to_net(net, self.output_element, output_element_index, self.output_variable,
-                     output_values, self.write_flag)
+        write_to_net(
+            net, self.output_element, output_element_index, self.output_variable, output_values, self.write_flag
+        )
 
     def _normalize_distribution_in_service(self, initial_pf_distribution=None):
         # normalize distribution depending on in service of stations
@@ -1100,7 +1104,7 @@ class DroopControl(Controller):
             if self.q_set_mvar_bsc is None:
                 self.q_set_mvar_bsc = net.controller.at[self.controller_idx, "object"].set_point
             if self.lb_voltage is not None and self.ub_voltage is not None:
-                if self.vm_pu > self.ub_voltage:         
+                if self.vm_pu > self.ub_voltage:
                     self.q_set_old_mvar, self.q_set_mvar = (
                         self.q_set_mvar,
                         self.q_set_mvar_bsc - (self.ub_voltage - self.vm_pu) * self.q_droop_mvar,
