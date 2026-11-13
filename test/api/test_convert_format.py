@@ -151,6 +151,29 @@ def test_convert_format_ext_grid_controllable_keeps_opf_results():
     np.testing.assert_allclose(net.res_ext_grid[["p_mw", "q_mvar"]].to_numpy(), expected)
 
 
+def test_convert_format_ext_grid_controllable_nonconsecutive_index():
+    # the backfill must not break OPF for networks whose ext_grid index is not
+    # consecutive (e.g. a single ext_grid with index 5)
+    from pandapower.networks import case9
+    from pandapower.run import runopp
+
+    legacy = case9()
+    legacy.ext_grid.index = [5]
+    legacy.ext_grid = legacy.ext_grid.drop(columns=["controllable"], errors="ignore")
+    runopp(legacy, verbose=False)
+    expected = legacy.res_ext_grid[["p_mw", "q_mvar"]].to_numpy()
+
+    net = case9()
+    net.ext_grid.index = [5]
+    net.format_version = "3.1.0"
+    net.ext_grid = net.ext_grid.drop(columns=["controllable"], errors="ignore")
+    convert_format(net)
+    assert "controllable" in net.ext_grid.columns
+    runopp(net, verbose=False)
+
+    np.testing.assert_allclose(net.res_ext_grid[["p_mw", "q_mvar"]].to_numpy(), expected)
+
+
 def test_convert_format_newer_format_version():
     version = max(found_versions, key=lambda k: Version(k))
     filename = os.path.join(folder, f"example_{version}.json")
