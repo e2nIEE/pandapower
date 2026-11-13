@@ -113,15 +113,16 @@ class BasePQVArea(BaseArea):
 
 
 class PQAreaPOLYGON(BaseArea):
-    """Provides a polygonal area of feasible reactive power provision. The polygonal area can be
-    defined by 'p_points_pu' and 'q_points_pu'.
+    """
+    Provides a polygonal area of feasible reactive power provision. The polygonal area can be defined by
+    'p_points_pu' and 'q_points_pu'.
 
-    Note: Due to generator point of view, negative q values are correspond with underexcited behavior.
+    Example:
+        >>> PQAreaDefault(p_points_pu=(0.1, 0.2, 1, 1, 0.2, 0.1, 0.1),
+        ...               q_points_pu=(0.1, 0.410775, 0.410775, -0.328684, -0.328684, -0.1, 0.1))
 
-    Example
-    -------
-    >>> PQAreaDefault(p_points_pu=(0.1, 0.2, 1, 1, 0.2, 0.1, 0.1),
-    ...               q_points_pu=(0.1, 0.410775, 0.410775, -0.328684, -0.328684, -0.1, 0.1))
+    Note:
+        Due to generator point of view, negative q values are correspond with underexcited behavior.
     """
 
     def __init__(self, p_points_pu, q_points_pu):
@@ -154,15 +155,16 @@ class PQAreaPOLYGON(BaseArea):
 
 
 class QVAreaPOLYGON(BaseArea):
-    """Provides a polygonal area of feasible reactive power provision. The polygonal area can be
-    defined by 'q_points_pu' and 'vm_points_pu'.
+    """
+    Provides a polygonal area of feasible reactive power provision. The polygonal area can be defined by
+    'q_points_pu' and 'vm_points_pu'.
 
-    Note: Due to generator point of view, negative q values are correspond with underexcited behavior.
+    Example:
+        >>> QVAreaPOLYGON(q_points_pu=(0.1, 0.410775, 0.410775, -0.328684, -0.328684, -0.1, 0.1),
+        ...               vm_points_pu=(0.9, 1.05, 1.1, 1.1, 1.05, 0.9, 0.9))
 
-    Example
-    -------
-    >>> QVAreaPOLYGON(q_points_pu=(0.1, 0.410775, 0.410775, -0.328684, -0.328684, -0.1, 0.1),
-    ...               vm_points_pu=(0.9, 1.05, 1.1, 1.1, 1.05, 0.9, 0.9))
+    Note:
+        Due to generator point of view, negative q values are correspond with underexcited behavior.
     """
 
     def __init__(self, q_points_pu, vm_points_pu):
@@ -193,15 +195,15 @@ class QVAreaPOLYGON(BaseArea):
 
 
 class PQVAreaPOLYGON(BasePQVArea):
-    """Provides a polygonal area of feasible reactive power provision. The polygonal area can be
-    defined by 'p_points_pu' and 'q_pq_points_pu' as well as 'q_qv_points_pu' and 'vm_points_pu'.
+    """
+    Provides a polygonal area of feasible reactive power provision. The polygonal area can be defined by
+    'p_points_pu' and 'q_pq_points_pu' as well as 'q_qv_points_pu' and 'vm_points_pu'.
 
-    Example
-    -------
-    >>> PQVAreaDefault(p_points_pu=(0.1, 0.2, 1, 1, 0.2, 0.1, 0.1),
-    ...                q_pq_points_pu=(0.1, 0.410775, 0.410775, -0.328684, -0.328684, -0.1, 0.1),
-    ...                q_qv_points_pu=(0.1, 0.410775, 0.410775, -0.328684, -0.328684, -0.1, 0.1),
-    ...                vm_points_pu=(0.9, 1.05, 1.1, 1.1, 1.05, 0.9, 0.9))
+    Example:
+        >>> PQVAreaDefault(p_points_pu=(0.1, 0.2, 1, 1, 0.2, 0.1, 0.1),
+        ...                q_pq_points_pu=(0.1, 0.410775, 0.410775, -0.328684, -0.328684, -0.1, 0.1),
+        ...                q_qv_points_pu=(0.1, 0.410775, 0.410775, -0.328684, -0.328684, -0.1, 0.1),
+        ...                vm_points_pu=(0.9, 1.05, 1.1, 1.1, 1.05, 0.9, 0.9))
     """
 
     def __init__(self, p_points_pu, q_pq_points_pu, q_qv_points_pu, vm_points_pu, raise_merge_overlap=True):
@@ -214,12 +216,12 @@ class PQVAreaPOLYGON(BasePQVArea):
 
 
 class PQAreaSTATCOM(BaseArea):
-    """PQAreaSTATCOM provides a simple rectangular reactive power provision area without a
-    dependency on the on the active power.
+    """
+    PQAreaSTATCOM provides a simple rectangular reactive power provision area without a dependency on the on the
+    active power.
 
-    Example
-    -------
-    >>> PQAreaSTATCOM(min_q=-0.328684, max_q=0.410775)
+    Example:
+        >>> PQAreaSTATCOM(min_q=-0.328684, max_q=0.410775)
     """
 
     def __init__(self, min_q_pu, max_q_pu):

@@ -7,12 +7,15 @@ from typing import overload
 
 import numpy as np
 import pandas as pd
+from numpy.typing import NDArray
 from pandas import Index
 from typing_extensions import deprecated
 
+from pandapower import pandapowerNet
 from pandapower.auxiliary import ensure_iterability, soft_dependency_error
 from pandapower.control.util.characteristic import Characteristic, SplineCharacteristic
 from pandapower.create._utils import add_column_to_df
+from pandapower.pp_types import Int
 
 if find_spec("matplotlib"):
     import matplotlib.pyplot as plt
@@ -28,12 +31,15 @@ logger = logging.getLogger(__name__)
 
 def asarray(val, dtype=np.float64):
     """
-    make sure the value is a numpy array of a certain dtype
-    in contrast to np.asarray, it also converts a scalar value to an array,
-    e.g. asarray(0) = array([0])
-    :param val: scalar or list-like or pandas index input
-    :param dtype: np.dtype for the output array
-    :return: numpy array of the dtype set
+    make sure the value is a numpy array of a certain dtype in contrast to np.asarray, it also converts a scalar
+    value to an array, e.g. asarray(0) = array([0])
+
+    Parameters:
+        val: scalar or list-like or pandas index input
+        dtype: np.dtype for the output array
+
+    Returns:
+        numpy array of the dtype set
     """
     # val is a list, tuple etc
     if not np.isscalar(val) and np.ndim(val) > 0:
@@ -101,17 +107,19 @@ def _controller_attributes_query(controller, parameters):
     return complete_match & element_index_match
 
 
-def get_controller_index(net, ctrl_type=None, parameters=None, idx=None):
+def get_controller_index(
+    net: pandapowerNet, ctrl_type: str | object = None, parameters: dict | None = None, idx: list | None = None
+) -> Int | list[Int]:
     """Returns indices of searched controllers. Parameters can specify the search query.
 
     Parameters:
         net (pandapowerNet): The pandapower network
-        controller_type (controller object or string name of controller object):
-        parameters (dict): Dict of parameter names, which are in the controller object or net.controller DataFrame
-        idx (list): list of indices in net.controller to be searched for. If list is empty all indices are considered.
+        ctrl_type: controller object or string name of controller object):
+        parameters: Dict of parameter names, which are in the controller object or net.controller DataFrame
+        idx: list of indices in net.controller to be searched for. If list is empty all indices are considered.
 
     Returns:
-        idx (list): index / indices of controllers in net.controller which are in idx and matches given ctrl_type or
+        index / indices of controllers in net.controller which are in idx and matches given ctrl_type or
             parameters
     """
     if idx is None:
@@ -146,18 +154,17 @@ def log_same_type_existing_controllers(net, this_ctrl_type, index=None, matching
 def log_same_type_existing_controllers(net, this_ctrl_type, index=None, matching_params=None, **kwargs): ...
 
 
-def log_same_type_existing_controllers(net, this_ctrl_type, index=None, matching_params=None, **kwargs):
+def log_same_type_existing_controllers(
+    net: pandapowerNet, this_ctrl_type: str | object, index: Int | None = None, matching_params: dict | None = None
+):
     """
     Logs same type controllers, if a controller is created.
 
     Parameters:
         net: pandapower net
-        this_ctrl_type (controller object or string name of controller object):
-        index (int): index in net.controller of the controller to be created
-        matching_params (dict): parameters, which must be equal if same type controller should be logged.
-
-    Keyword Arguments:
-        *deprecated*: unused arguments, given to avoid unexpected input arguments
+        this_ctrl_type: controller object or string name of controller object
+        index: index in net.controller of the controller to be created
+        matching_params: parameters, which must be equal if same type controller should be logged.
     """
     index = str(index)
     if isinstance(matching_params, dict):
@@ -174,21 +181,17 @@ def log_same_type_existing_controllers(net, this_ctrl_type, index=None, matching
         )
 
 
-def drop_same_type_existing_controllers(net, this_ctrl_type, index=None, matching_params=None, **kwargs):
+def drop_same_type_existing_controllers(
+    net: pandapowerNet, this_ctrl_type: str | object, index: Int | None = None, matching_params: dict | None = None
+):
     """
     Drops same type controllers to create a new controller of this type.
-    INPUT:
-        **net** - pandapower net
 
-        **this_ctrl_type** (controller object or string name of controller object)
-
-    OPTIONAL:
-        **index** (int) - index in net.controller of the controller to be created
-
-        **matching_params** (dict) - parameters, which must be equal if same type controller should
-            be logged.
-
-        ****kwargs** - unused arguments, given to avoid unexpected input arguments
+    Parameters:
+        net: pandapower net
+        this_ctrl_type (controller object or string name of controller object):
+        index (int): index in net.controller of the controller to be created
+        matching_params (dict): parameters, which must be equal if same type controller should be logged.
     """
     index = str(index)
     if isinstance(matching_params, dict):
@@ -540,33 +543,28 @@ def create_q_capability_characteristics_object(net):
         logger.debug("q_capability_curve_table is empty - no characteristic objects created.")
 
 
-def get_min_max_q_mvar_from_characteristics_object(net, element, element_index):
+def get_min_max_q_mvar_from_characteristics_object(
+    net: pandapowerNet, element: str, element_index: Int | list[Int]
+) -> tuple[NDArray, NDArray] | tuple[list, list] | None:
     """
-    Calculates the minimum and maximum reactive power (q_mvar) for a given element ('gen' or 'sgen')
-    using its Q capability characteristic curve.
+    Calculates the minimum and maximum reactive power (q_mvar) for a given element ('gen' or 'sgen') using its Q
+    capability characteristic curve.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        The pandapower network containing the element and characteristic tables.
-    element : str
-        The type of element, either 'gen' or 'sgen'.
-    element_index : int or iterable
-        The index or indices of the element(s) for which to calculate min and max q_mvar.
+    Parameters:
+        net: The pandapower network containing the element and characteristic tables.
+        element: The type of element, either 'gen' or 'sgen'.
+        element_index: The index or indices of the element(s) for which to calculate min and max q_mvar.
 
-    Returns
-    -------
-    qmin : numpy.ndarray
-        Array of minimum reactive power values for the specified element(s).
-    qmax : numpy.ndarray
-        Array of maximum reactive power values for the specified element(s).
+    Returns:
+        qmin: Array of minimum reactive power values for the specified element(s).
+        qmax: Array of maximum reactive power values for the specified element(s).
     """
     if element not in ["gen", "sgen", "ext_grid"]:
         logger.warning(
             f"The given element type is not valid for q_min and q_max reactive power capability calculation "
             f"of the {element}. Please give gen or sgen as an argument of the function"
         )
-        return
+        return None
 
     if len(net[element]) == 0:
         logger.warning(f"No. of {element} elements is zero.")

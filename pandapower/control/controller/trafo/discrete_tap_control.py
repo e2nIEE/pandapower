@@ -1,10 +1,14 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+from typing import Literal
 
 import numpy as np
+from typing_extensions import deprecated
 
+from pandapower import pandapowerNet
 from pandapower.auxiliary import read_from_net, write_to_net
 from pandapower.control.controller.trafo_control import TrafoController
+from pandapower.pp_types import HVMVLVType, Int
 
 
 class DiscreteTapControl(TrafoController):
@@ -12,28 +16,36 @@ class DiscreteTapControl(TrafoController):
     Trafo Controller with local tap changer voltage control.
 
     Parameters:
-        net (ADict): Pandapower struct
-        element_index (int): ID of the trafo that is controlled
-        vm_lower_pu (float): Lower voltage limit in pu
-        vm_upper_pu (float): Upper voltage limit in pu
-        side (string, "lv"): Side of the transformer where the voltage is controlled (hv or lv)
-        element (string, "trafo"): Trafo type ("trafo" or "trafo3w")
-        tol (float, 0.001): Voltage tolerance band at bus in Percent (default: 1% = 0.01pu)
-        in_service (bool, True): Indicates if the controller is currently in_service
-        drop_same_existing_ctrl (bool, False): Indicates if already existing controllers of the same type and with the
+        net: the pandapower net
+        element_index: ID of the trafo that is controlled
+        vm_lower_pu: Lower voltage limit in pu
+        vm_upper_pu: Upper voltage limit in pu
+        side: Side of the transformer where the voltage is controlled (hv or lv)
+        element: Trafo type ("trafo" or "trafo3w")
+        tol: Voltage tolerance band at bus in Percent (default: 1% = 0.01pu)
+        in_service: Indicates if the controller is currently in_service
+        drop_same_existing_ctrl: Indicates if already existing controllers of the same type and with the
             same matching parameters (e.g. at same element) should be dropped
+
+
+    Keyword Arguments:
+        vm_set_pu:
+
+    Example:
+        # Controller from tap step percent
+        >>> c = DiscreteTapControl(net, element_index, vm_set_pu)
     """
 
     def __init__(
         self,
-        net,
-        element_index,
-        vm_lower_pu,
-        vm_upper_pu,
-        side="lv",
-        element="trafo",
-        tol=1e-3,
-        in_service=True,
+        net: pandapowerNet,
+        element_index: Int,
+        vm_lower_pu=None,
+        vm_upper_pu=None,
+        side: HVMVLVType = "lv",
+        element: Literal["trafo", "trafo3w"] = "trafo",
+        tol: float = 1e-3,
+        in_service: bool = True,
         hunting_limit=None,
         level=0,
         order=0,
@@ -65,35 +77,24 @@ class DiscreteTapControl(TrafoController):
         self.hunting_limit = hunting_limit
         self._hunting_taps = np.array([], dtype=np.float64)
 
+    @deprecated("Use constructor directly")
     @classmethod
     def from_tap_step_percent(
         cls,
-        net,
-        element_index,
-        vm_set_pu,
-        side="lv",
-        element="trafo",
-        tol=1e-3,
-        in_service=True,
+        net: pandapowerNet,
+        element_index: Int,
+        vm_set_pu: float,
+        side: HVMVLVType = "lv",
+        element: Literal["trafo", "trafo3w"] = "trafo",
+        tol: float = 1e-3,
+        in_service: bool = True,
         hunting_limit=None,
         level=0,
         order=0,
-        drop_same_existing_ctrl=False,
+        drop_same_existing_ctrl: bool = False,
         matching_params=None,
         **kwargs,
     ):
-        """
-        Alternative mode of the controller, which uses a set point for voltage and the value of net.trafo.tap_step_percent to calculate
-        vm_upper_pu and vm_lower_pu. To this end, the parameter vm_set_pu should be provided, instead of vm_lower_pu and vm_upper_pu.
-        To use this mode of the controller, the controller can be initialized as following:
-
-        >>> c = DiscreteTapControl.from_tap_step_percent(net, element_index, vm_set_pu)
-
-        Parameters:
-            net (ADict): Pandapower struct
-            element_index (int): ID of the trafo that is controlled
-            vm_set_pu (float): Voltage setpoint in pu
-        """
         self = cls(
             net,
             element_index=element_index,

@@ -1,6 +1,7 @@
 import copy
 import logging
 import multiprocessing as mp
+from collections.abc import Callable
 from functools import partial
 
 import numpy as np
@@ -45,23 +46,25 @@ def run_contingency_parallel(
     pf_options: dict | None = None,
     pf_options_nminus1: dict | None = None,
     write_to_net: bool = True,
-    contingency_evaluation_function=runpp,
+    contingency_evaluation_function: Callable = runpp,
     n_procs: int = 1,
     **kwargs,
-):
+) -> dict:
     """
-    Obtain either loading (N-0) or max. loading (N-0 and all N-1 cases), and min/max bus voltage magnitude.
-    This function can be run in parallel by setting n_procs.
+    Obtain either loading (N-0) or max. loading (N-0 and all N-1 cases), and min/max bus voltage magnitude. This
+    function can be run in parallel by setting n_procs.
 
-    :param pandapowerNet net: The pandapower network
-    :param dict nminus1_cases: describes all N-1 cases, e.g. {"line": {"index": [1, 2, 3]}, "trafo": {"index": [0]}}
-    :param dict pf_options: options for power flow calculation in N-0 case
-    :param dict pf_options_nminus1: options for power flow calculation in N-1 cases
-    :param bool write_to_net: whether to write the results of contingency analysis to net (in `res_` tables).
-    :param callable contingency_evaluation_function: function to use for power flow calculation, default runpp
-    :param int n_procs: Number of processors to use. If None, all available cores are used. If 1, runs sequentially.
-    :return: contingency results dict of arrays per element for index, min/max result
-    :rtype: dict
+    Parameters:
+        net: The pandapower network
+        nminus1_cases: describes all N-1 cases, e.g. {"line": {"index": [1, 2, 3]}, "trafo": {"index": [0]}}
+        pf_options: options for power flow calculation in N-0 case
+        pf_options_nminus1: options for power flow calculation in N-1 cases
+        write_to_net: whether to write the results of contingency analysis to net (in `res_` tables).
+        contingency_evaluation_function: function to use for power flow calculation, default runpp
+        n_procs: Number of processors to use. If None, all available cores are used. If 1, runs sequentially.
+
+    Returns:
+        contingency results dict of arrays per element for index, min/max result
     """
     # --- Setup and Initialization ---
     raise_errors = kwargs.get("raise_errors", False)

@@ -16,6 +16,7 @@ import logging
 
 import numpy as np
 
+from pandapower import pandapowerNet
 from pandapower.auxiliary import ControllerNotConverged, NetCalculationNotConverged
 from pandapower.control.util.auxiliary import asarray
 from pandapower.optimal_powerflow import OPFNotConverged
@@ -27,12 +28,16 @@ logger = logging.getLogger(__name__)
 
 def get_controller_order(nets, controller):
     """
-    Defining the controller order per level
-    Takes the order and level columns from net.controller
-    If levels are specified, the levels and orders are executed in ascending order.
-    :param net:
-    :return: level_list - list of levels to be run
-    :return: controller_order - list of controller order lists per level
+    Defining the controller order per level Takes the order and level columns from net.controller If levels are
+    specified, the levels and orders are executed in ascending order.
+
+    Parameters:
+        nets:
+        controller:
+
+    Returns:
+        level_list: list of levels to be run
+        controller_order: list of controller order lists per level
     """
     # let level be float so that a new level can be added in between of existing ones
     if not hasattr(nets, "__len__") or (isinstance(nets, dict)):
@@ -103,26 +108,27 @@ def ctrl_variables_default(net, **kwargs):
     return ctrl_variables
 
 
-def prepare_run_ctrl(net, ctrl_variables, **kwargs):
+def prepare_run_ctrl(net: pandapowerNet, ctrl_variables: dict, **kwargs):
     """
     Prepares run control functions. Internal variables needed:
 
-    **controller_order** (list) - Order in which controllers in net.controller will be called
-    **runpp** (function) - the runpp function (for time series a faster version is possible)
-    **initial_run** (bool) - some controllers need an initial run of the powerflow prior to the control step
+    Parameters:
+        net:
+        ctrl_variables:
 
+    Keyword Args:
+        continue_on_divergence:
+        check_each_level:
     """
-    # sort controller_order by order if not already done
-
     ctrl_var = ctrl_variables
 
     if ctrl_variables is None:
         ctrl_variables = ctrl_variables_default(net, **kwargs)
 
-    if ("continue_on_divergence") in kwargs and (ctrl_var is None or "continue_on_divergence" not in ctrl_var):
+    if "continue_on_divergence" in kwargs and (ctrl_var is None or "continue_on_divergence" not in ctrl_var):
         div = kwargs.pop("continue_on_divergence")
         ctrl_variables["continue_on_divergence"] = div
-    if ("check_each_level") in kwargs and (ctrl_var is None or "check_each_level" not in ctrl_var):
+    if "check_each_level" in kwargs and (ctrl_var is None or "check_each_level" not in ctrl_var):
         check = kwargs.pop("check_each_level")
         ctrl_variables["check_each_level"] = check
 
@@ -249,21 +255,10 @@ def control_finalization(controller_order):
             ctrl.finalize_control(net)
 
 
-def run_control(net, ctrl_variables=None, max_iter=30, **kwargs):
+def run_control(net: pandapowerNet, ctrl_variables: dict | None = None, max_iter: int = 30, **kwargs):
     """
     Main function to call a net with controllers
     Function is running control loops for the controllers specified in net.controller
-
-    Parameters:
-        net: pandapower network with controllers included in net.controller
-        ctrl_variables (dict, None): variables needed internally to calculate the power flow. See prepare_run_ctrl()
-        max_iter (int, 30): The maximum number of iterations for controller to converge
-
-    Keyword Arguments:
-        continue_on_divergence (bool, False): if run_funct is not converging control_repair is fired (only relevant if
-            ctrl_varibales is None, otherwise it needs to be defined in ctrl_variables anyway)
-        check_each_level (bool, True): if each level shall be checked if the controllers are converged or not (only
-            relevant if ctrl_varibales is None, otherwise it needs to be defined in ctrl_variables anyway)
 
     Runs controller until each one converged or max_iter is hit.
 
@@ -275,8 +270,19 @@ def run_control(net, ctrl_variables=None, max_iter=30, **kwargs):
         a) Evaluate individual convergence for all controllers in the level
         b) Call control_step() for all controllers in the level on diverged controllers
         c) Calculate power flow (or optionally another function like runopf or whatever you defined)
+
     4. Call finalize_control() on each controller
 
+    Parameters:
+        net: pandapower network with controllers included in net.controller
+        ctrl_variables: variables needed internally to calculate the power flow. See prepare_run_ctrl()
+        max_iter: The maximum number of iterations for controller to converge
+
+    Keyword Arguments:
+        continue_on_divergence (bool, False): if run_funct is not converging control_repair is fired (only relevant if
+            ctrl_varibales is None, otherwise it needs to be defined in ctrl_variables anyway)
+        check_each_level (bool, True): if each level shall be checked if the controllers are converged or not (only
+            relevant if ctrl_varibales is None, otherwise it needs to be defined in ctrl_variables anyway)
     """
     ctrl_variables = prepare_run_ctrl(net, ctrl_variables, **kwargs)
     kwargs["recycle"], kwargs["only_v_results"] = get_recycle(ctrl_variables)

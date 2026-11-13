@@ -6,65 +6,54 @@ import logging
 import numpy as np
 import pandas as pd
 
+from pandapower import pandapowerNet
 from pandapower.control.controller.const_control import ConstControl
+from pandapower.pp_types import Int
 
 logger = logging.getLogger(__name__)
 
 
 class PQController(ConstControl):
     """
-    Parent class of all Controllers designed to control P and/or Q of an PQ-element.
-    Can be used for loads, shunts and sgen.
-    NOT applicable for gens.
-    Contains general initialization and
-    functions for getting and setting values from/to the data-structure.
-    Furthermore it contains the convergence check in respect to the
-    criteria it was created with.
+    Parent class of all Controllers designed to control P and/or Q of an PQ-element. Can be used for loads, shunts
+    and sgen. NOT applicable for gens. Contains general initialization and functions for getting and setting values
+    from/to the data-structure. Furthermore it contains the convergence check in respect to the criteria it was
+    created with.
 
-    INPUT:
-        **net** (attrdict) - pandapower network
+    Parameters:
+        net: pandapower network
+        element_index: IDs of the controlled elements
+        element: element table ('sgen', 'load' etc.)
+        max_p_error: Maximum absolute error of active power in MW
+        max_q_error: Maximum absolute error of reactive power in Mvar
+        pq_simultaneity_factor: Simultaneity factor applied to P and Q
+        converter_sizing_pu: Sizing of the converter factor applied to limit the active power (using the
+            internal function limit_to_inverter_sizing())
+        data_source: A DataSource that contains profiles
+        profile_scale: A scaling factor applied to the values of profiles
+        in_service: Indicates if the controller is currently in_service
+        ts_absolute: Whether the time step values are absolute power values or scaling factors
+        order:
+        level:
 
-        **element_index** (int[]) - IDs of the controlled elements
-
-    OPTIONAL:
-
-        **element** - element table ('sgen', 'load' etc.)
-
-        **max_p_error** (float, 0.0001) - Maximum absolute error of active power in MW
-
-        **max_q_error** (float, 0.0001) - Maximum absolute error of reactive power in Mvar
-
-        **pq_simultaneity_factor** (float, 1.0) - Simultaneity factor applied to P and Q
-
-        **converter_sizing_pu** (float, 1.0) - Sizing of the converter factor applied to limit the
-        active power (using the internal function limit_to_inverter_sizing())
-
-        **data_source** ( , None) - A DataSource that contains profiles
-
-        **profile_scale** (float, 1.0) - A scaling factor applied to the values of profiles
-
-        **in_service** (bool, True) - Indicates if the controller is currently in_service
-
-        **ts_absolute** (bool, True) - Whether the time step values are absolute power values or
-        scaling factors
-
+    Keyword Args:
     """
 
     def __init__(
         self,
-        net,
-        element_index,
-        element="sgen",
-        max_p_error=0.0001,
-        max_q_error=0.0001,
-        pq_simultaneity_factor=1.0,
-        converter_sizing_pu=1.0,
+        net: pandapowerNet,
+        element_index: list[Int],
+        element: str = "sgen",
+        max_p_error: float = 0.0001,
+        max_q_error: float = 0.0001,
+        pq_simultaneity_factor: float = 1.0,
+        converter_sizing_pu: float = 1.0,
         data_source=None,
-        profile_scale=1.0,
-        in_service=True,
-        ts_absolute=True,
-        order=0,
-        level=0,
+        profile_scale: float = 1.0,
+        in_service: bool = True,
+        ts_absolute: bool = True,
+        order: int = 0,
+        level: int = 0,
         **kwargs,
     ):
         super().__init__(
@@ -215,16 +204,13 @@ class PQController(ConstControl):
         """
         Returns the limited P and Q values in respect to the SGENs inverter sizing
 
-        INPUT:
-            **p_mw** - Active power of [self.element]
+        Parameters:
+            p_mw: Active power of [self.element]
+            q_mvar: Reactive power of [self.element]
 
-            **q_mvar** - Reactive power of [self.element]
-
-        OUTPUT:
-
-            **p_mw** - Active power limited to inverter sizing
-
-            **q_mvar** - Reactive power limited to inverter sizing
+        Returns:
+            p_mw: Active power limited to inverter sizing
+            q_mvar: Reactive power limited to inverter sizing
         """
         if n_nan_sn := sum(self.sn_mva.isnull()):
             logger.warning(

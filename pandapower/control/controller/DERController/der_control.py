@@ -7,10 +7,12 @@ import logging
 
 import numpy as np
 
+from pandapower import pandapowerNet
 from pandapower.auxiliary import ensure_iterability
 from pandapower.control.controller.DERController.pqv_areas import BaseArea, PQVArea4110, QVArea4110
 from pandapower.control.controller.DERController.q_models import QModel
 from pandapower.control.controller.pq_control import PQController
+from pandapower.pp_types import Int
 
 logger = logging.getLogger(__name__)
 
@@ -21,8 +23,8 @@ logger = logging.getLogger(__name__)
 
 
 class DERController(PQController):
-    """Flexible controller to model plenty types of distributed energy resource (DER) control
-    characteristics, such as
+    """
+    Flexible controller to model plenty types of distributed energy resource (DER) control characteristics, such as
 
     + const Q
     + cosphi fixed (different types)
@@ -41,41 +43,41 @@ class DERController(PQController):
     .. tip: For the DER controller, an extensive `tutorial <https://github.com/e2nIEE/pandapower/tree/develop/tutorials>`_ is available.
 
     .. note:: sn_mva of the controlled elements is expected to be the rated power (generation) of
-        the elements (called P_{b,installed} in the VDE AR N standards). Scalings and limits are
-        usually relative to that (sn_mva) values.
+        the elements (called P_{b,installed} in the VDE AR N standards). Scalings and limits are usually relative to that (sn_mva) values.
 
-    :param pandapowerNet net: The pandapower network
-    :param list[int] element_index: IDs of the controlled elements
-    :param Optional[str] element: element type which is controlled (default: "sgen")
-    :param Optional q_model: an q_model, such as provided in this file, should be passed to
-        model how the q value should be determined. (default: None)
-    :param Optional pqv_area: an pqv_area, such as provided in this file, should be passed
-        to model q values are allowed. (default: None)
-    :param Optional[float] saturate_sn_mva: Maximum apparent power of the inverter. If given, the
-        p or q values (depending on q_prio) are reduced to this maximum apparent power. Usually,
-        it is not necessary to pass this values since the inverter needs to be dimensioned to provide
-        the standardized reactive power requirements. (default: NaN)
-    :param Optional[bool] q_prio: If True, the active power is reduced first in case of power
-        reduction due to saturate_sn_mva. Otherwise, the reactive power is reduced first. (default: True)
-    :param Optional[float] damping_coef: damping coefficient to influence the power updating process
-        of the control loop. A higher value mean slower changes of p and q towards the latest target
-        values (default: 2.0)
-    :param Optional[float] max_p_error: Maximum absolute error of active power in MW (default: 0.0001)
-    :param Optional[float] max_q_error: Maximum absolute error of reactive power in Mvar (default: 0.0001)
-    :param Optional[float] pq_simultaneity_factor: Simultaneity factor applied to P and Q (default: 1.0)
-    :param Optional data_source: A DataSource that contains profiles (default: None)
-    :param Optional[list[str]] p_profile: The profile names of the controlled elements in the data
-        source for active power time series values (default: None)
-    :param Optional[bool] profile_from_name: If True, the profile names of the controlled elements
-        in the data source for active power time series values will be set be the name of the
-        controlled elements, e.g. for controlled sgen "SGEN_1", the active power profile "P_SGEN_1"
-        is applied (default: False)
-    :param Optional[float] profile_scale: A scaling factor applied to the values of profiles (default: 1.0)
-    :param Optional[bool] in_service: Indicates if the controller is currently in_service (default: True)
-    :param Optional[bool] ts_absolute: Whether the time step values are absolute power values or
-        scaling factors (default: True)
+    Parameters:
+        net: The pandapower network
+        element_index: IDs of the controlled elements
+        element: element type which is controlled
+        q_model: an q_model, such as provided in this file, should be passed to model how the q value should be
+            determined.
+        pqv_area: an pqv_area, such as provided in this file, should be passed to model q values are allowed.
+        saturate_sn_mva: Maximum apparent power of the inverter. If given, the p or q values (depending on
+            q_prio) are reduced to this maximum apparent power. Usually, it is not necessary to pass this values since
+            the inverter needs to be dimensioned to provide the standardized reactive power requirements.
+        q_prio: If True, the active power is reduced first in case of power reduction due to
+            saturate_sn_mva. Otherwise, the reactive power is reduced first.
+        damping_coef: damping coefficient to influence the power updating process of the control loop. A
+            higher value mean slower changes of p and q towards the latest target values
+        max_p_error: Maximum absolute error of active power in MW
+        max_q_error: Maximum absolute error of reactive power in Mvar
+        pq_simultaneity_factor: Simultaneity factor applied to P and Q
+        f_sizing:
+        data_source: A DataSource that contains profiles
+        p_profile: The profile names of the controlled elements in the data source for active power
+            time series values
+        profile_from_name: If True, the profile names of the controlled elements in the data source for
+            active power time series values will be set be the name of the controlled elements, e.g. for controlled sgen
+            "SGEN_1", the active power profile "P_SGEN_1" is applied
+        profile_scale: A scaling factor applied to the values of profiles
+        in_service: Indicates if the controller is currently in_service
+        ts_absolute: Whether the time step values are absolute power values or scaling factors
+        order:
+        level:
+        drop_same_existing_ctrl:
+        matching_params:
 
-    :example:
+    Example:
         >>> from pandapower.networks.cigre_networks import create_cigre_network_mv
         >>> from pandapower.control.controller.DERController import DERController, QModelCosphiP, PQVArea4120V2
         >>> from pandapower.run import runpp
@@ -90,24 +92,24 @@ class DERController(PQController):
 
     def __init__(
         self,
-        net,
-        element_index,
-        element="sgen",
+        net: pandapowerNet,
+        element_index: list[Int],
+        element: str = "sgen",
         q_model=None,
         pqv_area=None,
-        saturate_sn_mva=np.nan,
-        q_prio=True,
-        damping_coef=2,
-        max_p_error=1e-6,
-        max_q_error=1e-6,
-        pq_simultaneity_factor=1.0,
+        saturate_sn_mva: float = np.nan,
+        q_prio: bool = True,
+        damping_coef: float = 2,
+        max_p_error: float = 1e-6,
+        max_q_error: float = 1e-6,
+        pq_simultaneity_factor: float = 1.0,
         f_sizing=1.0,
         data_source=None,
-        p_profile=None,
-        profile_from_name=False,
-        profile_scale=1.0,
-        in_service=True,
-        ts_absolute=True,
+        p_profile: list[str] | None = None,
+        profile_from_name: bool = False,
+        profile_scale: float = 1.0,
+        in_service: bool = True,
+        ts_absolute: bool = True,
         order=0,
         level=0,
         drop_same_existing_ctrl=False,
