@@ -276,6 +276,11 @@ Whether the model is solved for the steady state or for a transient depends on t
 * A finite :code:`tdpf_delay_s` gives the temperature after this time step, starting from ambient. In a
   time series run, the switch temperature of the previous time step is used as the initial condition.
 
+In a time series run, a switch that is opened (or taken out of service) continues to cool down with
+zero current internally. Its :code:`res_switch.temperature_degree_celsius` stays :code:`NaN` while it is
+open, but closing it again resumes the thermal model from the cooled temperature instead of restarting
+from ambient.
+
 .. autofunction:: pandapower.run.runpp
 
 .. note::

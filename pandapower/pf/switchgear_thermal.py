@@ -132,6 +132,29 @@ def _profile_index(dt_minutes: float) -> list[datetime]:
     return [_PROFILE_START, _PROFILE_START + timedelta(minutes=float(dt_minutes))]
 
 
+def _profile_step(dt_minutes: float) -> tuple[float, float]:
+    """Whole minute profile step and its time constant scale for a real time step.
+
+    ``switchgear_thermal_model`` 0.0.1 derives its time step from the datetime index with
+    ``astype("timedelta64[m]")``, which truncates to whole minutes. A 30 second step would therefore
+    become 0 and never heat or cool the switch, and a 90 second step would become 1 instead of 1.5.
+    The profile index is consequently always built from a whole number of minutes, and the truncation
+    is compensated by scaling ``thermal_time_constant`` so that the ratio
+    ``dt / thermal_time_constant`` -- the only place the time step enters the IEC 62271-306
+    recursion -- is unchanged. Returns ``(profile_step_minutes, time_constant_scale)``.
+    """
+    dt = float(dt_minutes)
+    if np.isposinf(dt):
+        # steady state, matching the line TDPF convention for tdpf_delay_s=inf
+        return float(STEADY_STATE_DT_MINUTES), 1.0
+    if not np.isfinite(dt) or dt <= 0:
+        # no elapsed time: the model must not move (mirrors tdpf_delay_s=0 of the line TDPF). The
+        # infinite time constant makes the library's 1 - exp(-step / tau) factor zero.
+        return 1.0, np.inf
+    step = max(1.0, float(round(dt)))
+    return step, step / dt
+
+
 def _candidate_switches(net, rated_current) -> np.ndarray:
     """Boolean mask of the switches that can be calculated from the current results.
 
@@ -151,6 +174,23 @@ def _candidate_switches(net, rated_current) -> np.ndarray:
     return candidate & np.isfinite(current)
 
 
+def _disconnected_mask(net) -> np.ndarray:
+    """Boolean mask of the switches that are explicitly open or out of service.
+
+    A closed switch that cannot be calculated (fused ``z_ohm=0`` bus-bus switch, ``et='t3'``, missing
+    rated current) is *not* disconnected: its temperature is simply not advanced, because there is no
+    current information to advance it with. A disconnected switch, in contrast, physically carries no
+    current and must cool down.
+    """
+    switch = net.switch
+    closed = switch["closed"].fillna(False).to_numpy(dtype=bool)
+    if "in_service" in switch.columns:
+        in_service = switch["in_service"].fillna(False).to_numpy(dtype=bool)
+    else:
+        in_service = np.ones(len(switch), dtype=bool)
+    return ~closed | ~in_service
+
+
 def calculate_switch_temperatures(net, dt_minutes: float | None = None, initial_temperature=None):
     """Calculate the temperature of all current carrying switches and write the results.
 
@@ -165,14 +205,32 @@ def calculate_switch_temperatures(net, dt_minutes: float | None = None, initial_
         initial_temperature: optional mapping ``switch index -> temperature`` with the previous
             temperature of a warm start (used by the time series tracker). The library has no
             initial condition argument, so the value is injected through the first ambient sample,
-            see :func:`_calculate_switch`.
+            see :func:`_switch_temperature`.
 
     Returns:
         dict[int, float]: the resulting switch temperature per switch index. Empty if the
         calculation was skipped.
 
     The result column is only created when the calculation ran. Switches without a usable current or
-    rated current are left as NaN.
+    rated current are left as NaN, and an open switch is reported as NaN even if its stored thermal
+    state (see :class:`SwitchgearThermalTracker`) keeps cooling down.
+    """
+    _, temperatures = _switch_temperature_step(
+        net, dt_minutes=dt_minutes, initial_temperature=initial_temperature, cool_disconnected=False
+    )
+    return temperatures
+
+
+def _switch_temperature_step(net, dt_minutes, initial_temperature, cool_disconnected: bool):
+    """Advance the switch temperatures by one time step.
+
+    Returns ``(state, temperatures)``. ``state`` is the persistent internal temperature per switch
+    index, including the (not reported) temperature of open switches. ``temperatures`` only contains
+    the switches whose result was written to ``net.res_switch`` in this step.
+
+    ``cool_disconnected`` is set by the time series tracker. The standalone post-processing entry point
+    does not cool open switches, because a single power flow has no time step to cool over and the
+    historical convention is to leave them NaN.
     """
     if not SWITCHGEAR_THERMAL_AVAILABLE:
         logger.warning(
@@ -180,10 +238,10 @@ def calculate_switch_temperatures(net, dt_minutes: float | None = None, initial_
             "Install it with 'pip install pandapower[tdpf]' on Python >= 3.12 to enable them. "
             "Line and transformer TDPF results are not affected."
         )
-        return {}
+        return {}, {}
 
     if len(net.switch) == 0 or "res_switch" not in net:
-        return {}
+        return {}, {}
 
     # Clear the thermal column of every switch, even if it is skipped below. Stale values from a
     # previous time step must never be reported as the current one.
@@ -200,33 +258,64 @@ def calculate_switch_temperatures(net, dt_minutes: float | None = None, initial_
             "with pandapower.toolbox.compute_switch_flows(net) after a load flow and then run the TDPF calculation."
         )
 
-    if not candidate.any():
-        return {}
+    disconnected = _disconnected_mask(net) if cool_disconnected else np.zeros(len(net.switch), dtype=bool)
+    # The tracker still has to carry the stored state of closed but uncalculable switches, so it must
+    # not return early here.
+    if not candidate.any() and not disconnected.any() and not cool_disconnected:
+        return {}, {}
 
     if dt_minutes is None:
         dt_minutes = STEADY_STATE_DT_MINUTES
-    datetime_index = _profile_index(dt_minutes)
+    profile_step, time_constant_scale = _profile_step(dt_minutes)
+    datetime_index = _profile_index(profile_step)
 
     if initial_temperature is None:
         initial_temperature = {}
 
+    state = {}
     temperatures = {}
-    for index in net.switch.index[candidate]:
-        try:
-            temperature = _calculate_switch(net, index, datetime_index, initial_temperature.get(index))
-        except (ValueError, TypeError) as exception:
-            logger.warning(f"TDPF: skipping switch {index} for the thermal calculation: {exception}")
-            continue
-        net.res_switch.at[index, TEMPERATURE_COLUMN] = temperature
-        temperatures[index] = temperature
-    return temperatures
+    for position, index in enumerate(net.switch.index):
+        row = net.switch.loc[index]
+        previous = initial_temperature.get(index)
+        if candidate[position]:
+            current_a = _current_a(net.res_switch.at[index, "i_ka"])
+            try:
+                temperature = _switch_temperature(row, current_a, datetime_index, previous, time_constant_scale)
+            except (ValueError, TypeError) as exception:
+                # invalid specifications: drop the stored state instead of carrying a stale value
+                logger.warning(f"TDPF: skipping switch {index} for the thermal calculation: {exception}")
+                continue
+            net.res_switch.at[index, TEMPERATURE_COLUMN] = temperature
+            state[index] = temperature
+            temperatures[index] = temperature
+        elif disconnected[position]:
+            # The switch carries no current, but the IEC 62271-306 model is recursive, so it still has
+            # to cool down. The result stays NaN (a switch is not "in operation"), but the tracker
+            # keeps the cooled temperature so that closing it resumes from the correct state.
+            try:
+                temperature = _switch_temperature(row, 0.0, datetime_index, previous, time_constant_scale)
+            except (ValueError, TypeError) as exception:
+                logger.warning(f"TDPF: skipping switch {index} for the thermal calculation: {exception}")
+                continue
+            state[index] = temperature
+        elif previous is not None:
+            # A closed switch without usable current information: there is nothing to advance the
+            # model with, so keep the state unchanged instead of guessing a current.
+            state[index] = previous
+    return state, temperatures
 
 
-def _calculate_switch(net, index, datetime_index, initial_temperature) -> float:
-    """Temperature of a single switch at the last sample of the profile."""
-    row = net.switch.loc[index]
+def _switch_temperature(row, current_a, datetime_index, initial_temperature, time_constant_scale=1.0) -> float:
+    """Temperature of a single switch at the last sample of the profile.
+
+    ``time_constant_scale`` compensates the whole-minute profile step for a fractional real time
+    step, see :func:`_profile_step`, so that the ``dt / thermal_time_constant`` ratio is preserved.
+    """
     switchgear = specs_from_switch(row)
-    load_a = _current_a(net.res_switch.at[index, "i_ka"])
+    if time_constant_scale != 1.0:
+        switchgear = switchgear.model_copy(
+            update={"thermal_time_constant": switchgear.thermal_time_constant * time_constant_scale}
+        )
     ambient = _ambient_temperature(row)
 
     # The library has no initial condition argument: the first sample is always initialised with its
@@ -240,7 +329,7 @@ def _calculate_switch(net, index, datetime_index, initial_temperature) -> float:
         previous = ambient
     profile = InputProfile.create(
         datetime_index=datetime_index,
-        load_profile=[load_a] * len(datetime_index),
+        load_profile=[current_a] * len(datetime_index),
         ambient_temperature_profile=[previous, ambient],
     )
     return float(switchgear_temp(profile, switchgear).iloc[-1])
@@ -263,6 +352,11 @@ class SwitchgearThermalTracker:
     The IEC 62271-306 model is recursive: the temperature of a step depends on the previous one. The
     tracker holds the last temperature per switch and uses it as the initial condition of the next
     step, which is what makes a transient time series physically meaningful.
+
+    The state is kept for every switch that has one, including open or out-of-service switches. Those
+    carry no current but still cool down, and closing them again must resume from the cooled
+    temperature instead of restarting from ambient. Their result column stays NaN while they are open,
+    so only the internally stored state is advanced.
     """
 
     def __init__(self):
@@ -273,8 +367,13 @@ class SwitchgearThermalTracker:
         self.temperature = {}
 
     def run(self, net, dt_minutes: float | None = None):
-        """Run the thermal model for one time step and remember the resulting temperatures."""
-        self.temperature = calculate_switch_temperatures(
-            net, dt_minutes=dt_minutes, initial_temperature=self.temperature
+        """Run the thermal model for one time step and remember the resulting temperatures.
+
+        Returns the temperatures that were written to ``net.res_switch`` in this step. The persistent
+        state, including the temperatures of open switches, is kept in :attr:`temperature`.
+        """
+        state, temperatures = _switch_temperature_step(
+            net, dt_minutes=dt_minutes, initial_temperature=self.temperature, cool_disconnected=True
         )
-        return self.temperature
+        self.temperature = state
+        return temperatures

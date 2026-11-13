@@ -196,6 +196,32 @@ def test_switch_transient_matches_hand_recursion():
     assert net.res_switch.at[index, TEMPERATURE_COLUMN] == pytest.approx(expected, rel=1e-9)
 
 
+@pytest.mark.parametrize("delay_s", [30.0, 90.0])
+def test_fractional_minute_interval_is_not_truncated(delay_s):
+    """Sub-minute and non-integer minute steps must keep their true dt.
+
+    The library truncates the profile step to whole minutes (30 s -> 0 min, 90 s -> 1 min), so the
+    adapter has to preserve the dt / thermal_time_constant ratio itself.
+    """
+    net, index = _switch_net()
+    runpp(net, tdpf=True, tdpf_delay_s=delay_s)
+
+    current_ka = abs(net.res_switch.at[index, "i_ka"])
+    dt_minutes = delay_s / 60.0
+    asymptotic = _steady_state_temperature(current_ka)
+    expected = AMBIENT_C + (asymptotic - AMBIENT_C) * (1.0 - np.exp(-dt_minutes / TIME_CONSTANT_MINUTES))
+
+    assert net.res_switch.at[index, TEMPERATURE_COLUMN] == pytest.approx(expected, rel=1e-9)
+
+
+def test_zero_delay_does_not_change_the_temperature():
+    """``tdpf_delay_s=0`` means no elapsed time, as for the line TDPF."""
+    net, index = _switch_net()
+    runpp(net, tdpf=True, tdpf_delay_s=0.0)
+
+    assert net.res_switch.at[index, TEMPERATURE_COLUMN] == pytest.approx(AMBIENT_C, rel=1e-12)
+
+
 def test_switch_transient_uses_initial_temperature():
     """Starting above ambient must cool down towards the same asymptotic temperature."""
     net, index = _switch_net()
@@ -317,8 +343,8 @@ def test_fused_switch_is_skipped_with_one_message(caplog):
     assert any("skipped 1 switch" in record.message for record in caplog.records)
 
 
-def test_t3_switch_is_skipped():
-    """A bus-trafo3w switch has no solved current in res_switch and must be skipped."""
+def _trafo3w_switch_net(**switch_kwargs):
+    """A net whose only switch is a bus-trafo3w switch, which has no solved current."""
     net = pandapowerNet(name="switch_t3")
     hv_bus, mv_bus, lv_bus = create_buses(net, nr_buses=3, vn_kv=[110.0, 20.0, 10.0])
     create_ext_grid(net, hv_bus)
@@ -343,8 +369,14 @@ def test_t3_switch_is_skipped():
         i0_percent=0.1,
     )
     create_load(net, mv_bus, p_mw=10.0)
-    index = create_switch(net, hv_bus, 0, et="t3", closed=True, in_ka=RATED_CURRENT_KA)
+    index = create_switch(net, hv_bus, 0, et="t3", closed=True, in_ka=RATED_CURRENT_KA, **switch_kwargs)
     _disable_line_tdpf(net)
+    return net, index
+
+
+def test_t3_switch_is_skipped():
+    """A bus-trafo3w switch has no solved current in res_switch and must be skipped."""
+    net, index = _trafo3w_switch_net()
 
     runpp(net, tdpf=True)
 
@@ -482,6 +514,98 @@ def test_switch_and_transformer_temperatures_coexist():
     assert np.isfinite(net.res_trafo.at[0, "top_oil_temperature_degree_celsius"])
 
 
+# --------------------------------------------------------------- thermal state of open switches
+def test_open_switch_cools_down_but_reports_nan():
+    """An open switch keeps cooling internally while its result column stays NaN."""
+    net, index = _switch_net()
+    _run_plain(net)
+    tracker = SwitchgearThermalTracker()
+    for _ in range(3):
+        hot = tracker.run(net, dt_minutes=TIME_CONSTANT_MINUTES)[index]
+    assert hot > AMBIENT_C
+
+    net.switch.at[index, "closed"] = False
+    profile = []
+    for _ in range(3):
+        assert tracker.run(net, dt_minutes=TIME_CONSTANT_MINUTES) == {}
+        profile.append(tracker.temperature[index])
+        # a switch that is not in operation has no temperature result
+        assert np.isnan(net.res_switch.at[index, TEMPERATURE_COLUMN])
+
+    assert profile[0] < hot
+    assert all(later < earlier for earlier, later in itertools.pairwise(profile))
+    assert profile[-1] > AMBIENT_C
+
+
+def test_out_of_service_switch_cools_down():
+    """The same applies to a switch that is out of service, if the net has that column."""
+    net, index = _switch_net()
+    _run_plain(net)
+    net.switch["in_service"] = True
+    tracker = SwitchgearThermalTracker()
+    for _ in range(3):
+        hot = tracker.run(net, dt_minutes=TIME_CONSTANT_MINUTES)[index]
+
+    net.switch.at[index, "in_service"] = False
+    assert tracker.run(net, dt_minutes=TIME_CONSTANT_MINUTES) == {}
+
+    assert np.isnan(net.res_switch.at[index, TEMPERATURE_COLUMN])
+    assert tracker.temperature[index] < hot
+    assert tracker.temperature[index] > AMBIENT_C
+
+
+def test_reopened_switch_resumes_from_cooled_state():
+    """Closing a switch must continue from its cooled state instead of restarting at ambient."""
+    net, index = _switch_net()
+    _run_plain(net)
+    tracker = SwitchgearThermalTracker()
+    for _ in range(3):
+        tracker.run(net, dt_minutes=TIME_CONSTANT_MINUTES)
+
+    net.switch.at[index, "closed"] = False
+    for _ in range(3):
+        tracker.run(net, dt_minutes=TIME_CONSTANT_MINUTES)
+    cooled = tracker.temperature[index]
+
+    net.switch.at[index, "closed"] = True
+    resumed = tracker.run(net, dt_minutes=TIME_CONSTANT_MINUTES)[index]
+    # a cold started tracker would restart from ambient, which is colder than the cooled state
+    fresh = SwitchgearThermalTracker().run(net, dt_minutes=TIME_CONSTANT_MINUTES)[index]
+
+    assert cooled > AMBIENT_C
+    assert resumed > cooled
+    assert resumed > fresh
+
+
+def test_closed_switch_without_current_keeps_state_unchanged():
+    """A closed but uncalculable switch has no current information, so its state must not advance."""
+    net, index = _switch_net()
+    _run_plain(net)
+    tracker = SwitchgearThermalTracker()
+    tracker.run(net, dt_minutes=TIME_CONSTANT_MINUTES)
+    stored = tracker.temperature[index]
+
+    net.switch.at[index, "in_ka"] = np.nan
+    assert tracker.run(net, dt_minutes=TIME_CONSTANT_MINUTES) == {}
+
+    assert tracker.temperature[index] == pytest.approx(stored)
+    assert np.isnan(net.res_switch.at[index, TEMPERATURE_COLUMN])
+
+
+def test_removed_switch_state_is_dropped():
+    """The stored state must not outlive the switch it belongs to."""
+    net, index = _switch_net()
+    _run_plain(net)
+    tracker = SwitchgearThermalTracker()
+    tracker.run(net, dt_minutes=TIME_CONSTANT_MINUTES)
+    assert index in tracker.temperature
+
+    net.switch.drop(index=index, inplace=True)
+    assert tracker.run(net, dt_minutes=TIME_CONSTANT_MINUTES) == {}
+
+    assert tracker.temperature == {}
+
+
 # --------------------------------------------------------------- validation / defaults
 def test_default_columns_are_filled():
     net, _ = _switch_net()
@@ -529,6 +653,37 @@ def test_invalid_ambient_temperature_raises():
 def test_invalid_values_of_skipped_switches_are_not_validated():
     """A switch without a rated current is skipped anyway, so it must not reject the run."""
     net, index = _switch_net(switch_kwargs={"in_ka": np.nan, "thermal_time_constant_minutes": -1.0})
+
+    runpp(net, tdpf=True)
+
+    assert np.isnan(net.res_switch.at[index, TEMPERATURE_COLUMN])
+
+
+def test_invalid_values_of_fused_switch_are_not_validated():
+    """A fused bus-bus switch has no current, so its thermal inputs must not reject the run."""
+    net, index = _switch_net()
+    extra_bus = create_buses(net, nr_buses=1, vn_kv=[110.0])[0]
+    fused = create_switch(
+        net,
+        0,
+        extra_bus,
+        et="b",
+        closed=True,
+        in_ka=RATED_CURRENT_KA,
+        z_ohm=0.0,
+        thermal_time_constant_minutes=-1.0,
+    )
+
+    runpp(net, tdpf=True)
+
+    # the supported line switch is still calculated, the fused switch is only skipped
+    assert np.isfinite(net.res_switch.at[index, TEMPERATURE_COLUMN])
+    assert np.isnan(net.res_switch.at[fused, TEMPERATURE_COLUMN])
+
+
+def test_invalid_values_of_t3_switch_are_not_validated():
+    """A bus-trafo3w switch has no current, so its thermal inputs must not reject the run."""
+    net, index = _trafo3w_switch_net(thermal_time_constant_minutes=-1.0)
 
     runpp(net, tdpf=True)
 
