@@ -1276,17 +1276,16 @@ class DifferentVoltageLevelsConnected(DiagnosticFunction[pandapowerNet, dict]):
         """
         self.net = net
         check_results = {}
-        inconsistent_lines = []
-        for i, line in net.line.iterrows():
-            buses = net.bus.loc[[line.from_bus, line.to_bus]]
-            if buses.vn_kv.iloc[0] != buses.vn_kv.iloc[1]:
-                inconsistent_lines.append(i)
+        vn_kv = net.bus.vn_kv
+        lines = net.line
+        inconsistent_lines = lines.index[
+            vn_kv.loc[lines.from_bus].to_numpy() != vn_kv.loc[lines.to_bus].to_numpy()
+        ].tolist()
 
-        inconsistent_switches = []
-        for i, switch in net.switch[net.switch.et == "b"].iterrows():
-            buses = net.bus.loc[[switch.bus, switch.element]]
-            if buses.vn_kv.iloc[0] != buses.vn_kv.iloc[1]:
-                inconsistent_switches.append(i)
+        bus_switches = net.switch[net.switch.et == "b"]
+        inconsistent_switches = bus_switches.index[
+            vn_kv.loc[bus_switches.bus].to_numpy() != vn_kv.loc[bus_switches.element].to_numpy()
+        ].tolist()
 
         if inconsistent_lines:
             check_results["lines"] = inconsistent_lines
