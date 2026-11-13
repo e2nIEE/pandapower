@@ -68,6 +68,7 @@ Change Log
 - [FIXED] impedance element docs: the ``z_tf`` equation used ``rft_pu`` instead of ``rtf_pu``, and the ``gt_pu``/``bt_pu``/``gt0_pu``/``bt0_pu`` shunt parameters were described as being at the ``from_bus`` instead of the ``to_bus``.
 - [FIXED] fixed tutorial for plotting with pyqt
 - [FIXED] ``PPJSONEncoder.default`` passed ``self`` twice to ``json.JSONEncoder.default``, so unserializable objects raised ``TypeError: JSONEncoder.default() takes 2 positional arguments but 3 were given`` instead of ``Object of type X is not JSON serializable``
+- [ADDED] transformer tap changer controllers with line drop compensation (LDC): ``ContinuousTapControlLDC`` and ``DiscreteTapControlLDC`` regulate the estimated voltage at a remote point of the feeder instead of the voltage at the transformer bus. The fictitious line impedance can be given directly (``r_ohm``, ``x_ohm``) or calculated from the network topology (``calculate_impedance=True`` with ``remote_bus``) (#1425)
 
 [3.5.4] - 2026-07-08
 -------------------------------

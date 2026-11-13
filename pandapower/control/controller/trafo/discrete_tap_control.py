@@ -141,7 +141,7 @@ class DiscreteTapControl(TrafoController):
         if self.nothing_to_do(net):
             return
 
-        vm_pu = read_from_net(net, "res_bus", self.trafobus, "vm_pu", self._read_write_flag)
+        vm_pu = self._get_vm_pu(net)
         self.tap_pos = read_from_net(net, self.element, self.element_index, "tap_pos", self._read_write_flag).copy()
 
         increment = np.where(
@@ -174,7 +174,7 @@ class DiscreteTapControl(TrafoController):
         if self.nothing_to_do(net):
             return True
 
-        vm_pu = read_from_net(net, "res_bus", self.trafobus, "vm_pu", self._read_write_flag)
+        vm_pu = self._get_vm_pu(net)
         # this is possible in case the trafo is set out of service by the connectivity check
         is_nan = np.isnan(vm_pu)
         self.tap_pos = read_from_net(net, self.element, self.element_index, "tap_pos", self._read_write_flag)

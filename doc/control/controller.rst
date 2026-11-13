@@ -52,6 +52,45 @@ Discrete Tap Control
     :members:
 
 
+-------------
+
+**********************
+Line Drop Compensation
+**********************
+
+Line drop compensation (LDC) is a control strategy for tap changers that regulates the (estimated) voltage at a
+remote point of the feeder instead of the voltage at the transformer bus. The voltage drop over a fictitious line
+between the transformer and the remote bus is calculated from the power flow and subtracted from the measured
+voltage. The fictitious line impedance can either be given directly or derived from the network topology.
+
+This strategy is typically used in radial distribution grids with a single feeder. In meshed grids or grids with a
+high share of distributed generation the voltage at the transformer bus is not a good indicator for the voltage at
+other buses, so the compensation can be inaccurate there.
+
+.. autoclass:: pandapower.control.controller.trafo.line_drop_compensation.LineDropCompensation
+    :members:
+
+
+-------------
+
+*******************************
+Continuous Tap Control with LDC
+*******************************
+
+.. autoclass:: pandapower.control.controller.trafo.line_drop_compensation.ContinuousTapControlLDC
+    :members:
+
+
+-------------
+
+*****************************
+Discrete Tap Control with LDC
+*****************************
+
+.. autoclass:: pandapower.control.controller.trafo.line_drop_compensation.DiscreteTapControlLDC
+    :members:
+
+
 DER Controller
 ===============
 .. autoclass:: pandapower.control.controller.DERController.der_control.DERController
