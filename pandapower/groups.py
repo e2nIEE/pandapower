@@ -171,7 +171,7 @@ def attach_to_group(
         elif no_row == 1:
             # handle different reference_column
             existing_rc = net.group.reference_column.loc[group_et].at[index]
-            if existing_rc != rc:
+            if pd.notna(existing_rc) and existing_rc != rc:
                 if take_existing_reference_columns:
                     temp_gr = create_group(net, [et], [elm], reference_columns=rc)
                     set_group_reference_column(net, temp_gr, existing_rc, element_type=et)

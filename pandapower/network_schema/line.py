@@ -24,10 +24,17 @@ _line_columns = {
         int, pa.Check.ge(0), description="Index of bus where the line ends", metadata={"foreign_key": "bus"}
     ),
     "length_km": pa.Column(float, pa.Check.gt(0), description="length of the line [km]"),
-    "r_ohm_per_km": pa.Column(float, pa.Check.ge(0), description="resistance of the line [Ohm per km]"),
-    "x_ohm_per_km": pa.Column(float, pa.Check.ge(0), description="reactance of the line [Ohm per km]"),
+    "r_ohm_per_km": pa.Column(
+        float,
+        description="resistance of the line [Ohm per km] (should be positive, unless you are deliberately modelling equivalent networks)",
+    ),
+    "x_ohm_per_km": pa.Column(
+        float,
+        description="reactance of the line [Ohm per km] (should be positive, unless you are deliberately modelling series compensation)",
+    ),
     "c_nf_per_km": pa.Column(
-        float, pa.Check.ge(0), description="capacitance of the line (line-to-earth) [nano Farad per km]"
+        float,
+        description="capacitance of the line (line-to-earth) [nano Farad per km] (should be positive, unless you are deliberately modelling a shunt)",
     ),
     "g_us_per_km": pa.Column(
         float,

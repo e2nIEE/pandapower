@@ -7,7 +7,13 @@ import logging
 
 from numpy import allclose, array, concatenate, int64, nan_to_num
 
-from pandapower.auxiliary import AlgorithmUnknown, LoadflowNotConverged, _add_auxiliary_elements, _clean_up
+from pandapower.auxiliary import (
+    AlgorithmUnknown,
+    LoadflowNotConverged,
+    _add_auxiliary_elements,
+    _clean_up,
+    _remove_vsc_bipolar_aux,
+)
 from pandapower.build_branch import _calc_trafo3w_parameter, _calc_trafo_parameter
 from pandapower.build_gen import _build_gen_ppc
 from pandapower.pd2ppc import _calc_pq_elements_and_add_on_ppc, _pd2ppc, _ppc2ppci
@@ -17,6 +23,7 @@ from pandapower.pf.run_dc_pf import _run_dc_pf
 from pandapower.pf.run_helmpy_pf import _runpf_helmpy_pf
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.pf.runpf_pypower import _runpf_pypower
+from pandapower.pf.transformer_thermal import calculate_transformer_temperatures, dt_minutes_from_options
 from pandapower.pypower.bustypes import bustypes
 from pandapower.pypower.idx_bus import VM
 from pandapower.pypower.make_y_bus import makeYbus as makeYbus_pypower
@@ -37,14 +44,24 @@ def _powerflow(net, **kwargs):
     """
     Gets called by runpp or rundcpp with different arguments.
     """
-
-    # get infos from options
-    ac = net["_options"]["ac"]
-    algorithm = net["_options"]["algorithm"]
-
     net["converged"] = False
     net["OPF_converged"] = False
     _add_auxiliary_elements(net)  # create gen elements for start and end buses of dcline
+    try:
+        _powerflow_with_auxiliary_elements(net, **kwargs)
+    except Exception:
+        # the auxiliary VSC of bipolar VSC must not stay in net.vsc if the power flow fails
+        _remove_vsc_bipolar_aux(net)
+        raise
+
+
+def _powerflow_with_auxiliary_elements(net, **kwargs):
+    """
+    Runs the power flow after the auxiliary elements were added to net (see _powerflow).
+    """
+    # get infos from options
+    ac = net["_options"]["ac"]
+    algorithm = net["_options"]["algorithm"]
 
     if not ac or net["_options"]["init_results"]:
         verify_results(net, mode="pf" if ac else "dc")
@@ -206,6 +223,11 @@ def _ppci_to_net(result, net):
 
     _extract_results(net, result)
     _clean_up(net)
+
+    # transformer thermal model is post-processing: it consumes the solved loading and does not
+    # influence the power flow. It must run after the results were extracted.
+    if net["_options"].get("tdpf", False):
+        calculate_transformer_temperatures(net, dt_minutes=dt_minutes_from_options(net["_options"]))
 
 
 def _bypass_pf_and_set_results(ppci):

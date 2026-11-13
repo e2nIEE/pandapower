@@ -14,7 +14,7 @@ from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pypower.idx_bus import BUS_TYPE, NONE, PV, REF, VA, VM, VMAX, VMIN
 from pandapower.pypower.idx_bus import SL_FAC as SL_FAC_BUS
 from pandapower.pypower.idx_bus_dc import DC_BUS_TYPE, DC_NONE
-from pandapower.pypower.idx_gen import GEN_BUS, MBASE, PG, PMAX, PMIN, QG, QMAX, QMIN, SL_FAC, VG, gen_cols
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_COLS, MBASE, PG, PMAX, PMIN, QG, QMAX, QMIN, SL_FAC, VG
 from pandapower.pypower.idx_ssc import SSC_BUS, SSC_CONTROLLABLE, SSC_SET_VM_PU
 from pandapower.pypower.idx_vsc import (
     VSC_BUS,
@@ -78,7 +78,7 @@ def add_gen_order(gen_order, element, _is_elements, f):
 
 def _init_ppc_gen(net, ppc, nr_gens):
     # initialize generator matrix
-    ppc["gen"] = np.zeros(shape=(nr_gens, gen_cols), dtype=np.float64)
+    ppc["gen"] = np.zeros(shape=(nr_gens, GEN_COLS), dtype=np.float64)
     ppc["gen"][:] = np.array([0, 0, 0, 0, 0, 1.0, 1.0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     q_lim_default = net._options["q_lim_default"]
     p_lim_default = net._options["p_lim_default"]
@@ -130,8 +130,8 @@ def _build_pp_ext_grid(net, ppc, f, t):
             eg_constrained = net.ext_grid[eg_is][~net.ext_grid.controllable]
             if len(eg_constrained):
                 eg_constrained_bus_ppc = [bus_lookup[egb] for egb in eg_constrained.bus.values]
-                ppc["bus"][eg_constrained_bus_ppc, VMAX] = net["ext_grid"]["vm_pu"].values[eg_constrained.index] + delta
-                ppc["bus"][eg_constrained_bus_ppc, VMIN] = net["ext_grid"]["vm_pu"].values[eg_constrained.index] - delta
+                ppc["bus"][eg_constrained_bus_ppc, VMAX] = eg_constrained["vm_pu"] + delta
+                ppc["bus"][eg_constrained_bus_ppc, VMIN] = eg_constrained["vm_pu"] - delta
         else:
             # if we dont:
             ppc["bus"][eg_buses, VMAX] = net["ext_grid"]["vm_pu"].values[eg_is] + delta

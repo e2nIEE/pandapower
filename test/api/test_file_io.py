@@ -24,11 +24,11 @@ from pandapower.convert_format import convert_format
 from pandapower.create import create_transformer
 from pandapower.file_io import from_excel, from_json, from_json_string, from_pickle, to_excel, to_json, to_pickle
 from pandapower.io_utils import PPJSONDecoder, PPJSONEncoder, to_serializable
-from pandapower.networks import case9, case14, create_kerber_dorfnetz, mv_oberrhein, simple_four_bus_system
+from pandapower.networks import create_kerber_dorfnetz, mv_oberrhein, simple_four_bus_system
 from pandapower.run import runpp, set_user_pf_options
 from pandapower.sql_io import from_sqlite, to_sqlite
 from pandapower.timeseries import DFData
-from pandapower.toolbox.comparison import dataframes_equal, nets_equal
+from pandapower.toolbox.comparison import nets_equal
 from pandapower.topology.create_graph import create_nxgraph
 from test import test_path
 from test.helper_functions import assert_net_equal, create_test_network, create_test_network2
@@ -79,7 +79,7 @@ def test_excel(net_in, tmp_path):
     assert_net_equal(net_in, net_out)
 
     # test if user_pf_options are equal
-    set_user_pf_options(net_in, tolerance_mva=1e3)
+    set_user_pf_options(net_in, tolerance=1e3)
     to_excel(net_in, filename)
     net_out = from_excel(filename)
     assert_net_equal(net_in, net_out)
@@ -527,7 +527,9 @@ def test_json_simple_index_type():
     df5, df6, df7, df8 = df1.T, df2.T, df3.T, df4.T
     df9 = pd.DataFrame([[1, 2, 3], [4, 5, 7]], index=[1, "2"], columns=[4, "5", 6])
     json_input = dict(zip("abcdefghijkl", [s1, s2, s3, s4, df1, df2, df3, df4, df5, df6, df7, df8, df9]))
-    json_str = to_json(json_input)
+    net = pandapowerNet(name="test_;son_simple_index_type")
+    net.update(json_input)
+    json_str = to_json(net)
     output = from_json_string(json_str, convert=False)
     for key in [*"abcd"]:
         assert_series_equal(json_input[key], output[key], check_dtype=False)
@@ -556,17 +558,18 @@ def test_json_multiindex_and_index_names():
     idx3 = pd.MultiIndex.from_tuples(idx_tuples, names=["fifth", "sixth"])
     col1 = pd.MultiIndex.from_tuples(col_tuples)
     col2 = pd.MultiIndex.from_tuples(col_tuples, names=[7, 8])  # ["7", "8"] is not possible since
-    # orient="columns" loses info whether index/column is an iteger or a string
+    # orient="columns" loses info whether index/column is an integer or a string
     col3 = pd.MultiIndex.from_tuples(col_tuples, names=[7, None])
 
     for idx, col in zip([idx1, idx2, idx3], [col1, col2, col3]):
+        net = pandapowerNet(name="test_json_multiindex_and_index_names")
         s_mi = pd.Series(range(4), index=idx)
         df_mi = pd.DataFrame(np.arange(4 * 3).reshape((4, 3)), index=idx)
         df_mc = pd.DataFrame(np.arange(4 * 3).reshape((4, 3)), columns=col)
         df_mi_mc = pd.DataFrame(np.arange(4 * 3).reshape((4, 3)), index=idx, columns=col)
-
         json_input = dict(zip("abcd", [s_mi, df_mi, df_mc, df_mi_mc]))
-        json_str = to_json(json_input)
+        net.update(json_input)
+        json_str = to_json(net)
         output = from_json_string(json_str, convert=False)
         assert_series_equal(json_input["a"], output["a"], check_dtype=False)
         assert_frame_equal(json_input["b"], output["b"], check_dtype=False, check_column_type=False)
@@ -576,39 +579,12 @@ def test_json_multiindex_and_index_names():
         )
 
 
-def test_json_dict_of_stuff():
-    net1 = case9()
-    net2 = case14()
-    df = pd.DataFrame([[1, 2, 3], [3, 4, 5]])
-    text = "hello world"
-    d = {"net1": net1, "net2": net2, "df": df, "text": text}
-    s = to_json(d)
-    dd = from_json_string(s)
-    assert d.keys() == dd.keys()
-    assert_net_equal(net1, dd["net1"])
-    assert_net_equal(net2, dd["net2"])
-    dataframes_equal(df, dd["df"])
-    assert text == dd["text"]
-
-
-def test_json_list_of_stuff():
-    net1 = case9()
-    net2 = case14()
-    df = pd.DataFrame([[1, 2, 3], [3, 4, 5]])
-    text = "hello world"
-    s = to_json([net1, net2, df, text])
-    loaded_list = from_json_string(s)
-
-    assert_net_equal(net1, loaded_list[0])
-    assert_net_equal(net2, loaded_list[1])
-    dataframes_equal(df, loaded_list[2])
-    assert text == loaded_list[3]
-
-
 def test_multi_index():
+    net = pandapowerNet(name="test_multi_index")
     df = pd.DataFrame(columns=["a", "b", "c"], dtype=np.int64)
     df = df.set_index(["a", "b"])
-    df2 = from_json_string(to_json(df))
+    net["df"] = df
+    df2 = from_json_string(to_json(net))["df"]
     assert_frame_equal(df, df2)
 
 

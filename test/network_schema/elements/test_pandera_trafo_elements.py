@@ -79,9 +79,9 @@ class TestTrafoRequiredFields:
         list(
             itertools.chain(
                 itertools.product(["hv_bus", "lv_bus"], positiv_ints_plus_zero),
-                itertools.product(["sn_mva", "vn_hv_kv", "vn_lv_kv", "vk_percent"], positiv_floats),
-                itertools.product(["vkr_percent", "pfe_kw", "i0_percent"], positiv_floats_plus_zero),
-                itertools.product(["shift_degree"], all_allowed_floats),
+                itertools.product(["sn_mva", "vn_hv_kv", "vn_lv_kv"], positiv_floats),
+                itertools.product(["pfe_kw"], positiv_floats_plus_zero),
+                itertools.product(["shift_degree", "vkr_percent", "i0_percent", "vk_percent"], all_allowed_floats),
                 itertools.product(["parallel"], positiv_ints),
                 itertools.product(["in_service"], bools),
             )
@@ -103,12 +103,16 @@ class TestTrafoRequiredFields:
             itertools.chain(
                 itertools.product(["hv_bus", "lv_bus"], [float(np.nan), pd.NA, None, *negativ_ints, *not_ints_list]),
                 itertools.product(
-                    ["sn_mva", "vn_hv_kv", "vn_lv_kv", "vk_percent"],
+                    ["sn_mva", "vn_hv_kv", "vn_lv_kv"],
                     [float(np.nan), pd.NA, None, 0.0, *negativ_floats, *not_floats_list],
                 ),
                 itertools.product(
-                    ["vkr_percent", "pfe_kw", "i0_percent"],
+                    ["pfe_kw"],
                     [float(np.nan), pd.NA, None, *negativ_floats, *not_floats_list],
+                ),
+                itertools.product(
+                    ["vkr_percent", "i0_percent", "vk_percent"],
+                    [float(np.nan), pd.NA, None, *not_floats_list],
                 ),
                 itertools.product(["shift_degree"], [float(np.nan), pd.NA, None, *not_floats_list]),
                 itertools.product(["parallel"], [float(np.nan), pd.NA, None, 0, *negativ_ints, *not_ints_list]),

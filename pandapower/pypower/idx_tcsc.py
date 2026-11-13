@@ -58,4 +58,4 @@ TCSC_IF = 14
 TCSC_IT = 15
 TCSC_X_PU = 16
 
-tcsc_cols = 17
+TCSC_COLS = 17

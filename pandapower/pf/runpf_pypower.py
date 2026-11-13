@@ -64,7 +64,7 @@ def _get_options(options, **kwargs):
     recycle = options["recycle"]
     numba = options["numba"]
     enforce_q_lims = options["enforce_q_lims"]
-    tolerance_mva = options["tolerance_mva"]
+    tolerance = options["tolerance"]
     algorithm = options["algorithm"]
     max_iteration = options["max_iteration"]
 
@@ -72,7 +72,7 @@ def _get_options(options, **kwargs):
     algorithm_pypower_dict = {"nr": 1, "fdxb": 2, "fdbx": 3, "gs": 4}
 
     ppopt = ppoption(
-        ENFORCE_Q_LIMS=enforce_q_lims, PF_TOL=tolerance_mva, PF_ALG=algorithm_pypower_dict[algorithm], **kwargs
+        ENFORCE_Q_LIMS=enforce_q_lims, PF_TOL=tolerance, PF_ALG=algorithm_pypower_dict[algorithm], **kwargs
     )
     ppopt["PF_MAX_IT"] = max_iteration
     ppopt["PF_MAX_IT_GS"] = max_iteration
