@@ -177,10 +177,10 @@ def _candidate_switches(net, rated_current) -> np.ndarray:
 def _disconnected_mask(net) -> np.ndarray:
     """Boolean mask of the switches that are explicitly open or out of service.
 
-    A closed switch that cannot be calculated (fused ``z_ohm=0`` bus-bus switch, ``et='t3'``, missing
-    rated current) is *not* disconnected: its temperature is simply not advanced, because there is no
-    current information to advance it with. A disconnected switch, in contrast, physically carries no
-    current and must cool down.
+    A closed switch that cannot be calculated (``et='t3'``, missing rated current, or a fused group
+    without a unique flow split) is *not* disconnected: its temperature is simply not advanced,
+    because there is no current information to advance it with. A disconnected switch, in contrast,
+    physically carries no current and must cool down.
     """
     switch = net.switch
     closed = switch["closed"].fillna(False).to_numpy(dtype=bool)
@@ -189,6 +189,38 @@ def _disconnected_mask(net) -> np.ndarray:
     else:
         in_service = np.ones(len(switch), dtype=bool)
     return ~closed | ~in_service
+
+
+def _compute_fused_switch_flows(net) -> None:
+    """Fill ``res_switch.i_ka`` for fused bus-bus switches before the thermal step.
+
+    A closed bus-bus switch with ``z_ohm <= 0`` is fused into a single power flow node, so it has no
+    branch and no current. The thermal model needs a current, which
+    :func:`pandapower.toolbox.compute_switch_flows` reconstructs from the nodal balance of a converged
+    power flow. Calling it here makes fused switches part of the thermal result without the user
+    having to invoke it manually. A fused group that forms a cycle has no unique flow split; the
+    resulting ``ValueError`` is logged and those switches stay without a temperature instead of
+    aborting the whole TDPF run.
+    """
+    table = net.switch
+    if len(table) == 0 or "et" not in table.columns or not getattr(net, "converged", False):
+        return
+    z_ohm = (
+        pd.to_numeric(table["z_ohm"], errors="coerce")
+        if "z_ohm" in table.columns
+        else pd.Series(0.0, index=table.index)
+    )
+    closed = table["closed"].fillna(False).to_numpy(dtype=bool)
+    fused = (table["et"].astype(str).to_numpy() == "b") & ~(z_ohm.to_numpy(dtype=float) > 0)
+    if not np.any(closed & fused):
+        return
+    # imported here to avoid a circular import (switchgear_thermal -> toolbox -> create -> run -> powerflow)
+    from pandapower.toolbox import compute_switch_flows
+
+    try:
+        compute_switch_flows(net)
+    except ValueError as exception:
+        logger.warning(f"TDPF: cannot compute the flow through fused bus-bus switches: {exception}")
 
 
 def calculate_switch_temperatures(net, dt_minutes: float | None = None, initial_temperature=None):
@@ -243,6 +275,10 @@ def _switch_temperature_step(net, dt_minutes, initial_temperature, cool_disconne
     if len(net.switch) == 0 or "res_switch" not in net:
         return {}, {}
 
+    # Fused z_ohm=0 bus-bus switches have no branch current until it is reconstructed from the
+    # converged nodal balance. Do this here so they participate in the thermal calculation.
+    _compute_fused_switch_flows(net)
+
     # Clear the thermal column of every switch, even if it is skipped below. Stale values from a
     # previous time step must never be reported as the current one.
     _reset_columns(net.res_switch, [TEMPERATURE_COLUMN])
@@ -253,9 +289,8 @@ def _switch_temperature_step(net, dt_minutes, initial_temperature, cool_disconne
     skipped = int(np.count_nonzero(net.switch["closed"].fillna(False).to_numpy(dtype=bool) & ~candidate))
     if skipped:
         logger.info(
-            f"TDPF: skipped {skipped} switch(es): no current in res_switch (fused z_ohm=0 bus-bus switch or "
-            "et='t3') or no rated current in switch.in_ka. Use z_ohm > 0 to model them, or compute their flows "
-            "with pandapower.toolbox.compute_switch_flows(net) after a load flow and then run the TDPF calculation."
+            f"TDPF: skipped {skipped} switch(es): no current in res_switch (bus-trafo3w switch et='t3', or a "
+            "fused bus-bus group whose flow split is indeterminate) or no rated current in switch.in_ka."
         )
 
     disconnected = _disconnected_mask(net) if cool_disconnected else np.zeros(len(net.switch), dtype=bool)

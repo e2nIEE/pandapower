@@ -323,8 +323,8 @@ def test_bus_bus_switch_with_z_ohm_is_calculated():
     )
 
 
-def test_fused_switch_is_skipped_with_one_message(caplog):
-    """A fused bus-bus switch (z_ohm=0) has no branch, so it has no current to use."""
+def test_fused_switch_flow_is_reconstructed():
+    """A fused bus-bus switch (z_ohm=0) has no branch, but its flow is reconstructed automatically."""
     net = pandapowerNet(name="switch_fused")
     bus1, bus2, bus3 = create_buses(net, nr_buses=3, vn_kv=[110.0, 110.0, 110.0])
     create_ext_grid(net, bus1)
@@ -335,12 +335,32 @@ def test_fused_switch_is_skipped_with_one_message(caplog):
     index = create_switch(net, bus2, bus3, et="b", closed=True, in_ka=RATED_CURRENT_KA, z_ohm=0.0)
     _disable_line_tdpf(net)
 
-    with caplog.at_level("INFO"):
+    runpp(net, tdpf=True)
+
+    assert np.isfinite(net.res_switch.at[index, "i_ka"])
+    assert net.res_switch.at[index, TEMPERATURE_COLUMN] == pytest.approx(
+        _steady_state_temperature(net.res_switch.at[index, "i_ka"]), rel=1e-6
+    )
+
+
+def test_fused_switch_cycle_is_skipped_with_a_warning(caplog):
+    """A fused group with a cycle has no unique flow split; TDPF must not abort."""
+    net = pandapowerNet(name="switch_fused_cycle")
+    bus1, bus2, bus3 = create_buses(net, nr_buses=3, vn_kv=[110.0, 110.0, 110.0])
+    create_ext_grid(net, bus1)
+    create_line_from_parameters(
+        net, bus1, bus2, length_km=10.0, r_ohm_per_km=0.1, x_ohm_per_km=0.4, c_nf_per_km=10.0, max_i_ka=1.0
+    )
+    create_load(net, bus3, p_mw=10.0)
+    create_switch(net, bus2, bus3, et="b", closed=True, in_ka=RATED_CURRENT_KA, z_ohm=0.0)
+    create_switch(net, bus3, bus2, et="b", closed=True, in_ka=RATED_CURRENT_KA, z_ohm=0.0)
+    _disable_line_tdpf(net)
+
+    with caplog.at_level("WARNING"):
         runpp(net, tdpf=True)
 
-    assert np.isnan(net.res_switch.at[index, "i_ka"])
-    assert np.isnan(net.res_switch.at[index, TEMPERATURE_COLUMN])
-    assert any("skipped 1 switch" in record.message for record in caplog.records)
+    assert any("fused bus-bus switches" in record.message for record in caplog.records)
+    assert np.isnan(net.res_switch[TEMPERATURE_COLUMN]).all()
 
 
 def _trafo3w_switch_net(**switch_kwargs):
@@ -399,10 +419,8 @@ def test_switch_without_rated_current_is_skipped():
     assert np.isnan(net.res_switch.at[index, TEMPERATURE_COLUMN])
 
 
-def test_compute_switch_flows_is_an_escape_hatch():
-    """Fused switches are not computed implicitly, but can be computed explicitly afterwards."""
-    from pandapower.toolbox import compute_switch_flows
-
+def test_direct_call_reconstructs_fused_switch_flows():
+    """The direct entry point also reconstructs fused flows when a converged power flow exists."""
     net = pandapowerNet(name="switch_compute_flows")
     bus1, bus2, bus3 = create_buses(net, nr_buses=3, vn_kv=[110.0, 110.0, 110.0])
     create_ext_grid(net, bus1)
@@ -413,10 +431,9 @@ def test_compute_switch_flows_is_an_escape_hatch():
     index = create_switch(net, bus2, bus3, et="b", closed=True, in_ka=RATED_CURRENT_KA, z_ohm=0.0)
     _disable_line_tdpf(net)
 
-    runpp(net, tdpf=True)
-    assert np.isnan(net.res_switch.at[index, TEMPERATURE_COLUMN])
+    _run_plain(net)
+    assert np.isnan(net.res_switch.at[index, "i_ka"])
 
-    compute_switch_flows(net)
     calculate_switch_temperatures(net)
 
     assert np.isfinite(net.res_switch.at[index, "i_ka"])

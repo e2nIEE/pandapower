@@ -261,13 +261,15 @@ The results are written to an additional column of :code:`net.res_switch`:
 
     ``temperature_degree_celsius``,"res_switch","switch temperature in °C"
 
-Only switches with a closed state, a finite :code:`in_ka` greater than zero and a finite solved current
-in :code:`res_switch.i_ka` are calculated. All other switches stay :code:`NaN`. In particular, a fused
-bus-bus switch (:code:`z_ohm=0`) has no branch and therefore no current, and a bus-trafo3w switch
-(:code:`et="t3"`) is not supported. They are skipped with a single aggregated log message.
-:code:`compute_switch_flows` is not called implicitly. If the current of a fused switch is needed, call
-:code:`pandapower.toolbox.compute_switch_flows(net)` after the load flow and run the thermal
-calculation again.
+Only switches with a closed state, a finite :code:`in_ka` greater than zero and a finite current in
+:code:`res_switch.i_ka` are calculated. A bus-trafo3w switch (:code:`et="t3"`) has no solved current and
+is not supported; it is skipped with a single aggregated log message.
+
+A fused bus-bus switch (:code:`z_ohm=0`) has no branch either, because its buses are merged into one
+internal node. For the switch thermal model its flow is reconstructed from the nodal balance with
+:code:`pandapower.toolbox.compute_switch_flows(net)` automatically. A fused group whose zero-impedance
+switches form a cycle has no unique flow split; it is skipped with a warning instead of aborting TDPF.
+Use :code:`z_ohm > 0` to model a bus-bus switch as an explicit branch.
 
 Whether the model is solved for the steady state or for a transient depends on the
 :code:`tdpf_delay_s` power flow parameter, as for the lines and transformers:

@@ -53,10 +53,11 @@ This has the following advantages compared to modelling the switch as a small im
    flow through these switches via nodal balance, call
    :func:`pandapower.toolbox.compute_switch_flows` after the load flow.
 
-   For the same reason, a fused bus-bus switch (``z_ohm=0``) and a bus-trafo3w switch
-   (``et="t3"``) get no switch temperature in ``runpp(tdpf=True)``: they have no solved
-   current. Use ``z_ohm > 0`` to model a bus-bus switch with an impedance, or compute
-   the flows explicitly with :func:`pandapower.toolbox.compute_switch_flows`.
+   For the switch temperature in ``runpp(tdpf=True)``, the flow of a fused bus-bus switch
+   (``z_ohm=0``) is reconstructed automatically with
+   :func:`pandapower.toolbox.compute_switch_flows`, so it gets a temperature as well. A
+   bus-trafo3w switch (``et="t3"``) has no solved current and is skipped. Use
+   ``z_ohm > 0`` to model a bus-bus switch as an explicit branch.
 
 *Bus-Element-Switches:*
 
