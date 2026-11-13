@@ -7,9 +7,9 @@ from typing import Literal
 import numpy as np
 import pandas as pd
 
-from pandapower import pandapowerNet
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net
 from pandapower.control.basic_controller import Controller
+from pandapower.network import pandapowerNet
 from pandapower.pp_types import Int
 
 logger = logging.getLogger(__name__)

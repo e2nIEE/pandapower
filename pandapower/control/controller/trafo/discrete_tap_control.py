@@ -5,9 +5,9 @@ from typing import Literal
 import numpy as np
 from typing_extensions import deprecated
 
-from pandapower import pandapowerNet
 from pandapower.auxiliary import read_from_net, write_to_net
 from pandapower.control.controller.trafo_control import TrafoController
+from pandapower.network import pandapowerNet
 from pandapower.pp_types import HVMVLVType, Int
 
 

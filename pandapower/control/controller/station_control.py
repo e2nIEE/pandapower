@@ -6,11 +6,11 @@ from typing import Literal
 
 import numpy as np
 
-from pandapower import ensure_iterability, pandapowerNet
-from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
+from pandapower.auxiliary import _detect_read_write_flag, ensure_iterability, read_from_net, write_to_net
 from pandapower.control.basic_controller import Controller
 from pandapower.control.util.auxiliary import get_min_max_q_mvar_from_characteristics_object
 from pandapower.create._utils import add_column_to_df
+from pandapower.network import pandapowerNet
 from pandapower.pp_types import Int
 
 logger = logging.getLogger(__name__)

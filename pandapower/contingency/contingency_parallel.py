@@ -6,7 +6,7 @@ from functools import partial
 
 import numpy as np
 
-from pandapower import pandapowerNet
+from pandapower.network import pandapowerNet
 from pandapower.pf.transformer_thermal import TRANSFORMER_THERMAL_AVAILABLE
 from pandapower.run import runpp
 

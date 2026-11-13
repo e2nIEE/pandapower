@@ -6,8 +6,8 @@ import logging
 import numpy as np
 import pandas as pd
 
-from pandapower import pandapowerNet
 from pandapower.control.controller.const_control import ConstControl
+from pandapower.network import pandapowerNet
 from pandapower.pp_types import Int
 
 logger = logging.getLogger(__name__)

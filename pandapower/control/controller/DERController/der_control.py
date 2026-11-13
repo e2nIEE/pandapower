@@ -7,11 +7,11 @@ import logging
 
 import numpy as np
 
-from pandapower import pandapowerNet
 from pandapower.auxiliary import ensure_iterability
 from pandapower.control.controller.DERController.pqv_areas import BaseArea, PQVArea4110, QVArea4110
 from pandapower.control.controller.DERController.q_models import QModel
 from pandapower.control.controller.pq_control import PQController
+from pandapower.network import pandapowerNet
 from pandapower.pp_types import Int
 
 logger = logging.getLogger(__name__)

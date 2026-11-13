@@ -16,9 +16,9 @@ import logging
 
 import numpy as np
 
-from pandapower import pandapowerNet
 from pandapower.auxiliary import ControllerNotConverged, NetCalculationNotConverged
 from pandapower.control.util.auxiliary import asarray
+from pandapower.network import pandapowerNet
 from pandapower.optimal_powerflow import OPFNotConverged
 from pandapower.powerflow import LoadflowNotConverged
 from pandapower.run import runpp

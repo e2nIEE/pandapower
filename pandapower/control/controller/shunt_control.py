@@ -2,8 +2,8 @@ import logging
 
 import numpy as np
 
-from pandapower import pandapowerNet
 from pandapower.control.basic_controller import Controller
+from pandapower.network import pandapowerNet
 from pandapower.pp_types import Int
 
 logger = logging.getLogger(__name__)
