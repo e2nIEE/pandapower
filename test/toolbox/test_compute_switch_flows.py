@@ -307,6 +307,66 @@ class TestComputeSwitchFlowsGenAndBranch:
         assert np.isclose(sw_p, line1_p, atol=1e-6)
         assert np.isclose(sw_q, line1_q, atol=1e-6)
 
+    def test_impedance_switch_leaving_fused_group(self):
+        """A z_ohm > 0 bus-bus switch leaving the fused group is part of the balance.
+
+        ext_grid--(b0)--line--(b1)--sw--(b2)--sw(z_ohm>0)--(b3)--load
+
+        The fused switch carries the power that the impedance switch takes from
+        b2. Without the impedance switch in the branch balance, the flow through
+        the fused switch would depend on the arbitrary tree root and could be 0.
+        """
+        net = pandapowerNet(name="test_impedance_switch_leaving_fused_group")
+        b0, b1, b2, b3 = create_buses(net, 4, vn_kv=20.0)
+
+        create_ext_grid(net, b0)
+        create_lines(
+            net,
+            b0,
+            b1,
+            length_km=10,
+            line_params={"r_ohm_per_km": 0.1, "x_ohm_per_km": 0.1, "c_nf_per_km": 0, "max_i_ka": 1},
+        )
+        fused = create_switch(net, bus=b1, element=b2, et="b")
+        impedance = create_switch(net, bus=b2, element=b3, et="b", z_ohm=0.01)
+        create_load(net, b3, p_mw=2.0, q_mvar=1.0)
+
+        runpp(net)
+        compute_switch_flows(net)
+
+        # b2 is only connected to the impedance switch, so the fused switch must feed it
+        assert np.isclose(net.res_switch.at[fused, "p_from_mw"], net.res_switch.at[impedance, "p_from_mw"], atol=1e-6)
+        assert np.isclose(
+            net.res_switch.at[fused, "q_from_mvar"], net.res_switch.at[impedance, "q_from_mvar"], atol=1e-6
+        )
+        assert np.isclose(net.res_switch.at[fused, "i_ka"], net.res_switch.at[impedance, "i_ka"], atol=1e-9)
+        assert net.res_switch.at[fused, "i_ka"] > 0
+
+    def test_impedance_switch_without_solved_flow_is_ignored(self):
+        """An impedance switch whose terminal bus is out of service must not poison the balance."""
+        net = pandapowerNet(name="test_impedance_switch_without_solved_flow")
+        b0, b1, b2, b3 = create_buses(net, 4, vn_kv=20.0)
+
+        create_ext_grid(net, b0)
+        create_lines(
+            net,
+            b0,
+            b1,
+            length_km=10,
+            line_params={"r_ohm_per_km": 0.1, "x_ohm_per_km": 0.1, "c_nf_per_km": 0, "max_i_ka": 1},
+        )
+        fused = create_switch(net, bus=b1, element=b2, et="b")
+        create_switch(net, bus=b2, element=b3, et="b", z_ohm=0.01)
+        create_load(net, b2, p_mw=2.0, q_mvar=1.0)
+        net.bus.at[b3, "in_service"] = False
+
+        runpp(net)
+        compute_switch_flows(net)
+
+        assert np.isnan(net.res_switch.at[1, "i_ka"])
+        assert not np.isnan(net.res_switch.at[fused, "p_from_mw"])
+        assert np.isclose(abs(net.res_switch.at[fused, "p_from_mw"]), 2.0, atol=1e-2)
+
     def test_sgen_and_shunt(self):
         """Ensure static generators and shunts are accounted for."""
         net = pandapowerNet(name="test_sgen_and_shunt")
@@ -379,6 +439,40 @@ class TestComputeSwitchFlowsCycleDetection:
         runpp(net)
         with pytest.raises(ValueError, match="cycle"):
             compute_switch_flows(net)
+
+    def test_cycle_does_not_stop_other_groups(self):
+        """A cyclic fused group must not prevent the reconstruction of independent groups."""
+        net = pandapowerNet(name="test_cycle_does_not_stop_other_groups")
+        # the cyclic group has the lower bus indices, so it is processed first
+        b0, b1, b2 = create_buses(net, 3, vn_kv=20.0)
+        b3, b4, b5 = create_buses(net, 3, vn_kv=20.0)
+
+        create_ext_grid(net, b0)
+        create_ext_grid(net, b3)
+        create_lines(
+            net,
+            [b0, b3],
+            [b1, b4],
+            length_km=[10, 10],
+            line_params={"r_ohm_per_km": 0.1, "x_ohm_per_km": 0.1, "c_nf_per_km": 0, "max_i_ka": 1},
+        )
+        # cyclic group {b1, b2}
+        create_switch(net, bus=b1, element=b2, et="b")
+        create_switch(net, bus=b1, element=b2, et="b")
+        create_load(net, b2, p_mw=1.0)
+        # tree group {b4, b5}
+        valid = create_switch(net, bus=b4, element=b5, et="b")
+        create_load(net, b5, p_mw=2.0)
+
+        runpp(net)
+        with pytest.raises(ValueError, match="cycle"):
+            compute_switch_flows(net)
+
+        # the cyclic group stays indeterminate, the other group is reconstructed nevertheless
+        assert np.isnan(net.res_switch.at[0, "i_ka"])
+        assert np.isnan(net.res_switch.at[1, "i_ka"])
+        assert np.isfinite(net.res_switch.at[valid, "i_ka"])
+        assert np.isclose(abs(net.res_switch.at[valid, "p_from_mw"]), 2.0, atol=1e-2)
 
 
 class TestComputeSwitchFlowsSignConvention:

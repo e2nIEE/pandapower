@@ -199,8 +199,9 @@ def _compute_fused_switch_flows(net) -> None:
     :func:`pandapower.toolbox.compute_switch_flows` reconstructs from the nodal balance of a converged
     power flow. Calling it here makes fused switches part of the thermal result without the user
     having to invoke it manually. A fused group that forms a cycle has no unique flow split; the
-    resulting ``ValueError`` is logged and those switches stay without a temperature instead of
-    aborting the whole TDPF run.
+    resulting ``ValueError`` is logged. Since :func:`pandapower.toolbox.compute_switch_flows` still
+    reconstructs the independent groups, only the switches of the cyclic group stay without a
+    temperature instead of aborting the whole TDPF run.
     """
     table = net.switch
     if len(table) == 0 or "et" not in table.columns or not getattr(net, "converged", False):

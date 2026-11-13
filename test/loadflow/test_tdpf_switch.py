@@ -347,6 +347,33 @@ def test_fused_switch_flow_is_reconstructed():
     )
 
 
+def test_fused_switch_is_supplied_through_an_impedance_switch():
+    """A z_ohm > 0 bus-bus switch leaving the fused group counts in the reconstructed balance.
+
+    Without it the fused switch would be reconstructed with zero current and get the ambient
+    temperature instead of the steady state temperature of the load it feeds.
+    """
+    net = pandapowerNet(name="switch_fused_via_impedance")
+    bus1, bus2, bus3, bus4 = create_buses(net, nr_buses=4, vn_kv=[110.0] * 4)
+    create_ext_grid(net, bus1)
+    create_line_from_parameters(
+        net, bus1, bus2, length_km=10.0, r_ohm_per_km=0.1, x_ohm_per_km=0.4, c_nf_per_km=10.0, max_i_ka=1.0
+    )
+    create_load(net, bus4, p_mw=10.0)
+    fused = create_switch(net, bus2, bus3, et="b", closed=True, in_ka=RATED_CURRENT_KA, z_ohm=0.0)
+    impedance = create_switch(net, bus3, bus4, et="b", closed=True, in_ka=RATED_CURRENT_KA, z_ohm=0.01)
+    _disable_line_tdpf(net)
+
+    runpp(net, tdpf=True)
+
+    assert net.res_switch.at[fused, "i_ka"] == pytest.approx(net.res_switch.at[impedance, "i_ka"], rel=1e-9)
+    assert net.res_switch.at[fused, "i_ka"] > 0
+    assert net.res_switch.at[fused, TEMPERATURE_COLUMN] > AMBIENT_C
+    assert net.res_switch.at[fused, TEMPERATURE_COLUMN] == pytest.approx(
+        _steady_state_temperature(net.res_switch.at[fused, "i_ka"]), rel=1e-6
+    )
+
+
 def test_fused_switch_cycle_is_skipped_with_a_warning(caplog):
     """A fused group with a cycle has no unique flow split; TDPF must not abort."""
     net = pandapowerNet(name="switch_fused_cycle")
@@ -365,6 +392,45 @@ def test_fused_switch_cycle_is_skipped_with_a_warning(caplog):
 
     assert any("fused bus-bus switches" in record.message for record in caplog.records)
     assert np.isnan(net.res_switch[TEMPERATURE_COLUMN]).all()
+
+
+def test_cyclic_group_does_not_block_other_fused_groups(caplog):
+    """An indeterminate fused group must not keep the switches of independent groups at ambient."""
+    net = pandapowerNet(name="switch_fused_cycle_and_tree")
+    # the cyclic group has the lower bus indices, so it is reconstructed first
+    bus1, bus2, bus3 = create_buses(net, nr_buses=3, vn_kv=[110.0] * 3)
+    bus4, bus5, bus6 = create_buses(net, nr_buses=3, vn_kv=[110.0] * 3)
+    create_ext_grid(net, bus1)
+    create_ext_grid(net, bus4)
+    for bus in (bus1, bus4):
+        create_line_from_parameters(
+            net,
+            bus,
+            bus + 1,
+            length_km=10.0,
+            r_ohm_per_km=0.1,
+            x_ohm_per_km=0.4,
+            c_nf_per_km=10.0,
+            max_i_ka=1.0,
+        )
+    create_load(net, bus3, p_mw=10.0)
+    cyclic = [
+        create_switch(net, bus2, bus3, et="b", closed=True, in_ka=RATED_CURRENT_KA, z_ohm=0.0),
+        create_switch(net, bus3, bus2, et="b", closed=True, in_ka=RATED_CURRENT_KA, z_ohm=0.0),
+    ]
+    create_load(net, bus6, p_mw=10.0)
+    valid = create_switch(net, bus5, bus6, et="b", closed=True, in_ka=RATED_CURRENT_KA, z_ohm=0.0)
+    _disable_line_tdpf(net)
+
+    with caplog.at_level("WARNING"):
+        runpp(net, tdpf=True)
+
+    assert any("fused bus-bus switches" in record.message for record in caplog.records)
+    assert np.isnan(net.res_switch.loc[cyclic, TEMPERATURE_COLUMN]).all()
+    assert np.isfinite(net.res_switch.at[valid, "i_ka"])
+    assert net.res_switch.at[valid, TEMPERATURE_COLUMN] == pytest.approx(
+        _steady_state_temperature(net.res_switch.at[valid, "i_ka"]), rel=1e-6
+    )
 
 
 def _trafo3w_switch_net(**switch_kwargs):
