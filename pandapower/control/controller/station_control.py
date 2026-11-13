@@ -176,7 +176,7 @@ class BinarySearchControl(Controller):
         ###catching errors in variables, allocating
         if input_inverted is None:
             input_inverted = []  # for robustness
-        self.output_element_index = [int(item) for item in ensure_iterability(output_element_in_service)]
+        self.output_element_index = [int(item) for item in ensure_iterability(output_element_index)]
         self.output_element_in_service = ensure_iterability(output_element_in_service)
         if isinstance(input_element_index, (list, np.ndarray)):
             for element in input_element_index:
