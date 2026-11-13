@@ -24,6 +24,23 @@ from test.network_schema.elements.helper import (
     strings,
 )
 
+# optional numeric switch columns
+SWITCH_NUMERIC_OPTIONAL = (
+    "measured_temperature_rise_kelvin",
+    "temperature_rise_exponent",
+    "thermal_time_constant_minutes",
+    "air_temperature_degree_celsius",
+)
+SWITCH_STRING_OPTIONAL = (
+    "name",
+    "type",
+    "origin_id",
+    "origin_class",
+    "description",
+    "terminal_bus",
+    "terminal_element",
+)
+
 
 class TestSwitchRequiredFields:
     """Tests for required switch fields"""
@@ -108,6 +125,10 @@ class TestSwitchOptionalFields:
         # Optional fields
         net.switch["name"] = pd.Series(["SW-A"], dtype="string")
         net.switch["type"] = pd.Series(["CB"], dtype="string")
+        net.switch["measured_temperature_rise_kelvin"] = 75.0
+        net.switch["temperature_rise_exponent"] = 1.8
+        net.switch["thermal_time_constant_minutes"] = 90.0
+        net.switch["air_temperature_degree_celsius"] = 35.0
 
         validate_network(net)
 
@@ -125,6 +146,8 @@ class TestSwitchOptionalFields:
         net.switch["type"] = pd.Series(["CB", pd.NA], dtype="string")
         net.switch["in_ka"] = [float(np.nan), float(np.nan)]
         net.switch["z_ohm"] = [float(np.nan), float(np.nan)]
+        for column in SWITCH_NUMERIC_OPTIONAL:
+            net.switch[column] = float(np.nan)
 
         validate_network(net)
 
@@ -139,6 +162,11 @@ class TestSwitchOptionalFields:
                 itertools.product(["description"], [pd.NA, *strings]),
                 itertools.product(["terminal_bus"], [pd.NA, *strings]),
                 itertools.product(["terminal_element"], [pd.NA, *strings]),
+                itertools.product(
+                    ["measured_temperature_rise_kelvin", "temperature_rise_exponent", "thermal_time_constant_minutes"],
+                    [float(np.nan), *positiv_floats],
+                ),
+                itertools.product(["air_temperature_degree_celsius"], [float(np.nan), *all_allowed_floats]),
             )
         ),
     )
@@ -149,7 +177,10 @@ class TestSwitchOptionalFields:
 
         create_switch(net, bus=b0, element=b1, et="b", closed=True)
 
-        net.switch[parameter] = pd.Series([valid_value], dtype="string")
+        if parameter in SWITCH_STRING_OPTIONAL:
+            net.switch[parameter] = pd.Series([valid_value], dtype="string")
+        else:
+            net.switch[parameter] = valid_value
         validate_network(net)
 
     @pytest.mark.parametrize(
@@ -163,6 +194,11 @@ class TestSwitchOptionalFields:
                 itertools.product(["description"], not_strings_list),
                 itertools.product(["terminal_bus"], not_strings_list),
                 itertools.product(["terminal_element"], not_strings_list),
+                itertools.product(
+                    ["measured_temperature_rise_kelvin", "temperature_rise_exponent", "thermal_time_constant_minutes"],
+                    [*negativ_floats_plus_zero, *not_floats_list],
+                ),
+                itertools.product(["air_temperature_degree_celsius"], [-300.0, *not_floats_list]),
             )
         ),
     )

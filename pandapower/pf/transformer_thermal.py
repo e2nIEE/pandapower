@@ -20,13 +20,10 @@ tables. Line-only TDPF therefore behaves exactly as before, and no additional re
 
 import logging
 from datetime import datetime, timedelta
+from importlib.util import find_spec
 
 import numpy as np
 import pandas as pd
-
-logger = logging.getLogger(__name__)
-
-from importlib.util import find_spec
 
 TRANSFORMER_THERMAL_AVAILABLE = find_spec("transformer_thermal_model") is not None
 
@@ -49,6 +46,7 @@ if TRANSFORMER_THERMAL_AVAILABLE:
         ThreeWindingTransformer,
     )
 
+logger = logging.getLogger(__name__)
 
 # Result columns written to net.res_trafo / net.res_trafo3w. They are only created when the thermal
 # calculation actually ran (see the module docstring and `calculate_transformer_temperatures`).

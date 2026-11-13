@@ -128,6 +128,7 @@ More detailed information about TDPF can be found in the tutorials:
 - `TDPF introduction <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/temperature_dependent_power_flow.ipynb>`__
 - `Sensitivity of TDPF parameters <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/temperature_dependent_power_flow_parameters.ipynb>`__
 - `Transformer temperatures <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/temperature_dependent_power_flow_trafo.ipynb>`__
+- `Switch temperatures <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/temperature_dependent_power_flow_switchgear.ipynb>`__
 
 .. _tdpf_transformer_temperatures:
 
@@ -209,6 +210,78 @@ power flow parameter, the same parameter that controls the thermal inertia of th
     modified optional specifications exactly. The hot-spot temperature does depend on them, so it will
     differ from a calculation that uses a transformer-specific winding-oil gradient or hot-spot factor.
     A wider set of input columns is not part of this implementation.
+
+.. _tdpf_switchgear_temperatures:
+
+Switch temperatures
+```````````````````
+
+TDPF also reports the temperature of every current carrying switch (:code:`net.switch`). The
+calculation uses the first order thermal model of IEC 62271-306 and the python package
+`switchgear-thermal-model <https://github.com/alliander-opensource/switchgear-thermal-model>`__
+developed by Alliander, the same organisation that maintains the transformer thermal model.
+
+This is an optional feature and requires an optional dependency. Install it with:
+
+.. code-block:: bash
+
+    pip install pandapower[tdpf]
+
+The switch thermal model currently requires Python 3.12 or newer. If the package is not installed,
+TDPF logs a warning and skips switch temperature calculations. Line and transformer TDPF continue to
+work as before, and the switch temperature result column is not created, so users who do not model
+switches do not see a column filled with NaN values.
+
+Unlike a transformer, a switch has no nameplate data from which the thermal model could be derived.
+Four additional input columns are therefore read from :code:`net.switch`:
+
+.. tabularcolumns:: |p{0.38\linewidth}|p{0.12\linewidth}|p{0.40\linewidth}|
+.. csv-table::
+    :header: "Column", "Type", "Description"
+    :widths: 38, 12, 40
+
+    ``measured_temperature_rise_kelvin``,float,"temperature rise above ambient at rated current (default: 75)"
+    ``temperature_rise_exponent``,float,"exponent that scales the temperature rise with the current (default: 1.8)"
+    ``thermal_time_constant_minutes``,float,"thermal time constant of the switch in minutes (default: 90)"
+    ``air_temperature_degree_celsius``,float,"ambient temperature in °C (default: 35)"
+
+The rated current :code:`rated_current` of the model is the existing :code:`in_ka` column, converted to
+ampere. These four values are assumptions when they are missing, so pandapower logs which defaults it
+filled in.
+
+The temperature is *reported*, not fed back into the power flow. The switch thermal model runs as
+post-processing on the solved switch current, so it does not change voltages, flows or losses.
+
+The results are written to an additional column of :code:`net.res_switch`:
+
+.. tabularcolumns:: |p{0.35\linewidth}|p{0.30\linewidth}|p{0.35\linewidth}|
+.. csv-table::
+    :header: "Column", "Table", "Description"
+    :widths: 35, 30, 35
+
+    ``temperature_degree_celsius``,"res_switch","switch temperature in °C"
+
+Only switches with a closed state, a finite :code:`in_ka` greater than zero and a finite current in
+:code:`res_switch.i_ka` are calculated. A bus-trafo3w switch (:code:`et="t3"`) has no solved current and
+is not supported; it is skipped with a single aggregated log message.
+
+A fused bus-bus switch (:code:`z_ohm=0`) has no branch either, because its buses are merged into one
+internal node. For the switch thermal model its flow is reconstructed from the nodal balance with
+:code:`pandapower.toolbox.compute_switch_flows(net)` automatically. A fused group whose zero-impedance
+switches form a cycle has no unique flow split; it is skipped with a warning instead of aborting TDPF.
+Use :code:`z_ohm > 0` to model a bus-bus switch as an explicit branch.
+
+Whether the model is solved for the steady state or for a transient depends on the
+:code:`tdpf_delay_s` power flow parameter, as for the lines and transformers:
+
+* :code:`tdpf_delay_s=None` (the default) gives the steady state temperature for the present current.
+* A finite :code:`tdpf_delay_s` gives the temperature after this time step, starting from ambient. In a
+  time series run, the switch temperature of the previous time step is used as the initial condition.
+
+In a time series run, a switch that is opened (or taken out of service) continues to cool down with
+zero current internally. Its :code:`res_switch.temperature_degree_celsius` stays :code:`NaN` while it is
+open, but closing it again resumes the thermal model from the cooled temperature instead of restarting
+from ambient.
 
 .. autofunction:: pandapower.run.runpp
 

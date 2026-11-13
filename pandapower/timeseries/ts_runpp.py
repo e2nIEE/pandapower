@@ -18,6 +18,8 @@ from pandapower.pf.run_newton_raphson_pf import (
     _get_Y_bus,
     newtonpf,
 )
+from pandapower.pf.switchgear_thermal import SwitchgearThermalTracker
+from pandapower.pf.transformer_thermal import TransformerThermalTracker
 from pandapower.powerflow import LoadflowNotConverged, _add_auxiliary_elements
 from pandapower.pypower.idx_bus import PD, QD
 from pandapower.pypower.idx_bus_dc import DC_PD
@@ -47,9 +49,10 @@ class TimeSeriesRunpp:
         # update functions
         self.update_pq = False
         self.update_trafo = False
-        from pandapower.pf.transformer_thermal import TransformerThermalTracker
 
         self.transformer_thermal_tracker = TransformerThermalTracker()
+        self.switchgear_thermal_tracker = SwitchgearThermalTracker()
+
         self.init_timeseries_newton()
 
     def ts_newtonpf(self, net):
@@ -121,13 +124,15 @@ class TimeSeriesRunpp:
 
         _extract_results(net, self.ppc)
 
-        # transformer thermal model is post-processing and is not reached through _ppci_to_net here.
-        # The tracker chains the top-oil temperature across the time steps, which is what makes the
-        # recursive IEC 60076-7 model physically meaningful in a time series.
+        # transformer and switch thermal models are post-processing and are not reached through
+        # _ppci_to_net here. The trackers chain the temperatures across the time steps, which is what
+        # makes the recursive models physically meaningful in a time series.
         if options.get("tdpf", False):
             from pandapower.pf.transformer_thermal import dt_minutes_from_options
 
-            self.transformer_thermal_tracker.run(net, dt_minutes=dt_minutes_from_options(options))
+            dt_minutes = dt_minutes_from_options(options)
+            self.transformer_thermal_tracker.run(net, dt_minutes=dt_minutes)
+            self.switchgear_thermal_tracker.run(net, dt_minutes=dt_minutes)
 
         return net
 

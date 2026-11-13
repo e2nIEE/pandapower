@@ -65,6 +65,7 @@ from packaging.version import Version
 from pandas.api.types import is_numeric_dtype, is_object_dtype, is_string_dtype
 
 from pandapower.network import pandapowerNet
+from pandapower.pf.switchgear_thermal import SWITCH_DEFAULTS
 from pandapower.pypower.idx_brch import BR_STATUS, F_BUS, T_BUS
 from pandapower.pypower.idx_brch_dc import DC_BR_STATUS, DC_F_BUS, DC_T_BUS
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, NONE, PD, PQ, PV, QD, REF, VA, VM, VMAX, VMIN
@@ -1567,6 +1568,7 @@ def _check_tdpf_parameters(net: pandapowerNet, tdpf_update_r_theta: bool, tdpf_d
         raise UserWarning("TDPF: temperature dependent power flow cannot be applied to lines that have r_ohm_per_km=0")
 
     _check_tdpf_trafo_parameters(net, trafo_idx, trafo3w_idx)
+    _check_tdpf_switch_parameters(net)
 
 
 def _check_tdpf_trafo_parameters(net: pandapowerNet, trafo_idx, trafo3w_idx) -> None:
@@ -1602,6 +1604,71 @@ def _check_tdpf_trafo_parameters(net: pandapowerNet, trafo_idx, trafo3w_idx) -> 
             )
         if (table.loc[indices, "air_temperature_degree_celsius"] <= -273).any():
             raise UserWarning(f"TDPF: air_temperature_degree_celsius in {element} must be greater than -273 °C")
+
+
+def _check_tdpf_switch_parameters(net: pandapowerNet) -> None:
+    """Default and validate the switch input columns of the switch thermal calculation.
+
+    Every closed switch with a usable current takes part in the thermal calculation when ``tdpf=True``;
+    there is no per switch opt-in flag. Unlike a transformer, none of the thermal specifications can be
+    derived from the switch data, so all four inputs are columns of ``net.switch`` and are filled with
+    documented assumptions if they are missing.
+
+    Only the switches that can actually be calculated are defaulted and validated. A switch without a
+    rated current, with an open state or a bus-trafo3w switch (``et="t3"``) is skipped by the thermal
+    calculation anyway (see ``pandapower.pf.switchgear_thermal``), so an incomplete or invalid value
+    there must not reject a network that TDPF handles fine. A fused bus-bus switch (``z_ohm <= 0``) is
+    validated like any other switch: its flow is reconstructed from the nodal balance during the
+    thermal step, so it takes part in the calculation.
+    """
+    if len(net.switch) == 0:
+        return
+
+    table = net.switch
+    for column in SWITCH_DEFAULTS:
+        if column not in table.columns:
+            table[column] = np.nan
+
+    # `in_ka` is nullable and a NaN rating is the schema default, so it is skipped rather than rejected
+    closed = table["closed"].fillna(False).astype(bool)
+    if "in_service" in table.columns:
+        closed &= table["in_service"].fillna(False).astype(bool)
+    rated_current = (
+        pd.to_numeric(table["in_ka"], errors="coerce")
+        if "in_ka" in table.columns
+        else pd.Series(np.nan, index=table.index)
+    )
+    # A bus-trafo3w switch has no branch in the power flow and no current in res_switch, so the
+    # thermal calculation skips it. Fused bus-bus switches get their current from the thermal step.
+    calculable = table["et"].astype(str) != "t3"
+    relevant = (closed & np.isfinite(rated_current) & (rated_current > 0) & calculable).to_numpy(dtype=bool)
+    if not relevant.any():
+        return
+    indices = table.index[relevant]
+
+    for column, value in SWITCH_DEFAULTS.items():
+        raw = table.loc[indices, column]
+        numeric = pd.to_numeric(raw, errors="coerce")
+        # a value that is present but not numeric is an error, not a missing value
+        not_numeric = raw.notnull() & numeric.isnull()
+        if not_numeric.any():
+            raise UserWarning(
+                f"TDPF: switch.{column} must be numeric for indices {indices[not_numeric.to_numpy(dtype=bool)].tolist()}"
+            )
+        if numeric.isnull().any():
+            logger.info(f"TDPF: filling nan values in switch.{column} with a default assumption of {value}")
+        table.loc[indices, column] = numeric.fillna(value)
+
+    for column in ("measured_temperature_rise_kelvin", "temperature_rise_exponent", "thermal_time_constant_minutes"):
+        invalid = table.loc[indices, column] <= 0
+        if invalid.any():
+            raise UserWarning(f"TDPF: switch.{column} must be greater than 0 for indices {indices[invalid].tolist()}")
+    invalid = table.loc[indices, "air_temperature_degree_celsius"] <= -273
+    if invalid.any():
+        raise UserWarning(
+            f"TDPF: switch.air_temperature_degree_celsius must be greater than -273 °C for indices "
+            f"{indices[invalid].tolist()}"
+        )
 
 
 # =============================================================================
