@@ -2357,6 +2357,7 @@ def _init_runse_options(
     v_start: float | Literal["flat", "results"],
     delta_start: float | Literal["dc", "flat", "results"],
     calculate_voltage_angles: bool,
+    se_options,
     check_connectivity: bool = True,
     trafo_model: Literal["t", "pi"] = "t",
     trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
@@ -2379,6 +2380,7 @@ def _init_runse_options(
         voltage_depend_loads=False,
         trafo3w_losses=trafo3w_losses,
     )
+    _add_options(net, se_options)
     _add_pf_options(
         net,
         tolerance=1e-8,
