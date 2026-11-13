@@ -10,6 +10,12 @@ import tqdm
 from pandapower.auxiliary import ControllerNotConverged
 from pandapower.control import prepare_run_ctrl, run_control
 from pandapower.control.util.diagnostic import control_diagnostic
+from pandapower.pf.switchgear_thermal import SWITCHGEAR_THERMAL_AVAILABLE, SwitchgearThermalTracker
+from pandapower.pf.transformer_thermal import (
+    TRANSFORMER_THERMAL_AVAILABLE,
+    TransformerThermalTracker,
+    dt_minutes_from_options,
+)
 from pandapower.run import runpp
 from pandapower.timeseries.output_writer import OutputWriter
 
@@ -138,30 +144,36 @@ def run_time_step(
 
 
 def _advance_transformer_thermal_tracker(net, ts_variables, pf_converged):
-    """Chain the transformer top-oil temperature from this time step into the next one.
+    """Chain the transformer and switch temperatures from this time step into the next one.
 
-    The thermal model inside ``runpp`` has no memory: it always starts from the cold start condition
-    unless it is given the previous top-oil temperature. In a time series that would make every step
-    start from ambient, so the recursive IEC 60076-7 model must be advanced once per completed step.
-    This runs after the control loop finished, so it sees the final loading of the step.
+    The thermal models inside ``runpp`` have no memory: they always start from the cold start condition
+    unless they are given the previous temperature. In a time series that would make every step start
+    from ambient, so the recursive models must be advanced once per completed step. This runs after
+    the control loop finished, so it sees the final loading of the step.
     """
-    tracker = ts_variables.get("transformer_thermal_tracker")
-    if tracker is None or not pf_converged:
+    if not pf_converged:
         return
     options = net.get("_options", {})
     if not options.get("tdpf", False):
         return
 
-    from pandapower.pf.transformer_thermal import dt_minutes_from_options
-
-    tracker.run(net, dt_minutes=dt_minutes_from_options(options))
+    dt_minutes = dt_minutes_from_options(options)
+    transformer_tracker = ts_variables.get("transformer_thermal_tracker")
+    if transformer_tracker is not None:
+        transformer_tracker.run(net, dt_minutes=dt_minutes)
+    switchgear_tracker = ts_variables.get("switchgear_thermal_tracker")
+    if switchgear_tracker is not None:
+        switchgear_tracker.run(net, dt_minutes=dt_minutes)
 
 
 def _create_transformer_thermal_tracker():
     """The thermal state tracker, or None if the optional library is not installed."""
-    from pandapower.pf.transformer_thermal import TRANSFORMER_THERMAL_AVAILABLE, TransformerThermalTracker
-
     return TransformerThermalTracker() if TRANSFORMER_THERMAL_AVAILABLE else None
+
+
+def _create_switchgear_thermal_tracker():
+    """The switch thermal state tracker, or None if the optional library is not installed."""
+    return SwitchgearThermalTracker() if SWITCHGEAR_THERMAL_AVAILABLE else None
 
 
 def _check_controller_recyclability(net):
@@ -340,10 +352,10 @@ def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True
     ts_variables["continue_on_divergence"] = continue_on_divergence
     # print settings
     ts_variables["verbose"] = verbose
-    # one tracker for the whole run, so that the top-oil temperature is carried from step to step
-    ts_variables["transformer_thermal_tracker"] = (
-        _create_transformer_thermal_tracker() if _tdpf_requested(net, **kwargs) else None
-    )
+    # one tracker each for the whole run, so that the temperatures are carried from step to step
+    tdpf_requested = _tdpf_requested(net, **kwargs)
+    ts_variables["transformer_thermal_tracker"] = _create_transformer_thermal_tracker() if tdpf_requested else None
+    ts_variables["switchgear_thermal_tracker"] = _create_switchgear_thermal_tracker() if tdpf_requested else None
 
     if logger.level != 10 and verbose:
         # simple progress bar
