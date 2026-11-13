@@ -77,8 +77,8 @@ class DiscreteTapControl(TrafoController):
         self.hunting_limit = hunting_limit
         self._hunting_taps = np.array([], dtype=np.float64)
 
-    @deprecated("Use constructor directly")
     @classmethod
+    @deprecated("Use constructor directly")
     def from_tap_step_percent(
         cls,
         net: pandapowerNet,
