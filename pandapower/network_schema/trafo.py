@@ -34,12 +34,14 @@ _trafo_columns = {
     "sn_mva": pa.Column(float, pa.Check.gt(0), description="rated apparent power of the transformer [MVA]"),
     "vn_hv_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage at high voltage side [kV]"),
     "vn_lv_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage at low voltage side [kV]"),
-    "vk_percent": pa.Column(float, pa.Check.gt(0), description="short circuit voltage [%]", metadata={"sc": True}),
-    "vkr_percent": pa.Column(
-        float, pa.Check.ge(0), description="real component of short circuit voltage [%]", metadata={"sc": True}
-    ),
+    "vk_percent": pa.Column(float, description="short circuit voltage [%]", metadata={"sc": True}),
+    "vkr_percent": pa.Column(float, description="real component of short circuit voltage [%]", metadata={"sc": True}),
     "pfe_kw": pa.Column(float, pa.Check.ge(0), description="iron losses [kW]"),
-    "i0_percent": pa.Column(float, pa.Check.ge(0), description="open loop current in [%]"),
+    "i0_percent": pa.Column(
+        float,
+        description="open loop current in [%]; the magnetizing susceptance is inductive, a negative value denotes a "
+        "capacitive susceptance (e.g. the charging of an imported MATPOWER/PYPOWER transformer branch)",
+    ),
     "vk0_percent": pa.Column(
         float,
         pa.Check.ge(0),
@@ -276,6 +278,22 @@ _trafo_columns = {
         metadata={"sc": True},
     ),
     "pt_percent": pa.Column(float, required=False, description="", metadata={"sc": True}),
+    "cooling_type": pa.Column(
+        pd.StringDtype,
+        pa.Check.isin(["ONAN", "ONAF"]),
+        nullable=True,
+        required=False,
+        description="cooling type of the transformer for the thermal calculation (TDPF), ONAN (Oil Natural, Air Natural) or ONAF (Oil Natural, Air Forced)",
+        metadata={"tdpf": True, "default": "ONAN"},
+    ),
+    "air_temperature_degree_celsius": pa.Column(
+        float,
+        pa.Check.gt(-273),
+        nullable=True,
+        required=False,
+        description="ambient temperature in °C used by the transformer thermal calculation (TDPF)",
+        metadata={"tdpf": True, "default": 35},
+    ),
     "origin_id": pa.Column(
         pd.StringDtype,
         nullable=True,
@@ -403,13 +421,11 @@ _trafo_columns = {
         metadata={"ucte": True, "doc": False},
     ),
 }
-tap2_columns = ["tap2_pos", "tap2_neutral", "tap2_side", "tap2_step_percent", "tap2_step_degree"]
+tap2_columns = ["tap2_pos", "tap2_neutral", "tap2_step_percent"]
 tap_columns = [
     "tap_pos",
     "tap_neutral",
-    "tap_side",
     "tap_step_percent",
-    "tap_step_degree",
 ]
 trafo_checks = [
     create_lower_equals_column_check(first_element="tap_min", second_element="tap_max"),

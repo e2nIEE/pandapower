@@ -7,6 +7,7 @@ from functools import partial
 import numpy as np
 
 from pandapower import pandapowerNet
+from pandapower.pf.transformer_thermal import TRANSFORMER_THERMAL_AVAILABLE
 from pandapower.run import runpp
 
 logger = logging.getLogger(__name__)
@@ -30,7 +31,13 @@ def _run_single_contingency(
         # If successful, extract the relevant results
         result_pack = {"success": True, "case": contingency_case, "res_vals": {}}
         for res_element, res_vars in result_variables.items():
-            result_pack["res_vals"][res_element] = {var: net_copy[f"res_{res_element}"][var].values for var in res_vars}
+            res_table = net_copy[f"res_{res_element}"]
+            result_pack["res_vals"][res_element] = {
+                # a requested variable can be absent in a single contingency, e.g. the transformer
+                # temperature when the contingency itself takes the last transformer out of service
+                var: res_table[var].values if var in res_table.columns else np.full(len(res_table), np.nan)
+                for var in res_vars
+            }
         return result_pack
     except Exception as err:
         logger.error(f"Contingency {element} {i} failed: {err}")
@@ -98,12 +105,23 @@ def run_contingency_parallel(
         "bus": ["vm_pu"],
         **{key: ["loading_percent"] for key in ("line", "trafo", "trafo3w") if len(net[key]) > 0},
     }
-    if len(net.line) > 0 and (
+    tdpf_requested = (
         net.get("_options", {}).get("tdpf", False)
         or pf_options.get("tdpf", False)
         or pf_options_nminus1.get("tdpf", False)
-    ):
-        result_variables["line"].append("temperature_degree_celsius")
+    )
+    if tdpf_requested:
+        if len(net.line) > 0:
+            result_variables["line"].append("temperature_degree_celsius")
+
+        # transformer temperatures are post-processing results of the transformer thermal model. They
+        # are produced by every solve once tdpf is on, no matter whether the input network already
+        # carries the result column -- a fresh network does not, so the column cannot be used to
+        # decide this before the first solve.
+        if TRANSFORMER_THERMAL_AVAILABLE:
+            for element in ("trafo", "trafo3w"):
+                if len(net[element]) > 0:
+                    result_variables[element].append("temperature_degree_celsius")
 
     # --- N-1 Contingency Analysis ---
     if n_procs is None:
@@ -188,8 +206,14 @@ def _update_contingency_results_parallel(
     """
     for element, vars_list in result_variables.items():
         for var in vars_list:
-            # Get result values from the net object (sequential) or the passed results (parallel)
-            val = parallel_results[element][var] if parallel_results else net[f"res_{element}"][var].values
+            if parallel_results:
+                val = parallel_results[element][var]
+            else:
+                res_table = net[f"res_{element}"]
+                if var not in res_table.columns:
+                    # e.g. the transformer temperature when no transformer took part in this solve
+                    continue
+                val = res_table[var].values
 
             if nminus1:
                 if var == "loading_percent":

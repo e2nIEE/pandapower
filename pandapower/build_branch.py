@@ -714,7 +714,8 @@ def _calc_y_from_dataframe(mode, trafo_df, vn_lv, vn_trafo_lv, net_sn_mva) -> ND
     ym_mva = i0 / 100 * trafo_sn_mva
     b_mva_squared = np.square(ym_mva) - np.square(pfe_mw)
     b_mva_squared[b_mva_squared < 0] = 0
-    b_mva = -np.sqrt(b_mva_squared)
+    # the magnetizing susceptance is inductive, a negative i0_percent denotes a capacitive susceptance
+    b_mva = np.where(i0 < 0, 1.0, -1.0) * np.sqrt(b_mva_squared)
 
     g_pu = g_mva / vnl_squared * baseZ * parallel / np.square(vn_trafo_lv / vn_lv_kv)
     b_pu = b_mva / vnl_squared * baseZ * parallel / np.square(vn_trafo_lv / vn_lv_kv)
@@ -1874,6 +1875,9 @@ def _calculate_3w_tap_changers(net, t2, sides):
     tap_arrays["tap_side"] = {side: np.array([None] * nr_trafos) for side in sides}
     at_star_point = net.trafo3w.tap_at_star_point.values
     any_at_star_point = at_star_point.any()
+    ideal_tap = np.zeros(nr_trafos, dtype=bool)
+    if "tap_changer_type" in net.trafo3w:
+        ideal_tap = net.trafo3w.tap_changer_type.eq("Ideal").fillna(False).to_numpy(dtype=bool)
     for side in sides:
         add_column_to_df(net, "trafo3w", "tap_side")
         tap_mask = (net.trafo3w.tap_side.fillna("") == side).to_numpy()
@@ -1888,14 +1892,19 @@ def _calculate_3w_tap_changers(net, t2, sides):
 
         # net.trafo3w with tap changer at star points
         if any_at_star_point & np.any(mask_star_point := (tap_mask & at_star_point)):
-            t = tap_arrays["tap_step_percent"][side][mask_star_point] * np.exp(
-                1j * np.deg2rad(tap_arrays["tap_step_degree"][side][mask_star_point])
-            )
-            tap_pos = tap_arrays["tap_pos"][side][mask_star_point]
-            tap_neutral = tap_arrays["tap_neutral"][side][mask_star_point]
-            t_corrected = 100 * t / (100 + (t * (tap_pos - tap_neutral)))
-            tap_arrays["tap_step_percent"][side][mask_star_point] = np.abs(t_corrected)
             tap_arrays["tap_side"][side][mask_star_point] = "lv" if side == "hv" else "hv"
-            tap_arrays["tap_step_degree"][side][mask_star_point] = np.rad2deg(np.angle(t_corrected))
-            tap_arrays["tap_step_degree"][side][mask_star_point] -= 180
+            ideal_star_point = mask_star_point & ideal_tap
+            tap_arrays["tap_step_percent"][side][ideal_star_point] *= -1
+            tap_arrays["tap_step_degree"][side][ideal_star_point] *= -1
+
+            complex_star_point = mask_star_point & ~ideal_tap
+            t = tap_arrays["tap_step_percent"][side][complex_star_point] * np.exp(
+                1j * np.deg2rad(tap_arrays["tap_step_degree"][side][complex_star_point])
+            )
+            tap_pos = tap_arrays["tap_pos"][side][complex_star_point]
+            tap_neutral = tap_arrays["tap_neutral"][side][complex_star_point]
+            t_corrected = 100 * t / (100 + (t * (tap_pos - tap_neutral)))
+            tap_arrays["tap_step_percent"][side][complex_star_point] = np.abs(t_corrected)
+            tap_arrays["tap_step_degree"][side][complex_star_point] = np.rad2deg(np.angle(t_corrected))
+            tap_arrays["tap_step_degree"][side][complex_star_point] -= 180
     t2.update(tap_arrays)
