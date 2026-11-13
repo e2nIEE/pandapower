@@ -56,7 +56,7 @@ from pandapower.pf.make_y_bus_facts import (
     makeYft_tcsc,
 )
 from pandapower.pypower.bustypes import bustypes_dc
-from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS
+from pandapower.pypower.idx_brch import BR_R, BR_STATUS, BR_X, F_BUS, SHIFT, T_BUS, TAP
 from pandapower.pypower.idx_brch_dc import DC_BR_R, DC_BR_STATUS, DC_F_BUS, DC_IF, DC_IT, DC_PF, DC_PT, DC_T_BUS
 from pandapower.pypower.idx_brch_tdpf import (
     ALPHA,
@@ -561,6 +561,21 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     Ybus = Ybus.tocsr()
     J = None
 
+    # Phase 2: only BR_R of the TDPF lines changes, so Ybus can be updated in place instead of
+    # being rebuilt with makeYbus in every iteration. Positions of the four entries per line are
+    # looked up once; if that fails, fall back to a full rebuild.
+    tdpf_ybus_positions = None
+    tdpf_ybus_in_service = None
+    y_series_old = None
+    if tdpf:
+        tdpf_ybus_update = _init_tdpf_ybus_update(Ybus, branch, tdpf_lines)
+        if tdpf_ybus_update is not None:
+            tdpf_ybus_positions, tdpf_ybus_in_service = tdpf_ybus_update
+            tdpf_lines_in_service = tdpf_lines[tdpf_ybus_in_service]
+            y_series_old = branch[tdpf_lines_in_service, BR_STATUS].real / (
+                branch[tdpf_lines_in_service, BR_R] + 1j * branch[tdpf_lines_in_service, BR_X]
+            )
+
     # do Newton iterations
     while not converged and i < max_it:
         # update iteration counter
@@ -573,8 +588,11 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
                 1 + alpha_pu * np.clip(np.nan_to_num(T - t_ref_pu), -50, 250 / T_base)
             )
             # todo expansion with SSC and VSC (that are not controllable)
-            Ybus, _, _ = makeYbus(baseMVA, bus, branch)
             g, b = calc_g_b(r, x)
+            if tdpf_ybus_positions is not None:
+                y_series_old = _update_tdpf_ybus(Ybus, tdpf_ybus_positions, tdpf_ybus_in_service, y_series_old, g, b)
+            else:
+                Ybus, _, _ = makeYbus(baseMVA, bus, branch)
 
         # todo: adjust the SSC J function to take care about the Ybus_ssc_not_controllable instead
         J = create_jacobian_matrix(
@@ -885,6 +903,13 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     # print("P to:", St.real)
     # print("Sbus:", Sbus.real)
 
+    if tdpf and makeYbus is not None:
+        # one full rebuild after convergence so that Ybus, Yf and Yt match the final temperatures
+        # (the incremental update above keeps the sparsity pattern of Ybus, but Yf/Yt are stale)
+        Ybus, Yf, Yt = makeYbus(baseMVA, bus, branch)
+        ppci["internal"]["Yf"] = Yf
+        ppci["internal"]["Yt"] = Yt
+
     # because we now have updates of the Ybus matrices due to TDPF, SVC, TCSC, SSC,
     # we are interested in storing them for later use:
     ppci["internal"]["Ybus"] = Ybus
@@ -899,6 +924,63 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     ppci["internal"]["tcsc_tb"] = tcsc_tb
 
     return V, converged, i, J, Vm_it, Va_it, r_theta_pu / baseMVA * T_base, T * T_base
+
+
+def _csr_positions(Ybus, rows, cols):
+    """Return the positions of the (row, col) entries in the CSR data array, or None if missing."""
+    indptr = Ybus.indptr
+    indices = Ybus.indices
+    positions = np.empty(len(rows), dtype=np.int64)
+    for k in range(len(rows)):
+        row = rows[k]
+        start = indptr[row]
+        end = indptr[row + 1]
+        position = start + np.searchsorted(indices[start:end], cols[k])
+        if position >= end or indices[position] != cols[k]:
+            return None
+        positions[k] = position
+    return positions
+
+
+def _init_tdpf_ybus_update(Ybus, branch, tdpf_lines):
+    """Precompute the CSR positions of the TDPF branches in Ybus for in-place updates.
+
+    Only the series admittance of the TDPF lines changes between the Newton iterations. For lines
+    with tap ratio 1 and phase shift 0, the four affected entries are (f, f), (f, t), (t, f) and
+    (t, t), each getting ``+dy``, ``-dy``, ``-dy`` and ``+dy`` respectively.
+
+    Returns ``(positions, in_service)`` or None if the incremental update is not applicable and
+    Ybus has to be rebuilt with makeYbus instead.
+    """
+    in_service = branch[tdpf_lines, BR_STATUS].real != 0
+    if not np.any(in_service):
+        return None
+    lines = tdpf_lines[in_service]
+
+    tap = branch[lines, TAP].real
+    if np.any((tap != 0) & (tap != 1)) or np.any(branch[lines, SHIFT].real != 0):
+        # TDPF only applies to lines, but keep the fallback in case a branch has a tap/shift
+        return None
+
+    f = branch[lines, F_BUS].real.astype(np.int64)
+    t = branch[lines, T_BUS].real.astype(np.int64)
+    positions = []
+    for rows, cols in ((f, f), (f, t), (t, f), (t, t)):
+        pos = _csr_positions(Ybus, rows, cols)
+        if pos is None:
+            # an entry was eliminated (e.g. a zero branch admittance): fall back to a rebuild
+            return None
+        positions.append(pos)
+    return np.concatenate(positions), in_service
+
+
+def _update_tdpf_ybus(Ybus, positions, in_service, y_old, g, b):
+    """Update Ybus in place for the new TDPF conductor temperatures and return the new y series."""
+    y_new = g[in_service] + 1j * b[in_service]
+    dy = y_new - y_old
+    # np.add.at handles parallel lines, which share the same Ybus entry positions
+    np.add.at(Ybus.data, positions, np.concatenate([dy, -dy, -dy, dy]))
+    return y_new
 
 
 def _evaluate_Fx(Ybus, V, Sbus, ref, pv, pq, slack_weights=None, dist_slack=False, slack=None):

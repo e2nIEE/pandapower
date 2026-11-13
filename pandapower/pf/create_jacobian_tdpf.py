@@ -3,8 +3,7 @@
 
 
 import numpy as np
-from scipy.sparse import csr_matrix as sparse
-from scipy.sparse import eye, hstack, vstack
+from scipy.sparse import csr_matrix, hstack, vstack
 
 from pandapower.pypower.idx_brch import BR_STATUS, F_BUS, T_BUS
 from pandapower.pypower.idx_bus import BASE_KV
@@ -371,6 +370,10 @@ def create_J_tdpf(
     Electrical Engineering and 2019 IEEE Industrial and Commercial Power Systems Europe (EEEIC / I&CPS Europe),
     2019, pp. 1-6, doi: 10.1109/EEEIC.2019.8783234.
     """
+    n_branch = len(branch)
+    n_pvpq = len(pvpq)
+    n_pq = len(pq)
+
     C = np.ones_like(tdpf_lines, dtype=np.float64)
     if tdpf_delay_s is not None and tdpf_delay_s != np.inf:
         C *= 1 - np.exp(-tdpf_delay_s / tau)
@@ -378,20 +381,83 @@ def create_J_tdpf(
     dg_dT = (np.square(x) - np.square(r)) * alpha_pu * r_ref_pu / np.square(np.square(r) + np.square(x))
     db_dT = 2 * x * g * alpha_pu * r_ref_pu / (np.square(r) + np.square(x))
 
-    in_pq_f = np.isin(branch[tdpf_lines, F_BUS].real.astype(np.int64), pq)
-    in_pq_t = np.isin(branch[tdpf_lines, T_BUS].real.astype(np.int64), pq)
-    in_pvpq_f = np.isin(branch[tdpf_lines, F_BUS].real.astype(np.int64), pvpq)
-    in_pvpq_t = np.isin(branch[tdpf_lines, T_BUS].real.astype(np.int64), pvpq)
+    # bus masks instead of four np.isin calls
+    mask_pvpq = np.zeros(len(Vm), dtype=bool)
+    mask_pvpq[pvpq] = True
+    mask_pq = np.zeros(len(Vm), dtype=bool)
+    mask_pq[pq] = True
 
-    # todo: optimize and speed-up the code for the matrices (write numba versions)
-    J13 = create_J13(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, Va, dg_dT, db_dT)
-    J23 = create_J23(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, dg_dT, db_dT)
-    J31 = create_J31(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, Va, C, r_theta_pu, g)
-    J32 = create_J32(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, C, r_theta_pu, g)
-    J33 = create_J33(branch, tdpf_lines, r_theta_pu, Vm, Va, dg_dT)
+    f = branch[tdpf_lines, F_BUS].real.astype(np.int64)
+    t = branch[tdpf_lines, T_BUS].real.astype(np.int64)
 
-    Jright = vstack([sparse(J13), sparse(J23)], format="csr")
-    Jbtm = hstack([sparse(J31), sparse(J32), sparse(J33)], format="csr")
+    # trig terms shared by all four coupling blocks
+    Vf = Vm[f]
+    Vt = Vm[t]
+    delta = Va[f] - Va[t]
+    cos_d = np.cos(delta)
+    sin_d = np.sin(delta)
+    VfVt = Vf * Vt
+    # A_mn = Vm[m]^2 - Vm[m] * Vm[n] * cos(Va[m] - Va[n]), B_mn = Vm[m] * Vm[n] * sin(Va[m] - Va[n])
+    A_f = np.square(Vf) - VfVt * cos_d
+    A_t = np.square(Vt) - VfVt * cos_d
+    B_f = VfVt * sin_d
+    B_t = -B_f
+
+    in_pvpq_f = mask_pvpq[f]
+    in_pvpq_t = mask_pvpq[t]
+    in_pq_f = mask_pq[f]
+    in_pq_t = mask_pq[t]
+
+    # one entry per TDPF line and side; the branch index is a coordinate, so no duplicates arise
+    br_pvpq = np.r_[tdpf_lines[in_pvpq_f], tdpf_lines[in_pvpq_t]]
+    br_pq = np.r_[tdpf_lines[in_pq_f], tdpf_lines[in_pq_t]]
+    row_pvpq = np.r_[pvpq_lookup[f[in_pvpq_f]], pvpq_lookup[t[in_pvpq_t]]]
+    row_pq = np.r_[pq_lookup[f[in_pq_f]], pq_lookup[t[in_pq_t]]]
+
+    A_pvpq = np.r_[A_f[in_pvpq_f], A_t[in_pvpq_t]]
+    B_pvpq = np.r_[B_f[in_pvpq_f], B_t[in_pvpq_t]]
+    dg_pvpq = np.r_[dg_dT[in_pvpq_f], dg_dT[in_pvpq_t]]
+    db_pvpq = np.r_[db_dT[in_pvpq_f], db_dT[in_pvpq_t]]
+    r_theta_pvpq = np.r_[r_theta_pu[in_pvpq_f], r_theta_pu[in_pvpq_t]]
+    g_pvpq = np.r_[g[in_pvpq_f], g[in_pvpq_t]]
+    C_pvpq = np.r_[C[in_pvpq_f], C[in_pvpq_t]]
+
+    A_pq = np.r_[A_f[in_pq_f], A_t[in_pq_t]]
+    B_pq = np.r_[B_f[in_pq_f], B_t[in_pq_t]]
+    dg_pq = np.r_[dg_dT[in_pq_f], dg_dT[in_pq_t]]
+    db_pq = np.r_[db_dT[in_pq_f], db_dT[in_pq_t]]
+    r_theta_pq = np.r_[r_theta_pu[in_pq_f], r_theta_pu[in_pq_t]]
+    g_pq = np.r_[g[in_pq_f], g[in_pq_t]]
+    C_pq = np.r_[C[in_pq_f], C[in_pq_t]]
+
+    J13 = csr_matrix(
+        (A_pvpq * dg_pvpq - B_pvpq * db_pvpq, (row_pvpq, br_pvpq)),
+        shape=(n_pvpq, n_branch),
+    )
+    J23 = csr_matrix(
+        (-A_pq * db_pq - B_pq * dg_pq, (row_pq, br_pq)),
+        shape=(n_pq, n_branch),
+    )
+    J31 = csr_matrix(
+        (-2 * r_theta_pvpq * g_pvpq * B_pvpq * C_pvpq, (br_pvpq, row_pvpq)),
+        shape=(n_branch, n_pvpq),
+    )
+
+    # J32 uses Vm[m] - Vm[n] * cos(Va[m] - Va[n]) per side
+    dV_pq = np.r_[Vf[in_pq_f] - Vt[in_pq_f] * cos_d[in_pq_f], Vt[in_pq_t] - Vf[in_pq_t] * cos_d[in_pq_t]]
+    J32 = csr_matrix(
+        (-2 * r_theta_pq * g_pq * dV_pq * C_pq, (br_pq, row_pq)),
+        shape=(n_branch, n_pq),
+    )
+
+    # J33 is the identity for non-TDPF branches and gets the thermal derivative on the TDPF diagonal
+    j33_diag = np.ones(n_branch, dtype=np.float64)
+    j33_diag[tdpf_lines] = 1 - r_theta_pu * (np.square(Vf) + np.square(Vt) - 2 * VfVt * cos_d) * dg_dT
+    diagonal = np.arange(n_branch)
+    J33 = csr_matrix((j33_diag, (diagonal, diagonal)), shape=(n_branch, n_branch))
+
+    Jright = vstack([J13, J23], format="csr")
+    Jbtm = hstack([J31, J32, J33], format="csr")
     JJ = vstack([hstack([J, Jright]), Jbtm], format="csr")
     return JJ
 
@@ -415,358 +481,3 @@ def get_S_flows(branch, Yf, Yt, baseMVA, V):
     t_bus = np.real(branch[br, T_BUS]).astype(np.int64)
     St = V[t_bus] * np.conj(Yt[br, :] * V) * baseMVA
     return Sf, St, f_bus, t_bus
-
-
-#
-# def calc_AB(branch, tdpf_lines, pvpq, pvpq_lookup, Va, Vm):
-#     # A = np.zeros(shape=(len(pvpq), len(pvpq)))
-#     # B = np.zeros(shape=(len(pvpq), len(pvpq)))
-#     A = np.zeros(shape=(len(Vm), len(Vm)))
-#     B = np.zeros(shape=(len(Vm), len(Vm)))
-#
-#     # figure out the indexing for the pv buses:
-#     for br in tdpf_lines:
-#         f, t = branch[br, [F_BUS, T_BUS]].real.astype(np.int64)
-#         #m = pvpq_lookup[f]
-#         #i = pvpq_lookup[t]
-#         m = f
-#         i = t
-#         A[m, i] = np.square(Vm[m]) - Vm[m] * Vm[i] * np.cos(Va[m] - Va[i])
-#         A[i, m] = np.square(Vm[i]) - Vm[m] * Vm[i] * np.cos(Va[i] - Va[m])
-#         B[m, i] = Vm[m] * Vm[i] * np.sin(Va[m] - Va[i])
-#         B[i, m] = Vm[m] * Vm[i] * np.sin(Va[i] - Va[m])
-#
-#     # for bus in pvpq:
-#     #     m = int(pvpq_lookup[bus])
-#     #     if bus in branch[:, F_BUS].real.astype(np.int64):
-#     #         other = branch[branch[:, F_BUS] == bus, T_BUS].real.astype(np.int64)
-#     #         i = pvpq_lookup[other]
-#     #     elif bus in branch[:, T_BUS].real.astype(np.int64):
-#     #         other = branch[branch[:, T_BUS] == bus, F_BUS].real.astype(np.int64)
-#     #         i = pvpq_lookup[other]
-#     #     else:
-#     #         continue
-#     #
-#     #     A[m, i] = np.square(Vm[m]) - Vm[m] * Vm[i] * np.cos(Va[m]-Va[i])
-#     #     B[m, i] = Vm[m] * Vm[i] * np.sin(Va[m]-Va[i])
-#
-#     return A, B
-
-
-def create_J13(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, Va, dg_dT, db_dT):
-    """
-         | J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  |
-         | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
-         |                                              |
-         | J21 = dQ/dd     J22 = dQ/dV     J23 = dQ/dT  |
-         | (M)x(N-1)       (M)x(M)         (M)x(R)      |
-         |                                              |
-         | J31 = ddT/dd    J32 = ddT/dV    J33 = ddT/dT |
-         | (R)x(N-1)       (R)x(M)         (R)x(R)      |
-
-    N = Number of buses
-    M = Number of PQ buses
-    R = Number temperature-dependent branches
-
-    shape = (len(branch), len(bus))
-    :param b:
-    :param g:
-    :param dg_dT:
-    :param db_dT:
-    :param Vm:
-    :param Va:
-    :param pvpq_lookup:
-
-    """
-    nrow = len(pvpq)
-    ncol = len(branch)
-    J13 = np.zeros(shape=(nrow, ncol), dtype=np.float64)
-
-    # for m in pvpq:
-    #     mm = pvpq_lookup[m]
-    #     # m = bus
-    #     #for ij in range(ncol):
-    #     for ij_lookup, ij in enumerate(tdpf_lines):
-    #         i = branch[ij, F_BUS].real.astype(np.int64)
-    #         j = branch[ij, T_BUS].real.astype(np.int64)
-    #
-    #         if m == i:
-    #             n = j
-    #         elif m == j:
-    #             n = i
-    #         else:
-    #             continue
-    #
-    #         A_mn = Vm[m] ** 2 - Vm[m] * Vm[n] * np.cos(Va[m] - Va[n])
-    #         B_mn = Vm[m] * Vm[n] * np.sin(Va[m] - Va[n])
-    #         # p_mn = g[ij_lookup] * A_mn - b[ij_lookup] * B_mn
-    #         # J13[mm, ij] = alpha[ij] * r_ref[ij] * g[ij] * (A_mn / r[ij] - 2 * p_mn)
-    #         J13[mm, ij] = A_mn * dg_dT[ij_lookup] - B_mn * db_dT[ij_lookup]
-
-    mf = np.r_[branch[tdpf_lines[in_pvpq_f], F_BUS].real.astype(np.int64)]
-    mt = np.r_[branch[tdpf_lines[in_pvpq_t], T_BUS].real.astype(np.int64)]
-    nf = np.r_[branch[tdpf_lines[in_pvpq_f], T_BUS].real.astype(np.int64)]
-    nt = np.r_[branch[tdpf_lines[in_pvpq_t], F_BUS].real.astype(np.int64)]
-
-    for in_pq, m, n in ((in_pvpq_f, mf, nf), (in_pvpq_t, mt, nt)):
-        pq_j = pvpq_lookup[m]
-        A_mn = Vm[m] ** 2 - Vm[m] * Vm[n] * np.cos(Va[m] - Va[n])
-        B_mn = Vm[m] * Vm[n] * np.sin(Va[m] - Va[n])
-        J13[pq_j, tdpf_lines[in_pq]] = A_mn * dg_dT[in_pq] - B_mn * db_dT[in_pq]
-
-    return J13
-
-
-def create_J23(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, dg_dT, db_dT):
-    """
-         | J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  |
-         | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
-         |                                              |
-         | J21 = dQ/dd     J22 = dQ/dV     J23 = dQ/dT  |
-         | (M)x(N-1)       (M)x(M)         (M)x(R)      |
-         |                                              |
-         | J31 = ddT/dd    J32 = ddT/dV    J33 = ddT/dT |
-         | (R)x(N-1)       (R)x(M)         (R)x(R)      |
-
-        N = Number of buses
-        M = Number of PQ buses
-        R = Number temperature-dependent branches
-
-    shape = (len(bus), len(branch))
-    :param g:
-    :param b:
-    :param dg_dT:
-    :param db_dT:
-    :param Vm:
-    :param Va:
-    :param pq_lookup:
-
-    """
-
-    ncol = len(branch)
-    nrow = len(pq)
-    J23 = np.zeros(shape=(nrow, ncol), dtype=np.float64)
-
-    if nrow == 0:
-        return J23
-
-    # for m in pq:
-    #     mm = pq_lookup[m]
-    #     # m = bus
-    #     #for ij in range(ncol):
-    #     for ij_lookup, ij in enumerate(tdpf_lines):
-    #         i = branch[ij, F_BUS].real.astype(np.int64)
-    #         j = branch[ij, T_BUS].real.astype(np.int64)
-    #
-    #         if m == i:
-    #             n = j
-    #         elif m == j:
-    #             n = i
-    #         else:
-    #             continue
-    #
-    #         A_mn = Vm[m] ** 2 - Vm[m] * Vm[n] * np.cos(Va[m] - Va[n])
-    #         B_mn = Vm[m] * Vm[n] * np.sin(Va[m] - Va[n])
-    #         q_mn = -b[ij_lookup] * A_mn - g[ij_lookup] * B_mn
-    #         # J13[mm, ij] = alpha[ij] * r_ref[ij] * g[ij] * (B_mn / r[ij] - 2 * q_mn)
-    #         J23[mm, ij] = - A_mn * db_dT[ij_lookup] - B_mn * dg_dT[ij_lookup]
-
-    mf = np.r_[branch[tdpf_lines[in_pq_f], F_BUS].real.astype(np.int64)]
-    mt = np.r_[branch[tdpf_lines[in_pq_t], T_BUS].real.astype(np.int64)]
-    nf = np.r_[branch[tdpf_lines[in_pq_f], T_BUS].real.astype(np.int64)]
-    nt = np.r_[branch[tdpf_lines[in_pq_t], F_BUS].real.astype(np.int64)]
-
-    for in_pq, m, n in ((in_pq_f, mf, nf), (in_pq_t, mt, nt)):
-        pq_j = pq_lookup[m]
-        A_mn = Vm[m] ** 2 - Vm[m] * Vm[n] * np.cos(Va[m] - Va[n])
-        B_mn = Vm[m] * Vm[n] * np.sin(Va[m] - Va[n])
-        J23[pq_j, tdpf_lines[in_pq]] = -A_mn * db_dT[in_pq] - B_mn * dg_dT[in_pq]
-
-    return J23
-
-
-def create_J31(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, Va, C, r_theta_pu, g):
-    """
-         | J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  |
-         | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
-         |                                              |
-         | J21 = dQ/dd     J22 = dQ/dV     J23 = dQ/dT  |
-         | (M)x(N-1)       (M)x(M)         (M)x(R)      |
-         |                                              |
-         | J31 = ddT/dd    J32 = ddT/dV    J33 = ddT/dT |
-         | (R)x(N-1)       (R)x(M)         (R)x(R)      |
-
-    N = Number of buses
-    M = Number of PQ buses
-    R = Number temperature-dependent branches
-
-    shape = (len(branch), len(m))
-    branch elements by row, m elements by column
-    :param g:
-    :param b:
-    :param r_theta_pu:
-    :param Vm:
-    :param Va:
-    :param pvpq_lookup:
-
-    """
-
-    nrow = len(branch)
-    ncol = len(pvpq)
-
-    J31 = np.zeros(shape=(nrow, ncol), dtype=np.float64)
-
-    # #for ij in range(nrow):
-    # for ij_lookup, ij in enumerate(tdpf_lines):
-    #     i = branch[ij, F_BUS].real.astype(np.int64)
-    #     j = branch[ij, T_BUS].real.astype(np.int64)
-    #     for m in pvpq:
-    #         mm = pvpq_lookup[m]
-    #         if m == i:
-    #             n = j
-    #             sign = 1
-    #         elif m == j:
-    #             n = i
-    #             sign = -1
-    #         else:
-    #             continue
-    #
-    #         B_mn = Vm[m] * Vm[n] * np.sin(Va[m] - Va[n])
-    #         # J31[ij, mm] = sign * (g[ij] ** 2 + b[ij] ** 2) * C[ij] * B_mn
-    #         J31_old[ij, mm] = - 2 * r_theta_pu[ij_lookup] * g[ij_lookup] * B_mn * C[ij_lookup]
-
-    mf = np.r_[branch[tdpf_lines[in_pvpq_f], F_BUS].real.astype(np.int64)]
-    mt = np.r_[branch[tdpf_lines[in_pvpq_t], T_BUS].real.astype(np.int64)]
-    nf = np.r_[branch[tdpf_lines[in_pvpq_f], T_BUS].real.astype(np.int64)]
-    nt = np.r_[branch[tdpf_lines[in_pvpq_t], F_BUS].real.astype(np.int64)]
-
-    for in_pvpq, m, n in ((in_pvpq_f, mf, nf), (in_pvpq_t, mt, nt)):
-        pq_j = pvpq_lookup[m]
-        J31[tdpf_lines[in_pvpq], pq_j] = (
-            -2 * r_theta_pu[in_pvpq] * g[in_pvpq] * Vm[m] * Vm[n] * np.sin(Va[m] - Va[n]) * C[in_pvpq]
-        )
-
-    return J31
-
-
-def create_J32(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, C, r_theta_pu, g):
-    """
-         | J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  |
-         | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
-         |                                              |
-         | J21 = dQ/dd     J22 = dQ/dV     J23 = dQ/dT  |
-         | (M)x(N-1)       (M)x(M)         (M)x(R)      |
-         |                                              |
-         | J31 = ddT/dd    J32 = ddT/dV    J33 = ddT/dT |
-         | (R)x(N-1)       (R)x(M)         (R)x(R)      |
-
-        N = Number of buses
-        M = Number of PQ buses
-        R = Number temperature-dependent branches
-
-    shape = (len(branch), len(m))
-    branch elements by ij, m elements by column
-    :param g:
-    :param b:
-    :param r_theta_pu:
-    :param pq_lookup:
-
-    """
-
-    nrow = len(branch)
-    ncol = len(pq)
-
-    J32 = np.zeros(shape=(nrow, ncol), dtype=np.float64)
-
-    if ncol == 0:
-        return J32
-
-    # # #for ij in range(nrow):
-    # for ij_lookup, ij in enumerate(tdpf_lines):
-    #     i = branch[ij, F_BUS].real.astype(np.int64)
-    #     j = branch[ij, T_BUS].real.astype(np.int64)
-    #     for m in pq:
-    #         mm = pq_lookup[m]
-    #         if m == i:
-    #             n = j
-    #         elif m == j:
-    #             n = i
-    #         else:
-    #             continue
-    #
-    #         # A_mn = Vm[m] ** 2 - Vm[m] * Vm[n] * np.cos(Va[m] - Va[n])
-    #         # J32[ij, mm] = 2 * (g[ij]**2 + b[ij]**2) * C[ij] * A_mn / Vm[m]
-    #         J32_old[ij, mm] = - 2 * r_theta_pu[ij_lookup] * g[ij_lookup] * (Vm[m] - Vm[n] * np.cos(Va[m] - Va[n])) * C[ij_lookup]
-
-    mf = np.r_[branch[tdpf_lines[in_pq_f], F_BUS].real.astype(np.int64)]
-    mt = np.r_[branch[tdpf_lines[in_pq_t], T_BUS].real.astype(np.int64)]
-    nf = np.r_[branch[tdpf_lines[in_pq_f], T_BUS].real.astype(np.int64)]
-    nt = np.r_[branch[tdpf_lines[in_pq_t], F_BUS].real.astype(np.int64)]
-
-    for in_pq, m, n in ((in_pq_f, mf, nf), (in_pq_t, mt, nt)):
-        pq_j = pq_lookup[m]
-        J32[tdpf_lines[in_pq], pq_j] = (
-            -2 * r_theta_pu[in_pq] * g[in_pq] * (Vm[m] - Vm[n] * np.cos(Va[m] - Va[n])) * C[in_pq]
-        )
-
-    return J32
-
-
-def create_J33(branch, tdpf_lines, r_theta_pu, Vm, Va, dg_dT):
-    """
-     | J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  |
-     | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
-     |                                              |
-     | J21 = dQ/dd     J22 = dQ/dV     J23 = dQ/dT  |
-     | (M)x(N-1)       (M)x(M)         (M)x(R)      |
-     |                                              |
-     | J31 = ddT/dd    J32 = ddT/dV    J33 = ddT/dT |
-     | (R)x(N-1)       (R)x(M)         (R)x(R)      |
-
-    N = Number of buses
-    M = Number of PQ buses
-    R = Number temperature-dependent branches
-
-    shape = (len(branch), len(bus))
-    branch elements by row, bus elements by column
-    :param g:
-    :param b:
-    :param dg_dT:
-    :param Vm:
-    :param r_theta_pu:
-    :param pvpq_lookup:
-
-    """
-
-    nrow = len(branch)
-    J33 = eye(nrow, format="csr", dtype=np.float64)
-
-    # J33 = np.zeros(shape=(nrow, nrow))
-    # J33[np.arange(nrow), np.arange(nrow)] = 1
-
-    # k = (np.square(g) + np.square(b)) / g
-    # p_loss_pu = i_square_pu / k
-
-    # for mn in range(nrow):
-    # for mn in tdpf_lines:
-    #     #for ij in range(nrow):
-    #     for ij_lookup, ij in enumerate(tdpf_lines):
-    #         if mn == ij:
-    #             i, j = branch[ij, [F_BUS, T_BUS]].real.astype(np.int64)
-    #             # J33[mn, ij] = -(1 + 2 * alpha[ij_lookup] * r_ref[ij_lookup] * g[ij_lookup] * i_square_pu[ij_lookup])
-    #             J33[mn, ij] = 1 - r_theta_pu[ij_lookup] * (Vm[i]**2 + Vm[j]**2 - 2*Vm[i]*Vm[j]*np.cos(Va[i]-Va[j])) * dg_dT[ij_lookup]
-
-    # use this instead:
-    # for ij_lookup, ij in enumerate(tdpf_lines):
-    #    i, j = branch[ij, [F_BUS, T_BUS]].real.astype(np.int64)
-    #    # J33[mn, ij] = -(1 + 2 * alpha[ij_lookup] * r_ref[ij_lookup] * g[ij_lookup] * i_square_pu[ij_lookup])
-    #    J33[ij, ij] = 1 - r_theta_pu[ij_lookup] * (Vm[i] ** 2 + Vm[j] ** 2 - 2 * Vm[i] * Vm[j] * np.cos(Va[i] - Va[j])) * dg_dT[ij_lookup]
-
-    # vectorized with numpy:
-    i = branch[tdpf_lines, F_BUS].real.astype(np.int64)
-    j = branch[tdpf_lines, T_BUS].real.astype(np.int64)
-    J33[tdpf_lines, tdpf_lines] = (
-        1 - r_theta_pu * (Vm[i] ** 2 + Vm[j] ** 2 - 2 * Vm[i] * Vm[j] * np.cos(Va[i] - Va[j])) * dg_dT
-    )
-
-    return J33

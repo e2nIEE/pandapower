@@ -7,6 +7,7 @@ import os
 import numpy as np
 import pandas as pd
 import pytest
+from scipy.sparse import csr_matrix, hstack, vstack
 
 from pandapower.create import (
     create_bus,
@@ -28,8 +29,12 @@ from pandapower.pf.create_jacobian_tdpf import (
     calc_r_theta_from_t_rise,
     calc_T_frank,
     calc_T_ngoko,
+    create_J_tdpf,
 )
-from pandapower.pypower.idx_brch import BR_R, BR_X
+from pandapower.pypower.idx_brch import BR_R, BR_STATUS, BR_X, F_BUS, T_BUS
+from pandapower.pypower.idx_brch_tdpf import TDPF
+from pandapower.pypower.make_y_bus import makeYbus as makeYbus_pypower
+from pandapower.pypower.newtonpf import _init_tdpf_ybus_update, _update_tdpf_ybus
 from pandapower.run import runpp, set_user_pf_options
 from pandapower.std_types import parameter_from_std_type
 from test import test_path
@@ -556,6 +561,250 @@ def test_EN_standard(en_net):
     assert np.isclose(en_net.res_line.temperature_degree_celsius, max_cond_temp, rtol=0, atol=2), (
         en_net.res_line.temperature_degree_celsius
     )
+
+
+@pytest.mark.parametrize("with_numba", [False, True])
+def test_tdpf_ybus_consistent_after_run(with_numba):
+    if with_numba:
+        pytest.importorskip("numba")
+
+    net = prepare_case_30()
+    # an out-of-service TDPF line must not break the incremental Ybus update
+    net.line.loc[net.line.index[5], "tdpf"] = True
+    net.line.loc[net.line.index[5], "in_service"] = False
+    runpp(net, tdpf=True, numba=with_numba)
+
+    internal = net._ppc["internal"]
+    Ybus, Yf, Yt = makeYbus_pypower(internal["baseMVA"], internal["bus"], internal["branch"])
+    np.testing.assert_allclose(internal["Ybus"].toarray(), Ybus.toarray(), rtol=0, atol=1e-12)
+    np.testing.assert_allclose(internal["Yf"].toarray(), Yf.toarray(), rtol=0, atol=1e-12)
+    np.testing.assert_allclose(internal["Yt"].toarray(), Yt.toarray(), rtol=0, atol=1e-12)
+
+
+@pytest.mark.parametrize("with_numba", [False, True])
+def test_tdpf_incremental_ybus_matches_makeYbus(with_numba):
+    if with_numba:
+        pytest.importorskip("numba")
+        from pandapower.pf.make_y_bus_numba import makeYbus as make_ybus_numba
+
+        make_ybus = make_ybus_numba
+    else:
+        make_ybus = makeYbus_pypower
+
+    net = prepare_case_30()
+    runpp(net, tdpf=True, numba=False)
+    ppci = net._ppc
+    bus = ppci["bus"]
+    branch = ppci["branch"].copy()
+    tdpf_lines = np.flatnonzero(np.nan_to_num(branch[:, TDPF]))
+
+    # add a parallel line (shared Ybus entry positions) and take one line out of service
+    branch = np.vstack([branch, branch[tdpf_lines[0]].copy()])
+    tdpf_lines = np.append(tdpf_lines, len(branch) - 1)
+    branch[tdpf_lines[1], BR_STATUS] = 0
+
+    Ybus, _, _ = make_ybus(ppci["baseMVA"], bus, branch)
+    Ybus = Ybus.tocsr()
+    update = _init_tdpf_ybus_update(Ybus, branch, tdpf_lines)
+    assert update is not None
+    positions, in_service = update
+    lines = tdpf_lines[in_service]
+    y_old = branch[lines, BR_STATUS].real / (branch[lines, BR_R] + 1j * branch[lines, BR_X])
+
+    for factor in (1.02, 1.1, 0.95, 1.0, 1.3):
+        branch[lines, BR_R] = branch[lines, BR_R].real * factor
+        g, b = calc_g_b(branch[tdpf_lines, BR_R].real, branch[tdpf_lines, BR_X].real)
+        y_old = _update_tdpf_ybus(Ybus, positions, in_service, y_old, g, b)
+        expected, _, _ = make_ybus(ppci["baseMVA"], bus, branch)
+        np.testing.assert_allclose(Ybus.toarray(), expected.toarray(), rtol=0, atol=1e-12)
+
+    # no in-service TDPF line -> fall back to a full makeYbus rebuild
+    all_off = branch.copy()
+    all_off[tdpf_lines, BR_STATUS] = 0
+    assert _init_tdpf_ybus_update(Ybus, all_off, tdpf_lines) is None
+
+
+def _reference_create_J_tdpf(
+    branch,
+    tdpf_lines,
+    alpha_pu,
+    r_ref_pu,
+    pvpq,
+    pq,
+    pvpq_lookup,
+    pq_lookup,
+    tau,
+    tdpf_delay_s,
+    Vm,
+    Va,
+    r_theta_pu,
+    J,
+    r,
+    x,
+    g,
+):
+    """Dense reference implementation of the TDPF Jacobian, as it was before the sparse assembly."""
+    C = np.ones_like(tdpf_lines, dtype=np.float64)
+    if tdpf_delay_s is not None and tdpf_delay_s != np.inf:
+        C *= 1 - np.exp(-tdpf_delay_s / tau)
+
+    dg_dT = (np.square(x) - np.square(r)) * alpha_pu * r_ref_pu / np.square(np.square(r) + np.square(x))
+    db_dT = 2 * x * g * alpha_pu * r_ref_pu / (np.square(r) + np.square(x))
+
+    in_pq_f = np.isin(branch[tdpf_lines, F_BUS].real.astype(np.int64), pq)
+    in_pq_t = np.isin(branch[tdpf_lines, T_BUS].real.astype(np.int64), pq)
+    in_pvpq_f = np.isin(branch[tdpf_lines, F_BUS].real.astype(np.int64), pvpq)
+    in_pvpq_t = np.isin(branch[tdpf_lines, T_BUS].real.astype(np.int64), pvpq)
+
+    n_branch = len(branch)
+
+    def _dense_coupling(in_f, in_t, lookup, nrow, sign):
+        block = np.zeros((nrow, n_branch), dtype=np.float64)
+        if nrow == 0:
+            return block
+        f = branch[tdpf_lines, F_BUS].real.astype(np.int64)
+        t = branch[tdpf_lines, T_BUS].real.astype(np.int64)
+        for in_side, m, n in ((in_f, f, t), (in_t, t, f)):
+            if not np.any(in_side):
+                continue
+            mm = m[in_side]
+            nn = n[in_side]
+            A_mn = Vm[mm] ** 2 - Vm[mm] * Vm[nn] * np.cos(Va[mm] - Va[nn])
+            B_mn = Vm[mm] * Vm[nn] * np.sin(Va[mm] - Va[nn])
+            if sign > 0:
+                values = A_mn * dg_dT[in_side] - B_mn * db_dT[in_side]
+            else:
+                values = -A_mn * db_dT[in_side] - B_mn * dg_dT[in_side]
+            block[lookup[mm], tdpf_lines[in_side]] = values
+        return block
+
+    def _dense_thermal(in_f, in_t, lookup, ncol, is_voltage):
+        block = np.zeros((n_branch, ncol), dtype=np.float64)
+        if ncol == 0:
+            return block
+        f = branch[tdpf_lines, F_BUS].real.astype(np.int64)
+        t = branch[tdpf_lines, T_BUS].real.astype(np.int64)
+        for in_side, m, n in ((in_f, f, t), (in_t, t, f)):
+            if not np.any(in_side):
+                continue
+            mm = m[in_side]
+            nn = n[in_side]
+            B_mn = Vm[mm] * Vm[nn] * np.sin(Va[mm] - Va[nn])
+            if is_voltage:
+                values = -2 * r_theta_pu[in_side] * g[in_side] * B_mn * C[in_side]
+            else:
+                values = (
+                    -2 * r_theta_pu[in_side] * g[in_side] * (Vm[mm] - Vm[nn] * np.cos(Va[mm] - Va[nn])) * C[in_side]
+                )
+            block[tdpf_lines[in_side], lookup[mm]] = values
+        return block
+
+    J13 = _dense_coupling(in_pvpq_f, in_pvpq_t, pvpq_lookup, len(pvpq), 1)
+    J23 = _dense_coupling(in_pq_f, in_pq_t, pq_lookup, len(pq), -1)
+    J31 = _dense_thermal(in_pvpq_f, in_pvpq_t, pvpq_lookup, len(pvpq), True)
+    J32 = _dense_thermal(in_pq_f, in_pq_t, pq_lookup, len(pq), False)
+
+    J33 = np.zeros((n_branch, n_branch), dtype=np.float64)
+    J33[np.arange(n_branch), np.arange(n_branch)] = 1
+    i = branch[tdpf_lines, F_BUS].real.astype(np.int64)
+    j = branch[tdpf_lines, T_BUS].real.astype(np.int64)
+    J33[tdpf_lines, tdpf_lines] = (
+        1 - r_theta_pu * (Vm[i] ** 2 + Vm[j] ** 2 - 2 * Vm[i] * Vm[j] * np.cos(Va[i] - Va[j])) * dg_dT
+    )
+
+    Jright = vstack([csr_matrix(J13), csr_matrix(J23)], format="csr")
+    Jbtm = hstack([csr_matrix(J31), csr_matrix(J32), csr_matrix(J33)], format="csr")
+    return vstack([hstack([J, Jright]), Jbtm], format="csr")
+
+
+@pytest.mark.parametrize("dist_slack", [False, True])
+@pytest.mark.parametrize("tdpf_delay_s", [None, 0, np.inf, 120.0])
+@pytest.mark.parametrize("empty_pq", [False, True])
+def test_create_J_tdpf_matches_dense_reference(dist_slack, tdpf_delay_s, empty_pq):
+    rng = np.random.default_rng(42)
+    n_bus = 12
+    n_branch = 15
+
+    branch = np.zeros((n_branch, 30), dtype=np.float64)
+    branch[:, F_BUS] = rng.integers(0, n_bus, n_branch)
+    branch[:, T_BUS] = (branch[:, F_BUS] + rng.integers(1, n_bus, n_branch)) % n_bus
+    branch[:, BR_R] = rng.uniform(0.01, 0.1, n_branch)
+    branch[:, BR_X] = rng.uniform(0.05, 0.3, n_branch)
+
+    tdpf_lines = np.arange(0, n_branch, 2)
+    nl = len(tdpf_lines)
+
+    pvpq = np.arange(1, n_bus)
+    pq = np.arange(2, n_bus) if not empty_pq else np.array([], dtype=np.int64)
+    if dist_slack:
+        pvpq = np.arange(n_bus)
+        if not empty_pq:
+            pq = np.arange(1, n_bus)
+
+    n_pvpq = len(pvpq)
+    n_pq = len(pq)
+    pvpq_lookup = np.zeros(int(max(pvpq)) + 1, dtype=np.int64)
+    pvpq_lookup[pvpq] = np.arange(n_pvpq)
+    if n_pq > 0:
+        pq_lookup = np.zeros(int(max(pvpq)) + 1, dtype=np.int64)
+        pq_lookup[pq] = np.arange(n_pq)
+    else:
+        pq_lookup = np.array([])
+
+    Vm = rng.uniform(0.9, 1.1, n_bus)
+    Va = rng.uniform(-0.3, 0.3, n_bus)
+    r = branch[tdpf_lines, BR_R].real
+    x = branch[tdpf_lines, BR_X].real
+    g = r / (np.square(r) + np.square(x))
+    alpha_pu = rng.uniform(0.3, 0.5, nl)
+    r_ref_pu = rng.uniform(0.01, 0.05, nl)
+    r_theta_pu = rng.uniform(0.5, 2.0, nl)
+    tau = 10.0
+
+    J = csr_matrix(rng.uniform(-1, 1, (n_pvpq + n_pq, n_pvpq + n_pq)))
+
+    result = create_J_tdpf(
+        branch,
+        tdpf_lines,
+        alpha_pu,
+        r_ref_pu,
+        pvpq,
+        pq,
+        pvpq_lookup,
+        pq_lookup,
+        tau,
+        tdpf_delay_s,
+        Vm,
+        Va,
+        r_theta_pu,
+        J,
+        r,
+        x,
+        g,
+    )
+    expected = _reference_create_J_tdpf(
+        branch,
+        tdpf_lines,
+        alpha_pu,
+        r_ref_pu,
+        pvpq,
+        pq,
+        pvpq_lookup,
+        pq_lookup,
+        tau,
+        tdpf_delay_s,
+        Vm,
+        Va,
+        r_theta_pu,
+        J,
+        r,
+        x,
+        g,
+    )
+
+    assert result.shape == expected.shape
+    assert (result != 0).nnz == (expected != 0).nnz
+    np.testing.assert_allclose(result.toarray(), expected.toarray(), rtol=0, atol=1e-12)
 
 
 if __name__ == "__main__":
