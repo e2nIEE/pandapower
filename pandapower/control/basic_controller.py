@@ -7,6 +7,8 @@ import logging
 from pandapower.auxiliary import get_free_id
 from pandapower.control.util.auxiliary import drop_same_type_existing_controllers, log_same_type_existing_controllers
 from pandapower.io_utils import JSONSerializableClass
+from pandapower.network import pandapowerNet
+from pandapower.pp_types import Int
 
 logger = logging.getLogger(__name__)
 
@@ -175,9 +177,9 @@ class Controller(BasicCtrl):
 
     def add_controller_to_net(
         self,
-        net,
-        name,
-        in_service,
+        net: pandapowerNet,
+        name: str,
+        in_service: bool,
         initial_run,
         order,
         level,
@@ -186,16 +188,27 @@ class Controller(BasicCtrl):
         drop_same_existing_ctrl,
         overwrite,
         **kwargs,
-    ):
+    ) -> Int:
         """
         adds the controller to net['controller'] dataframe.
 
         Parameters:
-            in_service (bool): in service status
-            order: order
-            index: index
+            net: the pandapower network where the controller should be added
+            name: the name to identify the controller
+            in_service: in service status
+            initial_run:
+            order:
+            level:
+            index:
             recycle: if controller needs a new bbm (ppc, Ybus...) or if it can be used with prestored values. This is
                 mostly needed for time series calculations
+            drop_same_existing_ctrl:
+            overwrite:
+
+        Keyword Args:
+
+        Returns:
+            index of the added controller
         """
         if drop_same_existing_ctrl:
             drop_same_type_existing_controllers(net, type(self), index=index, **kwargs)

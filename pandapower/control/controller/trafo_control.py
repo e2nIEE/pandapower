@@ -1,12 +1,16 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import logging
+from typing import Literal
 
 import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import _detect_read_write_flag, read_from_net
 from pandapower.control.basic_controller import Controller
+from pandapower.network import pandapowerNet
+from pandapower.pp_types import Int
 
 logger = logging.getLogger(__name__)
 
@@ -15,25 +19,31 @@ class TrafoController(Controller):
     """
     Trafo Controller with local tap changer voltage control.
 
-    INPUT:
-       **net** (attrdict) - Pandapower struct
-
-       **element_index** (int) - ID of the trafo that is controlled
-
-       **side** (string) - Side of the transformer where the voltage is controlled ("hv", "mv"
-       or "lv")
-
-       **tol** (float) - Voltage tolerance band at bus in Percent
-
-       **in_service** (bool) - Indicates if the element is currently active
-
-       **element** (string) - Type of the controlled trafo ("trafo" or "trafo3w")
-
-    OPTIONAL:
-        **recycle** (bool, True) - Re-use of internal-data in a time series loop.
+    Parameters:
+        net: the pandapower net
+        element_index: ID of the trafo that is controlled
+        side: Side of the transformer where the voltage is controlled ("hv", "mv" or "lv")
+        tol: Voltage tolerance band at bus in Percent
+        in_service: Indicates if the element is currently active
+        element: Type of the controlled trafo ("trafo" or "trafo3w")
+        level:
+        order:
+        recycle: Re-use of internal-data in a time series loop.
     """
 
-    def __init__(self, net, element_index, side, tol, in_service, element, level=0, order=0, recycle=True, **kwargs):
+    def __init__(
+        self,
+        net: pandapowerNet,
+        element_index: Int,
+        side: str,
+        tol: float,
+        in_service: bool,
+        element: Literal["trafo", "trafo3w"],
+        level=0,
+        order=0,
+        recycle: bool = True,
+        **kwargs,
+    ):
         super().__init__(net, in_service=in_service, level=level, order=order, recycle=recycle)
 
         self.element = element

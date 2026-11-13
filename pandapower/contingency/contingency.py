@@ -65,7 +65,7 @@ def pp_to_ls2g(net: pandapowerNet) -> "GridModel":
     """
     Try to initialize a lightsim2grid model
 
-    Arguments:
+    Parameters:
         net: The pandapower network to use in lightsim2grid
 
     Returns:
@@ -461,14 +461,15 @@ def _update_contingency_results(
                 contingency_results[element][var] = val
 
 
-def get_element_limits(net):
+def get_element_limits(net: pandapowerNet) -> dict:
     """
     Construct the dictionary of element limits
 
-    :param pandapowerNet net:
+    Parameters:
+        net: the pandapower network
 
-    :return: element limits
-    :rtype: dict
+    Returns:
+        element limits
     """
     element_limits = {}
     if "max_vm_pu" in net.bus and "min_vm_pu" in net.bus:
@@ -546,21 +547,31 @@ def get_element_limits(net):
     return element_limits
 
 
-def check_elements_within_limits(element_limits, contingency_results, nminus1=False, branch_tol=1e-3, bus_tol=1e-6):
+def check_elements_within_limits(
+    element_limits: dict,
+    contingency_results: dict,
+    nminus1: bool = False,
+    branch_tol: float = 1e-3,
+    bus_tol: float = 1e-6,
+):
     """
     Check if the indexed elements with extracted constraints are within limits.
 
-    Elements without extracted constraints are not checked. Missing constrained
-    elements or result groups raise ValueError.
+    Elements without extracted constraints are not checked. Missing constrained elements or result groups raise
+    ValueError.
 
-    :param dict element_limits:
-    :param dict contingency_results:
-    :param bool nminus1:
-    :param float branch_tol: tolerance of the limit violation check for branch limits
-    :param float bus_tol: tolerance of the limit violation check for bus limits
+    Parameters:
+        element_limits:
+        contingency_results:
+        nminus1:
+        branch_tol: tolerance of the limit violation check for branch limits
+        bus_tol: tolerance of the limit violation check for bus limits
 
-    :return: True if all within limits (no violations), False if any limits violated
-    :rtype: bool
+    Returns:
+        bool: True if all within limits (no violations), False if any limits violated
+
+    Raises:
+        ValueError: if a constraint is missing
     """
     for element, limit in element_limits.items():
         if element not in contingency_results:
@@ -620,14 +631,17 @@ def _log_violation(element, var, val, limit_index, mask):
             logger.info(f"{element}: {var}{s} violation at index {limit_index[mask]} ({val[mask]})")
 
 
-def report_contingency_results(element_limits, contingency_results, branch_tol=1e-3, bus_tol=1e-6):
+def report_contingency_results(
+    element_limits: dict, contingency_results: dict, branch_tol: float = 1e-3, bus_tol: float = 1e-6
+):
     """
     Print log messages for elements with violations of limits
 
-    :param dict element_limits:
-    :param dict contingency_results:
-    :param float branch_tol: tolerance for branch results
-    :param float bus_tol: tolerance for bus results
+    Parameters:
+        element_limits:
+        contingency_results:
+        branch_tol: tolerance for branch results
+        bus_tol: tolerance for bus results
     """
     for element, results in contingency_results.items():
         limit = element_limits[element]

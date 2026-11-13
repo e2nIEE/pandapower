@@ -2,118 +2,138 @@ import logging
 import numbers
 from collections.abc import Sequence
 from enum import Enum
+from typing import Literal
 
 import numpy as np
 
-from pandapower.auxiliary import _detect_read_write_flag, read_from_net, write_to_net
+from pandapower.auxiliary import _detect_read_write_flag, ensure_iterability, read_from_net, write_to_net
 from pandapower.control.basic_controller import Controller
 from pandapower.control.util.auxiliary import get_min_max_q_mvar_from_characteristics_object
 from pandapower.create._utils import add_column_to_df
+from pandapower.network import pandapowerNet
+from pandapower.pp_types import Int
 
 logger = logging.getLogger(__name__)
 
 
+class ControlModusEnum(Enum):
+    v_ctrl = "V_ctrl"
+    v_ctrl_q_droop = "V_ctrl_Q_droop"
+    v_ctrl_q_droop_local = "V_ctrl_Q_droop_local"
+    q_ctrl = "Q_ctrl"
+    q_ctrl_v_droop = "Q_ctrl_V_droop"
+    PF_ctrl = "PF_ctrl"
+    PF_ctrl_ind = "PF_ctrl_ind"
+    PF_ctrl_cap = "PF_ctrl_cap"
+    tan_phi_ctrl = "tan_phi_ctrl"
+
+    @classmethod
+    def pf_modes(cls):
+        return {
+            cls.PF_ctrl,
+            cls.PF_ctrl_cap,
+            cls.PF_ctrl_ind,
+        }
+
+    @classmethod
+    def v_modes(cls):
+        return {
+            cls.v_ctrl,
+            cls.v_ctrl_q_droop,
+            cls.v_ctrl_q_droop_local,
+        }
+
+    @classmethod
+    def q_modes(cls):
+        return {cls.q_ctrl, cls.q_ctrl_v_droop}
+
+    @classmethod
+    def droop_modes(cls):
+        return {
+            cls.v_ctrl_q_droop,
+            cls.v_ctrl_q_droop_local,
+            cls.q_ctrl_v_droop,
+        }
+
+
 class BinarySearchControl(Controller):
     """
-    The Binary search control is a controller that adjusts output values in order to reach a given set point.
-    It can be used for reactive power control, voltage control, cosines(phi) or tangens(phi) control. The control modus
-    can be set via the control_modus parameter. Input and output elements and indexes can be lists. Input elements can
-    be transformers, switches, lines or buses (only in voltage control). the controlled bus must be
-    given to input_element_index. Output elements are sgens, where active and reactive power can be set. The
+    The Binary search control is a controller that adjusts output values in order to reach a given set point. It can
+    be used for reactive power control, voltage control, cosines(phi) or tangens(phi) control. The control modus can
+    be set via the control_modus parameter. Input and output elements and indexes can be lists. Input elements can
+    be transformers, switches, lines or buses (only in voltage control). the controlled bus must be given to
+    input_element_index. Output elements are sgens, where active and reactive power can be set. The
     "output_values_distribution" describes the distribution of reactive power provision between multiple
     "output_elements" and will be normalized to 100 % (1).
 
-    Parameters
-    ----------
-    self : BinarySearchControl
-    net : pandapowerNet
-        A pandapower grid.
-    ctrl_in_service : bool
-        Whether the controller is in service.
-    output_element : str
-        Output element type: ``"gen"`` or ``"sgen"``.
-        For reactive power control, currently only ``"sgen"`` is supported.
-    output_variable : str or list of str
-        Output variable of the element (e.g., ``"q_mvar"``).
-    output_element_index : int or list of int
-        Index or list of indices of the output element(s) in net (e.g. ``"net.sgen"``).
-    output_element_in_service : bool or list of bool
-        Indicates whether each output element is in service.
-    output_values_distribution : int, float or list of float
-        Distribution of reactive power provision among output elements (must sum to 1).
-    input_element : str
-        Measurement location, can be a transformer, switches or lines. Must be a bus for
-        ``"V_ctrl"``. Indicated by string value ``"res_trafo"``, ``"res_switch"``, ``"res_line"`` or ``"res_bus"``.
-        In case of ``"res_switch"``, an additional small impedance is introduced in the switch.
-    input_variable : str or list of string
-        Variable which is used to take the measurement from. Indicated by string value. Must
-        be ``"vm_pu"`` for ``"V_ctrl"``.
-    input_inverted : bool or list of bool
-        Indicates whether the measurement of each input element must be inverted.
-        Required when importing from PowerFactory.
-    input_element_index : int or list of int
-        Element of input element in net. Controlled bus in case of Voltage control. Can be
-        given the string ``"auto"`` in control_modus ``"V_ctrl"`` to automatically select a bus whose nominal voltage is >= X kV.
-        The X must be given to set_point. Will take target voltage of the encountered bus. If no bus is found,
-        uses the bus next to the controlled generator group. Not completely implemented, generators on multiple buses
-        are not correctly handled.
-    control_modus : str -> ControlModusEnum:
-        Enables the selection of the available control modi by taking one of the strings: ``"Q_ctrl"``, ``"V_ctrl"``,
-        ``"PF_ctrl_ind"`` or ``"PF_ctrl_cap"`` for power factor control with reactance or ``"tan_phi_ctrl"``.
-        Formerly called Voltage_ctrl.
-    set_point : float
-        Set point of the controller, can be a reactive power provision, a power factor or a voltage set point. In
-        case of voltage set point, control_modus must be "V_ctrl", input_element_index must be a bus (input_variable must
-        be "vm_pu" input_element must be "res_bus"). Can be overwritten by a droop controller chained with the binary
-        search control. If "V_ctrl" and automated bus selection (input_element_index = "auto"), set_point will be
-        the search criteria in kV for the controlled bus (V_bus >= V_set_point).
-    output_min_q_mvar : float or list of float
-        Minimum Q limits for each output element. Considered when runpp is
-        executed with enforce_q_lims=True.
-    output_max_q_mvar : float or list of float
-        Maximum Q limits for each output element. Considered when runpp is
-        executed with enforce_q_lims=True.
-    tol : float, optional
-        Tolerance for controller convergence. Default is 0.001.
-    in_service : bool, optional
-        Whether the controller is in service. Default is True.
-    order : int, optional
-        Execution order of the controller.
-    level : int, optional
-        Execution level of the controller.
-    drop_same_existing_ctrl : bool, optional
-        Whether to drop existing controllers with the same parameters.
-    matching_params : dict, optional
-        Parameters used to match controllers.
-    name : str, optional
-        Name of the controller.
-    kwargs : dict, optional
-        Additional keyword arguments.
+    Parameters:
+        net: A pandapower grid.
+        ctrl_in_service: Whether the controller is in service.
+        output_element: Output element type: ``"gen"`` or ``"sgen"``. For reactive power control, currently only
+            ``"sgen"`` is supported.
+        output_variable: Output variable of the element (e.g., ``"q_mvar"``).
+        output_element_index: Index or list of indices of the output element(s) in net (e.g. ``"net.sgen"``).
+        output_element_in_service (bool or list of bool): Indicates whether each output element is in service.
+        output_values_distribution (int, float or list of float): Distribution of reactive power provision among output
+            elements (must sum to 1).
+        input_element: Measurement location, can be a transformer, switches or lines. Must be a bus for
+            ``"V_ctrl"``. Indicated by string value ``"res_trafo"``, ``"res_switch"``, ``"res_line"`` or ``"res_bus"``.
+            In case of ``"res_switch"``, an additional small impedance is introduced in the switch.
+        input_variable: Variable which is used to take the measurement from. Indicated by string
+            value. Must be ``"vm_pu"`` for ``"V_ctrl"``.
+        input_element_index: Element of input element in net. Controlled bus in case of Voltage
+            control. Can be given the string ``"auto"`` in control_modus ``"V_ctrl"`` to automatically select a bus
+            whose nominal voltage is >= X kV. The X must be given to set_point. Will take target voltage of the
+            encountered bus. If no bus is found, uses the bus next to the controlled generator group. Not completely
+            implemented, generators on multiple buses are not correctly handled.
+        set_point: Set point of the controller, can be a reactive power provision, a power factor or a voltage
+            set point. In case of voltage set point, control_modus must be "V_ctrl", input_element_index must be a bus
+            (input_variable must be "vm_pu" input_element must be "res_bus"). Can be overwritten by a droop controller
+            chained with the binary search control. If "V_ctrl" and automated bus selection (input_element_index =
+            "auto"), set_point will be the search criteria in kV for the controlled bus (V_bus >= V_set_point).
+        control_modus: Enables the selection of the available control modi by taking one of
+            the strings: ``"Q_ctrl"``, ``"V_ctrl"``, ``"PF_ctrl_ind"`` or ``"PF_ctrl_cap"`` for power factor control
+            with reactance or ``"tan_phi_ctrl"``. Formerly called Voltage_ctrl.
+        output_min_q_mvar: Minimum Q limits for each output element. Considered when runpp is
+            executed with enforce_q_lims=True.
+        output_max_q_mvar: Maximum Q limits for each output element. Considered when runpp is
+            executed with enforce_q_lims=True.
+        name: Name of the controller.
+        input_inverted: Indicates whether the measurement of each input element must be inverted.
+            Required when importing from PowerFactory.
+        tol: Tolerance for controller convergence.
+        in_service: Whether the controller is in service.
+        order: Execution order of the controller.
+        level: Execution level of the controller.
+        drop_same_existing_ctrl: Whether to drop existing controllers with the same parameters.
+        matching_params: Parameters used to match controllers.
+
+    Keyword Args:
 
     """
 
     def __init__(
         self,
-        net,
-        ctrl_in_service,
-        output_element,
-        output_variable,
-        output_element_index,
-        output_element_in_service,
-        output_values_distribution,
-        input_element,
-        input_variable,
-        input_element_index,
-        set_point,
-        control_modus: str | None = None,
-        name="",
-        input_inverted=None,
-        tol=0.001,
-        in_service=True,
-        order=0,
-        level=0,
-        drop_same_existing_ctrl=False,
-        matching_params=None,
+        net: pandapowerNet,
+        ctrl_in_service: bool,
+        output_element: Literal["gen", "sgen"],
+        output_variable: str,
+        output_element_index: Int | list[Int],
+        output_element_in_service: bool | list[bool],
+        output_values_distribution: Int | float | list[float],
+        input_element: str,
+        input_variable: str | list[str],
+        input_element_index: Int | list[Int],
+        set_point: float,
+        control_modus: ControlModusEnum | None = None,
+        name: str = "",
+        input_inverted: bool | list[bool] | None = None,
+        tol: float = 0.001,
+        in_service: bool = True,
+        order: int = 0,
+        level: int = 0,
+        drop_same_existing_ctrl: bool = False,
+        matching_params: dict | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -156,16 +176,8 @@ class BinarySearchControl(Controller):
         ###catching errors in variables, allocating
         if input_inverted is None:
             input_inverted = []  # for robustness
-        if isinstance(output_element_index, (list, np.ndarray)):
-            self.output_element_index = [int(item) for item in output_element_index]
-        else:
-            self.output_element_index = []
-            self.output_element_index.append(output_element_index)
-            self.output_element_index = output_element_index
-        if isinstance(output_element_in_service, bool):
-            self.output_element_in_service = [output_element_in_service]
-        else:
-            self.output_element_in_service = output_element_in_service
+        self.output_element_index = [int(item) for item in ensure_iterability(output_element_index)]
+        self.output_element_in_service = ensure_iterability(output_element_in_service)
         if isinstance(input_element_index, (list, np.ndarray)):
             for element in input_element_index:
                 self.input_element_index.append(element)
@@ -188,8 +200,6 @@ class BinarySearchControl(Controller):
                 inv_list += [False] * (n - len(inv_list))
             self.input_sign = [-1 if inv else 1 for inv in inv_list]
         self.output_element = output_element
-        self.output_element_index = output_element_index
-        self.output_element_in_service = output_element_in_service
 
         # normalize the values distribution:
         self._normalize_distribution_in_service(initial_pf_distribution=output_values_distribution)
@@ -880,71 +890,51 @@ class BinarySearchControl(Controller):
 
 class DroopControl(Controller):
     """
-    The droop controller is used in case of a droop based control. It can operate either as a Q(U) controller or
-    as a U(Q) controller and is used in addition to a binary search controller (bsc). The linked binary search
-    controller is specified using the controller_index, which refers to the linked bsc. The droop controller
-    behaves in a similar way to the station controllers presented in the Power Factory Tech Ref, although not
-    all possible settings from Power Factory are yet available.
+    The droop controller is used in case of a droop based control. It can operate either as a Q(U) controller or as
+    a U(Q) controller and is used in addition to a binary search controller (bsc). The linked binary search
+    controller is specified using the controller_index, which refers to the linked bsc. The droop controller behaves
+    in a similar way to the station controllers presented in the Power Factory Tech Ref, although not all possible
+    settings from Power Factory are yet available.
 
-    Parameters
-    ----------
-    self : DroopControl
-    net : pandapowerNet
-        A pandapower grid.
-    controller_idx : int
-        Index of linked Binary search control (bsc.index).
-    in_service : bool
-        Whether the droop controller is in service or not. Default is True
-    control_modus : str -> ControlModusEnum:
-        takes string: Q_ctrl_V_droop, V_ctrl_Q_droop. Formerly called voltage_ctrl.
-    q_droop_var : float
-        Droop Value in Mvar/p.u.
-    vm_set_pu_bsc : float
-        Initial voltage set point in case of voltage control. If None will take linked bsc setpoint
-    bus_idx : int
-        Bus index which is used for Q control.
-    q_set_mvar_bsc : float
-        Initial voltage set point in case of no voltage control.
-    vm_set_lb : float
-        Lower band border of dead band
-    vm_set_ub : float
-        Upper band border of dead band
-    tol : float, optional
-        Tolerance for controller convergence. Default is 0.001.
-    ctrl_in_service : bool, optional
-        Whether the controller is in service. Default is True.
-    order : int, optional
-        Execution order of the controller.
-    level : int, optional
-        Execution level of the controller.
-    drop_same_existing_ctrl : bool, optional
-        Whether to drop existing controllers with the same parameters. Default is False
-    matching_params : dict, optional
-        Parameters used to match controllers. Default is None
-    name : str, optional
-        Name of the controller.
-    kwargs : dict, optional
-        Additional keyword arguments.
+    Parameters:
+        net: A pandapower grid.
+        q_droop_mvar: Droop Value in Mvar/p.u.
+        controller_idx: Index of linked Binary search control (bsc.index).
+        control_modus: takes string: Q_ctrl_V_droop, V_ctrl_Q_droop. Formerly called voltage_ctrl.
+        bus_idx: Bus index which is used for Q control.
+        tol: Tolerance for controller convergence.
+        q_set_mvar_bsc: Initial voltage set point in case of no voltage control.
+        in_service: Whether the droop controller is in service or not.
+        order: Execution order of the controller.
+        level: Execution level of the controller.
+        name: Name of the controller.
+        drop_same_existing_ctrl: Whether to drop existing controllers with the same parameters.
+        matching_params: Parameters used to match controllers.
+        vm_set_pu_bsc: Initial voltage set point in case of voltage control. If None will take linked bsc setpoint
+        vm_set_lb: Lower band border of dead band
+        vm_set_ub: Upper band border of dead band
+
+    Keyword Args:
     """
 
     def __init__(
         self,
-        net,
-        q_droop_mvar,
-        controller_idx,
-        control_modus=None,
-        bus_idx=None,
-        tol=1e-6,
-        q_set_mvar_bsc=None,
-        in_service=True,
-        order=-1,
-        level=0,
-        name="",
-        drop_same_existing_ctrl=False,
-        matching_params=None,
-        vm_set_pu_bsc=None,
-        vm_set_lb=None,
-        vm_set_ub=None,
+        net: pandapowerNet,
+        q_droop_mvar: float,
+        controller_idx: Int,
+        control_modus: ControlModusEnum | None = None,
+        bus_idx: int | None = None,
+        tol: float = 1e-6,
+        q_set_mvar_bsc: float | None = None,
+        in_service: bool = True,
+        order: int = -1,
+        level: int = 0,
+        name: str = "",
+        drop_same_existing_ctrl: bool = False,
+        matching_params: dict | None = None,
+        vm_set_pu_bsc: float | None = None,
+        vm_set_lb: float | None = None,
+        vm_set_ub: float | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -1250,43 +1240,3 @@ class VDroopControl_local(Controller):
         input_values = (net.controller.at[self.controller_idx, "object"].input_sign * np.asarray(input_values)).tolist()
         self.vm_set_pu_new = self.vm_set_pu_bsc - (sum(input_values) - self.q_set_mvar) / self.q_droop_mvar
         net.controller.at[self.controller_idx, "object"].set_point = self.vm_set_pu_new
-
-
-class ControlModusEnum(Enum):
-    v_ctrl = "V_ctrl"
-    v_ctrl_q_droop = "V_ctrl_Q_droop"
-    v_ctrl_q_droop_local = "V_ctrl_Q_droop_local"
-    q_ctrl = "Q_ctrl"
-    q_ctrl_v_droop = "Q_ctrl_V_droop"
-    PF_ctrl = "PF_ctrl"
-    PF_ctrl_ind = "PF_ctrl_ind"
-    PF_ctrl_cap = "PF_ctrl_cap"
-    tan_phi_ctrl = "tan_phi_ctrl"
-
-    @classmethod
-    def pf_modes(cls):
-        return {
-            cls.PF_ctrl,
-            cls.PF_ctrl_cap,
-            cls.PF_ctrl_ind,
-        }
-
-    @classmethod
-    def v_modes(cls):
-        return {
-            cls.v_ctrl,
-            cls.v_ctrl_q_droop,
-            cls.v_ctrl_q_droop_local,
-        }
-
-    @classmethod
-    def q_modes(cls):
-        return {cls.q_ctrl, cls.q_ctrl_v_droop}
-
-    @classmethod
-    def droop_modes(cls):
-        return {
-            cls.v_ctrl_q_droop,
-            cls.v_ctrl_q_droop_local,
-            cls.q_ctrl_v_droop,
-        }
