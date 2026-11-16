@@ -37,3 +37,5 @@ sonar-project.properties
 .scannerwork/
 uv.lock
 *.code-workspace
+.env
+.python-version

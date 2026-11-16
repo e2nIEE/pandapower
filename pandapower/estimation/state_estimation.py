@@ -56,6 +56,7 @@ def estimate(
 
     Parameters:
         net (pandapowerNet): The net within this line should be created
+        algorithm: Algorithm used for state estimation
         init (string): Initial voltage for the estimation. 'flat' sets 1.0 p.u. / 0° for all buses, 'results' uses the
             values from *res_bus* if available and 'slack' considers the slack bus voltage (and optionally, angle) as
             the initial values. Default is 'flat'
@@ -88,6 +89,11 @@ def estimate(
                     e.g. if one of the bus among the buses connected through bb switch is given, then all of them will \
                     still be fused
 
+    Keyword Arguments:
+        a:
+        estimator:
+        opt_method:
+
     Returns:
         dict: "success" (bool, whether the state estimation was successful), "num_iterations" (int) and "time" (str,
         ISO 8601 time stamp of the estimation in UTC). The dict itself is always truthy, so use result["success"] to
@@ -103,7 +109,7 @@ def estimate(
         delta_start=delta_start,
         zero_injection=zero_injection,
         fuse_buses_with_bb_switch=fuse_buses_with_bb_switch,
-        algorithm=algorithm,
+        init=init,
         **opt_vars,
     )
 
@@ -179,6 +185,8 @@ class StateEstimation:
         self.eppci = None
         self.recycle = recycle
         self.algorithm = algorithm
+        self.tolerance = tolerance
+        self.maximum_iterations = maximum_iterations
 
         # variables for chi^2 / rn_max tests
         self.delta = None
@@ -190,7 +198,7 @@ class StateEstimation:
         delta_start="flat",
         zero_injection=None,
         fuse_buses_with_bb_switch="all",
-        algorithm="wls",
+        init: str = "flat",
         **opt_vars,
     ):
         """
@@ -213,11 +221,6 @@ class StateEstimation:
             voltage angles in degrees (sorted by bus index)
 
         OPTIONAL:
-            **tolerance** - (float) - When the maximum state change between iterations is less than
-            tolerance, the process stops. Default is 1e-6
-
-            **maximum_iterations** - (integer) - Maximum number of iterations. Default is 50
-
             **zero_injection** - (str, iterable, None) - Defines which buses are zero injection bus or the method
             to identify zero injection bus, with 'wls_estimator' virtual measurements will be added, with
             'wls_estimator with zero constraints' the buses will be handled as constraints.
@@ -274,9 +277,14 @@ class StateEstimation:
             delta_start=delta_start,
             calculate_voltage_angles=True,
             zero_injection=zero_injection,
-            algorithm=algorithm,
+            algorithm=self.algorithm,
             ppc=self.ppc,
             eppci=self.eppci,
+            init=init,
+            tolerance=self.tolerance,
+            maximum_iterations=self.maximum_iterations,
+            fuse_buses_with_bb_switch=fuse_buses_with_bb_switch,
+            estimator=opt_vars.get("estimator", "wls"),
         )
 
         # Estimate voltage magnitude and angle with the given estimator

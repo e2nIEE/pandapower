@@ -99,10 +99,14 @@ def _initialize_voltage(net, init):
     return v_start, delta_start
 
 
-def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
+def _init_ppc(net, v_start, delta_start, calculate_voltage_angles, se_options):
     # select elements in service and convert pandapower ppc to ppc
     _init_runse_options(
-        net, v_start=v_start, delta_start=delta_start, calculate_voltage_angles=calculate_voltage_angles
+        net,
+        v_start=v_start,
+        delta_start=delta_start,
+        calculate_voltage_angles=calculate_voltage_angles,
+        se_options=se_options
     )
     ppc, ppci = _pd2ppc(net)
 
@@ -738,7 +742,21 @@ def pp2eppci(
     algorithm="wls",
     ppc=None,
     eppci=None,
+    init="flat",
+    tolerance=1e-6,
+    maximum_iterations=50,
+    fuse_buses_with_bb_switch="all",
+    estimator="wls",
 ):
+    se_options = {
+        "algorithm_se": algorithm,
+        "init": init,
+        "tolerance": tolerance,
+        "maximum_iterations": maximum_iterations,
+        "zero_injection": zero_injection,
+        "fuse_buses_with_bb_switch": fuse_buses_with_bb_switch,
+        "estimator": estimator,
+    }
     if isinstance(eppci, ExtendedPPCI):
         eppci.algorithm = algorithm
         eppci.data = _add_measurements_to_ppci(net, eppci.data, zero_injection, algorithm)
@@ -746,7 +764,13 @@ def pp2eppci(
         return net, ppc, eppci
     else:
         # initialize ppc
-        ppc, ppci = _init_ppc(net, v_start, delta_start, calculate_voltage_angles)
+        ppc, ppci = _init_ppc(
+            net=net,
+            v_start=v_start,
+            delta_start=delta_start,
+            calculate_voltage_angles=calculate_voltage_angles,
+            se_options=se_options
+        )
 
         # add measurements to ppci structure
         # Finished converting pandapower network to ppci
