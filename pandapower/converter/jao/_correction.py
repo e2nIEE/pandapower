@@ -183,16 +183,18 @@ def _repair_incomplete_line_data(data: dict[str, pd.DataFrame]) -> None:
             missing = s1 if pd.isna(df.at[idx, s1]) else s2
             other = df.at[idx, s2] if missing == s1 else df.at[idx, s1]
             tokens = [token.strip().upper() for token in re.sub(r"\s*\(.*?\)", "", str(df.at[idx, ne_col])).split("-")]
-            candidates = [
-                name
-                for name in known_names
-                if name != other
+            other_location = _normalize_locname(other)
+            candidate_names = {
+                _normalize_locname(name): name
+                for name in sorted(known_names)
+                if _normalize_locname(name) != other_location
                 and any(token == name.upper() or token.startswith(name.upper() + " ") for token in tokens)
-            ]
-            if len(candidates) == 1:
-                df.at[idx, missing] = candidates[0]
+            }
+            if len(candidate_names) == 1:
+                candidate = next(iter(candidate_names.values()))
+                df.at[idx, missing] = candidate
                 logger.warning(
-                    f"{key} row {idx}: missing {missing[0]} name set to {candidates[0]!r} "
+                    f"{key} row {idx}: missing {missing[0]} name set to {candidate!r} "
                     f"(derived from NE_name {df.at[idx, ne_col]!r})"
                 )
 

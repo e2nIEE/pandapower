@@ -178,6 +178,39 @@ def test_repair_incomplete_line_data_matches_name_variants():
     assert pd.isna(repaired.at[3, vn_col])
 
 
+def test_repair_incomplete_line_data_counts_normalized_name_candidates():
+    cols = pd.MultiIndex.from_tuples(
+        [
+            (None, "NE_name"),
+            (None, "Voltage_level(kV)"),
+            ("Substation_1", "Full_name"),
+            ("Substation_2", "Full_name"),
+            ("Electrical Parameters", "Length_(km)"),
+        ]
+    )
+    lines = pd.DataFrame(
+        [
+            # two spellings of the same substation, both matching the same NE_name token
+            ["X", 380.0, "KROSNO", "Else", 10.0],
+            ["X", 380.0, "Krosno", "Else", 10.0],
+            ["Y", 380.0, "Vierraden", "Else", 10.0],
+            # the two raw spellings are one location, so the name must be derived unambiguously
+            ["KROSNO - Missing", 380.0, None, "Other", 10.0],
+            # the other endpoint is the same location, only spelled differently -> no candidate
+            ["VIERRADEN - Same", 380.0, None, "vierraden", 10.0],
+        ],
+        columns=cols,
+    )
+    data = {"Lines": lines, "Tielines": lines.iloc[0:0].copy()}
+
+    _repair_incomplete_line_data(data)
+
+    s1 = ("Substation_1", "Full_name")
+    repaired = data["Lines"]
+    assert _normalize_locname(repaired.at[3, s1]) == "krosno"
+    assert pd.isna(repaired.at[4, s1])
+
+
 def test_parse_html_str_widget_id():
     point = {"lng": [1.0, 2.0], "lat": [3.0, 4.0]}
     args = [None] * 7
