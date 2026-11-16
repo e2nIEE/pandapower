@@ -262,6 +262,14 @@ def test_trafo_locations_match_known_jao_name_variants():
     assert resolved.tolist() == list(expectations.values())
 
 
+def test_find_trafo_locations_without_bus_locations():
+    # no bus locations at all: names must be left unresolved (warning + fallback bus), not raise
+    resolved = _find_trafo_locations(pd.Series(["TR A-A1", "B"]), [])
+
+    assert len(resolved) == 2
+    assert resolved.isna().all()
+
+
 def test_select_rated_current_a_prefers_fixed_then_max():
     cols = pd.MultiIndex.from_tuples(
         [

@@ -392,6 +392,9 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
         bus_keys = list(bus_key_to_name)
         for idx in trafo_bus_names_longest_part.index[unresolved]:
             raw_name = trafo_bus_names.at[idx]
+            if not bus_keys:
+                unresolved_names.append(raw_name)
+                continue
             search_key = longest_keys.at[idx] or _normalize_locname(raw_name)
 
             # --- fuzzy matching: accept only a clear best match
