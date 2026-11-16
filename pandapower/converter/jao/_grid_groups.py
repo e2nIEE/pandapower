@@ -169,6 +169,8 @@ def _invent_connections_between_grid_groups(
     bus_name_splits = net.bus.name.str.split(r"[ -/]+", expand=True)
     buses_with_single_base = net.bus.name.loc[(~bus_name_splits.isnull()).sum(axis=1) == 1]
     for idx, name_base in buses_with_single_base.items():
+        if idx not in net.bus.index:
+            continue
         same_name_base = _same_name_base_mask(net.bus.drop(idx).name, name_base)
         if not any(same_name_base):
             continue

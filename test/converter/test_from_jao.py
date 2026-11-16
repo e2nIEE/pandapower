@@ -299,6 +299,23 @@ def test_invent_connections_keeps_own_grid_group():
     assert sorted(net.bus.name) == ["DUP", "DUP X", "E", "E", "X"]
 
 
+def test_invent_connections_skips_buses_fused_earlier():
+    net = pandapowerNet(name="jao_grid_groups")
+    create_buses(net, 1, 380, name=["DOUBLE"])
+    create_buses(net, 1, 380, name=["Left"])
+    create_buses(net, 1, 380, name=["DOUBLE"])
+    create_buses(net, 1, 380, name=["Right"])
+    create_lines_from_parameters(net, [0, 2], [1, 3], 1.0, 0.1, 0.1, 1.0, 1.0)
+    net.bus["zone"] = "TSO"  # the transformer step requires net.bus.zone
+
+    _invent_connections_between_grid_groups(net)
+
+    # the second DOUBLE bus is fused into the first one; the stale loop entry of the
+    # removed bus must be skipped instead of being processed again
+    assert len(net.bus) == 3
+    assert sorted(net.bus.name) == ["DOUBLE", "Left", "Right"]
+
+
 def test_normalize_locname_transliterates_polish_l():
     # "Ł"/"ł" do not decompose under NFKD and must be transliterated explicitly
     assert _normalize_locname("Łódź") == "lodz"
