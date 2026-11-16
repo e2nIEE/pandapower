@@ -164,7 +164,7 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
         )  # default is EIC_Code
         take_from_name = ((is_dupl.EIC | is_missing.EIC) & (~is_dupl.name & ~is_missing.name)).values
         access_vals.loc[take_from_name, "col_name"] = "name"
-        access_vals.loc[take_from_name, "identifier"] = line_excerpt.name.loc[take_from_name].values  # type: ignore[index]
+        access_vals.loc[take_from_name, "identifier"] = line_excerpt.name.loc[take_from_name].values
         keep = (~(is_dupl | is_missing)).any(axis=1).values
         if np.all(is_missing):
             log_msg = (
@@ -182,8 +182,8 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
                 f"For {bus=}, all EIC_Codes and names of connected lines are ambiguous. "
                 "No geo data is dropped at this point."
             )
-            keep[(~is_missing).any(axis=1)] = True  # type: ignore[index]
-        access_vals = access_vals.loc[keep]  # type: ignore[index]
+            keep[(~is_missing).any(axis=1)] = True
+        access_vals = access_vals.loc[keep]
 
         # --- get this_bus_geo for exactly the selected (col_name, identifier, bus) combinations
         access_keys = pd.MultiIndex.from_frame(access_vals[["col_name", "identifier", "bus"]])
@@ -217,7 +217,7 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
                     f"No geo positions was used more often than all other positions. "
                     "The first of the most used positions is used."
                 )
-            return _geo_json_str(this_bus_geo.loc[how_often.idxmax()])  # type: ignore[call-overload]
+            return _geo_json_str(this_bus_geo.loc[how_often.idxmax()])
 
         return None
 
@@ -231,19 +231,20 @@ def _fill_geo_at_one_sided_branches_without_geo_extent(net: pandapowerNet):
         av: dict[str, pd.Index | int] = {}  # availablitiy of geodata
         av["bus_with_geo"] = net.bus.index[~net.bus.geo.isnull()]
         av["lines_fbw_tbwo"] = net.line.index[
-            net.line.from_bus.isin(av["bus_with_geo"]) & (~net.line.to_bus.isin(av["bus_with_geo"]))  # type: ignore[arg-type]
+            net.line.from_bus.isin(av["bus_with_geo"]) & (~net.line.to_bus.isin(av["bus_with_geo"]))
         ]
         av["lines_fbwo_tbw"] = net.line.index[
-            (~net.line.from_bus.isin(av["bus_with_geo"])) & net.line.to_bus.isin(av["bus_with_geo"])  # type: ignore[arg-type]
+            (~net.line.from_bus.isin(av["bus_with_geo"])) & net.line.to_bus.isin(av["bus_with_geo"])
         ]
         av["trafos_hvbw_lvbwo"] = net.trafo.index[
-            net.trafo.hv_bus.isin(av["bus_with_geo"]) & (~net.trafo.lv_bus.isin(av["bus_with_geo"]))  # type: ignore[arg-type]
+            net.trafo.hv_bus.isin(av["bus_with_geo"]) & (~net.trafo.lv_bus.isin(av["bus_with_geo"]))
         ]
         av["trafos_hvbwo_lvbw"] = net.trafo.index[
-            (~net.trafo.hv_bus.isin(av["bus_with_geo"])) & net.trafo.lv_bus.isin(av["bus_with_geo"])  # type: ignore[arg-type]
+            (~net.trafo.hv_bus.isin(av["bus_with_geo"])) & net.trafo.lv_bus.isin(av["bus_with_geo"])
         ]
-        av["n_lines_one_side_geo"] = len(av["lines_fbw_tbwo"]) + len(av["lines_fbwo_tbw"])  # type: ignore[assignment,arg-type]
-        av["n_trafos_one_side_geo"] = len(av["trafos_hvbw_lvbwo"]) + len(av["trafos_hvbwo_lvbw"])  # type: ignore[assignment,arg-type]
+        av["n_lines_one_side_geo"] = len(av["lines_fbw_tbwo"]) + len(av["lines_fbwo_tbw"])
+        n_trafos_one_side_geo = len(av["trafos_hvbw_lvbwo"]) + len(av["trafos_hvbwo_lvbw"])
+        av["n_trafos_one_side_geo"] = n_trafos_one_side_geo  # type: ignore[assignment]
         return av
 
     geo_avail = _check_geo_availablitiy(net)

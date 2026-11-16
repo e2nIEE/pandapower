@@ -349,6 +349,23 @@ def test_allocate_trafos_creates_separate_buses_for_missing_locations():
     assert {"Transformer 0", "Transformer 2", "Unknown Sub"} <= set(net.bus.name)
 
 
+def test_allocate_trafos_reuses_buses_across_passes():
+    cols = pd.MultiIndex.from_tuples([("Location", "Full Name"), ("Location", "TSO")])
+    data = {"Transformers": pd.DataFrame([["A", "TSO1"], ["A", "TSO2"]], columns=cols)}
+    net = pandapowerNet(name="jao_trafos")
+    create_buses(net, 1, 380, name=["A"], zone="TSO")
+
+    conn = _allocate_trafos_to_buses_and_create_buses(
+        net, data, _get_bus_idx(net), np.array([220.0, 380.0]), np.array([110.0, 220.0])
+    )
+
+    # the second transformer's lv side must reuse the A/220 bus created for the first one's hv side
+    a_220 = net.bus.index[(net.bus.name == "A") & (net.bus.vn_kv == 220)]
+    assert len(net.bus) == 3
+    assert len(a_220) == 1
+    assert conn.hv_bus.iat[0] == conn.lv_bus.iat[1] == a_220[0]
+
+
 def _add_trafo(net, hv_bus, lv_bus):
     create_transformers_from_parameters(net, [hv_bus], [lv_bus], 1.0, 380, 110, 0, 1, 0, 0, 0)
 

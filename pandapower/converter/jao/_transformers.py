@@ -209,6 +209,7 @@ def _allocate_trafos_to_buses_and_create_buses(
     trafo_connections[["hv_bus", "lv_bus"]] = trafo_connections[["hv_bus", "lv_bus"]].astype(np.int64)
 
     for side in ["hv", "lv"]:
+        bus_idx = _get_bus_idx(net)  # buses created in the previous pass must be reused
         bus_col, trafo_vn_col, next_col, rel_dev_col, has_dev_col = (
             f"{side}_bus",
             f"vn_{side}_kv",
