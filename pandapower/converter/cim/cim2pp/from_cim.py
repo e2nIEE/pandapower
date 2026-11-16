@@ -3,8 +3,11 @@
 
 import logging
 import time
+from typing import overload
 
-from pandapower import pandapowerNet
+from typing_extensions import deprecated
+
+from pandapower.network import pandapowerNet
 
 from .. import cim_classes, interfaces
 from . import build_pp_net
@@ -13,9 +16,43 @@ from . import converter_classes as std_converter_classes
 logger = logging.getLogger("cim.cim2pp.from_cim")
 
 
+@overload
+@deprecated("log_debug is deprecated, remove it from function call.")
 def from_cim_dict(
     cim_parser: cim_classes.CimParser,
-    log_debug=False,
+    log_debug: bool = False,
+    convert_line_to_switch: bool = False,
+    line_r_limit: float = 0.1,
+    line_x_limit: float = 0.1,
+    repair_cim: str | interfaces.CIMRepair | None = None,
+    repair_cim_class: type[interfaces.CIMRepair] | None = None,
+    repair_pp: str | interfaces.PandapowerRepair | None = None,
+    repair_pp_class: type[interfaces.PandapowerRepair] | None = None,
+    custom_converter_classes: dict | None = None,
+    cim_version: str | None = None,
+    **kwargs,
+) -> pandapowerNet: ...
+
+
+@overload
+def from_cim_dict(
+    cim_parser: cim_classes.CimParser,
+    convert_line_to_switch: bool = False,
+    line_r_limit: float = 0.1,
+    line_x_limit: float = 0.1,
+    repair_cim: str | interfaces.CIMRepair | None = None,
+    repair_cim_class: type[interfaces.CIMRepair] | None = None,
+    repair_pp: str | interfaces.PandapowerRepair | None = None,
+    repair_pp_class: type[interfaces.PandapowerRepair] | None = None,
+    custom_converter_classes: dict | None = None,
+    cim_version: str | None = None,
+    **kwargs,
+) -> pandapowerNet: ...
+
+
+def from_cim_dict(
+    cim_parser: cim_classes.CimParser,
+    log_debug: bool = False,
     convert_line_to_switch: bool = False,
     line_r_limit: float = 0.1,
     line_x_limit: float = 0.1,
@@ -30,20 +67,23 @@ def from_cim_dict(
     """
     Creates a pandapower net from a CIM data structure.
 
-    :param cim_parser: The CimParser with parsed cim data.
-    :param log_debug: Set this parameter to True to enable logging at debug level. Optional, default: False
-    :param convert_line_to_switch: Set this parameter to True to enable line -> switch conversion. All lines with a
-        resistance lower or equal than line_r_limit or a reactance lower or equal than line_x_limit will become a
-        switch. Optional, default: False
-    :param line_r_limit: The limit from resistance. Optional, default: 0.1
-    :param line_x_limit: The limit from reactance. Optional, default: 0.1
-    :param repair_cim: The CIMRepair object or a path to its serialized object. Optional, default: None
-    :param repair_cim_class: The CIMRepair class. Optional, default: None
-    :param repair_pp: The PandapowerRepair object or a path to its serialized object. Optional, default: None
-    :param repair_pp_class: The PandapowerRepair class. Optional, default: None
-    :param custom_converter_classes: Dict to inject classes for different functionality. Optional, default: None
-    :param cim_version: The CIM / CGMES / LTDS version. Optional, default: None
-    :return: The pandapower net.
+    Parameters:
+        cim_parser: The CimParser with parsed cim data.
+        log_debug: Set this parameter to True to enable logging at debug level.
+        convert_line_to_switch: Set this parameter to True to enable line -> switch conversion. All lines with a
+            resistance lower or equal than line_r_limit or a reactance lower or equal than line_x_limit will become a
+            switch.
+        line_r_limit: The limit from resistance.
+        line_x_limit: The limit from reactance.
+        repair_cim: The CIMRepair object or a path to its serialized object.
+        repair_cim_class: The CIMRepair class.
+        repair_pp: The PandapowerRepair object or a path to its serialized object.
+        repair_pp_class: The PandapowerRepair class.
+        custom_converter_classes: Dict to inject classes for different functionality.
+        cim_version: The CIM / CGMES / LTDS version.
+
+    Returns:
+        The pandapower net.
     """
     if cim_version is None:
         cim_version = "2.4.15"
@@ -64,7 +104,6 @@ def from_cim_dict(
         convert_line_to_switch=convert_line_to_switch,
         line_r_limit=line_r_limit,
         line_x_limit=line_x_limit,
-        log_debug=log_debug,
         **kwargs,
     )
 
@@ -120,14 +159,13 @@ def from_cim(
     **kwargs,
 ) -> pandapowerNet:
     """
-    Converts a CIM net to a pandapower net from XML files.
-    Additional parameters for kwargs:
+    Converts a CIM net to a pandapower net from XML files. Additional parameters for kwargs:
     - create_measurements (str): Set this parameter to 'SV' to create measurements for the pandapower net from the SV
-    profile. Set it to 'Analog' to create measurements from Analogs. If the parameter is not set or is set to None, no
-    measurements will be created.
+    profile. Set it to 'Analog' to create measurements from Analogs. If the parameter is not set or is set to None,
+    no measurements will be created.
     - diagram_name (str): The name from the Diagram from the DL profile for the diagram coordinates. Default:
-    The first diagram sorted ascending by name. Set the parameter to "all" to use available diagrams for creating the
-    coordinates.
+    The first diagram sorted ascending by name. Set the parameter to "all" to use available diagrams for creating
+    the coordinates.
     - create_tap_controller (bool): If True, create pandapower controllers for transformer tap changers. If False, skip
     creating them. Default: True
     - sn_mva (float): Set the sn_mva from the pandapower net to a specific value. This value is not given in CGMES.
@@ -138,22 +176,25 @@ def from_cim(
     if there are errors in the conversion. Default: True.
     - set_switch_impedance (bool): Set the line impedance for lines that will be converted to switches
     - use_sv_data_for_assets (bool): Use the SV PowerFlow, SvTapStep and SvShuntCompensatorSections and map them to the
-    assets in the grid.  Default: False.
+    assets in the grid. Default: False.
 
-    :param file_list: The path to the CGMES files as a string or list.
-    :param encoding: The encoding from the files. Optional, default: None
-    :param convert_line_to_switch: Set this parameter to True to enable line -> switch conversion. All lines with a
-        resistance lower or equal than line_r_limit or a reactance lower or equal than line_x_limit will become a
-        switch. Optional, default: False
-    :param line_r_limit: The limit from resistance for converting line to switch. Optional, default: 0.1
-    :param line_x_limit: The limit from reactance for converting line to switch. Optional, default: 0.1
-    :param repair_cim: The CIMRepair object or a path to its serialized object. Optional, default: None
-    :param repair_cim_class: The CIMRepair class. Optional, default: None
-    :param repair_pp: The PandapowerRepair object or a path to its serialized object. Optional, default: None
-    :param repair_pp_class: The PandapowerRepair class. Optional, default: None
-    :param custom_converter_classes: Dict to inject classes for different functionality. Optional, default: None
-    :param cgmes_version: The CGMES version of the files, can be 3.0, 2.4.15 or LTDS. Optional, default: 2.4.15
-    :return: The pandapower net.
+    Parameters:
+        file_list: The path to the CGMES files as a string or list.
+        encoding: The encoding from the files.
+        convert_line_to_switch: Set this parameter to True to enable line -> switch conversion. All lines with a
+            resistance lower or equal than line_r_limit or a reactance lower or equal than line_x_limit will become a
+            switch.
+        line_r_limit: The limit from resistance for converting line to switch.
+        line_x_limit: The limit from reactance for converting line to switch.
+        repair_cim: The CIMRepair object or a path to its serialized object.
+        repair_cim_class: The CIMRepair class.
+        repair_pp: The PandapowerRepair object or a path to its serialized object.
+        repair_pp_class: The PandapowerRepair class.
+        custom_converter_classes: Dict to inject classes for different functionality.
+        cgmes_version: The CGMES version of the files, can be 3.0, 2.4.15 or LTDS.
+
+    Returns:
+        The pandapower net.
     """
     time_start_parsing = time.time()
 
