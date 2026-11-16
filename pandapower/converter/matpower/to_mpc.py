@@ -71,12 +71,7 @@ def _trafo_branch_mask(net, ppc):
 
 def _ppc2mpc(ppc, trafo_branches=None):
     """
-    Convert network in Pypower/Matpower format
-    Convert 0-based python to 1-based Matlab
-
-    **INPUT**:
-        * net - The pandapower format network
-        * filename - File path + name of the mat file which is created
+    Convert network in Pypower/Matpower format Convert 0-based python to 1-based Matlab
     """
 
     # convert to matpower
