@@ -82,23 +82,29 @@ class LineDropCompensation:
         self.calculate_impedance = calculate_impedance
 
         super().__init__(net, element_index=element_index, side=side, **kwargs)
-        # the base class only initializes the trafo bus during initialize_control, but it is needed for the calculation
-        # of the compensated voltage already before the first control step
-        self._update_trafobus(net)
+        try:
+            # the base class only initializes the trafo bus during initialize_control, but it is needed for the
+            # calculation of the compensated voltage already before the first control step
+            self._update_trafobus(net)
 
-        if self.calculate_impedance:
-            # the user values are replaced by the topology result, so a failure at creation must raise
-            self.r_ohm = None
-            self.x_ohm = None
-            self.update_impedance(net)
-        else:
-            if self.r_ohm is None and self.x_ohm is None:
-                raise ValueError(
-                    "Line drop compensation requires the impedance of the fictitious line: either provide r_ohm "
-                    "and/or x_ohm or set calculate_impedance=True to derive it from the network topology"
-                )
-            self.r_ohm = self._check_impedance("r_ohm", 0.0 if self.r_ohm is None else self.r_ohm)
-            self.x_ohm = self._check_impedance("x_ohm", 0.0 if self.x_ohm is None else self.x_ohm)
+            if self.calculate_impedance:
+                # the user values are replaced by the topology result, so a failure at creation must raise
+                self.r_ohm = None
+                self.x_ohm = None
+                self.update_impedance(net)
+            else:
+                if self.r_ohm is None and self.x_ohm is None:
+                    raise ValueError(
+                        "Line drop compensation requires the impedance of the fictitious line: either provide r_ohm "
+                        "and/or x_ohm or set calculate_impedance=True to derive it from the network topology"
+                    )
+                self.r_ohm = self._check_impedance("r_ohm", 0.0 if self.r_ohm is None else self.r_ohm)
+                self.x_ohm = self._check_impedance("x_ohm", 0.0 if self.x_ohm is None else self.x_ohm)
+        except Exception:
+            # the controller has already been registered by the base class, so it must not remain in the net if
+            # the initialization fails
+            net.controller.drop(self.index, inplace=True)
+            raise
 
     def _check_impedance(self, name, value):
         """
