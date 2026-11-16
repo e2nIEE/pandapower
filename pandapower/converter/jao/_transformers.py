@@ -115,7 +115,7 @@ def _get_transformer_voltages(data: dict[str, pd.DataFrame], bus_idx: pd.Series)
     """Returns the hv and lv nominal voltages of the transformers."""
     key = "Transformers"
     vn = data[key].loc[:, [("Voltage_level(kV)", "Primary"), ("Voltage_level(kV)", "Secondary")]].values
-    missing = pd.isna(vn).any(axis=1)
+    missing = np.asarray(pd.isna(vn).any(axis=1), dtype=bool)
     if missing.any():
         raise ValueError(
             f"Transformers: {missing.sum()} row(s) have no Primary or Secondary voltage level and "

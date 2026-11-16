@@ -69,8 +69,8 @@ def _create_lines(net: pandapowerNet, data: dict[str, pd.DataFrame], max_i_ka_fi
 
         _ = create_lines_from_parameters(
             net,
-            bus_idx.loc[keys_1].values,
-            bus_idx.loc[keys_2].values,
+            np.asarray(bus_idx.loc[keys_1], dtype=np.int64),
+            np.asarray(bus_idx.loc[keys_2], dtype=np.int64),
             length_km,
             data[key][("Electrical Parameters", "Resistance_R(Ω)")].values / length_km,  # type: ignore[operator]
             data[key][("Electrical Parameters", "Reactance_X(Ω)")].values / length_km,  # type: ignore[operator]
