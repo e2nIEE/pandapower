@@ -24,7 +24,7 @@ def test_recycle_case30():
     runpp(net)
     net.measurement.drop(net.measurement.index, inplace=True)
     add_virtual_meas_from_loadflow(net)
-    assert se.estimate()
+    assert se.estimate()["success"]
     assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, atol=1e-5)
     assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, atol=1e-5)
 

@@ -402,6 +402,9 @@ def _create_transformers_and_buses(net: pandapowerNet, data: dict[str, pd.DataFr
     dphi = _get_float_column(data[key], ("Phase Shifting Properties", "Angle Regulation δu (%)"))
     phase_shifter = np.isclose(du, 0) & (~np.isclose(dphi, 0))  # Symmetrical/Asymmetrical not
     # considered
+    has_du = ~(np.isnan(du) | np.isclose(du, 0))
+    tap_changer_type = np.where(phase_shifter, "Ideal", np.where(has_du, "Ratio", None))
+    tap_step_percent = np.where(phase_shifter, np.nan, du)  # ideal phase shifters only use tap_step_degree
 
     _ = create_transformers_from_parameters(
         net,
@@ -420,8 +423,8 @@ def _create_transformers_and_buses(net: pandapowerNet, data: dict[str, pd.DataFr
         tap_side="lv",
         tap_min=taps["tap_min"].values,
         tap_max=taps["tap_max"].values,
-        tap_phase_shifter=phase_shifter,
-        tap_step_percent=du,
+        tap_changer_type=tap_changer_type,
+        tap_step_percent=tap_step_percent,
         tap_step_degree=dphi,
         name=data[key].loc[:, ("Location", "Full Name")].str.strip().values,
         EIC_Code=data[key].xs("EIC_Code", level=1, axis=1).values[:, 0],  # type: ignore[call-overload]

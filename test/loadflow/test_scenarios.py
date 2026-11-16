@@ -2,6 +2,8 @@
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
 
+import os
+
 import numpy as np
 import pytest
 
@@ -20,11 +22,13 @@ from pandapower.create import (
     create_transformer_from_parameters,
     create_xward,
 )
+from pandapower.file_io import from_json
 from pandapower.network import pandapowerNet
 from pandapower.networks.simple_pandapower_test_networks import simple_mv_open_ring_net
 from pandapower.run import rundcpp, runpp
 from pandapower.shortcircuit.calc_sc import calc_sc
 from pandapower.std_types import create_std_type
+from test import test_path
 from test.consistency_checks import runpp_with_consistency_checks
 from test.helper_functions import add_grid_connection, create_test_network2
 from test.loadflow.result_test_network_generator import add_test_bus_bus_switch, add_test_trafo
@@ -270,6 +274,19 @@ def test_transformer_phase_shift():
     assert np.isclose(b3a_angle - net.res_bus.va_degree.at[2], 10)
     assert np.isclose(b2b_angle - net.res_bus.va_degree.at[4], -10)
     assert np.isclose(b3b_angle - net.res_bus.va_degree.at[5], -10)
+
+
+def test_ideal_and_symmetrical_phase_shifter_powerfactory():
+    net = from_json(os.path.join(test_path, "test_files", "symmetrical_and_ideal_pst.json"))
+    runpp_with_consistency_checks(net, calculate_voltage_angles=True)
+
+    correct_results = {
+        1: (0.987593, -7.095931),  # lv bus of the ideal phase shifter
+        3: (0.987562, -6.823519),  # lv bus of the symmetrical phase shifter
+    }
+    for bus, (vm_pu, va_degree) in correct_results.items():
+        assert np.isclose(net.res_bus.vm_pu.at[bus], vm_pu, atol=1e-6), bus
+        assert np.isclose(net.res_bus.va_degree.at[bus], va_degree, atol=1e-6), bus
 
 
 @pytest.mark.parametrize("side", ["hv", "lv"])

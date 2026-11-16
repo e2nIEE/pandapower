@@ -116,7 +116,7 @@ def _add_dcline_constraints(om, net):
 
 
 def _run_pf_before_opf(net, ppci):
-    net._options["tolerance_mva"] = 1e-8
+    net._options["tolerance"] = 1e-8
     net._options["max_iteration"] = 10
     net._options["algorithm"] = "nr"
     return _run_newton_raphson_pf(ppci, net["_options"])

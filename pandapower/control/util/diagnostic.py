@@ -126,14 +126,19 @@ def trafo_characteristic_table_diagnostic(net):
                 category=UserWarning,
             )
             warnings_count += 1
-        # check if tap_changer_type is "Symmetrical" but tap_step_degree is not 90
+        # check if tap_changer_type is "Symmetrical" but tap_step_degree is set to a value other than 90
+        # (NaN or 0 are treated as 90 degree)
+        step_degree = net[trafo_table]["tap_step_degree"]
         mismatch_d = net[trafo_table][
-            (net[trafo_table]["tap_step_degree"] != 90) & (net[trafo_table]["tap_changer_type"] == "Symmetrical")
+            step_degree.notna()
+            & (step_degree != 0)
+            & (step_degree != 90)
+            & (net[trafo_table]["tap_changer_type"] == "Symmetrical")
         ].shape[0]
         if mismatch_d != 0:
             warnings.warn(
                 f"{trafo_table}: found {mismatch_d} transformer(s) with tap_changer_type parameter "
-                f"set to 'Symmetrical' but tap_step_degree value not set to 90 degrees.",
+                f"set to 'Symmetrical' but tap_step_degree value not set to 90 degrees (or NaN).",
                 category=UserWarning,
             )
             warnings_count += 1

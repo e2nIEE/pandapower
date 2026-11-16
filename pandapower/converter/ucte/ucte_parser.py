@@ -84,8 +84,12 @@ class UCTEParser:
         return True
 
     def _parse_date_str(self, date_str: str):
+        """
+        Parses date_str ('%Y%m%d_%H%M', e.g. the beginning of the UCTE file name) as UTC time into self.date. If it cannot
+        be parsed, the current time is used.
+        """
         try:
-            self.date = datetime.strptime(date_str, "%Y%m%d_%H%M")
+            self.date = datetime.strptime(date_str, "%Y%m%d_%H%M").replace(tzinfo=UTC)
         except Exception:  # noqa: BLE001
             self.logger.info(f"The given {date_str=} couldn't be parsed as '%Y%m%d_%H%M'.")
             self.date = datetime.now(UTC)

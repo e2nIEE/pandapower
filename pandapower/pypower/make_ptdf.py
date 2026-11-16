@@ -20,7 +20,16 @@ from .idx_bus import BUS_I, BUS_TYPE, REF
 from .make_b_dc import makeBdc
 
 
-def makePTDF(baseMVA, bus, branch, slack=None, result_side=0, using_sparse_solver=False, branch_id=None, reduced=False):
+def makePTDF(
+    baseMVA,
+    bus,
+    branch,
+    slack=None,
+    result_side: int = 0,
+    using_sparse_solver: bool = False,
+    branch_id=None,
+    reduced: bool = False,
+):
     """Builds the DC PTDF matrix for a given choice of slack.
     Returns the DC PTDF matrix for a given choice of slack. The matrix is
     C{nbr x nb}, where C{nbr} is the number of branches and C{nb} is the
@@ -99,8 +108,9 @@ def makePTDF(baseMVA, bus, branch, slack=None, result_side=0, using_sparse_solve
 
     ## distribute slack, if requested
     if not isscalar(slack):
-        if len(slack.shape) == 1:  ## slack is a vector of weights
-            slack = slack / sum(slack)  ## normalize weights
+        slack = np.asarray(slack)
+        if slack.ndim == 1:  ## slack is a vector of weights
+            slack = slack / slack.sum()  ## normalize weights
 
             ## conceptually, we want to do ...
             ##    H = H * (eye(nb, nb) - slack * ones((1, nb)))

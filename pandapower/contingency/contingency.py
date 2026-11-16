@@ -22,6 +22,7 @@ from packaging.version import Version
 
 from pandapower.create._utils import add_column_to_df
 from pandapower.network import pandapowerNet
+from pandapower.pf.transformer_thermal import TRANSFORMER_THERMAL_AVAILABLE
 from pandapower.run import runpp
 
 logger = logging.getLogger(__name__)
@@ -70,7 +71,7 @@ def pp_to_ls2g(net: pandapowerNet) -> "GridModel":
     """
     Try to initialize a lightsim2grid model
 
-    Arguments:
+    Parameters:
         net: The pandapower network to use in lightsim2grid
 
     Returns:
@@ -160,12 +161,23 @@ def run_contingency(
         "bus": ["vm_pu"],
         **{key: ["loading_percent"] for key in ("line", "trafo", "trafo3w") if len(net[key]) > 0},
     }
-    if len(net.line) > 0 and (
+    tdpf_requested = (
         net.get("_options", {}).get("tdpf", False)
         or pf_options.get("tdpf", False)
         or pf_options_nminus1.get("tdpf", False)
-    ):
-        result_variables["line"].append("temperature_degree_celsius")
+    )
+    if tdpf_requested:
+        if len(net.line) > 0:
+            result_variables["line"].append("temperature_degree_celsius")
+
+        # transformer temperatures are post-processing results of the transformer thermal model. They
+        # are produced by every solve once tdpf is on, no matter whether the input network already
+        # carries the result column -- a fresh network does not, so the column cannot be used to
+        # decide this before the first solve.
+        if TRANSFORMER_THERMAL_AVAILABLE:
+            for element in ("trafo", "trafo3w"):
+                if len(net[element]) > 0:
+                    result_variables[element].append("temperature_degree_celsius")
 
     # for n-1
     for element, val in nminus1_cases.items():
@@ -252,22 +264,16 @@ def run_contingency_ls2g(
         raise UserWarning("bus index must be continuous and start with 0 (use pandapower.create_continuous_bus_index)")
     contingency_evaluation_function(net, **kwargs)
 
-    tps_flag = False
-    tps, tps_tap_pos, tps_shift_degree = None, None, None
-    if "tap_phase_shifter" in net.trafo.columns and np.any(net.trafo.tap_phase_shifter):
-        tps_flag = True
-        tps, tps_tap_pos, tps_shift_degree = _convert_trafo_phase_shifter(net, "trafo", "tap_phase_shifter")
-
     tct2w_flag = False
     tct2w, tct2w_tap_pos, tct2w_shift_degree = None, None, None
     tct3w_flag = False
     tct3w, tct3w_tap_pos, tct3w_shift_degree = None, None, None
     if "tap_changer_type" in net.trafo.columns and np.any(net.trafo.tap_changer_type == "Ideal"):
         tct2w_flag = True
-        tct2w, tct2w_tap_pos, tct2w_shift_degree = _convert_trafo_phase_shifter(net, "trafo", "tap_changer_type")
+        tct2w, tct2w_tap_pos, tct2w_shift_degree = _convert_trafo_phase_shifter(net, "trafo")
     if "tap_changer_type" in net.trafo3w.columns and np.any(net.trafo3w.tap_changer_type == "Ideal"):
         tct3w_flag = True
-        tct3w, tct3w_tap_pos, tct3w_shift_degree = _convert_trafo_phase_shifter(net, "trafo3w", "tap_changer_type")
+        tct3w, tct3w_tap_pos, tct3w_shift_degree = _convert_trafo_phase_shifter(net, "trafo3w")
 
     # setting "slack" back-and-forth is due to the difference in interpretation of generators as "distributed slack"
     distributed_slack = net._options.get("distributed_slack", False)
@@ -287,10 +293,6 @@ def run_contingency_ls2g(
     solver_multi_slack, solver_single_slack = _ls2g_solver_types()
     solver_type = solver_multi_slack if distributed_slack else solver_single_slack
 
-    if tps_flag:
-        net.trafo["tap_phase_shifter"] = tps
-        net.trafo["tap_pos"] = tps_tap_pos
-        net.trafo["shift_degree"] = tps_shift_degree
     if tct2w_flag:
         net.trafo["tap_changer_type"] = tct2w
         net.trafo["tap_pos"] = tct2w_tap_pos
@@ -321,7 +323,7 @@ def run_contingency_ls2g(
 
     # s.add_multiple_n1(net.line.index.values.astype(int))
     v_init = net._ppc["internal"]["V"]  # type: ignore[index]
-    s.compute(v_init, net._options["max_iteration"], net._options["tolerance_mva"])
+    s.compute(v_init, net._options["max_iteration"], net._options["tolerance"])
     v_res = s.get_voltages()
     s.compute_flows()
     kamps_all = s.get_flows()
@@ -404,29 +406,22 @@ def run_contingency_ls2g(
             ] = congestion_caused
 
 
-def _convert_trafo_phase_shifter(net, trafotable="trafo", tap_param="tap_changer_type"):
+def _convert_trafo_phase_shifter(net, trafotable="trafo"):
     """
-    Moves tap_step_degree values for ideal phase shifters to the shift_degree values.
-    Works both for old implementation (tap_phase_shifter) and for new implementation (tap_changer_type).
+    Moves tap_step_degree values for ideal phase shifters (tap_changer_type "Ideal") to the shift_degree values.
     """
-    tap_changer = net[trafotable][tap_param].values.copy()
+    tap_changer = net[trafotable]["tap_changer_type"].values.copy()
     shift_degree = net[trafotable].shift_degree.values.copy()
 
     tap_pos = net[trafotable].tap_pos.values
     tap_neutral = net[trafotable].tap_neutral.values
     tap_diff = tap_pos - tap_neutral
     tap_step_degree = net[trafotable].tap_step_degree.values.copy()
+    direction = np.where(net[trafotable].tap_side.values == "lv", -1, 1)
 
-    if tap_param == "tap_changer_type":
-        net.trafo.loc[tap_changer == "Ideal", "shift_degree"] += (
-            tap_diff[tap_changer == "Ideal"] * tap_step_degree[tap_changer == "Ideal"]
-        )
-        net[trafotable][tap_param] = None
-    elif tap_param == "tap_phase_shifter":
-        net.trafo.loc[tap_changer, "shift_degree"] += tap_diff[tap_changer] * tap_step_degree[tap_changer]
-        net[trafotable][tap_param] = False
-    else:
-        raise ValueError("tap_param argument not recognized")
+    ideal = tap_changer == "Ideal"
+    net.trafo.loc[ideal, "shift_degree"] += direction[ideal] * tap_diff[ideal] * tap_step_degree[ideal]
+    net[trafotable]["tap_changer_type"] = None
 
     net[trafotable]["tap_pos"] = 0
 
@@ -438,7 +433,11 @@ def _update_contingency_results(
 ):
     for element, vars in result_variables.items():
         for var in vars:
-            val = net[f"res_{element}"][var].values
+            res_table = net[f"res_{element}"]
+            if var not in res_table.columns:
+                # e.g. the transformer temperature when no transformer took part in this solve
+                continue
+            val = res_table[var].values
             if nminus1:
                 if var == "loading_percent":
                     s = (
@@ -469,14 +468,15 @@ def _update_contingency_results(
                 contingency_results[element][var] = val
 
 
-def get_element_limits(net):
+def get_element_limits(net: pandapowerNet) -> dict:
     """
     Construct the dictionary of element limits
 
-    :param pandapowerNet net:
+    Parameters:
+        net: the pandapower network
 
-    :return: element limits
-    :rtype: dict
+    Returns:
+        element limits
     """
     element_limits = {}
     if "max_vm_pu" in net.bus and "min_vm_pu" in net.bus:
@@ -554,21 +554,31 @@ def get_element_limits(net):
     return element_limits
 
 
-def check_elements_within_limits(element_limits, contingency_results, nminus1=False, branch_tol=1e-3, bus_tol=1e-6):
+def check_elements_within_limits(
+    element_limits: dict,
+    contingency_results: dict,
+    nminus1: bool = False,
+    branch_tol: float = 1e-3,
+    bus_tol: float = 1e-6,
+):
     """
     Check if the indexed elements with extracted constraints are within limits.
 
-    Elements without extracted constraints are not checked. Missing constrained
-    elements or result groups raise ValueError.
+    Elements without extracted constraints are not checked. Missing constrained elements or result groups raise
+    ValueError.
 
-    :param dict element_limits:
-    :param dict contingency_results:
-    :param bool nminus1:
-    :param float branch_tol: tolerance of the limit violation check for branch limits
-    :param float bus_tol: tolerance of the limit violation check for bus limits
+    Parameters:
+        element_limits:
+        contingency_results:
+        nminus1:
+        branch_tol: tolerance of the limit violation check for branch limits
+        bus_tol: tolerance of the limit violation check for bus limits
 
-    :return: True if all within limits (no violations), False if any limits violated
-    :rtype: bool
+    Returns:
+        bool: True if all within limits (no violations), False if any limits violated
+
+    Raises:
+        ValueError: if a constraint is missing
     """
     for element, limit in element_limits.items():
         if element not in contingency_results:
@@ -628,14 +638,17 @@ def _log_violation(element, var, val, limit_index, mask):
             logger.info(f"{element}: {var}{s} violation at index {limit_index[mask]} ({val[mask]})")
 
 
-def report_contingency_results(element_limits, contingency_results, branch_tol=1e-3, bus_tol=1e-6):
+def report_contingency_results(
+    element_limits: dict, contingency_results: dict, branch_tol: float = 1e-3, bus_tol: float = 1e-6
+):
     """
     Print log messages for elements with violations of limits
 
-    :param dict element_limits:
-    :param dict contingency_results:
-    :param float branch_tol: tolerance for branch results
-    :param float bus_tol: tolerance for bus results
+    Parameters:
+        element_limits:
+        contingency_results:
+        branch_tol: tolerance for branch results
+        bus_tol: tolerance for bus results
     """
     for element, results in contingency_results.items():
         limit = element_limits[element]

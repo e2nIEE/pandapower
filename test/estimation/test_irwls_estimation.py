@@ -21,7 +21,7 @@ def test_irwls_comp_wls():
     runpp(net)
     add_virtual_meas_from_loadflow(net)
 
-    success = estimate(net, init="flat", algorithm="irwls", estimator="wls")
+    success = estimate(net, init="flat", algorithm="irwls", estimator="wls")["success"]
     assert success
 
     net_wls = deepcopy(net)
@@ -48,7 +48,7 @@ def test_irwls_shgm():
     net = case14()
     runpp(net)
     add_virtual_meas_from_loadflow(net, p_std_dev=0.01, q_std_dev=0.01)
-    success = estimate(net, algorithm="irwls", estimator="shgm", a=3, maximum_iterations=50)
+    success = estimate(net, algorithm="irwls", estimator="shgm", a=3, maximum_iterations=50)["success"]
     assert success
     assert np.allclose(net.res_bus.vm_pu, net.res_bus_est.vm_pu, 1e-2)
     assert np.allclose(net.res_bus.va_degree, net.res_bus_est.va_degree, 1e-2)

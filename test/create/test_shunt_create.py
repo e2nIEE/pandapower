@@ -440,6 +440,9 @@ def test_create_vsc_stacked():
 
 
 def test_create_vsc_bipolar():
+    """
+    Creation of bipolar VSC with the required, all optional and the default parameters.
+    """
     net = pandapowerNet(name="test_create_vsc_bipolar")
     b1 = create_bus(net, 110)
     b2 = create_bus(net, 20)
@@ -467,9 +470,10 @@ def test_create_vsc_bipolar():
         x_ohm=5.0,
         r_dc_ohm=0.2,
         pl_dc_mw=0.1,
-        control_mode="Vac_phi",
-        control_value_1=1.02,
-        control_value_2=5.0,
+        control_mode_ac="vm_pu",
+        control_value_ac=1.02,
+        control_mode_dc="p_mw",
+        control_value_dc=5.0,
         name="test_vsc_bipolar",
         controllable=False,
         in_service=False,
@@ -480,9 +484,10 @@ def test_create_vsc_bipolar():
     assert np.isclose(net.vsc_bipolar.at[idx2, "x_ohm"], 5.0)
     assert np.isclose(net.vsc_bipolar.at[idx2, "r_dc_ohm"], 0.2)
     assert np.isclose(net.vsc_bipolar.at[idx2, "pl_dc_mw"], 0.1)
-    assert net.vsc_bipolar.at[idx2, "control_mode"] == "Vac_phi"
-    assert np.isclose(net.vsc_bipolar.at[idx2, "control_value_1"], 1.02)
-    assert np.isclose(net.vsc_bipolar.at[idx2, "control_value_2"], 5.0)
+    assert net.vsc_bipolar.at[idx2, "control_mode_ac"] == "vm_pu"
+    assert np.isclose(net.vsc_bipolar.at[idx2, "control_value_ac"], 1.02)
+    assert net.vsc_bipolar.at[idx2, "control_mode_dc"] == "p_mw"
+    assert np.isclose(net.vsc_bipolar.at[idx2, "control_value_dc"], 5.0)
     assert net.vsc_bipolar.at[idx2, "name"] == "test_vsc_bipolar"
     assert not net.vsc_bipolar.at[idx2, "controllable"]
     assert not net.vsc_bipolar.at[idx2, "in_service"]
@@ -494,9 +499,10 @@ def test_create_vsc_bipolar():
         net, bus=b3, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus, r_ohm=0.1, x_ohm=2.0, r_dc_ohm=0.1
     )
     assert np.isclose(net.vsc_bipolar.at[idx3, "pl_dc_mw"], 0.0)  # default
-    assert net.vsc_bipolar.at[idx3, "control_mode"] == "Vac_phi"  # default
-    assert np.isclose(net.vsc_bipolar.at[idx3, "control_value_1"], 1.0)  # default
-    assert np.isclose(net.vsc_bipolar.at[idx3, "control_value_2"], 0.0)  # default
+    assert net.vsc_bipolar.at[idx3, "control_mode_ac"] == "vm_pu"  # default
+    assert np.isclose(net.vsc_bipolar.at[idx3, "control_value_ac"], 1.0)  # default
+    assert net.vsc_bipolar.at[idx3, "control_mode_dc"] == "p_mw"  # default
+    assert np.isclose(net.vsc_bipolar.at[idx3, "control_value_dc"], 0.0)  # default
     assert net.vsc_bipolar.at[idx3, "controllable"]  # default
     assert net.vsc_bipolar.at[idx3, "in_service"]  # default
 
@@ -661,6 +667,43 @@ def test_create_vsc_stacked_index_conflict():
         net, bus=b1, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus, r_ohm=0.2, x_ohm=3.0, r_dc_ohm=0.1, index=5
     )
     assert idx2 == 5
+
+
+def test_create_vsc_bipolar_legacy_control_kwargs():
+    """
+    The former control parameters raise a TypeError, other additional keywords are still stored.
+    """
+    net = pandapowerNet(name="test_create_vsc_bipolar_legacy_control_kwargs")
+    b1 = create_bus(net, 110)
+    b_dc_plus = create_bus_dc(net, 100)
+    b_dc_minus = create_bus_dc(net, 100)
+
+    for legacy in ({"control_mode": "Vac_phi"}, {"control_value_1": 1.0}, {"control_value_2": 5.0}):
+        with pytest.raises(TypeError, match=next(iter(legacy))):
+            create_vsc_bipolar(
+                net,
+                bus=b1,
+                bus_dc_plus=b_dc_plus,
+                bus_dc_minus=b_dc_minus,
+                r_ohm=1.0,
+                x_ohm=10.0,
+                r_dc_ohm=0.5,
+                **legacy,
+            )
+    assert len(net.vsc_bipolar) == 0
+
+    # other additional keywords are still stored
+    idx = create_vsc_bipolar(
+        net,
+        bus=b1,
+        bus_dc_plus=b_dc_plus,
+        bus_dc_minus=b_dc_minus,
+        r_ohm=1.0,
+        x_ohm=10.0,
+        r_dc_ohm=0.5,
+        test_kwargs="dummy_string",
+    )
+    assert net.vsc_bipolar.at[idx, "test_kwargs"] == "dummy_string"
 
 
 def test_create_vsc_bipolar_index_conflict():

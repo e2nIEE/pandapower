@@ -46,13 +46,13 @@ from pandapower.pypower.idx_brch import (
     BR_STATUS,
     BR_X,
     BR_X_ASYM,
+    BRANCH_COLS,
     F_BUS,
     SHIFT,
     T_BUS,
     TAP,
-    branch_cols,
 )
-from pandapower.pypower.idx_brch_sc import branch_cols_sc
+from pandapower.pypower.idx_brch_sc import BRANCH_COLS_SC
 from pandapower.pypower.idx_bus import BASE_KV, BS, BUS_TYPE, GS, NONE
 from pandapower.pypower.idx_bus_dc import DC_BUS_TYPE, DC_NONE
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN
@@ -118,9 +118,9 @@ def _build_branch_ppc_zero(net, ppc, k_st=None):
     length = _initialize_branch_lookup(net)
     lookup = net._pd2ppc_lookups["branch"]
     mode = net._options["mode"]
-    ppc["branch"] = np.zeros(shape=(length, branch_cols), dtype=np.complex128)
+    ppc["branch"] = np.zeros(shape=(length, BRANCH_COLS), dtype=np.complex128)
     if mode == "sc":
-        branch_sc = np.empty(shape=(length, branch_cols_sc), dtype=float)
+        branch_sc = np.empty(shape=(length, BRANCH_COLS_SC), dtype=float)
         branch_sc.fill(np.nan)
         ppc["branch"] = np.hstack((ppc["branch"], branch_sc))
     ppc["branch"][:, :13] = np.array([0, 0, 0, 0, 0, 250, 250, 250, 1, 0, 1, -360, 360])

@@ -161,6 +161,10 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
     for idx, tab in net.ssc.iterrows():
         bus_q.at[tab.bus] += net.res_ssc.q_mvar.at[idx]
 
+    for idx, tab in net.vsc_bipolar.iterrows():
+        bus_p.at[tab.bus] += net.res_vsc_bipolar.p_mw.at[idx]
+        bus_q.at[tab.bus] += net.res_vsc_bipolar.q_mvar.at[idx]
+
     assert allclose(net.res_bus.p_mw.values, bus_p.values, equal_nan=True, rtol=rtol)
     if test_q:
         assert allclose(net.res_bus.q_mvar.values, bus_q.values, equal_nan=True, rtol=rtol)
@@ -175,6 +179,10 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
         for idx, tab in net.vsc_stacked.iterrows():
             bus_p_dc.at[tab.bus_dc_plus] += net.res_vsc_stacked.p_dc_mw_p.at[idx]
             bus_p_dc.at[tab.bus_dc_minus] += net.res_vsc_stacked.p_dc_mw_m.at[idx]
+
+        for idx, tab in net.vsc_bipolar.iterrows():
+            bus_p_dc.at[tab.bus_dc_plus] += net.res_vsc_bipolar.p_dc_mw_p.at[idx]
+            bus_p_dc.at[tab.bus_dc_minus] += net.res_vsc_bipolar.p_dc_mw_m.at[idx]
 
         assert allclose(net.res_bus_dc.p_mw.values, bus_p_dc.values, equal_nan=True, rtol=rtol)
 

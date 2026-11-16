@@ -13,6 +13,7 @@ from pandapower.build_gen import _calculate_qmin_qmax_from_q_capability_characte
 from pandapower.pypower.idx_bus import (
     BASE_KV,
     BS,
+    BUS_COLS,
     BUS_I,
     BUS_TYPE,
     CID_P,
@@ -29,14 +30,14 @@ from pandapower.pypower.idx_bus import (
     VM,
     VMAX,
     VMIN,
-    bus_cols,
 )
-from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN, bus_cols_sc
+from pandapower.pypower.idx_bus_sc import BUS_COLS_SC, C_MAX, C_MIN
 
 from .pypower.idx_bus_dc import (
     DC_B2B,
     DC_BASE_KV,
     DC_BUS_AREA,
+    DC_BUS_COLS,
     DC_BUS_I,
     DC_BUS_TYPE,
     DC_NONE,
@@ -47,11 +48,11 @@ from .pypower.idx_bus_dc import (
     DC_VMAX,
     DC_VMIN,
     DC_ZONE,
-    dc_bus_cols,
 )
-from .pypower.idx_source_dc import SOURCE_DC_BUS, SOURCE_DC_STATUS, SOURCE_DC_VG, source_dc_cols
+from .pypower.idx_source_dc import SOURCE_DC_BUS, SOURCE_DC_COLS, SOURCE_DC_STATUS, SOURCE_DC_VG
 from .pypower.idx_ssc import (
     SSC_BUS,
+    SSC_COLS,
     SSC_CONTROLLABLE,
     SSC_INTERNAL_BUS,
     SSC_R,
@@ -60,10 +61,10 @@ from .pypower.idx_ssc import (
     SSC_X,
     SSC_X_CONTROL_VA,
     SSC_X_CONTROL_VM,
-    ssc_cols,
 )
 from .pypower.idx_svc import (
     SVC_BUS,
+    SVC_COLS,
     SVC_CONTROLLABLE,
     SVC_MAX_FIRING_ANGLE,
     SVC_MIN_FIRING_ANGLE,
@@ -72,11 +73,12 @@ from .pypower.idx_svc import (
     SVC_THYRISTOR_FIRING_ANGLE,
     SVC_X_CVAR,
     SVC_X_L,
-    svc_cols,
 )
 from .pypower.idx_vsc import (
     VSC_BUS,
     VSC_BUS_DC,
+    VSC_BUS_DC_MINUS,
+    VSC_COLS,
     VSC_CONTROLLABLE,
     VSC_DIFF_REF_BUS,
     VSC_INTERNAL_BUS,
@@ -97,7 +99,6 @@ from .pypower.idx_vsc import (
     VSC_VALUE_AC,
     VSC_VALUE_DC,
     VSC_X,
-    vsc_cols,
 )
 
 try:
@@ -479,7 +480,7 @@ def _build_bus_ppc(net, ppc, sequence=None):
 
     n_bus_ppc = len(bus_index)
     # init ppc with empty values
-    ppc["bus"] = np.zeros(shape=(n_bus_ppc, bus_cols), dtype=np.float64)
+    ppc["bus"] = np.zeros(shape=(n_bus_ppc, BUS_COLS), dtype=np.float64)
     ppc["bus"][:, :15] = np.array([0, 1, 0, 0, 0, 0, 1, 1, 0, 0, 1, 2, 0, 0.0, 0.0])  # changes of
     # voltage limits (2 and 0) must be considered in check_opf_data
 
@@ -487,7 +488,7 @@ def _build_bus_ppc(net, ppc, sequence=None):
         ppc["bus"][:, VM] = 0.0
 
     if mode == "sc":
-        bus_sc = np.empty(shape=(n_bus_ppc, bus_cols_sc), dtype=np.float64)
+        bus_sc = np.empty(shape=(n_bus_ppc, BUS_COLS_SC), dtype=np.float64)
         bus_sc.fill(np.nan)
         ppc["bus"] = np.hstack((ppc["bus"], bus_sc))
 
@@ -582,7 +583,7 @@ def _build_bus_dc_ppc(net, ppc):
 
     n_bus_ppc = len(bus_index)
     # init ppc with empty values
-    ppc["bus_dc"] = np.zeros(shape=(n_bus_ppc, dc_bus_cols), dtype=np.float64)
+    ppc["bus_dc"] = np.zeros(shape=(n_bus_ppc, DC_BUS_COLS), dtype=np.float64)
     # changes of voltage limits (2 and 0) must be considered in check_opf_data
     ppc["bus_dc"][:, [DC_BUS_TYPE, DC_BUS_AREA, DC_VM, DC_ZONE, DC_VMAX, DC_VMIN]] = np.array(
         [DC_P, 1, 1, 1, 2, 0], dtype=np.int64
@@ -631,7 +632,7 @@ def _build_bus_dc_ppc(net, ppc):
 
     # set dc sources
     n_source_dc = len(net.source_dc)
-    ppc["source_dc"] = np.zeros(shape=(n_source_dc, source_dc_cols), dtype=np.float64)
+    ppc["source_dc"] = np.zeros(shape=(n_source_dc, SOURCE_DC_COLS), dtype=np.float64)
     if n_source_dc > 0:
         source_buses = bus_lookup[net.source_dc.bus_dc.values]
         ppc["bus_dc"][source_buses, DC_BUS_TYPE] = DC_REF
@@ -646,6 +647,12 @@ def _build_bus_dc_ppc(net, ppc):
 
 
 def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux, bus_table="bus"):
+    """
+    Fills the auxiliary buses of an element (e.g. the internal AC or DC bus of a VSC) in ppc[bus_table] with the base
+    voltage (and for the OPF the voltage limits) of the bus the element is connected to. The initial voltage is taken
+    from the results of the element if the power flow is initialized with the results and a result exists, otherwise
+    from the connected bus.
+    """
     element_bus_idx = bus_lookup[net[element][bus_column].values]
     aux_idx = bus_lookup[aux[element]]
     if bus_table == "bus":
@@ -660,14 +667,15 @@ def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux, bus_ta
         ppc[bus_table][aux_idx, vmin] = ppc[bus_table][element_bus_idx, vmin]
         ppc[bus_table][aux_idx, vmax] = ppc[bus_table][element_bus_idx, vmax]
 
+    # elements without results (e.g. auxiliary elements) are initialized with the voltage of the connection bus
     if net._options["init_vm_pu"] == "results":
-        ppc[bus_table][aux_idx, vm] = net[f"res_{element}"][
-            "vm_internal_pu" if bus_table == "bus" else "vm_internal_dc_pu"
-        ].values
+        res_vm = net[f"res_{element}"]["vm_internal_pu" if bus_table == "bus" else "vm_internal_dc_pu"].values
+        ppc[bus_table][aux_idx, vm] = np.where(np.isnan(res_vm), ppc[bus_table][element_bus_idx, vm], res_vm)
     else:
         ppc[bus_table][aux_idx, vm] = ppc[bus_table][element_bus_idx, vm]
     if net._options["init_va_degree"] == "results" and bus_table == "bus":
-        ppc[bus_table][aux_idx, VA] = net[f"res_{element}"]["va_internal_degree"].values
+        res_va = net[f"res_{element}"]["va_internal_degree"].values
+        ppc[bus_table][aux_idx, VA] = np.where(np.isnan(res_va), ppc[bus_table][element_bus_idx, VA], res_va)
     elif bus_table == "bus":
         ppc[bus_table][aux_idx, VA] = ppc[bus_table][element_bus_idx, VA]
 
@@ -948,7 +956,8 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
 
         q_mvar = (sn_mva * i0 / 100.0) ** 2 - pfe_mw**2
         q_mvar[q_mvar < 0] = 0
-        q_mvar = np.sqrt(q_mvar)
+        # a negative i0_percent denotes a capacitive magnetizing susceptance
+        q_mvar = np.where(i0 < 0, -1.0, 1.0) * np.sqrt(q_mvar)
 
         vn_hv_trafo = trafo3w["vn_hv_kv"].values
         vn_hv_bus = ppc["bus"][bus_lookup[trafo3w.hv_bus.values], BASE_KV]
@@ -969,7 +978,7 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
 
 def _build_svc_ppc(net, ppc, mode):
     length = len(net.svc)
-    ppc["svc"] = np.zeros(shape=(length, svc_cols), dtype=np.float64)
+    ppc["svc"] = np.zeros(shape=(length, SVC_COLS), dtype=np.float64)
 
     if mode != "pf":
         return
@@ -1003,7 +1012,7 @@ def _build_svc_ppc(net, ppc, mode):
 
 def _build_ssc_ppc(net, ppc, mode):
     length = len(net.ssc)
-    ppc["ssc"] = np.zeros(shape=(length, ssc_cols), dtype=np.float64)
+    ppc["ssc"] = np.zeros(shape=(length, SSC_COLS), dtype=np.float64)
 
     if mode != "pf":
         return
@@ -1038,8 +1047,13 @@ def _build_ssc_ppc(net, ppc, mode):
 
 
 def _build_vsc_ppc(net, ppc, mode):
+    """
+    Builds ppc["vsc"] from net.vsc (including the auxiliary VSC of vsc_stacked and vsc_bipolar): connection buses,
+    minus terminal bus of bipolar VSC (-1 for VSC connected to ground), impedances in p.u., control modes and values.
+    Also sets the bus types of the AC buses of the VSC. The table is only filled for the modes "pf" and "dc".
+    """
     length = len(net.vsc)
-    ppc["vsc"] = np.zeros(shape=(length, vsc_cols), dtype=np.float64)
+    ppc["vsc"] = np.zeros(shape=(length, VSC_COLS), dtype=np.float64)
 
     if mode != "pf" and mode != "dc":
         return
@@ -1081,6 +1095,14 @@ def _build_vsc_ppc(net, ppc, mode):
         ref_bus_values = net["vsc"]["ref_bus"].fillna(0).values.astype(int)
         vsc[f:t, VSC_DIFF_REF_BUS] = bus_lookup_dc[ref_bus_values]
 
+    # minus terminal of bipolar VSC (only set for the auxiliary vsc entries created for net.vsc_bipolar),
+    # -1 means that the VSC is connected between bus_dc and ground
+    vsc[f:t, VSC_BUS_DC_MINUS] = -1
+    if "bus_dc_minus" in net["vsc"]:
+        bus_dc_minus = net["vsc"]["bus_dc_minus"].values
+        has_minus = pd.notna(bus_dc_minus)
+        vsc[f:t, VSC_BUS_DC_MINUS][has_minus] = bus_lookup_dc[bus_dc_minus[has_minus].astype(np.int64)]
+
     vsc[f:t, VSC_R] = net["vsc"]["r_ohm"].values / baseZ
     vsc[f:t, VSC_X] = net["vsc"]["x_ohm"].values / baseZ
     vsc[f:t, VSC_R_DC] = net["vsc"]["r_dc_ohm"].values / baseR
@@ -1113,7 +1135,9 @@ def _build_vsc_ppc(net, ppc, mode):
     if mode != "dc":
         ppc["bus"][aux["vsc"][~controllable], BUS_TYPE] = PV
     # it has a role of REF but internally it is PQ and we set the behavior of REF with the Jacobian and mismatch:
-    ppc["bus"][bus[(mode_ac_code == VSC_MODE_AC_SL) & (ppc["bus"][bus, BUS_TYPE] != NONE)], BUS_TYPE] = REF
+    ppc["bus"][
+        bus[(mode_ac_code == VSC_MODE_AC_SL) & (ppc["bus"][bus, BUS_TYPE] != NONE) & net._is_elements["vsc"]], BUS_TYPE
+    ] = REF
     # maybe we add this in the future
     # ppc["bus"][aux["vsc"][~controllable], VM] = net["vsc"].loc[~controllable, "vm_internal_pu"].values
 

@@ -531,7 +531,6 @@ class PowerTransformersCim16:
         eqssh_tap_changers_async["tap_changer_type"] = "Ratio"  # Ratio/Asymmetrical phase shifter
         eqssh_tap_changers_async[sc["tc_id"]] = eqssh_tap_changers_async["rdfId"].copy()
         eqssh_tap_changers = pd.concat([eqssh_tap_changers, eqssh_tap_changers_async], ignore_index=True, sort=False)
-        # todo: check correct implementation for PhaseTapChangerSymmetrical tap changers
         eqssh_ratio_tap_changers_sync = pd.merge(
             self.cimConverter.cim["eq"]["PhaseTapChangerSymmetrical"],
             self.cimConverter.cim["ssh"]["PhaseTapChangerSymmetrical"],
@@ -540,9 +539,7 @@ class PowerTransformersCim16:
         )
         eqssh_ratio_tap_changers_sync["stepVoltageIncrement"] = eqssh_ratio_tap_changers_sync["voltageStepIncrement"]
         eqssh_ratio_tap_changers_sync = eqssh_ratio_tap_changers_sync.drop(columns=["voltageStepIncrement"])
-        eqssh_ratio_tap_changers_sync["stepPhaseShiftIncrement"] = eqssh_ratio_tap_changers_sync[
-            "stepVoltageIncrement"
-        ].apply(lambda du: 2 * math.atan2(du, 2))
+        eqssh_ratio_tap_changers_sync["stepPhaseShiftIncrement"] = 90.0
         eqssh_ratio_tap_changers_sync[sc["tc"]] = "PhaseTapChangerSymmetrical"
         eqssh_ratio_tap_changers_sync["tap_changer_type"] = "Symmetrical"  # Symmetrical phase shifter
         eqssh_ratio_tap_changers_sync[sc["tc_id"]] = eqssh_ratio_tap_changers_sync["rdfId"].copy()
