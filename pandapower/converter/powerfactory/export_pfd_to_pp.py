@@ -1,6 +1,11 @@
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import logging
+from typing import Any, Literal
 
 from pandapower.file_io import to_json, to_pickle
+from pandapower.network import pandapowerNet
 
 from .echo_off import echo_off, echo_on
 from .pf_export_functions import create_network_dict, run_load_flow
@@ -13,102 +18,77 @@ logger = logging.getLogger(__name__)
 def from_pfd(
     app,
     prj_name: str,
-    script_name=None,
-    script_settings=None,
-    path_dst=None,
-    pv_as_slack=False,
-    pf_variable_p_loads="plini",
-    pf_variable_p_gen="pgini",
-    flag_graphics="GPS",
-    tap_opt="nntap",
-    export_controller=True,
-    handle_us="Deactivate",
-    is_unbalanced=False,
-    create_sections=True,
-    export_pf_ZoneArea=False,
-    sc_name=None,
-):
+    script_name: str | None = None,
+    script_settings: dict | None = None,
+    path_dst: str | None = None,
+    pv_as_slack: bool = False,
+    pf_variable_p_loads: str = "plini",
+    pf_variable_p_gen: str = "pgini",
+    flag_graphics: Literal["GPS", "IntGrf", "no geodata"] = "GPS",
+    tap_opt: str = "nntap",
+    export_controller: bool = True,
+    handle_us: Literal["Deactivate", "Drop", "Nothing"] = "Deactivate",
+    is_unbalanced: bool = False,
+    create_sections: bool = True,
+    export_pf_ZoneArea: bool = False,
+    sc_name: str | None = None,
+) -> pandapowerNet:
     """
     Import a DIgSILENT PowerFactory project into a pandapower network.
 
-    Optionally executes a DPL script and a load flow in PowerFactory before converting the
-    active project to a pandapower network. The resulting pandapower network can optionally
-    be stored as a JSON (.p) file. A flag indicating whether the PowerFactory load flow
-    converged is stored in ``net["pf_converged"]``.
+    Optionally executes a DPL script and a load flow in PowerFactory before converting the active project to a
+    pandapower network. The resulting pandapower network can optionally be stored as a JSON (.p) file. A flag
+    indicating whether the PowerFactory load flow converged is stored in ``net["pf_converged"]``.
 
-    Parameters
-    ----------
-    app :
-        PowerFactory application object returned by ``GetApplication()``.
-    prj_name : str
-        Name (``"Project"``), fully qualified name (``"Project.IntPrj"``) or fully qualified
-        path (``"nUsernProject.IntPrj"``) of the PowerFactory project to be activated.
-    script_name : str or None, optional
-        Name of the DPL script that shall be executed prior to the import to pandapower.
-        If None, no script is executed.
-    script_settings : dict or None, optional
-        Dictionary of arguments for the DPL script, e.g.
-        ``{"Script variable name in PF": value}``. Keys must match the
-        script's parameter names in PowerFactory. Ignored if ``script_name`` is None.
-    path_dst : str or None, optional
-        Destination file path for exporting the pandapower network as JSON (.p file)
-        using :func:`pandapower.to_json`. If None, the network is not written to disk.
-    pv_as_slack : bool, optional
-        If True, PowerFactory PV nodes are imported as slack nodes in pandapower.
-        Default is False.
-    pf_variable_p_loads : str, optional
-        PowerFactory variable name used for active power of loads, e.g. ``"plini"``,
-        ``"plini_a"`` or ``"m:P:bus1"``. Default is ``"plini"``.
-    pf_variable_p_gen : str, optional
-        PowerFactory variable name used for active power of generators, e.g. ``"pgini"``,
-        ``"pgini_a"`` or ``"m:P:bus1"``. Default is ``"pgini"``.
-    flag_graphics : {"GPS", "IntGrf"}, optional
-        Source for geodata. If ``"GPS"``, geodata comes from GPS information.
-        If ``"IntGrf"``, geodata is taken from graphic objects (``*.IntGrf``).
-        Default is ``"GPS"``.
-    tap_opt : str, optional
-        PowerFactory variable for tap position, e.g. ``"nntap"`` or ``"c:nntap"``.
-        Default is ``"nntap"``.
-    export_controller : bool, optional
-        If True, creates and exports controllers to the pandapower network.
-        Default is True.
-    handle_us : {"Deactivate", "Drop", "Nothing"}, optional
-        Action to be taken for unsupplied buses:
-        - ``"Deactivate"``: deactivate unsupplied buses and connected elements
-        - ``"Drop"``: remove unsupplied buses from the network
-        - ``"Nothing"``: leave unsupplied buses unchanged
+    Parameters:
+        app: PowerFactory application object returned by ``GetApplication()``.
+        prj_name: Name (``"Project"``), fully qualified name (``"Project.IntPrj"``) or fully qualified path
+            (``"nUsernProject.IntPrj"``) of the PowerFactory project to be activated.
+        script_name: Name of the DPL script that shall be executed prior to the import to pandapower. If
+            None, no script is executed.
+        script_settings: Dictionary of arguments for the DPL script, e.g. ``{"Script variable name in
+            PF": value}``. Keys must match the script's parameter names in PowerFactory. Ignored if ``script_name`` is
+            None.
+        path_dst: Destination file path for exporting the pandapower network as JSON (.p file) using
+            :func:`pandapower.to_json`. If None, the network is not written to disk.
+        pv_as_slack: If True, PowerFactory PV nodes are imported as slack nodes in pandapower.
+        pf_variable_p_loads: PowerFactory variable name used for active power of loads, e.g. ``"plini"``,
+            ``"plini_a"`` or ``"m:P:bus1"``. Default is ``"plini"``.
+        pf_variable_p_gen: PowerFactory variable name used for active power of generators, e.g. ``"pgini"``,
+            ``"pgini_a"`` or ``"m:P:bus1"``. Default is ``"pgini"``.
+        flag_graphics: Source for geodata. If ``"GPS"``, geodata comes from GPS information. If
+            ``"IntGrf"``, geodata is taken from graphic objects (``*.IntGrf``). Default is ``"GPS"``.
+        tap_opt: PowerFactory variable for tap position, e.g. ``"nntap"`` or ``"c:nntap"``. Default is
+            ``"nntap"``.
+        export_controller: If True, creates and exports controllers to the pandapower network.
+        handle_us: Action to be taken for unsupplied buses:
+            - ``"Deactivate"``: deactivate unsupplied buses and connected elements
+            - ``"Drop"``: remove unsupplied buses from the network
+            - ``"Nothing"``: leave unsupplied buses unchanged
+            Default is ``"Deactivate"``.
+        is_unbalanced: If True, import the network as an unbalanced system.
+        create_sections: If True, create network sections during the import.
+        export_pf_ZoneArea: If True, export Zone and Area information from PowerFactory to the pandapower
+            buses.
+        sc_name: Name of the PowerFactory Study Case (scenario) to activate before running the load flow
+            and exporting. If None, the currently active Study Case is used.
 
-        Default is ``"Deactivate"``.
-    is_unbalanced : bool, optional
-        If True, import the network as an unbalanced system. Default is False.
-    create_sections : bool, optional
-        If True, create network sections during the import. Default is True.
-    export_pf_ZoneArea : bool, optional
-        If True, export Zone and Area information from PowerFactory to the pandapower buses.
-        Default is False.
-    sc_name : str or None, optional
-        Name of the PowerFactory Study Case (scenario) to activate before running the
-        load flow and exporting. If None, the currently active Study Case is used.
+    Returns:
+        net: The imported pandapower network. Contains the key ``"pf_converged"`` indicating whether the
+            PowerFactory load flow converged (True/False).
 
-    Returns
-    -------
-    net : pandapowerNet
-        The imported pandapower network. Contains the key ``"pf_converged"`` indicating
-        whether the PowerFactory load flow converged (True/False).
+    Raises:
+        RuntimeError: If the specified PowerFactory project cannot be found or activated.
+        UserWarning: If the provided script settings are inconsistent with the script definition or the script execution
+            fails.
 
-    Raises
-    ------
-    RuntimeError
-        If the specified PowerFactory project cannot be found or activated.
-    UserWarning
-        If the provided script settings are inconsistent with the script definition or the
-        script execution fails.
-
-    Notes
-    -----
-    If ``path_dst`` is not None, the resulting pandapower network is additionally written
-    to disk as a JSON file using :func:`pandapower.to_json`.
+    Notes:
+        If ``path_dst`` is not None, the resulting pandapower network is additionally written
+        to disk as a JSON file using :func:`pandapower.to_json`.
     """
+    if script_settings is None:
+        script_settings = {}
+
     logger.debug("started")
     echo_off(app)
     user = app.GetCurrentUser()
@@ -138,8 +118,6 @@ def from_pfd(
         script = get_script(user, script_name)
         script_values = script.IntExpr
         for parameter_name, new_value in script_settings.items():
-            if parameter_name not in script_settings:
-                raise UserWarning("Script settings are faulty. Some parameters do not exist!")
             pos = script.IntName.index(parameter_name)
             if script_values[pos] != new_value:
                 script_values[pos] = new_value
@@ -207,19 +185,25 @@ def execute(
     scale_feeder_loads=False,
     var_load="plini",
     var_gen="pgini",
-    flag_graphics="GPS",
+    flag_graphics: Literal["GPS", "IntGrf", "no geodata"] = "GPS",
     create_sections=True,
-):
+) -> tuple[pandapowerNet, Any, Any]:
     """
     Executes import of a .dgs file, runs load flow, and exports net as .p
-    Args:
+
+    Parameters:
+        app:
         path_src: full path to the input .dgs file
         path_dst: full path to the result .p file
         pv_as_slack: whether "PV" nodes are to be imported as "Slack
         scale_feeder_loads: whether loads are to be scaled according to feeder scaling factor
+        var_load:
+        var_gen:
+        flag_graphics:
+        create_sections:
 
-    Returns: net
-
+    Returns:
+        a tuple of the imported network, trafo name and trafo description
     """
     logger.debug("started")
     echo_off(app)
@@ -295,10 +279,11 @@ def import_project(path_src, app, name="Import", import_folder="", template=None
 
 def _check_network(app):
     """
-    Used in VNS Hessen to make configs and run additional checks on the networks that are
-    imported from .dgs
-    raises error if the network does not fit to the criteria
-    :return: None
+    Used in VNS Hessen to make configs and run additional checks on the networks that are imported from .dgs raises
+    error if the network does not fit to the criteria
+
+    Returns:
+        None
     """
 
     # setting triggers out of service

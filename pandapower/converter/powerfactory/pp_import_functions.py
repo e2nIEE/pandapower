@@ -1,3 +1,6 @@
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import bisect
 import json
 import logging
@@ -91,7 +94,7 @@ def from_pf(
     pv_as_slack=True,
     pf_variable_p_loads="plini",
     pf_variable_p_gen="pgini",
-    flag_graphics: Literal["GPS", "no geodata"] = "GPS",
+    flag_graphics: Literal["GPS", "IntGrf", "no geodata"] = "GPS",
     tap_opt="nntap",
     export_controller=True,
     handle_us: Literal["Deactivate", "Drop", "Nothing"] = "Deactivate",
@@ -1624,12 +1627,13 @@ def get_pf_ext_grid_results(net, item, xid, is_unbalanced):
 def map_power_var(pf_var, map_var):
     """
     Returns additional variables from pf_variable_p_xxxx
-    Args:
+
+    Parameters:
         pf_var: pf_variable_p_xxxx
         map_var: 'q' or 's'
 
-    Returns: pf_variable as string
-
+    Returns:
+        pf_variable as string
     """
 
     vars = {

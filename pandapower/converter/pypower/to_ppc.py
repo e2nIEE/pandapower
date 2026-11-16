@@ -4,10 +4,13 @@
 __all__ = ["to_ppc"]
 
 import logging
+from typing import Literal
 
+import numpy.typing as npt
 from numpy import allclose, any, delete, zeros
 
 from pandapower.auxiliary import _add_ppc_options
+from pandapower.network import pandapowerNet
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.powerflow import _pd2ppc
 from pandapower.pypower.idx_brch import BR_B_ASYM, BR_G, BR_G_ASYM, BR_R_ASYM, BR_X_ASYM, TAP
@@ -16,61 +19,62 @@ logger = logging.getLogger(__name__)
 
 
 def to_ppc(
-    net,
-    calculate_voltage_angles=True,
-    trafo_model="t",
-    switch_rx_ratio=2,
-    check_connectivity=True,
-    voltage_depend_loads=False,
-    init="results",
-    mode=None,
-    take_slack_vm_limits=True,
+    net: pandapowerNet,
+    calculate_voltage_angles: bool = True,
+    trafo_model: Literal["t", "pi"] = "t",
+    switch_rx_ratio: float = 2.0,
+    check_connectivity: bool = True,
+    voltage_depend_loads: bool = False,
+    init: Literal["flat", "results"] = "results",
+    mode: Literal["opf", "pf", "pf_3ph", "sc", "nx", "se", "dc"] | None = None,
+    take_slack_vm_limits: bool = True,
 ):
     """
     This function converts a pandapower net to a pypower case file.
 
     Parameters:
         net: The pandapower net.
+        calculate_voltage_angles (bool, False): consider voltage angles in loadflow calculation If True, voltage angles
+            of ext_grids and transformer shifts are considered in the loadflow calculation. Considering the voltage
+            angles is only necessary in meshed networks that are usually found in higher networks.
+        trafo_model: transformer equivalent circuit model pandapower provides two equivalent circuit models
+            for the transformer:
 
-    OPTIONAL:
-        calculate_voltage_angles (bool, False): consider voltage angles in loadflow calculation
-            If True, voltage angles of ext_grids and transformer shifts are considered in the
-            loadflow calculation. Considering the voltage angles is only necessary in meshed
-            networks that are usually found in higher networks.
-        trafo_model (str, "t"): transformer equivalent circuit model
-            pandapower provides two equivalent circuit models for the transformer:
             - "t" - transformer is modeled as equivalent with the T-model.
             - "pi" - transformer is modeled as equivalent PI-model.
-            The "pi" - Model is not recommended, since it is less exact than the T-model. It is only
-            recommended for validation with other software that uses the pi-model.
-        switch_rx_ratio (float, 2): rx_ratio of bus-bus-switches. If the impedance of switches
-            defined in net.switch.z_ohm is zero, buses connected by a closed bus-bus switch are fused to
-            model an ideal bus. Closed bus-bus switches, whose impedance z_ohm is not zero, are modelled
-            as branches with resistance and reactance according to net.switch.z_ohm and switch_rx_ratio.
-        check_connectivity (bool, True): Perform an extra connectivity test after the
-            conversion from pandapower to PYPOWER
-            If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is
-            perfomed. If the check finds unsupplied buses, they are set out of service in the ppc
-        voltage_depend_loads (bool, False): consideration of voltage-dependent loads.
-            If False, net.load.const_z_p_percent, net.load.const_i_p_percent,
-            net.load.const_z_q_percent and net.load.const_i_q_percentare not considered, i.e.
-            net.load.p_mw and net.load.q_mvar are considered as constant-power loads.
-        init (str, "results"): initialization method of the converter
-            pandapower ppc converter supports two methods for initializing the converter:
-            - "flat" - flat start with voltage of 1.0pu and angle of 0° at all PQ-buses and 0° for PV buses as initial solution
+
+            The "pi" - Model is not recommended, since it is less exact than the T-model. It is only recommended for
+            validation with other software that uses the pi-model.
+        switch_rx_ratio: rx_ratio of bus-bus-switches. If the impedance of switches defined in
+            net.switch.z_ohm is zero, buses connected by a closed bus-bus switch are fused to model an ideal bus. Closed
+            bus-bus switches, whose impedance z_ohm is not zero, are modelled as branches with resistance and reactance
+            according to net.switch.z_ohm and switch_rx_ratio.
+        check_connectivity: Perform an extra connectivity test after the conversion from pandapower to
+            PYPOWER If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed. If
+            the check finds unsupplied buses, they are set out of service in the ppc
+        voltage_depend_loads: consideration of voltage-dependent loads. If False,
+            net.load.const_z_p_percent, net.load.const_i_p_percent, net.load.const_z_q_percent and
+            net.load.const_i_q_percentare not considered, i.e. net.load.p_mw and net.load.q_mvar are considered as
+            constant-power loads.
+        init: initialization method of the converter pandapower ppc converter supports two methods for
+            initializing the converter:
+
+            - "flat" - flat start with voltage of 1.0pu and angle of 0° at all PQ-buses and 0° for PV buses as initial
+              solution
             - "results" - voltage vector from net.res_bus is used as initial solution.
-        mode (str, None): mode of power flow calculation type ("pf" - power flow, "opf" -
-            optimal power flow or "sc" - short circuit). "mode" influences for instance whether opf
-            cost data will be converted or which slack bus voltage limits are respected. If "mode"
-            is None, cost data will be respected via mode="opf" if cost data exist.
-        take_slack_vm_limits (bool, True): Per default the voltage magnitude limits are assumed
-            as setpoint of the slack unit (usually net.ext_grid.vm_pu). To replace that by values from
-            net.bus[["min_vm_pu", "max_vm_pu"]], take_slack_vm_limits can be set to False.
+
+        mode: mode of power flow calculation type ("pf" - power flow, "opf" - optimal power flow or "sc" -
+            short circuit). "mode" influences for instance whether opf cost data will be converted or which slack bus
+            voltage limits are respected. If "mode" is None, cost data will be respected via mode="opf" if cost data
+            exist.
+        take_slack_vm_limits: Per default the voltage magnitude limits are assumed as setpoint of the slack
+            unit (usually net.ext_grid.vm_pu). To replace that by values from net.bus[["min_vm_pu", "max_vm_pu"]],
+            take_slack_vm_limits can be set to False.
 
     Returns:
         The Pypower casefile for usage with pypower
 
-    EXAMPLE:
+    Example:
         >>> from pandapower.converter.pypower.to_ppc import to_ppc
         >>> from pandapower.networks.power_system_test_cases import case9
         >>> net = case9()
@@ -148,7 +152,7 @@ def to_ppc(
         # in-service branches: build the mask in the coordinates of the full ppc and project
         # it onto the ppci rows with the same "branch_is" selection that created the ppci
         branch_is = ppci["internal"]["branch_is"]
-        impedance_branches = zeros(len(branch_is), dtype=bool)
+        impedance_branches: npt.NDArray = zeros(len(branch_is), dtype=bool)
         impedance_branches[start:end] = True
         ppci["branch"][impedance_branches[branch_is], TAP] = 0
     if not take_slack_vm_limits:
