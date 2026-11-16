@@ -24,6 +24,7 @@ def _normalize_locname(name: object) -> str:
     st = name.replace("\xa0", " ").replace("\u00ad", "")
     st = st.replace("\ufb00", "ff").replace("\ufb01", "fi").replace("\ufb02", "fl")
     st = st.replace("\u00df", "ss").replace("\u1e9e", "SS")
+    st = st.replace("\u0141", "L").replace("\u0142", "l")
     st = unicodedata.normalize("NFKD", st)
     st = "".join(char for char in st if not unicodedata.combining(char))
     return re.sub(r"[^0-9a-z]+", " ", st.casefold()).strip()

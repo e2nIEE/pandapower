@@ -4,6 +4,7 @@
 """Detection, connection and removal of islanded grid groups in a JAO net."""
 
 import logging
+import re
 from functools import reduce
 
 import pandas as pd
@@ -32,7 +33,8 @@ def drop_islanded_grid_groups(net: pandapowerNet, min_bus_number: int | str, **k
     :param panadpowerNet net: net in which islanded grid groups will be dropped
     :param Optional[int|str] min_bus_number: Threshold value to decide which small grid groups should be dropped and which large grid
         groups should be kept. If all islanded grid groups should be dropped except of the one
-        largest, set "max". If all grid groups that do not contain a slack element should be
+        largest, set "max". If several grid groups share the largest size, only the first one is
+        kept. If all grid groups that do not contain a slack element should be
         dropped, set "unsupplied".
     """
 
@@ -48,8 +50,7 @@ def drop_islanded_grid_groups(net: pandapowerNet, min_bus_number: int | str, **k
         grid_groups_to_drop = grid_groups.loc[~grid_groups.buses.apply(lambda x: not x.isdisjoint(slack_buses))]
 
     elif min_bus_number == "max":
-        min_bus_number = grid_groups["n_buses"].max()
-        grid_groups_to_drop = _grid_groups_to_drop_by_min_bus_number()
+        grid_groups_to_drop = grid_groups.drop(grid_groups["n_buses"].idxmax())
 
     elif isinstance(min_bus_number, int):
         grid_groups_to_drop = _grid_groups_to_drop_by_min_bus_number()
@@ -57,12 +58,18 @@ def drop_islanded_grid_groups(net: pandapowerNet, min_bus_number: int | str, **k
     else:
         raise NotImplementedError(f"{min_bus_number=} is not implemented. Use an int, 'max', or 'unsupplied' instead.")
 
-    buses_to_drop = reduce(set.union, grid_groups_to_drop.buses)
+    buses_to_drop: set[int] = reduce(set.union, grid_groups_to_drop.buses, set())
     drop_buses(net, buses_to_drop)
     logger.info(
         f"drop_islanded_grid_groups() drops {len(grid_groups_to_drop)} grid groups with a "
         f"total of {grid_groups_to_drop.n_buses.sum()} buses."
     )
+
+
+def _same_name_base_mask(names: pd.Series, name_base: str) -> pd.Series:
+    """Returns the mask of names that contain name_base as a complete token."""
+    pattern = rf"(?:^|[ \-/]){re.escape(name_base)}(?:$|[ \-/])"
+    return names.str.contains(pattern, regex=True)
 
 
 def _invent_connections_between_grid_groups(
@@ -162,7 +169,7 @@ def _invent_connections_between_grid_groups(
     bus_name_splits = net.bus.name.str.split(r"[ -/]+", expand=True)
     buses_with_single_base = net.bus.name.loc[(~bus_name_splits.isnull()).sum(axis=1) == 1]
     for idx, name_base in buses_with_single_base.items():
-        same_name_base = net.bus.drop(idx).name.str.contains(name_base)
+        same_name_base = _same_name_base_mask(net.bus.drop(idx).name, name_base)
         if not any(same_name_base):
             continue
         other_group = bus_grid_groups.drop(idx) != bus_grid_groups.at[idx]
@@ -171,10 +178,11 @@ def _invent_connections_between_grid_groups(
         if not any(is_fuse_candidate):
             continue
         to_fuse = bus_grid_groups.drop(idx).loc[is_fuse_candidate].drop_duplicates()
+        retained_group = bus_grid_groups.at[idx]
         fuse_buses(net, idx, set(to_fuse.index))
 
         bus_grid_groups.loc[bus_grid_groups.isin(bus_grid_groups.drop(idx).loc[is_fuse_candidate].unique())] = (
-            grid_groups_at_location.iat[0]
+            retained_group
         )
         bus_grid_groups = bus_grid_groups.drop(to_fuse.index)
 

@@ -13,11 +13,15 @@ from pandas.api.types import is_object_dtype
 from pandapower.converter.jao._locnames import (
     _locname_display_names,
     _multi_str_repl,
+    _normalize_locname,
     _replace_locnames,
     _replace_substrings,
 )
 
 logger = logging.getLogger(__name__)
+
+# documented second-level header variants (see doc/converter/jao-converter.csv) -> canonical label
+_vn_header_variants = {"Voltage_level (kV)": "Voltage_level(kV)", "Voltage_level [kV]": "Voltage_level(kV)"}
 
 
 def _data_correction(data: dict[str, pd.DataFrame], html_str: str | None, max_i_ka_fillna: float) -> str | None:
@@ -37,6 +41,7 @@ def _data_correction(data: dict[str, pd.DataFrame], html_str: str | None, max_i_
     for key in ["Lines", "Tielines"]:
         # --- correct column names
         cols = data[key].columns.to_frame().reset_index(drop=True)
+        cols[1] = cols[1].replace(_vn_header_variants)
         cols.loc[cols[1] == "Voltage_level(kV)", 0] = None
         cols.loc[cols[1] == "Comment", 0] = None
         cols.loc[cols[0].str.startswith("Unnamed:").astype(bool), 0] = None
@@ -163,7 +168,7 @@ def _repair_incomplete_line_data(data: dict[str, pd.DataFrame]) -> None:
             pairs = data[key][[subst, vn_col]].dropna()
             known_names |= set(pairs[subst].astype(str))
             for name, vn in pairs.itertuples(index=False):
-                name_vns.setdefault(name, set()).add(vn)
+                name_vns.setdefault(_normalize_locname(name), set()).add(vn)
 
     for key in ("Lines", "Tielines"):
         df = data[key].copy()
@@ -191,11 +196,8 @@ def _repair_incomplete_line_data(data: dict[str, pd.DataFrame]) -> None:
                 )
 
         for idx in df.index[df[vn_col].isna()]:
-            vns = {
-                next(iter(name_vns[name]))
-                for name in (df.at[idx, s1], df.at[idx, s2])
-                if len(name_vns.get(name, ())) == 1
-            }
+            lookup_keys = [_normalize_locname(name) for name in (df.at[idx, s1], df.at[idx, s2]) if not pd.isna(name)]
+            vns = {next(iter(name_vns[key])) for key in lookup_keys if len(name_vns.get(key, ())) == 1}
             if len(vns) == 1:
                 df.at[idx, vn_col] = vns.pop()
                 logger.warning(f"{key} row {idx}: missing Voltage_level(kV) set to {df.at[idx, vn_col]}")

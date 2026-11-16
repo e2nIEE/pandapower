@@ -27,6 +27,26 @@ from pandapower.network import pandapowerNet
 logger = logging.getLogger(__name__)
 
 
+def _select_rated_current_a(trafos: pd.DataFrame) -> pd.Series:
+    """Returns the primary rated current in A, preferring the fixed over the maximum rating.
+
+    Rows without a usable rated current cannot be converted into a meaningful sn_mva and are
+    rejected with a descriptive error instead of silently creating a transformer with NaN data.
+    """
+    fixed = trafos.loc[:, ("Maximum Current Imax (A) primary", "Fixed")]
+    maximum = trafos.loc[:, ("Maximum Current Imax (A) primary", "Max")]
+    rated_current = fixed.fillna(maximum)
+    missing = rated_current.isna()
+    if missing.any():
+        names = trafos.loc[missing, ("Location", "Full Name")].astype(str).tolist()  # type: ignore[index]
+        raise ValueError(
+            f"Transformers: {missing.sum()} row(s) have neither a Fixed nor a Max "
+            f"'Maximum Current Imax (A) primary' value, so sn_mva cannot be derived: "
+            f"{list(zip(rated_current.index[missing], names))}"  # type: ignore[index]
+        )
+    return rated_current  # type: ignore[return-value]
+
+
 def _create_transformers_and_buses(net: pandapowerNet, data: dict[str, pd.DataFrame], **kwargs) -> None:
     """
     Creates transformers to the pandapower net using information from the transformers sheet (excel file).
@@ -40,11 +60,7 @@ def _create_transformers_and_buses(net: pandapowerNet, data: dict[str, pd.DataFr
     bus_idx = _get_bus_idx(net)
     vn_hv_kv, vn_lv_kv = _get_transformer_voltages(data, bus_idx)
     trafo_connections = _allocate_trafos_to_buses_and_create_buses(net, data, bus_idx, vn_hv_kv, vn_lv_kv, **kwargs)
-    max_i_a = (
-        data[key]
-        .loc[:, ("Maximum Current Imax (A) primary", "Fixed")]
-        .fillna(data[key].loc[:, ("Maximum Current Imax (A) primary", "Max")])
-    )
+    max_i_a = _select_rated_current_a(data[key])
     sn_mva = np.sqrt(3) * max_i_a * vn_hv_kv / 1e3
     z_pu = vn_hv_kv**2 / sn_mva
     rk = data[key].xs("Resistance_R(Ω)", level=1, axis=1).values[:, 0] / z_pu
@@ -99,6 +115,12 @@ def _get_transformer_voltages(data: dict[str, pd.DataFrame], bus_idx: pd.Series)
     """Returns the hv and lv nominal voltages of the transformers."""
     key = "Transformers"
     vn = data[key].loc[:, [("Voltage_level(kV)", "Primary"), ("Voltage_level(kV)", "Secondary")]].values
+    missing = pd.isna(vn).any(axis=1)
+    if missing.any():
+        raise ValueError(
+            f"Transformers: {missing.sum()} row(s) have no Primary or Secondary voltage level and "
+            f"cannot be converted: {list(data[key].index[missing])}"
+        )
     vn_hv_kv = np.max(vn, axis=1)
     vn_lv_kv = np.min(vn, axis=1)
     if is_integer_dtype(list(bus_idx.index.dtypes)[1]):  # type: ignore[attr-defined]
@@ -213,6 +235,9 @@ def _allocate_trafos_to_buses_and_create_buses(
         # --- create buses to avoid too large vn deviations between nodes and transformers
         need_bus_creation = trafo_connections[rel_dev_col] > rel_deviation_threshold_for_trafo_bus_creation
         fallback_names = pd.Series(trafo_bus_names.astype(str).str.strip().to_numpy(), index=trafo_connections.index)
+        # transformers without a location name must not share one deduplication identity
+        no_location = trafo_bus_names.isna().to_numpy() | (fallback_names == "").to_numpy()
+        fallback_names.loc[no_location] = [f"Transformer {i}" for i in fallback_names.index[no_location]]
         new_bus_data = pd.DataFrame(
             {
                 "vn_kv": trafo_connections.loc[need_bus_creation, trafo_vn_col].values,

@@ -5,6 +5,7 @@
 
 import json
 import logging
+import re
 
 import numpy as np
 import pandas as pd
@@ -37,8 +38,10 @@ def _parse_html_str(html_str: str) -> pd.DataFrame:
             raise AssertionError("pos1 < len(name_start)")
         return st[pos0:pos1]
 
-    json_start_str = '<script type="application/json" data-for="htmlwidget-216030e6806f328c00fb">'
-    json_start_pos = html_str.find(json_start_str) + len(json_start_str)
+    json_script = re.search(r'<script type="application/json" data-for="htmlwidget-[^"]+">', html_str)
+    if json_script is None:
+        raise AssertionError('No JSON script tag with a "htmlwidget-" data-for attribute found in the html file.')
+    json_start_pos = json_script.end()
     json_end_pos = html_str[json_start_pos:].find("</script>")
     json_str = html_str[json_start_pos : (json_start_pos + json_end_pos)]
     geo_data = json.loads(json_str)
@@ -84,7 +87,6 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
         net: net in which geodata are added to the buses
         line_geo_data: Converted geodata from the html file
     """
-    iSl = pd.IndexSlice
     lgd_EIC_bus = line_geo_data.pivot_table(values="value", index=["EIC_Code", "bus"], columns="geo_dim")
     lgd_name_bus = line_geo_data.pivot_table(values="value", index=["name", "bus"], columns="geo_dim")
     lgd_EIC_bus_idx_extended = pd.MultiIndex.from_frame(
@@ -183,8 +185,9 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
             keep[(~is_missing).any(axis=1)] = True  # type: ignore[index]
         access_vals = access_vals.loc[keep]  # type: ignore[index]
 
-        # --- get this_bus_geo from EIC_Code or name with regard to access_vals
-        this_bus_geo = lgd_bus.loc[iSl[access_vals.col_name, access_vals.identifier, access_vals.bus], :]
+        # --- get this_bus_geo for exactly the selected (col_name, identifier, bus) combinations
+        access_keys = pd.MultiIndex.from_frame(access_vals[["col_name", "identifier", "bus"]])
+        this_bus_geo = lgd_bus.loc[lgd_bus.index.isin(access_keys), :]
 
         if len(this_bus_geo) > 1:
             # reduce similar/equal lines
@@ -214,7 +217,7 @@ def _add_bus_geo(net: pandapowerNet, line_geo_data: pd.DataFrame) -> None:
                     f"No geo positions was used more often than all other positions. "
                     "The first of the most used positions is used."
                 )
-            return _geo_json_str(this_bus_geo.loc[how_often.idxmax()].iloc[0])  # type: ignore[call-overload]
+            return _geo_json_str(this_bus_geo.loc[how_often.idxmax()])  # type: ignore[call-overload]
 
         return None
 
@@ -240,10 +243,11 @@ def _fill_geo_at_one_sided_branches_without_geo_extent(net: pandapowerNet):
             (~net.trafo.hv_bus.isin(av["bus_with_geo"])) & net.trafo.lv_bus.isin(av["bus_with_geo"])  # type: ignore[arg-type]
         ]
         av["n_lines_one_side_geo"] = len(av["lines_fbw_tbwo"]) + len(av["lines_fbwo_tbw"])  # type: ignore[assignment,arg-type]
+        av["n_trafos_one_side_geo"] = len(av["trafos_hvbw_lvbwo"]) + len(av["trafos_hvbwo_lvbw"])  # type: ignore[assignment,arg-type]
         return av
 
     geo_avail = _check_geo_availablitiy(net)
-    while geo_avail["n_lines_one_side_geo"]:
+    while geo_avail["n_lines_one_side_geo"] or geo_avail["n_trafos_one_side_geo"]:
         # copy available geodata to the other end of branches where geodata are missing
         for et, bus_w_geo, bus_wo_geo, idx_key in zip(
             ["line", "line", "trafo", "trafo"],
