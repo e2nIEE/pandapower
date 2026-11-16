@@ -392,9 +392,14 @@ def _get_dcline_results(net):
     net.res_dcline.q_from_mvar = -from_gens.q_mvar.values
     net.res_dcline.q_to_mvar = -to_gens.q_mvar.values
 
-    net.res_dcline.vm_from_pu = from_gens.vm_pu.values
-    net.res_dcline.vm_to_pu = to_gens.vm_pu.values
-    net.res_dcline.va_from_degree = from_gens.va_degree.values
-    net.res_dcline.va_to_degree = to_gens.va_degree.values
+    # terminals at unsupplied buses (islands without slack) have no voltage, like the buses themselves in res_bus
+    supplied_buses = net["_is_elements"]["bus_is_idx"]
+    from_unsupplied = ~np.isin(net.dcline.from_bus.values, supplied_buses)
+    to_unsupplied = ~np.isin(net.dcline.to_bus.values, supplied_buses)
+
+    net.res_dcline.vm_from_pu = np.where(from_unsupplied, np.nan, from_gens.vm_pu.values)
+    net.res_dcline.vm_to_pu = np.where(to_unsupplied, np.nan, to_gens.vm_pu.values)
+    net.res_dcline.va_from_degree = np.where(from_unsupplied, np.nan, from_gens.va_degree.values)
+    net.res_dcline.va_to_degree = np.where(to_unsupplied, np.nan, to_gens.va_degree.values)
 
     net.res_dcline.index = net.dcline.index

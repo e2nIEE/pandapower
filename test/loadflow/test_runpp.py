@@ -129,10 +129,10 @@ def test_set_user_pf_options():
 
     # see if user arguments overrule user_pf_options, but other user_pf_options still have the
     # priority
-    set_user_pf_options(net, tolerance_mva=1e-6, max_iteration=20)
-    runpp(net, tolerance_mva=1e-2)
-    assert np.isclose(net.user_pf_options["tolerance_mva"], 1e-6)
-    assert np.isclose(net._options["tolerance_mva"], 1e-2)
+    set_user_pf_options(net, tolerance=1e-6, max_iteration=20)
+    runpp(net, tolerance=1e-2)
+    assert np.isclose(net.user_pf_options["tolerance"], 1e-6)
+    assert np.isclose(net._options["tolerance"], 1e-2)
     assert net._options["max_iteration"] == 20
 
 
@@ -911,8 +911,8 @@ def test_zip_loads_out_of_service():
         const_z_q_percent=100,
     )
 
-    runpp(net, tolerance_mva=1e-8)
-    runpp(net1, tolerance_mva=1e-8)
+    runpp(net, tolerance=1e-8)
+    runpp(net1, tolerance=1e-8)
     assert np.allclose(net1.res_load.loc[oos_load].fillna(0), 0)
     net1.res_load = net1.res_load.drop(oos_load)
     assert nets_equal(net, net1, check_only_results=True)
@@ -962,7 +962,7 @@ def test_zip_loads_mixed_voltage_dependencies():
         net.load.at[0, "const_z_p_percent"] = c_z_p
         net.load.at[0, "const_z_q_percent"] = c_z_q
 
-        runpp(net, tolerance_mva=1e-6)
+        runpp(net, tolerance=1e-6)
 
         assert np.allclose(net.res_load.p_mw.at[0], res_load_p)
         assert np.allclose(net.res_load.q_mvar.at[0], res_load_q)
@@ -1312,6 +1312,29 @@ def test_dc_with_ext_grid_at_one_bus():
 
     runpp_with_consistency_checks(net)
     assert np.allclose(net.res_ext_grid.p_mw.values, [0, 0])
+
+
+@pytest.mark.parametrize("island_side", ["from", "to"])
+def test_dcline_terminal_in_island(island_side):
+    # a dcline terminal at an unsupplied bus (island without slack) has no voltage, like the bus in res_bus
+    net = pandapowerNet(name="test_dcline_terminal_in_island")
+    b = create_buses(net, nr_buses=4, vn_kv=110)
+    create_ext_grid(net, b[0])
+    create_line(net, b[0], b[1], length_km=10, std_type="149-AL1/24-ST1A 110.0")
+    create_line(net, b[2], b[3], length_km=10, std_type="149-AL1/24-ST1A 110.0")  # island without slack
+    create_load(net, b[3], p_mw=5)
+    from_bus, to_bus = (b[1], b[2]) if island_side == "to" else (b[2], b[1])
+    create_dcline(net, from_bus, to_bus, p_mw=10, loss_percent=0, loss_mw=0, vm_from_pu=1.0, vm_to_pu=1.0)
+
+    runpp(net)
+
+    supplied_side = "from" if island_side == "to" else "to"
+    supplied_bus = from_bus if island_side == "to" else to_bus
+    assert np.all(pd.isnull(net.res_bus.loc[[b[2], b[3]], "vm_pu"]))
+    assert pd.isnull(net.res_dcline.at[0, f"vm_{island_side}_pu"])
+    assert pd.isnull(net.res_dcline.at[0, f"va_{island_side}_degree"])
+    assert np.isclose(net.res_dcline.at[0, f"vm_{supplied_side}_pu"], net.res_bus.at[supplied_bus, "vm_pu"])
+    assert np.isclose(net.res_dcline.at[0, f"va_{supplied_side}_degree"], net.res_bus.at[supplied_bus, "va_degree"])
 
 
 def test_no_branches():
@@ -2082,6 +2105,67 @@ def test_q_capability_curve_for_sgen():
     assert min(net.res_bus.vm_pu) > 0.96
     assert net.res_sgen.q_mvar.loc[0] < 218.0099945068
     assert net.res_sgen.q_mvar.loc[0] > -265.01001
+
+
+def test_trafo_negative_i0_percent_is_capacitive():
+    """A negative i0_percent denotes a capacitive magnetizing susceptance of the same magnitude."""
+    net = pandapowerNet(name="test_trafo_negative_i0_percent_is_capacitive")
+    hv, lv, mv = create_buses(net, 3, vn_kv=[110.0, 20.0, 10.0])
+    create_ext_grid(net, hv)
+    create_load(net, lv, p_mw=5.0, q_mvar=1.0)
+    create_transformer_from_parameters(
+        net,
+        hv,
+        lv,
+        sn_mva=40.0,
+        vn_hv_kv=110.0,
+        vn_lv_kv=20.0,
+        vkr_percent=0.3,
+        vk_percent=12.0,
+        pfe_kw=20.0,
+        i0_percent=0.2,
+    )
+    create_transformer3w_from_parameters(
+        net,
+        hv,
+        lv,
+        mv,
+        vn_hv_kv=110.0,
+        vn_mv_kv=20.0,
+        vn_lv_kv=10.0,
+        sn_hv_mva=40.0,
+        sn_mv_mva=30.0,
+        sn_lv_mva=10.0,
+        vk_hv_percent=10.0,
+        vk_mv_percent=10.0,
+        vk_lv_percent=10.0,
+        vkr_hv_percent=0.3,
+        vkr_mv_percent=0.3,
+        vkr_lv_percent=0.3,
+        pfe_kw=20.0,
+        i0_percent=0.2,
+    )
+
+    def magnetizing(trafo3w_losses):
+        runpp(net, trafo3w_losses=trafo3w_losses, trafo_model="pi")
+        branch = net._ppc["branch"]
+        return branch[:, BR_G].real.copy(), branch[:, BR_B].real.copy(), net.res_trafo3w.q_hv_mvar.at[0]
+
+    for trafo3w_losses in ["hv", "star"]:
+        net.trafo["i0_percent"] = 0.2
+        net.trafo3w["i0_percent"] = 0.2
+        g_ind, b_ind, q_ind = magnetizing(trafo3w_losses)
+        net.trafo["i0_percent"] = -0.2
+        net.trafo3w["i0_percent"] = -0.2
+        g_cap, b_cap, q_cap = magnetizing(trafo3w_losses)
+
+        assert np.all(b_ind <= 0)
+        assert np.all(b_cap >= 0)
+        assert np.sum(b_ind < 0) == (2 if trafo3w_losses == "hv" else 1)
+        assert np.allclose(b_cap, -b_ind)
+        assert np.allclose(g_cap, g_ind)
+        # the trafo3w consumes less reactive power with a capacitive magnetizing susceptance
+        assert q_cap < q_ind
 
 
 if __name__ == "__main__":

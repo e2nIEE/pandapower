@@ -418,7 +418,7 @@ class OutputWriter(JSONSerializableClass):
                 "calculate_voltage_angles": True,
                 "init": "auto",
                 "max_iteration": "auto",
-                "tolerance_mva": 1e-8,
+                "tolerance": 1e-8,
                 "trafo_model": "t",
                 "trafo_loading": "current",
                 "enforce_p_lims": False,

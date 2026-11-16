@@ -25,6 +25,7 @@ from pandapower.auxiliary import (
     combine_X012,
     phase_to_sequence,
     sequence_to_phase,
+    warn_and_fix_parameter_renaming,
 )
 from pandapower.build_bus import _add_ext_grid_sc_impedance
 from pandapower.pd2ppc import _pd2ppc_recycle
@@ -152,7 +153,7 @@ def runpp_3ph(
     calculate_voltage_angles=True,
     init="auto",
     max_iteration="auto",
-    tolerance_mva=1e-8,
+    tolerance=1e-8,
     trafo_model="t",
     trafo_loading="current",
     enforce_q_lims=False,
@@ -211,7 +212,7 @@ def runpp_3ph(
 
                For three phase calculations, its extended to 3 * max_iteration
 
-           **tolerance_mva** (float, 1e-8) - loadflow termination condition
+           **tolerance** (float, 1e-8) - loadflow termination condition
            referring to P / Q mismatch of node power in MVA
 
            **trafo_model**
@@ -359,9 +360,7 @@ def runpp_3ph(
            - PH-E load type is called as wye since Neutral and Earth are considered same
            - This solver has proved successful only for Earthed transformers (i.e Dyn,Yyn,YNyn & Yzn vector groups)
     """
-    # =============================================================================
-    # pandapower settings
-    # =============================================================================
+    tolerance, kwargs = warn_and_fix_parameter_renaming("tolerance_mva", "tolerance", tolerance, 1e-8, kwargs)
     overrule_options = {}
     if "user_pf_options" in net and len(net.user_pf_options) > 0:
         passed_parameters = _passed_runpp_parameters(locals())
@@ -411,7 +410,7 @@ def runpp_3ph(
     )
     _add_pf_options(
         net,
-        tolerance_mva=tolerance_mva,
+        tolerance=tolerance,
         trafo_loading=trafo_loading,
         numba=numba,
         ac=ac,

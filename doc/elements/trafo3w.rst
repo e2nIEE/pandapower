@@ -44,6 +44,11 @@ Table Structure
 
 .. note:: Three Winding Transformer loading can not yet be constrained with the optimal power flow.
 
+.. note:: The columns ``cooling_type`` and ``air_temperature_degree_celsius`` are only used by the
+    transformer thermal calculation of the temperature dependent power flow, see
+    :ref:`Transformer temperatures <tdpf_transformer_temperatures>`. They default to ``"ONAN"`` (Oil Natural, Air Natural) and
+    ``35`` °C, so they can be left empty.
+
 .. _trafo3w_model:
 
 Electric Model
@@ -64,7 +69,7 @@ The parameters of the three transformers are defined as follows:
     :delim: ;
     :widths: 10, 15, 15, 15
 
-The iron loss (pfe\_kw) and open loop loss (i0\_percent) of the 3W transformer is by default attributed to T1 ('hv').
+The iron loss (pfe\_kw) and open loop loss (i0\_percent) of the 3W transformer is by default attributed to T1 ('hv'). As for the two winding transformer, a negative i0\_percent denotes a capacitive magnetising susceptance (see :ref:`trafo`).
 The parameter 'trafo3w\_losses' in the runpp function however also allows to assign the losses to T2 ('mv'), T3('lv') or to the star point ('star').
    
 To calculate the short-circuit voltages :math:`v_{k, t1..t3}` and :math:`v_{r, t1..t3}`, first all short-circuit voltages are converted from side based
@@ -172,6 +177,11 @@ Result Tables
     :file: table_structures/res_trafo3w.csv
     :header-rows: 1
     :delim: ,
+
+.. note:: With ``runpp(tdpf=True)`` the columns ``top_oil_temperature_degree_celsius``,
+    ``hot_spot_temperature_degree_celsius_hv``, ``hot_spot_temperature_degree_celsius_mv``,
+    ``hot_spot_temperature_degree_celsius_lv`` and ``temperature_degree_celsius`` are added, see
+    :ref:`Transformer temperatures <tdpf_transformer_temperatures>`.
 
 .. math::
     p\_hv\_mw &= Re(\underline{v}_{hv} \cdot \underline{i}_{hv}) \\    

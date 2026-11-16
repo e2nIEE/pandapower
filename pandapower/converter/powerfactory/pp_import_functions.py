@@ -51,7 +51,7 @@ from pandapower.create import (
     create_vsc as _create_vsc,
 )
 from pandapower.network import ADict, pandapowerNet
-from pandapower.results import reset_results
+from pandapower.results import init_results, reset_results
 from pandapower.run import set_user_pf_options
 from pandapower.std_types import (
     add_zero_impedance_parameters,
@@ -76,6 +76,14 @@ grf_map: dict = {}
 
 def ga(element, attr):
     return element.GetAttribute(attr)
+
+
+def _existing_result_tables(net):
+    """
+    Returns the names of all result tables (DataFrames whose name starts with "res_") that already exist in net, so
+    that init_results keeps the PowerFactory results that were already imported for other elements.
+    """
+    return [key for key, value in net.items() if key.startswith("res_") and isinstance(value, DataFrame)]
 
 
 def from_pf(
@@ -625,6 +633,7 @@ def create_pp_bus(net, item, flag_graphics, is_unbalanced, export_pf_ZoneArea):
         except AttributeError:
             net.bus.loc[bid, "pf_area"] = None
 
+    init_results(net, exclude_result_tables=_existing_result_tables(net))
     get_pf_bus_results(net, item, bid, is_unbalanced, system_type)
 
     substat_descr = ""
@@ -1297,6 +1306,7 @@ def create_line_no_sections(net, main_item, item_list, bus1, bus2, coords, is_un
         if chr_name is not None and len(chr_name) > 0:
             net["line"].loc[lid, "origin_id"] = chr_name[0]
 
+    init_results(net, exclude_result_tables=_existing_result_tables(net))
     get_pf_line_results(net, main_item, lid, is_unbalanced, ac)
 
     return lid
@@ -1391,6 +1401,7 @@ def create_line_normal(net, item, bus1, bus2, name, parallel, is_unbalanced, ac,
             else:
                 raise UserWarning(f"Characteristic for name {char.loc_name} not implemented.")
 
+    init_results(net, exclude_result_tables=_existing_result_tables(net))
     get_pf_line_results(net, item, lid, is_unbalanced, ac)
 
     return lid
@@ -1564,6 +1575,7 @@ def create_ext_net(net, item, pv_as_slack, is_unbalanced, multiplier, is_definit
             pass
         elm = "ext_grid"
 
+    init_results(net, exclude_result_tables=_existing_result_tables(net))
     get_pf_ext_grid_results(net, item, xid, is_unbalanced)
 
     net[elm].loc[xid, "description"] = " \n ".join(item.desc) if len(item.desc) > 0 else ""
@@ -2121,6 +2133,7 @@ def create_pp_load(net, item, pf_variable_p_loads, dict_net, is_unbalanced):
         attr_dict["cpGrid.loc_name"] = "grid"
     add_additional_attributes(item, net, load_type, ld, attr_dict=attr_dict, attr_list=attr_list)
 
+    init_results(net, exclude_result_tables=_existing_result_tables(net))
     get_pf_load_results(net, item, ld, is_unbalanced)
     #    if not is_unbalanced:
     #        if item.HasResults(0):  # 'm' results...
@@ -2384,6 +2397,7 @@ def create_sgen_genstat(net, item, pv_as_slack, pf_variable_p_gen, dict_net, is_
 
     # Add scaling
     net[element].at[sg, "scaling"] = dict_net["global_parameters"]["global_generation_scaling"] * item.scale0
+    init_results(net, exclude_result_tables=_existing_result_tables(net))
     get_pf_sgen_results(net, item, sg, is_unbalanced, element=element)
 
     # Create capability curve in case of sgen or gen
@@ -2856,19 +2870,14 @@ def create_trafo_type(net, item):
                 # see if it is an ideal phase shifter or a complex phase shifter
                 # checking tap_step_percent because a nonzero value for ideal phase shifter can be stored in the object
                 "tap_step_percent": item.dutap if item.tapchtype != 1 else 0,
-                "tap_step_degree": item.dphitap if item.tapchtype == 1 else item.phitr,
+                # ideal: angle per tap step; symmetrical: the additional voltage is always at 90 degree in PF
+                "tap_step_degree": item.dphitap if item.tapchtype == 1 else 90.0 if item.tapchtype == 2 else item.phitr,
                 "tap_changer_type": tap_changer_type,
                 "tap_max": item.ntpmx,
                 "tap_min": item.ntpmn,
                 "tap_neutral": item.nntap0,
             }
         )
-        if item.tapchtype == 2:
-            logger.warning(
-                f"trafo {item.loc_name} has symmetrical tap changer (tap changer at both hv and lv side) - "
-                f"not implemented, importing as asymmetrical tap changer at side {type_data['tap_side']}. "
-                f"Results will differ."
-            )
 
     # In PowerFactory, if the first tap changer is absent, the second is also, even if the check was there
     if item.itapch and item.itapch2:
@@ -2887,19 +2896,15 @@ def create_trafo_type(net, item):
                 # see if it is an ideal phase shifter or a complex phase shifter
                 # checking tap_step_percent because a nonzero value for ideal phase shifter can be stored in the object
                 "tap2_step_percent": item.dutap2 if item.tapchtype2 != 1 else 0,
-                "tap2_step_degree": item.dphitap2 if item.tapchtype2 == 1 else item.phitr2,
+                "tap2_step_degree": (
+                    item.dphitap2 if item.tapchtype2 == 1 else 90.0 if item.tapchtype2 == 2 else item.phitr2
+                ),
                 "tap2_changer_type": tap2_changer_type,
                 "tap2_max": item.ntpmx2,
                 "tap2_min": item.ntpmn2,
                 "tap2_neutral": item.nntap02,
             }
         )
-        if item.tapchtype2 == 2:
-            logger.warning(
-                f"trafo {item.loc_name} has symmetrical tap2 changer (tap2 changer at both hv and lv side) - "
-                f"not implemented, importing as asymmetrical tap2 changer at side {type_data['tap2_side']}. "
-                f"Results will differ."
-            )
 
     if "tap_side" in type_data and (type_data.get("tap_side") == "ext" or type_data.get("tap_side") == "ext"):
         logger.warning(f'controlled node of trafo "EXT" not implemented (type <{name}>)')
@@ -3055,7 +3060,7 @@ def create_trafo(net, item, export_controller=True, tap_opt="nntap", is_unbalanc
     net.trafo.loc[tid, "tap_set_vm_pu"] = item.usetp
 
     net.trafo.loc[tid, "description"] = " \n ".join(item.desc) if len(item.desc) > 0 else ""
-
+    init_results(net, exclude_result_tables=_existing_result_tables(net))
     get_pf_trafo_results(net, item, tid, is_unbalanced)
 
     # adding switches
@@ -5428,19 +5433,26 @@ def remove_folder_of_std_types(net):
     """
     for element in ["line", "trafo", "trafo3w"]:
         std_types = available_std_types(net, element=element).index
-        reduced_std_types = {name.split("\\")[-1] for name in std_types}
-        for std_type in reduced_std_types:
+        renaming = {}  # old name (with folder) -> new name (without folder)
+        for std_type in {name.split("\\")[-1] for name in std_types}:
             all_types = [st for st in std_types if st.split("\\")[-1] == std_type]
-            if len(all_types) > 1:
-                types_equal = [
-                    load_std_type(net, type1, element) == load_std_type(net, type2, element)
-                    for type1, type2 in combinations(all_types, 2)
-                ]
-                if not all(types_equal):
-                    continue
-            for st in all_types:
-                net.std_types[element][std_type] = net.std_types[element].pop(st)
-                net[element].std_type = net[element].std_type.replace(st, std_type)
+            if all_types == [std_type]:
+                continue  # no folder in the name, nothing to rename
+            if len(all_types) > 1 and not all(
+                load_std_type(net, type1, element) == load_std_type(net, type2, element)
+                for type1, type2 in combinations(all_types, 2)
+            ):
+                continue
+            renaming.update({st: std_type for st in all_types if st != std_type})
+        if not renaming:
+            continue
+
+        for old_name, new_name in renaming.items():
+            net.std_types[element][new_name] = net.std_types[element].pop(old_name)
+        # the std_type column only exists if an element was created from a standard type
+        if "std_type" in net[element].columns:
+            to_rename = net[element]["std_type"].isin(list(renaming))
+            net[element].loc[to_rename, "std_type"] = net[element].loc[to_rename, "std_type"].map(renaming)
 
 
 def create_q_capability_curve(net, item):

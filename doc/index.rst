@@ -49,6 +49,7 @@ Operation at the Fraunhofer Institute for Energy Economics and Energy System Tec
     std_types
     powerflow
     contingency
+    sensitivity
     opf
     shortcircuit
     estimation

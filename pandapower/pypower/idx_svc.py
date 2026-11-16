@@ -40,4 +40,4 @@ SVC_MAX_FIRING_ANGLE = 8
 SVC_Q = 9
 SVC_X_PU = 10
 
-svc_cols = 11
+SVC_COLS = 11

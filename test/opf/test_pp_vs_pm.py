@@ -175,7 +175,8 @@ def test_opf_angle_limits_imported():
     assert np.allclose(net.line.max_angle_degree, 30.0)
 
     runopp(net, delta=1e-12)
-    assert np.isclose(net.res_cost, 17089.886, atol=1e-3)
+    # the transformer branches 4 and 5 have a capacitive susceptance (negative i0_percent, #1740)
+    assert np.isclose(net.res_cost, 17082.781, atol=1e-3)
     assert _max_va_diff(net) < 5.0
 
 
@@ -208,7 +209,7 @@ def test_opf_ignore_angle_limits():
     net.line[["min_angle_degree", "max_angle_degree"]] = [-2.0, 2.0]
 
     runopp(net, delta=1e-12, OPF_IGNORE_ANG_LIM=True)
-    assert np.isclose(net.res_cost, 17089.886, atol=1e-3)
+    assert np.isclose(net.res_cost, 17082.781, atol=1e-3)
     assert _max_va_diff(net) > 2.0
 
 

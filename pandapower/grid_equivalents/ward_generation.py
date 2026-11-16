@@ -306,7 +306,7 @@ def _replace_external_area_by_xwards(
             eq_power.loc[len(eq_power)] = new_eq_power
     assert len(eq_power.bus) == len(set(eq_power.bus))  # only one slack at individual bus
 
-    runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles, tolerance_mva=1e-6, max_iteration=100, **kwargs)
+    runpp_fct(net_external, calculate_voltage_angles=calc_volt_angles, tolerance=1e-6, max_iteration=100, **kwargs)
 
     subtract_concat_of_p_and_q_from_first_input(eq_power, net_external, slack_gen)
     for bus in eq_power.bus:
