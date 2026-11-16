@@ -20,7 +20,7 @@ logger = logging.getLogger("cim.cim2pp.from_cim")
 @deprecated("log_debug is deprecated, remove it from function call.")
 def from_cim_dict(
     cim_parser: cim_classes.CimParser,
-    log_debug: bool = False,
+    log_debug: bool,
     convert_line_to_switch: bool = False,
     line_r_limit: float = 0.1,
     line_x_limit: float = 0.1,
@@ -37,6 +37,7 @@ def from_cim_dict(
 @overload
 def from_cim_dict(
     cim_parser: cim_classes.CimParser,
+    log_debug: bool = False,
     convert_line_to_switch: bool = False,
     line_r_limit: float = 0.1,
     line_x_limit: float = 0.1,
