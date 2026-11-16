@@ -11,6 +11,16 @@ from pandapower.network_schema.tools.validation.bus_index_validation import buil
 
 logger = logging.getLogger()
 
+#: Networks that are excluded from validation because their data intentionally violates the schema.
+#: Keys are network names (``net.name``), values are the reason for the exclusion.
+NETWORKS_EXCLUDED_FROM_VALIDATION = {
+    "case11_iwamoto": (
+        "The case11_iwamoto data does not contain line ratings (max_i_ka is NaN) and is a "
+        "deliberately ill-conditioned case that cannot be solved by a normal power flow, "
+        "so the network is not a valid pandapower network in the sense of the schema."
+    ),
+}
+
 # number of failing rows that are listed per issue before the output is truncated
 MAX_REPORTED_FAILURE_CASES = 5
 
@@ -274,6 +284,8 @@ def validate_network(
         - Missing or invalid schema modules are logged as warnings but don't raise exceptions
         - Bus index validation is performed after schema validation for each element
         - When groups_to_validate is specified, validates the base schema AND the specified groups
+        - Networks listed in NETWORKS_EXCLUDED_FROM_VALIDATION (matched by ``net.name``) are
+          skipped entirely, since their data is known to violate the schema on purpose
 
     Example:
         >>> import pandapower as pp
@@ -288,6 +300,12 @@ def validate_network(
         ...     for issue in issues:
         ...         print(issue)
     """
+    net_name = net.get("name")
+    if net_name in NETWORKS_EXCLUDED_FROM_VALIDATION:
+        logger.info(f"Skipping validation of network '{net_name}': {NETWORKS_EXCLUDED_FROM_VALIDATION[net_name]}")
+        # nothing is validated, so there are no issues to report
+        return {} if collect_errors else None
+
     # Normalize groups_to_validate to a set
     if groups_to_validate is None:
         groups_set = None

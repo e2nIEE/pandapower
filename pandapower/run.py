@@ -216,9 +216,12 @@ def runpp(
             according to contribution factor weights for external grids
             and generators.
         tdpf (bool, False): Temperature Dependent Power Flow (TDPF). If True, line temperature is calculated based on
-            the TDPF parameters in net.line table.
+            the TDPF parameters in net.line table. Additionally, the top-oil and hot-spot temperatures of all in-service
+            transformers in net.trafo and net.trafo3w are calculated as post-processing, based on their nameplate data
+            and the optional columns cooling_type and air_temperature_degree_celsius. See the TDPF section of the
+            documentation.
         tdpf_delay_s (float, None): TDPF parameter, specifies the time delay in s to consider thermal inertia of
-            conductors.
+            conductors and transformers. None means steady state.
 
     Keyword Args:
         lightsim2grid ((bool,str), "auto"): whether to use the package lightsim2grid for power

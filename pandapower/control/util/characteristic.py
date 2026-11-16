@@ -179,13 +179,13 @@ class SplineCharacteristic(Characteristic):
                 raise NotImplementedError(f"Interpolator {self.interpolator_kind} not implemented!")
         return self._interpolator
 
-    def __call__(self, x):
+    def __call__(self, x: float):
         """
         This method allows calling the SciPy interpolator object directly.
         Codacy is complaining about this, but it is not a problem.
 
         Parameters:
-            x (float): The x-value at which the current y-value is interpolated for.
+            x: The x-value at which the current y-value is interpolated for.
 
         Returns:
             The interpolated y-value.

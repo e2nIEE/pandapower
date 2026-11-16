@@ -147,12 +147,14 @@ _ext_grid_columns = {
     "p_mw": pa.Column(
         float,
         nullable=True,
+        required=False,
         description="p from converter, not relevant for calculations",
         metadata={"cim": True, "doc": False},
     ),
     "q_mvar": pa.Column(
         float,
         nullable=True,
+        required=False,
         description="q from converter, not relevant for calculations",
         metadata={"cim": True, "doc": False},
     ),

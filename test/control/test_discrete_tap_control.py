@@ -188,7 +188,7 @@ def test_discrete_tap_control_lv_from_tap_step_percent():
     # --- run loadflow
     runpp(net)
 
-    DiscreteTapControl.from_tap_step_percent(net, 0, side="lv", vm_set_pu=0.98)
+    DiscreteTapControl(net, 0, side="lv", vm_set_pu=0.98)
 
     logger.info("case1: low voltage")
     logger.info(

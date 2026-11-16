@@ -225,7 +225,6 @@ def example_multivoltage():
         vk_percent=8,
         pfe_kw=0,
         i0_percent=0,
-        tap_pos=0,
         shift_degree=0,
         name="EHV-HV-Trafo",
     )
@@ -248,7 +247,6 @@ def example_multivoltage():
         tap_min=-2,
         tap_max=2,
         tap_step_percent=2.5,
-        tap_pos=0,
         shift_degree=150,
         name="MV-LV-Trafo",
         tap_changer_type="Ratio",
@@ -284,7 +282,6 @@ def example_multivoltage():
         tap_min=-8,
         tap_max=8,
         tap_step_percent=1.25,
-        tap_pos=0,
         name="HV-MV-MV-Trafo",
         tap_changer_type="Ratio",
     )

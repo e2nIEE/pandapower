@@ -22,11 +22,12 @@ class CimParser:
         self, cim: dict[str, dict[str, pd.DataFrame]] | None = None, cgmes_version: str | None = None, **kwargs
     ):
         """
-        This class parses CIM files and loads its content to a dictionary of
-        CIM profile (dict) -> CIM element type (str) -> CIM elements (DataFrame)
+        This class parses CIM files and loads its content to a dictionary of CIM profile (dict) -> CIM element type
+        (str) -> CIM elements (DataFrame)
 
-        :param cim: CIM profile structure used for parsing
-        :param cgmes_version: CGMES version to use, '2.4.15' or '3.0', default '2.4.15'
+        Parameters:
+            cim: CIM profile structure used for parsing
+            cgmes_version: CGMES version to use, '2.4.15' or '3.0'
         """
         self.logger = logging.getLogger(self.__class__.__name__)
         self.cgmes_version = "2.4.15" if cgmes_version is None else cgmes_version
@@ -48,14 +49,15 @@ class CimParser:
         """
         Parse CIM XML files from a storage.
 
-        :param file_list: The path to the CGMES files as a list. Note: The files need a FullModel to parse the
-        CGMES profile. Optional, default: None.
-        :param encoding: The encoding from the files. Optional, default: None
-        :param prepare_cim_net: Set this parameter to True to prepare the parsed cim data according to the
-        CimConverter. Optional, default: False
-        :param set_data_types: Set this parameter to True to set the cim data types at the parsed data. Optional,
-        default: False
-        :return: Self
+        Parameters:
+            file_list: The path to the CGMES files as a list. Note: The files need a FullModel to parse the CGMES
+                profile.
+            encoding: The encoding from the files.
+            prepare_cim_net: Set this parameter to True to prepare the parsed cim data according to the CimConverter.
+            set_data_types: Set this parameter to True to set the cim data types at the parsed data.
+
+        Returns:
+            Self
         """
         self.logger.info("Start parsing CIM files.")
         self.report_container.add_log(
@@ -220,7 +222,9 @@ class CimParser:
     def _initialize_cim16_data_structure(self) -> MappingProxyType[str, MappingProxyType[str, pd.DataFrame]]:
         """
         Get the cim data structure used by the converter for cgmes version less than 3.
-        :return Dict[str, Dict[str, pd.DataFrame]]: The cim data structure used by the converter.
+
+        Returns:
+            The cim data structure used by the converter.
         """
         self.logger.debug("Returning the CIM data structure.")
         return MappingProxyType(
@@ -763,12 +767,13 @@ class CimParser:
         """
         Get the CGMES profile from the XML file.
 
-        :param root: The root element from the XML tree
-        :param default_profile: The default profile name which will be returned if ignore_errors is set to True.
-        Optional, default: 'unknown'
-        :return: The profile in short from: 'eq' for Equipment, 'eq_bd' for EquipmentBoundary,
-        'ssh' for SteadyStateHypothesis, 'sv' for StateVariables,
-        'tp' for Topology, 'tp_bd' for TopologyBoundary
+        Parameters:
+            root: The root element from the XML tree
+            default_profile: The default profile name which will be returned if ignore_errors is set to True.
+
+        Returns:
+            'eq' for Equipment, 'eq_bd' for EquipmentBoundary, 'ssh' for SteadyStateHypothesis, 'sv' for StateVariables,
+                'tp' for Topology, 'tp_bd' for TopologyBoundary
         """
         element_types = pd.Series([ele.tag for ele in root])
         element_types = element_types.drop_duplicates()
@@ -969,7 +974,9 @@ class CimParser:
     def _initialize_cim100_data_structure(self) -> MappingProxyType[str, MappingProxyType[str, pd.DataFrame]]:
         """
         Get the cim data structure used by the converter for cgmes version 3.
-        :return MappingProxyType[str, MappingProxyType[str, pd.DataFrame]]: The cim data structure used by the converter.
+
+        Returns:
+            The cim data structure used by the converter.
         """
         self.logger.debug("Returning the CIM data structure.")
         return MappingProxyType(

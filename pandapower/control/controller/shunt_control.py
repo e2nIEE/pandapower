@@ -3,6 +3,8 @@ import logging
 import numpy as np
 
 from pandapower.control.basic_controller import Controller
+from pandapower.network import pandapowerNet
+from pandapower.pp_types import Int
 
 logger = logging.getLogger(__name__)
 
@@ -11,47 +13,40 @@ class ShuntController(Controller):
     """
     Base Shunt Controller for controlling the steps of a shunt in a power network.
 
-    The `ShuntController` provides a basic framework for controlling a shunt in a pandapower network. It adjusts
-    the reactive power compensation provided by a shunt in discrete steps to influence the voltage level at a
-    particular bus. This class is intended to be extended by more specific controller implementations, such as
-    the `DiscreteShuntController`.
+    The `ShuntController` provides a basic framework for controlling a shunt in a pandapower network. It adjusts the
+    reactive power compensation provided by a shunt in discrete steps to influence the voltage level at a particular
+    bus. This class is intended to be extended by more specific controller implementations, such as the
+    `DiscreteShuntController`.
 
-    INPUT:
-        **net** (attrdict) - pandapower network object
+    Parameters:
+        net: pandapower network object
+        shunt_index: The index of the shunt in the pandapower network that is being controlled.
+        bus_index: The index of the bus that the controller monitors and regulates the voltage at. If None,
+            the bus connected to the shunt is used by default.
+        tol: Voltage tolerance in per-unit (pu) for controlling the bus voltage. This defines the
+            acceptable range around the setpoint where no control action is taken.
+        in_service: Boolean flag indicating whether the controller is currently active or not.
+        check_step_bounds: Flag to check if the shunt steps should be constrained within predefined minimum
+            and maximum step limits.
+        order: The execution order of the controller, which determines when this controller is executed
+            relative to others in the simulation.
+        level: The hierarchy level of the controller in multi-level control schemes, allowing control actions
+            to be prioritized.
 
-        **shunt_index** (int) - The index of the shunt in the pandapower network that is being controlled.
-
-    OPTIONAL:
-        **bus_index** (int, None) - The index of the bus that the controller monitors and regulates the voltage at.
-                                    If None, the bus connected to the shunt is used by default.
-
-        **tol** (float, 0.001) - Voltage tolerance in per-unit (pu) for controlling the bus voltage. This defines
-                                 the acceptable range around the setpoint where no control action is taken.
-
-        **in_service** (bool, True) - Boolean flag indicating whether the controller is currently active or not.
-
-        **check_step_bounds** (bool, True) - Flag to check if the shunt steps should be constrained within predefined
-                                             minimum and maximum step limits.
-
-        **order** (int, 0) - The execution order of the controller, which determines when this controller is executed
-                             relative to others in the simulation.
-
-        **level** (int, 0) - The hierarchy level of the controller in multi-level control schemes, allowing control
-                             actions to be prioritized.
-
-        **kwargs** - Additional keyword arguments passed to the base Controller class.
+    Keyword Args:
+        Additional keyword arguments passed to the base Controller class.
     """
 
     def __init__(
         self,
-        net,
-        shunt_index,
-        bus_index=None,
-        tol=1e-3,
-        in_service=True,
-        check_step_bounds=True,
-        order=0,
-        level=0,
+        net: pandapowerNet,
+        shunt_index: Int,
+        bus_index: Int | None = None,
+        tol: float = 1e-3,
+        in_service: bool = True,
+        check_step_bounds: bool = True,
+        order: int = 0,
+        level: int = 0,
         **kwargs,
     ):
         super().__init__(net, in_service=in_service, order=order, level=level, **kwargs)
@@ -83,39 +78,39 @@ class DiscreteShuntController(ShuntController):
     voltage deviation from a setpoint.
 
     Parameters:
-        net (ADict): pandapower network object
-        shunt_index (int): The index of the shunt in the pandapower network to be controlled.
-        vm_set_pu (float): The voltage setpoint in per-unit (pu) for controlling the bus voltage.
-        bus_index (int, None): The index of the bus where voltage control is applied. If None, the bus connected to the
+        net: pandapower network object
+        shunt_index: The index of the shunt in the pandapower network to be controlled.
+        vm_set_pu: The voltage setpoint in per-unit (pu) for controlling the bus voltage.
+        bus_index: The index of the bus where voltage control is applied. If None, the bus connected to the
             shunt is used by default.
-        tol (float, 0.001): Voltage tolerance band in per-unit (pu) for control action (default is 1% or 0.01 pu).
-        increment (int, 1): Step increment size for controlling the shunt. The controller adjusts the shunt steps by
+        tol: Voltage tolerance band in per-unit (pu) for control action (default is 1% or 0.01 pu).
+        increment: Step increment size for controlling the shunt. The controller adjusts the shunt steps by
             this increment based on the voltage deviation.
-        reset_at_init (bool, False): If True, the shunt steps will be reset to 0 during the initialization of the
+        reset_at_init: If True, the shunt steps will be reset to 0 during the initialization of the
             controller.
-        in_service (bool, True): Boolean flag to indicate whether the controller is active or not.
-        check_step_bounds (bool, True): If True, the controller will check and enforce the step boundaries
+        in_service: Boolean flag to indicate whether the controller is active or not.
+        check_step_bounds: If True, the controller will check and enforce the step boundaries
             (minimum and maximum) for the shunt.
-        order (int, 0): Execution order of the controller. Controllers with lower order are executed first.
-        level (int, 0): Controller level.
-        matching_params (dict, None): Dictionary of parameters used to match this controller with the appropriate
+        order: Execution order of the controller. Controllers with lower order are executed first.
+        level: Controller level.
+        matching_params: Dictionary of parameters used to match this controller with the appropriate
             elements in the network. Defaults to shunt_index and bus_index.
     """
 
     def __init__(
         self,
-        net,
-        shunt_index,
-        vm_set_pu,
-        bus_index=None,
-        tol=1e-3,
-        increment=1,
-        reset_at_init=False,
-        in_service=True,
-        check_step_bounds=True,
-        order=0,
-        level=0,
-        matching_params=None,
+        net: pandapowerNet,
+        shunt_index: Int,
+        vm_set_pu: float,
+        bus_index: Int | None = None,
+        tol: float = 1e-3,
+        increment: int = 1,
+        reset_at_init: bool = False,
+        in_service: bool = True,
+        check_step_bounds: bool = True,
+        order: int = 0,
+        level: int = 0,
+        matching_params: dict | None = None,
         **kwargs,
     ):
         if matching_params is None:

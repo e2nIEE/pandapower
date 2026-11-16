@@ -683,7 +683,6 @@ def create_cigre_network_lv():
         pfe_kw=0.0,
         i0_percent=0.0,
         shift_degree=30.0,
-        tap_pos=0.0,
         name="Trafo R0-R1",
     )
 
@@ -699,7 +698,6 @@ def create_cigre_network_lv():
         pfe_kw=0.0,
         i0_percent=0.0,
         shift_degree=30.0,
-        tap_pos=0.0,
         name="Trafo I0-I1",
     )
 
@@ -715,7 +713,6 @@ def create_cigre_network_lv():
         pfe_kw=0.0,
         i0_percent=0.0,
         shift_degree=30.0,
-        tap_pos=0.0,
         name="Trafo C0-C1",
     )
 

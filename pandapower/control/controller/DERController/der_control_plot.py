@@ -113,23 +113,20 @@ def plot_qv_area(qv_area, title=None, ax=None, prune_to_flexibility=False, vm_sa
 
 def generate_circle_segment(center_x, center_y, radius, start, stop, step):
     """
-    generates coordinates for a semicircle, centered at center_x, center_y
-    generates x and y coordinates for a segment of a circle, centered at center_x, center_y. The
-    segment (start, stop, step) is given in degree.
-    Which degree means which direction?
-    0: "east", 90: "north", 180: "west", 270: "south"
+    generates coordinates for a semicircle, centered at center_x, center_y generates x and y coordinates for a
+    segment of a circle, centered at center_x, center_y. The segment (start, stop, step) is given in degree. Which
+    degree means which direction? 0: "east", 90: "north", 180: "west", 270: "south"
 
-    Example
-    -------
-    >>> x, y = generate_circle_segment(0.5, 0.7, 1, 90, 225, 1)
-    >>> plt.plot(x, y)
-    >>> plt.axis('equal')
-    >>> plt.show()
-    Even a helix can be generated:
-    >>> x, y = generate_circle_segment(0, 0, np.linspace(0, 1, 3*360+1), 0, 3*360, 1)
-    >>> plt.plot(x, y)
-    >>> plt.axis('equal')
-    >>> plt.show()
+    Example:
+        >>> x, y = generate_circle_segment(0.5, 0.7, 1, 90, 225, 1)
+        >>> plt.plot(x, y)
+        >>> plt.axis('equal')
+        >>> plt.show()
+        Even a helix can be generated:
+        >>> x, y = generate_circle_segment(0, 0, np.linspace(0, 1, 3*360+1), 0, 3*360, 1)
+        >>> plt.plot(x, y)
+        >>> plt.axis('equal')
+        >>> plt.show()
     """
     degrees = np.array([start, stop + step / 2, step])
     angles = np.radians(degrees)
