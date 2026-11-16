@@ -8,7 +8,7 @@ import re
 
 import numpy as np
 import pandas as pd
-from pandas.api.types import is_object_dtype
+from pandas.api.types import is_object_dtype, is_string_dtype
 
 from pandapower.converter.jao._locnames import (
     _locname_display_names,
@@ -124,19 +124,17 @@ def _data_correction(data: dict[str, pd.DataFrame], html_str: str | None, max_i_
     # --- phase shifter with double info
     cols = ["Phase Regulation δu (%)", "Angle Regulation δu (%)"]  # type: ignore[assignment]
     for col in cols:
-        if is_object_dtype(data[key].loc[:, ("Phase Shifting Properties", col)]):
-            tr_double = data[key].index[
-                data[key].loc[:, ("Phase Shifting Properties", col)].str.contains("/").fillna(0).astype(bool)
-            ]
-            data[key].loc[tr_double, ("Phase Shifting Properties", col)] = (
-                data[key]
-                .loc[tr_double, ("Phase Shifting Properties", col)]
-                .str.split("/", expand=True)[1]
-                .str.replace(",", ".")
-                .astype(float)
-                .values
-            )  # take second info and correct
-            # separation: , -> .
+        col_key = ("Phase Shifting Properties", col)
+        series = data[key].loc[:, col_key]
+        if is_object_dtype(series) or is_string_dtype(series):
+            tr_double = series.index[series.str.contains("/", na=False)]
+            if len(tr_double) > 0:
+                # take second info and correct the decimal separator; the column is set positionally
+                # so that also a string dtype column can take the numeric values
+                corrected = series.astype(object).copy()
+                second_info = series.loc[tr_double].astype(str).str.split("/", expand=True)[1]
+                corrected.loc[tr_double] = second_info.str.replace(",", ".").astype(float).values
+                data[key].isetitem(data[key].columns.get_loc(col_key), corrected)  # type: ignore[arg-type]
 
     return html_str
 

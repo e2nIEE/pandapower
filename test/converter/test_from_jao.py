@@ -98,6 +98,26 @@ def test_from_jao_sets_ideal_tap_changer_type(tmp_path, du_value):
     assert net.trafo.tap_step_degree.iat[0] == pytest.approx(1.794)
 
 
+def test_from_jao_corrects_string_dtype_phase_regulation(tmp_path):
+    testfile = os.path.join(test_path, "converter", "jao_testfiles", "testfile.xlsx")
+    # a column that only holds string cells is read as pandas string dtype, which is not an object
+    # dtype. Values like "1,5/0" must still be reduced to their second number.
+    modified_testfile = tmp_path / "testfile_string_phase_regulation.xlsx"
+    workbook = load_workbook(testfile)
+    sheet = workbook["Transformers"]
+    du_column = next(cell.column for cell in sheet[2] if "Phase Regulation" in str(cell.value))
+    dphi_column = next(cell.column for cell in sheet[2] if "Angle Regulation" in str(cell.value))
+    sheet.cell(row=3, column=du_column).value = "1,5/0"
+    sheet.cell(row=3, column=dphi_column).value = "1/2,5"
+    workbook.save(modified_testfile)
+
+    net = from_jao(str(modified_testfile), None, False)
+
+    assert net.trafo.tap_changer_type.iat[0] == "Ideal"
+    assert net.trafo.tap_step_percent.iat[0] == 0
+    assert net.trafo.tap_step_degree.iat[0] == pytest.approx(2.5)
+
+
 def test_from_jao_trafo_params_use_primary_winding_base(tmp_path):
     testfile = os.path.join(test_path, "converter", "jao_testfiles", "testfile.xlsx")
     # the primary winding can be the lower-voltage side. R/X/B/G and the rated current refer to it,
