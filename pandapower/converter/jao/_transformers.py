@@ -6,10 +6,11 @@
 import difflib
 import logging
 import re
+from typing import cast
 
 import numpy as np
 import pandas as pd
-from pandas.api.types import is_integer_dtype
+from pandas.api.types import is_integer_dtype, is_string_dtype
 
 from pandapower.converter.jao._common import (
     _drop_duplicates_and_join_TSO,
@@ -25,6 +26,17 @@ from pandapower.create import create_buses, create_transformers_from_parameters
 from pandapower.network import pandapowerNet
 
 logger = logging.getLogger(__name__)
+
+
+def _with_str_accessor(series: pd.Series) -> pd.Series:
+    """Returns the series as object dtype if its dtype does not support the .str accessor.
+
+    Missing values are preserved, so that a missing name stays distinguishable from the
+    string "nan". String-like dtypes are returned unchanged.
+    """
+    if is_string_dtype(series):
+        return series
+    return series.astype(object)
 
 
 def _select_rated_current_a(trafos: pd.DataFrame) -> pd.Series:
@@ -104,7 +116,7 @@ def _create_transformers_and_buses(net: pandapowerNet, data: dict[str, pd.DataFr
         tap_phase_shifter=phase_shifter,
         tap_step_percent=du,
         tap_step_degree=dphi,
-        name=data[key].loc[:, ("Location", "Full Name")].str.strip().values,
+        name=_with_str_accessor(cast(pd.Series, data[key].loc[:, ("Location", "Full Name")])).str.strip().values,
         EIC_Code=data[key].xs("EIC_Code", level=1, axis=1).values[:, 0],  # type: ignore[call-overload]
         TSO=data[key].xs("TSO", level=1, axis=1).values[:, 0],  # type: ignore[call-overload]
         Comment=data[key].xs("Comment", level=1, axis=1).replace("\xa0", "").values[:, 0],  # type: ignore[call-overload]
@@ -273,7 +285,9 @@ def _allocate_trafos_to_buses_and_create_buses(
         trafo_connections.loc[same_bus_connection, "lv_bus"] = duplicated_buses.index
     net.bus = pd.concat([net.bus, duplicated_buses])
     if n_add_buses := len(duplicated_buses):
-        tr_names = data[key].loc[trafo_connections.index[same_bus_connection], ("Location", "Full Name")]
+        tr_names = _with_str_accessor(
+            cast(pd.Series, data[key].loc[trafo_connections.index[same_bus_connection], ("Location", "Full Name")])
+        )
         are_PSTs = tr_names.str.contains("PST")
         logger.info(
             f"{n_add_buses} additional buses were created to avoid that transformers are "
@@ -323,6 +337,8 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
 
     Returns a Series of bus location names (or ``None``) aligned with ``trafo_bus_names``.
     """
+    # an all-NaN Location / Full Name column is read as float64, which .str cannot be used on
+    trafo_bus_names = _with_str_accessor(trafo_bus_names)
     bus_location_names = sorted(set(bus_location_names))
     bus_key_to_name: dict[str, str] = {}
     for name in bus_location_names:

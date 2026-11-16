@@ -8,6 +8,7 @@ import os
 import numpy as np
 import pandas as pd
 import pytest
+from openpyxl import load_workbook
 
 from pandapower.converter.jao import from_jao
 from pandapower.converter.jao._common import _get_bus_idx
@@ -76,6 +77,20 @@ def test_from_jao_with_testfile():
     assert len(net3.line) == 5
     assert net3.line.Tieline.sum() == 1
     assert len(net3.trafo) == 1
+
+
+def test_from_jao_with_missing_trafo_location_names(tmp_path):
+    testfile = os.path.join(test_path, "converter", "jao_testfiles", "testfile.xlsx")
+    # an all-NaN Location / Full Name column is read as float64 and must not break the .str accessors
+    modified_testfile = tmp_path / "testfile_missing_trafo_location.xlsx"
+    workbook = load_workbook(testfile)
+    workbook["Transformers"].cell(row=3, column=1).value = None
+    workbook.save(modified_testfile)
+
+    net = from_jao(str(modified_testfile), None, False)
+
+    assert len(net.trafo) == 1
+    assert "Transformer 0" in set(net.bus.name)
 
 
 def test_repair_incomplete_line_data_matches_name_variants():
@@ -267,6 +282,13 @@ def test_find_trafo_locations_without_bus_locations():
     resolved = _find_trafo_locations(pd.Series(["TR A-A1", "B"]), [])
 
     assert len(resolved) == 2
+    assert resolved.isna().all()
+
+
+def test_find_trafo_locations_accepts_all_missing_location_column():
+    # an all-NaN Location / Full Name column is read as float64, which .str cannot be used on
+    resolved = _find_trafo_locations(pd.Series([np.nan, np.nan]), ["A"])
+
     assert resolved.isna().all()
 
 
