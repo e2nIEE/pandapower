@@ -1,7 +1,9 @@
 import sys
+from importlib.metadata import version
 from unittest.mock import MagicMock, patch
 
 import pytest
+from packaging.version import Version
 
 from pandapower.create import create_buses, create_ext_grid, create_lines, create_load, create_sgen, create_switch
 from pandapower.network import pandapowerNet
@@ -11,13 +13,14 @@ from test.consistency_checks import runpp_pgm_3ph_with_consistency_checks, runpp
 pytest.importorskip("power_grid_model")
 pytest.importorskip("power_grid_model_io")
 
+# older power-grid-model-io versions can not convert pandapower 4 networks that contain pd.NA values
+PGM_IO_SUPPORTS_PD_NA = Version(version("power-grid-model-io")) >= Version("1.3.87")
+
 
 @pytest.mark.parametrize("consistency_fn", [runpp_pgm_with_consistency_checks, runpp_pgm_3ph_with_consistency_checks])
 @pytest.mark.skipif(
-    sys.version_info < (3, 12),
-    reason=(
-        "power-grid-model-io pandapower converter can not be tested due to bug, update python version to fix this issue"
-    ),
+    not PGM_IO_SUPPORTS_PD_NA,
+    reason="power-grid-model-io can not handle pd.NA values in pandapower networks before 1.3.87",
 )
 def test_minimal_net_pgm(consistency_fn):
     # tests corner-case when the grid only has 1 bus and an ext-grid
