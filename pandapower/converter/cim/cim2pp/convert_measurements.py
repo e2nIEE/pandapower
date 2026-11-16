@@ -6,7 +6,7 @@ import time
 import numpy as np
 import pandas as pd
 
-from pandapower import pandapowerNet
+from pandapower.network import pandapowerNet
 
 from .. import cim_tools
 
