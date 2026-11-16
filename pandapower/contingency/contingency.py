@@ -31,11 +31,11 @@ if find_spec("lightsim2grid"):
     import lightsim2grid
 
     ls2g_version = Version(lightsim2grid.__version__)
-    if ls2g_version < Version("1.3.0"):
+    if ls2g_version < Version("1.3.1"):
         # do not raise, otherwise this module (and with it the ls2g independent functions) becomes
         # unimportable just because an outdated lightsim2grid is installed
         logger.warning(
-            f"lightsim2grid {ls2g_version} is too old for contingency analysis, version 1.3.0 or newer is "
+            f"lightsim2grid {ls2g_version} is too old for contingency analysis, version 1.3.1 or newer is "
             "required - please update lightsim2grid"
         )
         lightsim2grid_installed = False
