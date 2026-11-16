@@ -33,6 +33,8 @@ import tracemalloc
 from pathlib import Path
 from time import perf_counter
 
+import numpy as np
+
 # allow importing the test helpers when the script is run directly
 _REPO_ROOT = Path(__file__).resolve().parents[2]
 if str(_REPO_ROOT) not in sys.path:
@@ -57,11 +59,15 @@ def _prepare_tdpf_net(net, tdpf_update_r_theta: bool, tdpf_fraction: float = 1.0
     if len(line) == 0:
         return net
 
-    line["tdpf"] = line.r_ohm_per_km.fillna(0.0) != 0.0
-    if tdpf_fraction < 1.0:
-        step = max(round(1.0 / tdpf_fraction), 1)
-        selected = set(line.index[::step])
-        line.loc[~line.index.isin(selected), "tdpf"] = False
+    eligible = line.index[line.r_ohm_per_km.fillna(0.0) != 0.0]
+    line["tdpf"] = False
+    if tdpf_fraction >= 1.0 or len(eligible) == 0:
+        line.loc[eligible, "tdpf"] = True
+    else:
+        # select the requested count of the eligible lines, spread over the whole grid
+        target = max(round(tdpf_fraction * len(eligible)), 1)
+        selected = eligible[np.linspace(0, len(eligible) - 1, target).round().astype(np.int64)]
+        line.loc[selected, "tdpf"] = True
     line["temperature_degree_celsius"] = 20.0
     line["reference_temperature_degree_celsius"] = 20.0
     line["air_temperature_degree_celsius"] = 35.0
@@ -106,10 +112,12 @@ def _run_once(net, tdpf: bool, **options):
     net = copy.deepcopy(net)
     tracemalloc.start()
     start = perf_counter()
-    runpp(net, tdpf=tdpf, **options)
-    elapsed = perf_counter() - start
-    _, peak = tracemalloc.get_traced_memory()
-    tracemalloc.stop()
+    try:
+        runpp(net, tdpf=tdpf, **options)
+        elapsed = perf_counter() - start
+        _, peak = tracemalloc.get_traced_memory()
+    finally:
+        tracemalloc.stop()
     iterations = net._ppc.get("iterations", None)
     return elapsed, iterations, peak / 1e6
 
@@ -120,14 +128,15 @@ def benchmark_case(name: str, repeat: int, numba_values, tdpf_fraction: float = 
     print(f"\n=== {name} ===")
     print(f"buses: {len(net.bus)}, lines: {len(net.line)}, trafos: {len(net.trafo)}")
 
-    _run_once(net, tdpf=False)  # warm-up (numba compilation, imports)
-    elapsed, iterations, peak = _run_once(net, tdpf=False)
-    for _ in range(repeat - 1):
-        t, it, mem = _run_once(net, tdpf=False)
-        elapsed, iterations, peak = min(elapsed, t), it, min(peak, mem)
-    print(f"  {'plain runpp':<60} {elapsed * 1e3:9.2f} ms  it={iterations}  peak={peak:7.1f} MB")
-
     for numba in numba_values:
+        _run_once(net, tdpf=False, numba=numba)  # warm-up (numba compilation, imports)
+        elapsed, iterations, peak = _run_once(net, tdpf=False, numba=numba)
+        for _ in range(repeat - 1):
+            t, it, mem = _run_once(net, tdpf=False, numba=numba)
+            elapsed, iterations, peak = min(elapsed, t), it, min(peak, mem)
+        label = f"plain runpp numba={numba}"
+        print(f"  {label:<60} {elapsed * 1e3:9.2f} ms  it={iterations}  peak={peak:7.1f} MB")
+
         for update_r_theta in (True, False):
             tdpf_net = _prepare_tdpf_net(net, tdpf_update_r_theta=update_r_theta, tdpf_fraction=tdpf_fraction)
             for dist_slack in (False, True):
