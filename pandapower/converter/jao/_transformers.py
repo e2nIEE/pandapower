@@ -70,11 +70,13 @@ def _create_transformers_and_buses(net: pandapowerNet, data: dict[str, pd.DataFr
     # --- data preparations
     key = "Transformers"
     bus_idx = _get_bus_idx(net)
-    vn_hv_kv, vn_lv_kv = _get_transformer_voltages(data, bus_idx)
+    vn_hv_kv, vn_lv_kv, vn_primary_kv = _get_transformer_voltages(data, bus_idx)
     trafo_connections = _allocate_trafos_to_buses_and_create_buses(net, data, bus_idx, vn_hv_kv, vn_lv_kv, **kwargs)
     max_i_a = _select_rated_current_a(data[key])
-    sn_mva = np.sqrt(3) * max_i_a * vn_hv_kv / 1e3
-    z_pu = vn_hv_kv**2 / sn_mva
+    # the rated current and R/X/B/G refer to the primary winding ("Electrical Parameters (primary)"),
+    # so sn_mva and the impedance base must use the primary voltage, which is not always the hv side
+    sn_mva = np.sqrt(3) * max_i_a * vn_primary_kv / 1e3
+    z_pu = vn_primary_kv**2 / sn_mva
     rk = data[key].xs("Resistance_R(Ω)", level=1, axis=1).values[:, 0] / z_pu
     xk = data[key].xs("Reactance_X(Ω)", level=1, axis=1).values[:, 0] / z_pu
     b0 = data[key].xs("Susceptance_B (µS)", level=1, axis=1).values[:, 0] * 1e-6 * z_pu  # type: ignore[operator]
@@ -126,8 +128,10 @@ def _create_transformers_and_buses(net: pandapowerNet, data: dict[str, pd.DataFr
     )
 
 
-def _get_transformer_voltages(data: dict[str, pd.DataFrame], bus_idx: pd.Series) -> tuple[np.ndarray, np.ndarray]:
-    """Returns the hv and lv nominal voltages of the transformers."""
+def _get_transformer_voltages(
+    data: dict[str, pd.DataFrame], bus_idx: pd.Series
+) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
+    """Returns the hv, lv and primary winding nominal voltages of the transformers."""
     key = "Transformers"
     vn = data[key].loc[:, [("Voltage_level(kV)", "Primary"), ("Voltage_level(kV)", "Secondary")]].values
     missing = np.asarray(pd.isna(vn).any(axis=1), dtype=bool)
@@ -138,11 +142,13 @@ def _get_transformer_voltages(data: dict[str, pd.DataFrame], bus_idx: pd.Series)
         )
     vn_hv_kv = np.max(vn, axis=1)
     vn_lv_kv = np.min(vn, axis=1)
+    vn_primary_kv = vn[:, 0]
     if is_integer_dtype(list(bus_idx.index.dtypes)[1]):  # type: ignore[attr-defined]
         vn_hv_kv = vn_hv_kv.astype(int)
         vn_lv_kv = vn_lv_kv.astype(int)
+        vn_primary_kv = vn_primary_kv.astype(int)
 
-    return vn_hv_kv, vn_lv_kv
+    return vn_hv_kv, vn_lv_kv, vn_primary_kv
 
 
 def _allocate_trafos_to_buses_and_create_buses(

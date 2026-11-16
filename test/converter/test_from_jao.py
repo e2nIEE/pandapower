@@ -98,6 +98,37 @@ def test_from_jao_sets_ideal_tap_changer_type(tmp_path, du_value):
     assert net.trafo.tap_step_degree.iat[0] == pytest.approx(1.794)
 
 
+def test_from_jao_trafo_params_use_primary_winding_base(tmp_path):
+    testfile = os.path.join(test_path, "converter", "jao_testfiles", "testfile.xlsx")
+    # the primary winding can be the lower-voltage side. R/X/B/G and the rated current refer to it,
+    # so sn_mva, the per-unit impedance base and pfe_kw must follow the primary voltage, not the hv side.
+    original = from_jao(testfile, None, False)
+
+    modified_testfile = tmp_path / "testfile_swapped_voltage_sides.xlsx"
+    workbook = load_workbook(testfile)
+    sheet = workbook["Transformers"]
+    primary_column = next(cell.column for cell in sheet[2] if str(cell.value).strip() == "Primary")
+    secondary_column = next(cell.column for cell in sheet[2] if str(cell.value).strip() == "Secondary")
+    primary_kv = sheet.cell(row=3, column=primary_column).value
+    secondary_kv = sheet.cell(row=3, column=secondary_column).value
+    sheet.cell(row=3, column=primary_column).value = secondary_kv
+    sheet.cell(row=3, column=secondary_column).value = primary_kv
+    workbook.save(modified_testfile)
+
+    swapped = from_jao(str(modified_testfile), None, False)
+
+    # hv/lv allocation is unaffected, only the primary winding voltage differs
+    assert swapped.trafo.vn_hv_kv.iat[0] == original.trafo.vn_hv_kv.iat[0]
+    assert swapped.trafo.vn_lv_kv.iat[0] == original.trafo.vn_lv_kv.iat[0]
+    # the swapped primary winding is now the original secondary winding
+    swapped_primary_ratio = secondary_kv / primary_kv
+    assert swapped.trafo.sn_mva.iat[0] == pytest.approx(original.trafo.sn_mva.iat[0] * swapped_primary_ratio)
+    assert swapped.trafo.vk_percent.iat[0] == pytest.approx(original.trafo.vk_percent.iat[0] / swapped_primary_ratio)
+    assert swapped.trafo.vkr_percent.iat[0] == pytest.approx(original.trafo.vkr_percent.iat[0] / swapped_primary_ratio)
+    assert swapped.trafo.pfe_kw.iat[0] == pytest.approx(original.trafo.pfe_kw.iat[0] * swapped_primary_ratio**2)
+    assert swapped.trafo.i0_percent.iat[0] == pytest.approx(original.trafo.i0_percent.iat[0])
+
+
 def test_from_jao_with_missing_trafo_location_names(tmp_path):
     testfile = os.path.join(test_path, "converter", "jao_testfiles", "testfile.xlsx")
     # an all-NaN Location / Full Name column is read as float64 and must not break the .str accessors
@@ -340,10 +371,12 @@ def test_get_transformer_voltages_rejects_missing_voltage_level():
     cols = pd.MultiIndex.from_tuples([("Voltage_level(kV)", "Primary"), ("Voltage_level(kV)", "Secondary")])
     bus_idx = pd.Series([0, 1], index=pd.MultiIndex.from_arrays([["A", "B"], [380.0, 380.0]], names=["name", "vn_kv"]))
 
-    trafos = pd.DataFrame([[380.0, 110.0], [220.0, 110.0]], columns=cols)
-    vn_hv_kv, vn_lv_kv = _get_transformer_voltages({"Transformers": trafos}, bus_idx)
-    assert vn_hv_kv.tolist() == [380.0, 220.0]
-    assert vn_lv_kv.tolist() == [110.0, 110.0]
+    trafos = pd.DataFrame([[380.0, 110.0], [220.0, 400.0]], columns=cols)
+    vn_hv_kv, vn_lv_kv, vn_primary_kv = _get_transformer_voltages({"Transformers": trafos}, bus_idx)
+    assert vn_hv_kv.tolist() == [380.0, 400.0]
+    assert vn_lv_kv.tolist() == [110.0, 220.0]
+    # the primary winding is not necessarily the hv side
+    assert vn_primary_kv.tolist() == [380.0, 220.0]
 
     # a missing voltage level on either side must not silently propagate NaN
     trafos = pd.DataFrame([[380.0, 110.0], [220.0, np.nan], [np.nan, np.nan]], columns=cols)
