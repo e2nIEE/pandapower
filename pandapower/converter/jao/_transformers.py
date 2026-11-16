@@ -94,7 +94,10 @@ def _create_transformers_and_buses(net: pandapowerNet, data: dict[str, pd.DataFr
 
     du = _get_float_column(data[key], ("Phase Shifting Properties", "Phase Regulation δu (%)"))
     dphi = _get_float_column(data[key], ("Phase Shifting Properties", "Angle Regulation δu (%)"))
-    phase_shifter = np.isclose(du, 0) & (~np.isclose(dphi, 0))  # Symmetrical/Asymmetrical not considered
+    # ideal phase shifters have an angle step but no voltage step; the symmetrical/asymmetrical
+    # tap models need a non-zero voltage step to produce their angle shift, so they are not used
+    phase_shifter = np.isclose(du, 0) & (~np.isclose(dphi, 0))
+    tap_changer_type = np.where(phase_shifter, "Ideal", None).astype(object)
 
     _ = create_transformers_from_parameters(
         net,
@@ -113,7 +116,7 @@ def _create_transformers_and_buses(net: pandapowerNet, data: dict[str, pd.DataFr
         tap_side="lv",
         tap_min=taps["tap_min"].values,
         tap_max=taps["tap_max"].values,
-        tap_phase_shifter=phase_shifter,
+        tap_changer_type=tap_changer_type,
         tap_step_percent=du,
         tap_step_degree=dphi,
         name=_with_str_accessor(cast(pd.Series, data[key].loc[:, ("Location", "Full Name")])).str.strip().values,

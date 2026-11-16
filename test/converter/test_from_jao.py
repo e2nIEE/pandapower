@@ -79,6 +79,25 @@ def test_from_jao_with_testfile():
     assert len(net3.trafo) == 1
 
 
+@pytest.mark.parametrize("du_value", [0, None])
+def test_from_jao_sets_ideal_tap_changer_type(tmp_path, du_value):
+    testfile = os.path.join(test_path, "converter", "jao_testfiles", "testfile.xlsx")
+    # du == 0 (or missing) with dphi != 0 identifies an ideal phase shifter. The deprecated
+    # tap_phase_shifter flag is ignored by pandapower, so the supported tap_changer_type must be set.
+    modified_testfile = tmp_path / f"testfile_ideal_phase_shifter_{du_value}.xlsx"
+    workbook = load_workbook(testfile)
+    sheet = workbook["Transformers"]
+    du_column = next(cell.column for cell in sheet[2] if "Phase Regulation" in str(cell.value))
+    sheet.cell(row=3, column=du_column).value = du_value
+    workbook.save(modified_testfile)
+
+    net = from_jao(str(modified_testfile), None, False)
+
+    assert net.trafo.tap_changer_type.iat[0] == "Ideal"
+    assert net.trafo.tap_step_percent.iat[0] == 0
+    assert net.trafo.tap_step_degree.iat[0] == pytest.approx(1.794)
+
+
 def test_from_jao_with_missing_trafo_location_names(tmp_path):
     testfile = os.path.join(test_path, "converter", "jao_testfiles", "testfile.xlsx")
     # an all-NaN Location / Full Name column is read as float64 and must not break the .str accessors
