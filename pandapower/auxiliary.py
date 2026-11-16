@@ -1660,13 +1660,17 @@ def _check_tdpf_switch_parameters(net: pandapowerNet) -> None:
         table.loc[indices, column] = numeric.fillna(value)
 
     for column in ("measured_temperature_rise_kelvin", "temperature_rise_exponent", "thermal_time_constant_minutes"):
-        invalid = table.loc[indices, column] <= 0
+        values = table.loc[indices, column]
+        invalid = ~np.isfinite(values) | (values <= 0)
         if invalid.any():
-            raise UserWarning(f"TDPF: switch.{column} must be greater than 0 for indices {indices[invalid].tolist()}")
-    invalid = table.loc[indices, "air_temperature_degree_celsius"] <= -273
+            raise UserWarning(
+                f"TDPF: switch.{column} must be a finite value greater than 0 for indices {indices[invalid].tolist()}"
+            )
+    values = table.loc[indices, "air_temperature_degree_celsius"]
+    invalid = ~np.isfinite(values) | (values <= -273)
     if invalid.any():
         raise UserWarning(
-            f"TDPF: switch.air_temperature_degree_celsius must be greater than -273 °C for indices "
+            f"TDPF: switch.air_temperature_degree_celsius must be a finite value greater than -273 °C for indices "
             f"{indices[invalid].tolist()}"
         )
 

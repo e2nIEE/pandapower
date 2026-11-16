@@ -1,5 +1,10 @@
+import numpy as np
 import pandas as pd
 import pandera.pandas as pa
+
+# thermal inputs accept null values, which the calculation fills with documented defaults. Infinite
+# values are rejected: they cannot be used, so the default would be substituted without any notice.
+_finite = pa.Check(lambda values: np.isfinite(values), error="value must be finite")
 
 switch_schema = pa.DataFrameSchema(
     {
@@ -39,7 +44,7 @@ switch_schema = pa.DataFrameSchema(
         ),
         "measured_temperature_rise_kelvin": pa.Column(
             float,
-            pa.Check.gt(0),
+            checks=[pa.Check.gt(0), _finite],
             nullable=True,
             required=False,
             description="temperature rise of the switch above the ambient temperature at rated current, used by the switch thermal calculation (TDPF)",
@@ -47,7 +52,7 @@ switch_schema = pa.DataFrameSchema(
         ),
         "temperature_rise_exponent": pa.Column(
             float,
-            pa.Check.gt(0),
+            checks=[pa.Check.gt(0), _finite],
             nullable=True,
             required=False,
             description="exponent describing how the temperature rise of the switch scales with the load current, used by the switch thermal calculation (TDPF)",
@@ -55,7 +60,7 @@ switch_schema = pa.DataFrameSchema(
         ),
         "thermal_time_constant_minutes": pa.Column(
             float,
-            pa.Check.gt(0),
+            checks=[pa.Check.gt(0), _finite],
             nullable=True,
             required=False,
             description="thermal time constant of the switch in minutes, used by the switch thermal calculation (TDPF)",
@@ -63,7 +68,7 @@ switch_schema = pa.DataFrameSchema(
         ),
         "air_temperature_degree_celsius": pa.Column(
             float,
-            pa.Check.gt(-273),
+            checks=[pa.Check.gt(-273), _finite],
             nullable=True,
             required=False,
             description="ambient temperature in °C used by the switch thermal calculation (TDPF)",

@@ -196,9 +196,9 @@ class TestSwitchOptionalFields:
                 itertools.product(["terminal_element"], not_strings_list),
                 itertools.product(
                     ["measured_temperature_rise_kelvin", "temperature_rise_exponent", "thermal_time_constant_minutes"],
-                    [*negativ_floats_plus_zero, *not_floats_list],
+                    [float("inf"), *negativ_floats_plus_zero, *not_floats_list],
                 ),
-                itertools.product(["air_temperature_degree_celsius"], [-300.0, *not_floats_list]),
+                itertools.product(["air_temperature_degree_celsius"], [float("inf"), -300.0, *not_floats_list]),
             )
         ),
     )

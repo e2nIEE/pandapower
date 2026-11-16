@@ -727,13 +727,21 @@ def test_non_numeric_value_raises():
 )
 def test_non_positive_value_raises(column):
     net, _ = _switch_net(switch_kwargs={column: 0.0})
-    with pytest.raises(UserWarning, match=f"switch.{column} must be greater than 0"):
+    with pytest.raises(UserWarning, match=f"switch.{column} must be a finite value greater than 0"):
+        runpp(net, tdpf=True)
+
+
+@pytest.mark.parametrize("column", SWITCH_THERMAL_COLUMNS)
+def test_infinite_value_raises(column):
+    """An infinite thermal input must not be silently replaced by the default assumption."""
+    net, _ = _switch_net(switch_kwargs={column: np.inf})
+    with pytest.raises(UserWarning, match=f"switch.{column} must be a finite value"):
         runpp(net, tdpf=True)
 
 
 def test_invalid_ambient_temperature_raises():
     net, _ = _switch_net(switch_kwargs={"air_temperature_degree_celsius": -300.0})
-    with pytest.raises(UserWarning, match="air_temperature_degree_celsius must be greater than -273"):
+    with pytest.raises(UserWarning, match="air_temperature_degree_celsius must be a finite value greater than -273"):
         runpp(net, tdpf=True)
 
 
@@ -761,7 +769,7 @@ def test_invalid_values_of_fused_switch_are_validated():
         thermal_time_constant_minutes=-1.0,
     )
 
-    with pytest.raises(UserWarning, match="switch.thermal_time_constant_minutes must be greater than 0"):
+    with pytest.raises(UserWarning, match="switch.thermal_time_constant_minutes must be a finite value greater than 0"):
         runpp(net, tdpf=True)
 
 
