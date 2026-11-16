@@ -227,9 +227,8 @@ def read_ots_results(net: pandapowerNet):
     """
     Reads the branch_status variable from ppc to pandapower net
 
-    INPUT
-
-        **net** - pandapower net
+    Parameters:
+        net: pandapower net
     """
     ppc = net._ppc
     for element, (f, t) in net._pd2ppc_lookups["branch"].items():
