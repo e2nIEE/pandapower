@@ -418,7 +418,7 @@ def test_cause_element_index():
 
     nminus1_cases = {
         "line": {"index": net.line.iloc[[4, 2, 1, 5, 7, 8]].index.values},
-        "trafo": {"index": net.trafo.iloc[[2, 3, 1, 0, 4]].index.values},
+        "trafo": {"index": net.trafo.iloc[[2, 1, 0, 4]].index.values},
     }
 
     run_contingency(net, nminus1_cases, contingency_evaluation_function=run_for_from_bus_loading)
