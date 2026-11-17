@@ -30,6 +30,7 @@ import geojson
 import geojson.utils
 import numpy as np
 from geojson import Point
+from matplotlib.font_manager import FontProperties
 
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.plotting.plotting_toolbox import (
@@ -51,9 +52,8 @@ if find_spec("matplotlib"):
 else:
     MATPLOTLIB_INSTALLED = False
 
-if TYPE_CHECKING:
-    from matplotlib.patches import Patch
-    from matplotlib.path import Path  # noqa: TC004
+if TYPE_CHECKING and not MATPLOTLIB_INSTALLED:
+    raise UserWarning("matplotlib required for type checking")
 
 logger = logging.getLogger(__name__)
 
@@ -270,23 +270,22 @@ def node_patches(node_coords, size, patch_type, colors=None, **kwargs):
         raise ValueError("Wrong patchtype")
 
 
-def ellipse_patches(node_coords, width, height, angle=0, color=None, **kwargs):
+def ellipse_patches(node_coords, width: float, height: float, angle: float = 0.0, color=None, **kwargs):
     """
     Function to create a list of ellipse patches from node coordinates.
 
-    :param node_coords: coordinates of the nodes to draw
-    :type node_coords: iterable
-    :param width: width of the ellipse (described by an exterior rectangle)
-    :type width: float
-    :param height: height of the ellipse (described by an exterior rectangle)
-    :type height: float
-    :param angle: angle by which to rotate the ellipse
-    :type angle: float
-    :param color: color or colors of the patches
-    :type color: iterable, float
-    :param kwargs: additional keyword arguments to pass to the Ellipse initialization
-    :type kwargs: dict
-    :return: patches - list of ellipse patches for the nodes
+    Parameters:
+        node_coords (iterable): coordinates of the nodes to draw
+        width: width of the ellipse (described by an exterior rectangle)
+        height: height of the ellipse (described by an exterior rectangle)
+        angle: angle by which to rotate the ellipse
+        color (iterable, float): color or colors of the patches
+
+    Keyword Args:
+        additional keyword arguments to pass to the Ellipse initialization
+
+    Returns:
+        list of ellipse patches for the nodes
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
@@ -306,17 +305,15 @@ def rectangle_patches(node_coords, width, height, color=None, **kwargs):
     """
     Function to create a list of rectangle patches from node coordinates.
 
-    :param node_coords: coordinates of the nodes to draw
-    :type node_coords: iterable
-    :param width: width of the rectangle
-    :type width: float
-    :param height: height of the rectangle
-    :type height: float
-    :param color: color or colors of the patches
-    :type color: iterable, float
-    :param kwargs: additional keyword arguments to pass to the Rectangle initialization
-    :type kwargs: dict
-    :return: patches - list of rectangle patches for the nodes
+    Parameters:
+        node_coords (iterable): coordinates of the nodes to draw
+        width (float): width of the rectangle
+        height (float): height of the rectangle
+        color (iterable, float): color or colors of the patches
+        kwargs (dict): additional keyword arguments to pass to the Rectangle initialization
+
+    Returns:
+        list of rectangle patches for the nodes
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
@@ -331,54 +328,56 @@ def rectangle_patches(node_coords, width, height, color=None, **kwargs):
     return patches
 
 
-def polygon_patches(node_coords, radius, num_edges, color=None, **kwargs):
+def polygon_patches(node_coords, radius: float, num_edges: int, color=None, **kwargs) -> list[RegularPolygon]:
     """
-    Function to create a list of polygon patches from node coordinates. The number of edges for the
-    polygon can be defined.
+    Function to create a list of polygon patches from node coordinates. The number of edges for the polygon can be
+    defined.
 
-    :param node_coords: coordinates of the nodes to draw
-    :type node_coords: iterable
-    :param radius: radius for the polygon (from centroid to edges)
-    :type radius: float
-    :param num_edges: number of edges of the polygon
-    :type num_edges: int
-    :param color: color or colors of the patches
-    :type color: iterable, float
-    :param kwargs: additional keyword arguments to pass to the Polygon initialization
-    :type kwargs: dict
-    :return: patches - list of rectangle patches for the nodes
+    Parameters:
+        node_coords (iterable): coordinates of the nodes to draw
+        radius: radius for the polygon (from centroid to edges)
+        num_edges: number of edges of the polygon
+        color (iterable, float): color or colors of the patches
+
+    Keyword Args:
+        additional keyword arguments to pass to the Polygon initialization
+
+    Returns:
+        list of rectangle patches for the nodes
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-    patches = []
+    patches: list[RegularPolygon] = []
     if color is not None:
         colors = get_color_list(color, len(node_coords))
         for (x, y), col in zip(node_coords, colors):
-            patches.append(RegularPolygon([x, y], numVertices=num_edges, radius=radius, color=col, **kwargs))
+            patches.append(RegularPolygon((x, y), numVertices=num_edges, radius=radius, color=col, **kwargs))
     else:
         for x, y in node_coords:
-            patches.append(RegularPolygon([x, y], numVertices=num_edges, radius=radius, **kwargs))
+            patches.append(RegularPolygon((x, y), numVertices=num_edges, radius=radius, **kwargs))
     return patches
 
 
-def load_patches(node_coords, size, angles, **kwargs):
+def load_patches(node_coords, size: float, angles, **kwargs) -> tuple[list, list[RegularPolygon], set[str]]:
     """
     Creation function of patches for loads.
 
-    :param node_coords: coordinates of the nodes that the loads belong to.
-    :type node_coords: iterable
-    :param size: size of the patch
-    :type size: float
-    :param angles: angles by which to rotate the patches (in radians)
-    :type angles: iterable(float), float
-    :param kwargs: additional keyword arguments (might contain parameters "offset",\
-        "patch_edgecolor" and "patch_facecolor")
-    :type kwargs:
-    :return:
+    Parameters:
+        node_coords (iterable): coordinates of the nodes that the loads belong to.
+        size: size of the patch
+        angles (iterable(float), float): angles by which to rotate the patches (in radians)
+
+    Keyword Args:
+         offset: offset for the patch (rotation)
+         patch_edgecolor: color for the patch outline
+         patch_facecolor: color for the patch icon
+
+    Returns:
+
         - list of coordinates for lines leading to load patches
         - list containing the load patches
         - set of keywords removed from kwargs
-    :rtype: tuple[list, list[RegularPolygon], set[str]]
+
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(f"{sys._getframe().f_code.co_name}()", "matplotlib")
@@ -401,26 +400,29 @@ def load_patches(node_coords, size, angles, **kwargs):
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
 
 
-def gen_patches(node_coords, size, angles, patch_type, draw_by_type: bool = True, **kwargs):
+def gen_patches(
+    node_coords, size: float, angles, patch_type, draw_by_type: bool = True, **kwargs
+) -> tuple[list, list[Polygon | Circle | Arc], set[str]]:
     """
     Creation function of patches for generators.
 
-    :param node_coords: coordinates of the nodes that the generators belong to.
-    :type node_coords: iterable
-    :param size: size of the patch
-    :type size: float
-    :param angles: angles by which to rotate the patches (in radians)
-    :type angles: iterable(float) or float
-    :param patch_type: types to use for patches
-    :type patch_type: iterable(str) or str
-    :param kwargs: additional keyword arguments (might contain parameters "offset",\
-        "patch_edgecolor" and "patch_facecolor")
-    :type kwargs:
-    :return:
+    Parameters:
+        node_coords (iterable): coordinates of the nodes that the generators belong to.
+        size: size of the patch
+        angles (iterable(float) or float): angles by which to rotate the patches (in radians)
+        patch_type (iterable(str) or str): types to use for patches
+
+    Keyword Args:
+         offset: offset for the patch (rotation)
+         patch_edgecolor: color for the patch outline
+         patch_facecolor: color for the patch icon
+
+    Returns:
+
         - list of coordinates for lines leading to generator patches
         - list containing the generator patches
         - set of keywords removed from kwargs
-    :rtype: tuple[list, list[RegularPolygon], set[str]]
+
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
@@ -452,26 +454,29 @@ def gen_patches(node_coords, size, angles, patch_type, draw_by_type: bool = True
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
 
 
-def sgen_patches(node_coords, size, angles, patch_type, draw_by_type: bool = True, **kwargs):
+def sgen_patches(node_coords, size: float, angles, patch_type, draw_by_type: bool = True, **kwargs):
     """
     Creation function of patches for static generators.
 
-    :param node_coords: coordinates of the nodes that the static generators belong to.
-    :type node_coords: iterable
-    :param float size: size of the patch
-    :param angles: angles by which to rotate the patches (in radians)
-    :type angles: iterable(float) or float
-    :param patch_type: type of patches
-    :type patch_type: iterable(str) or str
-    :param bool draw_by_type: should static generators be drawn by type or grouped as one, default True
-    :param kwargs: additional keyword arguments (might contain parameters "offset", "r_triangle",\
-        "patch_edgecolor" and "patch_facecolor")
-    :type kwargs:
-    :return: Return values are: \
-        - list of coordinates for lines leading to static generator patches\
-        - list containing the static generator patches\
+    Parameters:
+        node_coords (iterable): coordinates of the nodes that the static generators belong to.
+        size: size of the patch
+        angles (iterable(float) or float): angles by which to rotate the patches (in radians)
+        patch_type (iterable(str) or str): type of patches
+        draw_by_type: should static generators be drawn by type or grouped as one
+
+    Keyword Args:
+         offset: offset for the patch (rotation)
+         r_triangle:
+         patch_edgecolor: color for the patch outline
+         patch_facecolor: color for the patch icon
+
+    Returns:
+
+        - list of coordinates for lines leading to static generator patches
+        - list containing the static generator patches
         - set of keywords removed from kwargs
-    :rtype: tuple[list, list[Patch], set[str]]
+
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
@@ -522,25 +527,30 @@ def sgen_patches(node_coords, size, angles, patch_type, draw_by_type: bool = Tru
     return lines, polys, {"offset", "r_triangle", "patch_edgecolor", "patch_facecolor"}
 
 
-def storage_patches(node_coords, size, angles, **kwargs):
+def storage_patches(node_coords, size: float, angles, **kwargs):
     """
     Creation function of patches for storage systems.
 
-    :param node_coords: coordinates of the nodes that the storage system belong to.
-    :type node_coords: iterable
-    :param size: size of the patch
-    :type size: float
-    :param angles: angles by which to rotate the patches (in radians)
-    :type angles: iterable(float), float
-    :param kwargs: additional keyword arguments (might contain parameters "offset", "r_triangle",\
-        "patch_edgecolor" and "patch_facecolor")
-    :type kwargs:
-    :return: Return values are: \
-        - lines (list) - list of coordinates for lines leading to storage patches\
-        - polys (list of RegularPolygon) - list containing the storage patches\
-        - keywords (set) - set of keywords removed from kwargs
+    Parameters:
+        node_coords (iterable): coordinates of the nodes that the storage system belong to.
+        size: size of the patch
+        angles (iterable(float), float): angles by which to rotate the patches (in radians)
+
+    Keyword Args:
+         offset: offset for the patch (rotation)
+         r_triangle:
+         patch_edgecolor: color for the patch outline
+         patch_facecolor: color for the patch icon
+
+    Returns:
+
+        - list of coordinates for lines leading to storage patches
+        - list containing the storage patches
+        - set of keywords removed from kwargs
+
     """
-    polys, lines = [], []
+    polys: list = []
+    lines: list[tuple] = []
     offset = kwargs.get("offset", 1 * size)
     r_triangle = kwargs.get("r_triangles", size * 0.4)
     for i, node_geo in enumerate(node_coords):
@@ -561,23 +571,26 @@ def storage_patches(node_coords, size, angles, **kwargs):
     return lines, polys, {"offset", "r_triangle", "patch_edgecolor", "patch_facecolor"}
 
 
-def ext_grid_patches(node_coords, size, angles, **kwargs):
+def ext_grid_patches(node_coords, size: float, angles, **kwargs):
     """
     Creation function of patches for external grids.
 
-    :param node_coords: coordinates of the nodes that the external grids belong to.
-    :type node_coords: iterable
-    :param size: size of the patch
-    :type size: float
-    :param angles: angles by which to rotate the patches (in radians)
-    :type angles: iterable(float), float
-    :param kwargs: additional keyword arguments (might contain parameters "offset",\
-        "patch_edgecolor" and "patch_facecolor")
-    :type kwargs:
-    :return: Return values are: \
-        - lines (list) - list of coordinates for lines leading to external grid patches\
-        - polys (list of RegularPolygon) - list containing the external grid patches\
-        - keywords (set) - set of keywords removed from kwargs (empty
+    Parameters:
+        node_coords (iterable): coordinates of the nodes that the external grids belong to.
+        size: size of the patch
+        angles (iterable(float), float): angles by which to rotate the patches (in radians)
+
+    Keyword Args:
+         offset: offset for the patch (rotation)
+         patch_edgecolor: color for the patch outline
+         patch_facecolor: color for the patch icon
+
+    Returns:
+
+        - list of coordinates for lines leading to external grid patches
+        - list containing the external grid patches
+        - set of keywords removed from kwargs
+
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
@@ -606,22 +619,22 @@ def ext_grid_patches(node_coords, size, angles, **kwargs):
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
 
 
-def trafo_patches(coords, size, **kwargs):
+def trafo_patches(coords, size: float, **kwargs):
     """
-    Creates a list of patches and line coordinates representing transformers each connecting two
-    nodes.
+    Creates a list of patches and line coordinates representing transformers each connecting two nodes.
 
-    :param coords: list of connecting node coordinates (usually should be \
-        `[((x11, y11), (x12, y12)), ((x21, y21), (x22, y22)), ...]`)
-    :type coords: (N, (2, 2)) shaped iterable
-    :param size: size of the trafo patches
-    :type size: float
-    :param kwargs: additional keyword arguments (might contain parameters "patch_edgecolor" and\
-        "patch_facecolor")
-    :type kwargs:
-    :return: Return values are: \
-        - lines (list) - list of coordinates for lines connecting nodes and transformer patches\
-        - circles (list of Circle) - list containing the transformer patches (rings)
+    Parameters:
+        coords ((N, (2, 2)) shaped iterable): list of connecting node coordinates (usually should be `[((x11, y11),
+            (x12, y12)), ((x21, y21), (x22, y22)), ...]`)
+        size: size of the trafo patches
+
+    Keyword Args:
+         patch_edgecolor: color for the patch outline
+         patch_facecolor: color for the patch icon
+
+    Returns:
+        - list of coordinates for lines connecting nodes and transformer patches
+        - list containing the transformer patches (rings)
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
@@ -659,23 +672,26 @@ def trafo_patches(coords, size, **kwargs):
     return lines, circles, {"patch_edgecolor", "patch_facecolor"}
 
 
-def ward_patches(node_coords, size, angles, **kwargs):
+def ward_patches(node_coords, size: float, angles, **kwargs):
     """
     Creation function of patches for wards.
 
-    :param node_coords: coordinates of the nodes that the wards belong to.
-    :type node_coords: iterable
-    :param size: size of the patch
-    :type size: float
-    :param angles: angles by which to rotate the patches (in radians)
-    :type angles: iterable(float), float
-    :param kwargs: additional keyword arguments (might contain parameters "offset",\
-        "patch_edgecolor" and "patch_facecolor")
-    :type kwargs:
-    :return: Return values are: \
-        - lines (list) - list of coordinates for lines leading to ward patches\
-        - polys (list of RegularPolygon) - list containing the ward patches\
-        - keywords (set) - set of keywords removed from kwargs (empty)
+    Parameters:
+        node_coords (iterable): coordinates of the nodes that the wards belong to.
+        size: size of the patch
+        angles (iterable(float), float): angles by which to rotate the patches (in radians)
+
+    Keyword Args:
+         offset: offset for the patch (rotation)
+         patch_edgecolor: color for the patch outline
+         patch_facecolor: color for the patch icon
+
+    Returns:
+
+        - list of coordinates for lines leading to ward patches
+        - list containing the ward patches
+        - set of keywords removed from kwargs
+
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
@@ -685,7 +701,8 @@ def ward_patches(node_coords, size, angles, **kwargs):
     facecolor = kwargs.get("patch_facecolor", "w")
     edgecolors = get_color_list(edgecolor, len(node_coords))
     facecolors = get_color_list(facecolor, len(node_coords))
-    polys, lines = [], []
+    polys: list[PathPatch | Rectangle] = []
+    lines = []
     for i, node_geo in enumerate(node_coords):
         p2 = node_geo + _rotate_dim2(np.array([0, offset]), all_angles[i])
         p_ll = p2 + _rotate_dim2(np.array([-size, 0]), all_angles[i])
@@ -696,9 +713,11 @@ def ward_patches(node_coords, size, angles, **kwargs):
         )
         lines.append((node_geo, p2))
 
-        text_foot = p2 + np.array([-1.425 * size, -0.34 * size]) + _rotate_dim2(np.array([size, size]), all_angles[i])
+        text_foot: list[float] = (
+            p2 + np.array([-1.425 * size, -0.34 * size]) + _rotate_dim2(np.array([size, size]), all_angles[i])
+        )
 
-        text_path = TextPath((0, 0), "W", size=0.9 * size, prop={"weight": "light"})
+        text_path = TextPath((0, 0), "W", size=0.9 * size, prop=FontProperties(weight="light"))
         transform = Affine2D().translate(text_foot[0], text_foot[1]).rotate(all_angles[i])
         text_patch = PathPatch(transform.transform_path(text_path), edgecolor="black", facecolor="black", lw=0.5)
         polys.append(text_patch)
@@ -706,24 +725,26 @@ def ward_patches(node_coords, size, angles, **kwargs):
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
 
 
-def xward_patches(node_coords, size, angles, **kwargs):
+def xward_patches(node_coords, size: float, angles, **kwargs) -> tuple[list, list[PathPatch | Rectangle], set[str]]:
     """
     Creation function of patches for xwards.
 
-    :param node_coords: coordinates of the nodes that the xwards belong to.
-    :type node_coords: iterable
-    :param size: size of the patch
-    :type size: float
-    :param angles: angles by which to rotate the patches (in radians)
-    :type angles: iterable(float), float
-    :param kwargs: additional keyword arguments (might contain parameters "offset",\
-        "patch_edgecolor" and "patch_facecolor")
-    :type kwargs:
-    :return:
-        - list of coordinates for lines leading to elements of xward patches\
-        - list containing the xward patches\
-        - set of keywords removed from kwargs (empty)
-    :rtype: tuple[list, list[Patch], set[str]]
+    Parameters:
+        node_coords (iterable): coordinates of the nodes that the xwards belong to.
+        size: size of the patch
+        angles (iterable(float), float): angles by which to rotate the patches (in radians)
+
+    Keyword Args:
+         offset: offset for the patch (rotation)
+         patch_edgecolor: color for the patch outline
+         patch_facecolor: color for the patch icon
+
+    Returns:
+
+        - list of coordinates for lines leading to elements of xward patches
+        - list containing the xward patches
+        - set of keywords removed from kwargs
+
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
@@ -733,7 +754,8 @@ def xward_patches(node_coords, size, angles, **kwargs):
     facecolor = kwargs.get("patch_facecolor", "w")
     edgecolors = get_color_list(edgecolor, len(node_coords))
     facecolors = get_color_list(facecolor, len(node_coords))
-    polys, lines = [], []
+    polys: list[PathPatch | Rectangle] = []
+    lines = []
     for i, node_geo in enumerate(node_coords):
         p2 = node_geo + _rotate_dim2(np.array([0, offset]), all_angles[i])
         p_ll = p2 + _rotate_dim2(np.array([-size, 0]), all_angles[i])
@@ -746,7 +768,7 @@ def xward_patches(node_coords, size, angles, **kwargs):
 
         text_foot = p2 + np.array([-1.755 * size, -0.34 * size]) + _rotate_dim2(np.array([size, size]), all_angles[i])
 
-        text_path = TextPath((0, 0), "XW", size=0.9 * size, prop={"weight": "light"})
+        text_path = TextPath((0, 0), "XW", size=0.9 * size, prop=FontProperties(weight="light"))
         transform = Affine2D().translate(text_foot[0], text_foot[1]).rotate(all_angles[i])
         text_patch = PathPatch(transform.transform_path(text_path), edgecolor="black", facecolor="black", lw=0.5)
         polys.append(text_patch)
@@ -754,22 +776,23 @@ def xward_patches(node_coords, size, angles, **kwargs):
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
 
 
-def vsc_patches(coords, size, **kwargs):
+def vsc_patches(coords, size: float, **kwargs):
     """
-    Creates a list of patches and line coordinates representing VSCs each connecting an AC and a DC
-    node.
+    Creates a list of patches and line coordinates representing VSCs each connecting an AC and a DC node.
 
-    :param coords: list of connecting node coordinates (usually should be \
-        `[((x11, y11), (x12, y12)), ((x21, y21), (x22, y22)), ...]`)
-    :type coords: (N, (2, 2)) shaped iterable
-    :param size: size of the VSC patches
-    :type size: float
-    :param kwargs: additional keyword arguments (might contain parameters "patch_edgecolor" and\
-        "patch_facecolor")
-    :type kwargs:
-    :return: Return values are: \
-        - lines (list) - list of coordinates for lines connecting nodes and VSC patches\
-        - squares (list of Rectangle) - list containing the VSC patches (squares)
+    Parameters:
+        coords ((N, (2, 2)) shaped iterable): list of connecting node coordinates (usually should be `[((x11, y11),
+            (x12, y12)), ((x21, y21), (x22, y22)), ...]`)
+        size: size of the VSC patches
+
+    Keyword Args:
+         patch_edgecolor: color for the patch outline
+         patch_facecolor: color for the patch icon
+
+    Returns:
+
+        - list of coordinates for lines connecting nodes and VSC patches
+        - list containing the VSC patches (squares)
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")

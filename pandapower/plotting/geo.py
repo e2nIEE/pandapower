@@ -12,7 +12,10 @@ __all__ = [
 import logging
 import math
 import sys
+from importlib.util import find_spec
+from typing import TYPE_CHECKING
 
+import geojson
 import numpy as np
 import pandas as pd
 from numpy import array
@@ -25,47 +28,42 @@ from pandapower.plotting.plotting_toolbox import safe_geojson_loads
 
 logger = logging.getLogger(__name__)
 
-try:
+if find_spec("shapely") is not None:
     from shapely.geometry import LineString, Point
 
     shapely_INSTALLED = True
-except ImportError:
+else:
     shapely_INSTALLED = False
 
-try:
+if find_spec("geopandas") is not None:
     from geopandas import GeoDataFrame, GeoSeries
 
     geopandas_INSTALLED = True
-except ImportError:
+else:
     geopandas_INSTALLED = False
 
-try:
+if find_spec("pyproj") is not None:
     from pyproj import Transformer
 
     pyproj_INSTALLED = True
-except ImportError:
+else:
     pyproj_INSTALLED = False
 
-try:
-    import geojson
-
-    geojson_INSTALLED = True
-except ImportError:
-    geojson_INSTALLED = False
+if TYPE_CHECKING and not geopandas_INSTALLED:
+    raise UserWarning("geopandas required for type checking")
 
 
-def _node_geometries_from_geodata(node_geo, epsg=31467, remove_xy=False):
+def _node_geometries_from_geodata(node_geo: pd.DataFrame, epsg: int = 31467, remove_xy: bool = False) -> "GeoDataFrame":
     """
-    Creates a geopandas geodataframe from a given dataframe of with node coordinates as x and y
-    values.
+    Creates a geopandas geodataframe from a given dataframe of with node coordinates as x and y values.
 
-    :param node_geo: The dataframe containing the node coordinates (x and y values)
-    :type node_geo: pandas.dataframe
-    :param epsg: The epsg projection of the node coordinates
-    :type epsg: int, default 31467 (= Gauss-Krüger Zone 3)
-    :param remove_xy: If x/y and coords columns should be removed from the geodataframe
-    :type remove_xy: bool, default False
-    :return: node_geodata - a geodataframe containing the node_geo and Points in the geometry column
+    Parameters:
+        node_geo: The dataframe containing the node coordinates (x and y values)
+        epsg: The epsg projection of the node coordinates, 31467 is Gauss-Krüger Zone 3
+        remove_xy: If x/y and coords columns should be removed from the geodataframe
+
+    Returns:
+        a geodataframe containing the node_geo and Points in the geometry column
     """
     missing_packages = array(["shapely", "geopandas"])[~array([shapely_INSTALLED, geopandas_INSTALLED])]
     if len(missing_packages):
@@ -76,7 +74,7 @@ def _node_geometries_from_geodata(node_geo, epsg=31467, remove_xy=False):
     return GeoDataFrame(node_geo, crs=f"epsg:{epsg}", geometry=geoms, index=node_geo.index)
 
 
-def _branch_geometries_from_geodata(branch_geo, epsg=31467, remove_xy=False):
+def _branch_geometries_from_geodata(branch_geo, epsg: int = 31467, remove_xy: bool = False) -> "GeoDataFrame":
     missing_packages = array(["shapely", "geopandas"])[~array([shapely_INSTALLED, geopandas_INSTALLED])]
     if len(missing_packages):
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", missing_packages)
@@ -90,70 +88,81 @@ def _branch_geometries_from_geodata(branch_geo, epsg=31467, remove_xy=False):
     return GeoDataFrame(branch_geo, crs=f"epsg:{epsg}", geometry=geoms, index=branch_geo.index)
 
 
-def _transform_node_geometry_to_geodata(node_geo):
+def _transform_node_geometry_to_geodata(node_geo: "GeoDataFrame") -> "GeoDataFrame":
     """
     Create x and y values from geodataframe
 
-    :param node_geo: The dataframe containing the node geometries (as shapely points)
-    :type node_geo: geopandas.GeoDataFrame
-    :return: bus_geo - The given geodataframe with x and y values
+    Parameters:
+        node_geo: The dataframe containing the node geometries (as shapely points)
+
+    Returns:
+        The given geodataframe with x and y values
     """
-    node_geo["x"] = [p.x for p in node_geo.geometry]
-    node_geo["y"] = [p.y for p in node_geo.geometry]
+    node_geo["x"] = [p.x for p in node_geo.geometry]  # type: ignore[attr-defined]
+    node_geo["y"] = [p.y for p in node_geo.geometry]  # type: ignore[attr-defined]
     return node_geo
 
 
-def _transform_branch_geometry_to_coords(branch_geo):
+def _transform_branch_geometry_to_coords(branch_geo: "GeoDataFrame") -> "GeoDataFrame":
     """
     Create coords entries from geodataframe geometries
 
-    :param branch_geo: The dataframe containing the branch geometries (as shapely LineStrings)
-    :type branch_geo: geopandas.GeoDataFrame
-    :return: branch_geo - The given geodataframe with coords
+    Parameters:
+        branch_geo: The dataframe containing the branch geometries (as shapely LineStrings)
+
+    Returns:
+        The given geodataframe with coords
     """
     branch_geo["coords"] = branch_geo.geometry.apply(lambda x: list(x.coords))
     return branch_geo
 
 
-def _transform_node_geometry_to_geojson(node_geo):
+def _transform_node_geometry_to_geojson(node_geo: "GeoDataFrame") -> str:
     """
     Create geojson string from geodataframe geometries
 
-    ! forces projection to wgs84 !
+    .. attention::
 
-    :param node_geo: The dataframe containing the node geometries (as shapely points)
-    :type node_geo: geopandas.GeoDataFrame
-    :return: A geojson string for the node_geo
+        forces projection to wgs84
+
+    Parameters:
+        node_geo: The dataframe containing the node geometries (as shapely points)
+
+    Returns:
+        A geojson string for the node_geo
     """
     return node_geo.to_json(na="drop", show_bbox=True, drop_id=False, to_wgs84=True)
 
 
-def _transform_branch_geometry_to_geojson(branch_geo):
+def _transform_branch_geometry_to_geojson(branch_geo: GeoDataFrame) -> str:
     """
     Create geojson from geodataframe geometries
 
-    ! forces projection to wgs84 !
+    .. attention::
 
-    :param branch_geo: The dataframe containing the branch geometries (as shapely LineStrings)
-    :type branch_geo: geopandas.GeoDataFrame
-    :return: A geojson object for the branch_geo
+        forces projection to wgs84
+
+    Parameters:
+        branch_geo: The dataframe containing the branch geometries (as shapely LineStrings)
+
+    Returns:
+        A geojson string for the branch_geo
     """
     return branch_geo.to_json(na="drop", show_bbox=True, drop_id=False, to_wgs84=True)
 
 
-def _convert_xy_epsg(x, y, epsg_in=4326, epsg_out=31467):
+def _convert_xy_epsg(x, y, epsg_in: int = 4326, epsg_out: int = 31467):
     """
     Converts the given x and y coordinates according to the defined epsg projections.
 
-    :param x: x-values of coordinates
-    :type x: iterable
-    :param y: y-values of coordinates
-    :type y: iterable
-    :param epsg_in: current epsg projection
-    :type epsg_in: int, default 4326 (= WGS84)
-    :param epsg_out: epsg projection to be transformed to
-    :type epsg_out: int, default 31467 (= Gauss-Krüger Zone 3)
-    :return: transformed_coords - x and y values in new coordinate system
+    Parameters:
+        x (iterable): x-values of coordinates
+        y (iterable): y-values of coordinates
+        epsg_in: current epsg projection, default 4326 is WGS84
+        epsg_out: epsg projection to be transformed to, default 31467 is Gauss-Krüger Zone 3
+
+    Returns:
+        x and y values in new coordinate system
     """
     if not pyproj_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "pyproj")
@@ -170,11 +179,11 @@ def abstract_convert_crs(
     """
     function to convert the crs of a network in place
 
-    :param ADict net: A network subclassed from pandapower.auxiliary.ADict
-    :param int epsg_in: the ESRI CRS number to convert from
-    :param int epsg_out: the ESRI CRS number to convert to
-    :param str component_name: name of the component DataFrame
-    :return:
+    Parameters:
+        net: A network subclassed from pandapower.auxiliary.ADict
+        epsg_in: the ESRI CRS number to convert from
+        epsg_out: the ESRI CRS number to convert to
+        component_name: name of the component DataFrame
     """
     if epsg_in == epsg_out:
         return
@@ -236,15 +245,13 @@ def convert_crs(
     epsg_out: int = 31467,
 ) -> None:
     """
-    Converts bus and line geodata in net from epsg_in to epsg_out
-    Supported geojson geometries are Point and LineString. Although Conversion away from WGS84 is highly discouraged.
+    Converts bus and line geodata in net from epsg_in to epsg_out Supported geojson geometries are Point and
+    LineString. Although Conversion away from WGS84 is highly discouraged.
 
-    :param net: network
-    :type net: pandapowerNet
-    :param epsg_in: current epsg projection
-    :type epsg_in: int, default 4326 (= WGS84)
-    :param epsg_out: epsg projection to be transformed to
-    :type epsg_out: int, default 31467 (= Gauss-Krüger Zone 3)
+    Parameters:
+        net: network
+        epsg_in: current epsg projection
+        epsg_out: epsg projection to be transformed to
     """
     abstract_convert_crs(net, epsg_in, epsg_out, "bus")
     abstract_convert_crs(net, epsg_in, epsg_out, "line")
@@ -261,13 +268,13 @@ def dump_to_geojson_node_branch(
     """
     function to dump node and branch information to geojson feature collection
 
-    :param net: the network to get the information from
-    :param node_name: name of the table for node information
-    :param branch_name: name of the table for branch information
-    :param nodes:
-    :param branches:
-    :param include_type_id:
-    :return:
+    Parameters:
+        net: the network to get the information from
+        node_name: name of the table for node information
+        branch_name: name of the table for branch information
+        nodes:
+        branches:
+        include_type_id:
     """
     features = []
     elements = {node_name: nodes, branch_name: branches}
@@ -318,34 +325,28 @@ def dump_to_geojson(
     include_type_id: bool = True,
 ) -> geojson.FeatureCollection:
     """
-    Dumps all primitive values into a geojson object. Supports bus, line, switche, trafo, trafo3w.
-    It is recommended to only dump networks using WGS84 for GeoJSON specification compliance.
+    Dumps all primitive values into a geojson object. Supports bus, line, switche, trafo, trafo3w. It is recommended
+    to only dump networks using WGS84 for GeoJSON specification compliance.
 
     Since switches and trafos do not contain their own geodata in pandapower, geodata is taken from the components
-    connected to them. Trafos are always given the geodata from the lv_bus connected at the trafo. Switches are given
-    geodata from the bus the switch is connected to. They do not carry info about where the other components connected
-    to them are located!
+    connected to them. Trafos are always given the geodata from the lv_bus connected at the trafo. Switches are
+    given geodata from the bus the switch is connected to. They do not carry info about where the other components
+    connected to them are located!
 
-    :param net: The pandapower network
-    :type net: pandapowerNet
-    :param buses: if True return contains all bus data, can be a list of bus ids that should be contained
-    :type buses: bool | list, default False
-    :param lines: if True return contains all line data, can be a list of line ids that should be contained
-    :type lines: bool | list, default False
-    :param switches: if True return contains all switch data, can be a list of switch ids that should be contained (only supported for pandapowerNet)
-    :type switches: bool | list, default False
-    :param trafos: if True return contains all trafo data, can be a list of trafo ids that should be contained (only supported for pandapowerNet)
-    :type trafos: bool | list, default False
-    :param t_is_3w: if True, the trafos are treated as 3W-trafos
-    :type t_is_3w: bool, default False
-    :param include_type_id: if True, pp_type and pp_index is added to every feature
-    :type include_type_id: bool, default true
-    :return: A geojson object.
-    :return type: geojson.FeatureCollection
+    Parameters:
+        net: The pandapower network
+        buses: if True return contains all bus data, can be a list of bus ids that should be contained
+        lines: if True return contains all line data, can be a list of line ids that should be contained
+        switches: if True return contains all switch data, can be a list of switch ids that should be contained (only
+            supported for pandapowerNet)
+        trafos: if True return contains all trafo data, can be a list of trafo ids that should be contained (only
+            supported for pandapowerNet)
+        t_is_3w: if True, the trafos are treated as 3W-trafos
+        include_type_id: if True, pp_type and pp_index is added to every feature
+
+    Returns:
+        A geojson object. geojson.FeatureCollection
     """
-    if not geojson_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "geojson")
-
     try:
         if hasattr(net, "bus_geodata") or hasattr(net, "line_geodata"):
             raise UserWarning("""The supplied network uses an outdated geodata format. Please update your geodata by
@@ -537,17 +538,14 @@ def convert_geodata_to_geojson(
     """
     Converts bus_geodata and line_geodata to bus.geo and line.geo column entries.
 
-    It is expected that any input network has its coords in WGS84 (epsg:4326) projection.
-    If this is not the case use convert_crs to convert the network to WGS84.
+    It is expected that any input network has its coords in WGS84 (epsg:4326) projection. If this is not the case
+    use convert_crs to convert the network to WGS84.
 
-    :param net: The pandapower network containing line_geodata and bus_geodata in WGS84!
-    :type net: pandapowerNet
-    :param delete: If True, the geodataframes are deleted after conversion
-    :type delete: bool, default True
-    :param lonlat: If True, the coordinates are expected to be in lonlat format (x=lon, y=lat)
-    :type lonlat: bool, default False
-    :param drop_invalid_geodata: If True, entries containing invalid geo coordinates e.g. None, np.nan will be dropped
-    :type drop_invalid_geodata: bool, default True
+    Parameters:
+        net: The pandapower network containing line_geodata and bus_geodata in WGS84!
+        delete: If True, the geodataframes are deleted after conversion
+        lonlat: If True, the coordinates are expected to be in lonlat format (x=lon, y=lat)
+        drop_invalid_geodata: If True, entries containing invalid geo coordinates e.g. None, np.nan will be dropped
     """
     abstract_convert_geodata_to_geojson(net, "bus", "line", delete, lonlat, drop_invalid_geodata)
     abstract_convert_geodata_to_geojson(net, "bus_dc", "line_dc", delete, lonlat, drop_invalid_geodata)
@@ -576,10 +574,11 @@ def convert_gis_to_geojson(net: pandapowerNet, delete: bool = True) -> None:
     """
     Transforms the bus and line geodataframes of a net into a geojson object.
 
-    :param net: The net for which to convert the geodataframes
-    :type net: pandapowerNet
-    :param delete: If True, the geodataframes are deleted after conversion
-    :type delete: bool, default True
-    :return: No output.
+    Parameters:
+        net: The net for which to convert the geodataframes
+        delete: If True, the geodataframes are deleted after conversion
+
+    Returns:
+        No output.
     """
     abstract_convert_gis_to_geojson(net, "bus", "line", delete)
