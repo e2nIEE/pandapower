@@ -14,6 +14,7 @@ from pandapower.create import (
     create_impedance,
     create_line_from_parameters,
     create_load,
+    create_shunt,
     create_transformer,
     create_transformer3w_from_parameters,
     create_transformer_from_parameters,
@@ -909,6 +910,37 @@ def test_shunt_split(result_test_network, v_tol=1e-6, i_tol=1e-6, s_tol=5e-3, l_
     assert abs(net.res_bus.vm_pu.loc[b2] - u) < v_tol
     assert abs(net.res_shunt.p_mw.loc[s1] - p / 2) < s_tol
     assert abs(net.res_shunt.q_mvar.loc[s1] - q / 2) < s_tol
+
+
+@pytest.mark.filterwarnings("error::RuntimeWarning")
+def test_shunt_step_dependency_table_at_step_zero():
+    # step 0 is a valid row of the characteristic table, e.g. a switched-off shunt reactor (#3347)
+    net = pandapowerNet(name="test_shunt_step_dependency_table_at_step_zero")
+    b0 = create_bus(net, vn_kv=110.0)
+    b1 = create_bus(net, vn_kv=110.0)
+    create_ext_grid(net, b0)
+    create_line_from_parameters(
+        net, b0, b1, length_km=10, r_ohm_per_km=0.1, x_ohm_per_km=0.4, c_nf_per_km=10, max_i_ka=1.0
+    )
+    create_load(net, b1, p_mw=5, q_mvar=1)
+    net["shunt_characteristic_table"] = pd.DataFrame(
+        {"id_characteristic": [0, 0, 0], "step": [0, 1, 2], "q_mvar": [0.0, 10.0, 20.0], "p_mw": [0.0, 0.01, 0.02]}
+    )
+    s_table = create_shunt(
+        net, b1, q_mvar=10.0, p_mw=0.01, step=0, max_step=2, step_dependency_table=True, id_characteristic_table=0
+    )
+    s_plain = create_shunt(net, b1, q_mvar=5.0, p_mw=0.01, step=0, max_step=2)
+
+    for step in (0, 1, 2):
+        net.shunt.at[s_table, "step"] = step
+        runpp(net)
+        vm = net.res_bus.vm_pu.at[b1]
+        char = net.shunt_characteristic_table.set_index("step").loc[step]
+        assert np.isclose(net.res_shunt.p_mw.at[s_table], vm**2 * char.p_mw)
+        assert np.isclose(net.res_shunt.q_mvar.at[s_table], vm**2 * char.q_mvar)
+        assert net.res_shunt.p_mw.at[s_plain] == 0
+        assert net.res_shunt.q_mvar.at[s_plain] == 0
+        assert np.isclose(net.res_bus.q_mvar.at[b1], 1 + net.res_shunt.q_mvar.sum())
 
 
 def test_open(result_test_network):

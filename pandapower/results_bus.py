@@ -622,25 +622,27 @@ def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
                 how="left",
                 suffixes=("", "_char"),
             )
-            p_shunt_step = np.where(
+            # the characteristic table holds the total power at the step, so it must not be
+            # scaled with the step (dividing by it fails for a shunt at step 0)
+            p_shunt_total = np.where(
                 merged_df["step_dependency_table"],
-                merged_df["p_mw_char"].values / merged_df["step"].values,
-                merged_df["p_mw"].values,
+                merged_df["p_mw_char"].values,
+                merged_df["p_mw"].values * step.values,
             ).astype(np.float64)
-            q_shunt_step = np.where(
+            q_shunt_total = np.where(
                 merged_df["step_dependency_table"],
-                merged_df["q_mvar_char"].values / merged_df["step"].values,
-                merged_df["q_mvar"].values,
+                merged_df["q_mvar_char"].values,
+                merged_df["q_mvar"].values * step.values,
             ).astype(np.float64)
         else:
-            p_shunt_step = net["shunt"]["p_mw"].values
-            q_shunt_step = net["shunt"]["q_mvar"].values
-        p_shunt = u_shunt**2 * p_shunt_step * shunt_is * v_ratio * step
+            p_shunt_total = net["shunt"]["p_mw"].values * step.values
+            q_shunt_total = net["shunt"]["q_mvar"].values * step.values
+        p_shunt = u_shunt**2 * p_shunt_total * shunt_is * v_ratio
         net["res_shunt"].loc[:, "p_mw"] = p_shunt
         p = np.hstack([p, p_shunt])
         if ac:
             net["res_shunt"].loc[:, "vm_pu"] = u_shunt
-            q_shunt = u_shunt**2 * q_shunt_step * shunt_is * v_ratio * step
+            q_shunt = u_shunt**2 * q_shunt_total * shunt_is * v_ratio
             net["res_shunt"].loc[:, "q_mvar"] = q_shunt
             q = np.hstack([q, q_shunt])
         b = np.hstack([b, s["bus"].values])
