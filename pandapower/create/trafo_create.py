@@ -454,7 +454,7 @@ def create_transformer_from_parameters(
         leakage_reactance_ratio_hv: ratio of transformer short-circuit reactance on HV side (default 0.5)
 
     Returns:
-        **index** (int) - the unique ID of the created transformer
+        the index of the created transformer
 
     Example:
         >>> create_transformer_from_parameters(
@@ -784,10 +784,10 @@ def create_transformer3w(
     **kwargs,
 ) -> Int:
     """
-    Creates a three-winding transformer in table net.trafo3w.
-    The trafo parameters are defined through the standard type library.
+    Creates a three-winding transformer in table net.trafo3w. The trafo parameters are defined through the standard
+    type library.
 
-    INPUT:
+    Parameters:
         net: the net within this transformer should be created
         hv_bus: The bus on the high-voltage side on which the transformer will be connected to
         mv_bus: The medium voltage bus on which the transformer will be connected to
@@ -802,18 +802,18 @@ def create_transformer3w(
         index: force a specified ID if it is available. If None, the index one higher than the highest already existing
             index is selected.
         max_loading_percent: maximum current loading (only needed for OPF)
-        min_angle_degree: minimum voltage angle difference in degree, considered in the OPF. NaN means unconstrained.
-            A three-winding transformer is modelled as three branches through an internal star point, so the limit
-            applies to each of those branches (hv -> star and star -> mv, star -> lv) separately. The angle
-            difference between the terminals, va_hv - va_mv resp. va_hv - va_lv, can therefore reach twice this value.
+        min_angle_degree: minimum voltage angle difference in degree, considered in the OPF. NaN means unconstrained. A
+            three-winding transformer is modelled as three branches through an internal star point, so the limit applies
+            to each of those branches (hv -> star and star -> mv, star -> lv) separately. The angle difference between
+            the terminals, va_hv - va_mv resp. va_hv - va_lv, can therefore reach twice this value.
         max_angle_degree: maximum voltage angle difference in degree, considered in the OPF. NaN means unconstrained.
             See min_angle_degree for the three-winding transformer specifics.
         tap_at_star_point: whether tap changer is modelled at star point or at the bus
         tap_dependency_table: True if transformer parameters (voltage ratio, angle, impedance) must be adjusted
             dependent on the tap position of the transformer. Requires the additional column "id_characteristic_table".
-            The function pandapower.control.trafo_characteristic_table_diagnostic can be used for sanity checks.
-            The function pandapower.control.create_trafo_characteristic_object can be used to create
-            SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column
+            The function pandapower.control.trafo_characteristic_table_diagnostic can be used for sanity checks. The
+            function pandapower.control.create_trafo_characteristic_object can be used to create SplineCharacteristic
+            objects in the net.trafo_characteristic_spline table and add the additional column
             "id_characteristic_spline" to set up the reference to the spline characteristics.
         id_characteristic_table: references the index of the characteristic from the lookup table
             net.trafo_characteristic_table
@@ -1280,10 +1280,10 @@ def create_transformers3w_from_parameters(  # no index ?
     **kwargs,
 ) -> npt.NDArray[integer]:
     """
-    Adds multiple three-winding transformers in table net.trafo3w with the specified parameters.
-    The model currently only supports one tap changer per 3w-transformer.
+    Adds multiple three-winding transformers in table net.trafo3w with the specified parameters. The model currently
+    only supports one tap changer per 3w-transformer.
 
-    Input:
+    Parameters:
         net: the net within this transformer should be created
         hv_bus: The bus on the high-voltage side on which the transformer will be connected to
         mv_bus: The bus on the middle-voltage side on which the transformer will be connected to
@@ -1317,17 +1317,17 @@ def create_transformers3w_from_parameters(  # no index ?
         name: name of the 3-winding transformer
         in_service: True for in_service or False for out of service
         max_loading_percent: maximum current loading (only needed for OPF)
-        min_angle_degree: minimum voltage angle difference in degree, considered in the OPF. NaN means unconstrained.
-            A three-winding transformer is modelled as three branches through an internal star point, so the limit
-            applies to each of those branches (hv -> star and star -> mv, star -> lv) separately. The angle
-            difference between the terminals, va_hv - va_mv resp. va_hv - va_lv, can therefore reach twice this value.
+        min_angle_degree: minimum voltage angle difference in degree, considered in the OPF. NaN means unconstrained. A
+            three-winding transformer is modelled as three branches through an internal star point, so the limit applies
+            to each of those branches (hv -> star and star -> mv, star -> lv) separately. The angle difference between
+            the terminals, va_hv - va_mv resp. va_hv - va_lv, can therefore reach twice this value.
         max_angle_degree: maximum voltage angle difference in degree, considered in the OPF. NaN means unconstrained.
             See min_angle_degree for the three-winding transformer specifics.
         tap_dependency_table: True if transformer parameters (voltage ratio, angle, impedance) must be adjusted
             dependent on the tap position of the transformer. Requires the additional column "id_characteristic_table".
-            The function pandapower.control.trafo_characteristic_table_diagnostic can be used for sanity checks.
-            The function pandapower.control.create_trafo_characteristic_object can be used to create
-            SplineCharacteristic objects in the net.trafo_characteristic_spline table and add the additional column
+            The function pandapower.control.trafo_characteristic_table_diagnostic can be used for sanity checks. The
+            function pandapower.control.create_trafo_characteristic_object can be used to create SplineCharacteristic
+            objects in the net.trafo_characteristic_spline table and add the additional column
             "id_characteristic_spline" to set up the reference to the spline characteristics.
         id_characteristic_table: references the index of the characteristic from the lookup table
             net.trafo_characteristic_table
@@ -1343,14 +1343,12 @@ def create_transformers3w_from_parameters(  # no index ?
         list of ids of the created 3w-transformers
 
     Example:
-        >>> create_transformers3w_from_parameters(
-        >>>     net, hv_bus=[0, 3], mv_bus=[1, 4], lv_bus=[2, 5], name="trafo1", sn_hv_mva=40, sn_mv_mva=20,
-        >>>     sn_lv_mva=20, vn_hv_kv=110, vn_mv_kv=20, vn_lv_kv=10, vk_hv_percent=10,vk_mv_percent=11,
-        >>>     vk_lv_percent=12, vkr_hv_percent=0.3, vkr_mv_percent=0.31, vkr_lv_percent=0.32, pfe_kw=30,
-        >>>     i0_percent=0.1, shift_mv_degree=30, shift_lv_degree=30
-        >>> )
-
-    \\* only considered in load flow if calculate_voltage_angles = True
+            >>> create_transformers3w_from_parameters(
+            >>>     net, hv_bus=[0, 3], mv_bus=[1, 4], lv_bus=[2, 5], name="trafo1", sn_hv_mva=40, sn_mv_mva=20,
+            >>>     sn_lv_mva=20, vn_hv_kv=110, vn_mv_kv=20, vn_lv_kv=10, vk_hv_percent=10,vk_mv_percent=11,
+            >>>     vk_lv_percent=12, vkr_hv_percent=0.3, vkr_mv_percent=0.31, vkr_lv_percent=0.32, pfe_kw=30,
+            >>>     i0_percent=0.1, shift_mv_degree=30, shift_lv_degree=30
+            >>> )
     """
 
     index = _get_multiple_index_with_check(net, "trafo3w", index, len(hv_buses), name="Three winding transformers")
