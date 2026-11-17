@@ -14,10 +14,12 @@ import pandas as pd
 class UCTEParser:
     def __init__(self, path_ucte_file: str | None = None, config: dict | None = None):
         """
-        This class parses an UCTE file and loads its content to a dictionary of
-        UCTE element type (str) -> UCTE elements (DataFrame)
-        :param path_ucte_file: The path to the UCTE file. Optional, default: None. This parameter may be set later.
-        :param config: The configuration dictionary. Optional, default: None. This parameter may be set later.
+        This class parses an UCTE file and loads its content to a dictionary of UCTE element type (str) -> UCTE
+        elements (DataFrame)
+
+        Parameters:
+            path_ucte_file: The path to the UCTE file. This parameter may be set later.
+            config: The configuration dictionary. This parameter may be set later.
         """
         self.path_ucte_file: str | None = path_ucte_file
         self.config: dict = config if isinstance(config, dict) else {}
@@ -30,8 +32,12 @@ class UCTEParser:
     def parse_file(self, path_ucte_file: str | None = None) -> bool:
         """
         Parse a UCTE file.
-        :param path_ucte_file: The path to the UCTE file. By default the internal field 'self.path_ucte_file' is used.
-        :return: True if parsing was successful, False otherwise.
+
+        Parameters:
+            path_ucte_file: The path to the UCTE file. By default, the internal field 'self.path_ucte_file' is used.
+
+        Returns:
+            True if parsing was successful, False otherwise.
         """
         time_start = time.time()
         # check parameters and needed fields
@@ -302,9 +308,11 @@ class UCTEParser:
     def get_fields_dict(self) -> dict[str, dict[str, list[str]]]:
         """
         Get an overview about the UCTE element types and their fields.
-        :return: A dictionary containing a dictionary with the UCTE element types as keys and for each UCTE element
-        type a list of fields and a dictionary with the UCTE element types as keys and for each UCTE element type a
-        list of dtypes.
+
+        Returns:
+            A dictionary containing a dictionary with the UCTE element types as keys and for each UCTE element type a
+                list of fields and a dictionary with the UCTE element types as keys and for each UCTE element type a
+                list of dtypes.
         """
         self.logger.info(
             "Creating a dictionary containing the UCTE element types as keys and for each UCTE element "

@@ -178,14 +178,13 @@ class PyPowSyBlComparisonUtilsMixin:
         """
         Return the first available result value from a powsybl result row.
 
-        Args:
+        Parameters:
             row: Source row that may contain different naming variants.
             *keys: Candidate column names to check in order.
             default: Value returned if no usable result is found.
 
         Returns:
             First available non-missing result value or ``default``.
-
         """
         if row is None:
             return default

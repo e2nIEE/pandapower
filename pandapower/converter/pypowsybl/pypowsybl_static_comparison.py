@@ -73,12 +73,11 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
         """
         Split the transfer table into grouped DataFrames.
 
-        Args:
+        Parameters:
             only_errors: If ``True``, keep only rows whose status is not ``OK``.
 
         Returns:
             Tuple containing grouped transfer DataFrames and transfer summary.
-
         """
         if self.transfer_table is None:
             self.transfer_table = self._build_transfer_table()
@@ -122,9 +121,8 @@ class PyPowSyBlStaticComparisonMixin(PyPowSyBlComparisonUtilsMixin):
         """
         Log grouped static transfer comparison tables.
 
-        Args:
+        Parameters:
             only_errors: If ``True``, log only failing comparison rows.
-
         """
         self.transfer_dataframes, self.transfer_summary = self._build_transfer_dataframes(only_errors=only_errors)
 
