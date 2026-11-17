@@ -14,8 +14,8 @@ from copy import deepcopy
 import numpy as np
 import pandas as pd
 
-from pandapower import pandapowerNet
 from pandapower.auxiliary import ensure_iterability
+from pandapower.network import pandapowerNet
 from pandapower.toolbox.element_selection import element_bus_tuples, pp_elements
 from pandapower.topology.create_graph import create_nxgraph
 from pandapower.topology.graph_searches import connected_component, connected_components
