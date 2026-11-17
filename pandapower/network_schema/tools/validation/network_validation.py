@@ -70,7 +70,7 @@ def _describe_failure_cases(failure_cases: pd.DataFrame, limit: int = MAX_REPORT
 
     Only the first ``limit`` entries are listed, the rest is summarized as a count.
 
-    Args:
+    Parameters:
         failure_cases: dataframe as reported in ``SchemaError.failure_cases``
         limit: maximum number of entries to list
 
@@ -101,10 +101,10 @@ def _dtype_name(dtype) -> str:
     """
     Return the bare name of a dtype, e.g. ``float64`` for ``"dtype('float64')"``.
 
-    Pandera reports the expected dtype of a column as ``"dtype('float64')"``, which is
-    unnecessarily noisy in a user facing message.
+    Pandera reports the expected dtype of a column as ``"dtype('float64')"``, which is unnecessarily noisy in a user
+    facing message.
 
-    Args:
+    Parameters:
         dtype: dtype as reported by pandera, either as ``dtype`` object or as string
 
     Returns:
@@ -120,7 +120,7 @@ def _build_message(element: str, error: pa.errors.SchemaError) -> str:
     """
     Create a user readable message for a single pandera ``SchemaError``.
 
-    Args:
+    Parameters:
         element: name of the element table the error belongs to
         error: the pandera error raised for one check or schema level rule
 
@@ -169,7 +169,7 @@ def _issues_from_schema_errors(element: str, errors: pa.errors.SchemaErrors) -> 
     """
     Convert a pandera ``SchemaErrors`` (raised with ``lazy=True``) into issues.
 
-    Args:
+    Parameters:
         element: name of the element table
         errors: the collected pandera errors
 
@@ -195,10 +195,10 @@ def _issue_from_exception(element: str, error: Exception) -> ValidationIssue:
     """
     Convert an exception raised outside of pandera's validation into an issue.
 
-    This is used for errors that happen while preparing the validation, e.g. when a
-    referenced element table is missing, to keep the collected output complete.
+    This is used for errors that happen while preparing the validation, e.g. when a referenced element table is
+    missing, to keep the collected output complete.
 
-    Args:
+    Parameters:
         element: name of the element table
         error: the exception that occurred
 
@@ -217,7 +217,7 @@ def format_validation_errors(errors: dict[str, list[ValidationIssue]]) -> str:
     """
     Format collected validation errors as a single readable string.
 
-    Args:
+    Parameters:
         errors: result of :func:`validate_network` with ``collect_errors=True``
 
     Returns:
@@ -239,10 +239,9 @@ def validate_network(
     """
     Validate pandapower network element dataframes using schemas from the schema folder.
 
-    This function iterates through all elements in a pandapower network and validates
-    each element's dataframe against its corresponding schema file. Schema files are
-    expected to be located in pandapower.network_schema and named after the
-    element type (e.g., 'bus.py', 'line.py', etc.).
+    This function iterates through all elements in a pandapower network and validates each element's dataframe
+    against its corresponding schema file. Schema files are expected to be located in pandapower.network_schema and
+    named after the element type (e.g., 'bus.py', 'line.py', etc.).
 
     The validation process includes:
 
@@ -251,31 +250,21 @@ def validate_network(
     3. Optional group dependency validation (e.g., opf, sc, 3ph)
     4. Bus index dependency validation for network consistency
 
-    Args:
-        net (pandapowerNet): A pandapower network object containing various
-                           electrical network elements (buses, lines, loads, etc.)
-                           to be validated.
-        groups_to_validate (str | list[str] | set[str] | None): Optional group(s) to validate.
-            If provided, validates the specified dependency groups in addition to
-            the base schema. Valid groups depend on the element schema (e.g., "opf",
-            "sc", "3ph" for ext_grid). A single group can be passed as a string, several
-            groups as a list or set. If None, validates only the base schema.
-        collect_errors (bool): If False (default) the first element that fails validation
-            raises a ``SchemaError``. If True, all elements are validated and all issues
-            are collected instead of raising, so that a complete picture of the network
-            is returned.
-
-    Raises:
-        pa.errors.SchemaError: If validation fails for any network element and
-                              ``collect_errors`` is False. The error includes details
-                              about which element failed validation and the underlying cause.
+    Parameters:
+        net: A pandapower network object containing various electrical network elements (buses, lines, loads, etc.) to
+            be validated.
+        groups_to_validate: group(s) to validate. If provided, validates the specified dependency groups in addition to
+            the base schema. Valid groups depend on the element schema (e.g., "opf", "sc", "3ph" for ext_grid). A single
+            group can be passed as a string, several groups as a list or set. If None, validates only the base schema.
+        collect_errors: If False (default) the first element that fails validation raises a ``SchemaError``. If True,
+            all elements are validated and all issues are collected instead of raising, so that a complete picture of
+            the network is returned.
 
     Returns:
-        None if ``collect_errors`` is False and the validation passed.
-        If ``collect_errors`` is True, a dict mapping the element name to a list of
-        :class:`ValidationIssue`. Each issue carries a readable ``message`` and printing
-        the issues (or using :func:`format_validation_errors`) gives a user facing report.
-        The dict is empty if all elements are valid.
+        None if ``collect_errors`` is False and the validation passed. If ``collect_errors`` is True, a dict mapping the
+            element name to a list of :class:`ValidationIssue`. Each issue carries a readable ``message`` and printing
+            the issues (or using :func:`format_validation_errors`) gives a user facing report. The dict is empty if all
+            elements are valid.
 
     Note:
 

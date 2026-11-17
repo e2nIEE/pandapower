@@ -26,18 +26,18 @@ from pandapower.grid_equivalents.auxiliary import (
     replace_motor_by_load,
 )
 from pandapower.grid_equivalents.toolbox import get_connected_switch_buses_groups
+from pandapower.network import pandapowerNet
 from pandapower.toolbox.grid_modification import drop_buses
 
 logger = logging.getLogger(__name__)
 
 
-def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type, show_computing_time=False, **kwargs):
+def _calculate_equivalent_Ybus(net_zpbn, bus_lookups: dict, eq_type: str, show_computing_time: bool = False):
     """
-    The function orders the admittance matrix of the original network into
-    new format firstly, which is convenient for rei equivalent calculation.d
-    Then it calculates the equivalent admittance matrix of the given network
+    The function orders the admittance matrix of the original network into new format firstly, which is convenient
+    for rei equivalent calculation.d Then it calculates the equivalent admittance matrix of the given network
 
-    i: internal   b: boundary    e: external    g: ground    t: total
+    i: internal b: boundary e: external g: ground t: total
 
     Ymat_trans =
 
@@ -52,19 +52,14 @@ def _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type, show_computing_ti
                                      [   0   , |Ybus_eb ,    0  |, |Ybus_eg, Ybus_ee| ]
                                                |________________|  |________________|
 
-    INPUT:
-        **net_zpbn** -  zero power balance network (pandapower network)
+    Parameters:
+        net_zpbn: zero power balance network (pandapower network)
+        bus_lookups: bus lookups
+        eq_type: the equavalten type
+        show_computing_time:
 
-        **bus_lookups** (dict) -  bus lookups
-
-        **eq_type** (str) -  the equavalten type
-
-    OPTIONAL:
-        **check_validity** (bool, False) - TODO
-
-    OUTPUT:
-        **Ybus** - equivalent admittance matrix of the external network
-
+    Returns:
+        Ybus: equivalent admittance matrix of the external network
     """
     t_start = time.perf_counter()
     # --- initialization
@@ -135,13 +130,13 @@ def adapt_impedance_params(Z, sign=1, adaption=1e-15):
 
 # TODO: This function should be refactored, it is way to big and does way to many tasks in one.
 def _create_net_zpbn(
-    net,
-    boundary_buses,
-    all_internal_buses,
-    all_external_buses,
-    load_separate=False,
-    sgen_separate=True,
-    gen_separate=True,
+    net: pandapowerNet,
+    boundary_buses: list,
+    all_internal_buses: list,
+    all_external_buses: list,
+    load_separate: bool = False,
+    sgen_separate: bool = True,
+    gen_separate: bool = True,
     show_computing_time=False,
     calc_volt_angles=True,
     runpp_fct=_runpp_except_voltage_angles,
@@ -158,26 +153,14 @@ def _create_net_zpbn(
         load_separate: flag if all the loads are reserved integrally
         sgen_separate: flag if all the DER are reserved separately
         gen_separate: flag if all the gens are reserved separately
-        tolerance: loadflow termination condition referring to P / Q mismatch of node power in MVA.
-            The loadflow hier is to get the admittance matrix of the zpbn network
+        show_computing_time:
+        calc_volt_angles:
+        runpp_fct:
 
-    OPTIONAL:
-        **load_separate** (bool, False) - flag if all the loads
-            are reserved integrally
+    Keyword Args:
 
-        **sgen_separate** (bool, True) - flag if all the DER are
-            reserved separately
-
-        **gen_separate** (bool, True) - flag if all the gens are
-            reserved separately
-
-        **tolerance** (float, 1e-3) - loadflow termination
-            condition referring to P / Q mismatch of node power
-            in MVA. The loadflow hier is to get the admittance
-            matrix of the zpbn network
-
-    OUTPUT:
-        **net_zpbn** - zero power balance networks
+    Returns:
+        net_zpbn: zero power balance networks
     """
 
     net_internal, net_external = _get_internal_and_external_nets(
@@ -677,20 +660,26 @@ def _get_internal_and_external_nets(
 
 
 def _calclate_equivalent_element_params(
-    net_zpbn, Ybus_eq, bus_lookups, show_computing_time=False, max_allowed_impedance=1e8, **kwargs
+    net_zpbn,
+    Ybus_eq,
+    bus_lookups: dict,
+    show_computing_time: bool = False,
+    max_allowed_impedance: float = 1e8,
+    **kwargs,
 ):
-    """This function calculates the equivalent parameters
+    """
+    This function calculates the equivalent parameters
 
-    INPUT:
-      **Ybus_eq** (array) - equivalent admittance matrix of the external area
+    Parameters:
+        net_zpbn:
+        Ybus_eq: equivalent admittance matrix of the external area
+        bus_lookup: bus lookup table
+        show_computing_time:
+        max_allowed_impedance:
 
-      **bus_lookup** (dict) - bus lookup table
-
-    OUTPUT:
-      **shunt_params** - parameters of the equivalent shunts
-
-      **impedance_params** - parameters of the equivalent impedances
-
+    Returns:
+        shunt_params: parameters of the equivalent shunts
+        impedance_params: parameters of the equivalent impedances
     """
     t_start = time.perf_counter()
     # --- calculate impedance paramter
