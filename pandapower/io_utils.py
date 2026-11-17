@@ -679,8 +679,14 @@ class FromSerializableRegistry:
         if "geo" in df.columns:
             df["geo"] = df["geo"].dropna().apply(json.dumps).apply(geojson.loads)
 
-        df_obj = df.select_dtypes(include=["object"])
-        for col in df_obj:
+        # the columns select_dtypes(include="object") returns on pandas 3, without its deprecation warning:
+        # object columns and default "str" columns (NaN as missing value), not "string" columns (pd.NA)
+        obj_cols = [
+            col
+            for col, dtype in df.dtypes.items()
+            if dtype == object or (isinstance(dtype, pd.StringDtype) and dtype.na_value is not pd.NA)
+        ]
+        for col in obj_cols:
             df[col] = df[col].apply(
                 partial(
                     self.pp_hook,
