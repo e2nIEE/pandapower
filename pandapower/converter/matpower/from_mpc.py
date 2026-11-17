@@ -94,6 +94,21 @@ def _mat2ppc(mpc_file, casename_mpc_file):
 
 
 def _m2ppc(mpc_file, load_case_engine=None):
+    """
+    Converts a MATPOWER case file (.m) to a PYPOWER case (ppc) dict.
+
+    The file is parsed with matpowercaseframes. The name arrays (bus_name, gen_name
+    and branch_name) are flattened to one dimension, as expected by from_ppc, and the
+    element indices are adjusted from MATLAB's 1-based to Python's 0-based convention.
+
+    Parameters:
+        mpc_file: path to the MATPOWER case file (.m).
+        load_case_engine (object, None): External engine used to call MATPOWER
+            `loadcase`, passed on to matpowercaseframes.
+
+    Returns:
+        The PYPOWER case dict (ppc)
+    """
     if not matpowercaseframes_imported:
         raise NotImplementedError(
             "matpowercaseframes is used to convert .m file. Please install that python "
