@@ -26,7 +26,7 @@ def to_ppc(
     check_connectivity: bool = True,
     voltage_depend_loads: bool = False,
     init: Literal["flat", "results"] = "results",
-    mode: Literal["opf", "pf", "pf_3ph", "sc", "nx", "se", "dc"] | None = None,
+    mode: Literal["opf", "pf"] | None = None,
     take_slack_vm_limits: bool = True,
 ):
     """
@@ -50,7 +50,7 @@ def to_ppc(
             bus-bus switches, whose impedance z_ohm is not zero, are modelled as branches with resistance and reactance
             according to net.switch.z_ohm and switch_rx_ratio.
         check_connectivity: Perform an extra connectivity test after the conversion from pandapower to
-            PYPOWER If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is perfomed. If
+            PYPOWER If True, an extra connectivity test based on SciPy Compressed Sparse Graph Routines is performed. If
             the check finds unsupplied buses, they are set out of service in the ppc
         voltage_depend_loads: consideration of voltage-dependent loads. If False,
             net.load.const_z_p_percent, net.load.const_i_p_percent, net.load.const_z_q_percent and
@@ -80,7 +80,7 @@ def to_ppc(
         >>> net = case9()
         >>> ppc = to_ppc(net)
     """
-    if (not (net["poly_cost"].empty and net["pwl_cost"].empty) and mode is None) or mode == "opf":
+    if mode == "opf" or (mode is None and not (net["poly_cost"].empty and net["pwl_cost"].empty)):
         mode = "opf"
         _check_necessary_opf_parameters(net, logger)
     else:
@@ -98,6 +98,9 @@ def to_ppc(
                 "The res_bus indices doesn't fit to the bus indices. Change the "
                 "input parameter 'init' to flat or correct the res_bus table."
             )
+
+    if mode is None:  # never, but mypy needs to understand that
+        raise ValueError("mode is None, this should not happen.")
 
     # select elements in service
     net["_options"] = {}

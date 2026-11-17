@@ -209,7 +209,7 @@ def validate_pf_conversion(net: pandapowerNet, is_unbalanced: bool = False, **kw
         is_unbalanced:
 
     Returns:
-        returns a list with the difference in all validated values. If all values are zero -> results are equal
+        returns a dict with the difference in all validated values. If all values are zero -> results are equal
     """
     logger.debug("starting verification")
     replace_zero_branches_with_switches(net)

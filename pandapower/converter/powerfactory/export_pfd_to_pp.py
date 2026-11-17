@@ -24,7 +24,7 @@ def from_pfd(
     pv_as_slack: bool = False,
     pf_variable_p_loads: str = "plini",
     pf_variable_p_gen: str = "pgini",
-    flag_graphics: Literal["GPS", "IntGrf", "no geodata"] = "GPS",
+    flag_graphics: str = "GPS",
     tap_opt: str = "nntap",
     export_controller: bool = True,
     handle_us: Literal["Deactivate", "Drop", "Nothing"] = "Deactivate",
