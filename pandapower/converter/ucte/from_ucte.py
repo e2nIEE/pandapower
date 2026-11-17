@@ -17,14 +17,14 @@ def from_ucte_dict(
     ucte_parser: UCTEParser, slack_as_gen: bool = True, clip_small_x_values: bool = True
 ) -> pandapowerNet:
     """
-    Creates a pandapower net from an UCTE data structure.
+    Creates a pandapower net from a UCTE data structure.
 
-    :param UCTEParser ucte_parser: The UCTEParser with parsed UCTE data.
-    :param bool slack_as_gen: decides whether slack elements are converted as gen or ext_grid elements, default True
+    Parameters:
+        ucte_parser: The UCTEParser with parsed UCTE data.
+        slack_as_gen: decides whether slack elements are converted as gen or ext_grid elements
 
-    :return: A pandapower net.
-    :rtype: pandapowerNet
-
+    Returns:
+        A pandapower net.
     """
     if ucte_parser.path_ucte_file is None:
         raise RuntimeError("The variable 'path_ucte_file' of ucte_parser is None, set it before parsing it!")
@@ -41,17 +41,19 @@ def from_ucte(
     harmonize_voltage_setpoints: bool = False,
 ) -> pandapowerNet:
     """
-    Converts net data stored as an UCTE file to a pandapower net.
+    Converts net data stored as a UCTE file to a pandapower net.
 
-    :param str ucte_file: path to the ucte file which includes all the data of the grid (EHV or HV or both)
-    :param bool slack_as_gen: decides whether slack elements are converted as gen or ext_grid elements.
-    :param bool clip_small_x_values: decides whether small X values shall be clipped to 0.05 Ohm (recommendation from UCTE-DEF)
-    :param bool harmonize_voltage_setpoints: decides whether voltage setpoints of electrically connected gens shall be harmonized
+    Parameters:
+        ucte_file: path to the ucte file which includes all the data of the grid (EHV or HV or both)
+        slack_as_gen: decides whether slack elements are converted as gen or ext_grid elements.
+        clip_small_x_values: decides whether small X values shall be clipped to 0.05 Ohm (recommendation from UCTE-DEF)
+        harmonize_voltage_setpoints: decides whether voltage setpoints of electrically connected gens shall be
+            harmonized
 
-    :return: A pandapower net
-    :rtype: pandapowerNet
+    Returns:
+        A pandapower net
 
-    :example:
+    Example:
         >>> import os
         >>> from pandapower import pp_dir
         >>> from pandapower.converter.ucte.from_ucte import from_ucte

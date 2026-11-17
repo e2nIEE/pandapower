@@ -44,9 +44,8 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
         """
         Log grouped AC load-flow comparison tables.
 
-        Args:
+        Parameters:
             only_errors: If ``True``, log only failing load-flow comparison rows.
-
         """
         self.loadflow_table = self._build_loadflow_table()
         self.loadflow_dataframes, self.loadflow_summary = self._build_loadflow_dataframes(only_errors=only_errors)
@@ -138,12 +137,11 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
         """
         Split the load-flow into grouped DataFrames.
 
-        Args:
+        Parameters:
             only_errors: If ``True``, keep only rows whose status is not ``OK``.
 
         Returns:
             Tuple containing grouped load-flow DataFrames and the load-flow summary.
-
         """
         if self.loadflow_table is None:
             self.loadflow_table = self._build_loadflow_table()
@@ -260,11 +258,10 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
         """
         Append load-flow execution status rows to the comparison table.
 
-        Args:
+        Parameters:
             rows: Mutable list that receives result dictionaries.
             pyp_status: Status dictionary returned by the powsybl load-flow runner.
             pp_status: Status dictionary returned by the pandapower load-flow runner.
-
         """
         pyp_results = pyp_status.get("results", []) or []
 
