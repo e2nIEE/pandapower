@@ -13,6 +13,7 @@ __all__ = [
     "get_plotly_cmap",
     "get_plotly_color",
     "get_plotly_color_palette",
+    "get_plotly_colorscale",
     "layers_plotly",
     "pf_res_plotly",
     "simple_plotly",
@@ -22,7 +23,12 @@ __all__ = [
 ]
 
 from pandapower.plotting.plotly.draw_layers import draw_layers, version_check
-from pandapower.plotting.plotly.get_colors import get_plotly_cmap, get_plotly_color, get_plotly_color_palette
+from pandapower.plotting.plotly.get_colors import (
+    get_plotly_cmap,
+    get_plotly_color,
+    get_plotly_color_palette,
+    get_plotly_colorscale,
+)
 from pandapower.plotting.plotly.layers_plotly import layers_plotly
 from pandapower.plotting.plotly.pf_res_plotly import pf_res_plotly
 from pandapower.plotting.plotly.simple_plotly import get_hoverinfo, simple_plotly
