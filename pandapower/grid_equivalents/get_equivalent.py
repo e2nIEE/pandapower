@@ -207,7 +207,7 @@ def get_equivalent(
         )
 
         # --- calculate equivalent Ybus according to gaussian elimination
-        Ybus_eq = _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type, show_computing_time, **kwargs)
+        Ybus_eq = _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type, show_computing_time)
 
         # --- calculate equivalent impedance and shunts
         shunt_params, impedance_params = _calclate_equivalent_element_params(
@@ -254,9 +254,7 @@ def get_equivalent(
         )
 
         # --- cacluate equivalent Ybus accourding to gaussian elimination
-        Ybus_eq = _calculate_equivalent_Ybus(
-            net_external, bus_lookups, eq_type, show_computing_time, check_validity=False
-        )
+        Ybus_eq = _calculate_equivalent_Ybus(net_external, bus_lookups, eq_type, show_computing_time)
 
         if eq_type == "ward":
             # --- calculate equivalent impedance and wards
