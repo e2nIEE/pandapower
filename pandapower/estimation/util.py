@@ -6,16 +6,21 @@ import pandas as pd
 from pandas import DataFrame, isnull, notnull
 
 from pandapower.create import create_measurement
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 from pandapower.topology import connected_component, create_nxgraph
 
 
-def estimate_voltage_vector(net):
+def estimate_voltage_vector(net: pandapowerNet):
     """
-    Function initializes the voltage vector of net with a rough estimation. All buses are set to the
-    slack bus voltage. Transformer differences in magnitude and phase shifting are accounted for.
-    :param net: pandapower network
-    :return: pandas dataframe with estimated vm_pu and va_degree
+    Function initializes the voltage vector of net with a rough estimation. All buses are set to the slack bus
+    voltage. Transformer differences in magnitude and phase shifting are accounted for.
+
+    Parameters:
+        net: pandapower network
+
+    Returns:
+        pandas dataframe with estimated vm_pu and va_degree
     """
     res_bus = DataFrame(index=net.bus.index, columns=["vm_pu", "va_degree"])
     net_graph = create_nxgraph(net, include_trafos=False)
@@ -36,7 +41,7 @@ def estimate_voltage_vector(net):
                         net.bus.vn_kv.at[trafo.hv_bus] / net.bus.vn_kv.at[trafo.lv_bus]
                     )
                     res_bus.loc[area, "vm_pu"] = res_bus.vm_pu.at[trafo.hv_bus] * ratio
-                    res_bus.loc[area, "va_degree"] = res_bus.va_degree.at[trafo.hv_bus] - shift
+                    res_bus.loc[area, "va_degree"] = res_bus.va_degree.at[trafo.hv_bus] - shift  # type: ignore[operator]
                 except KeyError:
                     raise UserWarning(
                         "An out-of-service bus is connected to an in-service "
@@ -85,26 +90,29 @@ def _get_bus_ppc_mapping(net, bus_to_be_fused):
     return bus_ppci
 
 
-def set_bb_switch_impedance(net, bus_to_be_fused=None, z_ohm=0.1):
+def set_bb_switch_impedance(net: pandapowerNet, bus_to_be_fused=None, z_ohm: float = 0.1):
     """
-     Assuming a substation with multiple buses connected to each other with bb switch
-     if multiple of them have an element (load, sgen usw.) then it caused problem on
-     e.g. State Estimation, since they will be automatically fused in ppc
-     A possiblity would be to properly seperate the substation to multiple clusters (ppc) bus
-     according to the number of buses with elements, in order to estimate the p, q on all
-     the busses.
-     These method implemented a forward and backward substitution:
-     1. Find the mapping of pd2ppc bus, and identify the ppc bus, which contains multiple bus with elements
-     2. Skip the first bus with elements with the same ppc bus, and finding all the switch connected to the
-       rest pandapower bus and set impedance
-     3. Update the pd2ppc lookup
-     4. if it caused some bus without elements to detach from any of the bus with connected element, then the
-       switch caused it will be reset to fuse mode
-     5. Iterate this process until all buses with elements are seperated to their own ppc bus, while no bus is
-       detached in order to get the voltage on bus right
-    :param net: pandapower net
-    :param z_ohm: float z_ohm to be setted for the switch
-    :return: None
+    Assuming a substation with multiple buses connected to each other with bb switch if multiple of them have an
+    element (load, sgen usw.) then it caused problem on e.g. State Estimation, since they will be automatically
+    fused in ppc A possibility would be to properly separate the substation to multiple clusters (ppc) bus according
+    to the number of buses with elements, in order to estimate the p, q on all the busses. These method implemented
+    a forward and backward substitution:
+    1. Find the mapping of pd2ppc bus, and identify the ppc bus, which contains multiple bus with elements
+    2. Skip the first bus with elements with the same ppc bus, and finding all the switch connected to the
+      rest pandapower bus and set impedance
+    3. Update the pd2ppc lookup
+    4. if it caused some bus without elements to detach from any of the bus with connected element, then the
+      switch caused it will be reset to fuse mode
+    5. Iterate this process until all buses with elements are separated to their own ppc bus, while no bus is
+      detached in order to get the voltage on bus right
+
+    Parameters:
+        net: pandapower net
+        bus_to_be_fused:
+        z_ohm: float z_ohm to be set for the switch
+
+    Returns:
+        None
     """
     if "z_ohm" in net.switch:
         net.switch["z_ohm_ori"] = net.switch["z_ohm"]
@@ -138,11 +146,15 @@ def set_bb_switch_impedance(net, bus_to_be_fused=None, z_ohm=0.1):
             return
 
 
-def reset_bb_switch_impedance(net):
+def reset_bb_switch_impedance(net: pandapowerNet):
     """
     Reset the z_ohm of the switch to its original state, undo the operation by set_bb_switch_impedance
-    :param net: pandapower net
-    :return: None
+
+    Parameters:
+        net: pandapower net
+
+    Returns:
+        None
     """
     if "z_ohm_ori" in net.switch:
         net.switch["z_ohm"] = net.switch["z_ohm_ori"]

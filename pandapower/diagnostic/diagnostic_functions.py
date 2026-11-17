@@ -382,11 +382,9 @@ class MultipleVoltageControllingElementsPerBus(DiagnosticFunction[pandapowerNet,
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> dict[str, list[Any]] | None:
         """
-        :returns: dict that contains all buses with multiple generator and
-                  all buses with multiple external grids
-                  Format: {'mult_ext_grids': [buses], 'buses_with_mult_gens', [buses]}
-        :rtype: dict
-
+        Returns:
+            dict that contains all buses with multiple generator and all buses with multiple external grids Format:
+                {'mult_ext_grids': [buses], 'buses_with_mult_gens', [buses]}
         """
         self.net = net
         check_results = {}
@@ -449,12 +447,16 @@ class Overload(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> dict[str, bool] | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
-            is replaced by the function kwargs["run"]
+        Parameters:
+            net: pandapower network
 
-        :returns: dict with the results of the overload check
-                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        Keyword Args:
+            run (Callable): replaces the default runpp
+            Arguments for power flow function.
+
+        Returns:
+            dict with the results of the overload check Format: {'load_overload': True/False, 'generation_overload',
+                True/False}
         """
         # get function to run power flow
         run = partial(kwargs.pop("run", runpp), **kwargs)
@@ -549,12 +551,16 @@ class CheckDCPowerflow(DiagnosticFunction[pandapowerNet, bool]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> bool | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
-            is replaced by the function kwargs["run"]
+        Parameters:
+            net: pandapower network
 
-        :returns: dict with the results of the overload check
-                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        Keyword Args:
+            run (Callable): replaces the default runpp
+            Arguments for power flow function.
+
+        Returns:
+            dict with the results of the overload check Format: {'load_overload': True/False, 'generation_overload',
+                True/False}
         """
         # get function to run power flow
         run = partial(kwargs.pop("run", rundcpp), **kwargs)
@@ -601,12 +607,16 @@ class DisableVoltageDependentLoads(DiagnosticFunction[pandapowerNet, bool]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> bool | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
-            is replaced by the function kwargs["run"]
+        Parameters:
+            net: pandapower network
 
-        :returns: dict with the results of the overload check
-                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        Keyword Args:
+            run (Callable): replaces the default runpp
+            Arguments for power flow function.
+
+        Returns:
+            dict with the results of the overload check Format: {'load_overload': True/False, 'generation_overload',
+                True/False}
         """
         # get function to run power flow
         run = partial(kwargs.pop("run", runpp), **kwargs)
@@ -654,12 +664,16 @@ class WrongLineCapacitance(DiagnosticFunction[pandapowerNet, bool]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> bool | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
-            is replaced by the function kwargs["run"]
+        Parameters:
+            net: pandapower network
 
-        :returns: dict with the results of the overload check
-                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        Keyword Args:
+            run (Callable): replaces the default runpp
+            Arguments for power flow function.
+
+        Returns:
+            dict with the results of the overload check Format: {'load_overload': True/False, 'generation_overload',
+                True/False}
         """
         # get function to run power flow
         run = partial(kwargs.pop("run", runpp), **kwargs)
@@ -734,12 +748,16 @@ class WrongLineReactance(DiagnosticFunction[pandapowerNet, bool]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> bool | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
-            is replaced by the function kwargs["run"]
+        Parameters:
+            net: pandapower network
 
-        :returns: dict with the results of the overload check
-                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        Keyword Args:
+            run (Callable): replaces the default runpp
+            Arguments for power flow function.
+
+        Returns:
+            dict with the results of the overload check Format: {'load_overload': True/False, 'generation_overload',
+                True/False}
         """
         # get function to run power flow
         run = partial(kwargs.pop("run", runpp), **kwargs)
@@ -814,12 +832,16 @@ class WrongLineResistance(DiagnosticFunction[pandapowerNet, bool]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> bool | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
-            is replaced by the function kwargs["run"]
+        Parameters:
+            net: pandapower network
 
-        :returns: dict with the results of the overload check
-                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        Keyword Args:
+            run (Callable): replaces the default runpp
+            Arguments for power flow function.
+
+        Returns:
+            dict with the results of the overload check Format: {'load_overload': True/False, 'generation_overload',
+                True/False}
         """
         # get function to run power flow
         run = partial(kwargs.pop("run", runpp), **kwargs)
@@ -895,12 +917,16 @@ class SubNetProblemTest(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> dict[str, bool] | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
-            is replaced by the function kwargs["run"]
+        Parameters:
+            net: pandapower network
 
-        :returns: dict with the results of the overload check
-                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        Keyword Args:
+            run (Callable): replaces the default runpp
+            Arguments for power flow function.
+
+        Returns:
+            dict with the results of the overload check Format: {'load_overload': True/False, 'generation_overload',
+                True/False}
         """
         # get function to run power flow
         run = partial(kwargs.pop("run", runpp), **kwargs)
@@ -962,12 +988,16 @@ class OptimisticPowerflow(DiagnosticFunction[pandapowerNet, dict[str, bool]]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> dict[str, bool] | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
-            is replaced by the function kwargs["run"]
+        Parameters:
+            net: pandapower network
 
-        :returns: dict with the results of the overload check
-                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        Keyword Args:
+            run (Callable): replaces the default runpp
+            Arguments for power flow function.
+
+        Returns:
+            dict with the results of the overload check Format: {'load_overload': True/False, 'generation_overload',
+                True/False}
         """
         # get function to run power flow
         run = partial(kwargs.pop("run", runpp), **kwargs)
@@ -1061,12 +1091,16 @@ class SlackGenPlacement(DiagnosticFunction[pandapowerNet, dict[str, float]]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> dict[str, float] | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
-            is replaced by the function kwargs["run"]
+        Parameters:
+            net: pandapower network
 
-        :returns: dict with the results of the overload check
-                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        Keyword Args:
+            run (Callable): replaces the default runpp
+            Arguments for power flow function.
+
+        Returns:
+            dict with the results of the overload check Format: {'load_overload': True/False, 'generation_overload',
+                True/False}
         """
         # get function to run power flow
         run = partial(kwargs.pop("run", runpp), **kwargs)
@@ -1153,12 +1187,14 @@ class TestContinuousBusIndices(DiagnosticFunction[pandapowerNet, bool]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> bool | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
-            is replaced by the function kwargs["run"]
+        Parameters:
+            net: pandapower network
+            kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp() is
+                replaced by the function kwargs["run"]
 
-        :returns: dict with the results of the overload check
-                  Format: {'load_overload': True/False, 'generation_overload', True/False}
+        Returns:
+            dict with the results of the overload check Format: {'load_overload': True/False, 'generation_overload',
+                True/False}
         """
         # get function to run power flow
         run = partial(kwargs.pop("run", runpp), **kwargs)
@@ -1203,9 +1239,12 @@ class WrongSwitchConfiguration(DiagnosticFunction[pandapowerNet, bool]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> bool | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
-                       is replaced by the function kwargs["run"]
+        Parameters:
+            net: pandapower network
+
+        Keyword Args:
+            run (Callable): replaces the default runpp
+            Arguments for power flow function.
         """
         run = partial(kwargs.pop("run", runpp), **kwargs)
         switch_configuration = copy.deepcopy(net.switch["closed"])
@@ -1253,11 +1292,15 @@ class MissingBusIndices(DiagnosticFunction[pandapowerNet, dict]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> dict | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: unused
+        Parameters:
+            net: pandapower network
 
-        :returns: List of tuples each containing missing bus indices.
-                  Format: [(element_index, bus_name (e.g. "from_bus",  bus_index), ...]
+        Keyword Args:
+            not used
+
+        Returns:
+            List of tuples each containing missing bus indices. Format: [(element_index, bus_name (e.g. "from_bus",
+                bus_index), ...]
         """
         check_results = {}
         bus_indices = set(net.bus.index)
@@ -1320,11 +1363,15 @@ class DifferentVoltageLevelsConnected(DiagnosticFunction[pandapowerNet, dict]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> dict | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs:
+        Parameters:
+            net: pandapower network
 
-        :returns: dict that contains all lines and switches that connect different voltage levels.
-                  Format: {'lines': lines, 'switches': switches}
+        Keyword Args:
+            not used
+
+        Returns:
+            dict that contains all lines and switches that connect different voltage levels. Format: {'lines': lines,
+                'switches': switches}
         """
         self.net = net
         check_results = {}
@@ -1393,11 +1440,15 @@ class ImplausibleImpedanceValues(DiagnosticFunction[pandapowerNet, list[dict]]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> list[dict] | None:
         """
-        :param pandapowerNet net: pandapower network
-        :param kwargs: Keyword arguments for power flow function. If "run" is in kwargs the default call to runpp()
-                       is replaced by the function kwargs["run"]
+        Parameters:
+            net: pandapower network
 
-        :returns: list that contains the indices of all lines with an impedance value of zero.
+        Keyword Args:
+            run (Callable): replaces the default runpp
+            Arguments for power flow function.
+
+        Returns:
+            list that contains the indices of all lines with an impedance value of zero.
         """
         # get function to run power flow
         run = partial(kwargs.pop("run", runpp), **kwargs)
@@ -1670,19 +1721,20 @@ class NominalVoltagesMismatch(DiagnosticFunction[pandapowerNet, dict]):
 
     def diagnostic(self, net: pandapowerNet, **kwargs) -> dict | None:
         """
-        :param pandapowerNet net: pandapower network
+        Parameters:
+            net: pandapower network
 
-        :returns: dict that contains all components whose nominal voltages
-                  differ from the nominal voltages of the buses they're
-                  connected to.
-                  Format:
-                  {trafo': {'hv_bus' : trafos_indices,
-                            'lv_bus' : trafo_indices,
-                            'hv_lv_swapped' : trafo_indices},
-                  trafo3w': {'hv_bus' : trafos3w_indices,
-                             'mv_bus' : trafos3w_indices
-                             'lv_bus' : trafo3w_indices,
-                             'connectors_swapped_3w' : trafo3w_indices}}
+        Keyword Args:
+            not used
+
+        Returns:
+            dict that contains all components whose nominal voltages differ from the nominal voltages of the buses
+                they're connected to. Format:
+                {trafo': {'hv_bus' : trafos_indices,
+                'lv_bus' : trafo_indices, 'hv_lv_swapped' : trafo_indices},
+                trafo3w': {'hv_bus' : trafos3w_indices,
+                'mv_bus' : trafos3w_indices
+                'lv_bus' : trafo3w_indices, 'connectors_swapped_3w' : trafo3w_indices}}
         """
         self.net = net
         results = {}
