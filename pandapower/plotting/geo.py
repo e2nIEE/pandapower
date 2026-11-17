@@ -134,7 +134,7 @@ def _transform_node_geometry_to_geojson(node_geo: "GeoDataFrame") -> str:
     return node_geo.to_json(na="drop", show_bbox=True, drop_id=False, to_wgs84=True)
 
 
-def _transform_branch_geometry_to_geojson(branch_geo: GeoDataFrame) -> str:
+def _transform_branch_geometry_to_geojson(branch_geo: "GeoDataFrame") -> str:
     """
     Create geojson from geodataframe geometries
 

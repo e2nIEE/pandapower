@@ -30,7 +30,6 @@ import geojson
 import geojson.utils
 import numpy as np
 from geojson import Point
-from matplotlib.font_manager import FontProperties
 
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.plotting.plotting_toolbox import (
@@ -43,6 +42,7 @@ from pandapower.plotting.plotting_toolbox import (
 )
 
 if find_spec("matplotlib"):
+    from matplotlib.font_manager import FontProperties
     from matplotlib.patches import Arc, Circle, Ellipse, Patch, PathPatch, Polygon, Rectangle, RegularPolygon
     from matplotlib.path import Path
     from matplotlib.textpath import TextPath
@@ -328,7 +328,7 @@ def rectangle_patches(node_coords, width, height, color=None, **kwargs):
     return patches
 
 
-def polygon_patches(node_coords, radius: float, num_edges: int, color=None, **kwargs) -> list[RegularPolygon]:
+def polygon_patches(node_coords, radius: float, num_edges: int, color=None, **kwargs) -> "list[RegularPolygon]":
     """
     Function to create a list of polygon patches from node coordinates. The number of edges for the polygon can be
     defined.
@@ -402,7 +402,7 @@ def load_patches(node_coords, size: float, angles, **kwargs) -> tuple[list, list
 
 def gen_patches(
     node_coords, size: float, angles, patch_type, draw_by_type: bool = True, **kwargs
-) -> tuple[list, list[Polygon | Circle | Arc], set[str]]:
+) -> "tuple[list, list[Polygon | Circle | Arc], set[str]]":
     """
     Creation function of patches for generators.
 
