@@ -341,10 +341,8 @@ def _add_to_entries_if_not_nan(
 
     For ease of use if the column has dtype float it will use 'nan' as default_val without explicitly setting it.
 
-
-    See Also
-    --------
-    _set_value_if_not_nan
+    See Also:
+        _set_value_if_not_nan
     """
     column_exists = column in net[element_type].columns
     dtype = get_structure_dict(required_only=False)[element_type][column]
