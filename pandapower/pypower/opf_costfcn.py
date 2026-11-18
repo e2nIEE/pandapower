@@ -24,9 +24,9 @@ def opf_costfcn(x, om, return_hessian=False):
     @param x: optimization vector
     @param om: OPF model object
 
-    @return: C{F} - value of objective function. C{df} - (optional) gradient
-    of objective function (column vector). C{d2f} - (optional) Hessian of
-    objective function (sparse matrix).
+    @return: C{F} - value of objective function. C{df} - gradient of objective
+    function (column vector). C{d2f} - Hessian of objective function (sparse
+    matrix), or C{None} if C{return_hessian} is False.
 
     @see: L{opf_consfcn}, L{opf_hessfcn}
 
@@ -127,7 +127,7 @@ def opf_costfcn(x, om, return_hessian=False):
         df = df + array(aa.dot(hwc)).flatten()
 
     if not return_hessian:
-        return f, df
+        return f, df, None
 
     ## ---- evaluate cost Hessian -----
     pcost = gencost[range(ng), :]
