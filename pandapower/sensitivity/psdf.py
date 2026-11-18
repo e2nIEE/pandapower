@@ -19,7 +19,7 @@ from numpy import arange, int64, isscalar, ones, r_, real
 from numpy import flatnonzero as find
 from scipy.sparse import csc_matrix, csr_matrix
 
-from pandapower import pandapowerNet
+from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pypower.idx_bus import BUS_TYPE, REF
 from pandapower.pypower.make_b_dc import calc_b_from_branch
