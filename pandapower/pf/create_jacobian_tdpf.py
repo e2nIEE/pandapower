@@ -6,6 +6,7 @@ import numpy as np
 from scipy.sparse import csr_matrix as sparse
 from scipy.sparse import eye, hstack, vstack
 
+from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_brch import BR_STATUS, F_BUS, T_BUS
 from pandapower.pypower.idx_bus import BASE_KV
 
@@ -14,26 +15,21 @@ SIGMA = 5.670374419e-8
 ALPHA_TDPF = 4e-3
 
 
-def calc_r_theta_from_t_rise(net, t_rise_degree_celsius):
+def calc_r_theta_from_t_rise(net: pandapowerNet, t_rise_degree_celsius):
     """
-    Calculate thermal resistance of the conductors from an assumed or calculated temperature rise.
-    The calculation is implemented according to Frank et al.
+    Calculate thermal resistance of the conductors from an assumed or calculated temperature rise. The calculation
+    is implemented according to Frank et al.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-    t_rise_degree_celsius : array
-        temperature rise of the conductor
+    Parameters:
+        net: A pandapower network
+        t_rise_degree_celsius (array): temperature rise of the conductor
 
-    Returns
-    -------
-    r_theta_kelvin_per_mw : array
-        Thermal resistance of the conductors R_{\\Theta}
+    Returns:
+        r_theta_kelvin_per_mw (array): Thermal resistance of the conductors R_{\\Theta}
 
-    References
-    ----------
-    S. Frank, J. Sexauer and S. Mohagheghi, "Temperature-Dependent Power Flow," in IEEE Transactions on Power Systems,
-    vol. 28, no. 4, pp. 4007-4018, Nov. 2013, doi: 10.1109/TPWRS.2013.2266409.
+    References:
+        S. Frank, J. Sexauer and S. Mohagheghi, "Temperature-Dependent Power Flow," in IEEE Transactions on Power
+            Systems, vol. 28, no. 4, pp. 4007-4018, Nov. 2013, doi: 10.1109/TPWRS.2013.2266409.
     """
     r_for_t_rated_rise = (
         net.line.r_ohm_per_km * (1 + net.line.alpha * t_rise_degree_celsius) * net.line.length_km / net.line.parallel
@@ -47,25 +43,17 @@ def calc_i_square_p_loss(branch, tdpf_lines, g, b, Vm, Va):
     """
     Calculate squared current and the active power losses.
 
-    Parameters
-    ----------
-    branch: np.array(complex)
-        ppc["branch"]
-    tdpf_lines : np.array(bool)
-        array that defines which lines are relevant for TDPF
-    g : array
-    b : array
-    Vm : array
-        Bus voltage magnitude (p.u.)
-    Va : array
-        Bus voltage angle (rad)
+    Parameters:
+        branch (np.array(complex)): ppc["branch"]
+        tdpf_lines (np.array(bool)): array that defines which lines are relevant for TDPF
+        g (array):
+        b (array):
+        Vm (array): Bus voltage magnitude (p.u.)
+        Va (array): Bus voltage angle (rad)
 
-    Returns
-    -------
-    i_square_pu : array
-        squared current
-    p_loss_pu : array
-        active power losses
+    Returns:
+        i_square_pu (array): squared current
+        p_loss_pu (array): active power losses
     """
     i = branch[tdpf_lines, F_BUS].real.astype(np.int64)
     j = branch[tdpf_lines, T_BUS].real.astype(np.int64)
@@ -85,35 +73,25 @@ def calc_r_theta(t_air_pu, a0, a1, a2, i_square_pu, p_loss_pu):
     """
     Calculate thermal resistance using the thermal model from Ngoko et al.
 
-    Parameters
-    ----------
-    t_air_pu : array
-        Air temperature in p.u.
-    a0 : array
-        constant term of the thermal model
-    a1 : array
-        linear term of the thermal model
-    a2 : array
-        quadratic term of the thermal model
-    i_square_pu : array
-        squared current in p.u.
-    p_loss_pu : array
-        active power losses in p.u.
+    Parameters:
+        t_air_pu (array): Air temperature in p.u.
+        a0 (array): constant term of the thermal model
+        a1 (array): linear term of the thermal model
+        a2 (array): quadratic term of the thermal model
+        i_square_pu (array): squared current in p.u.
+        p_loss_pu (array): active power losses in p.u.
 
-    Returns
-    -------
-    r_theta_pu : array
-        Thermal resistance of the conductors R_{\\Theta}
+    Returns:
+        r_theta_pu (array): Thermal resistance of the conductors R_{\\Theta}
 
-    References
-    ----------
-    S. Frank, J. Sexauer and S. Mohagheghi, "Temperature-Dependent Power Flow," in IEEE Transactions on Power Systems,
-    vol. 28, no. 4, pp. 4007-4018, Nov. 2013, doi: 10.1109/TPWRS.2013.2266409.
+    References:
+        S. Frank, J. Sexauer and S. Mohagheghi, "Temperature-Dependent Power Flow," in IEEE Transactions on Power
+            Systems, vol. 28, no. 4, pp. 4007-4018, Nov. 2013, doi: 10.1109/TPWRS.2013.2266409.
 
-    B. Ngoko, H. Sugihara and T. Funaki, "A Temperature Dependent Power Flow Model Considering Overhead Transmission
-    Line Conductor Thermal Inertia Characteristics," 2019 IEEE International Conference on Environment and
-    Electrical Engineering and 2019 IEEE Industrial and Commercial Power Systems Europe (EEEIC / I&CPS Europe),
-    2019, pp. 1-6, doi: 10.1109/EEEIC.2019.8783234.
+        B. Ngoko, H. Sugihara and T. Funaki, "A Temperature Dependent Power Flow Model Considering Overhead Transmission
+            Line Conductor Thermal Inertia Characteristics," 2019 IEEE International Conference on Environment and
+            Electrical Engineering and 2019 IEEE Industrial and Commercial Power Systems Europe (EEEIC / I&CPS Europe),
+            2019, pp. 1-6, doi: 10.1109/EEEIC.2019.8783234.
     """
     t_rise_pu = a0 + a1 * i_square_pu + a2 * np.square(i_square_pu) - t_air_pu
     r_theta_pu = t_rise_pu / np.where(p_loss_pu == 0, 1e-6, p_loss_pu)
@@ -122,37 +100,28 @@ def calc_r_theta(t_air_pu, a0, a1, a2, i_square_pu, p_loss_pu):
 
 def calc_T_frank(p_loss_pu, t_air_pu, r_theta_pu, tdpf_delay_s, T0, tau):
     """
-    Calculate overhead line temperature according to the method from Frank et al.
-    The calculation of the overhead line temperature is based on their thermal resistance.
+    Calculate overhead line temperature according to the method from Frank et al. The calculation of the overhead
+    line temperature is based on their thermal resistance.
 
-    Parameters
-    ----------
-    p_loss_pu : array
-        active power losses in p.u.
-    t_air_pu : array
-        Air temperature in p.u.
-    r_theta_pu : array
-        Thermal resistance of the conductors R_{\\Theta}
-    tdpf_delay_s : float, None
-        Delay for the consideration of thermal inertia in seconds. Describes the time passed after a change
-        of current in overhead lines that causes a change of temperature.
-        Example: tdpf_delay_s = 0 means there is no change in temperature;
-        tdpf_delay_s = np.inf leads to obtaining steady-state temperature (also default behavior if tdpf_delay_s = None)
-    T0 : array, None
-        initial temperature of overhead lines
-    tau : array, None
-        time constant of the overhead lines; describes the time after a current change after which the temperature
-        reaches approx. 63.2 % of the steady-state value
+    Parameters:
+        p_loss_pu (array): active power losses in p.u.
+        t_air_pu (array): Air temperature in p.u.
+        r_theta_pu (array): Thermal resistance of the conductors R_{\\Theta}
+        tdpf_delay_s (float, None): Delay for the consideration of thermal inertia in seconds. Describes the time passed
+            after a change of current in overhead lines that causes a change of temperature. Example: tdpf_delay_s = 0
+            means there is no change in temperature; tdpf_delay_s = np.inf leads to obtaining steady-state temperature
+            (also default behavior if tdpf_delay_s = None)
+        T0 (array, None): initial temperature of overhead lines
+        tau (array, None): time constant of the overhead lines; describes the time after a current change after which
+            the temperature reaches approx. 63.2 % of the steady-state value
 
-    Returns
-    -------
-    t_transient : array
-        Temperature of the overhead lines, either steady-state or corresponding to the time delay tdpf_delay_s
+    Returns:
+        t_transient (array): Temperature of the overhead lines, either steady-state or corresponding to the time delay
+            tdpf_delay_s
 
-    References
-    ----------
-    S. Frank, J. Sexauer and S. Mohagheghi, "Temperature-Dependent Power Flow," in IEEE Transactions on Power Systems,
-    vol. 28, no. 4, pp. 4007-4018, Nov. 2013, doi: 10.1109/TPWRS.2013.2266409.
+    References:
+        S. Frank, J. Sexauer and S. Mohagheghi, "Temperature-Dependent Power Flow," in IEEE Transactions on Power
+            Systems, vol. 28, no. 4, pp. 4007-4018, Nov. 2013, doi: 10.1109/TPWRS.2013.2266409.
     """
     t_ss = t_air_pu + r_theta_pu * p_loss_pu
 
@@ -165,42 +134,32 @@ def calc_T_frank(p_loss_pu, t_air_pu, r_theta_pu, tdpf_delay_s, T0, tau):
 
 def calc_T_ngoko(i_square_pu, a0, a1, a2, tdpf_delay_s, T0, tau):
     """
-    Calculate the overhead line temperature with the approach from Ngoko et al.
-    The calculation of the overhead line temperature is based on the simplified model that
-    includes a constant term, a linear coefficient and a quadratic coefficient.
+    Calculate the overhead line temperature with the approach from Ngoko et al. The calculation of the overhead line
+    temperature is based on the simplified model that includes a constant term, a linear coefficient and a quadratic
+    coefficient.
 
-    Parameters
-    ----------
-    i_square_pu : array
-        squared current in p.u.
-    a0 : array
-        constant term of the thermal model
-    a1 : array
-        linear term of the thermal model
-    a2 : array
-        quadratic term of the thermal model
-    tdpf_delay_s : float, None
-        Delay for the consideration of thermal inertia in seconds. Describes the time passed after a change
-        of current in overhead lines that causes a change of temperature.
-        Example: tdpf_delay_s = 0 means there is no change in temperature;
-        tdpf_delay_s = np.inf leads to obtaining steady-state temperature (also default behavior if tdpf_delay_s = None)
-    T0 : array, None
-        initial temperature of overhead lines
-    tau : array, None
-        time constant of the overhead lines; describes the time after a current change after which the temperature
-        reaches approx. 63.2 % of the steady-state value
+    Parameters:
+        i_square_pu (array): squared current in p.u.
+        a0 (array): constant term of the thermal model
+        a1 (array): linear term of the thermal model
+        a2 (array): quadratic term of the thermal model
+        tdpf_delay_s (float, None): Delay for the consideration of thermal inertia in seconds. Describes the time passed
+            after a change of current in overhead lines that causes a change of temperature. Example: tdpf_delay_s = 0
+            means there is no change in temperature; tdpf_delay_s = np.inf leads to obtaining steady-state temperature
+            (also default behavior if tdpf_delay_s = None)
+        T0 (array, None): initial temperature of overhead lines
+        tau (array, None): time constant of the overhead lines; describes the time after a current change after which
+            the temperature reaches approx. 63.2 % of the steady-state value
 
-    Returns
-    -------
-    t_transient : array
-        Temperature of the overhead lines, either steady-state or corresponding to the time delay tdpf_delay_s
+    Returns:
+        t_transient (array): Temperature of the overhead lines, either steady-state or corresponding to the time delay
+            tdpf_delay_s
 
-    References
-    ----------
-    B. Ngoko, H. Sugihara and T. Funaki, "A Temperature Dependent Power Flow Model Considering Overhead Transmission
-    Line Conductor Thermal Inertia Characteristics," 2019 IEEE International Conference on Environment and
-    Electrical Engineering and 2019 IEEE Industrial and Commercial Power Systems Europe (EEEIC / I&CPS Europe),
-    2019, pp. 1-6, doi: 10.1109/EEEIC.2019.8783234.
+    References:
+        B. Ngoko, H. Sugihara and T. Funaki, "A Temperature Dependent Power Flow Model Considering Overhead Transmission
+            Line Conductor Thermal Inertia Characteristics," 2019 IEEE International Conference on Environment and
+            Electrical Engineering and 2019 IEEE Industrial and Commercial Power Systems Europe (EEEIC / I&CPS Europe),
+            2019, pp. 1-6, doi: 10.1109/EEEIC.2019.8783234.
     """
     t_ss = a0 + a1 * i_square_pu + a2 * np.square(i_square_pu)
 
@@ -230,54 +189,36 @@ def calc_a0_a1_a2_tau(
     """
     Calculate the coefficients for the simplified thermal model according to Ngoko et al.
 
-    Parameters
-    ----------
-    t_air_pu : array
-        Air temperature in p.u.
-    t_max_pu : array
-        max. rated temperature of the overhead lines
-    t_ref_pu : array
-        rated temperature at which the reference (datasheet) resistance is provided
-    r_ref_ohm_per_m : array
-        reference (datasheet) specific resistance of the overhead lines
-    conductor_outer_diameter_m : array
-        outer diameter of the overhead line conductors (diameter of 1 individual conductor of the overhead line)
-    mc_joule_per_m_k : array
-        specific thermal capacitance of the overhead line:
-        mass per unit length m [kg/m] multiplied by the specific thermal capacity c [J/kg • K]
-    wind_speed_m_per_s : array
-        wind speed in m/s
-    wind_angle_degree : array
-        wind angle of attack
-    s_w_per_square_meter : array
-        solar radiation in W/m²
-    alpha_pu : array
-        temperature coefficient of resistance in p.u. - alpha multiplied by T_base
-    solar_absorptivity : array
-    emissivity : array
-    T_base : array
-        base value for T for calculating T in p.u.
-    i_base_a : array
-        base value for current for calculating I in p.u.
+    Parameters:
+        t_air_pu (array): Air temperature in p.u.
+        t_max_pu (array): max. rated temperature of the overhead lines
+        t_ref_pu (array): rated temperature at which the reference (datasheet) resistance is provided
+        r_ref_ohm_per_m (array): reference (datasheet) specific resistance of the overhead lines
+        conductor_outer_diameter_m (array): outer diameter of the overhead line conductors (diameter of 1 individual
+            conductor of the overhead line)
+        mc_joule_per_m_k (array): specific thermal capacitance of the overhead line: mass per unit length m [kg/m]
+            multiplied by the specific thermal capacity c [J/kg • K]
+        wind_speed_m_per_s (array): wind speed in m/s
+        wind_angle_degree (array): wind angle of attack
+        s_w_per_square_meter (array): solar radiation in W/m²
+        alpha_pu (array): temperature coefficient of resistance in p.u. - alpha multiplied by T_base
+        solar_absorptivity (array):
+        emissivity (array):
+        T_base (array): base value for T for calculating T in p.u.
+        i_base_a (array): base value for current for calculating I in p.u.
 
-    Returns
-    -------
-    a0 : array
-        constant term of the thermal model
-    a1 : array
-        linear term of the thermal model
-    a2 : array
-        quadratic term of the thermal model
-    tau : array
-        time constant of the overhead lines; describes the time after a current change after which the temperature
-        reaches approx. 63.2 % of the steady-state value
+    Returns:
+        a0 (array): constant term of the thermal model
+        a1 (array): linear term of the thermal model
+        a2 (array): quadratic term of the thermal model
+        tau (array): time constant of the overhead lines; describes the time after a current change after which the
+            temperature reaches approx. 63.2 % of the steady-state value
 
-    References
-    ----------
-    B. Ngoko, H. Sugihara and T. Funaki, "A Temperature Dependent Power Flow Model Considering Overhead Transmission
-    Line Conductor Thermal Inertia Characteristics," 2019 IEEE International Conference on Environment and
-    Electrical Engineering and 2019 IEEE Industrial and Commercial Power Systems Europe (EEEIC / I&CPS Europe),
-    2019, pp. 1-6, doi: 10.1109/EEEIC.2019.8783234.
+    References:
+        B. Ngoko, H. Sugihara and T. Funaki, "A Temperature Dependent Power Flow Model Considering Overhead Transmission
+            Line Conductor Thermal Inertia Characteristics," 2019 IEEE International Conference on Environment and
+            Electrical Engineering and 2019 IEEE Industrial and Commercial Power Systems Europe (EEEIC / I&CPS Europe),
+            2019, pp. 1-6, doi: 10.1109/EEEIC.2019.8783234.
     """
     # alpha here is expected to be for T in pu (alpha multiplied by T_base)
     r_amb_ohm_per_m = r_ref_ohm_per_m * (1 + alpha_pu * (t_air_pu - t_ref_pu))
@@ -348,28 +289,25 @@ def create_J_tdpf(
     g,
 ):
     """
-             | J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  |
-             | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
-             |                                              |
-             | J21 = dQ/dd     J22 = dQ/dV     J23 = dQ/dT  |
-             | (M)x(N-1)       (M)x(M)         (M)x(R)      |
-             |                                              |
-             | J31 = ddT/dd    J32 = ddT/dV    J33 = ddT/dT |
-             | (R)x(N-1)       (R)x(M)         (R)x(R)      |
+     | J11 = dP/dd     J12 = dP/dV     J13 = dP/dT  |
+     | (N-1)x(N-1)     (N-1)x(M)       (N-1)x(R)    |
+     |                                              |
+     | J21 = dQ/dd     J22 = dQ/dV     J23 = dQ/dT  |
+     | (M)x(N-1)       (M)x(M)         (M)x(R)      |
+     |                                              |
+     | J31 = ddT/dd    J32 = ddT/dV    J33 = ddT/dT |
+     | (R)x(N-1)       (R)x(M)         (R)x(R)      |
 
-            N = Number of buses
-            M = Number of PQ buses
-            R = Number temperature-dependent branches
+    N = Number of buses M = Number of PQ buses R = Number temperature-dependent branches
 
-    References
-    ----------
-    S. Frank, J. Sexauer and S. Mohagheghi, "Temperature-Dependent Power Flow," in IEEE Transactions on Power Systems,
-    vol. 28, no. 4, pp. 4007-4018, Nov. 2013, doi: 10.1109/TPWRS.2013.2266409.
+    References:
+        S. Frank, J. Sexauer and S. Mohagheghi, "Temperature-Dependent Power Flow," in IEEE Transactions on Power
+            Systems, vol. 28, no. 4, pp. 4007-4018, Nov. 2013, doi: 10.1109/TPWRS.2013.2266409.
 
-    B. Ngoko, H. Sugihara and T. Funaki, "A Temperature Dependent Power Flow Model Considering Overhead Transmission
-    Line Conductor Thermal Inertia Characteristics," 2019 IEEE International Conference on Environment and
-    Electrical Engineering and 2019 IEEE Industrial and Commercial Power Systems Europe (EEEIC / I&CPS Europe),
-    2019, pp. 1-6, doi: 10.1109/EEEIC.2019.8783234.
+        B. Ngoko, H. Sugihara and T. Funaki, "A Temperature Dependent Power Flow Model Considering Overhead Transmission
+        Line Conductor Thermal Inertia Characteristics," 2019 IEEE International Conference on Environment and
+            Electrical Engineering and 2019 IEEE Industrial and Commercial Power Systems Europe (EEEIC / I&CPS Europe),
+            2019, pp. 1-6, doi: 10.1109/EEEIC.2019.8783234.
     """
     C = np.ones_like(tdpf_lines, dtype=np.float64)
     if tdpf_delay_s is not None and tdpf_delay_s != np.inf:
@@ -464,19 +402,18 @@ def create_J13(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, 
          | J31 = ddT/dd    J32 = ddT/dV    J33 = ddT/dT |
          | (R)x(N-1)       (R)x(M)         (R)x(R)      |
 
-    N = Number of buses
-    M = Number of PQ buses
-    R = Number temperature-dependent branches
+    N = Number of buses M = Number of PQ buses R = Number temperature-dependent branches
 
     shape = (len(branch), len(bus))
-    :param b:
-    :param g:
-    :param dg_dT:
-    :param db_dT:
-    :param Vm:
-    :param Va:
-    :param pvpq_lookup:
 
+    Parameters:
+        b:
+        g:
+        dg_dT:
+        db_dT:
+        Vm:
+        Va:
+        pvpq_lookup:
     """
     nrow = len(pvpq)
     ncol = len(branch)
@@ -528,19 +465,18 @@ def create_J23(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, dg_d
          | J31 = ddT/dd    J32 = ddT/dV    J33 = ddT/dT |
          | (R)x(N-1)       (R)x(M)         (R)x(R)      |
 
-        N = Number of buses
-        M = Number of PQ buses
-        R = Number temperature-dependent branches
+        N = Number of buses M = Number of PQ buses R = Number temperature-dependent branches
 
     shape = (len(bus), len(branch))
-    :param g:
-    :param b:
-    :param dg_dT:
-    :param db_dT:
-    :param Vm:
-    :param Va:
-    :param pq_lookup:
 
+    Parameters:
+        g:
+        b:
+        dg_dT:
+        db_dT:
+        Vm:
+        Va:
+        pq_lookup:
     """
 
     ncol = len(branch)
@@ -596,19 +532,17 @@ def create_J31(branch, tdpf_lines, in_pvpq_f, in_pvpq_t, pvpq, pvpq_lookup, Vm, 
          | J31 = ddT/dd    J32 = ddT/dV    J33 = ddT/dT |
          | (R)x(N-1)       (R)x(M)         (R)x(R)      |
 
-    N = Number of buses
-    M = Number of PQ buses
-    R = Number temperature-dependent branches
+    N = Number of buses M = Number of PQ buses R = Number temperature-dependent branches
 
-    shape = (len(branch), len(m))
-    branch elements by row, m elements by column
-    :param g:
-    :param b:
-    :param r_theta_pu:
-    :param Vm:
-    :param Va:
-    :param pvpq_lookup:
+    shape = (len(branch), len(m)) branch elements by row, m elements by column
 
+    Parameters:
+        g:
+        b:
+        r_theta_pu:
+        Vm:
+        Va:
+        pvpq_lookup:
     """
 
     nrow = len(branch)
@@ -660,17 +594,15 @@ def create_J32(branch, tdpf_lines, in_pq_f, in_pq_t, pq, pq_lookup, Vm, Va, C, r
          | J31 = ddT/dd    J32 = ddT/dV    J33 = ddT/dT |
          | (R)x(N-1)       (R)x(M)         (R)x(R)      |
 
-        N = Number of buses
-        M = Number of PQ buses
-        R = Number temperature-dependent branches
+        N = Number of buses M = Number of PQ buses R = Number temperature-dependent branches
 
-    shape = (len(branch), len(m))
-    branch elements by ij, m elements by column
-    :param g:
-    :param b:
-    :param r_theta_pu:
-    :param pq_lookup:
+    shape = (len(branch), len(m)) branch elements by ij, m elements by column
 
+    Parameters:
+        g:
+        b:
+        r_theta_pu:
+        pq_lookup:
     """
 
     nrow = len(branch)
@@ -723,19 +655,17 @@ def create_J33(branch, tdpf_lines, r_theta_pu, Vm, Va, dg_dT):
      | J31 = ddT/dd    J32 = ddT/dV    J33 = ddT/dT |
      | (R)x(N-1)       (R)x(M)         (R)x(R)      |
 
-    N = Number of buses
-    M = Number of PQ buses
-    R = Number temperature-dependent branches
+    N = Number of buses M = Number of PQ buses R = Number temperature-dependent branches
 
-    shape = (len(branch), len(bus))
-    branch elements by row, bus elements by column
-    :param g:
-    :param b:
-    :param dg_dT:
-    :param Vm:
-    :param r_theta_pu:
-    :param pvpq_lookup:
+    shape = (len(branch), len(bus)) branch elements by row, bus elements by column
 
+    Parameters:
+        g:
+        b:
+        dg_dT:
+        Vm:
+        r_theta_pu:
+        pvpq_lookup:
     """
 
     nrow = len(branch)
