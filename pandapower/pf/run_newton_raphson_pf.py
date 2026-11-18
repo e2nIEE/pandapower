@@ -101,14 +101,10 @@ def ppci_to_pfsoln(ppci, options, limited_gens=None):
             ref = internal["ref"]
             ref_gens = internal["ref_gens"]
 
-        makeYbus, pfsoln = _get_numba_functions(ppci, options)
+        _, pfsoln = _get_numba_functions(ppci, options)
 
-        # todo: this can be dropped if Ybus is returned from Newton and has the latest Ybus status:
-        if options["tdpf"]:
-            # needs to be updated to match the new R because of the temperature
-            internal["Ybus"], internal["Yf"], internal["Yt"] = makeYbus(
-                internal["baseMVA"], internal["bus"], internal["branch"]
-            )
+        # Ybus, Yf and Yt for TDPF are rebuilt at the end of newtonpf, consistent with the final
+        # conductor temperatures (see newtonpf), so no rebuild is needed here any more.
 
         # todo: here Ybus_svc, Ybus_tcsc must be used (Ybus = Ybus + Ybus_svc + Ybus_tcsc)
         result_pfsoln = pfsoln(
@@ -204,6 +200,10 @@ def _run_ac_pf_without_qlims_enforced(ppci, options):
             + ppci["internal"]["Ybus_ssc"]
             + ppci["internal"]["Ybus_vsc"]
         )
+        if options["tdpf"]:
+            # newtonpf rebuilt these after convergence to match the final temperatures
+            Yf = ppci["internal"]["Yf"]
+            Yt = ppci["internal"]["Yt"]
 
     # keep "internal" variables in  memory / net["_ppc"]["internal"] -> needed for recycle.
     ppci["internal"].update(
