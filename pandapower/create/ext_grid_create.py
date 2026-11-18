@@ -80,7 +80,8 @@ def create_ext_grid(
 
             \\* considered in load flow if calculate_voltage_angles = True
         
-        **kwargs: Additional keyword arguments
+    Keyword Args:
+        Additional keyword arguments
 
     Example:
         >>> create_ext_grid(net, 1, voltage=1.03)

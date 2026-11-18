@@ -22,6 +22,7 @@ from pandapower.diagnostic.diagnostic_functions import (
     InvalidValues,
     MissingBusIndices,
     MultipleVoltageControllingElementsPerBus,
+    NegativeI0Percent,
     NoExtGrid,
     NominalVoltagesMismatch,
     NumbaComparison,
@@ -76,6 +77,7 @@ diag_functions: list[Callable] = [
     ImplausibleImpedanceValues,
     NominalVoltagesMismatch,
     InvalidValues,
+    NegativeI0Percent,
     Overload,
     MultipleVoltageControllingElementsPerBus,
     WrongSwitchConfiguration,
@@ -207,7 +209,6 @@ class TestInvalidValues:
                 (0, "vkr_percent", "-1", "<15"),
                 (0, "vkr_percent", "-1", "vkr_percent_larger"),
                 (0, "pfe_kw", -1.5, ">=0"),
-                (0, "i0_percent", -0.001, ">=0"),
             ],
             "trafo3w": [
                 (0, "vkr_hv_percent", True, ">=0"),
@@ -467,7 +468,6 @@ class TestInvalidValuesPandas3:
             "trafo": [
                 (0, "vkr_percent", -1, ">=0"),
                 (0, "pfe_kw", -1.5, ">=0"),
-                (0, "i0_percent", -0.001, ">=0"),
             ],
             "trafo3w": [
                 (0, "vkr_hv_percent", 16.0, "vkr_percent_larger"),
@@ -600,6 +600,27 @@ def test_no_ext_grid(test_net, diag_params, diag_errors):
     net = copy.deepcopy(test_net)
     net.ext_grid = net.ext_grid.drop(0)
     assert NoExtGrid().diagnostic(net)
+
+
+def test_negative_i0_percent(test_net, diag_params, diag_errors, caplog):
+    net = copy.deepcopy(test_net)
+    check_function = "negative_i0_percent"
+    diag_function = NegativeI0Percent()
+    assert diag_function.diagnostic(net, **diag_params) is None
+
+    net.trafo.loc[0, "i0_percent"] = -0.1
+    net.trafo3w.loc[0, "i0_percent"] = -0.2
+    check_result = diag_function.diagnostic(net, **diag_params)
+    assert check_result == {"trafo": [0], "trafo3w": [0]}
+    check_report_function(diag_function, diag_errors.get(check_function, None), check_result)
+
+    # the default diagnostic prints a warning for the transformers with negative i0_percent
+    diag = Diagnostic()
+    with caplog.at_level("WARNING"):
+        diag_results = diag.diagnose_network(net, report_style="compact", warnings_only=True)
+    assert diag_results[check_function] == {"trafo": [0], "trafo3w": [0]}
+    assert "invalid_values" not in diag_results
+    assert any(rec.levelname == "WARNING" and "negative i0_percent" in rec.getMessage() for rec in caplog.records)
 
 
 def test_multiple_voltage_controlling_elements_per_bus(test_net, diag_params, diag_errors):

@@ -8,26 +8,18 @@ from scipy.sparse import csr_matrix
 
 def calc_y_svc(x_control_degree, svc_x_l_ohm, svc_x_cvar_ohm, v_base_kv, baseMVA):
     """
-    Computes the admittance of SVC (Static VAR Compensator) components based on their control angles
-    and reactance values in ohms.
+    Computes the admittance of SVC (Static VAR Compensator) components based on their control angles and reactance
+    values in ohms.
 
     Parameters:
-    -----------
-    x_control_degree : array-like
-        Thyristor firing angles for the SVCs in degrees.
-    svc_x_l_ohm : array-like
-        Reactance of the SVC's inductor in ohms.
-    svc_x_cvar_ohm : array-like
-        Reactance of the SVC's capacitor in ohms.
-    v_base_kv : array-like
-        Base voltage levels in kV for corresponding SVC elements.
-    baseMVA : float
-        System's base power in MVA.
+        x_control_degree (array-like): Thyristor firing angles for the SVCs in degrees.
+        svc_x_l_ohm (array-like): Reactance of the SVC's inductor in ohms.
+        svc_x_cvar_ohm (array-like): Reactance of the SVC's capacitor in ohms.
+        v_base_kv (array-like): Base voltage levels in kV for corresponding SVC elements.
+        baseMVA (float): System's base power in MVA.
 
     Returns:
-    --------
-    array-like
-        Computed admittance values of the SVCs in ohms.
+        array-like Computed admittance values of the SVCs in ohms.
     """
     x_control = np.deg2rad(x_control_degree)
     z_base_ohm = np.square(v_base_kv) / baseMVA
@@ -43,18 +35,12 @@ def calc_y_svc_pu(x_control, svc_x_l_pu, svc_x_cvar_pu):
     Calculates the admittance of SVC elements (Static VAR Compensator) in per unit.
 
     Parameters:
-    -----------
-    x_control : array-like
-        Thyristor firing angles in radians for the SVCs.
-    svc_x_l_pu : array-like
-        Reactance of the SVC's inductor in per-unit.
-    svc_x_cvar_pu : array-like
-        Reactance of the SVC's capacitor in per-unit.
+        x_control (array-like): Thyristor firing angles in radians for the SVCs.
+        svc_x_l_pu (array-like): Reactance of the SVC's inductor in per-unit.
+        svc_x_cvar_pu (array-like): Reactance of the SVC's capacitor in per-unit.
 
     Returns:
-    --------
-    array-like
-        Admittance values of the SVCs in per-unit.
+        array-like Admittance values of the SVCs in per-unit.
     """
     y_svc = (2 * (np.pi - x_control) + np.sin(2 * x_control) + np.pi * svc_x_l_pu / svc_x_cvar_pu) / (
         np.pi * svc_x_l_pu
@@ -68,21 +54,13 @@ def makeYbus_svc(Ybus, x_control_svc, svc_x_l_pu, svc_x_cvar_pu, svc_buses):
     Constructs the SVC (Static VAR Compensator) admittance matrix.
 
     Parameters:
-    -----------
-    Ybus : csr_matrix
-        The base admittance matrix of the system.
-    x_control_svc : array-like
-        Thyristor firing angles for the SVCs in degrees.
-    svc_x_l_pu : array-like
-        Reactance of the SVC's inductor in per-unit.
-    svc_x_cvar_pu : array-like
-        Reactance of the SVC's capacitor in per-unit.
-    svc_buses : array-like
-        Bus indices where SVCs are connected.
+        Ybus (csr_matrix): The base admittance matrix of the system.
+        x_control_svc (array-like): Thyristor firing angles for the SVCs in degrees.
+        svc_x_l_pu (array-like): Reactance of the SVC's inductor in per-unit.
+        svc_x_cvar_pu (array-like): Reactance of the SVC's capacitor in per-unit.
+        svc_buses (array-like): Bus indices where SVCs are connected.
 
     Returns:
-    --------
-    csr_matrix
         The admittance matrix for the SVCs.
     """
     Y_SVC = -1j * calc_y_svc_pu(x_control_svc, svc_x_l_pu, svc_x_cvar_pu)
@@ -95,23 +73,14 @@ def makeYbus_tcsc(Ybus, x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu, tcsc_fb, tc
     Constructs the TCSC (Thyristor Controlled Series Capacitor) admittance matrix.
 
     Parameters:
-    -----------
-    Ybus : csr_matrix
-        The base admittance matrix of the system.
-    x_control_tcsc : array-like
-        Thyristor firing angles for the TCSCs in radians.
-    tcsc_x_l_pu : array-like
-        Reactance of the TCSC's inductor in per-unit.
-    tcsc_x_cvar_pu : array-like
-        Reactance of the TCSC's capacitor in per-unit.
-    tcsc_fb : array-like
-        From-bus indices where TCSCs are connected.
-    tcsc_tb : array-like
-        To-bus indices where TCSCs are connected.
+        Ybus (csr_matrix): The base admittance matrix of the system.
+        x_control_tcsc (array-like): Thyristor firing angles for the TCSCs in radians.
+        tcsc_x_l_pu (array-like): Reactance of the TCSC's inductor in per-unit.
+        tcsc_x_cvar_pu (array-like): Reactance of the TCSC's capacitor in per-unit.
+        tcsc_fb (array-like): From-bus indices where TCSCs are connected.
+        tcsc_tb (array-like): To-bus indices where TCSCs are connected.
 
     Returns:
-    --------
-    csr_matrix
         The updated admittance matrix considering the TCSCs.
     """
     Y_TCSC = -1j * calc_y_svc_pu(x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu)
@@ -124,27 +93,19 @@ def makeYft_tcsc(Ybus_tcsc, tcsc_fb, tcsc_tb, x_control_tcsc, tcsc_x_l_pu, tcsc_
     Constructs the 'from' and 'to' admittance matrices for the TCSC (Thyristor Controlled Series Capacitor).
 
     Parameters:
-    -----------
-    Ybus_tcsc : csr_matrix
-        The admittance matrix considering the TCSCs.
-    x_control_tcsc : array-like
-        Thyristor firing angles for the TCSCs in radians.
-    tcsc_x_l_pu : array-like
-        Reactance of the TCSC's inductor in per-unit.
-    tcsc_x_cvar_pu : array-like
-        Reactance of the TCSC's capacitor in per-unit.
-    tcsc_fb : array-like
-        From-bus indices where TCSCs are connected.
-    tcsc_tb : array-like
-        To-bus indices where TCSCs are connected.
+        Ybus_tcsc (csr_matrix): The admittance matrix considering the TCSCs.
+        x_control_tcsc (array-like): Thyristor firing angles for the TCSCs in radians.
+        tcsc_x_l_pu (array-like): Reactance of the TCSC's inductor in per-unit.
+        tcsc_x_cvar_pu (array-like): Reactance of the TCSC's capacitor in per-unit.
+        tcsc_fb (array-like): From-bus indices where TCSCs are connected.
+        tcsc_tb (array-like): To-bus indices where TCSCs are connected.
 
     Returns:
-    --------
-    tuple of csr_matrix
-        - Yf : csr_matrix
-            The 'from' admittance matrix for the TCSCs.
-        - Yt : csr_matrix
-            The 'to' admittance matrix for the TCSCs.
+        tuple of csr_matrix
+            - Yf : csr_matrix
+                The 'from' admittance matrix for the TCSCs.
+            - Yt : csr_matrix
+                The 'to' admittance matrix for the TCSCs.
     """
     Y_TCSC = -1j * calc_y_svc_pu(x_control_tcsc, tcsc_x_l_pu, tcsc_x_cvar_pu)
     Yf, Yt = make_Yft_facts(tcsc_fb, tcsc_tb, Y_TCSC, Ybus_tcsc.shape[0])
@@ -153,26 +114,18 @@ def makeYft_tcsc(Ybus_tcsc, tcsc_fb, tcsc_tb, x_control_tcsc, tcsc_x_l_pu, tcsc_
 
 def makeYbus_ssc_vsc(Ybus, internal_y_pu, fb, tb, controllable):
     """
-    Constructs the admittance matrices for SSCs (Static Synchronous Compensators)
-    and VSCs (Voltage Source Converters).
+    Constructs the admittance matrices for SSCs (Static Synchronous Compensators) and VSCs (Voltage Source
+    Converters).
 
     Parameters:
-    -----------
-    Ybus : csr_matrix
-        The base admittance matrix.
-    internal_y_pu : array-like
-        Internal transformer admittance values in per-unit.
-    fb : array-like
-        From bus indices.
-    tb : array-like
-        To bus indices.
-    controllable : array-like
-        Boolean flags indicating if elements are controllable.
+        Ybus (csr_matrix): The base admittance matrix.
+        internal_y_pu (array-like): Internal transformer admittance values in per-unit.
+        fb (array-like): From bus indices.
+        tb (array-like): To bus indices.
+        controllable (array-like): Boolean flags indicating if elements are controllable.
 
     Returns:
-    --------
-    tuple of csr_matrix
-        The not controllable, controllable, and combined admittance matrices.
+        tuple of csr_matrix The not controllable, controllable, and combined admittance matrices.
     """
     Ybus_matrices = []
 

@@ -28,7 +28,6 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower import pandapowerNet
 from pandapower.create import (
     create_buses,
     create_ext_grid,
@@ -38,6 +37,7 @@ from pandapower.create import (
     create_transformer3w_from_parameters,
     create_transformer_from_parameters,
 )
+from pandapower.network import pandapowerNet
 from pandapower.pf import transformer_thermal
 from pandapower.pf.transformer_thermal import (
     HOT_SPOT_3W_COLUMNS,

@@ -8,6 +8,8 @@ import pandas as pd
 
 from pandapower.auxiliary import _detect_read_write_flag, write_to_net
 from pandapower.control.basic_controller import Controller
+from pandapower.network import pandapowerNet
+from pandapower.pp_types import Int
 
 logger = logging.getLogger(__name__)
 
@@ -46,10 +48,10 @@ class ConstControl(Controller):
 
     def __init__(
         self,
-        net,
+        net: pandapowerNet,
         element,
         variable,
-        element_index,
+        element_index: list[Int],
         profile_name=None,
         data_source=None,
         scale_factor=1.0,

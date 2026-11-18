@@ -32,13 +32,12 @@ def example_simple():
     """
     Returns the simple example network from the pandapower tutorials.
 
-    OUTPUT:
+    Returns:
         net - simple example network
 
-    EXAMPLE:
+    Example:
         >>> from pandapower.networks.create_examples import example_simple
         >>> net = example_simple()
-
     """
     net = pandapowerNet(name="example_simple")
 
@@ -109,13 +108,12 @@ def example_multivoltage():
     """
     Returns the multivoltage example network from the pandapower tutorials.
 
-    OUTPUT:
+    Returns:
         net - multivoltage example network
 
-    EXAMPLE:
+    Example:
         >>> from pandapower.networks.create_examples import example_multivoltage
         >>> net = example_multivoltage()
-
     """
     net = pandapowerNet(name="example_multivoltage")
 
@@ -225,7 +223,6 @@ def example_multivoltage():
         vk_percent=8,
         pfe_kw=0,
         i0_percent=0,
-        tap_pos=0,
         shift_degree=0,
         name="EHV-HV-Trafo",
     )
@@ -248,7 +245,6 @@ def example_multivoltage():
         tap_min=-2,
         tap_max=2,
         tap_step_percent=2.5,
-        tap_pos=0,
         shift_degree=150,
         name="MV-LV-Trafo",
         tap_changer_type="Ratio",
@@ -284,7 +280,6 @@ def example_multivoltage():
         tap_min=-8,
         tap_max=8,
         tap_step_percent=1.25,
-        tap_pos=0,
         name="HV-MV-MV-Trafo",
         tap_changer_type="Ratio",
     )

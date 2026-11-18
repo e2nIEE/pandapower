@@ -69,7 +69,7 @@ The parameters of the three transformers are defined as follows:
     :delim: ;
     :widths: 10, 15, 15, 15
 
-The iron loss (pfe\_kw) and open loop loss (i0\_percent) of the 3W transformer is by default attributed to T1 ('hv').
+The iron loss (pfe\_kw) and open loop loss (i0\_percent) of the 3W transformer is by default attributed to T1 ('hv'). As for the two winding transformer, a negative i0\_percent denotes a capacitive magnetising susceptance (see :ref:`trafo`).
 The parameter 'trafo3w\_losses' in the runpp function however also allows to assign the losses to T2 ('mv'), T3('lv') or to the star point ('star').
    
 To calculate the short-circuit voltages :math:`v_{k, t1..t3}` and :math:`v_{r, t1..t3}`, first all short-circuit voltages are converted from side based

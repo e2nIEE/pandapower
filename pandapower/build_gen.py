@@ -130,8 +130,8 @@ def _build_pp_ext_grid(net, ppc, f, t):
             eg_constrained = net.ext_grid[eg_is][~net.ext_grid.controllable]
             if len(eg_constrained):
                 eg_constrained_bus_ppc = [bus_lookup[egb] for egb in eg_constrained.bus.values]
-                ppc["bus"][eg_constrained_bus_ppc, VMAX] = net["ext_grid"]["vm_pu"].values[eg_constrained.index] + delta
-                ppc["bus"][eg_constrained_bus_ppc, VMIN] = net["ext_grid"]["vm_pu"].values[eg_constrained.index] - delta
+                ppc["bus"][eg_constrained_bus_ppc, VMAX] = eg_constrained["vm_pu"] + delta
+                ppc["bus"][eg_constrained_bus_ppc, VMIN] = eg_constrained["vm_pu"] - delta
         else:
             # if we dont:
             ppc["bus"][eg_buses, VMAX] = net["ext_grid"]["vm_pu"].values[eg_is] + delta

@@ -956,7 +956,8 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
 
         q_mvar = (sn_mva * i0 / 100.0) ** 2 - pfe_mw**2
         q_mvar[q_mvar < 0] = 0
-        q_mvar = np.sqrt(q_mvar)
+        # a negative i0_percent denotes a capacitive magnetizing susceptance
+        q_mvar = np.where(i0 < 0, -1.0, 1.0) * np.sqrt(q_mvar)
 
         vn_hv_trafo = trafo3w["vn_hv_kv"].values
         vn_hv_bus = ppc["bus"][bus_lookup[trafo3w.hv_bus.values], BASE_KV]

@@ -222,11 +222,11 @@ def merge_nets(
     **runpp_kwargs,
 ):
     """
-    Function to concatenate two nets into one data structure. The elements keep their indices
-    unless both nets have the same indices. In that case, net2 elements get reindexed. The reindex
-    lookup of net2 elements can be retrieved by passing return_net2_reindex_lookup=True.
+    Function to concatenate two nets into one data structure. The elements keep their indices unless both nets have
+    the same indices. In that case, net2 elements get reindexed. The reindex lookup of net2 elements can be
+    retrieved by passing return_net2_reindex_lookup=True.
 
-    Arguments:
+    Parameters:
         net1: first net to concatenate
         net2: second net to concatenate
         validate: whether power flow results should be compared against the results of the input nets
@@ -234,8 +234,8 @@ def merge_nets(
         tol: tolerance which is allowed to pass the results validate check (relevant if validate is True)
         std_prio_on_net1: whether net1 standard type should be kept if net2 has types with same names
         return_net2_reindex_lookup: if True, the merged net AND a dict of lookups is returned
-        net2_reindex_log_level: logging level of the message which element types of net2 got reindexed elements.
-            Options are, for example "debug", "info", "warning", "error", or None, by default "info"
+        net2_reindex_log_level: logging level of the message which element types of net2 got reindexed elements. Options
+            are, for example "debug", "info", "warning", "error", or None, by default "info"
 
     Returns:
         net with concatenated element tables
@@ -423,10 +423,9 @@ def set_isolated_areas_out_of_service(net, respect_switches=True):
 
 def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
     """
-    creates a power line in parallel to the existing power line based on the values of the new
-    std_type. The new parallel line has an impedance value, which is chosen so that the resulting
-    impedance of the new line and the already existing line is equal to the impedance of the
-    replaced line. Or for electrical engineers:
+    creates a power line in parallel to the existing power line based on the values of the new std_type. The new
+    parallel line has an impedance value, which is chosen so that the resulting impedance of the new line and the
+    already existing line is equal to the impedance of the replaced line. Or for electrical engineers:
 
         Z0 = impedance of the existing line
 
@@ -441,19 +440,16 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
         ---|          |---   =  --- Z1 ---
             --- Z0 ---
 
-    Parameters
-    ----------
-    net - pandapower net
-    idx (int) - idx of the existing line
-    std_type (str) - pandapower standard type
-    name (str, None) - name of the new power line
-    in_service (bool, False) - if the new power line is in service
-    **kwargs - additional line parameters you want to set for the new line
+    Parameters:
+        net: pandapower net
+        idx (int): idx of the existing line
+        std_type (str): pandapower standard type
+        name (str, None): name of the new power line
+        in_service (bool, False): if the new power line is in service
+        kwargs: additional line parameters you want to set for the new line
 
-    Returns
-    -------
-    new_idx (int) - index of the created power line
-
+    Returns:
+        new_idx (int): index of the created power line
     """
 
     # impedance before changing the standard type
@@ -531,15 +527,9 @@ def merge_parallel_line(net, idx):
         ---|          |---   =  --- Z1 ---
             --- Z0 ---
 
-    Parameters
-    ----------
-        net - pandapower net
-
-        idx (int) - idx of the line to merge
-
-    Returns
-    -------
-    net
+    Parameters:
+        net: pandapower net
+        idx (int): idx of the line to merge
     """
     # impedance before changing the standard type
     r0 = net.line.at[idx, "r_ohm_per_km"]
@@ -726,9 +716,8 @@ def drop_elements_simple(net, element_type, element_index):
     """
     Drops element, result and group entries from the pandapower net.
 
-    See Also
-    --------
-    drop_elements : providing more generic usage (inter-element connections considered)
+    See Also:
+        drop_elements : providing more generic usage (inter-element connections considered)
     """
     if element_type in ["bus", "line", "trafo", "trafo3w"]:
         logger.warning(
@@ -1112,15 +1101,17 @@ def drop_inactive_elements(net, respect_switches=True):
 
 def create_replacement_switch_for_branch(net, element_type, element_index):
     """
-    Creates a switch parallel to a branch, connecting the same buses as the branch.
-    The switch is closed if the branch is in service and open if the branch is out of service.
-    The in_service status of the original branch is not affected and should be set separately,
-    if needed.
+    Creates a switch parallel to a branch, connecting the same buses as the branch. The switch is closed if the
+    branch is in service and open if the branch is out of service. The in_service status of the original branch is
+    not affected and should be set separately, if needed.
 
-    :param net: pandapower network
-    :param element_type: element_type table e. g. 'line', 'impedance'
-    :param element_index: index of the branch e. g. 0
-    :return: None
+    Parameters:
+        net: pandapower network
+        element_type: element_type table e. g. 'line', 'impedance'
+        element_index: index of the branch e. g. 0
+
+    Returns:
+        None
     """
     bus_i = net[element_type].from_bus.at[element_index]
     bus_j = net[element_type].to_bus.at[element_index]
@@ -1165,24 +1156,23 @@ def replace_zero_branches_with_switches(
     drop_affected=False,
 ):
     """
-    Creates a replacement switch for branches with zero impedance (line, impedance) and sets them
-    out of service.
+    Creates a replacement switch for branches with zero impedance (line, impedance) and sets them out of service.
 
-    :param net: pandapower network
-    :param elements: a tuple of names of element tables e. g. ('line', 'impedance') or (line)
-    :param zero_length: whether zero length lines will be affected
-    :param zero_impedance: whether zero impedance branches will be affected
-    :param in_service_only: whether the branches that are not in service will be affected
-    :param drop_affected: wheter the affected branch elements are dropped
-    :param min_length_km: threshhold for line length for a line to be considered zero line
-    :param min_r_ohm_per_km: threshhold for line R' value for a line to be considered zero line
-    :param min_x_ohm_per_km: threshhold for line X' value for a line to be considered zero line
-    :param min_c_nf_per_km: threshhold for line C' for a line to be considered zero line
-    :param min_rft_pu: threshhold for R from-to value for impedance to be considered zero impedance
-    :param min_xft_pu: threshhold for X from-to value for impedance to be considered zero impedance
-    :param min_rtf_pu: threshhold for R to-from value for impedance to be considered zero impedance
-    :param min_xtf_pu: threshhold for X to-from value for impedance to be considered zero impedance
-    :return:
+    Parameters:
+        net: pandapower network
+        elements: a tuple of names of element tables e. g. ('line', 'impedance') or (line)
+        zero_length: whether zero length lines will be affected
+        zero_impedance: whether zero impedance branches will be affected
+        in_service_only: whether the branches that are not in service will be affected
+        drop_affected: wheter the affected branch elements are dropped
+        min_length_km: threshhold for line length for a line to be considered zero line
+        min_r_ohm_per_km: threshhold for line R' value for a line to be considered zero line
+        min_x_ohm_per_km: threshhold for line X' value for a line to be considered zero line
+        min_c_nf_per_km: threshhold for line C' for a line to be considered zero line
+        min_rft_pu: threshhold for R from-to value for impedance to be considered zero impedance
+        min_xft_pu: threshhold for X from-to value for impedance to be considered zero impedance
+        min_rtf_pu: threshhold for R to-from value for impedance to be considered zero impedance
+        min_xtf_pu: threshhold for X to-from value for impedance to be considered zero impedance
     """
 
     if not isinstance(elements, tuple):
@@ -1960,18 +1950,12 @@ def replace_xward_by_internal_elements(net, xwards=None, set_xward_bus_limits=Fa
     """
     Replaces xward by loads, shunts, impedance and generators
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        pandapower net
-    xwards : iterable, optional
-        indices of xwards which should be replaced. If None, all xwards are replaced, by default None
-    set_xward_bus_limits : bool, optional
-        if True, the buses internal in xwards get vm limits from the connected buses
+    Parameters:
+        net (pandapowerNet): pandapower net
+        xwards (iterable): indices of xwards which should be replaced. If None, all xwards are replaced, by default None
+        set_xward_bus_limits (bool): if True, the buses internal in xwards get vm limits from the connected buses
 
-    Returns
-    -------
-    None
+    Returns:
         the given xwards in pandapower are replaced by buses, loads, shunts, impadance and generators
     """
     # --- determine xwards index
@@ -2032,34 +2016,25 @@ def replace_xward_by_internal_elements(net, xwards=None, set_xward_bus_limits=Fa
 
 def replace_xward_by_ward(net, index=None, drop=True):
     """
-    Replace xward elements by ward elements in the given grid model.
-    The series impedance component of xward is ignored and lost after the replacement.
+    Replace xward elements by ward elements in the given grid model. The series impedance component of xward is
+    ignored and lost after the replacement.
 
     This function replaces xward elements in a pandapower net with equivalent ward elements (sans series impedance).
     The original xward elements can be dropped (default) or set out of service.
 
     Parameters:
-    -----------
-    net : pandapowerNet
-        The pandapower grid containing the xward elements to be replaced.
-
-    index : int, list of int, or None, optional (default: None)
-        The index or list of indices of the xward elements to replace.
-        If None, all xward elements in the grid will be replaced.
-
-    drop : bool, optional (default: True)
-        If True, the original xward elements will be removed from the grid.
-        If False, the xward elements will be set out of service instead of being removed.
+        net (pandapowerNet): The pandapower grid containing the xward elements to be replaced.
+        index (int, list of int, or None, None): The index or list of indices of the xward elements to replace. If None,
+            all xward elements in the grid will be replaced.
+        drop (bool, True): If True, the original xward elements will be removed from the grid. If False, the xward
+            elements will be set out of service instead of being removed.
 
     Returns:
-    --------
-    new_index : list of int
-        A list of indices of the newly created ward elements in the network.
+        new_index (list of int): A list of indices of the newly created ward elements in the network.
 
     Notes:
-    ------
-    The function ensures that the group membership and associated element type of the replaced
-    elements are updated accordingly.
+        The function ensures that the group membership and associated element type of the replaced
+        elements are updated accordingly.
     """
     # TODO: parameter `drop` is implemented only to this replace function. needed if yes why not
     # implementing at the other replace functions?

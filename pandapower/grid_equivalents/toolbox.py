@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import ensure_iterability
+from pandapower.network import pandapowerNet
 from pandapower.toolbox.element_selection import element_bus_tuples, pp_elements
 from pandapower.topology.create_graph import create_nxgraph
 from pandapower.topology.graph_searches import connected_component, connected_components
@@ -53,23 +54,22 @@ def append_set_to_dict(dict_, set_, keys):
         raise ValueError(f"This function expects a set for '{keys[-1]}', not a {type(current[keys[-1]])}")
 
 
-def set_bus_zone_by_boundary_branches(net, all_boundary_branches):
+def set_bus_zone_by_boundary_branches(net: pandapowerNet, all_boundary_branches: dict):
     """
     Set integer values (0, 1, 2, ...) to net.bus.zone with regard to the given boundary branches in
     'all_boundary_branches'.
 
-    INPUT:
-        **net** - pandapowerNet
-
-        **all_boundary_branches** (dict) - defines which element indices are boundary branches.
-            The dict keys must be pandapower elements, e.g. "line" or "trafo"
+    Parameters:
+        net: the pandapower network
+        all_boundary_branches: defines which element indices are boundary branches. The dict keys must be
+            pandapower elements, e.g. "line" or "trafo"
     """
     include = {"line": None, "trafo": None, "trafo3w": None, "impedance": None}
     for elm in include:
         if elm in all_boundary_branches:
             include[elm] = net[elm].index.difference(all_boundary_branches[elm])
         else:
-            include[elm] = True
+            include[elm] = True  # type: ignore[assignment]
 
     mg = create_nxgraph(
         net,
@@ -100,50 +100,49 @@ def set_bus_zone_by_boundary_branches(net, all_boundary_branches):
         net.bus.loc[list(area), "zone"] = str(i)
 
 
-def get_boundaries_by_bus_zone_with_boundary_branches(net):
+def get_boundaries_by_bus_zone_with_boundary_branches(net: pandapowerNet):
     """
     Only in_service branches and closed switches are considered.
 
-    INPUT:
-        **net** - pandapower net - In net.bus.zone different zones must be given.
+    Parameters:
+        net: pandapower net - In net.bus.zone different zones must be given.
 
-    OUTPUT:
-        **boundary_buses** - dict of boundary buses - for each zone the internal and external
-        boundary buses are given as well as the external boundary buses for each other zone.
-        Furthermore the value of the boundary_buses key "all" concludes all boundary buses of all
-        zones.
-        Example:
-            {"all": {0, 1, 3},
-             1: {"all": {0, 1, 3},
-                 "external": {3},
-                 "internal": {0, 1},
-                 2: {3}
-                 },
-             2: {"all": {1, 2, 3, 4},
-                 "external": {0, 1, 4},
-                 "internal": {2, 3},
-                 1: {0, 1},
-                 3: {4}
-                 },
-             3: {"all": {2, 4},
-                 "external": {2},
-                 "internal": {4},
-                 2: {2}
-                 }
-             }
-
-        **boundary_branches** - dict of branch elements - for each zone a set of the corresponding
-        boundary boundary branches as well as "all" boundary branches
-        Example:
-            {"all": {"line": {0, 1},
-                     "trafo": {0}
-                     },
-             1: {"line": {0},
-                 "trafo": {0}
-                 },
-             2: {"line": {0, 1}},
-             3: {"line": {1}}
-             }
+    Returns:
+        boundary_buses: dict of boundary buses - for each zone the internal and external boundary buses are given as
+            well as the external boundary buses for each other zone. Furthermore the value of the boundary_buses key
+            "all" concludes all boundary buses of all zones.
+            Example:
+                {"all": {0, 1, 3},
+                    1: {"all": {0, 1, 3},
+                        "external": {3},
+                        "internal": {0, 1},
+                        2: {3}
+                    },
+                    2: {"all": {1, 2, 3, 4},
+                        "external": {0, 1, 4},
+                        "internal": {2, 3},
+                        1: {0, 1},
+                        3: {4}
+                    },
+                    3: {"all": {2, 4},
+                        "external": {2},
+                        "internal": {4},
+                        2: {2}
+                    }
+                }
+        boundary_branches: dict of branch elements - for each zone a set of the corresponding boundary boundary branches
+            as well as "all" boundary branches
+            Example:
+                {"all": {
+                    "line": {0, 1},
+                    "trafo": {0}
+                    },
+                    1: {"line": {0},
+                        "trafo": {0}
+                        },
+                    2: {"line": {0, 1}},
+                    3: {"line": {1}}
+                }
     """
 
     def append_boundary_buses_externals_per_zone(boundary_buses, boundaries, zone, other_zone_cols):
@@ -166,15 +165,15 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net):
     branch_tuples = element_bus_tuples(bus_elements=False, branch_elements=True, res_elements=False) + [
         ("switch", "element")
     ]
-    branch_dict = {branch_elm: [] for branch_elm in branch_elms}
+    branch_dict = {branch_elm: [] for branch_elm in branch_elms}  # type: ignore[var-annotated]
     for elm, bus in branch_tuples:
         branch_dict[elm] += [bus]
 
     zones = net.bus.zone.unique()
-    boundary_branches = {zone: {} for zone in zones}
+    boundary_branches = {zone: {} for zone in zones}  # type: ignore[var-annotated]
     boundary_branches["all"] = {}
-    boundary_buses = {zone: {"all": set(), "internal": set(), "external": set()} for zone in zones}
-    boundary_buses["all"] = set()
+    boundary_buses = {zone: {"all": set(), "internal": set(), "external": set()} for zone in zones}  # type: ignore[var-annotated]
+    boundary_buses["all"] = set()  # type: ignore[assignment]
 
     for elm, buses in branch_dict.items():
         idx = (

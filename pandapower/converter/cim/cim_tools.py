@@ -7,7 +7,7 @@ import os
 
 import pandas as pd
 
-from pandapower import pandapowerNet
+from pandapower.network import pandapowerNet
 
 logger = logging.getLogger(__name__)
 
@@ -15,7 +15,9 @@ logger = logging.getLogger(__name__)
 def get_pp_net_special_columns_dict() -> dict[str, str]:
     """
     Get a dictionary with the special CIM fields, used as columns in a pandapower network.
-    :return Dict[str, str]: The dictionary with the special CIM fields.
+
+    Returns:
+        The dictionary with the special CIM fields.
     """
     return {
         "o_id": "origin_id",
@@ -83,11 +85,15 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
 
 def get_cim_schema(cgmes_version: str = "2.4.15") -> dict[str, dict[str, dict[str, str | dict[str, dict[str, str]]]]]:
     """
-    Parses the CIM schema from the serialized CIM schema json files which have been created from the RDF schema files.
-    The schema is parsed for the serializer from the CIM data structure used by the cim2pp and pp2cim converters.
+    Parses the CIM schema from the serialized CIM schema json files which have been created from the RDF schema
+    files. The schema is parsed for the serializer from the CIM data structure used by the cim2pp and pp2cim
+    converters.
 
-    :param cgmes_version: CIM version to use, '2.4.15', '3.0' or LTDS, default '2.4.15'
-    :return: The CIM schema as dictionary.
+    Parameters:
+        cgmes_version: CIM version to use, '2.4.15', '3.0' or LTDS
+
+    Returns:
+        The CIM schema as dictionary.
     """
     path_with_serialized_schemas = os.path.dirname(__file__) + os.sep + "serialized_schemas"
     if not os.path.isdir(path_with_serialized_schemas):

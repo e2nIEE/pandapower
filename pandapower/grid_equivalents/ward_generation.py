@@ -3,6 +3,7 @@
 
 import logging
 import time
+from collections.abc import Callable
 
 import numpy as np
 import pandas as pd
@@ -13,6 +14,7 @@ from pandapower.grid_equivalents.auxiliary import (
     drop_internal_branch_elements,
     impedance_columns,
 )
+from pandapower.network import pandapowerNet
 from pandapower.toolbox.grid_modification import drop_buses
 
 logger = logging.getLogger(__name__)
@@ -82,21 +84,27 @@ def _calculate_xward_and_impedance_parameters(net_external, Ybus_eq, bus_lookups
 
 
 def create_passive_external_net_for_ward_admittance(
-    net, all_external_buses, boundary_buses, calc_volt_angles=True, runpp_fct=_runpp_except_voltage_angles, **kwargs
+    net: pandapowerNet,
+    all_external_buses: list,
+    boundary_buses: list,
+    calc_volt_angles: bool = True,
+    runpp_fct: Callable = _runpp_except_voltage_angles,
+    **kwargs,
 ):
     """
-    This function replace the wards and xward in external network by internal
-    elements, and replace the power injections in external area by shunts
-    if necessary.
+    This function replace the wards and xward in external network by internal elements, and replace the power
+    injections in external area by shunts if necessary.
 
-    INPUT:
-        **net** - The pandapower format network
+    Parameters:
+        net: The pandapower format network
+        all_external_buses (list): list of all external buses
+        boundary_buses (list): list of boundary bus indices, by which the original network are divide into an internal
+            area and an external area
+        calc_volt_angles:
+        runpp_fct: the function to use to calculate the powerflow
 
-        **all_external_buses** (list) -  list of all external buses
-
-        **boundary_buses** (list) -  list of boundary bus indices, by which the
-            original network are divide into an internal area and an external
-            area
+    Keyword Args:
+        passed to runpp_fct
     """
     # --- replace power injection in external net by shunts to creat a passiv network
     v_m = net.res_bus.vm_pu[all_external_buses].values

@@ -31,41 +31,47 @@ if find_spec("lightsim2grid"):
     import lightsim2grid
 
     ls2g_version = Version(lightsim2grid.__version__)
-    if ls2g_version < Version("0.9.0"):
-        logger.warning("Only lightsim2grid version 0.9.0 or newer is supported - please update ligtsim2grid")
-        raise ImportError
-
-    from lightsim2grid.contingencyAnalysis import ContingencyAnalysisCPP
-    from lightsim2grid.gridmodel.from_pandapower import init as init_ls2g
-
-    if ls2g_version < Version("0.13.0"):
-        from lightsim2grid_cpp import GridModel, SolverType
+    if ls2g_version < Version("1.3.1"):
+        # do not raise, otherwise this module (and with it the ls2g independent functions) becomes
+        # unimportable just because an outdated lightsim2grid is installed
+        logger.warning(
+            f"lightsim2grid {ls2g_version} is too old for contingency analysis, version 1.3.1 or newer is "
+            "required - please update lightsim2grid"
+        )
+        lightsim2grid_installed = False
     else:
-        from lightsim2grid.lightsim2grid_cpp import GridModel, SolverType
+        from lightsim2grid.algorithm import AlgorithmType as SolverType
+        from lightsim2grid.contingencyAnalysis import ContingencyAnalysisCPP
+        from lightsim2grid.network import LSGrid as GridModel
+        from lightsim2grid.network import init_from_pandapower as init_ls2g
 
-    lightsim2grid_installed = True
+        lightsim2grid_installed = True
 else:
     lightsim2grid_installed = False
 
 try:
     if not lightsim2grid_installed:
         raise ImportError
-    ls2g_version = Version(lightsim2grid.__version__)
-    if ls2g_version < Version("0.13.0"):
-        from lightsim2grid_cpp import KLUSolver, KLUSolverSingleSlack
-    else:
-        from lightsim2grid.lightsim2grid_cpp import KLUSolver, KLUSolverSingleSlack  # noqa: F401
+    from lightsim2grid.algorithm import NR_KLU, NRSing_KLU  # noqa: F401
 
     KLU_solver_available = True
 except ImportError:
     KLU_solver_available = False
 
 
+def _ls2g_solver_types() -> tuple["SolverType", "SolverType"]:
+    """
+    Return the lightsim2grid algorithm types for (multiple slack, single slack) grids, preferring KLU.
+    """
+    suffix = "KLU" if KLU_solver_available else "SparseLU"
+    return getattr(SolverType, f"NR_{suffix}"), getattr(SolverType, f"NRSing_{suffix}")
+
+
 def pp_to_ls2g(net: pandapowerNet) -> "GridModel":
     """
     Try to initialize a lightsim2grid model
 
-    Arguments:
+    Parameters:
         net: The pandapower network to use in lightsim2grid
 
     Returns:
@@ -270,7 +276,8 @@ def run_contingency_ls2g(
         tct3w, tct3w_tap_pos, tct3w_shift_degree = _convert_trafo_phase_shifter(net, "trafo3w")
 
     # setting "slack" back-and-forth is due to the difference in interpretation of generators as "distributed slack"
-    if net._options.get("distributed_slack", False):
+    distributed_slack = net._options.get("distributed_slack", False)
+    if distributed_slack:
         slack_backup = net.gen.slack.copy()
         net.gen.loc[net.gen.slack_weight != 0, "slack"] = True
         msg = (
@@ -281,10 +288,10 @@ def run_contingency_ls2g(
             warnings.filterwarnings("ignore", msg)
             lightsim_grid_model = pp_to_ls2g(net)
         net.gen["slack"] = slack_backup
-        solver_type = SolverType.KLU if KLU_solver_available else SolverType.SparseLU
     else:
         lightsim_grid_model = pp_to_ls2g(net)
-        solver_type = SolverType.KLUSingleSlack if KLU_solver_available else SolverType.SparseLUSingleSlack
+    solver_multi_slack, solver_single_slack = _ls2g_solver_types()
+    solver_type = solver_multi_slack if distributed_slack else solver_single_slack
 
     if tct2w_flag:
         net.trafo["tap_changer_type"] = tct2w
@@ -461,14 +468,15 @@ def _update_contingency_results(
                 contingency_results[element][var] = val
 
 
-def get_element_limits(net):
+def get_element_limits(net: pandapowerNet) -> dict:
     """
     Construct the dictionary of element limits
 
-    :param pandapowerNet net:
+    Parameters:
+        net: the pandapower network
 
-    :return: element limits
-    :rtype: dict
+    Returns:
+        element limits
     """
     element_limits = {}
     if "max_vm_pu" in net.bus and "min_vm_pu" in net.bus:
@@ -546,21 +554,31 @@ def get_element_limits(net):
     return element_limits
 
 
-def check_elements_within_limits(element_limits, contingency_results, nminus1=False, branch_tol=1e-3, bus_tol=1e-6):
+def check_elements_within_limits(
+    element_limits: dict,
+    contingency_results: dict,
+    nminus1: bool = False,
+    branch_tol: float = 1e-3,
+    bus_tol: float = 1e-6,
+):
     """
     Check if the indexed elements with extracted constraints are within limits.
 
-    Elements without extracted constraints are not checked. Missing constrained
-    elements or result groups raise ValueError.
+    Elements without extracted constraints are not checked. Missing constrained elements or result groups raise
+    ValueError.
 
-    :param dict element_limits:
-    :param dict contingency_results:
-    :param bool nminus1:
-    :param float branch_tol: tolerance of the limit violation check for branch limits
-    :param float bus_tol: tolerance of the limit violation check for bus limits
+    Parameters:
+        element_limits:
+        contingency_results:
+        nminus1:
+        branch_tol: tolerance of the limit violation check for branch limits
+        bus_tol: tolerance of the limit violation check for bus limits
 
-    :return: True if all within limits (no violations), False if any limits violated
-    :rtype: bool
+    Returns:
+        bool: True if all within limits (no violations), False if any limits violated
+
+    Raises:
+        ValueError: if a constraint is missing
     """
     for element, limit in element_limits.items():
         if element not in contingency_results:
@@ -620,14 +638,17 @@ def _log_violation(element, var, val, limit_index, mask):
             logger.info(f"{element}: {var}{s} violation at index {limit_index[mask]} ({val[mask]})")
 
 
-def report_contingency_results(element_limits, contingency_results, branch_tol=1e-3, bus_tol=1e-6):
+def report_contingency_results(
+    element_limits: dict, contingency_results: dict, branch_tol: float = 1e-3, bus_tol: float = 1e-6
+):
     """
     Print log messages for elements with violations of limits
 
-    :param dict element_limits:
-    :param dict contingency_results:
-    :param float branch_tol: tolerance for branch results
-    :param float bus_tol: tolerance for bus results
+    Parameters:
+        element_limits:
+        contingency_results:
+        branch_tol: tolerance for branch results
+        bus_tol: tolerance for bus results
     """
     for element, results in contingency_results.items():
         limit = element_limits[element]
