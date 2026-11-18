@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower.auxiliary import get_indices
+from pandapower.auxiliary import _sum_by_group, get_indices
 from pandapower.control import Characteristic, ConstControl, ContinuousTapControl
 from pandapower.control.util.auxiliary import (
     _create_trafo_characteristics,
@@ -670,6 +670,18 @@ def test_geo_accessor_geopandas():
 
     assert net.line.geo.geojson.as_shapely_obj.at[0] == line
     assert np.allclose(net.line.geo.geojson.total_bounds, [7.74426069, 48.32845845, 7.93829196, 48.47484423])
+
+
+@pytest.mark.parametrize("shape", [(-1,), (-1, 1)])
+def test_sum_by_group(shape):
+    # values can be column vectors, as the sgen currents in calc_sc with use_pre_fault_voltage=True
+    bus = np.array([2, 0, 2, 1, 0], dtype=np.int64)
+    first_val = np.array([1.0, 2.0, 3.0, 10.0, 5.0]).reshape(shape)
+    second_val = 10 * first_val
+    buses, first_sum, second_sum = _sum_by_group(bus, first_val, second_val)
+    assert np.array_equal(buses, [0, 1, 2])
+    assert np.allclose(first_sum, np.array([7.0, 10.0, 4.0]).reshape(shape))
+    assert np.allclose(second_sum, np.array([70.0, 100.0, 40.0]).reshape(shape))
 
 
 if __name__ == "__main__":

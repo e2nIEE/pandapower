@@ -420,11 +420,11 @@ def _sum_by_group(
     index[:-1] = bus[1:] != bus[:-1]
     bus = bus[index]
     first_val = first_val[order]
-    first_val.cumsum(out=first_val)
+    first_val.cumsum(axis=0, out=first_val)
     first_val = first_val[index]
     first_val[1:] = first_val[1:] - first_val[:-1]
     second_val = second_val[order]
-    second_val.cumsum(out=second_val)
+    second_val.cumsum(axis=0, out=second_val)
     second_val = second_val[index]
     second_val[1:] = second_val[1:] - second_val[:-1]
     return bus, first_val, second_val
