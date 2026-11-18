@@ -20,7 +20,7 @@ def from_pypowsybl(
     return_loadflow_table: bool = False,
     default_shift_degree: float = 0.0,
     default_length_km: float = 1.0,
-) -> pandapowerNet | tuple[pandapowerNet, pd.DataFrame]:
+) -> pandapowerNet | tuple[pandapowerNet, pd.DataFrame | None]:
     """
     Convert net data stored as a powsybl XIIDM file to a pandapower net.
 
