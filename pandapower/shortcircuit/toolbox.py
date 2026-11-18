@@ -10,9 +10,9 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-from pandapower import pandapowerNet
 from pandapower.auxiliary import _preserve_dtypes
 from pandapower.create import _get_index_with_check, create_buses
+from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, TAP
 from pandapower.pypower.idx_bus import BUS_I
 from pandapower.run import rundcpp
