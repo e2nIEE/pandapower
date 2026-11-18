@@ -467,14 +467,13 @@ def get_indices(
     fused_indices: bool = True,
 ) -> NDArray[np.int64]:
     """
-    Helper function during pd2mpc conversion. It resolves the mapping from a
-    given selection of indices to the actual indices, using a dict lookup being
-    passed as well.
+    Helper function during pd2mpc conversion. It resolves the mapping from a given selection of indices to the
+    actual indices, using a dict lookup being passed as well.
 
-    :param selection: Indices we want to select
-    :param lookup: The mapping itself
-    :param fused_indices: Flag which way the conversion is working.
-    :return:
+    Parameters:
+        selection: Indices we want to select
+        lookup: The mapping itself
+        fused_indices: Flag which way the conversion is working.
     """
     if fused_indices:
         return np.array([lookup[k] for k in selection], dtype=np.int64)
@@ -488,11 +487,10 @@ def _get_values(
     """
     Returns values for a selection of values after a lookup.
 
-    :param source: The array of values to select from.
-    :param selection: An array of keys, for the selection.
-    :param lookup: The mapping to resolve actual indices of the
-    value array from the selection.
-    :return:
+    Parameters:
+        source: The array of values to select from.
+        selection: An array of keys, for the selection.
+        lookup: The mapping to resolve actual indices of the value array from the selection.
     """
     v = np.zeros(len(selection))
     for i, k in enumerate(selection):
@@ -562,24 +560,18 @@ def read_from_net(
     flag: Literal["auto", "single_index", "all_index", "loc", "object"] = "auto",
 ) -> Any:
     """
-    Reads values from the specified element table at the specified index in the column according to the specified variable
-    Chooses the method to read based on flag
+    Reads values from the specified element table at the specified index in the column according to the specified
+    variable Chooses the method to read based on flag
 
-    Parameters
-    ----------
-    net
-    element : str
-        element table in pandapower net; can also be a results table
-    index : int or array_like
-        index of the element table where values are read from
-    variable : str
-        column of the element table
-    flag : str
-        defines which underlying function to use, can be one of ['auto', 'single_index', 'all_index', 'loc', 'object']
+    Parameters:
+        net:
+        element: element table in pandapower net; can also be a results table
+        index: index of the element table where values are read from
+        variable: column of the element table
+        flag: defines which underlying function to use, can be one of ['auto', 'single_index', 'all_index', 'loc',
+            'object']
 
-    Returns
-    -------
-    values
+    Returns:
         the values of the variable for the element table according to the index
     """
     if flag == "single_index":
@@ -628,24 +620,16 @@ def write_to_net(
     flag: Literal["auto", "single_index", "all_index", "loc", "object"] = "auto",
 ) -> None:
     """
-    Writes values to the specified element table at the specified index in the column according to the specified variable
-    Chooses the method to write based on flag
+    Writes values to the specified element table at the specified index in the column according to the specified
+    variable Chooses the method to write based on flag
 
-    Parameters
-    ----------
-    net
-    element : str
-        element table in pandapower net
-    index : int or array_like
-        index of the element table where values are written to
-    variable : str
-        column of the element table
-    flag : str
-        defines which underlying function to use, can be one of ['auto', 'single_index', 'all_index', 'loc', 'object']
-
-    Returns
-    -------
-    None
+    Parameters:
+        net:
+        element: element table in pandapower net
+        index: index of the element table where values are written to
+        variable: column of the element table
+        flag: defines which underlying function to use, can be one of ['auto', 'single_index', 'all_index', 'loc',
+            'object']
     """
     # write functions faster, depending on type of element_index
     if flag == "single_index":
@@ -769,10 +753,10 @@ def _set_isolated_nodes_out_of_service(
 
 def _check_connectivity_opf(ppc: PyPowerNetwork) -> tuple[NDArray[bool], int, int]:
     """
-    Checks if the ppc contains isolated buses and changes slacks to PV nodes if multiple slacks are
-    in net.
-    :param ppc: pypower case file
-    :return:
+    Checks if the ppc contains isolated buses and changes slacks to PV nodes if multiple slacks are in net.
+
+    Parameters:
+        ppc: pypower case file
     """
     br_status = ppc["branch"][:, BR_STATUS].astype(bool)
     nobranch = ppc["branch"][br_status, :].shape[0]
@@ -810,8 +794,9 @@ def _check_connectivity_opf(ppc: PyPowerNetwork) -> tuple[NDArray[bool], int, in
 def _check_connectivity(ppc: PyPowerNetwork) -> tuple[NDArray[bool], int, int, NDArray[bool], int, int]:
     """
     Checks if the ppc contains isolated buses. If yes this isolated buses are set out of service
-    :param ppc: pypower case file
-    :return:
+
+    Parameters:
+        ppc: pypower case file
     """
     br_status = ppc["branch"][:, BR_STATUS].astype(bool)
     nobranch = ppc["branch"][br_status, :].shape[0]
@@ -888,8 +873,9 @@ def _check_connectivity(ppc: PyPowerNetwork) -> tuple[NDArray[bool], int, int, N
 def _subnetworks(ppc: PyPowerNetwork) -> list[list[int]]:
     """
     Return a list of lists of the connected buses of the network
-    :param ppc: pypower case file
-    :return:
+
+    Parameters:
+        ppc: pypower case file
     """
     br_status = ppc["branch"][:, BR_STATUS].astype(bool)
     oos_bus = ppc["bus"][:, BUS_TYPE] == NONE
@@ -952,41 +938,28 @@ def _select_is_elements_numba(
     sequence: str | None = None,
 ) -> dict[str, NDArray[np.int64]]:
     """
-    Selects in-service elements in the grid (both AC and DC) based on the network's state
-    and sets this information in the internal lookups.
-    If provided, isolated buses (AC and DC) are additionally considered as not in service.
-    The function sets elements out of service based on their direct connectivity to
-    in-service buses, and also based on controllability flags in 'load', 'sgen', and 'storage'
-    during optimal power flow (OPF) mode.
+    Selects in-service elements in the grid (both AC and DC) based on the network's state and sets this information
+    in the internal lookups. If provided, isolated buses (AC and DC) are additionally considered as not in service.
+    The function sets elements out of service based on their direct connectivity to in-service buses, and also based
+    on controllability flags in 'load', 'sgen', and 'storage' during optimal power flow (OPF) mode.
 
     Parameters:
-    -----------
-    net : pandapowerNet
-        The grid data structure containing information about the buses, loads, lines, etc.
-
-    isolated_nodes : list or ndarray, optional (default=None)
-        List or array of isolated nodes (AC) in the network. If provided, the isolated nodes are
-        set as out of service.
-
-    isolated_nodes_dc : list or ndarray, optional (default=None)
-        List or array of isolated nodes (DC) in the network. If provided, the isolated DC nodes are
-        set as out of service.
-
-    sequence : str, optional (default=None)
-        Used when multi-sequence data is present in the network (like in fault studies).
-        If provided, it selects the specific sequence data in the network.
+        net: The grid data structure containing information about the buses, loads, lines, etc.
+        isolated_nodes: List or array of isolated nodes (AC) in the network. If provided, the isolated nodes are set as
+            out of service.
+        isolated_nodes_dc: List or array of isolated nodes (DC) in the network. If provided, the isolated DC nodes are
+            set as out of service.
+        sequence: Used when multi-sequence data is present in the network (like in fault studies). If provided, it
+            selects the specific sequence data in the network.
 
     Returns:
-    --------
-    is_elements : dict
-        A dictionary containing boolean arrays or lists representing the in-service state
-        of various elements (like 'load', 'gen', 'line', etc.) in the network.
+        A dictionary containing boolean arrays or lists representing the in-service state of various elements (like
+            'load', 'gen', 'line', etc.) in the network.
 
     Notes:
-    ------
-    1. The function checks and considers both AC and DC elements in the grid.
-    2. If the grid has VSC elements and auxiliary lookup data, the isolated auxiliary buses
-       for the VSC elements are also set out of service.
+        1. The function checks and considers both AC and DC elements in the grid.
+        2. If the grid has VSC elements and auxiliary lookup data, the isolated auxiliary buses
+           for the VSC elements are also set out of service.
     """
     # is missing sgen_controllable and load_controllable
     if len(net.bus) > 0:  # preparing for the possibility of not having any AC buses but just DC
@@ -1095,16 +1068,16 @@ def _add_ppc_options(
     calculate_voltage_angles: bool,
     trafo_model: Literal["t", "pi"],
     check_connectivity: bool,
-    mode: Literal["opf", "pf", "pf_3ph", "sc", "nx", "se", "dc"],
-    switch_rx_ratio: int,
+    mode: str,
+    switch_rx_ratio: float,
     enforce_p_lims: bool,
     enforce_q_lims: bool,
     recycle: dict[str, bool] | None,
     delta: float = 1e-10,
     voltage_depend_loads: bool = False,
     trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
-    init_vm_pu: Literal["flat", "results"] | float = 1.0,
-    init_va_degree: Literal["dc", "flat", "results"] | float = 0,
+    init_vm_pu: Literal["dc", "flat", "results", "auto"] | float = 1.0,
+    init_va_degree: Literal["dc", "flat", "results", "auto"] | float = 0,
     p_lim_default: float = 1e9,
     q_lim_default: float = 1e9,
     neglect_open_switch_branches: bool = False,
@@ -1912,13 +1885,11 @@ def _add_vsc_bipolar(net: pandapowerNet):
 
 def _add_auxiliary_elements(net: pandapowerNet):
     """
-    Add auxiliary elements to net, convert the HVDC links to a gen pair and
-    convert the back2back VSC to two monopol VSCs
-    Args:
+    Add auxiliary elements to net, convert the HVDC links to a gen pair and convert the back2back VSC to two monopol
+    VSCs
+
+    Parameters:
         net:
-
-    Returns:
-
     """
     # The auxiliary elements are added to net.gen and net.vsc. If adding them fails halfway (e.g. a create_vsc call
     # for a bipolar VSC raises), all rows and columns added so far are removed again. Otherwise they would stay in the
@@ -2393,18 +2364,13 @@ def _init_runse_options(
 
 def _internal_stored(net: pandapowerNet, ac: bool = True) -> bool:
     """
+    The function newtonpf() needs these variables as inputs: Ybus, Sbus, V0, pv, pq, ppci, options
 
-    The function newtonpf() needs these variables as inputs:
-    Ybus, Sbus, V0, pv, pq, ppci, options
+    Parameters:
+        net: the pandapower net
 
-    Parameters
-    ----------
-    net - the pandapower net
-
-    Returns
-    -------
-    True if all variables are stored False otherwise
-
+    Returns:
+        True if all variables are stored False otherwise
     """
     # checks if all internal variables are stored in net, which are needed for a power flow
 

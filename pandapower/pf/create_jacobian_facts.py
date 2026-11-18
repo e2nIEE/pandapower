@@ -176,32 +176,19 @@ def create_J_modification_ssc_vsc(J, V, Vm, y_pu, f, t, pvpq, pq, pvpq_lookup, p
     """
     creates the modification Jacobian matrix for SSC (STATCOM)
 
-    Parameters
-    ----------
-    Vm
-        control_delta
-    V
-        array of np.complex128
-    y_pu
-        admittances of the elements
-    f
-        array of np.int64
-    t
-        array of np.int64
-    pvpq
-        array of np.int64
-    pq
-        array of np.int64
-    pvpq_lookup
-        array of np.int64
-    pq_lookup
-        array of np.int64
+    Parameters:
+        Vm: control_delta
+        V: array of np.complex128
+        y_pu: admittances of the elements
+        f: array of np.int64
+        t: array of np.int64
+        pvpq: array of np.int64
+        pq: array of np.int64
+        pvpq_lookup: array of np.int64
+        pq_lookup: array of np.int64
 
-    Returns
-    -------
-    J_m
-        scipy.sparse.csr_matrix
-
+    Returns:
+        scipy.sparse.csr_matrix J_m
     """
 
     Vf = V[f]

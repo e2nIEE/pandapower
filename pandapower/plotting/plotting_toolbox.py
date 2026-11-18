@@ -20,23 +20,28 @@ import re
 
 import geojson
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
+from pandas.api.typing import NAType
 from typing_extensions import deprecated
+
+from pandapower.network import pandapowerNet
 
 logger = logging.getLogger(__name__)
 
 
-def safe_geojson_loads(value):
+def safe_geojson_loads(value: str | NAType):
     """
     Safely parse a GeoJSON string, handling non-string values.
 
-    In pandas 3.0, assignment to dataframes may result in non-string values
-    (e.g., float NaN or other types) in geo columns. This function handles
-    these cases gracefully.
+    In pandas 3.0, assignment to dataframes may result in non-string values (e.g., float NaN or other types) in geo
+    columns. This function handles these cases gracefully.
 
-    :param value: The value to parse (should be a string or NaN)
-    :type value: str or NAType
-    :return: Parsed GeoJSON object or None if parsing fails
+    Parameters:
+        value: The value to parse (should be a string or NaN)
+
+    Returns:
+        Parsed GeoJSON object or None if parsing fails
     """
     if pd.isna(value):
         return None
@@ -48,14 +53,13 @@ def safe_geojson_loads(value):
         return None
 
 
-def _rotate_dim2(arr, ang):
+def _rotate_dim2(arr: npt.NDArray[npt.NDArray], ang: float):
     """
     Rotate the input vector with the given angle.
 
-    :param arr: array with 2 dimensions
-    :type arr: np.array
-    :param ang: angle [rad]
-    :type ang: float
+    Parameters:
+        arr: array with 2 dimensions
+        ang: angle [rad]
     """
     return np.dot(np.array([[np.cos(ang), np.sin(ang)], [-np.sin(ang), np.cos(ang)]]), arr)
 
@@ -76,40 +80,34 @@ def _get_coords_from_geojson(gj_str):
 
 
 def get_collection_sizes(
-    net,
-    bus_size=1.0,
-    ext_grid_size=1.0,
-    trafo_size=1.0,
-    load_size=1.0,
-    sgen_size=1.0,
-    switch_size=2.0,
-    switch_distance=1.0,
-    gen_size=1.0,
-):
+    net: pandapowerNet,
+    bus_size: float = 1.0,
+    ext_grid_size: float = 1.0,
+    trafo_size: float = 1.0,
+    load_size: float = 1.0,
+    sgen_size: float = 1.0,
+    switch_size: float = 2.0,
+    switch_distance: float = 1.0,
+    gen_size: float = 1.0,
+) -> dict:
     """
-    Calculates the size for most collection types according to the distance between min and max
-    geocoord so that the collections fit the plot nicely
+    Calculates the size for most collection types according to the distance between min and max geocoord so that the
+    collections fit the plot nicely
 
-    .. note: This is implemented because if you would choose a fixed values (e.g. bus_size = 0.2),\
-        the size could be to small for large networks and vice versa
+    .. note: This is implemented because if you would choose a fixed values (e.g. bus_size = 0.2), the size could be to small for large networks and vice versa
 
-    :param net: pandapower network for which to create plot
-    :type net: pandapowerNet
-    :param bus_size: relative bus size
-    :type bus_size: float, default 1.
-    :param ext_grid_size: relative external grid size
-    :type ext_grid_size: float, default 1.
-    :param trafo_size: relative trafo size
-    :type trafo_size: float, default 1.
-    :param load_size: relative load size
-    :type load_size: float, default 1.
-    :param sgen_size: relative static generator size
-    :type sgen_size: float, default 1.
-    :param switch_size: relative switch size
-    :type switch_size: float, default 2.
-    :param switch_distance: relative distance between switches
-    :type switch_distance: float, default 1.
-    :return: sizes (dict) - dictionary containing all scaled sizes
+    Parameters:
+        net: pandapower network for which to create plot
+        bus_size: relative bus size
+        ext_grid_size: relative external grid size
+        trafo_size: relative trafo size
+        load_size: relative load size
+        sgen_size: relative static generator size
+        switch_size: relative switch size
+        switch_distance: relative distance between switches
+
+    Returns:
+        dictionary containing all scaled sizes
     """
 
     lst = net.bus.geo.apply(safe_geojson_loads).dropna().apply(geojson.utils.coords).apply(next).values
@@ -128,23 +126,20 @@ def get_collection_sizes(
     return sizes
 
 
-def get_list(individuals, number_entries, name_ind, name_ent):
+def get_list(individuals, number_entries: int, name_ind: str, name_ent: str) -> list:
     """
-    Auxiliary function to create a list of specified length from an input value that could be either
-    an iterable or a single value. Strings are treated as non-iterables. In case of iterables and
-    the length not matching the specified length, the input values are repeated or capped to match
-    the specified length.
+    Auxiliary function to create a list of specified length from an input value that could be either an iterable or
+    a single value. Strings are treated as non-iterables. In case of iterables and the length not matching the
+    specified length, the input values are repeated or capped to match the specified length.
 
-    :param individuals: list or other iterable to adapt to the given length
-    :type individuals: iterable
-    :param number_entries: length to which individuals shall be entended / capped
-    :type number_entries: int
-    :param name_ind: Name of the individuals (only for logging pupose).
-    :type name_ind: str
-    :param name_ent: Name of the entries to which the length belongs (only for logging pupose).
-    :type name_ent: str
-    :return: new_individuals (list) - a list of length __number_entries__ containing the \
-        (extended / capped) individuals
+    Parameters:
+        individuals (iterable): list or other iterable to adapt to the given length
+        number_entries: length to which individuals shall be entended / capped
+        name_ind: Name of the individuals (only for logging pupose).
+        name_ent: Name of the entries to which the length belongs (only for logging pupose).
+
+    Returns:
+        a list of length __number_entries__ containing the (extended / capped) individuals
     """
     if hasattr(individuals, "__iter__") and not isinstance(individuals, str):
         if number_entries == len(individuals):
@@ -191,38 +186,31 @@ def coords_from_node_geodata(
     element_indices,
     from_nodes,
     to_nodes,
-    node_geodata,
-    table_name,
-    node_name="Bus",
-    ignore_no_geo_diff=True,
-    node_geodata_to=None,
-):
+    node_geodata: pd.DataFrame,
+    table_name: str,
+    node_name: str = "Bus",
+    ignore_no_geo_diff: bool = True,
+    node_geodata_to: pd.DataFrame | None = None,
+) -> tuple[list, set]:
     """
-    Auxiliary function to get the node coordinates for a number of branches with respective from
-    and to nodes. The branch elements for which there is no geodata available are not included in
-    the final list of coordinates.
+    Auxiliary function to get the node coordinates for a number of branches with respective from and to nodes. The
+    branch elements for which there is no geodata available are not included in the final list of coordinates.
 
-    :param element_indices: Indices of the branch elements for which to find node geodata
-    :type element_indices: iterable
-    :param from_nodes: Indices of the starting nodes
-    :type from_nodes: iterable
-    :param to_nodes: Indices of the ending nodes
-    :type to_nodes: iterable
-    :param node_geodata: Dataframe containing x and y coordinates of the nodes
-    :type node_geodata: pd.DataFrame
-    :param table_name: Name of the table that the branches belong to (only for logging)
-    :type table_name: str
-    :param node_name: Name of the node type (only for logging)
-    :type node_name: str, default "Bus"
-    :param ignore_no_geo_diff: States if branches should be left out, if their length is zero, i.e. \
-        from_node_coords = to_node_coords
-    :type ignore_no_geo_diff: bool, default True
-    :param node_geodata_to: Dataframe containing x and y coordinates of the "to" nodes (optional, default node_geodata)
-    :type node_geodata_to: pd.DataFrame
-    :return: Return values are:\
-        - coords (list) - list of branch coordinates as geojson valid strings
-        - elements_with_geo (set) - the indices of branch elements for which coordinates wer found \
-            in the node geodata table
+    Parameters:
+        element_indices (iterable): Indices of the branch elements for which to find node geodata
+        from_nodes (iterable): Indices of the starting nodes
+        to_nodes (iterable): Indices of the ending nodes
+        node_geodata: Dataframe containing x and y coordinates of the nodes
+        table_name: Name of the table that the branches belong to (only for logging)
+        node_name: Name of the node type (only for logging)
+        ignore_no_geo_diff: States if branches should be left out, if their length is zero, i.e.
+            from_node_coords = to_node_coords
+        node_geodata_to: Dataframe containing x and y coordinates of the "to" nodes
+
+    Returns:
+
+        - list of branch coordinates as geojson valid strings
+        - the indices of branch elements for which coordinates wer found in the node geodata table
     """
     if len(element_indices) == 0:
         return np.array([], dtype=object), np.array([], dtype=int)
@@ -272,12 +260,15 @@ def coords_from_node_geodata(
 
 def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False, ignore_no_geo_diff=True):
     """
-    Sets coordinates in net.line.geo based on the from_bus and to_bus coordinates
-    in net.bus.geo
-    :param net: pandapowerNet
-    :param line_index: index of lines, coordinates of which will be set from bus geo (all lines if None)
-    :param overwrite: whether the existing coordinates in net.line.geo must be overwritten
-    :return: None
+    Sets coordinates in net.line.geo based on the from_bus and to_bus coordinates in net.bus.geo
+
+    Parameters:
+        net: pandapowerNet
+        line_index: index of lines, coordinates of which will be set from bus geo (all lines if None)
+        overwrite: whether the existing coordinates in net.line.geo must be overwritten
+
+    Returns:
+        None
     """
     if "geo" not in net.bus.columns or net.bus.geo.isnull().all():
         logger.warning("The function set_line_geodata_from_bus_geodata requires geodata to be present in net.bus.geo")
@@ -307,18 +298,18 @@ def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False, ign
 
 
 @deprecated("Use of busbar is not by bus_geodata anymore.")
-def position_on_busbar(net, bus, busbar_coords):
+def position_on_busbar(net: pandapowerNet, bus: int, busbar_coords: npt.NDArray):
     """
     Checks if the first or the last coordinates of a line are on a bus
 
-    :param net: The pandapower network
-    :type net: pandapowerNet
-    :param bus: ID of the target bus on one end of the line
-    :type bus: int
-    :param busbar_coords: The coordinates of the busbar (beginning and end point).
-    :type busbar_coords: array, shape= (,2L)
-    :return: intersection (tuple, shape= (2L,))- Intersection point of the line with the given bus.\
-        Can be used for switch position
+    Parameters:
+        net: The pandapower network
+        bus: ID of the target bus on one end of the line
+        busbar_coords (array, shape= (,2L)): The coordinates of the busbar (beginning and end point).
+
+    Returns:
+        intersection (tuple, shape= (2L,))- Intersection point of the line with the given bus. Can be used for switch
+            position
     """
     # If the line has no Intersection line will be returned and the bus coordinates can be used to
     # calculate the switch position

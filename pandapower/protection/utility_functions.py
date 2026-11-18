@@ -13,9 +13,9 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
-from pandapower import pandapowerNet
 from pandapower.create import create_buses, create_lines
 from pandapower.create._utils import add_column_to_df
+from pandapower.network import pandapowerNet
 from pandapower.plotting.collections import (
     create_annotation_collection,
     create_bus_bus_switch_collection,

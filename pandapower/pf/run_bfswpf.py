@@ -23,15 +23,19 @@ from pandapower.pypower.pfsoln import pfsoln
 
 def _make_bibc_bcbv(bus, branch, graph):
     """
-    performs depth-first-search bus ordering and creates Direct Load Flow (DLF) matrix
-    which establishes direct relation between bus current injections and voltage drops from each bus to the root bus
+    performs depth-first-search bus ordering and creates Direct Load Flow (DLF) matrix which establishes direct
+    relation between bus current injections and voltage drops from each bus to the root bus
 
-    :param ppc: matpower-type case data
-    :return: DLF matrix DLF = BIBC * BCBV where
-                    BIBC - Bus Injection to Branch-Current
-                    BCBV - Branch-Current to Bus-Voltage
-            ppc with bfs ordering
-            original bus names bfs ordered (used to convert voltage array back to normal)
+    Parameters:
+        ppc: matpower-type case data
+
+    Returns:
+        DLF matrix DLF = BIBC * BCBV where
+
+            BIBC - Bus Injection to Branch-Current
+            BCBV - Branch-Current to Bus-Voltage
+
+            ppc with bfs ordering original bus names bfs ordered (used to convert voltage array back to normal)
     """
 
     nobus = bus.shape[0]
@@ -200,21 +204,23 @@ def _makeYsh_bfsw(bus, branch, baseMVA):
 def _bfswpf(DLF, bus, gen, branch, baseMVA, Ybus, Sbus, V0, ref, pv, pq, buses_ordered_bfs_nets, options, **kwargs):
     """
     distribution power flow solution according to [1]
-    :param DLF: direct-Load-Flow matrix which relates bus current injections to voltage drops from the root bus
 
-    :param bus: buses martix
-    :param gen: generators matrix
-    :param branch: branches matrix
-    :param baseMVA:
-    :param Ybus: bus admittance matrix
-    :param Sbus: vector of power injections
-    :param V0: initial voltage state vector
-    :param ref: reference bus index
-    :param pv: PV buses indices
-    :param pq: PQ buses indices
-    :param buses_ordered_bfs_nets: buses ordered according to breadth-first search
+    Parameters:
+        DLF: direct-Load-Flow matrix which relates bus current injections to voltage drops from the root bus
+        bus: buses martix
+        gen: generators matrix
+        branch: branches matrix
+        baseMVA:
+        Ybus: bus admittance matrix
+        Sbus: vector of power injections
+        V0: initial voltage state vector
+        ref: reference bus index
+        pv: PV buses indices
+        pq: PQ buses indices
+        buses_ordered_bfs_nets: buses ordered according to breadth-first search
 
-    :return: power flow result
+    Returns:
+        power flow result
     """
     enforce_q_lims = options["enforce_q_lims"]
     tolerance = options["tolerance"]
@@ -343,14 +349,16 @@ def _get_options(options):
 
 def _run_bfswpf(ppci, options, **kwargs):
     """
-    SPARSE version of distribution power flow solution according to [1]
-    :References:
-    [1] Jen-Hao Teng, "A Direct Approach for Distribution System Load Flow Solutions",
-    IEEE Transactions on Power Delivery, vol. 18, no. 3, pp. 882-887, July 2003.
+    SPARSE version of distribution power flow solution according to [1] :References: [1] Jen-Hao Teng, "A Direct
+    Approach for Distribution System Load Flow Solutions", IEEE Transactions on Power Delivery, vol. 18, no. 3, pp.
+    882-887, July 2003.
 
-    :param ppci: matpower-style case data
-    :param options: pf options
-    :return: ppci (dict)
+    Parameters:
+        ppci: matpower-style case data
+        options: pf options
+
+    Returns:
+        ppci (dict)
     """
     time_start = perf_counter()  # starting pf calculation timing
 

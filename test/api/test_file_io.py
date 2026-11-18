@@ -12,7 +12,6 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal, assert_series_equal
 
-from pandapower import pandapowerNet
 from pandapower.control import (
     Characteristic,
     ConstControl,
@@ -24,6 +23,7 @@ from pandapower.convert_format import convert_format
 from pandapower.create import create_transformer
 from pandapower.file_io import from_excel, from_json, from_json_string, from_pickle, to_excel, to_json, to_pickle
 from pandapower.io_utils import PPJSONDecoder, PPJSONEncoder, to_serializable
+from pandapower.network import pandapowerNet
 from pandapower.networks import create_kerber_dorfnetz, mv_oberrhein, simple_four_bus_system
 from pandapower.run import runpp, set_user_pf_options
 from pandapower.sql_io import from_sqlite, to_sqlite

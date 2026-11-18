@@ -5,7 +5,6 @@
 import os
 from copy import deepcopy
 
-from pandapower import pandapowerNet
 from pandapower.auxiliary import get_free_id
 from pandapower.create import (
     create_buses,
@@ -17,6 +16,7 @@ from pandapower.create import (
     create_transformer_from_parameters,
 )
 from pandapower.file_io import from_pickle
+from pandapower.network import pandapowerNet
 from pandapower.toolbox.comparison import nets_equal
 from test import test_path
 

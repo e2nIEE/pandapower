@@ -207,7 +207,7 @@ def get_equivalent(
         )
 
         # --- calculate equivalent Ybus according to gaussian elimination
-        Ybus_eq = _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type, show_computing_time, **kwargs)
+        Ybus_eq = _calculate_equivalent_Ybus(net_zpbn, bus_lookups, eq_type, show_computing_time)
 
         # --- calculate equivalent impedance and shunts
         shunt_params, impedance_params = _calclate_equivalent_element_params(
@@ -254,9 +254,7 @@ def get_equivalent(
         )
 
         # --- cacluate equivalent Ybus accourding to gaussian elimination
-        Ybus_eq = _calculate_equivalent_Ybus(
-            net_external, bus_lookups, eq_type, show_computing_time, check_validity=False
-        )
+        Ybus_eq = _calculate_equivalent_Ybus(net_external, bus_lookups, eq_type, show_computing_time)
 
         if eq_type == "ward":
             # --- calculate equivalent impedance and wards
@@ -389,31 +387,26 @@ def get_equivalent(
 
 
 def merge_internal_net_and_equivalent_external_net(
-    net_eq, net_internal, fuse_bus_column="auto", show_computing_time=False, **kwargs
+    net_eq, net_internal, fuse_bus_column: str = "auto", show_computing_time: bool = False, **kwargs
 ):
     """
-    Merges the internal network and the equivalent external network.
-    It is expected that the boundaries occur in both, equivalent net and
-    internal net. Therefore, the boundaries are first dropped in the
-    internal net before merging.
+    Merges the internal network and the equivalent external network. It is expected that the boundaries occur in
+    both, equivalent net and internal net. Therefore, the boundaries are first dropped in the internal net before
+    merging.
 
-    INPUT:
-        **net_eq** - equivalent external area
+    Parameters:
+        net_eq: equivalent external area
+        net_internal: internal area
+        fuse_bus_column: the function expects boundary buses to be in net_eq and in net_internal. These
+            duplicate buses get fused. To identify these buses, the given column is used. Option "auto" provides
+            backward compatibility which is: use "name_equivalent" if existing and "name" otherwise
+        show_computing_time:
 
-        **net_internal** - internal area
+    Keyword Args:
+         are passed to :func:`merge_nets`
 
-    OPTIONAL:
-        **fuse_bus_column**  (str, "auto) - the function expects boundary buses to be in net_eq and
-        in net_internal. These duplicate buses get fused. To identify these buses, the given column is used. Option "auto" provides backward compatibility which is: use "name_equivalent" if
-        existing and "name" otherwise
-
-        **show_computing_time** (bool, False)
-
-        ****kwargs** - key word arguments for pp.merge_nets()
-
-    OUTPUT:
-        **merged_net** - equivalent network within the internal area
-
+    Returns:
+        merged_net: equivalent network within the internal area
     """
     kwargs = deepcopy(kwargs)
     t_start = time.perf_counter()
@@ -502,27 +495,18 @@ def drop_repeated_characteristic(net):
 
 def _determine_bus_groups(net, boundary_buses, internal_buses, show_computing_time=False):
     """
-    Defines bus groups according to the given boundary buses and internal
-    buses.
+    Defines bus groups according to the given boundary buses and internal buses.
 
-    INPUT:
-        **net** - original network
+    Parameters:
+        net: original network
+        boundary_buses (iterable): list of boundary bus indices
+        internal_buses (iterable): some of the internal bus indices
 
-        **boundary_buses** (iterable) - list of boundary bus indices
-
-        **internal_buses** (iterable) - some of the internal bus indices
-
-    OUTPUT:
-        **all_internal_buses** (list) - list of all internal bus indices
-
-        **all_external_buses** (list) - list of all external bus indices
-
-        **boundary_buses_inclusive_bswitch** (list) - list of boundary buses
-            and the connected buses via bus-bus-switch
-
-        **boundary_buses** (list) - list of boundary bus indices (only
-            supplied buses are considered)
-
+    Returns:
+        all_internal_buses (list): list of all internal bus indices
+        all_external_buses (list): list of all external bus indices
+        boundary_buses_inclusive_bswitch (list): list of boundary buses and the connected buses via bus-bus-switch
+        boundary_buses (list): list of boundary bus indices (only supplied buses are considered)
     """
     # --- check internal and boundary buses
     t_start = time.perf_counter()

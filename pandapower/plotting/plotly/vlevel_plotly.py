@@ -132,7 +132,8 @@ def _draw_colored_bus_groups_plotly(
     """
     Internal function of vlevel_plotly()
 
-    **bus_groups** - list of tuples consisting of set of bus indices, color, legendgroup
+    Parameters:
+        bus_groups: list of tuples consisting of set of bus indices, color, legendgroup
     """
     # create geocoord if none are available
     if any(net.line.geo.isna()) and any(net.bus.geo.isna()):
