@@ -3,13 +3,14 @@
 
 import logging
 import tempfile
-from collections.abc import Iterable
+from collections.abc import Callable, Iterable
 
 import tqdm
 
 from pandapower.auxiliary import ControllerNotConverged
 from pandapower.control import prepare_run_ctrl, run_control
 from pandapower.control.util.diagnostic import control_diagnostic
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 from pandapower.timeseries.output_writer import OutputWriter
 
@@ -28,15 +29,13 @@ _TRANSFORMER_THERMAL_VARIABLES = (
 )
 
 
-def init_default_outputwriter(net, time_steps, **kwargs):
+def init_default_outputwriter(net: pandapowerNet, time_steps: list, **kwargs):
     """
     Initializes the output writer. If output_writer is None, default output_writer is created
 
-    INPUT:
-        **net** - The pandapower format network
-
-        **time_steps** (list) - time steps to be calculated
-
+    Parameters:
+        net: The pandapower format network
+        time_steps: time steps to be calculated
     """
     output_writer = kwargs.get("output_writer", None)
     if output_writer is not None:
@@ -99,18 +98,22 @@ def _call_output_writer(net, time_step, pf_converged, ctrl_converged, ts_variabl
 
 
 def run_time_step(
-    net, time_step, ts_variables, run_control_fct=run_control, output_writer_fct=_call_output_writer, **kwargs
+    net: pandapowerNet,
+    time_step: int,
+    ts_variables: dict,
+    run_control_fct: Callable = run_control,
+    output_writer_fct: Callable = _call_output_writer,
+    **kwargs,
 ):
     """
-    Time Series step function
-    Is called to run the PANDAPOWER AC power flows with the timeseries module
+    Time Series step function Is called to run the PANDAPOWER AC power flows with the timeseries module
 
-    INPUT:
-        **net** - The pandapower format network
-
-        **time_step** (int) - time_step to be calculated
-
-        **ts_variables** (dict) - contains settings for controller and time series simulation. See init_time_series()
+    Parameters:
+        net: The pandapower format network
+        time_step: time_step to be calculated
+        ts_variables: contains settings for controller and time series simulation. See init_time_series()
+        run_control_fct:
+        output_writer_fct:
     """
     ctrl_converged = True
     pf_converged = True
@@ -245,16 +248,16 @@ def _check_output_writer_recyclability(net, recycle, run, tdpf=False):
     return recycle
 
 
-def get_recycle_settings(net, **kwargs):
+def get_recycle_settings(net: pandapowerNet, **kwargs):
     """
-    checks if "run" is specified in kwargs and calls this function in time series loop.
-    if "recycle" is in kwargs we use the TimeSeriesRunpp class (not implemented yet)
+    checks if "run" is specified in kwargs and calls this function in time series loop. if "recycle" is in kwargs we
+    use the TimeSeriesRunpp class (not implemented yet)
 
-    INPUT:
-        **net** - The pandapower format network
+    Parameters:
+        net: The pandapower format network
 
-    RETURN:
-        **recycle** - a dict with recycle options to be used by runpp
+    Returns:
+        recycle: a dict with recycle options to be used by runpp
     """
 
     recycle = kwargs.get("recycle", None)
@@ -301,22 +304,19 @@ def init_time_steps(net, time_steps, **kwargs):
     return time_steps
 
 
-def init_time_series(net, time_steps, continue_on_divergence=False, verbose=True, **kwargs):
+def init_time_series(
+    net: pandapowerNet, time_steps: list, continue_on_divergence: bool = False, verbose: bool = True, **kwargs
+):
     """
-    inits the time series calculation
-    creates the dict ts_variables, which includes necessary variables for the time series / control function
+    inits the time series calculation creates the dict ts_variables, which includes necessary variables for the time
+    series / control function
 
-    INPUT:
-        **net** - The pandapower format network
-
-        **time_steps** (list or tuple, None) - time_steps to calculate as list or tuple (start, stop)
-        if None, all time steps from provided data source are simulated
-
-    OPTIONAL:
-
-        **continue_on_divergence** (bool, False) - If True time series calculation continues in case of errors.
-
-        **verbose** (bool, True) - prints progress bar or logger debug messages
+    Parameters:
+        net: The pandapower format network
+        time_steps: time_steps to calculate as list or tuple (start, stop) if None, all time steps
+            from provided data source are simulated
+        continue_on_divergence: If True time series calculation continues in case of errors.
+        verbose: prints progress bar or logger debug messages
     """
 
     time_steps = init_time_steps(net, time_steps, **kwargs)
@@ -374,15 +374,15 @@ def print_progress(i, time_step, time_steps, verbose, **kwargs):
         func(i, time_step, time_steps, **kwargs)
 
 
-def run_loop(net, ts_variables, run_control_fct=run_control, output_writer_fct=_call_output_writer, **kwargs):
+def run_loop(
+    net: pandapowerNet, ts_variables, run_control_fct=run_control, output_writer_fct=_call_output_writer, **kwargs
+):
     """
     runs the time series loop which calls runpp (or another run function) in each iteration
 
-    Parameters
-    ----------
-    net - pandapower net
-    ts_variables - settings for time series
-
+    Parameters:
+        net: pandapower net
+        ts_variables: settings for time series
     """
     for i, time_step in enumerate(ts_variables["time_steps"]):
         print_progress(
