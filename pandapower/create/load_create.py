@@ -60,18 +60,15 @@ def create_load(
     """
     Adds one load in table net["load"].
 
-    All loads are modelled in the consumer system, meaning load is positive and generation is
-    negative active power. Please pay attention to the correct signing of the reactive power as
-    well.
+    All loads are modelled in the consumer system, meaning load is positive and generation is negative active power.
+    Please pay attention to the correct signing of the reactive power as well.
 
     Parameters:
         net: The net within this load should be created
         bus: The bus id to which the load is connected
         p_mw: The active power of the load
-
             - positive value -> load
             - negative value -> generation
-
         q_mvar: The reactive power of the load
         const_z_p_percent: percentage of p_mw that will be associated to constant impedance load at rated voltage
         const_i_p_percent: percentage of p_mw that will be associated to constant current load at rated voltage
@@ -79,7 +76,7 @@ def create_load(
         const_i_q_percent: percentage of q_mvar that will be associated to constant current load at rated voltage
         sn_mva: Nominal power of the load
         name: The name for this load
-        scaling: An OPTIONAL scaling factor. Multiplies with p_mw and q_mvar.
+        scaling: An optional scaling factor. Multiplies with p_mw and q_mvar.
         type: type variable to classify the load: wye/delta
         index: Force a specified ID if it is available. If None, the index one higher than the highest already existing
             index is selected.
@@ -91,7 +88,7 @@ def create_load(
         controllable: States, whether a load is controllable or not. Only respected for OPF; defaults to False if
             "controllable" column exists in DataFrame
 
-    Return:
+    Returns:
         The ID of the created load
 
     Example:
@@ -414,7 +411,8 @@ def create_load_from_cosphi(  # no index ?
             - "underexcited" (Q absorption, decreases voltage)
             - "overexcited" (Q injection, increases voltage)
 
-        **kwargs: any parameter from create_load, as these get passed to the create_load function
+    Keyword Args:
+        are passed to the create_load function.
 
     Returns:
         The ID of the created load

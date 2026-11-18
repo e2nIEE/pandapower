@@ -218,13 +218,12 @@ class PyPowSyBlConverter(
         """
         Convert a value to ``float`` while applying a safe fallback.
 
-        Args:
+        Parameters:
             value: Input value that may be numeric, nullable, or a NumPy scalar.
             default: Value returned when conversion is impossible or the result in NaN.
 
         Returns:
             The converted floating-point value or ``default``.
-
         """
         try:
             if value is None:
@@ -314,14 +313,13 @@ class PyPowSyBlConverter(
         """
         Resolve a powsybl bus reference to pandapower bus indices.
 
-        Args:
+        Parameters:
             elements_map: Mapping that stores created pandapower indices per element.
             bus_id_to_bus_names: Mapping from powsybl bus ids to bus-breaker names.
             pyp_bus_ref: Bus reference from a powsybl element row.
 
         Returns:
             List of matching pandapower bus indices.
-
         """
         bus_indices = []
 
@@ -413,13 +411,12 @@ class PyPowSyBlConverter(
         """
         Map a powsybl switch kind to pandapower switch type.
 
-        Args:
+        Parameters:
             switch_row: Row from the powsybl switch table.
             default: Optional fallback pandapower switch type.
 
         Returns:
             The mapped pandapower switch type, for example ``CB``, ``DS``, or ``LBS``.
-
         """
         if default is None:
             default = self.default_switch_type
@@ -435,14 +432,13 @@ class PyPowSyBlConverter(
         """
         Convert an impedance from ohms to per-unit.
 
-        Args:
+        Parameters:
             z_ohm: Physical impedance in ohms.
             vn_kv: Nominal voltage in kilovolts.
             sn_mva: Base apparent power in megavolt-amperes.
 
         Returns:
             Impedance in per-unit on the specified voltage and power base.
-
         """
         z_base = (vn_kv**2) / sn_mva
         return z_ohm / z_base
@@ -455,15 +451,12 @@ class PyPowSyBlConverter(
         """
         Load and validate the powsybl source network.
 
-        Args:
-            filename: Path to source network. The file must use the ``.xiidm``
-                extension.
+        Parameters:
+            filename: Path to source network. The file must use the ``.xiidm`` extension.
 
         Raises:
-            ValueError: If the file extension is unsupported or the network uses
-                per-unit values.
+            ValueError: If the file extension is unsupported or the network uses per-unit values.
             RuntimeError: If powsybl fails to load the file.
-
         """
         if not filename.endswith(".xiidm"):
             raise ValueError("pypowsybl-files must use the .xiidm extension.")
@@ -1190,12 +1183,11 @@ class PyPowSyBlConverter(
         """
         Export the generated pandapower network as JSON.
 
-        Args:
+        Parameters:
             filename: Source file name used to derive the output file path.
 
         Returns:
             Path of the written JSON file.
-
         """
         base_path, _ = os.path.splitext(filename)
         json_filename = base_path + ".json"
@@ -1206,14 +1198,13 @@ class PyPowSyBlConverter(
         """
         Calculate pairwise short-circuit values for the three-winding transformer.
 
-        Args:
+        Parameters:
             leg_a: First transformer leg dictionary.
             leg_b: Second transformer leg dictionary.
             reference_u_kv: Voltage base used for the pairwise impedance conversion.
 
         Returns:
             Tuple ``(vk_percent, vkr_percent)`` for the selected leg pair.
-
         """
         s_ref_mva = min(leg_a["rated_s"], leg_b["rated_s"])
         z_base_ohm = (reference_u_kv**2) / s_ref_mva

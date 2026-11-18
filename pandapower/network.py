@@ -321,7 +321,7 @@ class pandapowerNet(ADict):
                     par.append(f"   - {et} ({n_groups} group{plural_s(n_groups)}, {n_rows} row{plural_s(n_rows)})")
                 else:
                     par.append(f"   - {et} ({n_rows} element{plural_s(n_rows)})")
-        res_cost = [" and the following result values:", "   - %s" % "res_cost"] if "res_cost" in self.keys() else []
+        res_cost = [" and the following result values:", "   - res_cost"] if "res_cost" in self.keys() else []
         if not len(par) + len(res):
             return "This pandapower network is empty"
         if len(res):

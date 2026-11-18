@@ -5,7 +5,6 @@ __all__ = [
     "add_collections_to_axes",
     "add_single_collection",
     "build_igraph_from_pp",
-    "bus_info",
     "calculate_unique_angles",
     "cmap_continuous",
     "cmap_discrete",
@@ -55,9 +54,9 @@ __all__ = [
     "get_plotly_cmap",
     "get_plotly_color",
     "get_plotly_color_palette",
+    "get_plotly_colorscale",
     "hover",
     "layers_plotly",
-    "line_info",
     "pf_res_plotly",
     "plot_loading",
     "plot_voltage_profile",
@@ -66,8 +65,6 @@ __all__ = [
     "simple_plotly",
     "sum_line_length",
     "to_html",
-    "trafo3w_info",
-    "trafo_info",
     "version_check",
     "vlevel_plotly",
     "voltage_profile_to_bus_geodata",
@@ -133,6 +130,7 @@ from pandapower.plotting.plotly import (
     get_plotly_cmap,
     get_plotly_color,
     get_plotly_color_palette,
+    get_plotly_colorscale,
     layers_plotly,
     pf_res_plotly,
     simple_plotly,
@@ -142,15 +140,7 @@ from pandapower.plotting.plotly import (
 )
 from pandapower.plotting.plotting_toolbox import get_collection_sizes, set_line_geodata_from_bus_geodata
 from pandapower.plotting.powerflow_results import plot_loading, plot_voltage_profile, voltage_profile_to_bus_geodata
-from pandapower.plotting.simple_plot import (
-    bus_info,
-    calculate_unique_angles,
-    hover,
-    line_info,
-    simple_plot,
-    trafo3w_info,
-    trafo_info,
-)
+from pandapower.plotting.simple_plot import calculate_unique_angles, hover, simple_plot
 from pandapower.plotting.to_html import to_html
 
 try:

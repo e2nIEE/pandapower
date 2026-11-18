@@ -1,6 +1,8 @@
 import pandas as pd
 import pandera.pandas as pa
 
+from pandapower.network_schema.tools.validation.column_condition import create_lower_equals_column_check
+
 _line_columns = {
     "name": pa.Column(
         pd.StringDtype,
@@ -22,10 +24,17 @@ _line_columns = {
         int, pa.Check.ge(0), description="Index of bus where the line ends", metadata={"foreign_key": "bus"}
     ),
     "length_km": pa.Column(float, pa.Check.gt(0), description="length of the line [km]"),
-    "r_ohm_per_km": pa.Column(float, pa.Check.ge(0), description="resistance of the line [Ohm per km]"),
-    "x_ohm_per_km": pa.Column(float, pa.Check.ge(0), description="reactance of the line [Ohm per km]"),
+    "r_ohm_per_km": pa.Column(
+        float,
+        description="resistance of the line [Ohm per km] (should be positive, unless you are deliberately modelling equivalent networks)",
+    ),
+    "x_ohm_per_km": pa.Column(
+        float,
+        description="reactance of the line [Ohm per km] (should be positive, unless you are deliberately modelling series compensation)",
+    ),
     "c_nf_per_km": pa.Column(
-        float, pa.Check.ge(0), description="capacitance of the line (line-to-earth) [nano Farad per km]"
+        float,
+        description="capacitance of the line (line-to-earth) [nano Farad per km] (should be positive, unless you are deliberately modelling a shunt)",
     ),
     "g_us_per_km": pa.Column(
         float,
@@ -85,6 +94,22 @@ _line_columns = {
         nullable=True,
         required=False,
         description="Maximum loading of the line",
+        metadata={"opf": True},
+    ),
+    "min_angle_degree": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="minimum voltage angle difference between from_bus and to_bus (va_from - va_to) [degree], "
+        "considered in the OPF; NaN means unconstrained",
+        metadata={"opf": True},
+    ),
+    "max_angle_degree": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="maximum voltage angle difference between from_bus and to_bus (va_from - va_to) [degree], "
+        "considered in the OPF; NaN means unconstrained",
         metadata={"opf": True},
     ),
     "endtemp_degree": pa.Column(
@@ -248,6 +273,7 @@ _line_columns = {
 }
 line_schema = pa.DataFrameSchema(
     _line_columns,
+    checks=[create_lower_equals_column_check(first_element="min_angle_degree", second_element="max_angle_degree")],
     name="line",
     strict=False,
 )

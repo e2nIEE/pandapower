@@ -5,7 +5,7 @@ Functions for creating and validating bus index cross-references.
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower import pandapowerNet
+from pandapower.network import pandapowerNet
 
 
 def _create_index_validation_check(reference_df: pd.DataFrame, column_name: str, element_name: str) -> pa.Check:

@@ -22,13 +22,13 @@ from pandapower.network import pandapowerNet
 
 def panda_four_load_branch():
     """
-    This function creates a simple six bus system with four radial low voltage nodes connected to \
-    a medium voltage slack bus. At every low voltage node the same load is connected.
+    This function creates a simple six bus system with four radial low voltage nodes connected to a medium voltage
+    slack bus. At every low voltage node the same load is connected.
 
-    OUTPUT:
-         **net** - Returns the required four load system
+    Returns:
+        net: Returns the required four load system
 
-    EXAMPLE:
+    Example:
         >>> from pandapower.networks.simple_pandapower_test_networks import panda_four_load_branch
         >>> net_four_load = panda_four_load_branch()
     """
@@ -52,14 +52,14 @@ def panda_four_load_branch():
 
 def four_loads_with_branches_out():
     """
-    This function creates a simple ten bus system with four radial low voltage nodes connected to \
-    a medium voltage slack bus. At every of the four radial low voltage nodes another low voltage \
-    node with a load is connected via cable.
+    This function creates a simple ten bus system with four radial low voltage nodes connected to a medium voltage
+    slack bus. At every of the four radial low voltage nodes another low voltage node with a load is connected via
+    cable.
 
-    OUTPUT:
-         **net** - Returns the required four load system with branches
+    Returns:
+        net: Returns the required four load system with branches
 
-    EXAMPLE:
+    Example:
         >>> from pandapower.networks.simple_pandapower_test_networks import four_loads_with_branches_out
         >>> net_four_load_with_branches = four_loads_with_branches_out()
     """
@@ -84,14 +84,13 @@ def four_loads_with_branches_out():
 
 def simple_four_bus_system():
     """
-    This function creates a simple four bus system with two radial low voltage nodes connected to \
-    a medium voltage slack bus. At both low voltage nodes the a load and a static generator is \
-    connected.
+    This function creates a simple four bus system with two radial low voltage nodes connected to a medium voltage
+    slack bus. At both low voltage nodes the a load and a static generator is connected.
 
-    OUTPUT:
-         **net** - Returns the required four bus system
+    Returns:
+        net: Returns the required four bus system
 
-    EXAMPLE:
+    Example:
         >>> from pandapower.networks.simple_pandapower_test_networks import simple_four_bus_system
         >>> net_simple_four_bus = simple_four_bus_system()
     """
@@ -114,16 +113,15 @@ def simple_four_bus_system():
 
 def simple_mv_open_ring_net():
     """
-    This function creates a simple medium voltage open ring network with loads at every medium \
-    voltage node.
-    As an example this function is used in the topology and diagnostic docu.
+    This function creates a simple medium voltage open ring network with loads at every medium voltage node. As an
+    example this function is used in the topology and diagnostic docu.
 
-    OUTPUT:
-         **net** - Returns the required simple medium voltage open ring network
+    Returns:
+        net: Returns the required simple medium voltage open ring network
 
-    EXAMPLE:
-         >>> from pandapower.networks.simple_pandapower_test_networks import simple_mv_open_ring_net
-         >>> net_simple_open_ring = simple_mv_open_ring_net()
+    Example:
+        >>> from pandapower.networks.simple_pandapower_test_networks import simple_mv_open_ring_net
+        >>> net_simple_open_ring = simple_mv_open_ring_net()
     """
 
     net = pandapowerNet(name="simple_mv_open_ring_net")

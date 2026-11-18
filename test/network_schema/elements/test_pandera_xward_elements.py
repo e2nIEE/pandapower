@@ -13,6 +13,7 @@ from pandapower.network_schema.tools.validation.network_validation import valida
 from test.network_schema.elements.helper import (
     all_allowed_floats,
     bools,
+    negativ_floats,
     negativ_floats_plus_zero,
     negativ_ints,
     not_boolean_list,
@@ -20,6 +21,7 @@ from test.network_schema.elements.helper import (
     not_ints_list,
     not_strings_list,
     positiv_floats,
+    positiv_floats_plus_zero,
     positiv_ints_plus_zero,
     strings,
 )
@@ -37,7 +39,7 @@ class TestXWardRequiredFields:
                 itertools.product(["qs_mvar"], all_allowed_floats),
                 itertools.product(["pz_mw"], all_allowed_floats),
                 itertools.product(["qz_mvar"], all_allowed_floats),
-                itertools.product(["r_ohm"], positiv_floats),  # gt(0)
+                itertools.product(["r_ohm"], positiv_floats_plus_zero),  # ge(0)
                 itertools.product(["x_ohm"], positiv_floats),  # gt(0)
                 itertools.product(["vm_pu"], positiv_floats),  # gt(0)
                 itertools.product(["in_service"], bools),
@@ -79,7 +81,7 @@ class TestXWardRequiredFields:
                 itertools.product(["qs_mvar"], [float(np.nan), pd.NA, None, *not_floats_list]),
                 itertools.product(["pz_mw"], [float(np.nan), pd.NA, None, *not_floats_list]),
                 itertools.product(["qz_mvar"], [float(np.nan), pd.NA, None, *not_floats_list]),
-                itertools.product(["r_ohm"], [float(np.nan), pd.NA, None, *negativ_floats_plus_zero, *not_floats_list]),
+                itertools.product(["r_ohm"], [float(np.nan), pd.NA, None, *negativ_floats, *not_floats_list]),
                 itertools.product(["x_ohm"], [float(np.nan), pd.NA, None, *negativ_floats_plus_zero, *not_floats_list]),
                 itertools.product(["vm_pu"], [float(np.nan), pd.NA, None, *negativ_floats_plus_zero, *not_floats_list]),
                 itertools.product(["in_service"], [float(np.nan), pd.NA, None, *not_boolean_list]),

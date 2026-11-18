@@ -34,11 +34,10 @@ from pandapower.pypower.make_s_bus import makeSbus
 def _run_dc_pf(ppci, recycle: dict | bool = False):
     """
     Runs a decoupled (dc) powerflow to initialize all the values.
-    :param ppci: the internal ppci structure
-    :param recycle: Flag to use results from a previous powerflow
 
-    Returns:
-
+    Parameters:
+        ppci: the internal ppci structure
+        recycle: Flag to use results from a previous powerflow
     """
     t0 = perf_counter()
 

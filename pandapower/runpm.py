@@ -126,7 +126,7 @@ def runpm(
             starts for PowerModels. If "results", pg_start and qg_start values are
             added to the PowerModels generator data from pandapower result tables.
     """
-    ac = True if "DC" not in pm_model else False
+    ac = "DC" not in pm_model
     net._options = {}
     _add_ppc_options(
         net,
@@ -352,7 +352,7 @@ def runpm_redispatch(
 
     See :func:`runpm` for the remaining keyword arguments.
     """
-    ac = True if "DC" not in pm_model else False
+    ac = "DC" not in pm_model
     if pp_to_pm_callback is None:
         pp_to_pm_callback = partial(add_redispatch_params, redispatch_cost=redispatch_cost)
     net._options = {}
@@ -421,7 +421,7 @@ def runpm_tnep(
     """
     Runs transmission network extension planning (tnep) optimization from PowerModels.jl via PandaModels.jl
     """
-    ac = True if "DC" not in pm_model else False
+    ac = "DC" not in pm_model
     if pm_solver is None:
         if pm_model == "DCPPowerModel":
             pm_solver = "ipopt"
@@ -499,7 +499,7 @@ def runpm_ots(
     """
     Runs optimal transmission switching (OTS) optimization from PowerModels.jl via PandaModels.jl
     """
-    ac = True if "DC" not in pm_model else False
+    ac = "DC" not in pm_model
     if pm_solver is None:
         pm_solver = "juniper"
 
@@ -576,7 +576,7 @@ def runpm_storage_opf(
     kwargs["from_time_step"] = from_time_step
     kwargs["to_time_step"] = to_time_step
 
-    ac = True if "DC" not in pm_model else False
+    ac = "DC" not in pm_model
     net._options = {}
     _add_ppc_options(
         net,
@@ -1055,7 +1055,7 @@ def runpm_pf(
     """
     Runs power flow from PowerModels.jl via PandaModels.jl
     """
-    ac = True if "DC" not in pm_model else False
+    ac = "DC" not in pm_model
     net._options = {}
     _add_ppc_options(
         net,

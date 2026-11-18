@@ -30,9 +30,8 @@ def control_diagnostic(net, respect_in_service=True):
         same_type_existing_ctrl = get_controller_index(net, ctrl_type=type(current_controller), parameters=parameters)
         if len(same_type_existing_ctrl) > 1:
             logger.info(
-                "Same type and same matching parameters controllers "
-                + str(["%i" % i for i in same_type_existing_ctrl])
-                + " could affect convergence."
+                f"Same type and same matching parameters controllers {[f'{i}' for i in same_type_existing_ctrl]} could "
+                f"affect convergence."
             )
             for val in same_type_existing_ctrl:
                 indices.remove(val)
@@ -53,12 +52,8 @@ def control_diagnostic(net, respect_in_service=True):
         trafo_ctrl_at_same_trafo = get_controller_index(net, parameters=parameters, idx=trafo_ctrl)
         if len(trafo_ctrl_at_same_trafo) > 1:
             logger.info(
-                "Trafo Controllers %s at the %s transformer %s probably could affect convergence."
-                % (
-                    str(["%i" % i for i in trafo_ctrl_at_same_trafo]),
-                    parameters["element"],
-                    parameters["element_index"],
-                )
+                f"Trafo Controllers {[f'{i}' for i in trafo_ctrl_at_same_trafo]} at the {parameters['element']} "
+                f"transformer {parameters['element_index']} probably could affect convergence."
             )
             for val in trafo_ctrl_at_same_trafo:
                 trafo_ctrl.remove(val)
@@ -92,7 +87,7 @@ def trafo_characteristic_table_diagnostic(net):
                 and not net[trafo_table]["tap_dependency_table"].any()
             )
         ):
-            logger.info("No %s with tap-dependent characteristics found." % trafo_table)
+            logger.info(f"No {trafo_table} with tap-dependent characteristics found.")
             continue
         # check if both tap_dependency_table & id_characteristic_table columns are populated
         mismatch_a = net[trafo_table][
@@ -131,14 +126,19 @@ def trafo_characteristic_table_diagnostic(net):
                 category=UserWarning,
             )
             warnings_count += 1
-        # check if tap_changer_type is "Symmetrical" but tap_step_degree is not 90
+        # check if tap_changer_type is "Symmetrical" but tap_step_degree is set to a value other than 90
+        # (NaN or 0 are treated as 90 degree)
+        step_degree = net[trafo_table]["tap_step_degree"]
         mismatch_d = net[trafo_table][
-            (net[trafo_table]["tap_step_degree"] != 90) & (net[trafo_table]["tap_changer_type"] == "Symmetrical")
+            step_degree.notna()
+            & (step_degree != 0)
+            & (step_degree != 90)
+            & (net[trafo_table]["tap_changer_type"] == "Symmetrical")
         ].shape[0]
         if mismatch_d != 0:
             warnings.warn(
                 f"{trafo_table}: found {mismatch_d} transformer(s) with tap_changer_type parameter "
-                f"set to 'Symmetrical' but tap_step_degree value not set to 90 degrees.",
+                f"set to 'Symmetrical' but tap_step_degree value not set to 90 degrees (or NaN).",
                 category=UserWarning,
             )
             warnings_count += 1

@@ -5,7 +5,7 @@ from pandapower.create import create_bus, create_ext_grid, create_measurement, c
 from pandapower.estimation.idx_brch import P_TO, P_TO_STD
 from pandapower.estimation.ppc_conversion import pp2eppci
 from pandapower.network import pandapowerNet
-from pandapower.pypower.idx_brch import branch_cols
+from pandapower.pypower.idx_brch import BRANCH_COLS
 
 
 def test_duplicate_measurements_at_trafo3w():
@@ -59,10 +59,10 @@ def test_duplicate_measurements_at_trafo3w():
             )
 
     _, _, eppci = pp2eppci(net, v_start="flat", delta_start="flat", zero_injection="aux_bus")
-    vals = eppci.data["branch"][[2, 3], branch_cols + P_TO]
+    vals = eppci.data["branch"][[2, 3], BRANCH_COLS + P_TO]
     np.testing.assert_array_equal(vals, [3, 3])
 
-    std_dev = eppci.data["branch"][[2, 3], branch_cols + P_TO_STD]
+    std_dev = eppci.data["branch"][[2, 3], BRANCH_COLS + P_TO_STD]
     # 0.707107 =  ((1^2 + 1^2)^0.5)/2
     np.testing.assert_array_almost_equal(std_dev, [0.707107, 0.707107], decimal=6)
 

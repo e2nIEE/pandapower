@@ -38,7 +38,7 @@ The following controllers to control tap changers are predefined within the pand
 **********************
 Continuous Tap Control
 **********************
-.. autoclass:: pandapower.control.controller.trafo.ContinuousTapControl.ContinuousTapControl
+.. autoclass:: pandapower.control.controller.trafo.continuous_tap_control.ContinuousTapControl
     :members:
 
 
@@ -48,7 +48,7 @@ Continuous Tap Control
 Discrete Tap Control
 **********************
 
-.. autoclass:: pandapower.control.controller.trafo.DiscreteTapControl.DiscreteTapControl
+.. autoclass:: pandapower.control.controller.trafo.discrete_tap_control.DiscreteTapControl
     :members:
 
 
@@ -75,7 +75,7 @@ CharacteristicControl
 VmSetTapControl
 **********************
 
-.. autoclass:: pandapower.control.controller.trafo.VmSetTapControl.VmSetTapControl
+.. autoclass:: pandapower.control.controller.trafo.vm_set_tap_control.VmSetTapControl
     :members:
 
 -------------
@@ -84,7 +84,7 @@ VmSetTapControl
 TapDependentImpedance
 **********************
 
-.. autoclass:: pandapower.control.controller.trafo.TapDependentImpedance.TapDependentImpedance
+.. autoclass:: pandapower.control.controller.trafo.tap_dependent_impedance.TapDependentImpedance
     :members:
 
 
@@ -145,4 +145,3 @@ Discrete Shunt Control
 
 .. autoclass:: pandapower.control.controller.shunt_control.DiscreteShuntController
     :members:
-

@@ -76,7 +76,11 @@ _trafo3w_columns = {
         metadata={"sc": True},
     ),
     "pfe_kw": pa.Column(float, description="iron losses [kW]"),
-    "i0_percent": pa.Column(float, description="open loop losses [%]"),
+    "i0_percent": pa.Column(
+        float,
+        description="open loop losses [%]; the magnetizing susceptance is inductive, a negative value denotes a "
+        "capacitive susceptance",
+    ),
     "shift_mv_degree": pa.Column(
         float, description="transformer phase shift angle at the MV side", metadata={"default": 0.0}
     ),
@@ -141,6 +145,24 @@ _trafo3w_columns = {
         nullable=True,
         required=False,
         description="maximum current loading (only needed for OPF)",
+        metadata={"opf": True},
+    ),
+    "min_angle_degree": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="minimum voltage angle difference per internal star branch (hv -> star, star -> mv/lv) [degree], "
+        "considered in the OPF; NaN means unconstrained. The terminal difference va_hv - va_mv/lv can reach twice "
+        "this value",
+        metadata={"opf": True},
+    ),
+    "max_angle_degree": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="maximum voltage angle difference per internal star branch (hv -> star, star -> mv/lv) [degree], "
+        "considered in the OPF; NaN means unconstrained. The terminal difference va_hv - va_mv/lv can reach twice "
+        "this value",
         metadata={"opf": True},
     ),
     "vector_group": pa.Column(
@@ -354,11 +376,28 @@ _trafo3w_columns = {
         description="power_station_unit from converter, not relevant for calculations",
         metadata={"cim": True, "doc": False},
     ),
+    "cooling_type": pa.Column(
+        pd.StringDtype,
+        pa.Check.isin(["ONAN", "ONAF"]),
+        nullable=True,
+        required=False,
+        description="cooling type of the transformer for the thermal calculation (TDPF), ONAN (Oil Natural, Air Natural) or ONAF (Oil Natural, Air Forced)",
+        metadata={"tdpf": True, "default": "ONAN"},
+    ),
+    "air_temperature_degree_celsius": pa.Column(
+        float,
+        pa.Check.gt(-273),
+        nullable=True,
+        required=False,
+        description="ambient temperature in °C used by the transformer thermal calculation (TDPF)",
+        metadata={"tdpf": True, "default": 35},
+    ),
 }
 # FIXME: either tap_step_percent or tap_step_degree for each row
 tap_columns = ["tap_pos", "tap_neutral", "tap_side"]  # , "tap_step_percent", "tap_step_degree"]
 trafo3w_checks = [
     create_lower_equals_column_check(first_element="tap_min", second_element="tap_max"),
+    create_lower_equals_column_check(first_element="min_angle_degree", second_element="max_angle_degree"),
     pa.Check(
         create_column_group_dependency_validation_func(tap_columns),
         error=f"trafo3w tap configuration columns have dependency violations. Please ensure {tap_columns} are present in the dataframe.",

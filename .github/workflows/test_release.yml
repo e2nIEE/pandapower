@@ -35,8 +35,7 @@ jobs:
 
       - name: Install dependencies
         run: |
-          uv sync --all-extras          
-          uv pip install pytest-split
+          uv sync --group test --all-extras
 
       - name: Install specific dependencies (Windows)
         if: matrix.os  == 'windows-latest'

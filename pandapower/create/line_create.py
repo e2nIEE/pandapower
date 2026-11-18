@@ -87,6 +87,8 @@ def create_lines(
     alpha: float | Iterable[float] = nan,
     temperature_degree_celsius: float | Iterable[float] = nan,
     skip_validation: bool = False,
+    min_angle_degree: float | Iterable[float] = nan,
+    max_angle_degree: float | Iterable[float] = nan,
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
@@ -111,6 +113,10 @@ def create_lines(
         df: derating factor: maximum current of line in relation to nominal current of line (from 0 to 1)
         parallel: number of parallel line systems
         max_loading_percent: maximum current loading (only needed for OPF)
+        min_angle_degree: minimum voltage angle difference between from_bus and to_bus (va_from - va_to) in degree,
+            considered in the OPF. NaN means unconstrained.
+        max_angle_degree: maximum voltage angle difference between from_bus and to_bus (va_from - va_to) in degree,
+            considered in the OPF. NaN means unconstrained.
         alpha: temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))
             .. attention::
                 This column will only be filled from std_type if the column already exists in the line DataFrame
@@ -204,6 +210,8 @@ def create_lines(
         raise TypeError(f"line_params is not a valid type: {type(line_params)}")
 
     _add_to_entries_if_not_nan(net, "line", entries, index, "max_loading_percent", max_loading_percent)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "min_angle_degree", min_angle_degree)
+    _add_to_entries_if_not_nan(net, "line", entries, index, "max_angle_degree", max_angle_degree)
     _add_to_entries_if_not_nan(net, "line", entries, index, "alpha", alpha)
     _add_to_entries_if_not_nan(net, "line", entries, index, "temperature_degree_celsius", temperature_degree_celsius)
 
@@ -891,9 +899,8 @@ def create_lines_dc_from_parameters(
     **kwargs,
 ) -> npt.NDArray[Int]:
     """
-    Convenience function for creating many dc lines at once. Parameters 'from_buses_dc' and 'to_buses_dc'
-        must be arrays of equal length. Other parameters may be either arrays of the same length or
-        single or values.
+    Convenience function for creating many dc lines at once. Parameters 'from_buses_dc' and 'to_buses_dc' must be
+    arrays of equal length. Other parameters may be either arrays of the same length or single or values.
 
     Parameters:
         net: The net within this dc lines should be created
@@ -915,8 +922,8 @@ def create_lines_dc_from_parameters(
         max_loading_percent: maximum current loading (only needed for OPF)
         alpha: temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0)))
         temperature_degree_celsius: line temperature for which line resistance is adjusted
-        skip_validation: if set to true validate_network will not be run after creating.
-            (Only use this if performance is critical)
+        skip_validation: if set to true validate_network will not be run after creating. (Only use this if performance
+            is critical)
 
     Keyword Arguments:
         tdpf (bool): whether the line is considered in the TDPF calculation
@@ -933,7 +940,7 @@ def create_lines_dc_from_parameters(
         mc_joule_per_m_k (float): specific mass of the conductor multiplied by the specific thermal capacity of the
             material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
 
-    Return:
+    Returns:
         List of IDs of the created dc lines
 
     Example:
@@ -1038,10 +1045,10 @@ def create_dcline(
         min_q_to_mvar: Minimum reactive power at to bus. Necessary for OPF
         max_q_from_mvar: Maximum reactive power at from bus. Necessary for OPF
         max_q_to_mvar: Maximum reactive power at to bus. Necessary for OPF
-        skip_validation: if set to true validate_network will not be run after creating.
-            (Only use this if performance is critical)
+        skip_validation: if set to true validate_network will not be run after creating. (Only use this if performance
+            is critical)
 
-    Return:
+    Returns:
         ID of the created element
 
     Example:

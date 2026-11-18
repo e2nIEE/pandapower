@@ -41,9 +41,9 @@ __all__ = [
     "QVCurve",
 ]
 
+from pandapower.control.controller.DERController.der_basics import BaseModel, CosphiPCurve, CosphiVCurve, QVCurve
 from pandapower.control.controller.DERController.der_control import DERController
-from pandapower.control.controller.DERController.DERBasics import BaseModel, CosphiPCurve, CosphiVCurve, QVCurve
-from pandapower.control.controller.DERController.PQVAreas import (
+from pandapower.control.controller.DERController.pqv_areas import (
     BaseArea,
     BasePQVArea,
     PQArea4105,
@@ -69,7 +69,7 @@ from pandapower.control.controller.DERController.PQVAreas import (
     QVArea4130,
     QVAreaPOLYGON,
 )
-from pandapower.control.controller.DERController.QModels import (
+from pandapower.control.controller.DERController.q_models import (
     QModel,
     QModelConstQ,
     QModelCosphiP,

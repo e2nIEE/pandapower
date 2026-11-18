@@ -1,7 +1,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-__all__ = ["get_plotly_cmap", "get_plotly_color", "get_plotly_color_palette"]
+__all__ = ["get_plotly_cmap", "get_plotly_color", "get_plotly_color_palette", "get_plotly_colorscale"]
 
 import sys
 
@@ -80,13 +80,80 @@ def _to_plotly_color(scl, transparence=None):
 
 
 def get_plotly_cmap(values, cmap_name="jet", cmin=None, cmax=None):
-    if not MATPLOTLIB_INSTALLED:
-        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
-    cmap = mpl_colormaps[cmap_name]
+    if MATPLOTLIB_INSTALLED:
+        try:
+            cmap = mpl_colormaps[cmap_name]
+        except KeyError:
+            # plotly-only colorscale name (e.g. 'algae'): sample the plotly colorscale instead
+            return _get_plotly_cmap_from_plotly(values, cmap_name, cmin, cmax)
+    else:
+        # without matplotlib only plotly colorscale names can be resolved
+        return _get_plotly_cmap_from_plotly(values, cmap_name, cmin, cmax)
     if cmin is None:
         cmin = values.min()
     if cmax is None:
         cmax = values.max()
     norm = mplc.Normalize(vmin=cmin, vmax=cmax)
     bus_fill_colors_rgba = cmap(norm(values).data)[:, 0:3] * 255.0
-    return [f"rgb({r},{g},{b})" for r, g, b in bus_fill_colors_rgba]
+    # integer components: plotly rejects the scientific notation that float formatting
+    # can produce for very small components (e.g. 'rgb(15.9,1.5e-05,6.2)')
+    return [f"rgb({r:.0f},{g:.0f},{b:.0f})" for r, g, b in bus_fill_colors_rgba]
+
+
+def _get_plotly_cmap_from_plotly(values, cmap_name, cmin, cmax):
+    try:
+        from plotly.colors import get_colorscale, sample_colorscale
+        from plotly.exceptions import PlotlyError
+    except ImportError:
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "plotly")
+    try:
+        colorscale = get_colorscale(cmap_name)
+    except (PlotlyError, KeyError, ValueError):
+        raise ValueError(f"Colormap {cmap_name!r} is not a known matplotlib or plotly colormap") from None
+    values = np.asarray(values, dtype=float)
+    if cmin is None:
+        cmin = values.min()
+    if cmax is None:
+        cmax = values.max()
+    if cmax == cmin:
+        # mirror matplotlib.colors.Normalize, which maps everything to 0 for a degenerate range
+        sample_points = np.zeros(values.shape)
+    else:
+        sample_points = (values - cmin) / (cmax - cmin)
+    # sample_colorscale requires points in [0, 1] and raises IndexError outside of it, so
+    # clamp like the matplotlib colormap does (out-of-range values take the end colors);
+    # NaN values fall back to the low end instead of raising
+    sample_points = np.clip(np.nan_to_num(sample_points, nan=0.0), 0.0, 1.0)
+    return sample_colorscale(colorscale, sample_points.tolist())
+
+
+def get_plotly_colorscale(cmap_name):
+    """
+    Returns a colorscale that plotly accepts for a matplotlib or plotly colormap name.
+
+    A name known to plotly is returned unchanged, so plotly keeps using its own (named)
+    colorscale. A name only known to matplotlib is sampled to an explicit list of
+    [position, color] stops, which plotly accepts as a colorscale. A name unknown to both
+    registries raises a ValueError.
+    """
+    if not isinstance(cmap_name, str):
+        return cmap_name
+    try:
+        from plotly.colors import get_colorscale
+        from plotly.exceptions import PlotlyError
+    except ImportError:
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "plotly")
+    try:
+        get_colorscale(cmap_name)
+        return cmap_name
+    except (PlotlyError, KeyError, ValueError):
+        pass
+    if not MATPLOTLIB_INSTALLED:
+        soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
+    try:
+        cmap = mpl_colormaps[cmap_name]
+    except KeyError:
+        raise ValueError(f"Colormap {cmap_name!r} is not a known matplotlib or plotly colormap") from None
+    positions = np.linspace(0, 1, 11)
+    colors_rgba = cmap(positions)[:, 0:3] * 255.0
+    return [[float(position), f"rgb({r:.0f}, {g:.0f}, {b:.0f})"] for position, (r, g, b) in zip(positions, colors_rgba)]

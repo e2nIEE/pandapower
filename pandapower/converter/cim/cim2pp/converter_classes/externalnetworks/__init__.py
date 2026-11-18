@@ -1,3 +1,3 @@
-__all__ = ["externalNetworkInjectionsCim16"]
+__all__ = ["external_network_injections_cim16"]
 
-from . import externalNetworkInjectionsCim16
+from . import external_network_injections_cim16

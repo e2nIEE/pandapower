@@ -5,8 +5,8 @@ import time
 
 import pandas as pd
 
-from pandapower import pandapowerNet
 from pandapower.create import create_buses, create_ext_grid, create_lines
+from pandapower.network import pandapowerNet
 from pandapower.network_structure import get_structure_dict
 from pandapower.std_types import create_std_type
 
@@ -25,10 +25,15 @@ def _set_column_to_type(input_df: pd.DataFrame, column: str, data_type: str) -> 
 def set_pp_col_types(net: pandapowerNet, ignore_errors: bool = False) -> pandapowerNet:
     """
     Set the data types for some columns from pandapower assets. This mainly effects bus columns (to int, e.g.
-    sgen.bus or line.from_bus) and in_service and other boolean columns (to bool, e.g. line.in_service or gen.slack).
-    :param net: The pandapower network to update the data types.
-    :param ignore_errors: Ignore problems if set to True (no warnings displayed). Optional, default: False.
-    :return: The pandapower network with updated data types.
+    sgen.bus or line.from_bus) and in_service and other boolean columns (to bool, e.g. line.in_service or
+    gen.slack).
+
+    Parameters:
+        net: The pandapower network to update the data types.
+        ignore_errors: Ignore problems if set to True (no warnings displayed).
+
+    Returns:
+        The pandapower network with updated data types.
     """
     time_start = time.time()
     structure_dict = get_structure_dict(required_only=False)
@@ -116,11 +121,11 @@ def set_pp_col_types(net: pandapowerNet, ignore_errors: bool = False) -> pandapo
 def add_slack_and_lines_to_boundary_nodes(net: pandapowerNet, voltage_levels: list[int] | None = None):
     """
     Add lines with low impedance and a slack to the boundary nodes with the highest voltage.
-    :param net: The pandapower network
-    :param voltage_levels: The voltage levels to add lines and slacks. For each given voltage level, lines and one
-    slack will be connected to the corresponding boundary nodes. Optional, default: Highest voltage level from
-    boundary nodes.
-    :return:
+
+    Parameters:
+        net: The pandapower network
+        voltage_levels: The voltage levels to add lines and slacks. For each given voltage level, lines and one slack
+            will be connected to the corresponding boundary nodes. Default: Highest voltage level from boundary nodes.
     """
     sc = cim_tools.get_pp_net_special_columns_dict()
     busses = net.bus.loc[(net.bus[sc["o_prf"]] == "eq_bd") | (net.bus[sc["o_prf"]] == "tp_bd")]
@@ -159,8 +164,12 @@ def add_slack_and_lines_to_boundary_nodes(net: pandapowerNet, voltage_levels: li
 def get_not_existing_column(df: pd.DataFrame) -> str:
     """
     Get a not existing column name in a DataFrame
-    :param df: The DataFrame where to get a not existing column
-    :return: The name of a not existing column, e.g. temp_col_0 or temp_col_1
+
+    Parameters:
+        df: The DataFrame where to get a not existing column
+
+    Returns:
+        The name of a not existing column, e.g. temp_col_0 or temp_col_1
     """
     i = 0
     col = "temp_col_"

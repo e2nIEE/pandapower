@@ -198,14 +198,26 @@ def drop_internal_branch_elements(net, internal_buses, branch_elements=None):
                 net[elm] = net[elm].drop(idx_to_drop)
 
 
-def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen", existing_shift_degree=False):
+def calc_zpbn_parameters(
+    net: pandapowerNet,
+    boundary_buses: list,
+    all_external_buses: list,
+    slack_as: str = "gen",
+    existing_shift_degree: bool = False,
+):
     """
     The function calculats the parameters for zero power balance network
 
-    OUTPUT:
-        **Z** - impedance between essential buses and new buses
+    Parameters:
+        net:
+        boundary_buses:
+        all_external_buses:
+        slack_as:
+        existing_shift_degree
 
-        **v** - voltage at new buses
+    Returns:
+        Z: impedance between essential buses and new buses
+        v: voltage at new buses
     """
     #    runpp_fct(net, calculate_voltage_angles=True)
     be_buses = boundary_buses + all_external_buses
@@ -273,14 +285,14 @@ def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen"
         "sgen_separate_total",
     ]
     v = pd.DataFrame(dtype=complex)
-    Y.ext_bus, v["ext_bus"] = all_external_buses, all_external_buses
+    Y.ext_bus, v["ext_bus"] = all_external_buses, all_external_buses  # type: ignore[attr-defined]
 
     for elm in ["load", "gen", "sgen"]:
         if existing_shift_degree:
-            Y[elm + "_ground"] = (S[elm + "_separate"].values / S.v_cpx.values).conjugate() / S.v_cpx.values
+            Y[elm + "_ground"] = (S[elm + "_separate"].values / S.v_cpx.values).conjugate() / S.v_cpx.values  # type: ignore[operator]
         else:
-            Y[elm + "_ground"] = S[elm + "_separate"].values.conjugate() / np.square(S.v_m)
-        I_elm_integrated_total = sum((S[elm + "_separate"].values / S.v_cpx.values).conjugate())
+            Y[elm + "_ground"] = S[elm + "_separate"].values.conjugate() / np.square(S.v_m)  # type: ignore[union-attr]
+        I_elm_integrated_total = sum((S[elm + "_separate"].values / S.v_cpx.values).conjugate())  # type: ignore[operator]
         if I_elm_integrated_total == 0:
             Y[elm + "_integrated_total"] = float("nan")
         else:
@@ -299,7 +311,7 @@ def calc_zpbn_parameters(net, boundary_buses, all_external_buses, slack_as="gen"
             v["gen_separate_vm_total"] = S.v_m
 
     Z = -1 / Y
-    Z.ext_bus = all_external_buses
+    Z.ext_bus = all_external_buses  # type: ignore[attr-defined]
 
     # determine original external bus limits
     limits = pd.DataFrame([], index=range(nb_ext_buses), columns=["min_vm_pu", "max_vm_pu", "ext_bus"])
@@ -353,7 +365,7 @@ def build_ppc_and_Ybus(net):
         calculate_voltage_angles="auto",
         init="auto",
         max_iteration="auto",
-        tolerance_mva=1e-8,
+        tolerance=1e-8,
         trafo_model="t",
         trafo_loading="current",
         enforce_p_lims=False,
@@ -405,7 +417,7 @@ def ensure_origin_id(net, elms=None):
         if "origin_id" not in net[elm].columns:
             net[elm]["origin_id"] = pd.Series([None] * net[elm].shape[0], dtype=object)
         idxs = net[elm].index[net[elm].origin_id.isnull()]
-        net[elm].loc[idxs, "origin_id"] = ["%s_%i_%s" % (elm, idx, str(uuid.uuid4())) for idx in idxs]
+        net[elm].loc[idxs, "origin_id"] = [f"{elm}_{idx}_{uuid.uuid4()!s}" for idx in idxs]
 
 
 def drop_and_edit_cost_functions(net, buses, drop_cost, add_origin_id):
@@ -533,11 +545,11 @@ def adaptation_phase_shifter(net, v_boundary):
                                 net[e].lv_bus[i] = hb
                         elif e == "trafo3w":
                             if net[e].hv_bus[i] == lb:
-                                net[e].hv_bus[i] == hb
+                                net[e].hv_bus[i] = hb
                             elif net[e].mv_bus[i] == lb:
-                                net[e].mv_bus[i] == hb
+                                net[e].mv_bus[i] = hb
                             else:
-                                net[e].lv_bus[i] == lb
+                                net[e].lv_bus[i] = lb
                         elif e in ["bus", "load", "sgen", "gen", "shunt", "ward", "xward"]:
                             continue
                         else:

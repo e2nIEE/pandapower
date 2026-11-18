@@ -4,6 +4,7 @@
 import logging
 import os
 import pickle
+from copy import deepcopy
 from importlib.util import find_spec
 
 import numpy as np
@@ -14,9 +15,24 @@ from pandapower.converter.pypower import from_ppc, to_ppc, validate_from_ppc
 from pandapower.converter.pypower.from_ppc import _branch_to_which, _gen_to_which
 from pandapower.file_io import from_json
 from pandapower.networks.power_system_test_cases import case9, case24_ieee_rts
-from pandapower.pypower.idx_brch import PF, PT, QF, QT
-from pandapower.pypower.idx_bus import PD, VA, VM
-from pandapower.pypower.idx_gen import PG, QG
+from pandapower.pypower.idx_brch import (
+    ANGMAX,
+    ANGMIN,
+    BR_B,
+    BR_R,
+    BRANCH_COLS,
+    F_BUS,
+    PF,
+    PT,
+    QF,
+    QT,
+    SHIFT,
+    T_BUS,
+    TAP,
+)
+from pandapower.pypower.idx_bus import BASE_KV, BUS_I, PD, QD, VA, VM
+from pandapower.pypower.idx_gen import GEN_BUS, PG, QG
+from pandapower.pypower.make_y_bus import makeYbus
 from pandapower.results import reset_results
 from pandapower.run import runopp, runpp, set_user_pf_options
 from pandapower.toolbox.comparison import nets_equal
@@ -24,9 +40,12 @@ from pandapower.toolbox.data_modification import reindex_buses
 from test import test_path
 
 if find_spec("pypower"):
-    import pypower.case24_ieee_rts as c24
-
-    pypower_installed = True
+    try:
+        import pypower.case24_ieee_rts as c24
+    except ImportError:
+        pypower_installed = False
+    else:
+        pypower_installed = True
 else:
     pypower_installed = False
 
@@ -94,8 +113,8 @@ def test_ppc_testgrids(case_name):
 
 @pytest.mark.slow
 @pytest.mark.parametrize(
-    "case_name", ["case4gs", "case6ww", "case24_ieee_rts", "case30", "case39", "case118"]
-)  # 'case300'
+    "case_name", ["case4gs", "case6ww", "case24_ieee_rts", "case30", "case39", "case118", "case300"]
+)
 def test_pypower_cases(case_name):
     # check pypower cases
     ppc = get_testgrids("pypower_cases", case_name + ".json")
@@ -120,6 +139,101 @@ def test_case9_not_in_matpower():
     assert validate_from_ppc(ppc, net, max_diff_values2)
 
 
+def _ybus(base_mva, bus, branch):
+    """bus admittance matrix and branch admittance matrices of a ppc with consecutive bus indices"""
+    branch = np.hstack([branch, np.zeros((branch.shape[0], BRANCH_COLS - branch.shape[1]))])
+    return [y.toarray() for y in makeYbus(base_mva, bus, branch)]
+
+
+def _ppc_ybus(ppc):
+    """admittance matrices of a ppc, the bus positions of the bus numbers and the branches with bus positions"""
+    bus = ppc["bus"].copy()
+    bus[:, BUS_I] = np.arange(len(bus))
+    bus_pos = pd.Series(np.arange(len(bus)), index=ppc["bus"][:, BUS_I].astype(np.int64))
+    branch = ppc["branch"].copy()
+    branch[:, F_BUS] = bus_pos.loc[branch[:, F_BUS].astype(np.int64)].values
+    branch[:, T_BUS] = bus_pos.loc[branch[:, T_BUS].astype(np.int64)].values
+    return *_ybus(ppc["baseMVA"], bus, branch), bus_pos, branch
+
+
+def _net_ybus(net, ppc):
+    """bus admittance matrix of the last power flow of a net converted from a ppc, in the bus order of the ppc"""
+    pp_bus = net._pd2ppc_lookups["bus"][ppc["bus"][:, BUS_I].astype(np.int64)]
+    return _ybus(net._ppc["baseMVA"], net._ppc["bus"], net._ppc["branch"])[0][np.ix_(pp_bus, pp_bus)]
+
+
+@pytest.mark.parametrize("tap_side", ["hv", "lv"])
+def test_from_ppc_trafo_tap_at_lv_bus(tap_side):
+    """
+    The tap ratio and phase shift of a ppc branch are at its from bus, which is the lv bus of a transformer
+    branch from a lower to a higher voltage level. The converted transformers must have the admittances of the
+    ppc branches for both pandapower tap sides (pandapower#1740).
+    """
+    ppc = get_testgrids("pypower_cases", "case9.json")
+    ppc["bus"][[0, 1], BASE_KV] = [110.0, 20.0]
+    # branch 0: from bus 1 (110 kV) to bus 4 (345 kV) -> the tap is at the lv bus
+    ppc["branch"][0, [BR_R, TAP, SHIFT, BR_B]] = [0.002, 0.95, 3.0, -0.05]
+    # branch 6: from bus 8 (345 kV) to bus 2 (20 kV) -> the tap is at the hv bus
+    ppc["branch"][6, [BR_R, TAP, SHIFT, BR_B]] = [0.003, 1.03, -2.0, -0.04]
+    net = from_ppc(deepcopy(ppc), f_hz=60, tap_side=tap_side)
+    assert len(net.trafo) == 2
+    assert list(net.trafo.hv_bus) == [4, 8]
+    runpp(net, calculate_voltage_angles=True, trafo_model="pi")
+    assert np.allclose(_ppc_ybus(ppc)[0], _net_ybus(net, ppc), atol=1e-8)
+
+
+def test_from_ppc_trafo_positive_susceptance():
+    """
+    A positive (capacitive) susceptance of a transformer branch is converted to a negative i0_percent, which
+    denotes a capacitive magnetizing susceptance, so that the charging is part of the transformer branch
+    (pandapower#1740).
+    """
+    ppc = get_testgrids("pypower_cases", "case9.json")
+    ppc["branch"][0, [TAP, BR_B]] = [1.05, 0.3]
+    ppc["branch"][3, [TAP, SHIFT, BR_B]] = [0.97, 5.0, 0.2]
+    net = from_ppc(deepcopy(ppc), f_hz=60)
+    assert len(net.trafo) == 2
+    assert np.all(net.trafo.i0_percent < 0)
+    assert len(net.shunt) == 0
+    runpp(net, calculate_voltage_angles=True, trafo_model="pi")
+
+    # the converted net has the same bus admittance matrix as the ppc
+    ybus, yf, yt, bus_pos, ppc_branch = _ppc_ybus(ppc)
+    assert np.allclose(ybus, _net_ybus(net, ppc), atol=1e-8)
+
+    # the transformer flows contain the charging: the pandapower results are a power flow solution of the ppc,
+    # since the admittance matrices are equal, and they match the ppc branch flows
+    vm = net.res_bus.loc[ppc["bus"][:, BUS_I], "vm_pu"].values
+    va = net.res_bus.loc[ppc["bus"][:, BUS_I], "va_degree"].values
+    v = vm * np.exp(1j * np.deg2rad(va))
+    s_f = v[ppc_branch[:, F_BUS].astype(np.int64)] * np.conj(yf @ v) * ppc["baseMVA"]
+    s_t = v[ppc_branch[:, T_BUS].astype(np.int64)] * np.conj(yt @ v) * ppc["baseMVA"]
+    ppc["branch"][:, [PF, QF, PT, QT]] = np.column_stack([s_f.real, s_f.imag, s_t.real, s_t.imag])
+    ppc["bus"][:, [VM, VA]] = np.column_stack([vm, va])
+    gen_bus = bus_pos.loc[ppc["gen"][:, GEN_BUS].astype(np.int64)].values
+    ppc["gen"] = ppc["gen"].astype(np.float64)
+    ppc["gen"][:, QG] = (v * np.conj(ybus @ v)).imag[gen_bus] * ppc["baseMVA"] + ppc["bus"][gen_bus, QD]
+    assert validate_from_ppc(ppc, net, max_diff_values=max_diff_values1)
+
+
+def test_from_ppc_trafo_positive_susceptance_follows_tap():
+    """
+    The charging of a converted transformer branch with positive susceptance follows tap changes as in the pi
+    model of the ppc branch, in which the susceptance at the from bus is divided by the squared tap ratio.
+    """
+    ppc = get_testgrids("pypower_cases", "case9.json")
+    ppc["branch"][0, [TAP, BR_B]] = [1.05, 0.3]
+    ppc["branch"][3, [TAP, SHIFT, BR_B]] = [0.97, 5.0, 0.2]
+    net = from_ppc(deepcopy(ppc), f_hz=60)
+    assert list(net.trafo.tap_pos) == [1, -1]
+
+    # two tap steps of the converted transformers are the doubled tap deviations of the ppc
+    net.trafo["tap_pos"] = [2, -2]
+    ppc["branch"][[0, 3], TAP] = [1.10, 0.94]
+    runpp(net, calculate_voltage_angles=True, trafo_model="pi")
+    assert np.allclose(_ppc_ybus(ppc)[0], _net_ybus(net, ppc), atol=1e-8)
+
+
 def test_to_and_from_ppc():
     net9 = case9()
     net24 = case24_ieee_rts()
@@ -130,6 +244,10 @@ def test_to_and_from_ppc():
         net.line["max_loading_percent"] = 100
         runpp(net)
         ppc = to_ppc(net, mode="opf", take_slack_vm_limits=False)
+
+        # unconstrained cases must not gain the angle limit columns in the round trip
+        assert np.all(ppc["branch"][:, ANGMIN] == -360.0)
+        assert np.all(ppc["branch"][:, ANGMAX] == 360.0)
 
         # correct ppc data (to_ppc() does not convert completely)
         if i == 0:
@@ -160,6 +278,97 @@ def test_to_and_from_ppc():
             runopp(net, delta=1e-16)
             runopp(net2, delta=1e-16)
             assert nets_equal(net, net2, check_only_results=True, atol=1e-10)
+
+
+def test_from_ppc_angle_limits():
+    """ANGMIN/ANGMAX must be imported; the pypower 'no limit' spellings must become NaN."""
+    ppc = get_testgrids("pypower_cases", "case9.json")
+    ppc["branch"][0, ANGMIN] = -30.0
+    ppc["branch"][0, ANGMAX] = 20.0
+    ppc["branch"][1, ANGMIN] = 0.0  # MATPOWER convention: no limit
+    ppc["branch"][1, ANGMAX] = 360.0
+    ppc["branch"][2, ANGMIN] = -360.0
+    ppc["branch"][2, ANGMAX] = 0.0
+
+    net = from_ppc(ppc, f_hz=60)
+
+    assert np.isclose(net.line.at[0, "min_angle_degree"], -30.0)
+    assert np.isclose(net.line.at[0, "max_angle_degree"], 20.0)
+    assert net.line["min_angle_degree"].iloc[1:].isnull().all()
+    assert net.line["max_angle_degree"].iloc[1:].isnull().all()
+
+
+def test_from_ppc_no_angle_columns_for_unconstrained_case():
+    """A fully unconstrained case must not gain the angle columns at all."""
+    ppc = get_testgrids("pypower_cases", "case9.json")
+    net = from_ppc(ppc, f_hz=60)
+    assert "min_angle_degree" not in net.line.columns
+    assert "max_angle_degree" not in net.line.columns
+    assert "min_angle_degree" not in net.trafo.columns
+    assert "max_angle_degree" not in net.trafo.columns
+    assert "min_angle_degree" not in net.impedance.columns
+    assert "max_angle_degree" not in net.impedance.columns
+
+
+def test_from_ppc_angle_limits_reversed_trafo():
+    """For a trafo branch oriented lv -> hv in the ppc, the limits are swapped and negated."""
+    mpc = {
+        "branch": np.array(
+            [
+                # f_bus, t_bus, r, x, b, rateA, rateB, rateC, ratio, shift, status, angmin, angmax
+                [2, 1, 0.001, 0.01, 0.0, 100.0, 0.0, 0.0, 1.0, 0.0, 1, -30.0, 10.0],
+            ]
+        ),
+        "bus": np.array(
+            [
+                [1, 3, 0.0, 0.0, 0.0, 0.0, 1, 1.0, 0.0, 110.0, 1, 1.1, 0.9],
+                [2, 1, 50.0, 10.0, 0.0, 0.0, 1, 1.0, 0.0, 10.0, 1, 1.1, 0.9],
+            ]
+        ),
+        "gen": np.array([[1, 50.0, 0.0, 100.0, -100.0, 1.0, 100.0, 1, 100.0, 0.0]]),
+        "gencost": np.array([[2, 0.0, 0.0, 3, 0.0, 10.0, 0.0]]),
+        "version": 2,
+        "baseMVA": 100.0,
+    }
+
+    net = from_ppc(mpc, f_hz=50)
+    # pandapower models the trafo hv -> lv, which is the reverse ppc direction,
+    # so va_lv - va_hv in [-30, 10] becomes va_hv - va_lv in [-10, 30]
+    assert np.isclose(net.trafo.at[0, "min_angle_degree"], -10.0)
+    assert np.isclose(net.trafo.at[0, "max_angle_degree"], 30.0)
+
+
+def test_angle_limits_roundtrip():
+    """from_ppc -> to_ppc -> from_ppc must preserve the limits."""
+    ppc = get_testgrids("pypower_cases", "case9.json")
+    ppc["branch"][0, ANGMIN] = -30.0
+    ppc["branch"][0, ANGMAX] = 20.0
+    net = from_ppc(ppc, f_hz=60)
+    net.line["max_loading_percent"] = 100.0
+    runpp(net)
+
+    net2 = from_ppc(to_ppc(net, mode="opf"), f_hz=60)
+
+    for col in ("min_angle_degree", "max_angle_degree"):
+        assert np.allclose(net.line[col].to_numpy(), net2.line[col].to_numpy(), equal_nan=True), (
+            f"{col} not preserved by the round trip"
+        )
+
+
+def test_from_ppc_branch_without_angle_columns():
+    """A branch array that stops before ANGMIN/ANGMAX must convert unconstrained instead of raising.
+
+    from_ppc accepts raw ppc dicts, and before the angle limits were imported only columns up to BR_STATUS
+    were read. Such truncated branch arrays must keep working.
+    """
+    ppc = get_testgrids("pypower_cases", "case9.json")
+    ppc["branch"] = ppc["branch"][:, :ANGMIN]  # drop ANGMIN and ANGMAX
+
+    net = from_ppc(ppc, f_hz=60)
+
+    assert len(net.line) > 0
+    assert "min_angle_degree" not in net.line.columns
+    assert "max_angle_degree" not in net.line.columns
 
 
 def test_gencost_pwl():

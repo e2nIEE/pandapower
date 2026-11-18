@@ -21,24 +21,22 @@ def from_pypowsybl(
     default_shift_degree: float = 0.0,
     default_length_km: float = 1.0,
 ) -> pandapowerNet | tuple[pandapowerNet, pd.DataFrame]:
-    """Convert net data stored as a powsybl XIIDM file to a pandapower net.
+    """
+    Convert net data stored as a powsybl XIIDM file to a pandapower net.
 
-    Args:
+    Parameters:
         pypowsybl_file: Path to the powsybl ``.xiidm`` file containing the grid data.
         log_static_comparison: Whether static transfer comparison tables are logged.
-        log_loadflow_comparison: Whether powsybl and pandapower AC load-flow results
-            are compared and logged.
-        return_loadflow_table: Whether the load-flow comparison table is returned
-            together with the pandapower net.
+        log_loadflow_comparison: Whether powsybl and pandapower AC load-flow results are compared and logged.
+        return_loadflow_table: Whether the load-flow comparison table is returned together with the pandapower net.
         default_shift_degree: Fallback phase-shift angle in degrees.
         default_length_km: Fallback line length in kilometres.
 
     Returns:
-        The converted pandapower net. If ``return_loadflow_table`` is ``True``,
-        returns a tuple containing the pandapower net and the load-flow comparison
-        table.
+        The converted pandapower net. If ``return_loadflow_table`` is ``True``, returns a tuple containing the
+            pandapower net and the load-flow comparison table.
 
-    Examples:
+    Example:
         >>> from pandapower.converter.pypowsybl.from_pypowsybl import from_pypowsybl
         >>> net = from_pypowsybl("network.xiidm")
     """

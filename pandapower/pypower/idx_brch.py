@@ -92,4 +92,4 @@ BR_G_ASYM = 24
 BR_B_ASYM = 25
 
 
-branch_cols = 26
+BRANCH_COLS = 26

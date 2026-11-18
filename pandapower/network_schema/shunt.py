@@ -14,8 +14,7 @@ shunt_schema = pa.DataFrameSchema(
         ),
         "p_mw": pa.Column(
             float,
-            pa.Check.ge(0),
-            description="shunt active power in MW at v= 1.0 p.u. per step",
+            description="shunt active power in MW at v= 1.0 p.u. per step, (negative values are only meaningful as an equivalent not as a physical component)",
             metadata={"default": 0.0},
         ),
         "q_mvar": pa.Column(float, description="shunt reactive power in MVAr at v= 1.0 p.u. per step"),

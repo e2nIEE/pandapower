@@ -196,8 +196,8 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
 
     Sabc, _ = SVabc_from_SV012(S012, V012 / np.sqrt(3), n_res=n_res_eg, idx=eg_is_mask)
 
-    pA, pB, pC = map(lambda x: x.flatten(), np.real(Sabc))
-    qA, qB, qC = map(lambda x: x.flatten(), np.imag(Sabc))
+    pA, pB, pC = (x.flatten() for x in np.real(Sabc))
+    qA, qB, qC = (x.flatten() for x in np.imag(Sabc))
 
     # store result in net['res']
     net["res_ext_grid_3ph"]["p_a_mw"] = pA
@@ -269,8 +269,8 @@ def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
     Vabc = sequence_to_phase(V012)
     Iabc = sequence_to_phase(I012)
     Sabc = S_from_VI_elementwise(Vabc, Iabc) * 1e-3 * -1
-    pA, pB, pC = map(lambda x: x.flatten(), np.real(Sabc))
-    qA, qB, qC = map(lambda x: x.flatten(), np.imag(Sabc))
+    pA, pB, pC = (x.flatten() for x in np.real(Sabc))
+    qA, qB, qC = (x.flatten() for x in np.imag(Sabc))
 
     net["res_gen_3ph"]["p_a_mw"] = pA
     net["res_gen_3ph"]["p_b_mw"] = pB
@@ -392,9 +392,14 @@ def _get_dcline_results(net):
     net.res_dcline.q_from_mvar = -from_gens.q_mvar.values
     net.res_dcline.q_to_mvar = -to_gens.q_mvar.values
 
-    net.res_dcline.vm_from_pu = from_gens.vm_pu.values
-    net.res_dcline.vm_to_pu = to_gens.vm_pu.values
-    net.res_dcline.va_from_degree = from_gens.va_degree.values
-    net.res_dcline.va_to_degree = to_gens.va_degree.values
+    # terminals at unsupplied buses (islands without slack) have no voltage, like the buses themselves in res_bus
+    supplied_buses = net["_is_elements"]["bus_is_idx"]
+    from_unsupplied = ~np.isin(net.dcline.from_bus.values, supplied_buses)
+    to_unsupplied = ~np.isin(net.dcline.to_bus.values, supplied_buses)
+
+    net.res_dcline.vm_from_pu = np.where(from_unsupplied, np.nan, from_gens.vm_pu.values)
+    net.res_dcline.vm_to_pu = np.where(to_unsupplied, np.nan, to_gens.vm_pu.values)
+    net.res_dcline.va_from_degree = np.where(from_unsupplied, np.nan, from_gens.va_degree.values)
+    net.res_dcline.va_to_degree = np.where(to_unsupplied, np.nan, to_gens.va_degree.values)
 
     net.res_dcline.index = net.dcline.index

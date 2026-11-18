@@ -3,8 +3,11 @@
 
 import logging
 import time
+from typing import overload
 
-from pandapower import pandapowerNet
+from typing_extensions import deprecated
+
+from pandapower.network import pandapowerNet
 
 from .. import cim_classes, interfaces
 from . import build_pp_net
@@ -13,9 +16,44 @@ from . import converter_classes as std_converter_classes
 logger = logging.getLogger("cim.cim2pp.from_cim")
 
 
+@overload
+@deprecated("log_debug is deprecated, remove it from function call.")
 def from_cim_dict(
     cim_parser: cim_classes.CimParser,
-    log_debug=False,
+    log_debug: bool,
+    convert_line_to_switch: bool = False,
+    line_r_limit: float = 0.1,
+    line_x_limit: float = 0.1,
+    repair_cim: str | interfaces.CIMRepair | None = None,
+    repair_cim_class: type[interfaces.CIMRepair] | None = None,
+    repair_pp: str | interfaces.PandapowerRepair | None = None,
+    repair_pp_class: type[interfaces.PandapowerRepair] | None = None,
+    custom_converter_classes: dict | None = None,
+    cim_version: str | None = None,
+    **kwargs,
+) -> pandapowerNet: ...
+
+
+@overload
+def from_cim_dict(
+    cim_parser: cim_classes.CimParser,
+    log_debug: bool = False,
+    convert_line_to_switch: bool = False,
+    line_r_limit: float = 0.1,
+    line_x_limit: float = 0.1,
+    repair_cim: str | interfaces.CIMRepair | None = None,
+    repair_cim_class: type[interfaces.CIMRepair] | None = None,
+    repair_pp: str | interfaces.PandapowerRepair | None = None,
+    repair_pp_class: type[interfaces.PandapowerRepair] | None = None,
+    custom_converter_classes: dict | None = None,
+    cim_version: str | None = None,
+    **kwargs,
+) -> pandapowerNet: ...
+
+
+def from_cim_dict(
+    cim_parser: cim_classes.CimParser,
+    log_debug: bool = False,
     convert_line_to_switch: bool = False,
     line_r_limit: float = 0.1,
     line_x_limit: float = 0.1,
@@ -30,20 +68,23 @@ def from_cim_dict(
     """
     Creates a pandapower net from a CIM data structure.
 
-    :param cim_parser: The CimParser with parsed cim data.
-    :param log_debug: Set this parameter to True to enable logging at debug level. Optional, default: False
-    :param convert_line_to_switch: Set this parameter to True to enable line -> switch conversion. All lines with a
-        resistance lower or equal than line_r_limit or a reactance lower or equal than line_x_limit will become a
-        switch. Optional, default: False
-    :param line_r_limit: The limit from resistance. Optional, default: 0.1
-    :param line_x_limit: The limit from reactance. Optional, default: 0.1
-    :param repair_cim: The CIMRepair object or a path to its serialized object. Optional, default: None
-    :param repair_cim_class: The CIMRepair class. Optional, default: None
-    :param repair_pp: The PandapowerRepair object or a path to its serialized object. Optional, default: None
-    :param repair_pp_class: The PandapowerRepair class. Optional, default: None
-    :param custom_converter_classes: Dict to inject classes for different functionality. Optional, default: None
-    :param cim_version: The CIM / CGMES / LTDS version. Optional, default: None
-    :return: The pandapower net.
+    Parameters:
+        cim_parser: The CimParser with parsed cim data.
+        log_debug: Set this parameter to True to enable logging at debug level.
+        convert_line_to_switch: Set this parameter to True to enable line -> switch conversion. All lines with a
+            resistance lower or equal than line_r_limit or a reactance lower or equal than line_x_limit will become a
+            switch.
+        line_r_limit: The limit from resistance.
+        line_x_limit: The limit from reactance.
+        repair_cim: The CIMRepair object or a path to its serialized object.
+        repair_cim_class: The CIMRepair class.
+        repair_pp: The PandapowerRepair object or a path to its serialized object.
+        repair_pp_class: The PandapowerRepair class.
+        custom_converter_classes: Dict to inject classes for different functionality.
+        cim_version: The CIM / CGMES / LTDS version.
+
+    Returns:
+        The pandapower net.
     """
     if cim_version is None:
         cim_version = "2.4.15"
@@ -64,7 +105,6 @@ def from_cim_dict(
         convert_line_to_switch=convert_line_to_switch,
         line_r_limit=line_r_limit,
         line_x_limit=line_x_limit,
-        log_debug=log_debug,
         **kwargs,
     )
 
@@ -78,29 +118,29 @@ def from_cim_dict(
 
 def get_converter_classes() -> dict[str, object]:
     converter_classes: dict[str, object] = {
-        "ConnectivityNodesCim16": std_converter_classes.connectivitynodes.connectivityNodesCim16.ConnectivityNodesCim16,
-        "externalNetworkInjectionsCim16": std_converter_classes.externalnetworks.externalNetworkInjectionsCim16.ExternalNetworkInjectionsCim16,
-        "acLineSegmentsCim16": std_converter_classes.lines.acLineSegmentsCim16.AcLineSegmentsCim16,
-        "dcLineSegmentsCim16": std_converter_classes.lines.dcLineSegmentsCim16.DcLineSegmentsCim16,
-        "switchesCim16": std_converter_classes.switches.switchesCim16.SwitchesCim16,
-        "energyConsumersCim16": std_converter_classes.loads.energyConsumersCim16.EnergyConsumersCim16,
-        "conformLoadsCim16": std_converter_classes.loads.conformLoadsCim16.ConformLoadsCim16,
-        "nonConformLoadsCim16": std_converter_classes.loads.nonConformLoadsCim16.NonConformLoadsCim16,
-        "stationSuppliesCim16": std_converter_classes.loads.stationSuppliesCim16.StationSuppliesCim16,
-        "synchronousMachinesCim16": std_converter_classes.generators.synchronousMachinesCim16.SynchronousMachinesCim16,
-        "asynchronousMachinesCim16": std_converter_classes.generators.asynchronousMachinesCim16.AsynchronousMachinesCim16,
-        "energySourcesCim16": std_converter_classes.generators.energySourcesCim16.EnergySourceCim16,
-        "powerElectronicsConnection": std_converter_classes.generators.powerElectronicsConnection.PowerElectronicsConnection,
-        "linearShuntCompensatorCim16": std_converter_classes.shunts.linearShuntCompensatorCim16.LinearShuntCompensatorCim16,
-        "nonLinearShuntCompensatorCim16": std_converter_classes.shunts.nonLinearShuntCompensatorCim16.NonLinearShuntCompensatorCim16,
-        "staticVarCompensatorCim16": std_converter_classes.shunts.staticVarCompensatorCim16.StaticVarCompensatorCim16,
-        "equivalentBranchesCim16": std_converter_classes.impedance.equivalentBranchesCim16.EquivalentBranchesCim16,
-        "seriesCompensatorsCim16": std_converter_classes.impedance.seriesCompensatorsCim16.SeriesCompensatorsCim16,
-        "equivalentInjectionsCim16": std_converter_classes.wards.equivalentInjectionsCim16.EquivalentInjectionsCim16,
-        "powerTransformersCim16": std_converter_classes.transformers.powerTransformersCim16.PowerTransformersCim16,
-        "tapController": std_converter_classes.transformers.tapController.TapController,
-        "geoCoordinatesFromGLCim16": std_converter_classes.coordinates.geoCoordinatesFromGLCim16.GeoCoordinatesFromGLCim16,
-        "coordinatesFromDLCim16": std_converter_classes.coordinates.coordinatesFromDLCim16.CoordinatesFromDLCim16,
+        "ConnectivityNodesCim16": std_converter_classes.connectivitynodes.connectivity_nodes_cim16.ConnectivityNodesCim16,
+        "externalNetworkInjectionsCim16": std_converter_classes.externalnetworks.external_network_injections_cim16.ExternalNetworkInjectionsCim16,
+        "acLineSegmentsCim16": std_converter_classes.lines.ac_line_segments_cim16.AcLineSegmentsCim16,
+        "dcLineSegmentsCim16": std_converter_classes.lines.dc_line_segments_cim16.DcLineSegmentsCim16,
+        "switchesCim16": std_converter_classes.switches.switches_cim16.SwitchesCim16,
+        "energyConsumersCim16": std_converter_classes.loads.energy_consumers_cim16.EnergyConsumersCim16,
+        "conformLoadsCim16": std_converter_classes.loads.conform_loads_cim16.ConformLoadsCim16,
+        "nonConformLoadsCim16": std_converter_classes.loads.non_conform_loads_cim16.NonConformLoadsCim16,
+        "stationSuppliesCim16": std_converter_classes.loads.station_supplies_cim16.StationSuppliesCim16,
+        "synchronousMachinesCim16": std_converter_classes.generators.synchronous_machines_cim16.SynchronousMachinesCim16,
+        "asynchronousMachinesCim16": std_converter_classes.generators.asynchronous_machines_cim16.AsynchronousMachinesCim16,
+        "energySourcesCim16": std_converter_classes.generators.energy_sources_cim16.EnergySourceCim16,
+        "powerElectronicsConnection": std_converter_classes.generators.power_electronics_connection.PowerElectronicsConnection,
+        "linearShuntCompensatorCim16": std_converter_classes.shunts.linear_shunt_compensator_cim16.LinearShuntCompensatorCim16,
+        "nonLinearShuntCompensatorCim16": std_converter_classes.shunts.non_linear_shunt_compensator_cim16.NonLinearShuntCompensatorCim16,
+        "staticVarCompensatorCim16": std_converter_classes.shunts.static_var_compensator_cim16.StaticVarCompensatorCim16,
+        "equivalentBranchesCim16": std_converter_classes.impedance.equivalent_branches_cim16.EquivalentBranchesCim16,
+        "seriesCompensatorsCim16": std_converter_classes.impedance.series_compensators_cim16.SeriesCompensatorsCim16,
+        "equivalentInjectionsCim16": std_converter_classes.wards.equivalent_injections_cim16.EquivalentInjectionsCim16,
+        "powerTransformersCim16": std_converter_classes.transformers.power_transformers_cim16.PowerTransformersCim16,
+        "tapController": std_converter_classes.transformers.tap_controller.TapController,
+        "geoCoordinatesFromGLCim16": std_converter_classes.coordinates.geo_coordinates_from_gl_cim16.GeoCoordinatesFromGLCim16,
+        "coordinatesFromDLCim16": std_converter_classes.coordinates.coordinates_from_dl_cim16.CoordinatesFromDLCim16,
     }
     return converter_classes
 
@@ -120,14 +160,13 @@ def from_cim(
     **kwargs,
 ) -> pandapowerNet:
     """
-    Converts a CIM net to a pandapower net from XML files.
-    Additional parameters for kwargs:
+    Converts a CIM net to a pandapower net from XML files. Additional parameters for kwargs:
     - create_measurements (str): Set this parameter to 'SV' to create measurements for the pandapower net from the SV
-    profile. Set it to 'Analog' to create measurements from Analogs. If the parameter is not set or is set to None, no
-    measurements will be created.
+    profile. Set it to 'Analog' to create measurements from Analogs. If the parameter is not set or is set to None,
+    no measurements will be created.
     - diagram_name (str): The name from the Diagram from the DL profile for the diagram coordinates. Default:
-    The first diagram sorted ascending by name. Set the parameter to "all" to use available diagrams for creating the
-    coordinates.
+    The first diagram sorted ascending by name. Set the parameter to "all" to use available diagrams for creating
+    the coordinates.
     - create_tap_controller (bool): If True, create pandapower controllers for transformer tap changers. If False, skip
     creating them. Default: True
     - sn_mva (float): Set the sn_mva from the pandapower net to a specific value. This value is not given in CGMES.
@@ -138,22 +177,25 @@ def from_cim(
     if there are errors in the conversion. Default: True.
     - set_switch_impedance (bool): Set the line impedance for lines that will be converted to switches
     - use_sv_data_for_assets (bool): Use the SV PowerFlow, SvTapStep and SvShuntCompensatorSections and map them to the
-    assets in the grid.  Default: False.
+    assets in the grid. Default: False.
 
-    :param file_list: The path to the CGMES files as a string or list.
-    :param encoding: The encoding from the files. Optional, default: None
-    :param convert_line_to_switch: Set this parameter to True to enable line -> switch conversion. All lines with a
-        resistance lower or equal than line_r_limit or a reactance lower or equal than line_x_limit will become a
-        switch. Optional, default: False
-    :param line_r_limit: The limit from resistance for converting line to switch. Optional, default: 0.1
-    :param line_x_limit: The limit from reactance for converting line to switch. Optional, default: 0.1
-    :param repair_cim: The CIMRepair object or a path to its serialized object. Optional, default: None
-    :param repair_cim_class: The CIMRepair class. Optional, default: None
-    :param repair_pp: The PandapowerRepair object or a path to its serialized object. Optional, default: None
-    :param repair_pp_class: The PandapowerRepair class. Optional, default: None
-    :param custom_converter_classes: Dict to inject classes for different functionality. Optional, default: None
-    :param cgmes_version: The CGMES version of the files, can be 3.0, 2.4.15 or LTDS. Optional, default: 2.4.15
-    :return: The pandapower net.
+    Parameters:
+        file_list: The path to the CGMES files as a string or list.
+        encoding: The encoding from the files.
+        convert_line_to_switch: Set this parameter to True to enable line -> switch conversion. All lines with a
+            resistance lower or equal than line_r_limit or a reactance lower or equal than line_x_limit will become a
+            switch.
+        line_r_limit: The limit from resistance for converting line to switch.
+        line_x_limit: The limit from reactance for converting line to switch.
+        repair_cim: The CIMRepair object or a path to its serialized object.
+        repair_cim_class: The CIMRepair class.
+        repair_pp: The PandapowerRepair object or a path to its serialized object.
+        repair_pp_class: The PandapowerRepair class.
+        custom_converter_classes: Dict to inject classes for different functionality.
+        cgmes_version: The CGMES version of the files, can be 3.0, 2.4.15 or LTDS.
+
+    Returns:
+        The pandapower net.
     """
     time_start_parsing = time.time()
 

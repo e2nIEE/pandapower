@@ -6,6 +6,7 @@ Optimisation problem
 The equation describes the basic formulation of the optimal power flow (OPF) problem.
 The pandapower optimal power flow can be constrained by either AC or DC loadflow equations.
 The branch constraints represent the maximum apparent power loading of transformers and the maximum line current loadings.
+They can also contain a minimum and maximum voltage angle difference over each branch.
 The bus constraints can contain maximum and minimum voltage magnitude and angle.
 For the external grid, generators, loads, DC lines and static generators, the maximum and minimum active resp. reactive power can be considered as operational constraints for the optimal power flow.
 The constraints are defined element wise in the respective element tables.
@@ -40,7 +41,17 @@ The network constraints contain constraints for bus voltages and branch flows:
    :file: opf_constraints.csv
    :delim: ;
 
-The defaults are unconstrained branch loadings and :math:`\pm 1.0 pu` for bus voltages.
+The defaults are unconstrained branch loadings, unconstrained angle differences and :math:`\pm 1.0 pu` for bus voltages.
+
+The voltage angle difference constraints are defined per branch element by ``min_angle_degree`` and ``max_angle_degree``.
+They bound :math:`\theta_{from} - \theta_{to}` (for lines and impedances) resp. :math:`\theta_{hv} - \theta_{lv}` (for transformers), in degree.
+
+A three-winding transformer is represented internally as three branches connected through a star point, i.e. :math:`\theta_{hv} - \theta_{star}` and :math:`\theta_{star} - \theta_{mv}` resp. :math:`\theta_{star} - \theta_{lv}`.
+The limit applies to each of these internal branches separately, so the terminal-to-terminal difference :math:`\theta_{hv} - \theta_{mv}` resp. :math:`\theta_{hv} - \theta_{lv}` can reach twice the configured limit.
+
+A missing or ``NaN`` value means that this side is unconstrained, which is also the default for networks created without these columns.
+Please note that a value of ``0`` follows the MATPOWER/PYPOWER convention and means "no limit" as well, not a limit at 0 degree; use a small epsilon instead if such a constraint is intended.
+The limits can be ignored by passing ``OPF_IGNORE_ANG_LIM=True`` to :func:`~pandapower.run.runopp` or :func:`~pandapower.run.rundcopp`.
 
 Cost functions
 ---------------
