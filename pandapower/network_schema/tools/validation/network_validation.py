@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower import pandapowerNet
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.helper import get_element_schema
 from pandapower.network_schema.tools.validation.bus_index_validation import build_foreign_key_index_checks
 
