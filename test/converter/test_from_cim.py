@@ -1,11 +1,13 @@
 import math
 import os
+from types import SimpleNamespace
 
 import numpy as np
 import pandas as pd
 import pytest
 
 from pandapower.control.util.auxiliary import create_shunt_characteristic_object, create_trafo_characteristic_object
+from pandapower.converter.cim.cim2pp.build_pp_net import CimConverter
 from pandapower.converter.cim.cim2pp.from_cim import from_cim, from_cim_dict
 from pandapower.converter.cim.cim_classes import CimParser
 from pandapower.run import runpp
@@ -1891,6 +1893,17 @@ def test_sv_mapping():
 
     # test the trafo tap changer
     assert net.trafo.loc[net.trafo["origin_id"] == "_trafo1", "tap_pos"].item() == pytest.approx(12.0, abs=0.000001)
+
+
+def test_fullgrid_cgmes3_lines():
+    # issue #3322: ACLineSegments get Equipment.inService as cim:Equipment in the SSH profile
+    folder_path = os.path.join(test_path, "test_files", "example_cim")
+    cgmes_files = [os.path.join(folder_path, "CGMES_v3.0_FullGrid-Merged_v3.0.2.zip")]
+
+    net = from_cim(file_list=cgmes_files, cgmes_version="3.0")
+
+    assert len(net.line.index) == 11
+    assert net.line["in_service"].all()
 
 
 if __name__ == "__main__":
