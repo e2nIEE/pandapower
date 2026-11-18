@@ -135,7 +135,7 @@ class PyPowSyBlConverter(
         return_loadflow_table: bool = False,
         default_shift_degree: float = 0.0,
         default_length_km: float = 1.0,
-    ) -> tuple[Any, Any, str, pd.DataFrame|None]:
+    ) -> tuple[Any, Any, str, pd.DataFrame | None]:
         """
         Convert a powsybl ``.xiidm`` file into a pandapower network.
 
