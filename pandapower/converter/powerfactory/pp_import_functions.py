@@ -30,8 +30,8 @@ from pandapower.control.util.characteristic import SplineCharacteristic
 from pandapower.create import (
     create_asymmetric_load,
     create_asymmetric_sgen,
-    create_buses,
     create_bus_dc,
+    create_buses,
     create_ext_grid,
     create_gen,
     create_impedance,
