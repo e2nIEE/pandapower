@@ -312,7 +312,7 @@ def create_nxgraph(
     return mg
 
 
-def get_edge_table(net: pandapowerNet, table_name: str, include_edges: bool | ArrayLike[bool]):
+def get_edge_table(net: pandapowerNet, table_name: str, include_edges: bool | ArrayLike):
     """
     Returns the table for the specified name according to parameter include_edges. If it is True, the whole table is
     returnedif False, None is returned. If it is an iterable, only the included indices are chosen.
