@@ -184,7 +184,8 @@ class DcLineSegmentsCim16:
             mapping = mapping.set_index("rdfId").to_dict()["inService"]
             dc_line_segments["in_service"] = dc_line_segments["rdfId"].map(mapping)
             dc_line_segments["in_service"] = (
-                    dc_line_segments["in_service"] & dc_line_segments.connected & dc_line_segments.connected2)
+                dc_line_segments["in_service"] & dc_line_segments.connected & dc_line_segments.connected2
+            )
         elif self.cimConverter.cim_version == "ltds":
             mapping = self.cimConverter.cim["ssh"]["Equipment"][["rdfId", "inService"]]
             mapping = mapping.set_index("rdfId").to_dict()["inService"]
