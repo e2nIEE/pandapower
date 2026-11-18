@@ -23,6 +23,7 @@ from pandapower.pf.run_dc_pf import _run_dc_pf
 from pandapower.pf.run_helmpy_pf import _runpf_helmpy_pf
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.pf.runpf_pypower import _runpf_pypower
+from pandapower.pf.switchgear_thermal import calculate_switch_temperatures
 from pandapower.pf.transformer_thermal import calculate_transformer_temperatures, dt_minutes_from_options
 from pandapower.pypower.bustypes import bustypes
 from pandapower.pypower.idx_bus import VM
@@ -224,10 +225,12 @@ def _ppci_to_net(result, net):
     _extract_results(net, result)
     _clean_up(net)
 
-    # transformer thermal model is post-processing: it consumes the solved loading and does not
-    # influence the power flow. It must run after the results were extracted.
+    # transformer and switch thermal models are post-processing: they consume the solved loading and
+    # currents and do not influence the power flow. They must run after the results were extracted.
     if net["_options"].get("tdpf", False):
-        calculate_transformer_temperatures(net, dt_minutes=dt_minutes_from_options(net["_options"]))
+        dt_minutes = dt_minutes_from_options(net["_options"])
+        calculate_transformer_temperatures(net, dt_minutes=dt_minutes)
+        calculate_switch_temperatures(net, dt_minutes=dt_minutes)
 
 
 def _bypass_pf_and_set_results(ppci):

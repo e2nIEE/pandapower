@@ -1,5 +1,10 @@
+import numpy as np
 import pandas as pd
 import pandera.pandas as pa
+
+# thermal inputs accept null values, which the calculation fills with documented defaults. Infinite
+# values are rejected: they cannot be used, so the default would be substituted without any notice.
+_finite = pa.Check(lambda values: np.isfinite(values), error="value must be finite")
 
 switch_schema = pa.DataFrameSchema(
     {
@@ -36,6 +41,38 @@ switch_schema = pa.DataFrameSchema(
             nullable=True,
             description="indicates the resistance of the switch, which has effect only on bus-bus switches, if sets to 0, the buses will be fused like before, if larger than 0 a branch will be created for the switch which has also effects on the bus mapping",
             metadata={"default": 0.0},
+        ),
+        "measured_temperature_rise_kelvin": pa.Column(
+            float,
+            checks=[pa.Check.gt(0), _finite],
+            nullable=True,
+            required=False,
+            description="temperature rise of the switch above the ambient temperature at rated current, used by the switch thermal calculation (TDPF)",
+            metadata={"tdpf": True, "default": 75.0},
+        ),
+        "temperature_rise_exponent": pa.Column(
+            float,
+            checks=[pa.Check.gt(0), _finite],
+            nullable=True,
+            required=False,
+            description="exponent describing how the temperature rise of the switch scales with the load current, used by the switch thermal calculation (TDPF)",
+            metadata={"tdpf": True, "default": 1.8},
+        ),
+        "thermal_time_constant_minutes": pa.Column(
+            float,
+            checks=[pa.Check.gt(0), _finite],
+            nullable=True,
+            required=False,
+            description="thermal time constant of the switch in minutes, used by the switch thermal calculation (TDPF)",
+            metadata={"tdpf": True, "default": 90.0},
+        ),
+        "air_temperature_degree_celsius": pa.Column(
+            float,
+            checks=[pa.Check.gt(-273), _finite],
+            nullable=True,
+            required=False,
+            description="ambient temperature in °C used by the switch thermal calculation (TDPF)",
+            metadata={"tdpf": True, "default": 35},
         ),
         "origin_id": pa.Column(
             pd.StringDtype,

@@ -436,10 +436,17 @@ def compute_switch_flows(net):
     to zero.  Switches that already have results (``z_ohm > 0``) are not
     modified.
 
+    Closed bus-bus switches with ``z_ohm > 0`` are branches in the power flow.
+    Their solved flow is part of the nodal balance, like the flow of a line, so
+    a fused group that is fed or drained through such a switch is reconstructed
+    correctly.
+
     **Assumption:** Within each fused-bus group the zero-impedance switches
     must form a *tree* (no parallel zero-impedance paths between the same pair
-    of buses).  If a cycle is detected a ``ValueError`` is raised, since the
-    flow split is physically indeterminate without impedance information.
+    of buses).  If a cycle is detected in a group, the flow split of that group
+    is physically indeterminate without impedance information.  The group is
+    skipped, all other fused groups are still computed and a ``ValueError`` is
+    raised afterwards.
 
     Parameters
     ----------
@@ -453,6 +460,7 @@ def compute_switch_flows(net):
         If ``net.converged`` is ``False``.
     ValueError
         If zero-impedance bus-bus switches form a cycle within a fused group.
+        Raised after the flows of all other fused groups have been written.
 
     Examples
     --------
@@ -538,6 +546,8 @@ def compute_switch_flows(net):
         ),
         ("impedance", "res_impedance", [("from_bus", "p_from_mw", "q_from_mvar"), ("to_bus", "p_to_mw", "q_to_mvar")]),
         ("dcline", "res_dcline", [("from_bus", "p_from_mw", "q_from_mvar"), ("to_bus", "p_to_mw", "q_to_mvar")]),
+        # a closed bus-bus switch with z_ohm > 0 is a branch, so its flow leaves or enters a fused group
+        ("switch", "res_switch", [("bus", "p_from_mw", "q_from_mvar"), ("element", "p_to_mw", "q_to_mvar")]),
     ]
     for tbl_name, res_name, bus_pairs in _branch_specs:
         tbl = net.get(tbl_name)
@@ -545,6 +555,19 @@ def compute_switch_flows(net):
         if tbl is None or res is None or len(tbl) == 0 or len(res) == 0:
             continue
         in_service = tbl["in_service"].values if "in_service" in tbl.columns else np.ones(len(tbl), dtype=bool)
+        if tbl_name == "switch":
+            # only closed bus-bus switches with an impedance are branches in the power flow
+            z_ohm = (
+                pd.to_numeric(tbl["z_ohm"], errors="coerce")
+                if "z_ohm" in tbl.columns
+                else pd.Series(0.0, index=tbl.index)
+            )
+            in_service = (
+                in_service
+                & tbl["closed"].fillna(False).to_numpy(dtype=bool)
+                & (tbl["et"].astype(str).to_numpy() == "b")
+                & (z_ohm.to_numpy(dtype=float) > 0)
+            )
         for i, idx in enumerate(tbl.index):
             if not in_service[i]:
                 continue
@@ -557,10 +580,15 @@ def compute_switch_flows(net):
                 if all(bus_to_group.get(ob) == this_grp for ob in other_buses):
                     continue
                 try:
-                    bus_p[this_bus] += float(res.at[idx, p_col])
-                    bus_q[this_bus] += float(res.at[idx, q_col])
+                    p_val = float(res.at[idx, p_col])
+                    q_val = float(res.at[idx, q_col])
                 except (KeyError, ValueError):
-                    pass
+                    continue
+                if tbl_name == "switch" and not (np.isfinite(p_val) and np.isfinite(q_val)):
+                    # a switch without solved flow, e.g. because a terminal bus is out of service
+                    continue
+                bus_p[this_bus] += p_val
+                bus_q[this_bus] += q_val
 
     # Index closed zero-impedance bus-bus switches by fused group
     sw_by_group = defaultdict(list)
@@ -575,6 +603,7 @@ def compute_switch_flows(net):
             sw_by_group[grp].append((sw_idx, a, b))
 
     computed_switches = set()
+    cyclic_groups = []
 
     # For each fused group, build the coupler subgraph and compute flows
     for grp_id, grp_buses in multi_groups.items():
@@ -597,12 +626,11 @@ def compute_switch_flows(net):
             coupler_buses.add(a)
             coupler_buses.add(b)
 
-        # A tree with N nodes has exactly N-1 edges; more means a cycle
+        # A tree with N nodes has exactly N-1 edges; more means a cycle. The flow split in such a
+        # group is indeterminate, but other fused groups are independent and are still computed.
         if len(couplers) >= len(coupler_buses):
-            raise ValueError(
-                f"Zero-impedance bus-bus switches form a cycle in fused group containing buses {sorted(grp_buses)}. "
-                f"The flow split is indeterminate without impedance values."
-            )
+            cyclic_groups.append(sorted(grp_buses))
+            continue
 
         # DFS to build tree order
         root = next(iter(grp_buses))
@@ -663,6 +691,15 @@ def compute_switch_flows(net):
             if not np.isnan(in_val) and in_val > 0:
                 i_val = net.res_switch.at[sw_idx, "i_ka"]
                 net.res_switch.at[sw_idx, "loading_percent"] = i_val / in_val * 100
+
+    if cyclic_groups:
+        # raised after all independent groups are reconstructed, so their results stay usable
+        groups = ", ".join(str(buses) for buses in cyclic_groups)
+        raise ValueError(
+            f"Zero-impedance bus-bus switches form a cycle in fused group(s) containing buses {groups}. "
+            f"The flow split is indeterminate without impedance values. The flows of all other fused "
+            f"groups were computed."
+        )
 
 
 def res_power_columns(element_type, side=0):
