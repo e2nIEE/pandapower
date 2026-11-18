@@ -11,6 +11,7 @@ from pandapower.auxiliary import (
     _sum_by_group_nvals,
     sequence_to_phase,
 )
+from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_bus import BASE_KV, VA, VM
 from pandapower.pypower.idx_bus_dc import DC_PD
 from pandapower.pypower.idx_gen import GEN_BUS, PG, QG
@@ -18,7 +19,7 @@ from pandapower.pypower.idx_source_dc import SOURCE_DC_BUS, SOURCE_DC_STATUS
 from pandapower.pypower.idx_vsc import VSC_MODE_AC, VSC_MODE_AC_SL, VSC_P, VSC_Q
 
 
-def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
+def _get_gen_results(net: pandapowerNet, ppc, bus_lookup_aranged, pq_bus):
     ac = net["_options"]["ac"]
 
     eg_end = sum(net["ext_grid"].in_service)
@@ -47,7 +48,7 @@ def _get_gen_results(net, ppc, bus_lookup_aranged, pq_bus):
     pq_bus[b, 1] -= q_sum
 
 
-def _get_gen_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_bus):
+def _get_gen_results_3ph(net: pandapowerNet, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_bus):
     ac = net["_options"]["ac"]
 
     eg_end = len(net["ext_grid"])
@@ -74,7 +75,7 @@ def _get_gen_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_bus):
     pq_bus[b_ppc, 5] -= qC_sum
 
 
-def _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc):
+def _get_dc_slack_results(net: pandapowerNet, ppc, bus_dc_lookup_aranged, bus_p_dc):
     # ac = net["_options"]["ac"]
 
     # eg_end = sum(net['source_dc'].in_service)
@@ -110,7 +111,7 @@ def _get_dc_slack_results(net, ppc, bus_dc_lookup_aranged, bus_p_dc):
     # bus_p_dc[b, 0] -= p_sum
 
 
-def _get_vsc_slack_results(net, ppc, b, p, q):
+def _get_vsc_slack_results(net: pandapowerNet, ppc, b, p, q):
     ac = net["_options"]["ac"]
 
     # get results for external grids
@@ -135,7 +136,7 @@ def _get_vsc_slack_results(net, ppc, b, p, q):
     return np.r_[b, vsc_b], np.r_[p, vsc_p], np.r_[q, vsc_q]
 
 
-def _get_ext_grid_results(net, ppc):
+def _get_ext_grid_results(net: pandapowerNet, ppc):
     ac = net["_options"]["ac"]
 
     # get results for external grids
@@ -167,7 +168,7 @@ def _get_ext_grid_results(net, ppc):
     return b, p, q
 
 
-def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
+def _get_ext_grid_results_3ph(net: pandapowerNet, ppc0, ppc1, ppc2):
     # get results for external grids
     eg_is_mask = net["_is_elements"]["ext_grid"]
     ext_grid_lookup = net["_pd2ppc_lookups"]["ext_grid"]
@@ -215,7 +216,7 @@ def _get_ext_grid_results_3ph(net, ppc0, ppc1, ppc2):
     return b, pA, qA, pB, qB, pC, qC
 
 
-def _get_p_q_gen_results(net, ppc):
+def _get_p_q_gen_results(net: pandapowerNet, ppc):
     gen_is = net["_is_elements"]["gen"]
     gen_lookup = net["_pd2ppc_lookups"]["gen"]
     gen_is_idx = np.array(net["gen"].index)[gen_is]
@@ -239,7 +240,7 @@ def _get_p_q_gen_results(net, ppc):
     return p_gen, q_gen
 
 
-def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
+def _get_p_q_gen_results_3ph(net: pandapowerNet, ppc0, ppc1, ppc2):
     _is_elements = net["_is_elements"]
     gen_is_mask = _is_elements["gen"]
     gen_lookup = net["_pd2ppc_lookups"]["gen"]
@@ -282,7 +283,7 @@ def _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2):
     return pA, qA, pB, qB, pC, qC
 
 
-def _get_v_gen_resuts(net, ppc):
+def _get_v_gen_resuts(net: pandapowerNet, ppc):
     # lookups for ppc
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
 
@@ -305,7 +306,7 @@ def _get_v_gen_resuts(net, ppc):
     return v_pu, v_a
 
 
-def _get_v_gen_results_3ph(net, ppc0, ppc1, ppc2):
+def _get_v_gen_results_3ph(net: pandapowerNet, ppc0, ppc1, ppc2):
     # lookups for ppc
     gen_lookup = net["_pd2ppc_lookups"]["gen"]
 
@@ -347,7 +348,7 @@ def _get_v_gen_results_3ph(net, ppc0, ppc1, ppc2):
     return vA_pu, vA_a, vB_pu, vB_a, vC_pu, vC_a
 
 
-def _get_pp_gen_results(net, ppc, b, p, q):
+def _get_pp_gen_results(net: pandapowerNet, ppc, b, p, q):
     p_gen, q_gen = _get_p_q_gen_results(net, ppc)
     _get_v_gen_resuts(net, ppc)
 
@@ -360,7 +361,7 @@ def _get_pp_gen_results(net, ppc, b, p, q):
     return b, p, q
 
 
-def _get_pp_gen_results_3ph(net, ppc0, ppc1, ppc2, b, pA, qA, pB, qB, pC, qC):
+def _get_pp_gen_results_3ph(net: pandapowerNet, ppc0, ppc1, ppc2, b, pA, qA, pB, qB, pC, qC):
     pA_gen, qA_gen, pB_gen, qB_gen, pC_gen, qC_gen = _get_p_q_gen_results_3ph(net, ppc0, ppc1, ppc2)
     _get_v_gen_results_3ph(net, ppc0, ppc1, ppc2)
 

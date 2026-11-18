@@ -385,7 +385,7 @@ def to_sql(
     return written_grid_id
 
 
-def to_sqlite(net, filename, include_results=False):
+def to_sqlite(net: pandapowerNet, filename, include_results=False):
     """
     Saves pandapowerNet an SQLite format
 

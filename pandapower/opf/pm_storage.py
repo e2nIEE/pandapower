@@ -1,10 +1,11 @@
 import numpy as np
 import pandas as pd
 
+from pandapower.network import pandapowerNet
 from pandapower.opf.make_objective import costs_from_areas
 
 
-def add_storage_opf_settings(net, ppci, pm):
+def add_storage_opf_settings(net: pandapowerNet, ppci, pm):
     """
     pp_to_pm_callback of :func:`runpm_storage_opf`: adds the controllable storages to pm["storage"]. Must be
     called after initializing the pm data structure.
@@ -71,7 +72,7 @@ def add_storage_opf_settings(net, ppci, pm):
         pm["storage"][str(pm_idx)].update(_storage_cost(net, idx))
 
 
-def _storage_cost(net, idx):
+def _storage_cost(net: pandapowerNet, idx):
     """
     Returns the active power costs of a storage in the format of the PowerModels gen costs, as a function of
     the storage power ps in MW (charging: ps > 0) in MATPOWER units like the gen costs:
@@ -112,7 +113,7 @@ def _value(df, idx, column, default):
     return float(default)
 
 
-def storage_ppci_gens(net, ppci):
+def storage_ppci_gens(net: pandapowerNet, ppci):
     """
     Returns the pandapower indices and ppci gen indices of the in service controllable storages. In OPF mode
     a controllable storage is a ppc generator.
@@ -128,7 +129,7 @@ def storage_ppci_gens(net, ppci):
     return pp_idx[in_ppci], (np.cumsum(gen_is) - 1)[ppc_gens[in_ppci]]
 
 
-def _deactivate_storage_gens(net, ppci, pm):
+def _deactivate_storage_gens(net: pandapowerNet, ppci, pm):
     """
     The ppc generator of a controllable storage has without max_p_mw / min_p_mw the default limits of
     +-1e9 MW. Its power is given by pm["storage"] instead, so the generator is deactivated.

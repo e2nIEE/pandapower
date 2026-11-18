@@ -27,7 +27,7 @@ from pandapower.toolbox.element_selection import pp_elements
 logger = logging.getLogger(__name__)
 
 
-def lf_info(net, numv=1, numi=2):  # pragma: no cover
+def lf_info(net: pandapowerNet, numv=1, numi=2):  # pragma: no cover
     """
     Prints some basic information of the results in a net
     (max/min voltage, max trafo load, max line load).
@@ -51,7 +51,7 @@ def lf_info(net, numv=1, numi=2):  # pragma: no cover
         logger.info("  %s loading at line %s (%s)", r.loading_percent, r.name, net.line.name.at[r.name])
 
 
-def opf_task(net, delta_pq=1e-3, keep=False, log=True):
+def opf_task(net: pandapowerNet, delta_pq=1e-3, keep=False, log=True):
     """
     Collects some basic inforamtion of the optimal powerflow task und prints them.
     """
@@ -377,7 +377,7 @@ def _get_keys_and_elements_from_opf_task_dict(dict_):
     return keys, elms
 
 
-def switch_info(net, sidx):  # pragma: no cover
+def switch_info(net: pandapowerNet, sidx):  # pragma: no cover
     """
     Prints what buses and elements are connected by a certain switch.
     """
@@ -390,7 +390,7 @@ def switch_info(net, sidx):  # pragma: no cover
     logger.info(f"Switch {sidx:u} connects bus {bidx:u} ({bus_name}) with trafo {eidx:u} ({name})")
 
 
-def overloaded_lines(net, max_load=100):
+def overloaded_lines(net: pandapowerNet, max_load=100):
     """
     Returns the results for all lines with loading_percent > max_load or None, if
     there are none.
@@ -401,7 +401,7 @@ def overloaded_lines(net, max_load=100):
         raise UserWarning("The last loadflow terminated erratically, results are invalid!")
 
 
-def violated_buses(net, min_vm_pu, max_vm_pu):
+def violated_buses(net: pandapowerNet, min_vm_pu, max_vm_pu):
     """
     Returns all bus indices where vm_pu is not within min_vm_pu and max_vm_pu or returns None, if
     there are none of those buses.

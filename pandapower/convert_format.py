@@ -21,7 +21,7 @@ from pandapower.control.controller.trafo_control import TrafoController
 from pandapower.create import create_poly_cost
 from pandapower.create._utils import add_column_to_df
 from pandapower.create.trafo_characteristic_create import create_trafo_characteristic
-from pandapower.network import pandapowerNet
+from pandapower.network import ADict, pandapowerNet
 from pandapower.network_structure import get_default_value, get_structure_dict
 from pandapower.plotting.geo import _is_valid_number, convert_geodata_to_geojson
 from pandapower.results import reset_results
@@ -29,7 +29,7 @@ from pandapower.results import reset_results
 logger = logging.getLogger(__name__)
 
 
-def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=False, donot_open_newer=True):
+def convert_format(net: pandapowerNet, elements_to_deserialize=None, drop_invalid_geodata=False, donot_open_newer=True):
     """
     Converts old nets to new format to ensure consistency. The converted net is returned.
     """
@@ -137,7 +137,7 @@ def _convert_q_capability_characteristic(net: pandapowerNet):
         net["q_capability_characteristic"] = net.pop("q_capability_curve_characteristic")
 
 
-def _replace_invalid_data(net, elements_to_deserialize, drop_invalid_geodata):
+def _replace_invalid_data(net: pandapowerNet, elements_to_deserialize, drop_invalid_geodata):
     for element in ["bus", "bus_dc", "line", "line_dc"]:
         if not _check_elements_to_deserialize(element, elements_to_deserialize):
             continue
@@ -173,7 +173,7 @@ def _replace_invalid_data(net, elements_to_deserialize, drop_invalid_geodata):
                         break
 
 
-def _convert_geo_data(net, elements_to_deserialize=None, drop_invalid_geodata=True):
+def _convert_geo_data(net: ADict, elements_to_deserialize=None, drop_invalid_geodata=True):
     if (
         (
             _check_elements_to_deserialize("bus_geodata", elements_to_deserialize)
@@ -208,7 +208,7 @@ def _restore_index_names(net):
         del net["index_names"]
 
 
-def correct_dtypes(net, error):
+def correct_dtypes(net: ADict, error):
     """
     Corrects all dtypes of pp element tables if possible. If not and error is True, an Error is raised.
     """
@@ -266,13 +266,13 @@ def _convert_trafo_controller_parameter_names(net):
                 controller.__dict__["trafobus"] = controller.__dict__.pop("controlled_bus")
 
 
-def _convert_bus_pq_meas_to_load_reference(net, elements_to_deserialize):
+def _convert_bus_pq_meas_to_load_reference(net: pandapowerNet, elements_to_deserialize):
     if _check_elements_to_deserialize("measurement", elements_to_deserialize):
         bus_pq_meas_mask = net.measurement.measurement_type.isin(["p", "q"]) & (net.measurement.element_type == "bus")
         net.measurement.loc[bus_pq_meas_mask, "value"] *= -1
 
 
-def _convert_to_generation_system(net, elements_to_deserialize):
+def _convert_to_generation_system(net: pandapowerNet, elements_to_deserialize):
     update_elements = []
     if _check_elements_to_deserialize("sgen", elements_to_deserialize):
         net.sgen.p_kw *= -1
@@ -342,7 +342,7 @@ def _add_missing_tables(net):
             net[key] = net_new[key]
 
 
-def _create_seperate_cost_tables(net, elements_to_deserialize):
+def _create_seperate_cost_tables(net: pandapowerNet, elements_to_deserialize):
     if _check_elements_to_deserialize("gen", elements_to_deserialize) and "cost_per_kw" in net.gen:
         for index, cost in net.gen.cost_per_kw.items():
             if not np.isnan(cost):
@@ -374,7 +374,7 @@ def _create_seperate_cost_tables(net, elements_to_deserialize):
                 create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost * 1e3)
 
 
-def _rename_columns(net, elements_to_deserialize):
+def _rename_columns(net: ADict, elements_to_deserialize):
     """
     Renames the columns of networks stored with older pandapower versions to the current names (e.g. of line, load, gen,
     trafo, measurement, controller, vsc_bipolar and some result tables). If elements_to_deserialize is given, only these
@@ -489,7 +489,7 @@ def _rename_columns(net, elements_to_deserialize):
             net["options"]["recycle"]["bus_pq"] = True
 
 
-def _add_missing_columns(net, elements_to_deserialize):
+def _add_missing_columns(net: pandapowerNet, elements_to_deserialize):
     update_elements = []
     if _check_elements_to_deserialize("trafo", elements_to_deserialize):
         update_elements += ["trafo"]
@@ -656,7 +656,7 @@ def _update_trafo_type_parameter_names(net):
                 net.std_types[element][type][new_key] = net.std_types[element][type].pop(old_key)
 
 
-def _update_trafo_parameter_names(net, elements_to_deserialize):
+def _update_trafo_parameter_names(net: pandapowerNet, elements_to_deserialize):
     update_data = []
     if _check_elements_to_deserialize("trafo", elements_to_deserialize):
         update_data += ["trafo"]
@@ -754,7 +754,7 @@ def _update_object_attributes(obj):
         obj.__dict__["vm_set_pu_bsc"] = obj.__dict__.pop("vm_set_pu")
 
 
-def _convert_objects(net, elements_to_deserialize):
+def _convert_objects(net: pandapowerNet, elements_to_deserialize):
     """
     The function updates  attribute names and adds new attributes in pandapower objects. For now, it affects
     TrafoController and Station Controller.
@@ -780,7 +780,7 @@ def _add_missing_std_type_tables(net):
             net.std_types[tn] = {}
 
 
-def _update_characteristics(net, elements_to_deserialize):
+def _update_characteristics(net: pandapowerNet, elements_to_deserialize):
     # new interpolator type has been added to SplineCharacteristic - "pchip", and the attributes have been refactored
     if (
         not _check_elements_to_deserialize("characteristic", elements_to_deserialize)

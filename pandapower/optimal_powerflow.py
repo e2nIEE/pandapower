@@ -10,6 +10,7 @@ from numpy import allclose, concatenate
 from scipy.sparse import csr_matrix as sparse
 
 from pandapower.auxiliary import OPFNotConverged, _add_auxiliary_elements, _clean_up
+from pandapower.network import pandapowerNet
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.pypower.add_userfcn import add_userfcn
@@ -22,7 +23,7 @@ from pandapower.results import _copy_results_ppci_to_ppc, _extract_results, init
 logger = logging.getLogger(__name__)
 
 
-def _optimal_powerflow(net, verbose, suppress_warnings, **kwargs):
+def _optimal_powerflow(net: pandapowerNet, verbose, suppress_warnings, **kwargs):
     ac = net["_options"]["ac"]
     init = net["_options"]["init"]
 
@@ -115,7 +116,7 @@ def _add_dcline_constraints(om, net):
         om = om.add_constraints("dcline", Adc, nL0, nL0, ["Pg"])
 
 
-def _run_pf_before_opf(net, ppci):
+def _run_pf_before_opf(net: pandapowerNet, ppci):
     net._options["tolerance"] = 1e-8
     net._options["max_iteration"] = 10
     net._options["algorithm"] = "nr"

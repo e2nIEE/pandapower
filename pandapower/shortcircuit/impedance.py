@@ -8,6 +8,7 @@ from scipy.linalg import inv
 from scipy.sparse.linalg import inv as inv_sparse
 
 from pandapower.auxiliary import _clean_up
+from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_bus import BASE_KV
 from pandapower.pypower.idx_bus_sc import R_EQUIV, X_EQUIV
 
@@ -17,7 +18,7 @@ except ImportError:
     from pandapower.pypower.make_y_bus import makeYbus
 
 
-def _calc_rx(net, ppci, bus_idx):
+def _calc_rx(net: pandapowerNet, ppci, bus_idx):
     # Vectorized for multiple bus
     r_fault = net["_options"]["r_fault_ohm"]
     x_fault = net["_options"]["x_fault_ohm"]
@@ -46,7 +47,7 @@ def _calc_ybus(ppci):
     ppci["internal"]["Ybus"] = Ybus
 
 
-def _calc_zbus(net, ppci):
+def _calc_zbus(net: pandapowerNet, ppci):
     try:
         Ybus = ppci["internal"]["Ybus"]
         sparsity = Ybus.nnz / Ybus.shape[0] ** 2
@@ -61,7 +62,7 @@ def _calc_zbus(net, ppci):
         raise
 
 
-def _calc_zbus_diag(net, ppci, bus_idx=None):
+def _calc_zbus_diag(net: pandapowerNet, ppci, bus_idx=None):
     ybus_fact = ppci["internal"]["ybus_fact"]
     n_ppci_bus = ppci["bus"].shape[0]
 

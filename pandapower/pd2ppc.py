@@ -38,6 +38,7 @@ from pandapower.build_gen import (
     _check_voltage_angles_at_same_bus,
     _check_voltage_setpoints_at_same_bus,
 )
+from pandapower.network import pandapowerNet
 from pandapower.opf.make_objective import _make_objective
 from pandapower.pypower.idx_area import PRICE_REF_BUS
 from pandapower.pypower.idx_brch import BR_STATUS, F_BUS, T_BUS
@@ -64,7 +65,7 @@ from pandapower.pypower.idx_vsc import (
 from pandapower.pypower.run_userfcn import run_userfcn
 
 
-def _pd2ppc_recycle(net, sequence, recycle):
+def _pd2ppc_recycle(net: pandapowerNet, sequence, recycle):
     # TODO: for FACTS and DC elements: SVC, TCSC, SSC, VSC
     key = "_ppc" if sequence is None else f"_ppc{sequence}"
     if not recycle or not net.get(key, None):
@@ -129,7 +130,7 @@ def _check_slack_at_vsc_bus(ppci):
         )
 
 
-def _pd2ppc(net, sequence=None, **kwargs):
+def _pd2ppc(net: pandapowerNet, sequence=None, **kwargs):
     """
     Converter Flow:
         1. Create an empty pypower datatructure
@@ -268,7 +269,7 @@ def _pd2ppc(net, sequence=None, **kwargs):
     return ppc, ppci
 
 
-def _init_ppc(net, mode="pf", sequence=None):
+def _init_ppc(net: pandapowerNet, mode="pf", sequence=None):
     # init empty ppc
     ppc = {
         "baseMVA": net.sn_mva,
@@ -511,14 +512,14 @@ def _ppc2ppci(ppc, net, ppci=None):
     return ppci
 
 
-def _update_lookup_entries(net, lookup, e2i, element):
+def _update_lookup_entries(net: pandapowerNet, lookup, e2i, element):
     valid_bus_lookup_entries = lookup >= 0
     # update entries
     lookup[valid_bus_lookup_entries] = e2i[lookup[valid_bus_lookup_entries]]
     _write_lookup_to_net(net, element, lookup)
 
 
-def _build_gen_lookups(net, element, f, t):
+def _build_gen_lookups(net: pandapowerNet, element, f, t):
     in_service = net._is_elements[element]
     if "controllable" in element:
         pandapower_index = net[element.split("_")[0]].index.values[in_service]
@@ -529,7 +530,7 @@ def _build_gen_lookups(net, element, f, t):
         _init_lookup(net, element, pandapower_index, ppc_index)
 
 
-def _init_lookup(net, lookup_name, pandapower_index, ppc_index):
+def _init_lookup(net: pandapowerNet, lookup_name, pandapower_index, ppc_index):
     # init lookup
     lookup = -np.ones(max(pandapower_index) + 1, dtype=np.int64)
 

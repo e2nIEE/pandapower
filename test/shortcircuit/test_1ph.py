@@ -28,13 +28,13 @@ from pandapower.std_types import add_zero_impedance_parameters, create_std_type
 from test import test_path
 
 
-def check_results(net, vc, result):
+def check_results(net: pandapowerNet, vc, result):
     res_ika = net.res_bus_sc[(net.bus.zone == vc) & net.bus.in_service].ikss_ka.values
     if not np.allclose(result, res_ika, rtol=0, atol=1e-6):
         raise ValueError(f"Incorrect results for vector group {vc}", res_ika, result)
 
 
-def add_network(net, vector_group):
+def add_network(net: pandapowerNet, vector_group):
     (b1,) = create_buses(net, 1, 110, zone=vector_group, index=get_free_id(net.bus))
     (b2,) = create_buses(net, 1, 20, zone=vector_group)
     create_buses(net, 1, 20, in_service=False)

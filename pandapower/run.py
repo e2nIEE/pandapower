@@ -23,6 +23,7 @@ from pandapower.auxiliary import (
     _internal_stored,
     warn_and_fix_parameter_renaming,
 )
+from pandapower.network import pandapowerNet
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.optimal_powerflow import _optimal_powerflow
 from pandapower.powerflow import _powerflow, _recycled_powerflow
@@ -40,7 +41,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def set_user_pf_options(net, overwrite=False, **kwargs):
+def set_user_pf_options(net: pandapowerNet, overwrite=False, **kwargs):
     """
     This function sets the 'user_pf_options' dict for net. These options overrule
     net.__internal_options once they are added to net. These options are used in configuration of
@@ -309,7 +310,14 @@ def runpp(
         _powerflow(net, **kwargs)
 
 
-def runpp_pgm(net, algorithm="nr", max_iterations=20, error_tolerance_vm_pu=1e-8, symmetric=True, validate_input=False):
+def runpp_pgm(
+    net: pandapowerNet,
+    algorithm="nr",
+    max_iterations=20,
+    error_tolerance_vm_pu=1e-8,
+    symmetric=True,
+    validate_input=False,
+):
     """
     Runs powerflow using power-grid-model library
 

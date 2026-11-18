@@ -122,7 +122,7 @@ def _igraph_meshed(g):
     return False
 
 
-def _get_element_mask_from_nodes(net, element, node_elements, nodes=None):
+def _get_element_mask_from_nodes(net: pandapowerNet, element, node_elements, nodes=None):
     mask = np.ones(len(net[element])).astype(bool)
     if nodes is not None:
         for node_element in node_elements:
@@ -130,7 +130,7 @@ def _get_element_mask_from_nodes(net, element, node_elements, nodes=None):
     return mask
 
 
-def _get_switch_mask(net, element, switch_element, open_switches):
+def _get_switch_mask(net: pandapowerNet, element, switch_element, open_switches):
     element_switches = net.switch.et.values == switch_element
     open_elements = net.switch.element.values[open_switches & element_switches]
     open_element_mask = np.isin(net[element].index, open_elements, invert=True)

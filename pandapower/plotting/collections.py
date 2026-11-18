@@ -713,7 +713,9 @@ def create_dcline_collection(
     return lc
 
 
-def create_impedance_collection(net, impedances=None, bus_geodata=None, infofunc=None, picker=False, **kwargs):
+def create_impedance_collection(
+    net: pandapowerNet, impedances=None, bus_geodata=None, infofunc=None, picker=False, **kwargs
+):
     """
     Creates a matplotlib line collection of pandapower lines.
 
@@ -836,7 +838,7 @@ def create_trafo_connection_collection(
     return lc
 
 
-def create_trafo3w_connection_collection(net, trafos=None, bus_geodata=None, infofunc=None, **kwargs):
+def create_trafo3w_connection_collection(net: pandapowerNet, trafos=None, bus_geodata=None, infofunc=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower 3W-transformers.
     This function can be used to create line collections for voltage fall diagrams.
@@ -1478,7 +1480,9 @@ def create_sgen_collection(
     )
 
 
-def create_storage_collection(net, storages=None, size=1.0, infofunc=None, orientation=np.pi, picker=False, **kwargs):
+def create_storage_collection(
+    net: pandapowerNet, storages=None, size=1.0, infofunc=None, orientation=np.pi, picker=False, **kwargs
+):
     """
     Creates a matplotlib patch collection of pandapower storage element.
 
@@ -1573,7 +1577,9 @@ def create_ext_grid_collection(
     return ext_grid_pc, ext_grid_lc
 
 
-def create_line_switch_collection(net, switches=None, size=1, distance_to_bus=3, use_line_geodata=False, **kwargs):
+def create_line_switch_collection(
+    net: pandapowerNet, switches=None, size=1, distance_to_bus=3, use_line_geodata=False, **kwargs
+):
     """
     Creates a matplotlib patch collection of pandapower line-bus switches.
 

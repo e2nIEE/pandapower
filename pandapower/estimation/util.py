@@ -61,7 +61,7 @@ def estimate_voltage_vector(net: pandapowerNet):
     return res_bus
 
 
-def _get_bus_ppc_mapping(net, bus_to_be_fused):
+def _get_bus_ppc_mapping(net: pandapowerNet, bus_to_be_fused):
     bus_with_elements = (
         set(net.load.bus)
         .union(set(net.sgen.bus))
@@ -206,7 +206,7 @@ def add_virtual_meas_from_loadflow(
     )
 
 
-def remove_shunt_injection_from_meas(net, type):
+def remove_shunt_injection_from_meas(net: pandapowerNet, type):
     index = net[type].index.tolist()
     bus = net[type]["bus"].tolist()
     for k in range(len(index)):

@@ -24,6 +24,7 @@ from pandapower.build_branch import (
     _trafo_df_from_trafo3w,
 )
 from pandapower.build_bus import _build_bus_ppc
+from pandapower.network import pandapowerNet
 from pandapower.pd2ppc import _init_ppc
 from pandapower.pf.make_y_bus_facts import calc_y_svc_pu
 from pandapower.pypower.idx_bus import BASE_KV
@@ -310,7 +311,7 @@ def create_nxgraph(
     return mg
 
 
-def get_edge_table(net, table_name, include_edges):
+def get_edge_table(net: pandapowerNet, table_name, include_edges):
     """
     Returns the table for the specified name according to parameter include_edges. If it is True,
     the whole table is returnedif False, None is returned. If it is an iterable, only the included
@@ -371,7 +372,7 @@ def add_edges(
             mg.add_edge(idx[F_BUS], idx[T_BUS], key=(element, idx[INDEX]), weight=p[WEIGHT], path=1)
 
 
-def get_baseR(net, ppc, buses):
+def get_baseR(net: pandapowerNet, ppc, buses):
     bus_lookup = net._pd2ppc_lookups["bus"]
     base_kv = ppc["bus"][bus_lookup[buses], BASE_KV]
     return np.square(base_kv) / net.sn_mva

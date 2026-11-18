@@ -8,11 +8,12 @@ import pandas as pd
 
 from pandapower.control.controller.trafo_control import TrafoController
 from pandapower.control.util.auxiliary import get_controller_index
+from pandapower.network import pandapowerNet
 
 logger = logging.getLogger(__name__)
 
 
-def control_diagnostic(net, respect_in_service=True):
+def control_diagnostic(net: pandapowerNet, respect_in_service=True):
     """
     Diagnostic function to find obvious mistakes in control data
     """
@@ -258,7 +259,7 @@ def shunt_characteristic_table_diagnostic(net):
     return warnings_count == 0
 
 
-def q_capability_curve_table_diagnostic(net, element):
+def q_capability_curve_table_diagnostic(net: pandapowerNet, element):
     if element not in ["gen", "sgen"]:
         warnings.warn(
             "The given element type is not valid for diagnostics. Please give gen or sgen "

@@ -29,6 +29,7 @@ from pandapower.auxiliary import (
     warn_and_fix_parameter_renaming,
 )
 from pandapower.build_bus import _add_ext_grid_sc_impedance
+from pandapower.network import pandapowerNet
 from pandapower.pd2ppc import _pd2ppc_recycle
 from pandapower.pf.run_newton_raphson_pf import _run_newton_raphson_pf
 from pandapower.powerflow import LoadflowNotConverged
@@ -106,7 +107,7 @@ def _get_elements(params, net, element, phase, typ):
     return params
 
 
-def _load_mapping(net, ppci1):
+def _load_mapping(net: pandapowerNet, ppci1):
     """
     Takes three phase P, Q values from PQ elements
     sums them up for each bus

@@ -202,7 +202,7 @@ def attach_to_group(
 
 
 @deprecated("Use detach_from_groups instead")
-def detach_from_group(net, index, element_type, element_index):
+def detach_from_group(net: pandapowerNet, index, element_type, element_index):
     detach_from_groups(net, element_type, element_index, index=index)
 
 
@@ -673,7 +673,7 @@ def set_value_to_group(
             net[et].loc[ix, column] = value
 
 
-def _sum_powers(net, index, formula_character, unit):
+def _sum_powers(net: pandapowerNet, index, formula_character, unit):
     power = 0.0
     missing_res_idx = []
     no_power_column_found = []

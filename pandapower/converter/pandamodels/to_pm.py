@@ -211,7 +211,7 @@ def convert_pp_to_pm(
 logger = logging.getLogger(__name__)
 
 
-def convert_to_pm_structure(net, from_time_step=None, to_time_step=None, **kwargs):
+def convert_to_pm_structure(net: pandapowerNet, from_time_step=None, to_time_step=None, **kwargs):
     """
     Converts the pandapower net to the PowerModels data structure with the options in net._options.
 
@@ -252,7 +252,7 @@ def convert_to_pm_structure(net, from_time_step=None, to_time_step=None, **kwarg
     return net, pm, ppc, ppci
 
 
-def add_pm_gen_start_values_from_results(net, pm):
+def add_pm_gen_start_values_from_results(net: pandapowerNet, pm):
     pm_gens = pm.get("gen", {})
     if not pm_gens:
         return
@@ -299,7 +299,7 @@ def dump_pm_json(pm, buffer_file=None):
     return buffer_file
 
 
-def _pp_element_to_pm(net, pm, element, pd_bus, qd_bus, load_idx):
+def _pp_element_to_pm(net: pandapowerNet, pm, element, pd_bus, qd_bus, load_idx):
     bus_lookup = net._pd2ppc_lookups["bus"]
 
     pm_lookup = (
@@ -390,7 +390,7 @@ def _branch_to_pm(row, idx, opf_flow_lim, correct_pm_network_data, z_scale=1.0):
     return branch
 
 
-def create_pm_lookups(net, pm_lookup):
+def create_pm_lookups(net: pandapowerNet, pm_lookup):
     for key, val in net._pd2ppc_lookups.items():
         if isinstance(val, dict):
             # lookup is something like "branch" with dict as val -> iterate over the subdicts
@@ -411,13 +411,13 @@ def create_pm_lookups(net, pm_lookup):
     return net
 
 
-def pm_base_mva(net, ppci):
+def pm_base_mva(net: pandapowerNet, ppci):
     """power base (MVA) of the PowerModels data, independent of net.sn_mva"""
     base_mva = net._options.get("pm_base_mva")
     return float(ppci["baseMVA"] if base_mva is None else base_mva)
 
 
-def ppc_to_pm(net, ppci):
+def ppc_to_pm(net: pandapowerNet, ppci):
     # create power models dict. Similar to matpower case file. ne_branch is for a tnep case
     # "per_unit == False": the data is in MATPOWER units (MW, MVAr, degrees, impedances in per unit
     # on baseMVA). PandaModels.jl converts it to per unit and returns the results in MW / degrees.
@@ -570,7 +570,7 @@ def add_pm_options(pm, net):
     return pm
 
 
-def build_ne_branch(net, ppc):
+def build_ne_branch(net: pandapowerNet, ppc):
     # this is only used by pm tnep
     if "ne_line" in net:
         length = len(net["ne_line"])
@@ -584,7 +584,7 @@ def build_ne_branch(net, ppc):
     return ppc
 
 
-def init_ne_line(net, new_line_index: list[Int], construction_costs: list[float] | None = None):
+def init_ne_line(net: pandapowerNet, new_line_index: list[Int], construction_costs: list[float] | None = None):
     """
     init function for new line dataframe, which specifies the possible new lines being built by power models tnep
     opt
@@ -605,7 +605,7 @@ def init_ne_line(net, new_line_index: list[Int], construction_costs: list[float]
     net["res_ne_line"] = pd.DataFrame(data=0, index=new_line_index, columns=["built"], dtype=np.int64)
 
 
-def add_params_to_pm(net, pm):
+def add_params_to_pm(net: pandapowerNet, pm):
     # add user defined parameters to pm
     pd_idxs_br = []
     pm_idxs_br = []
@@ -690,7 +690,7 @@ def add_params_to_pm(net, pm):
     return pm
 
 
-def _get_redispatch_elements(net):
+def _get_redispatch_elements(net: pandapowerNet):
     """
     Returns a list of (element_type, pp_index, cost_up, cost_down) tuples for every controllable
     gen / sgen that is selected for redispatch, i.e. that is controllable and has a poly_cost entry
@@ -720,7 +720,7 @@ def _get_redispatch_elements(net):
     return selected
 
 
-def _get_controllable_gen_elements(net):
+def _get_controllable_gen_elements(net: pandapowerNet):
     """
     Returns a list of (element_type, pp_index) tuples for every controllable gen / sgen. These are
     exactly the gens / sgens that become free PowerModels generators (non-controllable sgens are
@@ -737,7 +737,7 @@ def _get_controllable_gen_elements(net):
     return elements
 
 
-def _pm_gen_index_for(net, elm, pp_idx):
+def _pm_gen_index_for(net: pandapowerNet, elm, pp_idx):
     """
     Maps a pandapower gen / controllable-sgen index to the PowerModels gen index (1-based) using the
     lookups built during conversion. Returns None if the element has no PowerModels gen.
@@ -752,7 +752,7 @@ def _pm_gen_index_for(net, elm, pp_idx):
     return None if pm_idx == -1 else pm_idx
 
 
-def _redispatch_base_p_mw(net, elm, pp_idx, res_lookup):
+def _redispatch_base_p_mw(net: pandapowerNet, elm, pp_idx, res_lookup):
     """base dispatch p_mw of a gen / sgen from its result table (raises if no power flow result)."""
     res_table = res_lookup[elm]
     if res_table not in net or pp_idx not in net[res_table].index:
@@ -763,7 +763,7 @@ def _redispatch_base_p_mw(net, elm, pp_idx, res_lookup):
     return float(net[res_table].at[pp_idx, "p_mw"])
 
 
-def add_redispatch_params(net, ppci, pm, redispatch_cost=False):
+def add_redispatch_params(net: pandapowerNet, ppci, pm, redispatch_cost=False):
     """
     pp_to_pm_callback for :func:`runpm_redispatch`. Writes the base dispatch (pg0) and, in cost mode,
     per-generator up/down redispatch costs into pm["user_defined_params"].
@@ -822,7 +822,7 @@ def add_redispatch_params(net, ppci, pm, redispatch_cost=False):
     return pm
 
 
-def add_time_series_to_pm(net, pm, from_time_step, to_time_step):
+def add_time_series_to_pm(net: pandapowerNet, pm, from_time_step, to_time_step):
     from pandapower.control import ConstControl
 
     if from_time_step is None or to_time_step is None:
@@ -866,7 +866,7 @@ def add_time_series_to_pm(net, pm, from_time_step, to_time_step):
     return pm
 
 
-def allow_multi_ext_grids(net, pm, ext_grids=None):
+def allow_multi_ext_grids(net: pandapowerNet, pm, ext_grids=None):
     ext_grids = net.ext_grid.index.tolist() if ext_grids is None else ext_grids
     target_pp_buses = net.ext_grid.bus[ext_grids]
     target_pm_buses = net._pd2pm_lookups["bus"][target_pp_buses]

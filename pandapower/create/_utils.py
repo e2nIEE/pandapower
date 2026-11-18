@@ -147,7 +147,7 @@ def _group_parameter_list(element_types, elements, reference_columns):
     return element_types, elements, reference_columns
 
 
-def _check_elements_existence(net, element_types, elements, reference_columns):
+def _check_elements_existence(net: ADict, element_types, elements, reference_columns):
     """
     Raises UserWarnings if elements does not exist in net.
     """
@@ -177,7 +177,7 @@ def _get_index_with_check(net: pandapowerNet, table: str, index: Int | None, nam
     return index
 
 
-def _cost_existance_check(net, element, et, power_type=None):
+def _cost_existance_check(net: ADict, element, et, power_type=None):
     if power_type is None:
         return (
             bool(net.poly_cost.shape[0])
@@ -200,7 +200,7 @@ def _cost_existance_check(net, element, et, power_type=None):
         )
 
 
-def _costs_existance_check(net, elements, et, power_type=None):
+def _costs_existance_check(net: ADict, elements, et, power_type=None):
     if isinstance(et, str) and (power_type is None or isinstance(power_type, str)):
         poly_exist = (net.poly_cost.element.isin(elements)).values & (net.poly_cost.et == et).values
         pwl_exist = (net.pwl_cost.element.isin(elements)).values & (net.pwl_cost.et == et).values
@@ -221,7 +221,7 @@ def _costs_existance_check(net, elements, et, power_type=None):
         return poly_df.duplicated().sum() + pwl_df.duplicated().sum()
 
 
-def _get_multiple_index_with_check(net, table, index, number, name=None):
+def _get_multiple_index_with_check(net: ADict, table, index, number, name=None):
     if index is None:
         bid = get_free_id(net[table])
         return arange(bid, bid + number, 1)
@@ -236,14 +236,14 @@ def _get_multiple_index_with_check(net, table, index, number, name=None):
     return index
 
 
-def _check_element(net, element_index, element="bus"):
+def _check_element(net: ADict, element_index, element="bus"):
     if element not in net:
         raise UserWarning(f"Node table {element} does not exist")
     if element_index not in net[element].index.values:
         raise UserWarning(f"Cannot attach to {element} {element_index}, {element_index} does not exist")
 
 
-def _check_multiple_elements(net, element_indices, element="bus", name="buses"):
+def _check_multiple_elements(net: ADict, element_indices, element="bus", name="buses"):
     if element not in net:
         raise UserWarning(f"Node table {element} does not exist")
     if np_any(~isin(element_indices, net[element].index.values)):
@@ -251,7 +251,7 @@ def _check_multiple_elements(net, element_indices, element="bus", name="buses"):
         raise UserWarning(f"Cannot attach to {name} {node_not_exist}, they do not exist")
 
 
-def _check_branch_element(net, element_name, index, from_node, to_node, node_name="bus", plural="es"):
+def _check_branch_element(net: ADict, element_name, index, from_node, to_node, node_name="bus", plural="es"):
     if node_name not in net:
         raise UserWarning(f"Node table {node_name} does not exist")
     missing_nodes = {from_node, to_node} - set(net[node_name].index.values)
@@ -261,7 +261,7 @@ def _check_branch_element(net, element_name, index, from_node, to_node, node_nam
         )
 
 
-def _check_multiple_branch_elements(net, from_nodes, to_nodes, element_name, node_name="bus", plural="es"):
+def _check_multiple_branch_elements(net: ADict, from_nodes, to_nodes, element_name, node_name="bus", plural="es"):
     if node_name not in net:
         raise UserWarning(f"Node table {node_name} does not exist")
     all_nodes = set(from_nodes) | set(to_nodes)
@@ -389,7 +389,7 @@ def _add_branch_geodata(net: pandapowerNet, geodata, index, table="line"):
     net[table]["geo"] = net[table]["geo"].astype(get_structure_dict(required_only=False)[table]["geo"])
 
 
-def _add_multiple_branch_geodata(net, geodata, index, table="line"):
+def _add_multiple_branch_geodata(net: ADict, geodata, index, table="line"):
     dtype = get_structure_dict(required_only=False)[table]["geo"]
     if not geodata:
         net[table].loc[index, "geo"] = pd.Series(data=[pd.NA] * len(net[table]), index=net[table].index, dtype=dtype)
@@ -413,7 +413,7 @@ def _add_multiple_branch_geodata(net, geodata, index, table="line"):
     _preserve_dtypes(net[table], dtypes)
 
 
-def _set_entries(net, table, index, preserve_dtypes=True, entries: dict | None = None):
+def _set_entries(net: ADict, table, index, preserve_dtypes=True, entries: dict | None = None):
     if entries is None:
         return
 

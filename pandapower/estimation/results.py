@@ -4,6 +4,7 @@
 import numpy as np
 
 from pandapower.auxiliary import get_values
+from pandapower.network import pandapowerNet
 from pandapower.pf.pfsoln_numba import pfsoln
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.pypower.idx_bus import PD, QD
@@ -26,7 +27,7 @@ def _calc_power_flow(ppci, V):
     return ppci
 
 
-def _extract_result_ppci_to_pp(net, ppc, ppci):
+def _extract_result_ppci_to_pp(net: pandapowerNet, ppc, ppci):
     # convert to pandapower indices
     ppc = _copy_results_ppci_to_ppc(ppci, ppc, mode="se")
 
@@ -73,7 +74,7 @@ def _extract_result_ppci_to_pp(net, ppc, ppci):
     return net
 
 
-def eppci2pp(net, ppc, eppci):
+def eppci2pp(net: pandapowerNet, ppc, eppci):
     # calculate the branch power flow and bus power injection based on the estimated voltage vector
     eppci = _calc_power_flow(eppci, eppci.V)
 

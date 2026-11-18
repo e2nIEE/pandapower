@@ -235,7 +235,7 @@ def from_opendss(path: str, solve: bool = True):
     return net
 
 
-def _add_buses(net, report):
+def _add_buses(net: pandapowerNet, report):
     bus_map = {}
     for name in dss.Circuit.AllBusNames():
         dss.Circuit.SetActiveBus(name)
@@ -262,7 +262,7 @@ def _capture_voltages(report):
             report.vm_pu_opendss[name.lower()] = sum(mags) / len(mags)
 
 
-def _add_source(net, bus_map, report):
+def _add_source(net: pandapowerNet, bus_map, report):
     if not dss.Vsources.First():
         report.warn("no Vsource found; net has no ext_grid")
         return
@@ -274,7 +274,7 @@ def _add_source(net, bus_map, report):
     create_ext_grid(net, bus, vm_pu=dss.Vsources.PU(), va_degree=0.0, name=dss.Vsources.Name())
 
 
-def _add_lines(net, bus_map, report):
+def _add_lines(net: pandapowerNet, bus_map, report):
     i = dss.Lines.First()
     while i:
         name = dss.Lines.Name()
@@ -331,7 +331,7 @@ def _add_lines(net, bus_map, report):
         i = dss.Lines.Next()
 
 
-def _add_reactors(net, bus_map, report):
+def _add_reactors(net: pandapowerNet, bus_map, report):
     """Series (bus-to-bus) Reactor elements as a fixed-impedance pandapower line.
 
     Some feeder libraries (e.g. EPRI's Ckt5/Ckt7 test circuits) model the
@@ -374,14 +374,14 @@ def _add_reactors(net, bus_map, report):
         i = dss.Reactors.Next()
 
 
-def _add_transformers(net, bus_map, report):
+def _add_transformers(net: pandapowerNet, bus_map, report):
     i = dss.Transformers.First()
     while i:
         _add_one_transformer(net, bus_map, report)
         i = dss.Transformers.Next()
 
 
-def _add_one_transformer(net, bus_map, report):
+def _add_one_transformer(net: pandapowerNet, bus_map, report):
     name = dss.Transformers.Name()
     dss.Circuit.SetActiveElement("Transformer." + name)
     wbus = [_busname(b) for b in dss.CktElement.BusNames()]
@@ -461,7 +461,7 @@ def _add_one_transformer(net, bus_map, report):
         report.n_split_phase_transformers += 1
 
 
-def _add_loads(net, bus_map, report):
+def _add_loads(net: pandapowerNet, bus_map, report):
     i = dss.Loads.First()
     while i:
         name = dss.Loads.Name()
@@ -476,7 +476,7 @@ def _add_loads(net, bus_map, report):
         i = dss.Loads.Next()
 
 
-def _add_capacitors(net, bus_map, report):
+def _add_capacitors(net: pandapowerNet, bus_map, report):
     i = dss.Capacitors.First()
     while i:
         name = dss.Capacitors.Name()

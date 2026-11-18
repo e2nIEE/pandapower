@@ -258,7 +258,7 @@ def coords_from_node_geodata(
         return coords[~no_geo_diff], np.array(element_indices)[in_geo & not_nan][~no_geo_diff]
 
 
-def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False, ignore_no_geo_diff=True):
+def set_line_geodata_from_bus_geodata(net: pandapowerNet, line_index=None, overwrite=False, ignore_no_geo_diff=True):
     """
     Sets coordinates in net.line.geo based on the from_bus and to_bus coordinates in net.bus.geo
 

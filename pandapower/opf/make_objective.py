@@ -9,6 +9,7 @@ import logging
 
 from numpy import array, int64, zeros
 
+from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_cost import COST, MODEL, NCOST, POLYNOMIAL, PW_LINEAR
 from pandapower.pypower.idx_gen import PMAX, PMIN
 
@@ -38,7 +39,7 @@ def _make_objective(ppci, net):
     return ppci
 
 
-def _get_gen_index(net, et, element):
+def _get_gen_index(net: pandapowerNet, et, element):
     if et == "dcline":
         dc_idx = net.dcline.index.get_loc(element)
         element = len(net.gen.index) - 2 * len(net.dcline) + dc_idx * 2 + 1
@@ -50,7 +51,7 @@ def _get_gen_index(net, et, element):
         return None
 
 
-def _map_costs_to_gen(net, cost):
+def _map_costs_to_gen(net: pandapowerNet, cost):
     gens = array([_get_gen_index(net, et, element) for et, element in zip(cost.et.values, cost.element.values)])
     cost_is = array([gen is not None for gen in gens])
     cost = cost[cost_is]

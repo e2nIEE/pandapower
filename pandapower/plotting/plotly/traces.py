@@ -29,7 +29,7 @@ import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import soft_dependency_error
-from pandapower.network import ADict
+from pandapower.network import ADict, pandapowerNet
 from pandapower.plotting.plotly.get_colors import get_plotly_cmap, get_plotly_color, get_plotly_colorscale
 from pandapower.plotting.plotly.mapbox_plot import _on_map_test
 
@@ -337,7 +337,9 @@ def _create_node_trace(
     return [node_trace]
 
 
-def _get_branch_geodata_plotly(net, branches, use_branch_geodata, branch_element="line", node_element="bus"):
+def _get_branch_geodata_plotly(
+    net: pandapowerNet, branches, use_branch_geodata, branch_element="line", node_element="bus"
+):
     xs = []
     ys = []
     if use_branch_geodata:
@@ -1060,7 +1062,7 @@ def create_weighted_marker_trace(
     return marker_trace
 
 
-def create_scale_trace(net, weighted_trace, down_shift=0):
+def create_scale_trace(net: pandapowerNet, weighted_trace, down_shift=0):
     """Create a scale (marker size legend) for a weighted_marker_trace.
 
     The default reference marker is of average size of all weighted markers, rounded to the next 5,

@@ -35,6 +35,7 @@ from pandapower.build_bus import (
     _build_vsc_ppc,
 )
 from pandapower.build_gen import _build_gen_ppc
+from pandapower.network import pandapowerNet
 from pandapower.pd2ppc import _init_ppc, _ppc2ppci
 from pandapower.pypower.idx_brch import (
     BR_B,
@@ -58,7 +59,7 @@ from pandapower.pypower.idx_bus_dc import DC_BUS_TYPE, DC_NONE
 from pandapower.pypower.idx_bus_sc import C_MAX, C_MIN
 
 
-def _pd2ppc_zero(net, k_st, sequence=0):
+def _pd2ppc_zero(net: pandapowerNet, k_st, sequence=0):
     """
     Builds the ppc data structure for zero impedance system. Includes the impedance values of
     lines and transformers, but no load or generation data.
@@ -100,7 +101,7 @@ def _pd2ppc_zero(net, k_st, sequence=0):
     return ppc, ppci
 
 
-def _build_branch_ppc_zero(net, ppc, k_st=None):
+def _build_branch_ppc_zero(net: pandapowerNet, ppc, k_st=None):
     """
     Takes the empty ppc network and fills it with the zero imepdance branch values. The branch
     datatype will be np.complex 128 afterwards.
@@ -141,7 +142,7 @@ def _build_branch_ppc_zero(net, ppc, k_st=None):
             raise NotImplementedError("Three winding transformers are not implemented for unbalanced calculations")
 
 
-def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
+def _add_trafo_sc_impedance_zero(net: pandapowerNet, ppc, trafo_df=None, k_st=None):
     if trafo_df is None:
         trafo_df = net["trafo"]
     if k_st is None:
@@ -468,7 +469,7 @@ def _add_trafo_sc_impedance_zero(net, ppc, trafo_df=None, k_st=None):
     del net.trafo["_ppc_idx"]
 
 
-def _add_gen_sc_impedance_zero(net, ppc):
+def _add_gen_sc_impedance_zero(net: pandapowerNet, ppc):
     mode = net["_options"]["mode"]
     if mode == "pf_3ph":
         return
@@ -485,7 +486,7 @@ def _add_gen_sc_impedance_zero(net, ppc):
     ppc["bus"][eg_buses_ppc, BS] += y0_gen.imag
 
 
-def _add_ext_grid_sc_impedance_zero(net, ppc):
+def _add_ext_grid_sc_impedance_zero(net: pandapowerNet, ppc):
     mode = net["_options"]["mode"]
 
     if mode == "sc":
@@ -529,7 +530,7 @@ def _add_ext_grid_sc_impedance_zero(net, ppc):
     ppc["bus"][buses, BS] = bs
 
 
-def _add_line_sc_impedance_zero(net, ppc):
+def _add_line_sc_impedance_zero(net: pandapowerNet, ppc):
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
     mode = net["_options"]["mode"]
     if "line" not in branch_lookup:
@@ -559,7 +560,7 @@ def _add_line_sc_impedance_zero(net, ppc):
     ppc["branch"][f:t, BR_STATUS] = line["in_service"].astype(np.int64)
 
 
-def _add_impedance_sc_impedance_zero(net, ppc):
+def _add_impedance_sc_impedance_zero(net: pandapowerNet, ppc):
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
     if "impedance" not in branch_lookup:
         return
@@ -585,7 +586,7 @@ def _add_impedance_sc_impedance_zero(net, ppc):
     branch[f:t, BR_STATUS] = net["impedance"]["in_service"].values.astype(np.int64)
 
 
-def _add_trafo3w_sc_impedance_zero(net, ppc):
+def _add_trafo3w_sc_impedance_zero(net: pandapowerNet, ppc):
     # TODO: check this/expand this
     branch_lookup = net["_pd2ppc_lookups"]["branch"]
     if "trafo3w" not in branch_lookup:

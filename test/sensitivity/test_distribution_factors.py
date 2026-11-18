@@ -8,6 +8,7 @@ import pandas as pd
 import pytest
 
 from pandapower.control import ConstControl
+from pandapower.network import pandapowerNet
 from pandapower.networks.create_examples import example_multivoltage
 from pandapower.networks.power_system_test_cases import (
     case14,
@@ -118,7 +119,7 @@ def test_trafo3w():
     run_lodf(net, outage_branch_type="line")
 
 
-def _dc_timeseries_reference(net, profiles, res_table, res_column):
+def _dc_timeseries_reference(net: pandapowerNet, profiles, res_table, res_column):
     # exact reference: one DC power flow per time step with run_timeseries
     net = copy.deepcopy(net)
     for (ele_type, variable), profile in profiles.items():
@@ -137,7 +138,7 @@ def _dc_timeseries_reference(net, profiles, res_table, res_column):
     return ow.output[f"{res_table}.{res_column}"]
 
 
-def _assert_profile_matches_timeseries(net, profiles, result_side=0):
+def _assert_profile_matches_timeseries(net: pandapowerNet, profiles, result_side=0):
     res = run_ptdf_dc_profile(net, profiles, result_side=result_side)
     res_column = "p_from_mw" if result_side == 0 else "p_to_mw"
     reference = _dc_timeseries_reference(net, profiles, "res_line", res_column)

@@ -445,7 +445,7 @@ def test_cause_element_index():
         check_cause_index(net, nminus1_cases)
 
 
-def check_cause_index(net, nminus1_cases):
+def check_cause_index(net: pandapowerNet, nminus1_cases):
     """
     This is a not so efficient but very easy to understand auxiliary function to test the "cause element" feature
     that is otherwise complicated to test properly.
@@ -477,7 +477,7 @@ def check_cause_index(net, nminus1_cases):
             )
 
 
-def run_for_from_bus_loading(net, **kwargs):
+def run_for_from_bus_loading(net: pandapowerNet, **kwargs):
     runpp(net, **kwargs)
     net.res_line["loading_percent"] = net.res_line.i_from_ka / net.line.max_i_ka * 100
     if len(net.trafo) > 0:

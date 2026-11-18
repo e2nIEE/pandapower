@@ -8,13 +8,14 @@ import networkx as nx
 import numpy as np
 from scipy.sparse.linalg import factorized
 
+from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_brch import BR_R, BR_X, F_BUS, T_BUS
 from pandapower.pypower.idx_bus import BASE_KV, BS, BUS_I, GS
 from pandapower.pypower.idx_bus_sc import BS_P, GS_P, K_G, KAPPA, R_EQUIV, X_EQUIV
 from pandapower.shortcircuit.impedance import _calc_rx, _calc_ybus, _calc_zbus
 
 
-def _add_kappa_to_ppc(net, ppc):
+def _add_kappa_to_ppc(net: pandapowerNet, ppc):
     if not net._options["kappa"]:
         return
     topology = net._options["topology"]
@@ -36,7 +37,7 @@ def _kappa(rx):
     return 1.02 + 0.98 * np.exp(-3 * rx)
 
 
-def _kappa_method_c(net, ppc):
+def _kappa_method_c(net: pandapowerNet, ppc):
     if net.f_hz == 50:
         fc = 20
     elif net.f_hz == 60:
@@ -74,7 +75,7 @@ def _kappa_method_c(net, ppc):
     return _kappa(rx_equiv_c)
 
 
-def _kappa_method_b(net, ppc):
+def _kappa_method_b(net: pandapowerNet, ppc):
     topology = net._options["topology"]
     kappa_max = np.full(ppc["bus"].shape[0], 2.0)
     lv_buses = np.nonzero(ppc["bus"][:, BASE_KV] < 1.0)
@@ -102,7 +103,7 @@ def _kappa_method_b(net, ppc):
     return np.clip(kappa_korr * _kappa(rx_equiv), 1, kappa_max)
 
 
-def nxgraph_from_ppc(net, ppc):
+def nxgraph_from_ppc(net: pandapowerNet, ppc):
     bus_lookup = net._pd2ppc_lookups["bus"]
     mg = nx.MultiGraph()
     mg.add_nodes_from(ppc["bus"][:, BUS_I].astype(np.int64))

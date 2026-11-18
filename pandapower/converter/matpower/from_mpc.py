@@ -9,6 +9,7 @@ import numpy as np
 import scipy.io
 
 from pandapower.converter.pypower import from_ppc
+from pandapower.network import pandapowerNet
 
 try:
     from matpowercaseframes import CaseFrames
@@ -23,13 +24,13 @@ logger = logging.getLogger(__name__)
 
 
 def from_mpc(
-    mpc_file,
-    f_hz=50,
-    casename_mpc_file="mpc",
-    validate_conversion=False,
-    load_case_engine=None,
+    mpc_file: str | os.PathLike,
+    f_hz: int = 50,
+    casename_mpc_file: str = "mpc",
+    validate_conversion: bool = False,
+    load_case_engine: object | None = None,
     **kwargs,
-):
+) -> pandapowerNet:
     """
     This function converts a matpower case file version 2 to a pandapower net.
 
@@ -43,9 +44,10 @@ def from_mpc(
 
     Parameters:
         mpc_file: path to a matpower case file (.mat format not .m script).
-        f_hz (int, 50): The frequency of the network.
-        casename_mpc_file (str, 'mpc'): The name of the variable in .mat file which contain the matpower case structure,
+        f_hz: The frequency of the network.
+        casename_mpc_file: The name of the variable in .mat file which contain the matpower case structure,
             i.e. the arrays "gen", "branch" and "bus".
+        validate_conversion:
         load_case_engine (object, None): External engine used to call MATPOWER `loadcase` (e.g. Oct2Py() object from
             matpower.start_instance()). Defaults to None. If None, parse data using
             matpowercaseframes.reader.parse_file.
