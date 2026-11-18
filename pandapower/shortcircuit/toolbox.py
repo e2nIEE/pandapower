@@ -10,6 +10,7 @@ import networkx as nx
 import numpy as np
 import pandas as pd
 
+from pandapower import pandapowerNet
 from pandapower.auxiliary import _preserve_dtypes
 from pandapower.create import _get_index_with_check, create_buses
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, TAP
@@ -22,19 +23,18 @@ from pandapower.topology.graph_searches import connected_component
 logger = logging.getLogger(__name__)
 
 
-def detect_power_station_unit(net, mode="auto", max_gen_voltage_kv=80, max_distance_km=0.01):
+def detect_power_station_unit(
+    net: pandapowerNet, mode: str = "auto", max_gen_voltage_kv: float = 80.0, max_distance_km: float = 0.01
+):
     """
-    Identifies the power station units configuration (gen and trafo) according to IEC 60909.
-    Updates the power_station_trafo in the gen table
+    Identifies the power station units configuration (gen and trafo) according to IEC 60909. Updates the
+    power_station_trafo in the gen table
 
-    INPUT:
-        **net** - panpdapower net
-
-        **mode** (str, ("auto", trafo""))
-
-        **max_gen_voltage_kv** (float)
-
-        **max_distance_km** (float)
+    Parameters:
+        net: pandapower net
+        mode:
+        max_gen_voltage_kv:
+        max_distance_km:
     """
     logger.info("This function will overwrites the value 'power_station_trafo' in gen table")
     net.gen["power_station_trafo"] = np.nan
@@ -128,20 +128,18 @@ def _create_aux_net(net, line_ix, distance_to_bus0):
     return aux_net, aux_bus
 
 
-def calc_sc_on_line(net, line_ix, distance_to_bus0, **kwargs):
+def calc_sc_on_line(net: pandapowerNet, line_ix: int, distance_to_bus0: float, **kwargs):
     """
-    Calculate the shortcircuit in the middle of the line, returns a modified network
-    with the shortcircuit calculation results and the bus added
+    Calculate the shortcircuit in the middle of the line, returns a modified network with the shortcircuit
+    calculation results and the bus added
 
-    INPUT:
-        **net** - panpdapower net
+    Parameters:
+        net: pandapower net
+        line_ix: The line of the shortcircuit
+        distance_to_bus0: The position of the shortcircuit should be between 0-1
 
-        **line_ix** (int) - The line of the shortcircuit
-
-        **distance_to_bus0** (float) - The position of the shortcircuit should be between 0-1
-
-    OPTIONAL:
-        **kwargs**** - the parameters required for the pandapower calc_sc function
+    Keyword Args:
+         the parameters required for the pandapower calc_sc function
     """
     # Update network
     aux_net, aux_bus = _create_aux_net(net, line_ix, distance_to_bus0)

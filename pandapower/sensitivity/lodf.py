@@ -400,34 +400,34 @@ def run_lodf(
     branch_dict: dict[str, list[int] | None] | None = None,
     reduced: bool = True,
 ) -> dict[tuple[str, str], pd.DataFrame]:
-    """Calculate the LODF (ratio without unit) of pp branches from the outage of a pp branch.
+    """
+    Calculate the LODF (ratio without unit) of pp branches from the outage of a pp branch.
 
-    The LODF is calculated with pypower matrices or with the perturb method.
-    The LODF is defined as: (p_{side}_mw_new - p_{side}_mw_old) / (p_{side}_mw_outage)
-    Side corresponds to the pandapower results definition, for LODF calculation both
-    sides give the same result, thus no side definition required
+    The LODF is calculated with pypower matrices or with the perturb method. The LODF is defined as:
+    (p_{side}_mw_new - p_{side}_mw_old) / (p_{side}_mw_outage) Side corresponds to the pandapower results
+    definition, for LODF calculation both sides give the same result, thus no side definition required
 
-    :param net: A pandapower network
-    :param outage_branch_type: The name of the type of the outage branch ("line", "trafo", "impedance")
-    :param outage_branch_ix: The pandapower index of the outage branch (int/list/np.ndarray), if None then all branches
-        will be used (except bridge branch and very low loading branch)
-    :param distributed_slack: Only passed to the DC power flows of the perturb method, where it currently has no
-        effect, since rundcpp does not support a distributed slack. The LODF does not depend on the slack, since an
-        outage does not change the injections. The direct method logs a warning if this is True, so pass False with
-        perturb=False.
-    :param perturb: Set True to use the perturb version (brute-force) which is faster for calculating
-        only a few elements on large networks, if a lot of elements required please set to False
-    :param using_sparse_solver: Select whether sparse linear system should be used (more efficient for large network)
-    :param random_verify: Set to True to check the direct version against perturb version
-        with 3 randomly selected elements
-    :param branch_dict: dictionary with keys "line", "trafo", "impedance", "trafo3w"; if not None the computation is
-        restricted to the branch indices given in the dict
-    :param reduced: if True, the output is reduced to the branches given in branch_dict
-    :param recycle: if True, recycles the previous
-    :return: {(goal_branch_type, outage_branch_type):
-        DataFrame(data=lodf, index=goal_branch_pp_index, columns=outage_branch_ix)}
-        with goal_branch_type in ("line", "trafo", "impedance", "trafo3w_{hv,mv,lv}")
-        and outage_branch_type in ("line", "trafo", "impedance")
+    Parameters:
+        net: A pandapower network
+        outage_branch_type: The name of the type of the outage branch ("line", "trafo", "impedance")
+        outage_branch_ix: The pandapower index of the outage branch (int/list/np.ndarray), if None then all branches
+            will be used (except bridge branch and very low loading branch)
+        distributed_slack: Only passed to the DC power flows of the perturb method, where it currently has no effect,
+            since rundcpp does not support a distributed slack. The LODF does not depend on the slack, since an outage
+            does not change the injections. The direct method logs a warning if this is True, so pass False with
+            perturb=False.
+        perturb: Set True to use the perturb version (brute-force) which is faster for calculating only a few elements
+            on large networks, if a lot of elements required please set to False
+        using_sparse_solver: Select whether sparse linear system should be used (more efficient for large network)
+        random_verify: Set to True to check the direct version against perturb version with 3 randomly selected elements
+        branch_dict: dictionary with keys "line", "trafo", "impedance", "trafo3w"; if not None the computation is
+            restricted to the branch indices given in the dict
+        reduced: if True, the output is reduced to the branches given in branch_dict
+        recycle: if True, recycles the previous
+
+    Returns:
+        DataFrame(data=lodf, index=goal_branch_pp_index, columns=outage_branch_ix)} with goal_branch_type in ("line",
+            "trafo", "impedance", "trafo3w_{hv,mv,lv}") and outage_branch_type in ("line", "trafo", "impedance")
     """
     if perturb and outage_branch_ix is None:
         logger.info("If a lot of branch required in lodf, please set perturb to False!")
@@ -600,21 +600,24 @@ def run_lodf_dc_n1(
     perturb: bool = False,
     lodf: dict | None = None,
 ):
-    """Calculate p_mw of a side of a branch under the outage of another branch with the LODF.
+    """
+    Calculate p_mw of a side of a branch under the outage of another branch with the LODF.
 
-    :param net: A pandapower network
-    :param outage_branch_type: The name of the type of the outage branch ("line", "trafo", "impedance")
-    :param outage_branch_ix: The pandapower index of the outage branch (int/list/np.ndarray), if None then all branches
-        will be used (except bridge branch and extra low loading branch)
-    :param result_side: 0 means ("from", "hv") side, 1 means ("to", "lv") side
-    :param distributed_slack: Only passed to the DC power flows of the perturb method (base case and each outage),
-        where it currently has no effect, since rundcpp does not support a distributed slack: with several slack
-        elements, all of them act as fixed voltage angle references. The direct method takes the base case flows from
-        the same DC power flow, and the LODF does not depend on the slack, so both methods give the same flows.
-    :param perturb: Set True to use the perturb version (brute-force) which is faster for calculating
-        only a few elements on large networks, if a lot of elements required please set to False
-    :param lodf: precomputed load matrices in dictionary, if None it will be calculated internally
-    :return: {(res_{branch_type}, p_{side}_mw):
+    Parameters:
+        net: A pandapower network
+        outage_branch_type: The name of the type of the outage branch ("line", "trafo", "impedance")
+        outage_branch_ix: The pandapower index of the outage branch (int/list/np.ndarray), if None then all branches
+            will be used (except bridge branch and extra low loading branch)
+        result_side: 0 means ("from", "hv") side, 1 means ("to", "lv") side
+        distributed_slack: Only passed to the DC power flows of the perturb method (base case and each outage), where it
+            currently has no effect, since rundcpp does not support a distributed slack: with several slack elements,
+            all of them act as fixed voltage angle references. The direct method takes the base case flows from the same
+            DC power flow, and the LODF does not depend on the slack, so both methods give the same flows.
+        perturb: Set True to use the perturb version (brute-force) which is faster for calculating only a few elements
+            on large networks, if a lot of elements required please set to False
+        lodf: precomputed load matrices in dictionary, if None it will be calculated internally
+
+    Returns:
         DataFrame(data=p_side_mw, index=goal_branch_pp_index, columns=outage_branch_pp_index)}
     """
     if perturb:
