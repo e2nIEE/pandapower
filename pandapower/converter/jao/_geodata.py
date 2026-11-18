@@ -39,6 +39,18 @@ def _parse_html_str(html_str: str) -> pd.DataFrame:
             raise AssertionError("pos1 < len(name_start)")
         return st[pos0:pos1]
 
+    def _filter_EIC(st: str) -> str:
+        eic_start = "EIC Code:<b> "
+        eic_end = "</b>"
+        pos0 = st.find(eic_start)
+        if pos0 < 0:
+            raise AssertionError("EIC Code not found")
+        pos0 += len(eic_start)
+        pos1 = st.find(eic_end, pos0)
+        if pos1 < 0:
+            raise AssertionError("EIC Code end tag not found")
+        return st[pos0:pos1]
+
     json_script = re.search(r'<script type="application/json" data-for="htmlwidget-[^"]+">', html_str)
     if json_script is None:
         raise AssertionError('No JSON script tag with a "htmlwidget-" data-for attribute found in the html file.')
@@ -49,10 +61,9 @@ def _parse_html_str(html_str: str) -> pd.DataFrame:
     geo_data = geo_data["x"]["calls"]
     methods_pos = pd.Series({item["method"]: i for i, item in enumerate(geo_data)})
     polylines = geo_data[methods_pos.at["addPolylines"]]["args"]
-    EIC_start = "EIC Code:<b> "
     if len(polylines[6]) != len(polylines[0]):
         raise AssertionError("The lists of EIC Code data and geo data are not of the same length.")
-    line_EIC = [polylines[6][i][polylines[6][i].find(EIC_start) + len(EIC_start) :] for i in range(len(polylines[6]))]
+    line_EIC = [_filter_EIC(polylines[6][i]) for i in range(len(polylines[6]))]
     line_name = [_filter_name(polylines[6][i]) for i in range(len(polylines[6]))]
     line_geo_data = pd.concat(
         [_lng_lat_to_df(polylines[0][i][0][0], line_EIC[i], line_name[i]) for i in range(len(polylines[0]))],

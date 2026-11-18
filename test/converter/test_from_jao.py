@@ -243,6 +243,7 @@ def test_parse_html_str_widget_id():
     line_geo_data = _parse_html_str(html)
     assert len(line_geo_data) == 4
     assert set(line_geo_data["geo_dim"]) == {"lng", "lat"}
+    assert line_geo_data["EIC_Code"].unique().tolist() == ["EIC1"]
 
     with pytest.raises(AssertionError):
         _parse_html_str("<html><body>no geodata</body></html>")
