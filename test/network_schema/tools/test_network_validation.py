@@ -2,7 +2,7 @@ import pandera.errors as pa_errors
 import pytest
 
 import pandapower.networks as pn
-from pandapower import pandapowerNet
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import (
     NETWORKS_EXCLUDED_FROM_VALIDATION,
     ValidationIssue,

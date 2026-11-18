@@ -16,8 +16,8 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-from pandapower import pandapowerNet
 from pandapower.create import create_load
+from pandapower.network import pandapowerNet
 from pandapower.pypower.make_lodf import makeLODF
 from pandapower.run import rundcpp
 from pandapower.sensitivity.ptdf import _get_ptdf_perturb, _make_ptdf_ppci
