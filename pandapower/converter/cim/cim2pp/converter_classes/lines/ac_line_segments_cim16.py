@@ -169,7 +169,13 @@ class AcLineSegmentsCim16:
         ac_line_segments = ac_line_segments.drop_duplicates(["rdfId"], keep="first")
         # get the max_i_ka
         ac_line_segments["max_i_ka"] = ac_line_segments["value"].fillna(ac_line_segments["value2"]) * 1e-3
-        if self.cimConverter.cim_version == "3.0" or self.cimConverter.cim_version == "ltds":
+        if self.cimConverter.cim_version == "3.0":
+            mapping = self.cimConverter.cim["ssh"]["Equipment"][["rdfId", "inService"]]
+            mapping = mapping.set_index("rdfId").to_dict()["inService"]
+            ac_line_segments["in_service"] = ac_line_segments["rdfId"].map(mapping)
+            ac_line_segments["in_service"] = (
+                    ac_line_segments["in_service"] & ac_line_segments.connected & ac_line_segments.connected2)
+        elif self.cimConverter.cim_version == "ltds":
             mapping = self.cimConverter.cim["ssh"]["Equipment"][["rdfId", "inService"]]
             mapping = mapping.set_index("rdfId").to_dict()["inService"]
             ac_line_segments["in_service"] = ac_line_segments["rdfId"].map(mapping)
