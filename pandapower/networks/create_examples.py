@@ -32,13 +32,12 @@ def example_simple():
     """
     Returns the simple example network from the pandapower tutorials.
 
-    OUTPUT:
+    Returns:
         net - simple example network
 
-    EXAMPLE:
+    Example:
         >>> from pandapower.networks.create_examples import example_simple
         >>> net = example_simple()
-
     """
     net = pandapowerNet(name="example_simple")
 
@@ -109,13 +108,12 @@ def example_multivoltage():
     """
     Returns the multivoltage example network from the pandapower tutorials.
 
-    OUTPUT:
+    Returns:
         net - multivoltage example network
 
-    EXAMPLE:
+    Example:
         >>> from pandapower.networks.create_examples import example_multivoltage
         >>> net = example_multivoltage()
-
     """
     net = pandapowerNet(name="example_multivoltage")
 
