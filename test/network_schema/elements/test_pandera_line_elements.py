@@ -54,9 +54,9 @@ class TestLineRequiredFields:
                 itertools.product(["from_bus"], positiv_ints_plus_zero),
                 itertools.product(["to_bus"], positiv_ints_plus_zero),
                 itertools.product(["length_km"], positiv_floats),
-                itertools.product(["r_ohm_per_km"], positiv_floats_plus_zero),
-                itertools.product(["x_ohm_per_km"], positiv_floats_plus_zero),
-                itertools.product(["c_nf_per_km"], positiv_floats_plus_zero),
+                itertools.product(["r_ohm_per_km"], all_allowed_floats),
+                itertools.product(["x_ohm_per_km"], all_allowed_floats),
+                itertools.product(["c_nf_per_km"], all_allowed_floats),
                 itertools.product(["g_us_per_km"], positiv_floats_plus_zero),
                 itertools.product(["max_i_ka"], positiv_floats),
                 itertools.product(["parallel"], positiv_ints),
@@ -83,9 +83,9 @@ class TestLineRequiredFields:
                 itertools.product(["from_bus"], [float(np.nan), pd.NA, *negativ_ints, *not_ints_list]),
                 itertools.product(["to_bus"], [float(np.nan), pd.NA, *negativ_ints, *not_ints_list]),
                 itertools.product(["length_km"], [float(np.nan), pd.NA, *negativ_floats_plus_zero, *not_floats_list]),
-                itertools.product(["r_ohm_per_km"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
-                itertools.product(["x_ohm_per_km"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
-                itertools.product(["c_nf_per_km"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
+                itertools.product(["r_ohm_per_km"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["x_ohm_per_km"], [float(np.nan), pd.NA, *not_floats_list]),
+                itertools.product(["c_nf_per_km"], [float(np.nan), pd.NA, *not_floats_list]),
                 itertools.product(["g_us_per_km"], [float(np.nan), pd.NA, *negativ_floats, *not_floats_list]),
                 itertools.product(["max_i_ka"], [float(np.nan), pd.NA, *negativ_floats_plus_zero, *not_floats_list]),
                 itertools.product(["parallel"], [float(np.nan), pd.NA, *negativ_ints_plus_zero, *not_ints_list]),
@@ -378,6 +378,55 @@ class TestLineForeignKey:
         )
 
         validate_network(net)
+
+
+class TestLineAngleLimits:
+    """Tests for the OPF branch angle difference limits"""
+
+    @staticmethod
+    def _net():
+        net = pandapowerNet(name="test_line_angle_limits")
+        create_buses(net, 2, 0.4)
+        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        return net
+
+    def test_min_less_equal_max_passes(self):
+        net = self._net()
+        net.line["min_angle_degree"] = -30.0
+        net.line["max_angle_degree"] = 30.0
+        validate_network(net)
+
+    def test_min_equals_max_passes(self):
+        net = self._net()
+        net.line["min_angle_degree"] = 10.0
+        net.line["max_angle_degree"] = 10.0
+        validate_network(net)
+
+    def test_min_greater_than_max_fails(self):
+        net = self._net()
+        net.line["min_angle_degree"] = 30.0
+        net.line["max_angle_degree"] = -30.0
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_nan_passes(self):
+        net = self._net()
+        net.line["min_angle_degree"] = float(np.nan)
+        net.line["max_angle_degree"] = float(np.nan)
+        validate_network(net)
+
+    def test_columns_are_optional(self):
+        net = self._net()
+        assert "min_angle_degree" not in net.line.columns
+        assert "max_angle_degree" not in net.line.columns
+        validate_network(net)
+
+    @pytest.mark.parametrize("parameter", ["min_angle_degree", "max_angle_degree"])
+    def test_non_float_fails(self, parameter):
+        net = self._net()
+        net.line[parameter] = "not a float"
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
 
 
 class TestLineResults:

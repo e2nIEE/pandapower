@@ -17,7 +17,7 @@ import logging
 import numpy as np
 
 from pandapower.auxiliary import ensure_iterability
-from pandapower.control.controller.DERController.DERBasics import BaseModel, CosphiPCurve, CosphiVCurve, QVCurve
+from pandapower.control.controller.DERController.der_basics import BaseModel, CosphiPCurve, CosphiVCurve, QVCurve
 
 logger = logging.getLogger(__name__)
 

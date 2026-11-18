@@ -82,12 +82,15 @@ class CimConverter:
         """
         Build the pandapower net.
 
-        :param convert_line_to_switch: Set this parameter to True to enable line -> switch conversion. All lines with a
-        resistance lower or equal than line_r_limit or a reactance lower or equal than line_x_limit will become a
-        switch. Optional, default: False
-        :param line_r_limit: The limit from resistance. Optional, default: 0.1
-        :param line_x_limit: The limit from reactance. Optional, default: 0.1
-        :return: The pandapower net.
+        Parameters:
+            convert_line_to_switch: Set this parameter to True to enable line -> switch conversion. All lines with a
+                resistance lower or equal than line_r_limit or a reactance lower or equal than line_x_limit will become
+                a switch.
+            line_r_limit: The limit from resistance.
+            line_x_limit: The limit from reactance.
+
+        Returns:
+            The pandapower net.
         """
         self.logger.info("Start building the pandapower net.")
         self.report_container.add_log(

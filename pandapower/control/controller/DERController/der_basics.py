@@ -98,9 +98,10 @@ class CosphiVCurve:
 
 
 class CosphiPCurve:
-    """CosphiPCurve is a Q(P) controller, more precisely a cosphi(P) controller. The characteristic
-    curve is defined by 'p_points_pu' and 'cosphi_points' (pos. values -> overexcited, voltage
-    increasing, neg. values -> underexcited, voltage decreasing).
+    """
+    CosphiPCurve is a Q(P) controller, more precisely a cosphi(P) controller. The characteristic curve is defined by
+    'p_points_pu' and 'cosphi_points' (pos. values -> overexcited, voltage increasing, neg. values -> underexcited,
+    voltage decreasing).
 
     **Exemplary Characteristic curve**::
 
@@ -117,13 +118,12 @@ class CosphiPCurve:
           |
         0 +--+-----+----+-------------->
            p[0]    p[1]  p[2]
-    INPUT:
-        **p_points_pu** (iterable of floats) - active power values (relative to sn_mva) on the
-        cosphi(P) curve.
 
-        **cosphi_points** (iterable of floats) - cosphi values on the cosphi(P) curve. positive
-        values lead to positive reactive power values (inductive/overexcited generator), negative
-        values mean capactive/underexcited generator
+    Parameters:
+        p_points_pu (iterable of floats): active power values (relative to sn_mva) on the cosphi(P) curve.
+        cosphi_points (iterable of floats): cosphi values on the cosphi(P) curve. positive values lead to positive
+            reactive power values (inductive/overexcited generator), negative values mean capactive/underexcited
+            generator
     """
 
     def __init__(self, p_points_pu, cosphi_points):

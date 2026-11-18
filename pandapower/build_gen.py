@@ -14,7 +14,7 @@ from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pypower.idx_bus import BUS_TYPE, NONE, PV, REF, VA, VM, VMAX, VMIN
 from pandapower.pypower.idx_bus import SL_FAC as SL_FAC_BUS
 from pandapower.pypower.idx_bus_dc import DC_BUS_TYPE, DC_NONE
-from pandapower.pypower.idx_gen import GEN_BUS, MBASE, PG, PMAX, PMIN, QG, QMAX, QMIN, SL_FAC, VG, gen_cols
+from pandapower.pypower.idx_gen import GEN_BUS, GEN_COLS, MBASE, PG, PMAX, PMIN, QG, QMAX, QMIN, SL_FAC, VG
 from pandapower.pypower.idx_ssc import SSC_BUS, SSC_CONTROLLABLE, SSC_SET_VM_PU
 from pandapower.pypower.idx_vsc import (
     VSC_BUS,
@@ -78,7 +78,7 @@ def add_gen_order(gen_order, element, _is_elements, f):
 
 def _init_ppc_gen(net, ppc, nr_gens):
     # initialize generator matrix
-    ppc["gen"] = np.zeros(shape=(nr_gens, gen_cols), dtype=np.float64)
+    ppc["gen"] = np.zeros(shape=(nr_gens, GEN_COLS), dtype=np.float64)
     ppc["gen"][:] = np.array([0, 0, 0, 0, 0, 1.0, 1.0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
     q_lim_default = net._options["q_lim_default"]
     p_lim_default = net._options["p_lim_default"]
@@ -102,7 +102,7 @@ def add_element_to_gen(net, ppc, element, f, t, sequence):
     elif element == "xward":
         _build_pp_xward(net, ppc, f, t)
     else:
-        raise ValueError("Unknown element %s" % element)
+        raise ValueError(f"Unknown element {element}")
 
 
 def _build_pp_ext_grid(net, ppc, f, t):
@@ -130,8 +130,8 @@ def _build_pp_ext_grid(net, ppc, f, t):
             eg_constrained = net.ext_grid[eg_is][~net.ext_grid.controllable]
             if len(eg_constrained):
                 eg_constrained_bus_ppc = [bus_lookup[egb] for egb in eg_constrained.bus.values]
-                ppc["bus"][eg_constrained_bus_ppc, VMAX] = net["ext_grid"]["vm_pu"].values[eg_constrained.index] + delta
-                ppc["bus"][eg_constrained_bus_ppc, VMIN] = net["ext_grid"]["vm_pu"].values[eg_constrained.index] - delta
+                ppc["bus"][eg_constrained_bus_ppc, VMAX] = eg_constrained["vm_pu"] + delta
+                ppc["bus"][eg_constrained_bus_ppc, VMIN] = eg_constrained["vm_pu"] - delta
         else:
             # if we dont:
             ppc["bus"][eg_buses, VMAX] = net["ext_grid"]["vm_pu"].values[eg_is] + delta
@@ -257,7 +257,8 @@ def _build_pp_gen(net, ppc, f, t, sequence):
 
     # set bus values for generator buses
     ppc["bus"][gen_buses[ppc["bus"][gen_buses, BUS_TYPE] != REF], BUS_TYPE] = PV
-    if mode != "se":
+    # the voltage set point only applies to the positive sequence system
+    if mode != "se" and ppc.get("sequence", 1) == 1:
         ppc["bus"][gen_buses, VM] = gen_is_vm
 
     add_q_constraints(net, "gen", gen_is, ppc, f, t, delta)
@@ -287,13 +288,14 @@ def _build_pp_xward(net, ppc, f, t):
     xward_buses = bus_lookup[aux_buses]
     ppc["bus"][xward_buses[xw_is], BUS_TYPE] = PV
     ppc["bus"][xward_buses[~xw_is], BUS_TYPE] = NONE
-    ppc["bus"][xward_buses, VM] = net["xward"]["vm_pu"].values
+    if ppc.get("sequence", 1) == 1:
+        ppc["bus"][xward_buses, VM] = net["xward"]["vm_pu"].values
 
 
 def _build_pp_pq_element(net, ppc, element, f, t, inverted=False):
     delta = net._options["delta"]
     sign = -1 if inverted else 1
-    is_element = net._is_elements["%s_controllable" % element]
+    is_element = net._is_elements[f"{element}_controllable"]
     tab = net[element]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     buses = bus_lookup[tab["bus"].values[is_element]]
@@ -320,7 +322,7 @@ def add_q_constraints(net, element, is_element, ppc, f, t, delta, inverted=False
 
     # add qmin and qmax limit from q_capability_characteristic
     capability_curve_condition = (
-        "q_capability_characteristic" in net.keys() and net._options["enforce_q_lims"] and element in ["gen", "sgen"]
+        "q_capability_characteristic" in net and net._options["enforce_q_lims"] and element in ["gen", "sgen"]
     )
     if capability_curve_condition:
         curve_q = _calculate_qmin_qmax_from_q_capability_characteristics(net, element)
@@ -516,10 +518,10 @@ def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
         sum_slack_weights = np.sum(slack_weights_gen[subnet_gen_mask])
         if np.isclose(sum_slack_weights, 0):
             # ppc['gen'][subnet_gen_mask, SL_FAC] = 0
-            raise ValueError("Distributed slack contribution factors in island '%s' sum to zero." % str(subnet))
+            raise ValueError(f"Distributed slack contribution factors in island '{subnet!s}' sum to zero.")
         elif sum_slack_weights < 0:
             raise ValueError(
-                "Distributed slack contribution factors in island '%s'" % str(subnet)
+                f"Distributed slack contribution factors in island '{subnet!s}'"
                 + " sum to negative value. Please correct the data."
             )
         else:

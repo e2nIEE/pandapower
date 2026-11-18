@@ -15,6 +15,7 @@ from collections.abc import Iterable, Sequence
 
 import numpy as np
 import numpy.typing as npt
+from numpy import nan
 
 from pandapower.create._utils import (
     _add_to_entries_if_not_nan,
@@ -57,94 +58,50 @@ def create_impedance(
     bf0_pu: float | None = None,
     gt0_pu: float | None = None,
     bt0_pu: float | None = None,
+    min_angle_degree: float = nan,
+    max_angle_degree: float = nan,
     **kwargs,
 ) -> Int:
     """
     Creates an impedance element in per unit (pu).
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        The pandapower grid model in which the element is created.
+    Parameters:
+        net: The pandapower grid model in which the element is created.
+        from_bus: The starting bus of the impedance element.
+        to_bus: The ending bus of the impedance element.
+        rft_pu: The real part of the impedance from 'from_bus' to 'to_bus' in per unit.
+        xft_pu: The imaginary part of the impedance from 'from_bus' to 'to_bus' in per unit.
+        sn_mva: The rated power of the impedance element in MVA.
+        rtf_pu: The real part of the impedance from 'to_bus' to 'from_bus' in per unit.
+        xtf_pu: The imaginary part of the impedance from 'to_bus' to 'from_bus' in per unit.
+        name: The name of the impedance element.
+        in_service: The service status of the impedance element.
+        min_angle_degree: Minimum voltage angle difference between from_bus and to_bus (va_from - va_to) in degree,
+            considered in the OPF. NaN means unconstrained.
+        max_angle_degree: Maximum voltage angle difference between from_bus and to_bus (va_from - va_to) in degree,
+            considered in the OPF. NaN means unconstrained.
+        index: The index of the impedance element.
+        rft0_pu: The zero-sequence real part of the impedance from 'from_bus' to 'to_bus' in per unit.
+        xft0_pu: The zero-sequence imaginary part of the impedance from 'from_bus' to 'to_bus' in per unit.
+        rtf0_pu: The zero-sequence real part of the impedance from 'to_bus' to 'from_bus' in per unit.
+        xtf0_pu: The zero-sequence imaginary part of the impedance from 'to_bus' to 'from_bus' in per unit.
+        gf_pu: Conductance at the 'from_bus' in per unit.
+        bf_pu: Susceptance at the 'from_bus' in per unit.
+        gt_pu: Conductance at the 'to_bus' in per unit.
+        bt_pu: Susceptance at the 'to_bus' in per unit.
+        gf0_pu: The zero-sequence conductance at the 'from_bus' in per unit.
+        bf0_pu: The zero-sequence susceptance at the 'from_bus' in per unit.
+        gt0_pu: The zero-sequence conductance at the 'to_bus' in per unit.
+        bt0_pu: The zero-sequence susceptance at the 'to_bus' in per unit.
 
-    from_bus : int
-        The starting bus of the impedance element.
+    Keyword Args:
+        Additional arguments are added as columns to the net.impedance table.
 
-    to_bus : int
-        The ending bus of the impedance element.
-
-    rft_pu : float
-        The real part of the impedance from 'from_bus' to 'to_bus' in per unit.
-
-    xft_pu : float
-        The imaginary part of the impedance from 'from_bus' to 'to_bus' in per unit.
-
-    sn_mva : float
-        The rated power of the impedance element in MVA.
-
-    rtf_pu : float, optional
-        The real part of the impedance from 'to_bus' to 'from_bus' in per unit. Defaults to `rft_pu`.
-
-    xtf_pu : float, optional
-        The imaginary part of the impedance from 'to_bus' to 'from_bus' in per unit. Defaults to `xft_pu`.
-
-    name : str, optional
-        The name of the impedance element. Default is None.
-
-    in_service : bool, optional
-        The service status of the impedance element. Default is True.
-
-    index : int, optional
-        The index of the impedance element. Default is None.
-
-    rft0_pu : float, optional
-        The zero-sequence real part of the impedance from 'from_bus' to 'to_bus' in per unit. Default is None.
-
-    xft0_pu : float, optional
-        The zero-sequence imaginary part of the impedance from 'from_bus' to 'to_bus' in per unit. Default is None.
-
-    rtf0_pu : float, optional
-        The zero-sequence real part of the impedance from 'to_bus' to 'from_bus' in per unit. Default is `rft0_pu`.
-
-    xtf0_pu : float, optional
-        The zero-sequence imaginary part of the impedance from 'to_bus' to 'from_bus' in per unit. Default is `xft0_pu`.
-
-    gf_pu : float, optional
-        Conductance at the 'from_bus' in per unit. Default is 0.
-
-    bf_pu : float, optional
-        Susceptance at the 'from_bus' in per unit. Default is 0.
-
-    gt_pu : float, optional
-        Conductance at the 'to_bus' in per unit. Defaults to `gf_pu`.
-
-    bt_pu : float, optional
-        Susceptance at the 'to_bus' in per unit. Defaults to `bf_pu`.
-
-    gf0_pu : float, optional
-        The zero-sequence conductance at the 'from_bus' in per unit. Default is None.
-
-    bf0_pu : float, optional
-        The zero-sequence susceptance at the 'from_bus' in per unit. Default is None.
-
-    gt0_pu : float, optional
-        The zero-sequence conductance at the 'to_bus' in per unit. Defaults to `gf0_pu`.
-
-    bt0_pu : float, optional
-        The zero-sequence susceptance at the 'to_bus' in per unit. Defaults to `bf0_pu`.
-
-    kwargs : dict, optional
-        Additional arguments (for additional columns in net.impedance table).
-
-    Returns
-    -------
-    int
+    Returns:
         The index of the created impedance element.
 
-    Raises
-    ------
-    UserWarning
-        If required impedance parameters are missing.
+    Raises:
+        UserWarning: If required impedance parameters are missing.
     """
 
     index = _get_index_with_check(net, "impedance", index)
@@ -207,6 +164,9 @@ def create_impedance(
         _set_value_if_not_nan(net, index, gt0_pu, "gt0_pu", "impedance")
         _set_value_if_not_nan(net, index, bt0_pu, "bt0_pu", "impedance")
 
+    _set_value_if_not_nan(net, index, min_angle_degree, "min_angle_degree", "impedance")
+    _set_value_if_not_nan(net, index, max_angle_degree, "max_angle_degree", "impedance")
+
     return index
 
 
@@ -234,94 +194,50 @@ def create_impedances(
     bf0_pu: float | Iterable[float] | None = None,
     gt0_pu: float | Iterable[float] | None = None,
     bt0_pu: float | Iterable[float] | None = None,
+    min_angle_degree: float | Iterable[float] = nan,
+    max_angle_degree: float | Iterable[float] = nan,
     **kwargs,
 ) -> npt.NDArray[np.array]:
     """
     Creates an impedance element in per unit (pu).
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        The pandapower grid model in which the element is created.
+    Parameters:
+        net: The pandapower grid model in which the element is created.
+        from_buses: The starting buses of the impedance element.
+        to_buses: The ending buses of the impedance element.
+        rft_pu: The real part of the impedance from 'from_bus' to 'to_bus' in per unit.
+        xft_pu: The imaginary part of the impedance from 'from_bus' to 'to_bus' in per unit.
+        sn_mva: The rated power of the impedance element in MVA.
+        rtf_pu: The real part of the impedance from 'to_bus' to 'from_bus' in per unit.
+        xtf_pu: The imaginary part of the impedance from 'to_bus' to 'from_bus' in per unit.
+        name: The name of the impedance element.
+        in_service: The service status of the impedance element.
+        min_angle_degree: Minimum voltage angle difference between from_bus and to_bus (va_from - va_to) in degree,
+            considered in the OPF. NaN means unconstrained.
+        max_angle_degree: Maximum voltage angle difference between from_bus and to_bus (va_from - va_to) in degree,
+            considered in the OPF. NaN means unconstrained.
+        index: The index of the impedance element.
+        rft0_pu: The zero-sequence real part of the impedance from 'from_bus' to 'to_bus' in per unit.
+        xft0_pu: The zero-sequence imaginary part of the impedance from 'from_bus' to 'to_bus' in per unit.
+        rtf0_pu: The zero-sequence real part of the impedance from 'to_bus' to 'from_bus' in per unit.
+        xtf0_pu: The zero-sequence imaginary part of the impedance from 'to_bus' to 'from_bus' in per unit.
+        gf_pu: Conductance at the 'from_bus' in per unit.
+        bf_pu: Susceptance at the 'from_bus' in per unit.
+        gt_pu: Conductance at the 'to_bus' in per unit.
+        bt_pu: Susceptance at the 'to_bus' in per unit.
+        gf0_pu: The zero-sequence conductance at the 'from_bus' in per unit.
+        bf0_pu: The zero-sequence susceptance at the 'from_bus' in per unit.
+        gt0_pu: The zero-sequence conductance at the 'to_bus' in per unit.
+        bt0_pu: The zero-sequence susceptance at the 'to_bus' in per unit.
 
-    from_buses : int
-        The starting buses of the impedance element.
+    Keyword Args:
+        Additional arguments are added as columns to the net.impedance table.
 
-    to_buses : int
-        The ending buses of the impedance element.
-
-    rft_pu : float
-        The real part of the impedance from 'from_bus' to 'to_bus' in per unit.
-
-    xft_pu : float
-        The imaginary part of the impedance from 'from_bus' to 'to_bus' in per unit.
-
-    sn_mva : float
-        The rated power of the impedance element in MVA.
-
-    rtf_pu : float, optional
-        The real part of the impedance from 'to_bus' to 'from_bus' in per unit. Defaults to `rft_pu`.
-
-    xtf_pu : float, optional
-        The imaginary part of the impedance from 'to_bus' to 'from_bus' in per unit. Defaults to `xft_pu`.
-
-    name : str, optional
-        The name of the impedance element. Default is None.
-
-    in_service : bool, optional
-        The service status of the impedance element. Default is True.
-
-    index : int, optional
-        The index of the impedance element. Default is None.
-
-    rft0_pu : float, optional
-        The zero-sequence real part of the impedance from 'from_bus' to 'to_bus' in per unit. Default is None.
-
-    xft0_pu : float, optional
-        The zero-sequence imaginary part of the impedance from 'from_bus' to 'to_bus' in per unit. Default is None.
-
-    rtf0_pu : float, optional
-        The zero-sequence real part of the impedance from 'to_bus' to 'from_bus' in per unit. Default is `rft0_pu`.
-
-    xtf0_pu : float, optional
-        The zero-sequence imaginary part of the impedance from 'to_bus' to 'from_bus' in per unit. Default is `xft0_pu`.
-
-    gf_pu : float, optional
-        Conductance at the 'from_bus' in per unit. Default is 0.
-
-    bf_pu : float, optional
-        Susceptance at the 'from_bus' in per unit. Default is 0.
-
-    gt_pu : float, optional
-        Conductance at the 'to_bus' in per unit. Defaults to `gf_pu`.
-
-    bt_pu : float, optional
-        Susceptance at the 'to_bus' in per unit. Defaults to `bf_pu`.
-
-    gf0_pu : float, optional
-        The zero-sequence conductance at the 'from_bus' in per unit. Default is None.
-
-    bf0_pu : float, optional
-        The zero-sequence susceptance at the 'from_bus' in per unit. Default is None.
-
-    gt0_pu : float, optional
-        The zero-sequence conductance at the 'to_bus' in per unit. Defaults to `gf0_pu`.
-
-    bt0_pu : float, optional
-        The zero-sequence susceptance at the 'to_bus' in per unit. Defaults to `bf0_pu`.
-
-    kwargs : dict, optional
-        Additional arguments (for additional columns in net.impedance table).
-
-    Returns
-    -------
-    int
+    Returns:
         The index of the created impedance element.
 
-    Raises
-    ------
-    UserWarning
-        If required impedance parameters are missing.
+    Raises:
+        UserWarning: If required impedance parameters are missing.
     """
     _check_multiple_branch_elements(net, from_buses, to_buses, "Impedances")
 
@@ -381,6 +297,9 @@ def create_impedances(
         _add_to_entries_if_not_nan(net, "impedance", entries, index, "bf0_pu", bf0_pu)
         _add_to_entries_if_not_nan(net, "impedance", entries, index, "gt0_pu", gt0_pu)
         _add_to_entries_if_not_nan(net, "impedance", entries, index, "bt0_pu", bt0_pu)
+
+    _add_to_entries_if_not_nan(net, "impedance", entries, index, "min_angle_degree", min_angle_degree)
+    _add_to_entries_if_not_nan(net, "impedance", entries, index, "max_angle_degree", max_angle_degree)
 
     _set_multiple_entries(net, "impedance", index, entries=entries)
 

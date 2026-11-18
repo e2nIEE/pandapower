@@ -30,18 +30,17 @@ from pandapower.std_types import create_std_type
 logger = logging.getLogger(__name__)
 
 
-def create_cigre_network_hv(length_km_6a_6b=0.1):
+def create_cigre_network_hv(length_km_6a_6b: float = 0.1) -> pandapowerNet:
     """
-    Create the CIGRE HV Grid from final Report of Task Force C6.04.02:
-    "Benchmark Systems for Network Integration of Renewable and Distributed Energy Resources”, 2014.
+    Create the CIGRE HV Grid from final Report of Task Force C6.04.02: "Benchmark Systems for Network Integration of
+    Renewable and Distributed Energy Resources”, 2014.
 
-    OPTIONAL:
-        **length_km_6a_6b** (float, 0.1) - Length of the line segment 9 between buses 6a and 6b
-            which is intended to be optional with user-definable geometrical configuration, length
-            and installation type.
+    Parameters:
+        length_km_6a_6b: Length of the line segment 9 between buses 6a and 6b which is intended to be with
+            user-definable geometrical configuration, length and installation type.
 
-    OUTPUT:
-        **net** - The pandapower format network.
+    Returns:
+        net: The pandapower network.
     """
     net_cigre_hv = pandapowerNet(name="CIGRE HV Grid")
 
@@ -203,18 +202,17 @@ def create_cigre_network_hv(length_km_6a_6b=0.1):
     return net_cigre_hv
 
 
-def create_cigre_network_mv(with_der=False):
+def create_cigre_network_mv(with_der: bool | str = False) -> pandapowerNet:
     """
-    Create the CIGRE MV Grid from final Report of Task Force C6.04.02:
-    "Benchmark Systems for Network Integration of Renewable and Distributed Energy Resources”, 2014.
+    Create the CIGRE MV Grid from final Report of Task Force C6.04.02: "Benchmark Systems for Network Integration of
+    Renewable and Distributed Energy Resources”, 2014.
 
-    OPTIONAL:
-        **with_der** (boolean or str, False) - Range of DER consideration, which should be in
-            (False, "pv_wind", "all"). The DER types, dimensions and locations are taken from CIGRE
-            CaseStudy: "DER in Medium Voltage Systems"
+    Parameters:
+        with_der: Range of DER consideration, which should be in (False, "pv_wind", "all"). The DER types, dimensions
+            and locations are taken from CIGRE CaseStudy: "DER in Medium Voltage Systems"
 
-    OUTPUT:
-        **net** - The pandapower format network.
+    Returns:
+        net: The pandapower network.
     """
     if with_der is True:
         raise ValueError("'with_der=True' is deprecated. Please use 'with_der=pv_wind'")
@@ -416,13 +414,13 @@ def create_cigre_network_mv(with_der=False):
     return net_cigre_mv
 
 
-def create_cigre_network_lv():
+def create_cigre_network_lv() -> pandapowerNet:
     """
-    Create the CIGRE LV Grid from final Report of Task Force C6.04.02:
-    "Benchmark Systems for Network Integration of Renewable and Distributed Energy Resources”, 2014.
+    Create the CIGRE LV Grid from final Report of Task Force C6.04.02: "Benchmark Systems for Network Integration of
+    Renewable and Distributed Energy Resources”, 2014.
 
-    OUTPUT:
-        **net** - The pandapower format network.
+    Returns:
+        net: The pandapower network.
     """
     net_cigre_lv = pandapowerNet(name="CIGRE LV Grid")
 
@@ -683,7 +681,6 @@ def create_cigre_network_lv():
         pfe_kw=0.0,
         i0_percent=0.0,
         shift_degree=30.0,
-        tap_pos=0.0,
         name="Trafo R0-R1",
     )
 
@@ -699,7 +696,6 @@ def create_cigre_network_lv():
         pfe_kw=0.0,
         i0_percent=0.0,
         shift_degree=30.0,
-        tap_pos=0.0,
         name="Trafo I0-I1",
     )
 
@@ -715,7 +711,6 @@ def create_cigre_network_lv():
         pfe_kw=0.0,
         i0_percent=0.0,
         shift_degree=30.0,
-        tap_pos=0.0,
         name="Trafo C0-C1",
     )
 

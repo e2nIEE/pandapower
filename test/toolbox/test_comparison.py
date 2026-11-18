@@ -6,7 +6,7 @@ import copy
 import pandas as pd
 import pytest
 
-from pandapower.control.controller.trafo.ContinuousTapControl import ContinuousTapControl
+from pandapower.control.controller.trafo.continuous_tap_control import ContinuousTapControl
 from pandapower.create import create_buses
 from pandapower.networks.cigre_networks import create_cigre_network_lv
 from pandapower.toolbox.comparison import logger as tbc_logger

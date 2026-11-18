@@ -6,6 +6,7 @@ Networks that are used for tutorials AND tests are located here so that both tut
 """
 
 import numpy as np
+import pandas as pd
 
 from pandapower.create import (
     create_buses,
@@ -148,20 +149,20 @@ def simple_test_grid(load_scaling=1.0, sgen_scaling=1.0, with_gen=False, distrib
     create_line(net, 1, 4, 0.42e-2 * z_base / r, std_type, name="2-5")
     create_line(net, 2, 3, 0.67e-2 * z_base / r, std_type, name="3-4")
     create_line(net, 3, 4, 0.42e-2 * z_base / r, std_type, name="4-5")
-    net.line.c_nf_per_km = 0
+    net.line.c_nf_per_km = 0.0
 
-    net.line["temperature_degree_celsius"] = 20
-    net.line["reference_temperature_degree_celsius"] = 20
-    net.line["air_temperature_degree_celsius"] = 35
+    net.line["temperature_degree_celsius"] = 20.0
+    net.line["reference_temperature_degree_celsius"] = 20.0
+    net.line["air_temperature_degree_celsius"] = 35.0
     net.line["alpha"] = ALPHA_TDPF
     net.line["conductor_outer_diameter_m"] = 30.6e-3
-    net.line["mc_joule_per_m_k"] = 1490
+    net.line["mc_joule_per_m_k"] = 1490.0
     net.line["wind_speed_m_per_s"] = 0.6
-    net.line["wind_angle_degree"] = 45
-    net.line["solar_radiation_w_per_sq_m"] = 900
+    net.line["wind_angle_degree"] = 45.0
+    net.line["solar_radiation_w_per_sq_m"] = 900.0
     net.line["solar_absorptivity"] = 0.5
     net.line["emissivity"] = 0.5
-    net.line["tdpf"] = True
+    net.line["tdpf"] = pd.Series(True, index=net.line.index, dtype="boolean")
 
     create_ext_grid(net, 3, 1.05, name="G1")
     create_sgen(net, 0, 200, scaling=sgen_scaling, name="R1")

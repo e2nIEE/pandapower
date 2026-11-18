@@ -127,6 +127,88 @@ More detailed information about TDPF can be found in the tutorials:
 
 - `TDPF introduction <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/temperature_dependent_power_flow.ipynb>`__
 - `Sensitivity of TDPF parameters <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/temperature_dependent_power_flow_parameters.ipynb>`__
+- `Transformer temperatures <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/temperature_dependent_power_flow_trafo.ipynb>`__
+
+.. _tdpf_transformer_temperatures:
+
+Transformer temperatures
+````````````````````````
+
+In addition to the conductor temperature of the lines, TDPF reports the top-oil and hot-spot temperature
+of every in-service transformer (:code:`net.trafo` and :code:`net.trafo3w`). The calculation is based on
+the IEC 60076-7 loading guide and utilizes the python package
+`transformer-thermal-model <https://github.com/alliander-opensource/transformer-thermal-model>`__ developed by Alliander.
+
+This is an optional feature and requires an optional dependency. Install it with:
+
+.. code-block:: bash
+
+    pip install pandapower[tdpf]
+
+If the package is not installed, TDPF logs a warning and skips transformer temperature calculations.
+Line TDPF continues to work as before. Transformer temperature result columns are not created,
+so line-only TDPF users do not see columns filled with NaN values.
+
+Two additional input columns are read from :code:`net.trafo` and :code:`net.trafo3w`:
+
+.. tabularcolumns:: |p{0.30\linewidth}|p{0.15\linewidth}|p{0.45\linewidth}|
+.. csv-table::
+    :header: "Column", "Type", "Description"
+    :widths: 30, 15, 45
+
+    ``cooling_type``,string,"cooling type of the transformer, either ONAN or ONAF (default: ONAN)"
+    ``air_temperature_degree_celsius``,float,"ambient air temperature in °C (default: 35)"
+
+The temperature is *reported*, not fed back into the power flow. In contrast to the line TDPF, the
+transformer resistance :code:`r_sc` is never modified, because the thermal model runs as post-processing
+on the solved transformer loading. The results are therefore not iterated with the power flow and do not
+change voltages, flows or losses.
+
+The results are written to additional columns of :code:`net.res_trafo` and :code:`net.res_trafo3w`:
+
+.. tabularcolumns:: |p{0.35\linewidth}|p{0.30\linewidth}|p{0.35\linewidth}|
+.. csv-table::
+    :header: "Column", "Table", "Description"
+    :widths: 35, 30, 35
+
+    ``top_oil_temperature_degree_celsius``,"res_trafo, res_trafo3w","top-oil temperature in °C"
+    ``hot_spot_temperature_degree_celsius``,"res_trafo","hot-spot temperature in °C"
+    ``hot_spot_temperature_degree_celsius_hv``,"res_trafo3w","hot-spot temperature of the HV winding in °C"
+    ``hot_spot_temperature_degree_celsius_mv``,"res_trafo3w","hot-spot temperature of the MV winding in °C"
+    ``hot_spot_temperature_degree_celsius_lv``,"res_trafo3w","hot-spot temperature of the LV winding in °C"
+    ``temperature_degree_celsius``,"res_trafo, res_trafo3w","hottest hot-spot temperature in °C, used by the contingency limit checks"
+
+For a three winding transformer, :code:`temperature_degree_celsius` is the maximum of the three winding
+hot-spot temperatures, mirroring how :code:`loading_percent` aggregates the windings.
+
+Whether the model is solved for the steady state or for a transient depends on the :code:`tdpf_delay_s`
+power flow parameter, the same parameter that controls the thermal inertia of the lines:
+
+* :code:`tdpf_delay_s=None` (the default) gives the steady state temperature for the current loading.
+* A finite :code:`tdpf_delay_s` gives the temperature after this time step, starting from a cold
+  transformer. In a time series run (:code:`pandapower.timeseries.run_timeseries`), the top-oil temperature
+  of the previous time step is used as the initial condition, so the transformer warms up and cools down
+  continuously over the simulation.
+
+.. note::
+
+    The ONAN and ONAF cooling types share the same steady state temperature. They only differ in the
+    transient behaviour: an ONAF transformer has shorter oil and winding time constants and therefore
+    reaches its final temperature faster, not at a lower temperature.
+
+.. note::
+
+    Only the nameplate data that pandapower already stores is passed to the thermal model: the no-load
+    loss, the load loss, the rated apparent power and the rated voltages of each winding, which yield
+    the nominal currents. The optional specifications of the loading guide -- above all
+    :code:`winding_oil_gradient`, :code:`hot_spot_fac` and the winding and oil time constants -- are
+    left at the IEC 60076-7 defaults of the library (17 K, 1.3 and the values for the selected cooling
+    type).
+
+    The top-oil temperature depends only on the nameplate data and therefore matches a calculation with
+    modified optional specifications exactly. The hot-spot temperature does depend on them, so it will
+    differ from a calculation that uses a transformer-specific winding-oil gradient or hot-spot factor.
+    A wider set of input columns is not part of this implementation.
 
 .. autofunction:: pandapower.run.runpp
 

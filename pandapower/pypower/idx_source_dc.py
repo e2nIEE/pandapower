@@ -50,4 +50,4 @@ SOURCE_DC_MU_PMIN = 12  # Kuhn-Tucker multiplier on lower Pg limit (u/MW)
 # Additional added by pandapower
 SOURCE_SL_FAC = 13  # Slack contribution factor
 
-source_dc_cols = 14
+SOURCE_DC_COLS = 14

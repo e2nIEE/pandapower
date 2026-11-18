@@ -60,7 +60,7 @@ def test_pf_export():
 
     net = from_pfd(app, prj_name=prj_name)
 
-    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
+    all_diffs = validate_pf_conversion(net, tolerance=1e-9)
 
     tol = get_tol()
 
@@ -84,7 +84,7 @@ def test_pf_export_trafo3w():
 
     net = from_pfd(app, prj_name=prj_name)
 
-    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
+    all_diffs = validate_pf_conversion(net, tolerance=1e-9)
     tol = get_tol()
 
     # doesn't pass yet due to trafo3w implementation
@@ -103,7 +103,7 @@ def test_pf_export_trafo3w():
 def test_trafo_tap2_results():
     path = os.path.join(test_path, "converter", "testfiles", "trafo_tap_model.json")
     net = from_json(path)
-    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
+    all_diffs = validate_pf_conversion(net, tolerance=1e-9)
     tol = 2e-7
     for key, diff in all_diffs.items():
         if isinstance(diff, pd.Series):
@@ -124,7 +124,7 @@ def test_trafo3w_tap_dependent_imp_with_tc():
 
     net = from_pfd(app, prj_name=prj_name)
 
-    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
+    all_diffs = validate_pf_conversion(net, tolerance=1e-9)
 
     tol = {
         "diff_vm": 5e-3,
@@ -157,7 +157,7 @@ def test_pf_export_tap_changer():
 
     net.trafo3w["tap_changer_type"] = "Tabular"
 
-    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
+    all_diffs = validate_pf_conversion(net, tolerance=1e-9)
 
     tol = {
         "diff_vm": 5e-3,
@@ -190,7 +190,7 @@ def test_pf_export_partial_loads():
 
     net = from_pfd(app, prj_name=prj_name, pv_as_slack=True, handle_us="Nothing")
 
-    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
+    all_diffs = validate_pf_conversion(net, tolerance=1e-9)
 
     # tol = get_tol()
     tol = {
@@ -237,7 +237,7 @@ def test_pf_SC_meas_relocate():
     if Version(str(pf.__version__)) < Version("25.0.0"):
         net.controller.object[4].q_droop_mvar = -net.controller.object[4].q_droop_mvar
 
-    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
+    all_diffs = validate_pf_conversion(net, tolerance=1e-9)
 
     tol = {
         "diff_vm": 5e-3,
@@ -318,7 +318,7 @@ def test_pf_export_q_capability_curve():
         ),
     )
 
-    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9, enforce_q_lims=True)
+    all_diffs = validate_pf_conversion(net, tolerance=1e-9, enforce_q_lims=True)
 
     tol = {
         "diff_vm": 5e-3,
@@ -352,7 +352,7 @@ def test_shunt_tables():
 
     net = from_pfd(app, prj_name=prj_name)
 
-    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
+    all_diffs = validate_pf_conversion(net, tolerance=1e-9)
 
     tol = {"diff_vm": 1e-6, "diff_va": 1e-4, "line_diff": 1e-2, "ext_grid_p_diff": 1e-3, "ext_grid_q_diff": 1e-3}
 
@@ -385,7 +385,7 @@ def test_mixed_zip_loads_import():
 
     net = from_pfd(app, prj_name=prj_name)
 
-    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-6)
+    all_diffs = validate_pf_conversion(net, tolerance=1e-6)
 
     tol = get_tol()
 
@@ -406,7 +406,7 @@ def test_vdroop_ctrl_local():
 
     net = from_pfd(app, prj_name=prj_name)
 
-    all_diffs = validate_pf_conversion(net, tolerance_mva=1e-9)
+    all_diffs = validate_pf_conversion(net, tolerance=1e-9)
 
     tol = {
         "diff_vm": 5e-3,

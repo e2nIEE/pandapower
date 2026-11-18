@@ -3,8 +3,8 @@
 import json
 import logging
 
-from pandapower import pandapowerNet
 from pandapower.diagnostic import diagnostic
+from pandapower.network import pandapowerNet
 
 from . import cim_tools
 
@@ -12,9 +12,13 @@ from . import cim_tools
 class PandapowerDiagnostic:
     """
     Create a pandapower diagnostic dictionary with CIM IDs instead of pandapower IDs.
-    :param net: The pandapower network.
-    :param diagnostic_: The pandapower diagnostic. If None a pp.diagnostic(net) will be run. Optional, default: None.
-    :return: The pandapower diagnostic with CIM IDs.
+
+    Parameters:
+        net: The pandapower network.
+        diagnostic_: The pandapower diagnostic. If None a pp.diagnostic(net) will be run.
+
+    Returns:
+        The pandapower diagnostic with CIM IDs.
     """
 
     def __init__(self, net: pandapowerNet, diagnostic_: dict | None = None):
@@ -95,9 +99,9 @@ class PandapowerDiagnostic:
     def replace_pp_diagnostic_with_cim_ids(self) -> dict:
         """
         Create a pandapower diagnostic dictionary with CIM IDs instead of pandapower IDs.
-        :param net: The pandapower network.
-        :param diagnostic: The pandapower diagnostic. If None a pp.diagnostic(net) will be run. Optional, default: None.
-        :return: The pandapower diagnostic with CIM IDs.
+
+        Returns:
+            The pandapower diagnostic with CIM IDs.
         """
         if self.diagnostic is None:
             self.diagnostic = diagnostic(self.net)
@@ -114,9 +118,10 @@ class PandapowerDiagnostic:
     def serialize(self, diagnostic: dict, path_to_store: str):
         """
         Serialize a pandapower diagnostic as json to disk.
-        :param diagnostic: The pandapower diagnostic dictionary.
-        :param path_to_store: The path to store the json on the disk.
-        :return:
+
+        Parameters:
+            diagnostic: The pandapower diagnostic dictionary.
+            path_to_store: The path to store the json on the disk.
         """
         self.logger.info(f"Storing diagnostic to path: {path_to_store}")
         with open(path_to_store, mode="w", encoding="UTF-8") as fp:

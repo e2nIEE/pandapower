@@ -54,39 +54,28 @@ def draw_layers(
 ):
     """
     plots all the traces (which can be created using :func:`create_bus_trace`, :func:`create_line_trace`,
-    :func:`create_trafo_trace`)
-    to PLOTLY (see https://plot.ly/python/)
+    :func:`create_trafo_trace`) to PLOTLY (see https://plot.ly/python/)
 
-    INPUT:
-        **traces** - list of dicts which correspond to plotly traces
+    Parameters:
+        traces: list of dicts which correspond to plotly traces
         generated using: `create_bus_trace`, `create_line_trace`, `create_trafo_trace`
-
-    OPTIONAL:
-        **num_layers** (int, 0) - Used for nameing the file if filename is not set.
-        **on_map** (bool, False) - enables using mapbox plot in plotly
-
-        **map_style** (str, 'basic') - enables using mapbox plot in plotly
-
+        num_layers (int, 0): Used for nameing the file if filename is not set.
+        on_map (bool, False): enables using mapbox plot in plotly
+        map_style (str, 'basic'): enables using mapbox plot in plotly
             - 'streets'
             - 'bright'
             - 'light'
             - 'dark'
             - 'satellite'
+        showlegend (bool, 'True'): enables legend display
+        figsize (float, 1): aspectratio is multiplied by it in order to get final image size
+        aspectratio (tuple, 'auto'): when 'auto' it preserves original aspect ratio of the network geodata any custom
+            aspectration can be given as a tuple, e.g. (1.2, 1)
+        filename (str, None): plots to a html file called filename if not None.
+        auto_open (bool, 'True'): automatically open plot in browser
 
-        **showlegend** (bool, 'True') - enables legend display
-
-        **figsize** (float, 1) - aspectratio is multiplied by it in order to get final image size
-
-        **aspectratio** (tuple, 'auto') - when 'auto' it preserves original aspect ratio of the
-        network geodata any custom aspectration can be given as a tuple, e.g. (1.2, 1)
-
-        **filename** (str, None) - plots to a html file called filename if not None.
-
-        **auto_open** (bool, 'True') - automatically open plot in browser
-
-    OUTPUT:
-        **figure** (graph_objs._figure.Figure) figure object
-
+    Returns:
+        figure (graph_objs._figure.Figure): figure object
     """
     if on_map:
         try:

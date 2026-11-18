@@ -171,7 +171,7 @@ def attach_to_group(
         elif no_row == 1:
             # handle different reference_column
             existing_rc = net.group.reference_column.loc[group_et].at[index]
-            if existing_rc != rc:
+            if pd.notna(existing_rc) and existing_rc != rc:
                 if take_existing_reference_columns:
                     temp_gr = create_group(net, [et], [elm], reference_columns=rc)
                     set_group_reference_column(net, temp_gr, existing_rc, element_type=et)
@@ -352,9 +352,9 @@ def group_row(net: pandapowerNet, index: int, element_type: str) -> pd.Series:
     if isinstance(row, pd.Series):
         return row
     elif isinstance(row, pd.DataFrame):
-        raise ValueError(f"Multiple {element_type} rows for group {index}")
+        raise TypeError(f"Multiple {element_type} rows for group {index}")
     else:
-        raise ValueError(f"Returning row {element_type} for group {index} failed.")
+        raise TypeError(f"Returning row {element_type} for group {index} failed.")
 
 
 def isin_group(
@@ -379,7 +379,7 @@ def isin_group(
         Information whether the element are in any group
     """
     if isinstance(element_index, str):
-        raise ValueError("element_index must be an integer or a list of integers.")
+        raise TypeError("element_index must be an integer or a list of integers.")
     single_element = np.isscalar(element_index)
     element_index = np.atleast_1d(element_index).tolist()
     if index is None:
@@ -424,7 +424,7 @@ def element_associated_groups(
     associated = pd.Series({key: [] for key in element_index})
     for idx in gr_et.index:
         ass = pd.Index(element_index).intersection(group_element_index(net, idx, element_type))
-        associated.loc[ass] = associated.loc[ass].apply(lambda x, idx=idx: x + [idx])
+        associated.loc[ass] = associated.loc[ass].apply(lambda x, _idx=idx: x + [_idx])
     if not return_empties:
         associated = associated.loc[associated.apply(len).astype(bool)]
     associated_: dict = associated.to_dict()
@@ -683,15 +683,15 @@ def _sum_powers(net, index, formula_character, unit):
             continue
         idx = group_element_index(net, index, et)
         res_et = "res_" + et
-        if res_et not in net.keys():
+        if res_et not in net:
             no_res_table_found.append(et)
             continue
         res_idx = net[res_et].index.intersection(idx)
         sign = 1 if et not in ["ext_grid", "gen", "sgen"] else -1
         if len(res_idx) != len(idx):
             missing_res_idx.append(et)
-        col1 = "%s_%s" % (formula_character, unit)
-        col2 = "%sl_%s" % (formula_character, unit)
+        col1 = f"{formula_character}_{unit}"
+        col2 = f"{formula_character}l_{unit}"
         if col1 in net[res_et].columns:
             power += sign * net[res_et][col1].loc[res_idx].sum()
         elif col2 in net[res_et].columns:

@@ -1,7 +1,7 @@
 # Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
 # and Energy System Technology (IEE), Kassel. All rights reserved.
 
-from pandapower.pypower.idx_brch import branch_cols as start
+from pandapower.pypower.idx_brch import BRANCH_COLS as start
 
 # todo: add comments to describe the variables!
 
@@ -30,4 +30,4 @@ VKSS_ANGLE_T = start + 19
 IKSS_ANGLE_F = start + 20
 IKSS_ANGLE_T = start + 21
 
-branch_cols_sc = 22
+BRANCH_COLS_SC = 22

@@ -11,13 +11,13 @@ import pytest
 import pandapower as pp
 from pandapower.converter.matpower import from_mpc, to_mpc
 from pandapower.converter.pypower import from_ppc, to_ppc
-from pandapower.networks import case14, case24_ieee_rts
+from pandapower.networks import case14
 from pandapower.pypower.idx_brch import F_BUS, T_BUS, TAP
 from pandapower.pypower.idx_bus import BASE_KV
-from pandapower.results import reset_results
-from pandapower.run import runpp, set_user_pf_options
+from pandapower.run import runpp
 from pandapower.toolbox.comparison import nets_equal
 from test import test_path
+from test.converter.test_from_ppc import get_testgrids
 
 matpowercaseframes_imported = find_spec("matpowercaseframes") is not None
 
@@ -25,21 +25,24 @@ logger = logging.getLogger(__name__)
 
 
 def test_from_mpc_mat():
-    case24 = case24_ieee_rts()
-    set_user_pf_options(case24)
+    """
+    The .mat case gives the results of the converted PYPOWER case24_ieee_rts, whose conversion is validated
+    against PYPOWER power flow results in test_pypower_cases. The pandapower.networks case24_ieee_rts is no
+    reference, since its transformers with the tap at the lv bus were converted with the tap at the hv bus.
+    """
+    case24 = from_ppc(get_testgrids("pypower_cases", "case24_ieee_rts.json"), f_hz=60)
     this_folder = os.path.join(test_path, "converter")
     mat_case = os.path.join(this_folder, "case24_ieee_rts.mat")
     case24_from_mpc = from_mpc(mat_case, f_hz=60, casename_mpc_file="mpc", tap_side="hv")
-    # TODO: remove after https://github.com/e2nIEE/pandapower/pull/2813:
-    #  reset 3ph results (new columns in case24 but not in from_mpc, would be solved by 3ph powerflow, so not relevant)
-    reset_results(case24, "pf_3ph")
-    reset_results(case24_from_mpc, "pf_3ph")
 
     runpp(case24)
     runpp(case24_from_mpc)
 
     assert case24_from_mpc.converged
-    assert nets_equal(case24, case24_from_mpc, check_only_results=True)
+    # res_bus contains the power per bus: the reactive power of the slack bus can be shared differently by the
+    # ext_grid and the gens at that bus
+    for res in ["res_bus", "res_line", "res_trafo", "res_load"]:
+        assert np.allclose(case24[res].values, case24_from_mpc[res].values, equal_nan=True), res
 
 
 @pytest.mark.skipif(not matpowercaseframes_imported, reason="matpowercaseframes is needed to convert .m files.")

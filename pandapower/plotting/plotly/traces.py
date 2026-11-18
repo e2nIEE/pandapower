@@ -30,7 +30,7 @@ import pandas as pd
 
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.network import ADict
-from pandapower.plotting.plotly.get_colors import get_plotly_cmap, get_plotly_color
+from pandapower.plotting.plotly.get_colors import get_plotly_cmap, get_plotly_color, get_plotly_colorscale
 from pandapower.plotting.plotly.mapbox_plot import _on_map_test
 
 if find_spec("plotly"):
@@ -101,7 +101,7 @@ def create_edge_center_trace(
     """
     Creates a plotly trace of pandapower buses.
 
-    INPUT:
+    Parameters:
         line traces (from pandapowerNet): The already generated line traces with center geodata
         size (int, 5): patch size
         patch_type (str, "circle"): patch type, can be
@@ -109,11 +109,10 @@ def create_edge_center_trace(
             - "square" for a rectangle
             - "diamond" for a diamond
             - much more patch types at https://plot.ly/python/reference/#scatter-marker
-        infofunc (pd.Series, None): hoverinfo for each trace element. Indices should correspond
-            to the pandapower element indices
+        infofunc (pd.Series, None): hoverinfo for each trace element. Indices should correspond to the pandapower
+            element indices
         trace_name (String, "buses"): name of the trace which will appear in the legend
         color (String, "blue"): color of buses in the trace
-
     """
 
     center_trace = {
@@ -164,13 +163,13 @@ def create_bus_trace(
     colormap_column="vm_pu",
 ):
     """
-    Creates a plotly trace of pandapower buses. It is a wrapper function for the more generic
-    _create_node_trace function.
+    Creates a plotly trace of pandapower buses. It is a wrapper function for the more generic _create_node_trace
+    function.
 
-    INPUT:
+    Parameters:
         net (pandapowerNet): The pandapower network
-        buses (list, None): The buses for which the collections are created.
-            If None, all buses in the network are considered.
+        buses (list, None): The buses for which the collections are created. If None, all buses in the network are
+            considered.
         size (int, 5): patch size
         patch_type (str, "circle"): patch type, can be
             - "circle" for a circle
@@ -178,11 +177,11 @@ def create_bus_trace(
             - "diamond" for a diamond
             - all types for plots at https://plotly.com/python/reference/#scatter-marker-symbol
             - all types for maps at https://plotly.com/python/reference/#scatter-marker-symbol
-        infofunc (pd.Series, None): hoverinfo for bus elements. Indices should correspond to
-            the pandapower element indices
+        infofunc (pd.Series, None): hoverinfo for bus elements. Indices should correspond to the pandapower element
+            indices
         trace_name (String, "buses"): name of the trace which will appear in the legend
         color (String, "blue"): color of buses in the trace
-        cmap (String, None): name of a colormap which exists within plotly
+        cmap (String, None): name of a matplotlib or plotly colormap
             (Greys, YlGnBu, Greens, YlOrRd, Bluered, RdBu, Reds, Blues, Picnic, Rainbow,
             Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis) alternatively a custom
             discrete colormap can be used. Append "_r" for inversion.
@@ -192,7 +191,6 @@ def create_bus_trace(
         cmax (float, None): colorbar range maximum
         cpos (float, 1.1): position of the colorbar
         colormap_column (str, "vm_pu"): set color of bus according to this variable
-
     """
     node_element = "bus"
     branch_element = "line"
@@ -237,25 +235,24 @@ def _create_node_trace(
     branch_element="line",
 ):
     """
-    Creates a plotly trace of node elements. In pandapower, it should be called by
-    create_bus_traces. The rather generic, non-power net specific names were introduced to make it
-    usable in other packages, e.g. for pipe networks.
+    Creates a plotly trace of node elements. In pandapower, it should be called by create_bus_traces. The rather
+    generic, non-power net specific names were introduced to make it usable in other packages, e.g. for pipe
+    networks.
 
-    Parametrs:
+    Parameters:
         net: The network
-        nodes (list, None): The nodes for which the collections are created.
-            If None, all nodes in the network are considered.
+        nodes (list, None): The nodes for which the collections are created. If None, all nodes in the network are
+            considered.
         size (int, 5): patch size
         patch_type (str, "circle"): patch type, can be
             - "circle" for a circle
             - "square" for a rectangle
             - "diamond" for a diamond
             - much more patch types at https://plot.ly/python/reference/#scatter-marker
-        infofunc (pd.Series, None): hoverinfo for node elements. Indices should correspond to
-            the node element indices
+        infofunc (pd.Series, None): hoverinfo for node elements. Indices should correspond to the node element indices
         trace_name (String, "buses"): name of the trace which will appear in the legend
         color (String, "blue"): color of nodes in the trace
-        cmap (String, None): name of a colormap which exists within plotly
+        cmap (String, None): name of a matplotlib or plotly colormap
             (Greys, YlGnBu, Greens, YlOrRd, Bluered, RdBu, Reds, Blues, Picnic, Rainbow,
             Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis) alternatively a custom
             discrete colormap can be used
@@ -265,11 +262,8 @@ def _create_node_trace(
         cmax (float, None): colorbar range maximum
         cpos (float, 1.1): position of the colorbar
         colormap_column (str, "vm_pu"): set color of bus according to this variable
-        node_element (str, "bus"): name of the node element in the net. In a pandapower net,
-            this is always "bus"
-        branch_element (str, "line"): name of the branch element in the net. In a pandapower
-            net, this is always "line"
-
+        node_element (str, "bus"): name of the node element in the net. In a pandapower net, this is always "bus"
+        branch_element (str, "line"): name of the branch element in the net. In a pandapower net, this is always "line"
     """
     if not PLOTLY_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "plotly")
@@ -331,7 +325,7 @@ def _create_node_trace(
             color=cmap_vals,
             cmin=cmin,
             cmax=cmax,
-            colorscale=cmap,
+            colorscale=get_plotly_colorscale(cmap),
             colorbar=ColorBar(thickness=10, x=cpos),
             symbol=patch_type,
         )
@@ -403,21 +397,21 @@ def create_line_trace(
     dash="solid",
 ):
     """
-    Creates a plotly trace of pandapower lines. It is a power net specific wrapper function for the
-    more generic _create_line_trace function.
+    Creates a plotly trace of pandapower lines. It is a power net specific wrapper function for the more generic
+    _create_line_trace function.
 
-    INPUT:
+    Parameters:
         net (pandapowerNet): The pandapower network
-        lines (list, None): The lines for which the collections are created.
-            If None, all lines in the network are considered.
+        lines (list, None): The lines for which the collections are created. If None, all lines in the network are
+            considered.
         width (int, 1): line width
-        infofunc (pd.Series, None): hoverinfo for line elements. Indices should correspond to
-            the pandapower element indices
+        infofunc (pd.Series, None): hoverinfo for line elements. Indices should correspond to the pandapower element
+            indices
         trace_name (String, "lines"): name of the trace which will appear in the legend
         color (String, "grey"): color of lines in the trace
         legendgroup (String, None): defines groups of layers that will be displayed in a legend
             e.g. groups according to voltage level (as used in `vlevel_plotly`)
-        cmap (String, None): name of a colormap which exists within plotly if set to True default `Jet`
+        cmap (String, None): name of a matplotlib or plotly colormap if set to True default `Jet`
             colormap is used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd,
             Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis
             To revert the color map, append "_r" to the name.
@@ -427,7 +421,6 @@ def create_line_trace(
         cmin (float, None): colorbar range minimum
         cmax (float, None): colorbar range maximum
         cpos (float, 1.1): position of the colorbar
-
     """
 
     branch_element = "line"
@@ -479,21 +472,21 @@ def create_dcline_trace(
     hoverlabel=None,
 ):
     """
-    Creates a plotly trace of pandapower dclines. It is a power net specific wrapper function for the
-    more generic _create_line_trace function.
+    Creates a plotly trace of pandapower dclines. It is a power net specific wrapper function for the more generic
+    _create_line_trace function.
 
-    INPUT:
+    Parameters:
         net (pandapowerNet): The pandapower network
-        dclines (list, None): The lines for which the collections are created.
-            If None, all lines in the network are considered.
+        dclines (list, None): The lines for which the collections are created. If None, all lines in the network are
+            considered.
         width (int, 1): line width
-        infofunc (pd.Series, None): hoverinfo for dcline elements. Indices should correspond to
-            the pandapower element indices
+        infofunc (pd.Series, None): hoverinfo for dcline elements. Indices should correspond to the pandapower element
+            indices
         trace_name (String, "lines"): name of the trace which will appear in the legend
         color (String, "grey"): color of dclines in the trace
         legendgroup (String, None): defines groups of layers that will be displayed in a legend
             e.g. groups according to voltage level (as used in `vlevel_plotly`)
-        cmap (String, None): name of a colormap which exists within plotly if set to True default `Jet`
+        cmap (String, None): name of a matplotlib or plotly colormap if set to True default `Jet`
             colormap is used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd,
             Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis
             To revert the color map, append "_r" to the name.
@@ -503,7 +496,6 @@ def create_dcline_trace(
         cmin (float, None): colorbar range minimum
         cmax (float, None): colorbar range maximum
         cpos (float, 1.1): position of the colorbar
-
     """
 
     branch_element = "dcline"
@@ -559,23 +551,23 @@ def _create_branch_trace(
     dash="solid",
 ):
     """
-    Creates a plotly trace of branch elements. The rather generic, non-power net specific names
-    were introduced to make it usable in other packages, e.g. for pipe networks.
+    Creates a plotly trace of branch elements. The rather generic, non-power net specific names were introduced to
+    make it usable in other packages, e.g. for pipe networks.
 
-    INPUT:
+    Parameters:
         net (pandapowerNet): The network
-        branches (list, None): The branches for which the collections are created.
-            If None, all branches in the network are considered.
+        branches (list, None): The branches for which the collections are created. If None, all branches in the network
+            are considered.
         use_branch_geodata (bool, True): whether the geodata of the branch tables should be used
         respect_separators (bool, True): whether separating elements like switches should be considered
         width (int, 1): branch width
         color (String, "grey"): color of lines in the trace
-        infofunc (pd.Series, None): hoverinfo for line elements. Indices should correspond to
-            the pandapower element indices
+        infofunc (pd.Series, None): hoverinfo for line elements. Indices should correspond to the pandapower element
+            indices
         trace_name (String, "lines"): name of the trace which will appear in the legend
         legendgroup (String, None): defines groups of layers that will be displayed in a legend
             e.g. groups according to voltage level (as used in `vlevel_plotly`)
-        cmap (String, None): name of a colormap which exists within plotly if set to True default `Jet`
+        cmap (String, None): name of a matplotlib or plotly colormap if set to True default `Jet`
             colormap is used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd,
             Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis
         cmap_vals (list, None): values used for coloring using colormap
@@ -584,20 +576,18 @@ def _create_branch_trace(
         cmin (float, None): colorbar range minimum
         cmax (float, None): colorbar range maximum
         cpos (float, 1.1): position of the colorbar
-        branch_element (str, "line"): name of the branch element in the net. In a pandapower
-            net, this is always "line"
-        separator_element (str, "switch"): name of the separator element in the net. In a
-            pandapower net, this is always "switch"
-        node_element (str, "bus"): name of the node element in the net. In a pandapower net,
-            this is alwas "bus" (net.bus)
-
+        branch_element (str, "line"): name of the branch element in the net. In a pandapower net, this is always "line"
+        separator_element (str, "switch"): name of the separator element in the net. In a pandapower net, this is always
+            "switch"
+        node_element (str, "bus"): name of the node element in the net. In a pandapower net, this is alwas "bus"
+            (net.bus)
     """
     if not PLOTLY_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "plotly")
 
     color = get_plotly_color(color)
 
-    # defining branches (lines) to be plot
+    # defining branches (lines) to be plotted
     branches = net[branch_element].index.tolist() if branches is None else list(branches)
     if len(branches) == 0:
         return []
@@ -687,13 +677,22 @@ def _create_branch_trace(
             "line": Line(width=width, color=line_color, dash=dash),
             "showlegend": False,
             "legendgroup": legendgroup,
+            "x": (
+                _get_branch_geodata_plotly(
+                    net, branches_to_plot.loc[idx:idx], use_branch_geodata, branch_element, node_element
+                )
+            )[0],
+            "y": (
+                _get_branch_geodata_plotly(
+                    net, branches_to_plot.loc[idx:idx], use_branch_geodata, branch_element, node_element
+                )
+            )[1],
         }
 
-        line_trace["x"], line_trace["y"] = _get_branch_geodata_plotly(
-            net, branches_to_plot.loc[idx:idx], use_branch_geodata, branch_element, node_element
-        )
-
         branch_traces.append(line_trace)
+
+    if not branch_traces:
+        return []
 
     # enable legend for one element to make the legend group show up in the legend:
     branch_traces[0]["showlegend"] = True
@@ -720,7 +719,7 @@ def _create_branch_trace(
                     cmax=cmax,
                     color="rgb(255,255,255)",
                     opacity=0,
-                    colorscale=cbar_cmap_name,
+                    colorscale=get_plotly_colorscale(cbar_cmap_name),
                     colorbar=ColorBar(thickness=10, x=cpos),
                 ),
             }
@@ -810,24 +809,24 @@ def create_trafo_trace(
     """
     Creates a plotly trace of pandapower trafos.
 
-    INPUT:
+    Parameters:
         net (pandapowerNet): The pandapower network
-        trafos (list, None): The trafos for which the collections are created.
-            If None, all trafos in the network are considered.
-        trafotype (String, "2W"): trafotype can be 2W or 3W and can define which transformer table is taken (trafo or trafo3w)
+        trafos (list, None): The trafos for which the collections are created. If None, all trafos in the network are
+            considered.
+        trafotype (String, "2W"): trafotype can be 2W or 3W and can define which transformer table is taken (trafo or
+            trafo3w)
         width (int, 5): line width
-        infofunc (pd.Series, None): hoverinfo for trafo elements. Indices should correspond
-            to the pandapower element indices
+        infofunc (pd.Series, None): hoverinfo for trafo elements. Indices should correspond to the pandapower element
+            indices
         trace_name (String, "lines"): name of the trace which will appear in the legend
         color (String, "green"): color of lines in the trace
-        cmap (bool, False): name of a colormap which exists within plotly (Greys, YlGnBu,
+        cmap (bool, False): name of a colormap which exists within matplotlib or plotly (Greys, YlGnBu,
             Greens, YlOrRd, Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot,
             Blackbody, Earth, Electric, Viridis)
         cmap_vals (list, None): values used for coloring using colormap
         cbar_title (String, None): title for the colorbar
         cmin (float, None): colorbar range minimum
         cmax (float, None): colorbar range maximum
-
     """
     if not PLOTLY_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "plotly")

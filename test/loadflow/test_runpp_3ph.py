@@ -27,6 +27,7 @@ from pandapower.create import (
     create_shunt,
     create_switch,
     create_transformer_from_parameters,
+    create_xward,
 )
 from pandapower.file_io import from_json
 from pandapower.network import pandapowerNet
@@ -883,6 +884,47 @@ def test_2trafos():
     runpp_3ph_with_consistency_checks(net)
     assert net["converged"]
     assert np.allclose(net.res_ext_grid_3ph.iloc[0].values, net.res_ext_grid_3ph.iloc[1].values)
+
+
+@pytest.mark.parametrize(
+    "add_element",
+    [
+        lambda net, bus: create_gen(net, bus, p_mw=1.0, vm_pu=1.0),
+        lambda net, bus: create_xward(net, bus, ps_mw=0, qs_mvar=0, pz_mw=0, qz_mvar=0, r_ohm=1, x_ohm=10, vm_pu=1.0),
+        lambda net, bus: create_xward(net, bus, ps_mw=0, qs_mvar=0, pz_mw=1, qz_mvar=1, r_ohm=1, x_ohm=10, vm_pu=1.02),
+    ],
+    ids=["gen_vm_1", "xward_vm_1", "xward_vm_1.02_with_pz"],
+)
+def test_3ph_voltage_controlled_elements_match_runpp(add_element):
+    """A balanced network with a gen or an xward gives the same results in runpp_3ph and runpp."""
+    net = pandapowerNet(name="test_3ph_voltage_controlled_elements_match_runpp")
+    b1 = create_bus(net, 20.0)
+    b2 = create_bus(net, 20.0)
+    create_ext_grid(net, b1, s_sc_max_mva=1000, rx_max=0.1, x0x_max=1.0, r0x0_max=0.1)
+    create_line_from_parameters(
+        net,
+        b1,
+        b2,
+        length_km=1,
+        r_ohm_per_km=1,
+        x_ohm_per_km=1,
+        c_nf_per_km=1,
+        r0_ohm_per_km=1,
+        x0_ohm_per_km=1,
+        c0_nf_per_km=1,
+        max_i_ka=1,
+    )
+    add_element(net, b2)
+
+    runpp(net)
+    runpp_3ph(net)
+
+    assert net.converged
+    eg_3ph = net.res_ext_grid_3ph.iloc[0]
+    assert np.isclose(eg_3ph[["p_a_mw", "p_b_mw", "p_c_mw"]].sum(), net.res_ext_grid.p_mw.iloc[0])
+    assert np.isclose(eg_3ph[["q_a_mvar", "q_b_mvar", "q_c_mvar"]].sum(), net.res_ext_grid.q_mvar.iloc[0])
+    for phase in "abc":
+        assert np.allclose(net.res_bus_3ph[f"vm_{phase}_pu"], net.res_bus.vm_pu)
 
 
 def test_3ph_isolated_nodes():

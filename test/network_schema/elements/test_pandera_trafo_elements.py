@@ -79,9 +79,9 @@ class TestTrafoRequiredFields:
         list(
             itertools.chain(
                 itertools.product(["hv_bus", "lv_bus"], positiv_ints_plus_zero),
-                itertools.product(["sn_mva", "vn_hv_kv", "vn_lv_kv", "vk_percent"], positiv_floats),
-                itertools.product(["vkr_percent", "pfe_kw", "i0_percent"], positiv_floats_plus_zero),
-                itertools.product(["shift_degree"], all_allowed_floats),
+                itertools.product(["sn_mva", "vn_hv_kv", "vn_lv_kv"], positiv_floats),
+                itertools.product(["pfe_kw"], positiv_floats_plus_zero),
+                itertools.product(["shift_degree", "vkr_percent", "i0_percent", "vk_percent"], all_allowed_floats),
                 itertools.product(["parallel"], positiv_ints),
                 itertools.product(["in_service"], bools),
             )
@@ -103,12 +103,16 @@ class TestTrafoRequiredFields:
             itertools.chain(
                 itertools.product(["hv_bus", "lv_bus"], [float(np.nan), pd.NA, None, *negativ_ints, *not_ints_list]),
                 itertools.product(
-                    ["sn_mva", "vn_hv_kv", "vn_lv_kv", "vk_percent"],
+                    ["sn_mva", "vn_hv_kv", "vn_lv_kv"],
                     [float(np.nan), pd.NA, None, 0.0, *negativ_floats, *not_floats_list],
                 ),
                 itertools.product(
-                    ["vkr_percent", "pfe_kw", "i0_percent"],
+                    ["pfe_kw"],
                     [float(np.nan), pd.NA, None, *negativ_floats, *not_floats_list],
+                ),
+                itertools.product(
+                    ["vkr_percent", "i0_percent", "vk_percent"],
+                    [float(np.nan), pd.NA, None, *not_floats_list],
                 ),
                 itertools.product(["shift_degree"], [float(np.nan), pd.NA, None, *not_floats_list]),
                 itertools.product(["parallel"], [float(np.nan), pd.NA, None, 0, *negativ_ints, *not_ints_list]),
@@ -863,6 +867,47 @@ class TestTrafoCrossFieldValidations:
         net.trafo = _create_valid_trafo_dataframe()
         net.trafo["tap2_min"] = 3.0
         net.trafo["tap2_max"] = -3.0
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+
+class TestTrafoAngleLimits:
+    """Tests for the OPF branch angle difference limits"""
+
+    def test_min_less_equal_max_passes(self):
+        net = _create_net_with_buses()
+        net.trafo = _create_valid_trafo_dataframe()
+        net.trafo["min_angle_degree"] = -30.0
+        net.trafo["max_angle_degree"] = 30.0
+        validate_network(net)
+
+    def test_min_greater_than_max_fails(self):
+        net = _create_net_with_buses()
+        net.trafo = _create_valid_trafo_dataframe()
+        net.trafo["min_angle_degree"] = 30.0
+        net.trafo["max_angle_degree"] = -30.0
+        with pytest.raises(pa.errors.SchemaError):
+            validate_network(net)
+
+    def test_nan_passes(self):
+        net = _create_net_with_buses()
+        net.trafo = _create_valid_trafo_dataframe()
+        net.trafo["min_angle_degree"] = float(np.nan)
+        net.trafo["max_angle_degree"] = float(np.nan)
+        validate_network(net)
+
+    def test_columns_are_optional(self):
+        net = _create_net_with_buses()
+        net.trafo = _create_valid_trafo_dataframe()
+        assert "min_angle_degree" not in net.trafo.columns
+        assert "max_angle_degree" not in net.trafo.columns
+        validate_network(net)
+
+    @pytest.mark.parametrize("parameter", ["min_angle_degree", "max_angle_degree"])
+    def test_non_float_fails(self, parameter):
+        net = _create_net_with_buses()
+        net.trafo = _create_valid_trafo_dataframe()
+        net.trafo[parameter] = "not a float"
         with pytest.raises(pa.errors.SchemaError):
             validate_network(net)
 

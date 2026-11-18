@@ -21,6 +21,7 @@ from pandapower.auxiliary import (
     _init_runopp_options,
     _init_runpp_options,
     _internal_stored,
+    warn_and_fix_parameter_renaming,
 )
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.optimal_powerflow import _optimal_powerflow
@@ -49,7 +50,7 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
 
     :param net: pandaPower network
     :param overwrite: specifies whether the user_pf_options is removed before setting new options
-    :param kwargs: load flow options, e.g. tolerance_mva = 1e-3
+    :param kwargs: load flow options, e.g. tolerance = 1e-3
     :return: None
     """
     standard_parameters = [
@@ -70,7 +71,7 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
         "init_vm_pu",
         "init_va_degree",
         "init_results",
-        "tolerance_mva",
+        "tolerance",
         "trafo_loading",
         "numba",
         "ac",
@@ -89,12 +90,11 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
         net["user_pf_options"] = {}
 
     net.user_pf_options.update({key: val for key, val in kwargs.items() if key in standard_parameters})
-
     additional_kwargs = {key: val for key, val in kwargs.items() if key not in standard_parameters}
 
     # this part is to inform user and to make typos in parameters visible
     if len(additional_kwargs) > 0:
-        logger.info("parameters %s are not in the list of standard options" % list(additional_kwargs.keys()))
+        logger.info(f"parameters {list(additional_kwargs.keys())} are not in the list of standard options")
 
         net.user_pf_options.update(additional_kwargs)
 
@@ -105,7 +105,7 @@ def runpp(
     calculate_voltage_angles=True,
     init="auto",
     max_iteration="auto",
-    tolerance_mva=1e-8,
+    tolerance=1e-8,
     trafo_model="t",
     trafo_loading="current",
     enforce_p_lims=False,
@@ -172,7 +172,7 @@ def runpp(
             - 30 for "nr" with "tdpf"
             - 40 for "helm"
 
-        tolerance_mva (float, 1e-8): loadflow termination condition referring to P / Q mismatch of node power in MVA
+        tolerance (float, 1e-8): loadflow termination condition referring to P / Q mismatch of node power in MVA
         trafo_model (str, "t"): transformer equivalent circuit model
             pandapower provides two equivalent circuit models for the transformer:
 
@@ -216,9 +216,12 @@ def runpp(
             according to contribution factor weights for external grids
             and generators.
         tdpf (bool, False): Temperature Dependent Power Flow (TDPF). If True, line temperature is calculated based on
-            the TDPF parameters in net.line table.
+            the TDPF parameters in net.line table. Additionally, the top-oil and hot-spot temperatures of all in-service
+            transformers in net.trafo and net.trafo3w are calculated as post-processing, based on their nameplate data
+            and the optional columns cooling_type and air_temperature_degree_celsius. See the TDPF section of the
+            documentation.
         tdpf_delay_s (float, None): TDPF parameter, specifies the time delay in s to consider thermal inertia of
-            conductors.
+            conductors and transformers. None means steady state.
 
     Keyword Args:
         lightsim2grid ((bool,str), "auto"): whether to use the package lightsim2grid for power
@@ -264,6 +267,8 @@ def runpp(
         tdpf_update_r_theta (bool, True): TDPF parameter, whether to update R_Theta in Newton-Raphson or to assume a constant R_Theta (either from net.line.r_theta, if set, or from a calculation based on the thermal model of Ngoko et.al.)
     """
 
+    tolerance, kwargs = warn_and_fix_parameter_renaming("tolerance_mva", "tolerance", tolerance, 1e-8, kwargs)
+
     # if dict 'user_pf_options' is present in net, these options overrule the net._options
     # except for parameters that are passed by user
     if isinstance(kwargs.get("recycle", None), dict) and _internal_stored(net):
@@ -285,7 +290,7 @@ def runpp(
             calculate_voltage_angles=calculate_voltage_angles,
             init=init,
             max_iteration=max_iteration,
-            tolerance_mva=tolerance_mva,
+            tolerance=tolerance,
             trafo_model=trafo_model,
             trafo_loading=trafo_loading,
             enforce_p_lims=enforce_p_lims,
@@ -388,7 +393,7 @@ def runpp_pgm(net, algorithm="nr", max_iterations=20, error_tolerance_vm_pu=1e-8
 
     # 5. Convert the Power Grid Model output data back to the pandapower format and update the pandapower net
     converted_output_data = pgm_converter.convert(data=output_data)
-    for table in converted_output_data.keys():
+    for table in converted_output_data:
         net[table] = converted_output_data[table]
 
 
@@ -511,6 +516,15 @@ def runopp(
     - net.line.max_loading_percent
     - net.trafo.max_loading_percent
     - net.trafo3w.max_loading_percent
+    - net.line.min_angle_degree / net.line.max_angle_degree
+    - net.trafo.min_angle_degree / net.trafo.max_angle_degree
+    - net.trafo3w.min_angle_degree / net.trafo3w.max_angle_degree
+    - net.impedance.min_angle_degree / net.impedance.max_angle_degree
+
+    The angle difference limits constrain ``va_from - va_to`` (for trafos ``va_hv - va_lv``). For ``trafo3w`` the limit
+    applies to each internal star branch (``va_hv - va_star`` and ``va_star - va_mv`` resp. ``va_star - va_lv``)
+    separately, so the terminal difference ``va_hv - va_mv`` resp. ``va_hv - va_lv`` can reach twice the limit.
+    The limits can be ignored by passing ``OPF_IGNORE_ANG_LIM=True``.
 
     If the external grid ist controllable, the voltage setpoint of the external grid can be optimized within the
     voltage constraints by the OPF. The same applies to the voltage setpoints of the controllable generator
@@ -599,6 +613,15 @@ def rundcopp(
     - net.line.max_loading_percent
     - net.trafo.max_loading_percent
     - net.trafo3w.max_loading_percent
+    - net.line.min_angle_degree / net.line.max_angle_degree
+    - net.trafo.min_angle_degree / net.trafo.max_angle_degree
+    - net.trafo3w.min_angle_degree / net.trafo3w.max_angle_degree
+    - net.impedance.min_angle_degree / net.impedance.max_angle_degree
+
+    The angle difference limits constrain ``va_from - va_to`` (for trafos ``va_hv - va_lv``). For ``trafo3w`` the limit
+    applies to each internal star branch (``va_hv - va_star`` and ``va_star - va_mv`` resp. ``va_star - va_lv``)
+    separately, so the terminal difference ``va_hv - va_mv`` resp. ``va_hv - va_lv`` can reach twice the limit.
+    The limits can be ignored by passing ``OPF_IGNORE_ANG_LIM=True``.
 
     Parameters:
         net: The pandapower format network
@@ -639,7 +662,7 @@ def _passed_runpp_parameters(local_parameters):
     :return: dictionary of explicitly passed parameters
     """
     net = local_parameters.pop("net")
-    if "user_pf_options" not in net.keys() or len(net.user_pf_options) == 0:
+    if "user_pf_options" not in net or len(net.user_pf_options) == 0:
         return None
     # default_parameters contains the parameters that are specified for the runpp function by default in its definition
     args, _, _, defaults, *_ = inspect.getfullargspec(runpp)

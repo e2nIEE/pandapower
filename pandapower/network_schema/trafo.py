@@ -34,12 +34,14 @@ _trafo_columns = {
     "sn_mva": pa.Column(float, pa.Check.gt(0), description="rated apparent power of the transformer [MVA]"),
     "vn_hv_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage at high voltage side [kV]"),
     "vn_lv_kv": pa.Column(float, pa.Check.gt(0), description="rated voltage at low voltage side [kV]"),
-    "vk_percent": pa.Column(float, pa.Check.gt(0), description="short circuit voltage [%]", metadata={"sc": True}),
-    "vkr_percent": pa.Column(
-        float, pa.Check.ge(0), description="real component of short circuit voltage [%]", metadata={"sc": True}
-    ),
+    "vk_percent": pa.Column(float, description="short circuit voltage [%]", metadata={"sc": True}),
+    "vkr_percent": pa.Column(float, description="real component of short circuit voltage [%]", metadata={"sc": True}),
     "pfe_kw": pa.Column(float, pa.Check.ge(0), description="iron losses [kW]"),
-    "i0_percent": pa.Column(float, pa.Check.ge(0), description="open loop current in [%]"),
+    "i0_percent": pa.Column(
+        float,
+        description="open loop current in [%]; the magnetizing susceptance is inductive, a negative value denotes a "
+        "capacitive susceptance (e.g. the charging of an imported MATPOWER/PYPOWER transformer branch)",
+    ),
     "vk0_percent": pa.Column(
         float,
         pa.Check.ge(0),
@@ -159,6 +161,22 @@ _trafo_columns = {
         description="Maximum loading of the transformer with respect to sn_mva and its corresponding current at 1.0 p.u.",
         metadata={"opf": True},
     ),
+    "min_angle_degree": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="minimum voltage angle difference between hv_bus and lv_bus (va_hv - va_lv) [degree], "
+        "considered in the OPF; NaN means unconstrained",
+        metadata={"opf": True},
+    ),
+    "max_angle_degree": pa.Column(
+        float,
+        nullable=True,
+        required=False,
+        description="maximum voltage angle difference between hv_bus and lv_bus (va_hv - va_lv) [degree], "
+        "considered in the OPF; NaN means unconstrained",
+        metadata={"opf": True},
+    ),
     "parallel": pa.Column(int, pa.Check.ge(1), description="number of parallel transformers", metadata={"default": 1}),
     "df": pa.Column(
         float,
@@ -260,6 +278,22 @@ _trafo_columns = {
         metadata={"sc": True},
     ),
     "pt_percent": pa.Column(float, required=False, description="", metadata={"sc": True}),
+    "cooling_type": pa.Column(
+        pd.StringDtype,
+        pa.Check.isin(["ONAN", "ONAF"]),
+        nullable=True,
+        required=False,
+        description="cooling type of the transformer for the thermal calculation (TDPF), ONAN (Oil Natural, Air Natural) or ONAF (Oil Natural, Air Forced)",
+        metadata={"tdpf": True, "default": "ONAN"},
+    ),
+    "air_temperature_degree_celsius": pa.Column(
+        float,
+        pa.Check.gt(-273),
+        nullable=True,
+        required=False,
+        description="ambient temperature in °C used by the transformer thermal calculation (TDPF)",
+        metadata={"tdpf": True, "default": 35},
+    ),
     "origin_id": pa.Column(
         pd.StringDtype,
         nullable=True,
@@ -387,17 +421,16 @@ _trafo_columns = {
         metadata={"ucte": True, "doc": False},
     ),
 }
-tap2_columns = ["tap2_pos", "tap2_neutral", "tap2_side", "tap2_step_percent", "tap2_step_degree"]
+tap2_columns = ["tap2_pos", "tap2_neutral", "tap2_step_percent"]
 tap_columns = [
     "tap_pos",
     "tap_neutral",
-    "tap_side",
     "tap_step_percent",
-    "tap_step_degree",
 ]
 trafo_checks = [
     create_lower_equals_column_check(first_element="tap_min", second_element="tap_max"),
     create_lower_equals_column_check(first_element="tap2_min", second_element="tap2_max"),
+    create_lower_equals_column_check(first_element="min_angle_degree", second_element="max_angle_degree"),
     pa.Check(
         create_column_group_dependency_validation_func(tap_columns),
         error=f"trafo tap configuration columns have dependency violations. Please ensure {tap_columns} are present in the dataframe.",

@@ -16,7 +16,15 @@ from pandapower.pypower.idx_bus_dc import DC_BUS_I, DC_BUS_TYPE, DC_NONE, DC_PD,
 from pandapower.pypower.idx_gen import PG, QG
 from pandapower.pypower.idx_ssc import SSC_INTERNAL_BUS, SSC_Q
 from pandapower.pypower.idx_svc import SVC_Q, SVC_THYRISTOR_FIRING_ANGLE, SVC_X_PU
-from pandapower.pypower.idx_vsc import VSC_BUS_DC, VSC_INTERNAL_BUS, VSC_INTERNAL_BUS_DC, VSC_P, VSC_P_DC, VSC_Q
+from pandapower.pypower.idx_vsc import (
+    VSC_BUS_DC,
+    VSC_INTERNAL_BUS,
+    VSC_INTERNAL_BUS_DC,
+    VSC_P,
+    VSC_P_DC,
+    VSC_P_DC_MINUS,
+    VSC_Q,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -39,7 +47,7 @@ def _set_dc_buses_out_of_service(ppc):
 def _get_bus_v_results(net, ppc, suffix=None):
     bus_idx = _get_bus_idx(net)
 
-    res_table = "res_bus" if suffix is None else "res_bus%s" % suffix
+    res_table = "res_bus" if suffix is None else f"res_bus{suffix}"
     # always read the vm_pu from ppc, even for DC power flow - otherwise old values can persist
     net[res_table]["vm_pu"] = ppc["bus"][bus_idx][:, VM]
     # voltage angles
@@ -324,7 +332,7 @@ def write_p_dc_results_to_element(net, ppc, element):
 
     # info element
     element_data = net[element]
-    res_ = "res_%s" % element
+    res_ = f"res_{element}"
 
     if element == "vsc":
         _is_elements[element] & (net.vsc.control_mode_dc == "p_mw")
@@ -432,7 +440,7 @@ def get_p_q_b(net, element, suffix=None):
     ac = net["_options"]["ac"]
     res_ = "res_" + element
     if suffix is not None:
-        res_ += "_%s" % suffix
+        res_ += f"_{suffix}"
 
     # bus values are needed for stacking
     b = net[element]["bus"].values
@@ -493,6 +501,13 @@ def _get_p_q_results(net, ppc, bus_lookup_aranged):
 
 
 def _get_p_dc_results(net, ppc, bus_lookup_aranged):
+    """
+    Writes the DC power results of the VSC and DC loads to their result tables and sums the DC power per DC bus. The DC
+    power of bipolar VSC is assigned to the plus and to the minus terminal bus.
+
+    Returns:
+        bus_p_dc: DC power per DC bus (rows ordered as bus_lookup_aranged)
+    """
     bus_p_dc = np.zeros(shape=(len(net["bus_dc"].index), 1), dtype=np.float64)  # 1 because only p relevant
     b, p = np.array([]), np.array([])
 
@@ -511,6 +526,12 @@ def _get_p_dc_results(net, ppc, bus_lookup_aranged):
             #     p = np.hstack([p, p_el])
             p = np.hstack([p, p_el])
             b = np.hstack([b, bus_el])
+            if element == "vsc" and "bus_dc_minus" in net.vsc.columns:
+                # bipolar VSC: the current returns into the minus terminal bus
+                bus_minus = net.vsc["bus_dc_minus"].values
+                has_minus = pd.notna(bus_minus)
+                p = np.hstack([p, ppc["vsc"][has_minus, VSC_P_DC_MINUS]])
+                b = np.hstack([b, bus_minus[has_minus]])
 
     # sum pq results from every element to be written to net['bus'] later on
     b_pp, vp, _ = _sum_by_group(b.astype(np.int64), p, p)

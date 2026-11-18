@@ -17,10 +17,10 @@ from numpy.typing import NDArray
 from scipy.sparse import csc_matrix, csr_matrix
 
 from pandapower.pypower.idx_brch import BR_STATUS, BR_X, F_BUS, SHIFT, T_BUS, TAP
-from pandapower.pypower.idx_brch_dc import DC_BR_R, DC_BR_STATUS, DC_F_BUS, DC_T_BUS, branch_dc_cols
+from pandapower.pypower.idx_brch_dc import BRANCH_DC_COLS, DC_BR_R, DC_BR_STATUS, DC_F_BUS, DC_T_BUS
 from pandapower.pypower.idx_bus import BUS_I
-from pandapower.pypower.idx_bus_dc import dc_bus_cols
-from pandapower.pypower.idx_vsc import VSC_BUS, VSC_BUS_DC, VSC_MODE_DC, VSC_MODE_DC_P, VSC_STATUS, VSC_X, vsc_cols
+from pandapower.pypower.idx_bus_dc import DC_BUS_COLS
+from pandapower.pypower.idx_vsc import VSC_BUS, VSC_BUS_DC, VSC_COLS, VSC_MODE_DC, VSC_MODE_DC_P, VSC_STATUS, VSC_X
 
 logger = logging.getLogger(__name__)
 
@@ -36,12 +36,12 @@ def makeBdc(
     """
     Builds the B matrices and phase shift injections for DC power flow.
 
-    Returns the B matrices and phase shift injection vectors needed for a DC power flow.
-    The bus real power injections are related to bus voltage angles by::
         P = Bbus * Va + PBusinj
     The real power flows at the from end the lines are related to the bus voltage angles by:
         Pf = Bf * Va + Pfinj
     Does appropriate conversions to p.u.
+    Returns the B matrices and phase shift injection vectors needed for a DC power flow. The bus real power
+    injections are related to bus voltage angles by::
 
     @see: L{dcpf}
 
@@ -50,19 +50,20 @@ def makeBdc(
     @author: Ray Zimmerman (PSERC Cornell)
     @author: Richard Lincoln
 
-    :param bus: the ppci buses
-    :param branch: the ppci branches
-    :param bus_dc: the ppci dc buses
-    :param branch_dc: the ppci dc branches
-    :param vsc: the ppci vscs
-    :param return_csr: return a csr matrix instead of a csc matrix
+    Parameters:
+        bus: the ppci buses
+        branch: the ppci branches
+        bus_dc: the ppci dc buses
+        branch_dc: the ppci dc branches
+        vsc: the ppci vscs
+        return_csr: return a csr matrix instead of a csc matrix
     """
     if bus_dc is None:
-        bus_dc = np.empty((0, dc_bus_cols))
+        bus_dc = np.empty((0, DC_BUS_COLS))
     if branch_dc is None:
-        branch_dc = np.empty((0, branch_dc_cols))
+        branch_dc = np.empty((0, BRANCH_DC_COLS))
     if vsc is None:
-        vsc = np.empty((0, vsc_cols))
+        vsc = np.empty((0, VSC_COLS))
     # Select csc/csr B matrix
     sparse = csr_matrix if return_csr else csc_matrix
 
