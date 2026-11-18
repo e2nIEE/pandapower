@@ -102,18 +102,16 @@ def _pd2ppc_zero(net, k_st, sequence=0):
 
 def _build_branch_ppc_zero(net, ppc, k_st=None):
     """
-    Takes the empty ppc network and fills it with the zero imepdance branch values. The branch
-    datatype will be np.complex 128 afterwards.
+    Takes the empty ppc network and fills it with the zero imepdance branch values. The branch datatype will be
+    np.complex 128 afterwards.
 
     .. note:: The order of branches in the ppc is:
             1. Lines
             2. Transformers
 
-    **INPUT**:
-        **net** -The pandapower format network
-
-        **ppc** - The PYPOWER format network to fill in values
-
+    Parameters:
+        net: The pandapower format network
+        ppc: The PYPOWER format network to fill in values
     """
     length = _initialize_branch_lookup(net)
     lookup = net._pd2ppc_lookups["branch"]

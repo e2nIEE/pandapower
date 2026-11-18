@@ -456,24 +456,19 @@ def _ppci_internal_to_ppc(result, ppc):
 
 def _copy_results_ppci_to_ppc(result, ppc, mode):
     """
-    result contains results for all in service elements
-    ppc gets the results for in- and out of service elements
-    -> results must be copied
+    result contains results for all in service elements ppc gets the results for in- and out of service elements ->
+    results must be copied
 
-    ppc and ppci are structured as follows:
-          [in_service elements]
-    ppc = [out_of_service elements]
-    result = [in_service elements]
+    ppc and ppci are structured as follows: [in_service elements] ppc = [out_of_service elements] result =
+    [in_service elements]
 
-    Parameters
-    ----------
-    result - ppci with results
-    ppc - ppc without results
-    mode - "pf","opf", "sc"...
+    Parameters:
+        result: ppci with results
+        ppc: ppc without results
+        mode: "pf","opf", "sc"...
 
-    Returns
-    -------
-    ppc with results
+    Returns:
+        ppc with results
     """
 
     # copy the results for bus, gen and branch and some additional values like "success"
