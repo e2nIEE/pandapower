@@ -156,10 +156,11 @@ class PyPowSyBlConverter(
             default_length_km: Fallback line length in kilometres.
 
         Returns:
-            A tuple containing the generated pandapower network, the loaded powsybl
-            network, and the path of the exported pandapower JSON file. If
-            ``return_loadflow_table`` is ``True``, the load-flow comparison table is
-            returned as a fourth value.
+            A tuple ``(pandap_net, pyp_net, json_filename, loadflow_table)`` containing
+            the generated pandapower network, the loaded powsybl network, and the path
+            of the exported pandapower JSON file. ``loadflow_table`` is the load-flow
+            comparison table if ``return_loadflow_table`` is ``True``, otherwise
+            ``None``.
 
         """
         self.default_shift_degree = self._to_float(default_shift_degree, self.default_shift_degree)
