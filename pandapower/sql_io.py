@@ -280,7 +280,8 @@ def from_sql(
     Downloads an existing pandapowerNet from a PostgreSQL database.
 
     Parameters:
-        conn: connection to SQL database (e.g. SQLite, PostgreSQL)
+        conn: connection to a PostgreSQL database. To load a pandapowerNet from an SQLite file, use
+            :func:`from_sqlite` instead.
         schema (str): name of the database schema (e.g. 'postgres')
         grid_id (int): unique grid_id that will be used to identify the data for the grid model
         grid_id_column (str, "grid_id"): name of the column for "grid_id" in the PosgreSQL tables
@@ -289,6 +290,10 @@ def from_sql(
         empty_dict_like_object (dict-like): If None, the output of :func:`pandapower.pandapowerNet` is used as an empty
             element to be filled by the grid data. Give another dict-like object to start filling that alternative
             object with the data.
+        grid_tables (pandas.DataFrame, None): optional DataFrame with a "table" column that lists the tables to be read.
+            If provided, the catalogue table validation and the table discovery (downloading the "grid_tables" table)
+            are skipped, and the table names in its "table" column are used to select the tables to read from the
+            database. If None, the tables are determined from the database as described above.
 
     Returns:
         net (pandapowerNet):
@@ -340,7 +345,8 @@ def to_sql(
 
     Parameters:
         net (pandapowerNet): the grid model to be uploaded to the database
-        conn (connection to SQL database (e.g. SQLite, PostgreSQL)):
+        conn: connection to a PostgreSQL database. To save a pandapowerNet to SQLite format, use :func:`to_sqlite`
+            instead.
         schema (str): name of the database schema (e.g. 'postgres')
         include_results (bool, False): specify whether the power flow results are included when the grid is uploaded
         grid_id (int): unique grid_id that will be used to identify the data for the grid model, default None. If None,
@@ -378,7 +384,7 @@ def to_sqlite(net, filename, include_results=False):
 
     Parameters:
         net (pandapowerNet): grid model
-        filename (str or PathLike): path to a text file where the data will be stored
+        filename (str or PathLike): path to a SQLite database file where the data will be stored
         include_results (bool): whether result tables should be included
     """
     if not SQLITE_INSTALLED:
@@ -394,7 +400,7 @@ def from_sqlite(filename):
     Loads a grid model from SQLite format
 
     Parameters:
-        filename: path to the text file where the data are stored
+        filename (str or PathLike): path to the SQLite database file where the data are stored
 
     Returns:
         net (pandapowerNet): the grid model
@@ -475,7 +481,9 @@ def from_postgresql(
         empty_dict_like_object: If None, the output of pandapower.create_empty_network() is used as an empty element
             to be filled by the grid data.
             Give another dict-like object to start filling that alternative object with the data.
-        grid_tables:
+        grid_tables (pandas.DataFrame, None): optional DataFrame with a "table" column that lists the tables to be read.
+            If provided, the catalogue table validation and the table discovery are skipped, and the table names in its
+            "table" column are used to select the tables to read. If None, the tables are determined from the database.
 
     Returns:
         the loaded pandapower network

@@ -146,20 +146,23 @@ def _pd2ppc(net, sequence=None, **kwargs):
         sequence: Used for three phase analysis ( 0 - Zero Sequence 1 - Positive Sequence 2 - Negative Sequence )
 
     Returns:
-        ppc: The simple matpower format network. Which consists of:
+        ppc: The simple matpower format network. Its fields are created empty by
+            ``_init_ppc`` and filled during the conversion:
             ppc = {
-                  "baseMVA": 1., *float*
-                  "version": 2,  *int*
-                  "bus": np.array([], dtype=float),
-                  "branch": np.array([], dtype=np.complex128),
-                  "gen": np.array([], dtype=float),
-                  "gencost" =  np.array([], dtype=float), only for OPF
+                  "baseMVA": taken from net.sn_mva, *float*
+                  "version": 2, *int*
+                  "bus": bus matrix, *float*
+                  "branch": branch matrix, dtype depends on the analysis path:
+                        *float64* for the balanced (positive/negative sequence)
+                        path, *complex128* for the zero-sequence path
+                  "gen": generator matrix, *float*
+                  "gencost": cost matrix, *float*, only for OPF
                   "internal": {
-                        "Ybus": np.array([], dtype=np.complex128)
-                        , "Yf": np.array([], dtype=np.complex128)
-                        , "Yt": np.array([], dtype=np.complex128)
-                        , "branch_is": np.array([], dtype=bool)
-                        , "gen_is": np.array([], dtype=bool)
+                        "Ybus": *complex128*
+                        , "Yf": *complex128*
+                        , "Yt": *complex128*
+                        , "branch_is": *bool*
+                        , "gen_is": *bool*
                         }
         ppci: The "internal" pypower format network for PF calculations
     """
@@ -310,6 +313,9 @@ def _ppc2ppci(ppc, net, ppci=None):
     Parameters:
         ppc: the ppc
         net: the pandapower net
+        ppci: optional ppci to fill. If provided, no new ppci is initialized and the
+            ppci arrays and internal masks are written into this object. If None
+            (default), a new ppci is initialized from the net.
 
     Returns:
         the "internal" ppc

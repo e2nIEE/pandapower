@@ -16,6 +16,7 @@ import logging
 import os
 import pickle
 import sys
+from os import PathLike
 from typing import TextIO
 from typing import overload as function_overload
 from warnings import warn
@@ -158,17 +159,23 @@ def to_json(
     return None
 
 
-def from_pickle(filename, convert=True, drop_invalid_geodata=False, ignore_version_conflicts=False):
+def from_pickle(
+    filename: str | PathLike,
+    convert: bool = True,
+    drop_invalid_geodata: bool = False,
+    ignore_version_conflicts: bool = False,
+):
     """
     Load a pandapower format Network from pickle file
 
     Parameters:
-        filename (str or file): The absolute or relative path to the input file or file-like object
-        convert (bool, True): If True, converts the format of the net loaded from pickle from the older version of
+        filename: The absolute or relative path to the input file or file-like object
+        convert: If True, converts the format of the net loaded from pickle from the older version of
             pandapower to the newer version format
-        drop_invalid_geodata (bool, True): If set to True, drop geodata entries with invalid coordinates instead of
-            raising an error
-        ignore_version_conflicts (bool): If set to True, ignore version conflicts between the net being loaded and the
+        drop_invalid_geodata: If set to True, drop geodata entries with invalid coordinates instead of
+            raising an error. Defaults to False, so callers must explicitly opt in to dropping invalid geodata during
+            conversion.
+        ignore_version_conflicts: If set to True, ignore version conflicts between the net being loaded and the
             pandapower version. This can lead to errors when loading nets saved in older formats. Use with caution!
             default False
 
@@ -190,20 +197,24 @@ def from_pickle(filename, convert=True, drop_invalid_geodata=False, ignore_versi
 
 
 def from_excel(
-    filename, convert=True, add_basic_std_types=True, drop_invalid_geodata=False, ignore_version_conflicts=False
+    filename: str | PathLike,
+    convert: bool = True,
+    add_basic_std_types: bool = True,
+    drop_invalid_geodata: bool = False,
+    ignore_version_conflicts: bool = False,
 ):
     """
     Load a pandapower network from an Excel file
 
     Parameters:
-        filename (str): The absolute or relative path to the input file.
-        convert (bool, True): If True, converts the format of the net loaded from Excel from the older version of
+        filename: The absolute or relative path to the input file.
+        convert: If True, converts the format of the net loaded from Excel from the older version of
             pandapower to the newer version format
-        add_basic_std_types (bool, True): If True, Adds missing standard-types from pandapower standard type library,
+        add_basic_std_types: If True, Adds missing standard-types from pandapower standard type library,
             default True. the older version of pandapower to the newer version format
-        drop_invalid_geodata (bool, True): If set to True, drop geodata entries with invalid coordinates instead of
+        drop_invalid_geodata: If set to True, drop geodata entries with invalid coordinates instead of
             raising an error
-        ignore_version_conflicts (bool): If set to True, ignore version conflicts between the net being loaded and the
+        ignore_version_conflicts: If set to True, ignore version conflicts between the net being loaded and the
             pandapower version. This can lead to errors when loading nets saved in older formats. Use with caution!
             default False
 
@@ -258,8 +269,8 @@ def _from_excel_old(xls, add_basic_std_types=True):
 
 
 def from_json(
-    filename_or_str,
-    convert=True,
+    filename_or_str: str | PathLike,
+    convert: bool = True,
     encryption_key=None,
     elements_to_deserialize=None,
     keep_serialized_elements=True,
@@ -278,8 +289,8 @@ def from_json(
     order as the original network. Index columns of all pandas DataFrames are sorted in ascending order.
 
     Parameters:
-        filename_or_str (str or file): The absolute or relative path to the input file or file-like object
-        convert (bool, True): If True, converts the format of the net loaded from json from the older version of
+        filename_or_str: The absolute or relative path to the input file or file-like object or a JSON String
+        convert: If True, converts the format of the net loaded from json from the older version of
             pandapower to the newer version format
         encryption_key (str or None, None): If given, key to decrypt an encrypted pandapower network
         elements_to_deserialize (list or None, None): Deserialize only certain pandapower elements. If None all elements
@@ -310,13 +321,16 @@ def from_json(
         >>> from pandapower.file_io import from_json
         >>> net = from_json("example.json")
     """
+    json_string: str
     if hasattr(filename_or_str, "read"):
         json_string = filename_or_str.read()
     elif os.path.isfile(filename_or_str):
         with open(filename_or_str, "r") as fp:
             json_string = fp.read()
-    else:
+    elif isinstance(filename_or_str, str):
         json_string = filename_or_str
+    else:
+        raise TypeError(f"from_json could not read {filename_or_str=}")
     try:
         return from_json_string(
             json_string,
@@ -473,8 +487,9 @@ def from_json_string(
 
 def from_json_dict(json_dict):
     """
-    Load a pandapower network from a JSON string. The index of the returned network is not necessarily in the same
-    order as the original network. Index columns of all pandas DataFrames are sorted in ascending order.
+    Load a pandapower network from a decoded JSON dictionary, e.g. the output of json.loads. The index of the
+    returned network is not necessarily in the same order as the original network. Index columns of all pandas
+    DataFrames are sorted in ascending order.
 
     Parameters:
         json_dict (dict): The json object representation of the network

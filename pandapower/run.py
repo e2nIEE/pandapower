@@ -660,11 +660,16 @@ def _passed_runpp_parameters(local_parameters):
     """
     Internal function to distinguish arguments for pandapower.runpp() that are explicitly passed by the user.
 
+    Named arguments are only recognized as passed if their value differs from the default value defined in the
+    runpp() signature. Additional keyword arguments are taken from ``kwargs`` and are treated as passed as well.
+    Since omitted arguments and explicitly passed arguments that equal their signature default cannot be
+    distinguished inside runpp(), the latter are not included in the result.
+
     Parameters:
         local_parameters: locals() in the runpp() function
 
     Returns:
-        dictionary of explicitly passed parameters
+        dictionary of explicitly passed parameters, or None if no stored options are present in net.user_pf_options
     """
     net = local_parameters.pop("net")
     if "user_pf_options" not in net or len(net.user_pf_options) == 0:
