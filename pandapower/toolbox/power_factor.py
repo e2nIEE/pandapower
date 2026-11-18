@@ -192,64 +192,56 @@ pos: cosphi is not in [0, 1] and [-1, -0] but in [0, 1] and [1, 2]
 
 
 def cosphi_pos_neg_from_pq(p, q):
-    """Returns the cosphi value(s) for given active and reactive power(s).
-    Positive q values lead to positive cosphi values, negative to negative.
-    If p, q come from generator view point, positive cosphi correspond to overexcited behaviour
-    while in load view point positive cosphi correspond to underexcited behaviour.
+    """
+    Returns the cosphi value(s) for given active and reactive power(s). Positive q values lead to positive cosphi
+    values, negative to negative. If p, q come from generator view point, positive cosphi correspond to overexcited
+    behaviour while in load view point positive cosphi correspond to underexcited behaviour.
 
-    Parameters
-    ----------
-    p : float(s)
-        active power value(s)
-    q : float(s)
-        reactive power values
+    Parameters:
+        p (float(s)): active power value(s)
+        q (float(s)): reactive power values
 
-    Examples
-    --------
-    >>> import numpy as np
-    >>> from pandapower.toolbox.power_factor import cosphi_pos_neg_from_pq
-    >>> np.round(cosphi_pos_neg_from_pq(0.76, 0.25), 5)
-    0.94993
-    >>> np.round(cosphi_pos_neg_from_pq(0.76, -0.25), 5)
-    -0.94993
-    >>> np.round(cosphi_pos_neg_from_pq([0.76, 0.76, 0.76, 0.76], [0.25, -0.25, 0, 0.1]), 5)
-    array([ 0.94993,  -0.94993,  1.     ,  0.99145])
-    >>> np.round(cosphi_pos_neg_from_pq([0.76, 0.76, -0.76, 0.76, 0, 0.1],
-    ...                                 [0.25, -0.25, 0.25, 0.1, 0.1, 0]), 5)
-    array([ 0.94993,  -0.94993,  0.94993, 0.99145, nan, 1])
-
-    Returns
-    -------
-    [float, np.array]
+    Returns:
         cosphi values where
 
-    See also
-    --------
-    pandapower.toolbox.cosphi_from_pq
-    pandapower.toolbox.cosphi_to_pos
+    Example:
+        >>> import numpy as np
+        >>> from pandapower.toolbox.power_factor import cosphi_pos_neg_from_pq
+        >>> np.round(cosphi_pos_neg_from_pq(0.76, 0.25), 5)
+        0.94993
+        >>> np.round(cosphi_pos_neg_from_pq(0.76, -0.25), 5)
+        -0.94993
+        >>> np.round(cosphi_pos_neg_from_pq([0.76, 0.76, 0.76, 0.76], [0.25, -0.25, 0, 0.1]), 5)
+        array([ 0.94993,  -0.94993,  1.     ,  0.99145])
+        >>> np.round(cosphi_pos_neg_from_pq([0.76, 0.76, -0.76, 0.76, 0, 0.1],
+        ...                                 [0.25, -0.25, 0.25, 0.1, 0.1, 0]), 5)
+        array([ 0.94993,  -0.94993,  0.94993, 0.99145, nan, 1])
+
+    See Also:
+        pandapower.toolbox.cosphi_from_pq
+        pandapower.toolbox.cosphi_to_pos
     """
     cosphis = cosphi_from_pq(p, q)[0]
     return np.copysign(cosphis, q)
 
 
 def cosphi_to_pos(cosphi):
-    """Signed cosphi values are converted into positive cosphi values from 0 to 1 and 1 to 2.
+    """
+    Signed cosphi values are converted into positive cosphi values from 0 to 1 and 1 to 2.
 
-    Examples
-    --------
-    >>> cosphi_to_pos(0.96)
-    0.96
-    >>> cosphi_to_pos(-0.94)
-    1.06
-    >>> cosphi_to_pos(-0.96)
-    1.04
-    >>> cosphi_to_pos([0.96, -0.94, -0.96])
-    np.array([0.96, 1.06, 1.04])
+    Example:
+        >>> cosphi_to_pos(0.96)
+        0.96
+        >>> cosphi_to_pos(-0.94)
+        1.06
+        >>> cosphi_to_pos(-0.96)
+        1.04
+        >>> cosphi_to_pos([0.96, -0.94, -0.96])
+        np.array([0.96, 1.06, 1.04])
 
-    See also
-    --------
-    pandapower.toolbox.cosphi_from_pos
-    pandapower.toolbox.cosphi_pos_neg_from_pq
+    See Also:
+        pandapower.toolbox.cosphi_from_pos
+        pandapower.toolbox.cosphi_pos_neg_from_pq
     """
     multiple = not isinstance(cosphi, (float, int))
     cosphi = np.array(ensure_iterability(cosphi))
@@ -261,23 +253,22 @@ def cosphi_to_pos(cosphi):
 
 
 def cosphi_from_pos(cosphi):
-    """All positive cosphi values are converted back to signed cosphi values
+    """
+    All positive cosphi values are converted back to signed cosphi values
 
-    Examples
-    --------
-    >>> cosphi_from_pos(0.96)
-    0.96
-    >>> cosphi_from_pos(1.06)
-    -0.94
-    >>> cosphi_from_pos(1.04)
-    -0.96
-    >>> cosphi_from_pos([0.96, 1.06, 1.04])
-    np.array([0.96, -0.94, -0.96])
+    Example:
+        >>> cosphi_from_pos(0.96)
+        0.96
+        >>> cosphi_from_pos(1.06)
+        -0.94
+        >>> cosphi_from_pos(1.04)
+        -0.96
+        >>> cosphi_from_pos([0.96, 1.06, 1.04])
+        np.array([0.96, -0.94, -0.96])
 
-    See also
-    --------
-    pandapower.toolbox.cosphi_to_pos
-    pandapower.toolbox.cosphi_pos_neg_from_pq
+    See Also:
+        pandapower.toolbox.cosphi_to_pos
+        pandapower.toolbox.cosphi_pos_neg_from_pq
     """
     multiple = not isinstance(cosphi, (float, int))
     cosphi = np.array(ensure_iterability(cosphi))
