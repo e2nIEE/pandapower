@@ -30,7 +30,7 @@ import pandas as pd
 
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.network import ADict
-from pandapower.plotting.plotly.get_colors import get_plotly_cmap, get_plotly_color
+from pandapower.plotting.plotly.get_colors import get_plotly_cmap, get_plotly_color, get_plotly_colorscale
 from pandapower.plotting.plotly.mapbox_plot import _on_map_test
 
 if find_spec("plotly"):
@@ -181,9 +181,10 @@ def create_bus_trace(
             indices
         trace_name (String, "buses"): name of the trace which will appear in the legend
         color (String, "blue"): color of buses in the trace
-        cmap (String, None): name of a colormap which exists within plotly (Greys, YlGnBu, Greens, YlOrRd, Bluered,
-            RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis) alternatively a
-            custom discrete colormap can be used. Append "_r" for inversion.
+        cmap (String, None): name of a matplotlib or plotly colormap
+            (Greys, YlGnBu, Greens, YlOrRd, Bluered, RdBu, Reds, Blues, Picnic, Rainbow,
+            Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis) alternatively a custom
+            discrete colormap can be used. Append "_r" for inversion.
         cmap_vals (list, None): values used for coloring using colormap
         cbar_title (String, None): title for the colorbar
         cmin (float, None): colorbar range minimum
@@ -251,9 +252,10 @@ def _create_node_trace(
         infofunc (pd.Series, None): hoverinfo for node elements. Indices should correspond to the node element indices
         trace_name (String, "buses"): name of the trace which will appear in the legend
         color (String, "blue"): color of nodes in the trace
-        cmap (String, None): name of a colormap which exists within plotly (Greys, YlGnBu, Greens, YlOrRd, Bluered,
-            RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis) alternatively a
-            custom discrete colormap can be used
+        cmap (String, None): name of a matplotlib or plotly colormap
+            (Greys, YlGnBu, Greens, YlOrRd, Bluered, RdBu, Reds, Blues, Picnic, Rainbow,
+            Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis) alternatively a custom
+            discrete colormap can be used
         cmap_vals (list, None): values used for coloring using colormap
         cbar_title (String, None): title for the colorbar
         cmin (float, None): colorbar range minimum
@@ -323,7 +325,7 @@ def _create_node_trace(
             color=cmap_vals,
             cmin=cmin,
             cmax=cmax,
-            colorscale=cmap,
+            colorscale=get_plotly_colorscale(cmap),
             colorbar=ColorBar(thickness=10, x=cpos),
             symbol=patch_type,
         )
@@ -407,11 +409,12 @@ def create_line_trace(
             indices
         trace_name (String, "lines"): name of the trace which will appear in the legend
         color (String, "grey"): color of lines in the trace
-        legendgroup (String, None): defines groups of layers that will be displayed in a legend e.g. groups according to
-            voltage level (as used in `vlevel_plotly`)
-        cmap (String, None): name of a colormap which exists within plotly if set to True default `Jet` colormap is
-            used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd, Bluered, RdBu, Reds, Blues, Picnic, Rainbow,
-            Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis To revert the color map, append "_r" to the name.
+        legendgroup (String, None): defines groups of layers that will be displayed in a legend
+            e.g. groups according to voltage level (as used in `vlevel_plotly`)
+        cmap (String, None): name of a matplotlib or plotly colormap if set to True default `Jet`
+            colormap is used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd,
+            Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis
+            To revert the color map, append "_r" to the name.
         cmap_vals (list, None): values used for coloring using colormap
         show_colorbar (bool, False): flag for showing or not corresponding colorbar
         cbar_title (String, None): title for the colorbar
@@ -481,11 +484,12 @@ def create_dcline_trace(
             indices
         trace_name (String, "lines"): name of the trace which will appear in the legend
         color (String, "grey"): color of dclines in the trace
-        legendgroup (String, None): defines groups of layers that will be displayed in a legend e.g. groups according to
-            voltage level (as used in `vlevel_plotly`)
-        cmap (String, None): name of a colormap which exists within plotly if set to True default `Jet` colormap is
-            used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd, Bluered, RdBu, Reds, Blues, Picnic, Rainbow,
-            Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis To revert the color map, append "_r" to the name.
+        legendgroup (String, None): defines groups of layers that will be displayed in a legend
+            e.g. groups according to voltage level (as used in `vlevel_plotly`)
+        cmap (String, None): name of a matplotlib or plotly colormap if set to True default `Jet`
+            colormap is used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd,
+            Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis
+            To revert the color map, append "_r" to the name.
         cmap_vals (list, None): values used for coloring using colormap
         show_colorbar (bool, False): flag for showing or not corresponding colorbar
         cbar_title (String, None): title for the colorbar
@@ -561,11 +565,11 @@ def _create_branch_trace(
         infofunc (pd.Series, None): hoverinfo for line elements. Indices should correspond to the pandapower element
             indices
         trace_name (String, "lines"): name of the trace which will appear in the legend
-        legendgroup (String, None): defines groups of layers that will be displayed in a legend e.g. groups according to
-            voltage level (as used in `vlevel_plotly`)
-        cmap (String, None): name of a colormap which exists within plotly if set to True default `Jet` colormap is
-            used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd, Bluered, RdBu, Reds, Blues, Picnic, Rainbow,
-            Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis
+        legendgroup (String, None): defines groups of layers that will be displayed in a legend
+            e.g. groups according to voltage level (as used in `vlevel_plotly`)
+        cmap (String, None): name of a matplotlib or plotly colormap if set to True default `Jet`
+            colormap is used, alternative colormaps : Greys, YlGnBu, Greens, YlOrRd,
+            Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis
         cmap_vals (list, None): values used for coloring using colormap
         show_colorbar (bool, False): flag for showing or not corresponding colorbar
         cbar_title (String, None): title for the colorbar
@@ -715,7 +719,7 @@ def _create_branch_trace(
                     cmax=cmax,
                     color="rgb(255,255,255)",
                     opacity=0,
-                    colorscale=cbar_cmap_name,
+                    colorscale=get_plotly_colorscale(cbar_cmap_name),
                     colorbar=ColorBar(thickness=10, x=cpos),
                 ),
             }
@@ -816,8 +820,9 @@ def create_trafo_trace(
             indices
         trace_name (String, "lines"): name of the trace which will appear in the legend
         color (String, "green"): color of lines in the trace
-        cmap (bool, False): name of a colormap which exists within plotly (Greys, YlGnBu, Greens, YlOrRd, Bluered, RdBu,
-            Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot, Blackbody, Earth, Electric, Viridis)
+        cmap (bool, False): name of a colormap which exists within matplotlib or plotly (Greys, YlGnBu,
+            Greens, YlOrRd, Bluered, RdBu, Reds, Blues, Picnic, Rainbow, Portland, Jet, Hot,
+            Blackbody, Earth, Electric, Viridis)
         cmap_vals (list, None): values used for coloring using colormap
         cbar_title (String, None): title for the colorbar
         cmin (float, None): colorbar range minimum
