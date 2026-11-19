@@ -1155,7 +1155,7 @@ def segment_buses(net: pandapowerNet, bus1, bus2, num_sections, line_name):  # ,
         vn_kv = net.bus.at[bus1, "vn_kv"]
         zone = net.bus.at[bus1, "zone"]
         # PowerFactory line section buses use type "ls", which pandapower does not restrict
-        bus = create_buses(net, 1, name=bus_name, type="ls", vn_kv=vn_kv, zone=zone)  # type: ignore[arg-type]
+        (bus,) = create_buses(net, 1, name=bus_name, type="ls", vn_kv=vn_kv, zone=zone)  # type: ignore[arg-type]
 
         # TODO: implement coords for segmentation buses.
         #  Handle coords if line has multiple coords.
