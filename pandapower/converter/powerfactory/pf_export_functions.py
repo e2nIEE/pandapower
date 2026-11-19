@@ -1,3 +1,6 @@
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import logging
 from typing import overload
 
@@ -157,12 +160,15 @@ def apply_unit_settings(app, elm_units, exponent):
 
 def run_load_flow(app, scale_feeder_loads=False, load_scaling=None, gen_scaling=None, motor_scaling=None):
     """
-    :param app: PowerFactory Application object
-    :param scale_feeder_loads: if loads have to be scaled according to the feeder scaling factor
-    :param motor_scaling: Load flow parameter in PowerFactory ("Load/Generation scaling")
-    :param gen_scaling: Load flow parameter in PowerFactory ("Load/Generation scaling")
-    :param load_scaling: Load flow parameter in PowerFactory ("Load/Generation scaling")
-    :return: None
+    Parameters:
+        app: PowerFactory Application object
+        scale_feeder_loads: if loads have to be scaled according to the feeder scaling factor
+        motor_scaling: Load flow parameter in PowerFactory ("Load/Generation scaling")
+        gen_scaling: Load flow parameter in PowerFactory ("Load/Generation scaling")
+        load_scaling: Load flow parameter in PowerFactory ("Load/Generation scaling")
+
+    Returns:
+        None
     """
 
     com_ldf = app.GetFromStudyCase("ComLdf")

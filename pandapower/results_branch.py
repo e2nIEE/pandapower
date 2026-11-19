@@ -24,22 +24,14 @@ from pandapower.pypower.idx_tcsc import (
 
 def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=None):
     """
-    Extract the branch results and writes it in the Dataframe net.res_line,  net.res_trafo, net.res_trafo3w...
+    Extract the branch results and writes it in the Dataframe net.res_line, net.res_trafo, net.res_trafo3w...
 
-    INPUT:
-
-        **net** - pandapower net
-
-        **ppc** (np.array) - ppc structure
-
-        **bus_lookup_aranged** - consecutive aranged bus lookup
-
-        **pq_buses** - the PQ type buses in ppc
-
-    OPTIONAL:
-
-        **suffix** (str, None) - a suffix like "_sc" to write to res_line_sc for example (short circuit)
-
+    Parameters:
+        net: pandapower net
+        ppc (np.array): ppc structure
+        bus_lookup_aranged: consecutive aranged bus lookup
+        pq_buses: the PQ type buses in ppc
+        suffix (str, None): a suffix like "_sc" to write to res_line_sc for example (short circuit)
     """
 
     i_ft, s_ft = _get_branch_flows(ppc)
@@ -58,12 +50,9 @@ def _get_branch_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_buses)
     """
     Extract the bus results and writes it in the Dataframe net.res_line and net.res_trafo.
 
-    INPUT:
-
-        **results** - the result of runpf loadflow calculation
-
-        **p** - the dict to dump the "res_line" and "res_trafo" Dataframe
-
+    Parameters:
+        results: the result of runpf loadflow calculation
+        p: the dict to dump the "res_line" and "res_trafo" Dataframe
     """
     I012_f, _, V012_f, I012_t, _, V012_t = _get_branch_flows_3ph(ppc0, ppc1, ppc2)
     _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)

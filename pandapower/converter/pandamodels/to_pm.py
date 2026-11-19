@@ -24,15 +24,19 @@ import logging
 import os
 import tempfile
 from collections import OrderedDict
+from collections.abc import Callable
 from os import remove
 from os.path import isfile
+from typing import Literal
 
 import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import _add_auxiliary_elements, _add_opf_options, _add_ppc_options
 from pandapower.build_branch import _calc_line_parameter
+from pandapower.network import pandapowerNet
 from pandapower.pd2ppc import _pd2ppc
+from pandapower.pp_types import Int
 from pandapower.pypower.idx_brch import (
     ANGMAX,
     ANGMIN,
@@ -92,82 +96,73 @@ class NumpyEncoder(json.JSONEncoder):
 
 
 def convert_pp_to_pm(
-    net,
-    pm_file_path=None,
-    correct_pm_network_data=True,
-    calculate_voltage_angles=True,
-    ac=True,
-    silence=True,
-    trafo_model="t",
-    delta=1e-8,
-    trafo3w_losses="hv",
-    check_connectivity=True,
-    pp_to_pm_callback=None,
-    pm_model="ACPPowerModel",
-    pm_solver="ipopt",
-    pm_mip_solver="cbc",
-    pm_nl_solver="ipopt",
-    opf_flow_lim="S",
-    pm_tol=1e-8,
-    voltage_depend_loads=False,
+    net: pandapowerNet,
+    pm_file_path: str | None = None,
+    correct_pm_network_data: bool = True,
+    calculate_voltage_angles: bool = True,
+    ac: bool = True,
+    silence: bool = True,
+    trafo_model: Literal["t", "pi"] = "t",
+    delta: float = 1e-8,
+    trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
+    check_connectivity: bool = True,
+    pp_to_pm_callback: Callable | None = None,
+    pm_model: str = "ACPPowerModel",
+    pm_solver: str = "ipopt",
+    pm_mip_solver: str = "cbc",
+    pm_nl_solver: str = "ipopt",
+    opf_flow_lim: str = "S",
+    pm_tol: float = 1e-8,
+    voltage_depend_loads: bool = False,
     from_time_step=None,
     to_time_step=None,
-    init_vm_pu="flat",
-    init_va_degree="flat",
+    init_vm_pu: Literal["flat", "results"] = "flat",
+    init_va_degree: Literal["dc", "flat", "results"] = "flat",
     init_pq="flat",
     **kwargs,
 ):
     """
     Converts a pandapower net to a PowerModels.jl datastructure and saves it to a json file
-    INPUT:
-        **net**  - pandapower net
-    OPTIONAL:
-        **pm_file_path** (str, None) - Specifiy the filename, under which the .json file for
-        powermodels is stored. If you want to keep the file after optimization, you should also
-        set delete_buffer_file to False!
 
-        **correct_pm_network_data** (bool, True) - checks if network data is correct.
-        If not tries to correct it
+    Parameters:
+        net: pandapower net
+        pm_file_path: Specifiy the filename, under which the .json file for powermodels is stored. If you
+            want to keep the file after optimization, you should also set delete_buffer_file to False!
+        correct_pm_network_data: checks if network data is correct. If not tries to correct it
+        calculate_voltage_angles:
+        ac:
+        silence: Suppresses information and warning messages output by PowerModels
+        trafo_model:
+        delta:
+        trafo3w_losses:
+        check_connectivity:
+        pp_to_pm_callback: callback function to add data to the PowerModels data structure
+        pm_model: The PowerModels.jl model to use
+        pm_solver: The "main" power models solver
+        pm_mip_solver: The mixed integer solver (when "main" solver == juniper)
+        pm_nl_solver: The nonlinear solver (when "main" solver == juniper)
+        opf_flow_lim: Quantity to limit for branch flow constraints, in line with matpower's "opf.flowlim"
 
-        **silence** (bool, True) - Suppresses information and warning messages output by PowerModels
+            - "S": apparent power flow (limit in MVA)
+            - "I": current magnitude (limit in MVA at 1 p.u. voltage)
+        pm_tol: default desired convergence tolerance for solver to use.
+        voltage_depend_loads: consideration of voltage-dependent loads. If False,
+            net.load.const_z_p_percent, net.load.const_i_p_percent, net.load.const_z_q_percent and
+            net.load.const_i_q_percent are not considered, i.e. net.load.p_mw and net.load.q_mvar are considered as
+            constant-power loads.
+        from_time_step:
+        to_time_step:
+        init_vm_pu:
+        init_va_degree:
+        init_pq:
 
-        **pm_model** (str, "ACPPowerModel") - The PowerModels.jl model to use
-
-        **pm_solver** (str, "ipopt") - The "main" power models solver
-
-        **pm_mip_solver** (str, "cbc") - The mixed integer solver (when "main" solver == juniper)
-
-        **pm_nl_solver** (str, "ipopt") - The nonlinear solver (when "main" solver == juniper)
-
-        **pm_time_limits** (Dict, None) - Time limits in seconds for power models interface.
-        To be set as a dict like
-        {"pm_time_limit": 300., "pm_nl_time_limit": 300., "pm_mip_time_limit": 300.}
-
-        **pm_log_level** (int, 0) - solver log level in power models
-
-        **delete_buffer_file** (Bool, True) - If True, the .json file used by powermodels will be
-        deleted after optimization.
-
-        **pp_to_pm_callback** (function, None) - callback function to add data to the PowerModels
-        data structure
-
-        **opf_flow_lim** (str, "I") - Quantity to limit for branch flow constraints, in line with
-        matpower's "opf.flowlim" parameter:
-
-            "S" - apparent power flow (limit in MVA),
-
-            "I" - current magnitude (limit in MVA at 1 p.u. voltage)
-
-        **pm_tol** (float, 1e-8) - default desired convergence tolerance for solver to use.
-
-        **voltage_depend_loads** (bool, False) - consideration of voltage-dependent loads.
-        If False, net.load.const_z_p_percent, net.load.const_i_p_percent,
-        net.load.const_z_q_percent and net.load.const_i_q_percent are not considered,
-        i.e. net.load.p_mw and net.load.q_mvar are considered as constant-power loads.
-
-    Returns
-    -------
+    Keyword Args:
+        pm_time_limits (Dict, None): Time limits in seconds for power models interface. To be set as a dict like
+            {"pm_time_limit": 300., "pm_nl_time_limit": 300., "pm_mip_time_limit": 300.}
+        pm_log_level (int, 0): solver log level in power models
+        delete_buffer_file (Bool, True): If True, the .json file used by powermodels will be deleted after optimization.
     """
+    # TODO: check if keyword args are even supported, they were documented but not present in signature…
 
     net._options = {}
 
@@ -217,6 +212,11 @@ logger = logging.getLogger(__name__)
 
 
 def convert_to_pm_structure(net, from_time_step=None, to_time_step=None, **kwargs):
+    """
+    Converts the pandapower net to the PowerModels data structure with the options in net._options.
+
+    Returns the net, the PowerModels dict, the ppc and the ppci.
+    """
     if net["_options"]["voltage_depend_loads"] and not (
         np.allclose(net.load.const_z_p_percent.values, 0)
         and np.allclose(net.load.const_i_p_percent.values, 0)
@@ -231,6 +231,10 @@ def convert_to_pm_structure(net, from_time_step=None, to_time_step=None, **kwarg
         verify_results(net, mode=net["_options"]["mode"])
     else:
         init_results(net)
+    # clear the lookups of a previous run, they could refer to elements which are not in this ppc
+    net._pd2ppc_lookups = {
+        key: np.array([], dtype=np.int64) for key in ["bus", "bus_dc", "ext_grid", "gen", "branch", "branch_dc"]
+    }
     ppc, ppci = _pd2ppc(net)
     ppci = build_ne_branch(net, ppci)
     net["_ppc_opf"] = ppci
@@ -580,16 +584,15 @@ def build_ne_branch(net, ppc):
     return ppc
 
 
-def init_ne_line(net, new_line_index, construction_costs=None):
+def init_ne_line(net, new_line_index: list[Int], construction_costs: list[float] | None = None):
     """
-    init function for new line dataframe, which specifies the possible new lines being built by power models tnep opt
-    Parameters
-    ----------
-    net - pp net
-    new_line_index (list) - indices of new lines. These are copied to the new dataframe net["ne_line"] from net["line"]
-    construction_costs (list, 0.) - costs of newly constructed lines
-    Returns
-    -------
+    init function for new line dataframe, which specifies the possible new lines being built by power models tnep
+    opt
+
+    Parameters:
+        net: pp net
+        new_line_index: indices of new lines. These are copied to the new dataframe net["ne_line"] from net["line"]
+        construction_costs: costs of newly constructed lines
     """
     # init dataframe
     net["ne_line"] = net["line"].loc[new_line_index, :].copy()

@@ -1,8 +1,12 @@
+# Copyright (c) 2016-2026 by University of Kassel and Fraunhofer Institute for Energy Economics
+# and Energy System Technology (IEE), Kassel. All rights reserved.
+
 import logging
 
 import numpy as np
 import pandas as pd
 
+from pandapower.network import pandapowerNet
 from pandapower.pf.runpp_3ph import runpp_3ph
 from pandapower.results import init_element
 from pandapower.run import runpp
@@ -194,20 +198,18 @@ def _set_pf_results_unbalanced(net, pf_results):
     net.res_trafo_3ph["pf_loading_percent"] = pf_results["pf_trafo_3ph_loading"]
 
 
-def validate_pf_conversion(net, is_unbalanced=False, **kwargs):
+def validate_pf_conversion(net: pandapowerNet, is_unbalanced: bool = False, **kwargs) -> dict[str, pd.DataFrame]:
     """
-    Trys to run a Loadflow with the converted pandapower network. If the loadflow converges, \
-    PowerFactory and pandapower loadflow results will be compared. Note that a pf validation can \
-    only be done if there are pf results available.
+    Trys to run a Loadflow with the converted pandapower network. If the loadflow converges, PowerFactory and
+    pandapower loadflow results will be compared. Note that a pf validation can only be done if there are pf results
+    available.
 
-    INPUT:
+    Parameters:
+        net: converted pandapower network
+        is_unbalanced:
 
-        - **net** (PandapowerNetwork) - converted pandapower network
-
-    OUTPUT:
-        - **all_diffs** (list) - returns a list with the difference in all validated values.
-                                 If all values are zero -> results are equal
-
+    Returns:
+        returns a dict with the difference in all validated values. If all values are zero -> results are equal
     """
     logger.debug("starting verification")
     replace_zero_branches_with_switches(net)

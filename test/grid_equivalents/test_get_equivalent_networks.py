@@ -14,10 +14,10 @@ epsilon = 1e-4
 """
 Attention:
 
-the epsilon value depends on the "tolerance_mva" by the power flow calculation.
+the epsilon value depends on the "tolerance" by the power flow calculation.
 
-if tolerance_mva = 1e-8, this test should work with epsilon=1e-6 .
-if tolerance_mva = 1e-6, we should use a bigger value, e.g. epsilon=1e-5
+if tolerance = 1e-8, this test should work with epsilon=1e-6 .
+if tolerance = 1e-6, we should use a bigger value, e.g. epsilon=1e-5
 """
 
 test_data = {

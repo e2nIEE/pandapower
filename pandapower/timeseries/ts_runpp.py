@@ -12,7 +12,12 @@ from pandapower.control.controller.trafo_control import TrafoController
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.pfsoln_numba import pf_solution_single_slack
 from pandapower.pf.pfsoln_numba import pfsoln as pfsoln_full
-from pandapower.pf.run_newton_raphson_pf import _get_pf_variables_from_ppci, _get_Y_bus, makeYbus_numba, newtonpf
+from pandapower.pf.run_newton_raphson_pf import (
+    _get_numba_functions,
+    _get_pf_variables_from_ppci,
+    _get_Y_bus,
+    newtonpf,
+)
 from pandapower.powerflow import LoadflowNotConverged, _add_auxiliary_elements
 from pandapower.pypower.idx_bus import PD, QD
 from pandapower.pypower.idx_bus_dc import DC_PD
@@ -42,6 +47,9 @@ class TimeSeriesRunpp:
         # update functions
         self.update_pq = False
         self.update_trafo = False
+        from pandapower.pf.transformer_thermal import TransformerThermalTracker
+
+        self.transformer_thermal_tracker = TransformerThermalTracker()
         self.init_timeseries_newton()
 
     def ts_newtonpf(self, net):
@@ -60,7 +68,7 @@ class TimeSeriesRunpp:
         Sbus = makeSbus(self.baseMVA, bus, gen)
 
         # run the newton power flow
-        V, success, _, _, _, _, _ = newtonpf(
+        V, success, *_ = newtonpf(
             Ybus=self.Ybus, Sbus=Sbus, V0=self.V, ref=self.ref, pv=self.pv, pq=self.pq, ppci=self.ppci, options=options
         )
 
@@ -112,6 +120,14 @@ class TimeSeriesRunpp:
         self.V = V
 
         _extract_results(net, self.ppc)
+
+        # transformer thermal model is post-processing and is not reached through _ppci_to_net here.
+        # The tracker chains the top-oil temperature across the time steps, which is what makes the
+        # recursive IEC 60076-7 model physically meaningful in a time series.
+        if options.get("tdpf", False):
+            from pandapower.pf.transformer_thermal import dt_minutes_from_options
+
+            self.transformer_thermal_tracker.run(net, dt_minutes=dt_minutes_from_options(options))
 
         return net
 
@@ -167,12 +183,11 @@ class TimeSeriesRunpp:
         self.ppc, self.ppci = _pd2ppc(net)
         net["_ppc"] = self.ppc
 
-        self.baseMVA, bus, _, branch, self.ref, self.pv, self.pq, _, _, self.V, self.ref_gens = (
+        self.baseMVA, bus, _, branch, _, _, _, _, self.ref, self.pv, self.pq, _, _, self.V, self.ref_gens = (
             _get_pf_variables_from_ppci(self.ppci)
         )
-        self.ppci, self.Ybus, self.Yf, self.Yt = _get_Y_bus(
-            self.ppci, options, makeYbus_numba, self.baseMVA, bus, branch
-        )
+        makeYbus, _ = _get_numba_functions(self.ppci, options)
+        self.ppci, self.Ybus, self.Yf, self.Yt = _get_Y_bus(self.ppci, options, makeYbus, self.baseMVA, bus, branch)
         self.Ibus = zeros(len(self.V), dtype=complex128)
 
         # self.Cg = _get_Cg(gen, bus)  # assumes that all gens are on!
@@ -252,8 +267,9 @@ class TimeSeriesRunpp:
 
         # update Ybus based on this
         options = net._options
+        makeYbus, _ = _get_numba_functions(ppci, options)
         baseMVA, bus, _, branch, *_ = _get_pf_variables_from_ppci(ppci)
-        self.ppci, self.Ybus, self.Yf, self.Yt = _get_Y_bus(ppci, options, makeYbus_numba, baseMVA, bus, branch)
+        self.ppci, self.Ybus, self.Yf, self.Yt = _get_Y_bus(ppci, options, makeYbus, baseMVA, bus, branch)
 
     def get_update_ctrl(self):
         controllers = self.net.controller["object"]

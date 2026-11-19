@@ -7,8 +7,10 @@ from collections import defaultdict
 from typing import Generic, Literal, TypeVar
 
 import numpy as np
+import pandas as pd
 
 from pandapower.network import ADict, pandapowerNet
+from pandapower.pp_types import Int
 
 logger = logging.getLogger(__name__)
 
@@ -18,8 +20,9 @@ def add_log_level(levelno: int, levelname: str) -> None:
     """
     add a custom log level to the logger
 
-    :param levelno: int number for the level
-    :param levelname: name for the level
+    Parameters:
+        levelno: int number for the level
+        levelname: name for the level
     """
 
     def log_for_level(self, message, *args, **kwargs):
@@ -71,19 +74,20 @@ class DiagnosticFunction(ABC, Generic[N, T]):
 
         The first lines should always check if an error occurred or there are no results
 
-        >>> # error and success checks
-        >>> if error is not None:
-        >>>     self.out.warning("Check for < > failed due to the following error:")
-        >>>     self.out.warning(error)
-        >>>     return
-        >>> if results is None:
-        >>>     self.out.info("PASSED: < > successful.")
-        >>>     return
-        >>> # message header
-        >>> ...
-        >>> # message body
-        >>> ...
-        >>> # message summary
+        >>> def report(self, error: Exception | None, results: T | None) -> None:
+        >>>     # error and success checks
+        >>>     if error is not None:
+        >>>         self.out.warning("Check for < > failed due to the following error:")
+        >>>         self.out.warning(error)
+        >>>         return
+        >>>     if results is None:
+        >>>         self.out.info("PASSED: < > successful.")
+        >>>         return
+        >>>     # message header
+        >>>     ...
+        >>>     # message body
+        >>>     ...
+        >>>     # message summary
 
         There are additional levels defined for the `self.out` logger.
 
@@ -156,26 +160,23 @@ def check_greater_equal_zero(element, element_index, column):
         return element_index
 
 
-def check_greater_zero(element, element_index, column):
+def check_greater_zero(element: pd.Series, element_index: int, column: str) -> Int | None:
     """
-    functions that check, if a certain input type restriction for attribute values of a pandapower
-    elements are fulfilled. Exemplary description for all type check functions.
+    functions that check, if a certain input type restriction for attribute values of a pandapower elements are
+    fulfilled. Exemplary description for all type check functions.
 
-    INPUT:
-       **element (pandas.Series)** - pandapower element instance (e.g. net.bus.loc[1])
+    Parameters:
+        element: pandapower element instance (e.g. net.bus.loc[1])
+        element_index: index of the element instance
+        column: element attribute (e.g. 'vn_kv')
 
-       **element_index (int)**     - index of the element instance
-
-       **column (string)**         - element attribute (e.g. 'vn_kv')
-
-
-    OUTPUT:
-       **element_index (index)**   - index of element instance, if input type restriction is not
-                                     fulfilled
+    Returns:
+        index of element instance, if input type restriction is not fulfilled
     """
     if check_number(element, element_index, column) is None:
         if element[column] <= 0:
             return element_index
+        return None
     else:
         return element_index
 
@@ -282,7 +283,7 @@ def diagnostic(
         overload_scaling_factor: downscaling factor for loads and generation for overload check
         lines_min_length_km: minimum length_km allowed for lines
         lines_min_z_ohm: minimum z_ohm allowed for lines
-        nom_voltage_tolerance** (float, 0.3): highest allowed relative deviation between nominal voltages and bus
+        nom_voltage_tolerance: highest allowed relative deviation between nominal voltages and bus
             voltages
 
     Keyword Arguments:

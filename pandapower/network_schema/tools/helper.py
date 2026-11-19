@@ -46,23 +46,18 @@ def get_dtypes(schema: pa.DataFrameSchema, required_only: bool = True, metadata:
     """
     Extract column data types from a Pandera DataFrame schema.
 
-    This function parses a Pandera schema and returns a dictionary mapping
-    column names to their corresponding data types. Optionally filters to
-    include only required columns or columns with specific metadata.
+    This function parses a Pandera schema and returns a dictionary mapping column names to their corresponding data
+    types. Optionally filters to include only required columns or columns with specific metadata.
 
-    Args:
-        schema (pa.DataFrameSchema): The Pandera DataFrame schema to extract
-            data types from.
-        required_only (bool, optional): If True, only includes required columns
-            in the result. If False, includes all columns regardless of their
-            required status. Defaults to True.
-        metadata (list, optional): List of metadata keys to check. Columns will
-            be included if they have metadata containing any of these keys with
-            truthy values. Defaults to empty list.
+    Parameters:
+        schema: The Pandera DataFrame schema to extract data types from.
+        required_only: If True, only includes required columns in the result. If False, includes all columns regardless
+            of their required status.
+        metadata: List of metadata keys to check. Columns will be included if they have metadata containing any of these
+            keys with truthy values. Defaults to empty list.
 
     Returns:
-        dict: A dictionary where keys are column names (str) and values are
-            the corresponding data type objects (type).
+        A dictionary where keys are column names (str) and values are the corresponding data type objects (type).
 
     Example:
         >>> import pandera as pa

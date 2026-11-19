@@ -169,10 +169,11 @@ def _connected_phases(token):
 
 
 def from_opendss(path: str, solve: bool = True):
-    """Build a balanced (positive-sequence) pandapower net from an OpenDSS feeder.
+    """
+    Build a balanced (positive-sequence) pandapower net from an OpenDSS feeder.
 
-    The OpenDSS circuit is compiled through ``OpenDSSDirect.py`` and its elements
-    are mapped to pandapower as follows:
+    The OpenDSS circuit is compiled through ``OpenDSSDirect.py`` and its elements are mapped to pandapower as
+    follows:
 
     * Circuit / Vsource -> ``ext_grid``: slack, ``vm_pu`` from the source pu
     * Bus -> ``bus``: ``vn_kv`` = base kV (line-to-line)
@@ -185,31 +186,24 @@ def from_opendss(path: str, solve: bool = True):
     * Load -> ``load``: kW/kvar -> p_mw/q_mvar
     * Capacitor -> ``shunt``: kvar -> -q_mvar (injection)
 
-    Transformers are imported at their *solved* tap ratio, so on-load tap changers
-    and RegControls are captured as the operating point; the controllers themselves
-    are not re-implemented. Three-winding center-tapped service transformers (two
-    LV windings on the same secondary bus) are collapsed to a balanced two-winding
-    equivalent. Because positive-sequence modeling cannot represent 120/240 V
-    split-phase operation (#873), those LV voltages carry the largest approximation
-    error.
+    Transformers are imported at their *solved* tap ratio, so on-load tap changers and RegControls are captured as
+    the operating point; the controllers themselves are not re-implemented. Three-winding center-tapped service
+    transformers (two LV windings on the same secondary bus) are collapsed to a balanced two-winding equivalent.
+    Because positive-sequence modeling cannot represent 120/240 V split-phase operation (#873), those LV voltages
+    carry the largest approximation error.
 
-    This function requires the optional dependency ``OpenDSSDirect.py``
-    (``pip install pandapower[opendss]``).
+    This function requires the optional dependency ``OpenDSSDirect.py`` (``pip install pandapower[opendss]``).
 
-    Args:
-        path (str): Path to the OpenDSS master ``.dss`` file, i.e. the file
-            you would ``Redirect`` to. All transitively ``Redirect``-ed component
-            files are followed.
-        solve (bool): If True, solves the circuit in OpenDSS first and captures the
-            per-bus voltage magnitudes (pu, phase-averaged) in the import report so
-            that a round-trip can be validated without re-solving OpenDSS. Defaults
-            to True.
+    Parameters:
+        path: Path to the OpenDSS master ``.dss`` file, i.e. the file you would ``Redirect`` to. All transitively
+            ``Redirect``-ed component files are followed.
+        solve: If True, solves the circuit in OpenDSS first and captures the per-bus voltage magnitudes (pu,
+            phase-averaged) in the import report so that a round-trip can be validated without re-solving OpenDSS.
 
     Returns:
-        pandapowerNet: A balanced net carrying an ``opendss_import`` diagnostics
-        dict with element counts, per-bus phase counts, the OpenDSS-solved
-        voltages, and the list of approximations or skipped elements encountered
-        during import.
+        pandapowerNet: A balanced net carrying an ``opendss_import`` diagnostics dict with element counts, per-bus phase
+            counts, the OpenDSS-solved voltages, and the list of approximations or skipped elements encountered during
+            import.
     """
     if not opendssdirect_imported:
         raise NotImplementedError(

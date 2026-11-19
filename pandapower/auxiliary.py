@@ -467,14 +467,13 @@ def get_indices(
     fused_indices: bool = True,
 ) -> NDArray[np.int64]:
     """
-    Helper function during pd2mpc conversion. It resolves the mapping from a
-    given selection of indices to the actual indices, using a dict lookup being
-    passed as well.
+    Helper function during pd2mpc conversion. It resolves the mapping from a given selection of indices to the
+    actual indices, using a dict lookup being passed as well.
 
-    :param selection: Indices we want to select
-    :param lookup: The mapping itself
-    :param fused_indices: Flag which way the conversion is working.
-    :return:
+    Parameters:
+        selection: Indices we want to select
+        lookup: The mapping itself
+        fused_indices: Flag which way the conversion is working.
     """
     if fused_indices:
         return np.array([lookup[k] for k in selection], dtype=np.int64)
@@ -488,11 +487,10 @@ def _get_values(
     """
     Returns values for a selection of values after a lookup.
 
-    :param source: The array of values to select from.
-    :param selection: An array of keys, for the selection.
-    :param lookup: The mapping to resolve actual indices of the
-    value array from the selection.
-    :return:
+    Parameters:
+        source: The array of values to select from.
+        selection: An array of keys, for the selection.
+        lookup: The mapping to resolve actual indices of the value array from the selection.
     """
     v = np.zeros(len(selection))
     for i, k in enumerate(selection):
@@ -562,24 +560,18 @@ def read_from_net(
     flag: Literal["auto", "single_index", "all_index", "loc", "object"] = "auto",
 ) -> Any:
     """
-    Reads values from the specified element table at the specified index in the column according to the specified variable
-    Chooses the method to read based on flag
+    Reads values from the specified element table at the specified index in the column according to the specified
+    variable Chooses the method to read based on flag
 
-    Parameters
-    ----------
-    net
-    element : str
-        element table in pandapower net; can also be a results table
-    index : int or array_like
-        index of the element table where values are read from
-    variable : str
-        column of the element table
-    flag : str
-        defines which underlying function to use, can be one of ['auto', 'single_index', 'all_index', 'loc', 'object']
+    Parameters:
+        net:
+        element: element table in pandapower net; can also be a results table
+        index: index of the element table where values are read from
+        variable: column of the element table
+        flag: defines which underlying function to use, can be one of ['auto', 'single_index', 'all_index', 'loc',
+            'object']
 
-    Returns
-    -------
-    values
+    Returns:
         the values of the variable for the element table according to the index
     """
     if flag == "single_index":
@@ -628,24 +620,16 @@ def write_to_net(
     flag: Literal["auto", "single_index", "all_index", "loc", "object"] = "auto",
 ) -> None:
     """
-    Writes values to the specified element table at the specified index in the column according to the specified variable
-    Chooses the method to write based on flag
+    Writes values to the specified element table at the specified index in the column according to the specified
+    variable Chooses the method to write based on flag
 
-    Parameters
-    ----------
-    net
-    element : str
-        element table in pandapower net
-    index : int or array_like
-        index of the element table where values are written to
-    variable : str
-        column of the element table
-    flag : str
-        defines which underlying function to use, can be one of ['auto', 'single_index', 'all_index', 'loc', 'object']
-
-    Returns
-    -------
-    None
+    Parameters:
+        net:
+        element: element table in pandapower net
+        index: index of the element table where values are written to
+        variable: column of the element table
+        flag: defines which underlying function to use, can be one of ['auto', 'single_index', 'all_index', 'loc',
+            'object']
     """
     # write functions faster, depending on type of element_index
     if flag == "single_index":
@@ -769,10 +753,10 @@ def _set_isolated_nodes_out_of_service(
 
 def _check_connectivity_opf(ppc: PyPowerNetwork) -> tuple[NDArray[bool], int, int]:
     """
-    Checks if the ppc contains isolated buses and changes slacks to PV nodes if multiple slacks are
-    in net.
-    :param ppc: pypower case file
-    :return:
+    Checks if the ppc contains isolated buses and changes slacks to PV nodes if multiple slacks are in net.
+
+    Parameters:
+        ppc: pypower case file
     """
     br_status = ppc["branch"][:, BR_STATUS].astype(bool)
     nobranch = ppc["branch"][br_status, :].shape[0]
@@ -810,8 +794,9 @@ def _check_connectivity_opf(ppc: PyPowerNetwork) -> tuple[NDArray[bool], int, in
 def _check_connectivity(ppc: PyPowerNetwork) -> tuple[NDArray[bool], int, int, NDArray[bool], int, int]:
     """
     Checks if the ppc contains isolated buses. If yes this isolated buses are set out of service
-    :param ppc: pypower case file
-    :return:
+
+    Parameters:
+        ppc: pypower case file
     """
     br_status = ppc["branch"][:, BR_STATUS].astype(bool)
     nobranch = ppc["branch"][br_status, :].shape[0]
@@ -888,8 +873,9 @@ def _check_connectivity(ppc: PyPowerNetwork) -> tuple[NDArray[bool], int, int, N
 def _subnetworks(ppc: PyPowerNetwork) -> list[list[int]]:
     """
     Return a list of lists of the connected buses of the network
-    :param ppc: pypower case file
-    :return:
+
+    Parameters:
+        ppc: pypower case file
     """
     br_status = ppc["branch"][:, BR_STATUS].astype(bool)
     oos_bus = ppc["bus"][:, BUS_TYPE] == NONE
@@ -952,41 +938,28 @@ def _select_is_elements_numba(
     sequence: str | None = None,
 ) -> dict[str, NDArray[np.int64]]:
     """
-    Selects in-service elements in the grid (both AC and DC) based on the network's state
-    and sets this information in the internal lookups.
-    If provided, isolated buses (AC and DC) are additionally considered as not in service.
-    The function sets elements out of service based on their direct connectivity to
-    in-service buses, and also based on controllability flags in 'load', 'sgen', and 'storage'
-    during optimal power flow (OPF) mode.
+    Selects in-service elements in the grid (both AC and DC) based on the network's state and sets this information
+    in the internal lookups. If provided, isolated buses (AC and DC) are additionally considered as not in service.
+    The function sets elements out of service based on their direct connectivity to in-service buses, and also based
+    on controllability flags in 'load', 'sgen', and 'storage' during optimal power flow (OPF) mode.
 
     Parameters:
-    -----------
-    net : pandapowerNet
-        The grid data structure containing information about the buses, loads, lines, etc.
-
-    isolated_nodes : list or ndarray, optional (default=None)
-        List or array of isolated nodes (AC) in the network. If provided, the isolated nodes are
-        set as out of service.
-
-    isolated_nodes_dc : list or ndarray, optional (default=None)
-        List or array of isolated nodes (DC) in the network. If provided, the isolated DC nodes are
-        set as out of service.
-
-    sequence : str, optional (default=None)
-        Used when multi-sequence data is present in the network (like in fault studies).
-        If provided, it selects the specific sequence data in the network.
+        net: The grid data structure containing information about the buses, loads, lines, etc.
+        isolated_nodes: List or array of isolated nodes (AC) in the network. If provided, the isolated nodes are set as
+            out of service.
+        isolated_nodes_dc: List or array of isolated nodes (DC) in the network. If provided, the isolated DC nodes are
+            set as out of service.
+        sequence: Used when multi-sequence data is present in the network (like in fault studies). If provided, it
+            selects the specific sequence data in the network.
 
     Returns:
-    --------
-    is_elements : dict
-        A dictionary containing boolean arrays or lists representing the in-service state
-        of various elements (like 'load', 'gen', 'line', etc.) in the network.
+        A dictionary containing boolean arrays or lists representing the in-service state of various elements (like
+            'load', 'gen', 'line', etc.) in the network.
 
     Notes:
-    ------
-    1. The function checks and considers both AC and DC elements in the grid.
-    2. If the grid has VSC elements and auxiliary lookup data, the isolated auxiliary buses
-       for the VSC elements are also set out of service.
+        1. The function checks and considers both AC and DC elements in the grid.
+        2. If the grid has VSC elements and auxiliary lookup data, the isolated auxiliary buses
+           for the VSC elements are also set out of service.
     """
     # is missing sgen_controllable and load_controllable
     if len(net.bus) > 0:  # preparing for the possibility of not having any AC buses but just DC
@@ -1095,16 +1068,16 @@ def _add_ppc_options(
     calculate_voltage_angles: bool,
     trafo_model: Literal["t", "pi"],
     check_connectivity: bool,
-    mode: Literal["opf", "pf", "pf_3ph", "sc", "nx", "se", "dc"],
-    switch_rx_ratio: int,
+    mode: str,
+    switch_rx_ratio: float,
     enforce_p_lims: bool,
     enforce_q_lims: bool,
     recycle: dict[str, bool] | None,
     delta: float = 1e-10,
     voltage_depend_loads: bool = False,
     trafo3w_losses: Literal["hv", "lv", "star"] = "hv",
-    init_vm_pu: Literal["flat", "results"] | float = 1.0,
-    init_va_degree: Literal["dc", "flat", "results"] | float = 0,
+    init_vm_pu: Literal["dc", "flat", "results", "auto"] | float = 1.0,
+    init_va_degree: Literal["dc", "flat", "results", "auto"] | float = 0,
     p_lim_default: float = 1e9,
     q_lim_default: float = 1e9,
     neglect_open_switch_branches: bool = False,
@@ -1172,7 +1145,7 @@ def _check_gen_index_and_print_warning_if_high(net: pandapowerNet, n_max: int = 
 
 def _add_pf_options(
     net: pandapowerNet,
-    tolerance_mva: float | None,
+    tolerance: float | None,
     trafo_loading: Literal["current", "power"],
     numba: bool,
     ac: bool,
@@ -1184,8 +1157,10 @@ def _add_pf_options(
     creates dictionary for pf, opf and short circuit calculations from input parameters.
     """
 
+    tolerance, kwargs = warn_and_fix_parameter_renaming("tolerance_mva", "tolerance", tolerance, 1e-8, kwargs)
+
     options = {
-        "tolerance_mva": tolerance_mva,
+        "tolerance": tolerance,
         "trafo_loading": trafo_loading,
         "numba": numba,
         "ac": ac,
@@ -1498,6 +1473,10 @@ def _check_tdpf_parameters(net: pandapowerNet, tdpf_update_r_theta: bool, tdpf_d
     if len(tdpf_lines) == 0:
         logger.info("TDPF: no relevant lines found")
 
+    # transformers are always included in the thermal calculation when tdpf=True (no opt-in flag)
+    trafo_idx = net.trafo.index[net.trafo.in_service.values] if len(net.trafo) else net.trafo.index[:0]
+    trafo3w_idx = net.trafo3w.index[net.trafo3w.in_service.values] if len(net.trafo3w) else net.trafo3w.index[:0]
+
     # required for simplified approach if r_theta_kelvin_per_mw is provided, can be filled with simplified values:
     default_values = {
         "temperature_degree_celsius": 20,  # starting temperature of lines
@@ -1531,20 +1510,22 @@ def _check_tdpf_parameters(net: pandapowerNet, tdpf_update_r_theta: bool, tdpf_d
     # if np.any(np.setdiff1d(net.line.columns, required_columns)):
     #     raise UserWarning(f"TDPF: required columns missing in net.line: {required_columns}")
 
-    missing_columns = []
-    for col in required_columns:
-        if col not in net.line.columns or np.any(net.line.loc[tdpf_lines, col].isnull()):
-            missing_columns.append(col)
+    # The line columns are only validated if the network contains lines at all. A network with only
+    # transformers (no lines) still gets transformer temperatures, so there is nothing to check here.
+    if len(net.line) > 0:
+        missing_columns = []
+        for col in required_columns:
+            # `tdpf` selects the lines and therefore has to exist for the branch conversion, but only
+            # the values of the selected lines are relevant. An ordinary line that did not opt in must
+            # not trigger a missing-value warning for a column it never needed.
+            if col not in net.line.columns or (len(tdpf_lines) > 0 and np.any(net.line.loc[tdpf_lines, col].isnull())):
+                missing_columns.append(col)
 
-    if len(missing_columns) > 0:
-        raise UserWarning(f"TDPF: required columns {missing_columns} are missing or have missing values")
+        if len(missing_columns) > 0:
+            raise UserWarning(f"TDPF: required columns {missing_columns} are missing or have missing values")
 
-    # check if unsupported elements are included
-    if (
-        len(net.line.loc[net.line.index.isin(tdpf_lines) & (net.line.type == "cs")]) > 0
-        or "tdpf" in net.trafo
-        or "tdpf" in net.trafo3w
-    ):
+    # check if unsupported elements are included; the "type" column is optional in the line schema
+    if len(tdpf_lines) > 0 and "type" in net.line.columns and (net.line.loc[tdpf_lines, "type"].dropna() == "cs").any():
         logger.warning("TDPF: temperature dependent power flow is only implemented for overhead lines")
 
     # now fill in the default values
@@ -1555,8 +1536,45 @@ def _check_tdpf_parameters(net: pandapowerNet, tdpf_update_r_theta: bool, tdpf_d
             logger.info(f"TDPF: filling nan values in {col} with a default assumption of {val}")
             net.line.loc[tdpf_lines, col] = net.line.loc[tdpf_lines, col].fillna(val)
 
-    if len(net.line.loc[net.line.index.isin(tdpf_lines) & (net.line.r_ohm_per_km == 0)]) > 0:
+    if len(net.line) > 0 and len(net.line.loc[net.line.index.isin(tdpf_lines) & (net.line.r_ohm_per_km == 0)]) > 0:
         raise UserWarning("TDPF: temperature dependent power flow cannot be applied to lines that have r_ohm_per_km=0")
+
+    _check_tdpf_trafo_parameters(net, trafo_idx, trafo3w_idx)
+
+
+def _check_tdpf_trafo_parameters(net: pandapowerNet, trafo_idx, trafo3w_idx) -> None:
+    """Default and validate the transformer input columns of the transformer thermal calculation.
+
+    Every in-service transformer takes part in the thermal calculation when ``tdpf=True``; there is no
+    per transformer opt-in flag. Only ``cooling_type`` and ``air_temperature_degree_celsius`` are
+    required inputs, everything else is derived from the nameplate data.
+    """
+    trafo_defaults = {"cooling_type": "ONAN", "air_temperature_degree_celsius": 35}
+    for element, indices in (("trafo", trafo_idx), ("trafo3w", trafo3w_idx)):
+        if len(indices) == 0:
+            continue
+        table = net[element]
+        if "cooling_type" not in table.columns:
+            table["cooling_type"] = pd.Series(pd.NA, index=table.index, dtype="string")
+        if "air_temperature_degree_celsius" not in table.columns:
+            table["air_temperature_degree_celsius"] = np.nan
+        for col, val in trafo_defaults.items():
+            if np.any(pd.isnull(table.loc[indices, col])):
+                logger.info(f"TDPF: filling nan values in {element}.{col} with a default assumption of {val}")
+        # normalise the cooling type, so that the library mapping is unambiguous
+        table["cooling_type"] = table["cooling_type"].astype("string")
+        table.loc[indices, "cooling_type"] = table.loc[indices, "cooling_type"].str.strip().str.upper().fillna("ONAN")
+        table.loc[indices, "air_temperature_degree_celsius"] = (
+            table.loc[indices, "air_temperature_degree_celsius"].astype(float).fillna(35.0)
+        )
+        invalid = ~table.loc[indices, "cooling_type"].isin(["ONAN", "ONAF"])
+        if invalid.any():
+            raise UserWarning(
+                f"TDPF: invalid cooling_type in {element} for indices {table.loc[indices].index[invalid].tolist()}, "
+                "must be 'ONAN' or 'ONAF'"
+            )
+        if (table.loc[indices, "air_temperature_degree_celsius"] <= -273).any():
+            raise UserWarning(f"TDPF: air_temperature_degree_celsius in {element} must be greater than -273 °C")
 
 
 # =============================================================================
@@ -1867,13 +1885,11 @@ def _add_vsc_bipolar(net: pandapowerNet):
 
 def _add_auxiliary_elements(net: pandapowerNet):
     """
-    Add auxiliary elements to net, convert the HVDC links to a gen pair and
-    convert the back2back VSC to two monopol VSCs
-    Args:
+    Add auxiliary elements to net, convert the HVDC links to a gen pair and convert the back2back VSC to two monopol
+    VSCs
+
+    Parameters:
         net:
-
-    Returns:
-
     """
     # The auxiliary elements are added to net.gen and net.vsc. If adding them fails halfway (e.g. a create_vsc call
     # for a bipolar VSC raises), all rows and columns added so far are removed again. Otherwise they would stay in the
@@ -1924,7 +1940,7 @@ def _init_runpp_options(
     calculate_voltage_angles: Literal["auto"] | bool,
     init: Literal["auto", "dc", "flat", "results"] | float,
     max_iteration: Literal["auto"] | int,
-    tolerance_mva: float,
+    tolerance: float,
     trafo_model: Literal["t", "pi"],
     trafo_loading: Literal["current", "power"],
     enforce_p_lims: bool,
@@ -1976,7 +1992,7 @@ def _init_runpp_options(
     tdpf_update_r_theta = overrule_options.get("tdpf_update_r_theta", tdpf_update_r_theta)
     tdpf_delay_s = overrule_options.get("tdpf_delay_s", tdpf_delay_s)
     # the other parameters do not need to be collected manually:
-    # tolerance_mva, trafo_model, trafo_loading, enforce_p_lims, enforce_q_lims, check_connectivity, consider_line_temperature
+    # tolerance, trafo_model, trafo_loading, enforce_p_lims, enforce_q_lims, check_connectivity, consider_line_temperature
 
     # check if numba is available and the corresponding flag
     numba &= _check_if_numba_is_installed()
@@ -2113,7 +2129,7 @@ def _init_runpp_options(
     )
     _add_pf_options(
         net,
-        tolerance_mva=tolerance_mva,
+        tolerance=tolerance,
         trafo_loading=trafo_loading,
         numba=numba,
         ac=ac,
@@ -2169,7 +2185,7 @@ def _init_rundcpp_options(
     enforce_q_lims: bool = False
     algorithm = None
     max_iteration = None
-    tolerance_mva = None
+    tolerance = None
     only_v_results = kwargs.get("only_v_results", False)
     net._options = {}
     _add_ppc_options(
@@ -2190,7 +2206,7 @@ def _init_rundcpp_options(
     )
     _add_pf_options(
         net,
-        tolerance_mva=tolerance_mva,
+        tolerance=tolerance,
         trafo_loading=trafo_loading,
         numba=numba,
         ac=ac,
@@ -2336,7 +2352,7 @@ def _init_runse_options(
     )
     _add_pf_options(
         net,
-        tolerance_mva=1e-8,
+        tolerance=1e-8,
         trafo_loading="power",
         numba=True,
         ac=True,
@@ -2348,18 +2364,13 @@ def _init_runse_options(
 
 def _internal_stored(net: pandapowerNet, ac: bool = True) -> bool:
     """
+    The function newtonpf() needs these variables as inputs: Ybus, Sbus, V0, pv, pq, ppci, options
 
-    The function newtonpf() needs these variables as inputs:
-    Ybus, Sbus, V0, pv, pq, ppci, options
+    Parameters:
+        net: the pandapower net
 
-    Parameters
-    ----------
-    net - the pandapower net
-
-    Returns
-    -------
-    True if all variables are stored False otherwise
-
+    Returns:
+        True if all variables are stored False otherwise
     """
     # checks if all internal variables are stored in net, which are needed for a power flow
 

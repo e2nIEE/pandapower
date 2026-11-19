@@ -35,6 +35,11 @@ Table Structure
 
 .. note:: The transformer loading constraint for the optimal power flow corresponds to the option trafo_loading="current":
 
+.. note:: The columns ``cooling_type`` and ``air_temperature_degree_celsius`` are only used by the
+    transformer thermal calculation of the temperature dependent power flow, see
+    :ref:`Transformer temperatures <tdpf_transformer_temperatures>`. They default to ``"ONAN"`` (Oil Natural, Air Natural) and
+    ``35`` °C, so they can be left empty.
+
 .. note:: vkr_percent can be calculated as follow :
 
     .. math::
@@ -135,11 +140,20 @@ The magnetising admittance is calculated as:
    :nowrap:
 
    \begin{align*}
-   y_m &= \frac{i0\_percent}{100} \\
+   y_m &= \frac{|i0\_percent|}{100} \\
    g_m &= \frac{pfe\_kw}{sn\_mva \cdot 1000} \\
-   b_m &= \sqrt{y_m^2 - g_m^2} \\
+   b_m &= \mathrm{sign}(i0\_percent) \cdot \sqrt{y_m^2 - g_m^2} \\
    \underline{y_m} &= g_m - j \cdot b_m
-   \end{align*}    
+   \end{align*}
+
+The magnetising susceptance of a transformer is inductive, so i0_percent is normally positive. A negative i0_percent
+denotes a capacitive susceptance of the same magnitude, while the iron losses (pfe_kw) stay positive. Real
+transformers do not have a capacitive magnetising admittance, but the branch models of other tools may: e.g. a
+MATPOWER/PYPOWER transformer branch with a positive BR_B (line charging) is converted by from_ppc / from_mpc to a
+transformer with a negative i0_percent. In this way, the charging is part of the transformer branch, its flows and its
+loading, and it is referred to the tap position. Some converters and tools that export transformers may not support
+negative values. The diagnostic function (check "negative_i0_percent") warns about transformers with a negative
+i0_percent.
 
 The values calculated in that way are relative to the rated values of the transformer. To transform them into the per unit system, they have to be converted to the rated values of the network:
 
@@ -403,6 +417,10 @@ Result Tables
     :file: table_structures/res_trafo.csv
     :header-rows: 1
     :delim: ,
+
+.. note:: With ``runpp(tdpf=True)`` the columns ``top_oil_temperature_degree_celsius``,
+    ``hot_spot_temperature_degree_celsius`` and ``temperature_degree_celsius`` are added, see
+    :ref:`Transformer temperatures <tdpf_transformer_temperatures>`.
 
 .. math::
    :nowrap:

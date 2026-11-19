@@ -5,11 +5,21 @@ from dataclasses import dataclass, field
 import pandas as pd
 import pandera.pandas as pa
 
-from pandapower import pandapowerNet
+from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.helper import get_element_schema
 from pandapower.network_schema.tools.validation.bus_index_validation import build_foreign_key_index_checks
 
 logger = logging.getLogger()
+
+#: Networks that are excluded from validation because their data intentionally violates the schema.
+#: Keys are network names (``net.name``), values are the reason for the exclusion.
+NETWORKS_EXCLUDED_FROM_VALIDATION = {
+    "case11_iwamoto": (
+        "The case11_iwamoto data does not contain line ratings (max_i_ka is NaN) and is a "
+        "deliberately ill-conditioned case that cannot be solved by a normal power flow, "
+        "so the network is not a valid pandapower network in the sense of the schema."
+    ),
+}
 
 # number of failing rows that are listed per issue before the output is truncated
 MAX_REPORTED_FAILURE_CASES = 5
@@ -60,7 +70,7 @@ def _describe_failure_cases(failure_cases: pd.DataFrame, limit: int = MAX_REPORT
 
     Only the first ``limit`` entries are listed, the rest is summarized as a count.
 
-    Args:
+    Parameters:
         failure_cases: dataframe as reported in ``SchemaError.failure_cases``
         limit: maximum number of entries to list
 
@@ -91,10 +101,10 @@ def _dtype_name(dtype) -> str:
     """
     Return the bare name of a dtype, e.g. ``float64`` for ``"dtype('float64')"``.
 
-    Pandera reports the expected dtype of a column as ``"dtype('float64')"``, which is
-    unnecessarily noisy in a user facing message.
+    Pandera reports the expected dtype of a column as ``"dtype('float64')"``, which is unnecessarily noisy in a user
+    facing message.
 
-    Args:
+    Parameters:
         dtype: dtype as reported by pandera, either as ``dtype`` object or as string
 
     Returns:
@@ -110,7 +120,7 @@ def _build_message(element: str, error: pa.errors.SchemaError) -> str:
     """
     Create a user readable message for a single pandera ``SchemaError``.
 
-    Args:
+    Parameters:
         element: name of the element table the error belongs to
         error: the pandera error raised for one check or schema level rule
 
@@ -159,7 +169,7 @@ def _issues_from_schema_errors(element: str, errors: pa.errors.SchemaErrors) -> 
     """
     Convert a pandera ``SchemaErrors`` (raised with ``lazy=True``) into issues.
 
-    Args:
+    Parameters:
         element: name of the element table
         errors: the collected pandera errors
 
@@ -185,10 +195,10 @@ def _issue_from_exception(element: str, error: Exception) -> ValidationIssue:
     """
     Convert an exception raised outside of pandera's validation into an issue.
 
-    This is used for errors that happen while preparing the validation, e.g. when a
-    referenced element table is missing, to keep the collected output complete.
+    This is used for errors that happen while preparing the validation, e.g. when a referenced element table is
+    missing, to keep the collected output complete.
 
-    Args:
+    Parameters:
         element: name of the element table
         error: the exception that occurred
 
@@ -207,7 +217,7 @@ def format_validation_errors(errors: dict[str, list[ValidationIssue]]) -> str:
     """
     Format collected validation errors as a single readable string.
 
-    Args:
+    Parameters:
         errors: result of :func:`validate_network` with ``collect_errors=True``
 
     Returns:
@@ -229,10 +239,9 @@ def validate_network(
     """
     Validate pandapower network element dataframes using schemas from the schema folder.
 
-    This function iterates through all elements in a pandapower network and validates
-    each element's dataframe against its corresponding schema file. Schema files are
-    expected to be located in pandapower.network_schema and named after the
-    element type (e.g., 'bus.py', 'line.py', etc.).
+    This function iterates through all elements in a pandapower network and validates each element's dataframe
+    against its corresponding schema file. Schema files are expected to be located in pandapower.network_schema and
+    named after the element type (e.g., 'bus.py', 'line.py', etc.).
 
     The validation process includes:
 
@@ -241,31 +250,21 @@ def validate_network(
     3. Optional group dependency validation (e.g., opf, sc, 3ph)
     4. Bus index dependency validation for network consistency
 
-    Args:
-        net (pandapowerNet): A pandapower network object containing various
-                           electrical network elements (buses, lines, loads, etc.)
-                           to be validated.
-        groups_to_validate (str | list[str] | set[str] | None): Optional group(s) to validate.
-            If provided, validates the specified dependency groups in addition to
-            the base schema. Valid groups depend on the element schema (e.g., "opf",
-            "sc", "3ph" for ext_grid). A single group can be passed as a string, several
-            groups as a list or set. If None, validates only the base schema.
-        collect_errors (bool): If False (default) the first element that fails validation
-            raises a ``SchemaError``. If True, all elements are validated and all issues
-            are collected instead of raising, so that a complete picture of the network
-            is returned.
-
-    Raises:
-        pa.errors.SchemaError: If validation fails for any network element and
-                              ``collect_errors`` is False. The error includes details
-                              about which element failed validation and the underlying cause.
+    Parameters:
+        net: A pandapower network object containing various electrical network elements (buses, lines, loads, etc.) to
+            be validated.
+        groups_to_validate: group(s) to validate. If provided, validates the specified dependency groups in addition to
+            the base schema. Valid groups depend on the element schema (e.g., "opf", "sc", "3ph" for ext_grid). A single
+            group can be passed as a string, several groups as a list or set. If None, validates only the base schema.
+        collect_errors: If False (default) the first element that fails validation raises a ``SchemaError``. If True,
+            all elements are validated and all issues are collected instead of raising, so that a complete picture of
+            the network is returned.
 
     Returns:
-        None if ``collect_errors`` is False and the validation passed.
-        If ``collect_errors`` is True, a dict mapping the element name to a list of
-        :class:`ValidationIssue`. Each issue carries a readable ``message`` and printing
-        the issues (or using :func:`format_validation_errors`) gives a user facing report.
-        The dict is empty if all elements are valid.
+        None if ``collect_errors`` is False and the validation passed. If ``collect_errors`` is True, a dict mapping the
+            element name to a list of :class:`ValidationIssue`. Each issue carries a readable ``message`` and printing
+            the issues (or using :func:`format_validation_errors`) gives a user facing report. The dict is empty if all
+            elements are valid.
 
     Note:
 
@@ -274,6 +273,8 @@ def validate_network(
         - Missing or invalid schema modules are logged as warnings but don't raise exceptions
         - Bus index validation is performed after schema validation for each element
         - When groups_to_validate is specified, validates the base schema AND the specified groups
+        - Networks listed in NETWORKS_EXCLUDED_FROM_VALIDATION (matched by ``net.name``) are
+          skipped entirely, since their data is known to violate the schema on purpose
 
     Example:
         >>> import pandapower as pp
@@ -288,6 +289,12 @@ def validate_network(
         ...     for issue in issues:
         ...         print(issue)
     """
+    net_name = net.get("name")
+    if net_name in NETWORKS_EXCLUDED_FROM_VALIDATION:
+        logger.info(f"Skipping validation of network '{net_name}': {NETWORKS_EXCLUDED_FROM_VALIDATION[net_name]}")
+        # nothing is validated, so there are no issues to report
+        return {} if collect_errors else None
+
     # Normalize groups_to_validate to a set
     if groups_to_validate is None:
         groups_set = None

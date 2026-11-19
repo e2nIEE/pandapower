@@ -131,20 +131,19 @@ def calc_branch_flows_batch(Yy_x, Yy_p, Yy_j, V, baseMVA, dim_x, bus_ind, base_k
     """
     Function to get branch flows with a batch computation for the timeseries module
 
-    Parameters
-    ----------
-    Yy_x, Yy_p, Yy_j - Yt or Yf CSR represenation
-    V - complex voltage matrix results from time series
-    baseMVA - base MVA from ppc
-    dim_x - shape of Y
-    bus_ind - f_bus or t_bus
-    base_kv - pcci["bus"] BASE_KV values
+    Parameters:
+        Yy_x: Yt or Yf CSR representation
+        Yy_p: Yt or Yf CSR representation
+        Yy_j: Yt or Yf CSR representation
+        V: complex voltage matrix results from time series
+        baseMVA: base MVA from ppc
+        dim_x: shape of Y
+        bus_ind: f_bus or t_bus
+        base_kv: pcci["bus"] BASE_KV values
 
-    Returns
-    ----------
-    i_abs, s_abs - absolute branch currents and power flows. This is "i_ft" / "s_ft" in results_branch.py
-    S - complex Sf / St values frpm ppci
-
+    Returns:
+        i_abs, s_abs - absolute branch currents and power flows. This is "i_ft" / "s_ft" in results_branch.py
+        S - complex Sf / St values from ppci
     """
 
     S = zeros((V.shape[0], dim_x), dtype=complex128)

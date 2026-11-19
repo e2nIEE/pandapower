@@ -532,15 +532,19 @@ def _add_measurements_to_ppci(net, ppci, zero_injection, algorithm):
 def _add_zero_injection(net, ppci, bus_append, zero_injection):
     """
     Add zero injection labels to the ppci structure and add virtual measurements to those buses
-    :param net: pandapower net
-    :param ppci: generated ppci
-    :param bus_append: added columns to the ppci bus with zero injection label
-    :param zero_injection: parameter to control which bus to be identified as zero injection
-        - None: no zero injection buses added
-        - "aux_bus": only auxiliary buses created in ppc
-        - "no_inj_bus": aux buses + buses without load, gen, sgen, etc.
-        - "zero_pwr_bus": aux buses + all buses with a zero power (also if there is load, sgen, etc.)
-    :return bus_append: added columns
+
+    Parameters:
+        net: pandapower net
+        ppci: generated ppci
+        bus_append: added columns to the ppci bus with zero injection label
+        zero_injection: parameter to control which bus to be identified as zero injection
+            - None: no zero injection buses added
+            - "aux_bus": only auxiliary buses created in ppc
+            - "no_inj_bus": aux buses + buses without load, gen, sgen, etc.
+            - "zero_pwr_bus": aux buses + all buses with a zero power (also if there is load, sgen, etc.)
+
+    Returns:
+        bus_append: added columns
     """
     bus_append[:, ZERO_INJ_FLAG] = False
     if zero_injection is not None:
@@ -601,10 +605,13 @@ def _add_zero_injection(net, ppci, bus_append, zero_injection):
 def _build_measurement_vectors(ppci, update_meas_only=False):
     """
     Building measurement vector z, pandapower to ppci measurement mapping and covariance matrix R
-    :param ppci: generated ppci which contains the measurement columns
-    :param branch_cols: number of columns in original ppci["branch"] without measurements
-    :param bus_cols: number of columns in original ppci["bus"] without measurements
-    :return: both created vectors
+
+    Parameters:
+        ppci: generated ppci which contains the measurement columns
+        update_meas_only:
+
+    Returns:
+        both created vectors
     """
     p_bus_not_nan = ~np.isnan(ppci["bus"][:, BUS_COLS + P])
     p_line_f_not_nan = ~np.isnan(ppci["branch"][:, BRANCH_COLS + P_FROM])

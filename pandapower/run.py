@@ -21,6 +21,7 @@ from pandapower.auxiliary import (
     _init_runopp_options,
     _init_runpp_options,
     _internal_stored,
+    warn_and_fix_parameter_renaming,
 )
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.optimal_powerflow import _optimal_powerflow
@@ -41,16 +42,18 @@ logger = logging.getLogger(__name__)
 
 def set_user_pf_options(net, overwrite=False, **kwargs):
     """
-    This function sets the 'user_pf_options' dict for net. These options overrule
-    net.__internal_options once they are added to net. These options are used in configuration of
-    load flow calculation.
-    At the same time, user-defined arguments for pandapower.runpp() always have a higher priority.
-    To remove user_pf_options, set overwrite=True and provide no additional arguments
+    This function sets the 'user_pf_options' dict for net. These options overrule net.__internal_options once they
+    are added to net. These options are used in configuration of load flow calculation. At the same time,
+    user-defined arguments for pandapower.runpp() always have a higher priority. To remove user_pf_options, set
+    overwrite=True and provide no additional arguments
 
-    :param net: pandaPower network
-    :param overwrite: specifies whether the user_pf_options is removed before setting new options
-    :param kwargs: load flow options, e.g. tolerance_mva = 1e-3
-    :return: None
+    Parameters:
+        net: pandaPower network
+        overwrite: specifies whether the user_pf_options is removed before setting new options
+        kwargs: load flow options, e.g. tolerance = 1e-3
+
+    Returns:
+        None
     """
     standard_parameters = [
         "calculate_voltage_angles",
@@ -70,7 +73,7 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
         "init_vm_pu",
         "init_va_degree",
         "init_results",
-        "tolerance_mva",
+        "tolerance",
         "trafo_loading",
         "numba",
         "ac",
@@ -89,7 +92,6 @@ def set_user_pf_options(net, overwrite=False, **kwargs):
         net["user_pf_options"] = {}
 
     net.user_pf_options.update({key: val for key, val in kwargs.items() if key in standard_parameters})
-
     additional_kwargs = {key: val for key, val in kwargs.items() if key not in standard_parameters}
 
     # this part is to inform user and to make typos in parameters visible
@@ -105,7 +107,7 @@ def runpp(
     calculate_voltage_angles=True,
     init="auto",
     max_iteration="auto",
-    tolerance_mva=1e-8,
+    tolerance=1e-8,
     trafo_model="t",
     trafo_loading="current",
     enforce_p_lims=False,
@@ -172,7 +174,7 @@ def runpp(
             - 30 for "nr" with "tdpf"
             - 40 for "helm"
 
-        tolerance_mva (float, 1e-8): loadflow termination condition referring to P / Q mismatch of node power in MVA
+        tolerance (float, 1e-8): loadflow termination condition referring to P / Q mismatch of node power in MVA
         trafo_model (str, "t"): transformer equivalent circuit model
             pandapower provides two equivalent circuit models for the transformer:
 
@@ -216,9 +218,12 @@ def runpp(
             according to contribution factor weights for external grids
             and generators.
         tdpf (bool, False): Temperature Dependent Power Flow (TDPF). If True, line temperature is calculated based on
-            the TDPF parameters in net.line table.
+            the TDPF parameters in net.line table. Additionally, the top-oil and hot-spot temperatures of all in-service
+            transformers in net.trafo and net.trafo3w are calculated as post-processing, based on their nameplate data
+            and the optional columns cooling_type and air_temperature_degree_celsius. See the TDPF section of the
+            documentation.
         tdpf_delay_s (float, None): TDPF parameter, specifies the time delay in s to consider thermal inertia of
-            conductors.
+            conductors and transformers. None means steady state.
 
     Keyword Args:
         lightsim2grid ((bool,str), "auto"): whether to use the package lightsim2grid for power
@@ -264,6 +269,8 @@ def runpp(
         tdpf_update_r_theta (bool, True): TDPF parameter, whether to update R_Theta in Newton-Raphson or to assume a constant R_Theta (either from net.line.r_theta, if set, or from a calculation based on the thermal model of Ngoko et.al.)
     """
 
+    tolerance, kwargs = warn_and_fix_parameter_renaming("tolerance_mva", "tolerance", tolerance, 1e-8, kwargs)
+
     # if dict 'user_pf_options' is present in net, these options overrule the net._options
     # except for parameters that are passed by user
     if isinstance(kwargs.get("recycle", None), dict) and _internal_stored(net):
@@ -285,7 +292,7 @@ def runpp(
             calculate_voltage_angles=calculate_voltage_angles,
             init=init,
             max_iteration=max_iteration,
-            tolerance_mva=tolerance_mva,
+            tolerance=tolerance,
             trafo_model=trafo_model,
             trafo_loading=trafo_loading,
             enforce_p_lims=enforce_p_lims,
@@ -651,10 +658,18 @@ def rundcopp(
 
 def _passed_runpp_parameters(local_parameters):
     """
-    Internal function to distinguish arguments for pandapower.runpp() that are explicitly passed by
-    the user.
-    :param local_parameters: locals() in the runpp() function
-    :return: dictionary of explicitly passed parameters
+    Internal function to distinguish arguments for pandapower.runpp() that are explicitly passed by the user.
+
+    Named arguments are only recognized as passed if their value differs from the default value defined in the
+    runpp() signature. Additional keyword arguments are taken from ``kwargs`` and are treated as passed as well.
+    Since omitted arguments and explicitly passed arguments that equal their signature default cannot be
+    distinguished inside runpp(), the latter are not included in the result.
+
+    Parameters:
+        local_parameters: locals() in the runpp() function
+
+    Returns:
+        dictionary of explicitly passed parameters, or None if no stored options are present in net.user_pf_options
     """
     net = local_parameters.pop("net")
     if "user_pf_options" not in net or len(net.user_pf_options) == 0:

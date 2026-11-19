@@ -169,7 +169,7 @@ def newtonpf(Ybus, Sbus, V0, ref, pv, pq, ppci, options, makeYbus=None):
     """
 
     # options
-    tol = options["tolerance_mva"]
+    tol = options["tolerance"]
     max_it = options["max_iteration"]
     numba = options["numba"]
     iwamoto = options["algorithm"] == "iwamoto_nr"

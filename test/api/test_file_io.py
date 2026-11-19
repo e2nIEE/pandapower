@@ -12,7 +12,6 @@ import pandas as pd
 import pytest
 from pandas.testing import assert_frame_equal, assert_series_equal
 
-from pandapower import pandapowerNet
 from pandapower.control import (
     Characteristic,
     ConstControl,
@@ -24,6 +23,7 @@ from pandapower.convert_format import convert_format
 from pandapower.create import create_transformer
 from pandapower.file_io import from_excel, from_json, from_json_string, from_pickle, to_excel, to_json, to_pickle
 from pandapower.io_utils import PPJSONDecoder, PPJSONEncoder, to_serializable
+from pandapower.network import pandapowerNet
 from pandapower.networks import create_kerber_dorfnetz, mv_oberrhein, simple_four_bus_system
 from pandapower.run import runpp, set_user_pf_options
 from pandapower.sql_io import from_sqlite, to_sqlite
@@ -79,7 +79,7 @@ def test_excel(net_in, tmp_path):
     assert_net_equal(net_in, net_out)
 
     # test if user_pf_options are equal
-    set_user_pf_options(net_in, tolerance_mva=1e3)
+    set_user_pf_options(net_in, tolerance=1e3)
     to_excel(net_in, filename)
     net_out = from_excel(filename)
     assert_net_equal(net_in, net_out)
@@ -375,6 +375,16 @@ def test_json_io_same_net(net_in, tmp_path):
     to_json(net_in, filename)
     net2 = from_json(filename)
     assert isinstance(net2.controller.object.at[0], ConstControl)
+
+
+def test_json_io_from_string_and_bytes_payload(net_in):
+    json_string = to_json(net_in)
+
+    net_from_str = from_json(json_string)
+    net_from_bytes = from_json(json_string.encode("utf-8"))
+
+    assert_net_equal(net_in, net_from_str)
+    assert_net_equal(net_in, net_from_bytes)
 
 
 def test_json_different_nets():
