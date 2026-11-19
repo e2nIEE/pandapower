@@ -1901,6 +1901,7 @@ def test_fullgrid_cgmes3_lines():
     net = from_cim(file_list=cgmes_files, cgmes_version="3.0")
 
     assert len(net.line.index) == 11
+    assert net.line["in_service"].notna().all()
     assert net.line["in_service"].all()
 
 
