@@ -210,7 +210,7 @@ def plot_characteristic(characteristic, start, stop, num=20, xlabel=None, ylabel
         plt.ylabel(ylabel)
 
 
-def create_trafo_characteristic_object(net):
+def create_trafo_characteristic_object(net: pandapowerNet):
     # check if trafo_characteristic_spline table already exists & if so, delete & re-create
     if "trafo_characteristic_spline" in net:
         del net["trafo_characteristic_spline"]
@@ -349,7 +349,7 @@ def _create_trafo_characteristics(net, trafotable, trafo_index, variable, x_poin
             net["trafo_characteristic_spline_temp"].at[idx, col] = s.index
 
 
-def create_shunt_characteristic_object(net):
+def create_shunt_characteristic_object(net: pandapowerNet):
     # check if shunt_characteristic_spline table already exists & if so, delete & re-create
     if "shunt_characteristic_spline" in net:
         del net["shunt_characteristic_spline"]
@@ -452,7 +452,7 @@ def _set_reactive_capability_curve_flag(net, element):
         ).astype(bool)
 
 
-def create_q_capability_characteristics_object(net):
+def create_q_capability_characteristics_object(net: pandapowerNet):
     # check if element_characteristic_spline table already exists & if so, delete & re-create
     if "q_capability_characteristic" in net:
         del net["q_capability_characteristic"]

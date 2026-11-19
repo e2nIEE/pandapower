@@ -403,7 +403,7 @@ def find_std_type_alternative(data, voltage_rating="", epsilon=0.0):
     return fitting_types
 
 
-def add_zero_impedance_parameters(net):
+def add_zero_impedance_parameters(net: "pandapowerNet"):
     """
     Adds all parameters required for zero sequence impedance calculations.
 

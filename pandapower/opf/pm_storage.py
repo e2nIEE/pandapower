@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 
+from pandapower.network import pandapowerNet
 from pandapower.opf.make_objective import costs_from_areas
 
 
@@ -137,7 +138,7 @@ def _deactivate_storage_gens(net, ppci, pm):
         pm["gen"][str(ppci_gen + 1)]["gen_status"] = 0
 
 
-def read_pm_storage_results(net):
+def read_pm_storage_results(net: pandapowerNet):
     """
     Returns the storage results of a time series optimization as dict storage index -> DataFrame
     (index: time steps, columns: p_mw, q_mvar, soc_mwh, soc_percent). The state of charge of storages

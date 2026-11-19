@@ -617,20 +617,20 @@ def net():
     return net
 
 
-def test_for_line_with_zero_length(net):
+def test_for_line_with_zero_length(net: pandapowerNet):
     replace_zero_branches_with_switches(net, elements=("line",), zero_impedance=False)
     assert "REPLACEMENT_line_0" in net.switch.name.values
     assert ~net.line.in_service.at[0]
     assert "REPLACEMENT_line_2" not in net.switch.name.values
 
 
-def test_drop(net):
+def test_drop(net: pandapowerNet):
     replace_zero_branches_with_switches(net, elements=("line", "impedance"), drop_affected=True)
     assert len(net.line) == 1
     assert len(net.impedance) == 2
 
 
-def test_in_service_only(net):
+def test_in_service_only(net: pandapowerNet):
     replace_zero_branches_with_switches(net, elements=("line",))
     assert len(net.switch.loc[net.switch.name == "REPLACEMENT_line_0"]) == 1
     replace_zero_branches_with_switches(net, elements=("line",), in_service_only=False)
@@ -638,14 +638,14 @@ def test_in_service_only(net):
     assert ~net.switch.closed.at[2]
 
 
-def test_line_with_zero_impediance(net):
+def test_line_with_zero_impediance(net: pandapowerNet):
     # test for line with zero impedance
     replace_zero_branches_with_switches(net, elements=("line",), zero_length=False)
     assert "REPLACEMENT_line_1" not in net.switch.name.values
     assert "REPLACEMENT_line_2" in net.switch.name.values
 
 
-def test_impedance(net):
+def test_impedance(net: pandapowerNet):
     replace_zero_branches_with_switches(
         net, elements=("impedance",), zero_length=False, zero_impedance=True, in_service_only=True
     )
@@ -654,7 +654,7 @@ def test_impedance(net):
     assert "REPLACEMENT_impedance_2" not in net.switch.name.values
 
 
-def test_all(net):
+def test_all(net: pandapowerNet):
     replace_zero_branches_with_switches(
         net, elements=("impedance", "line"), zero_length=True, zero_impedance=True, in_service_only=True
     )

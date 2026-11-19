@@ -404,7 +404,7 @@ def violated_buses(net, min_vm_pu, max_vm_pu):
         raise UserWarning("The last loadflow terminated erratically, results are invalid!")
 
 
-def clear_result_tables(net):
+def clear_result_tables(net: pandapowerNet):
     """
     Clears all ``res_`` DataFrames in net.
     """
@@ -413,7 +413,7 @@ def clear_result_tables(net):
             net[key] = net[key].drop(net[key].index)
 
 
-def compute_switch_flows(net):
+def compute_switch_flows(net: pandapowerNet):
     """
     Compute power flow through zero-impedance bus-bus switches via nodal balance.
 

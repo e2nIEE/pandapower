@@ -392,7 +392,7 @@ def init_par(tab, calc_branch_impedances=False, include_out_of_service=False):
         return indices, parameters
 
 
-def get_nx_ppc(net):
+def get_nx_ppc(net: pandapowerNet):
     _init_nx_options(net)
     ppc = _init_ppc(net)
     _build_bus_ppc(net, ppc)
