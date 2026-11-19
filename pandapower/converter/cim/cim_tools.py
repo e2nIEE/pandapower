@@ -26,7 +26,8 @@ def get_pp_net_special_columns_dict() -> Dict[str, str]:
             'pte_id_hv': 'PowerTransformerEnd_id_hv', 'pte_id_mv': 'PowerTransformerEnd_id_mv',
             'pte_id_lv': 'PowerTransformerEnd_id_lv', 'cnc_id': 'ConnectivityNodeContainer_id',
             'sub_id': 'Substation_id', 'src': 'source', 'name': 'name', 'desc': 'description',
-            'a_id': 'analog_id', 'bus': 'terminal', 'bb_id': 'Busbar_id', 'bb_name': 'Busbar_name'}
+            'a_id': 'analog_id', 'bus': 'terminal', 'bb_id': 'Busbar_id', 'bb_name': 'Busbar_name',
+            'bb_desc': 'Busbar_description'}
 
 
 def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNet:
@@ -52,7 +53,7 @@ def extend_pp_net_cim(net: pandapowerNet, override: bool = True) -> pandapowerNe
 
     fill_dict['bus'] = {}
     fill_dict['bus'][np_str_type] = [sc['o_prf'], sc['ct'], sc['cnc_id'], sc['sub_id'], 'description', sc['bb_id'],
-                                     sc['bb_name'], 'GeographicalRegion_id', 'GeographicalRegion_name',
+                                     sc['bb_name'], sc['bb_desc'], 'GeographicalRegion_id', 'GeographicalRegion_name',
                                      'SubGeographicalRegion_id', 'SubGeographicalRegion_name']
 
     fill_dict['ext_grid'] = {}
