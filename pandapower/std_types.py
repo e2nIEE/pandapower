@@ -1669,7 +1669,7 @@ def basic_fuse_std_types():
     return fusetypes
 
 
-def basic_std_types():
+def basic_std_types() -> dict[Literal["line", "line_dc", "trafo", "trafo3w", "fuse"], dict]:
     return {
         "line": basic_line_std_types(),
         "line_dc": basic_line_dc_std_types(),
@@ -1679,7 +1679,7 @@ def basic_std_types():
     }
 
 
-def add_basic_std_types(net):
+def add_basic_std_types(net: "pandapowerNet"):
     """Adds basic standard types of the pandapower library to the net provided. These standard types
     are the same types that are available with output of `pandapower.pandapowerNet()` and
     `pandapower.pandapowerNet(add_stdtypes=True)` respectively.

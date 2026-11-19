@@ -305,9 +305,8 @@ class pandapowerNet(ADict):
 
     def __repr__(self):  # pragma: no cover
         """
-        See Also
-        --------
-        count_elements
+        See Also:
+            count_elements
         """
         par = []
         res = []

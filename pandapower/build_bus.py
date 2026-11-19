@@ -247,10 +247,9 @@ class DisjointSet(dict):
 def create_consecutive_bus_lookup(bus_index: np.ndarray):
     """
     create a mapping from arbitrary pp-index to a consecutive index starting at zero (ppc-index)
-    Args:
-        bus_index: the original bus index to create a mapping from.
-    Returns:
 
+    Parameters:
+        bus_index: the original bus index to create a mapping from.
     """
     if len(bus_index) == 0:
         return np.array([], dtype=np.int64)

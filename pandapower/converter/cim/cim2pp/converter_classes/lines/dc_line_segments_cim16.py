@@ -180,8 +180,11 @@ class DcLineSegmentsCim16:
         dc_line_segments["vm_from_pu"] = dc_line_segments["targetUpcc"] / dc_line_segments["base_voltage_bus"]
         dc_line_segments["vm_to_pu"] = dc_line_segments["targetUpcc2"] / dc_line_segments["base_voltage_bus2"]
         if self.cimConverter.cim_version == "3.0":
+            mapping = self.cimConverter.cim["ssh"]["Equipment"][["rdfId", "inService"]]
+            mapping = mapping.set_index("rdfId").to_dict()["inService"]
+            dc_line_segments["in_service"] = dc_line_segments["rdfId"].map(mapping)
             dc_line_segments["in_service"] = (
-                dc_line_segments.connected & dc_line_segments.connected2 & dc_line_segments.inService
+                dc_line_segments["in_service"] & dc_line_segments.connected & dc_line_segments.connected2
             )
         elif self.cimConverter.cim_version == "ltds":
             mapping = self.cimConverter.cim["ssh"]["Equipment"][["rdfId", "inService"]]

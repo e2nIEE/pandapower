@@ -42,16 +42,18 @@ logger = logging.getLogger(__name__)
 
 def set_user_pf_options(net, overwrite=False, **kwargs):
     """
-    This function sets the 'user_pf_options' dict for net. These options overrule
-    net.__internal_options once they are added to net. These options are used in configuration of
-    load flow calculation.
-    At the same time, user-defined arguments for pandapower.runpp() always have a higher priority.
-    To remove user_pf_options, set overwrite=True and provide no additional arguments
+    This function sets the 'user_pf_options' dict for net. These options overrule net.__internal_options once they
+    are added to net. These options are used in configuration of load flow calculation. At the same time,
+    user-defined arguments for pandapower.runpp() always have a higher priority. To remove user_pf_options, set
+    overwrite=True and provide no additional arguments
 
-    :param net: pandaPower network
-    :param overwrite: specifies whether the user_pf_options is removed before setting new options
-    :param kwargs: load flow options, e.g. tolerance = 1e-3
-    :return: None
+    Parameters:
+        net: pandaPower network
+        overwrite: specifies whether the user_pf_options is removed before setting new options
+        kwargs: load flow options, e.g. tolerance = 1e-3
+
+    Returns:
+        None
     """
     standard_parameters = [
         "calculate_voltage_angles",
@@ -656,10 +658,18 @@ def rundcopp(
 
 def _passed_runpp_parameters(local_parameters):
     """
-    Internal function to distinguish arguments for pandapower.runpp() that are explicitly passed by
-    the user.
-    :param local_parameters: locals() in the runpp() function
-    :return: dictionary of explicitly passed parameters
+    Internal function to distinguish arguments for pandapower.runpp() that are explicitly passed by the user.
+
+    Named arguments are only recognized as passed if their value differs from the default value defined in the
+    runpp() signature. Additional keyword arguments are taken from ``kwargs`` and are treated as passed as well.
+    Since omitted arguments and explicitly passed arguments that equal their signature default cannot be
+    distinguished inside runpp(), the latter are not included in the result.
+
+    Parameters:
+        local_parameters: locals() in the runpp() function
+
+    Returns:
+        dictionary of explicitly passed parameters, or None if no stored options are present in net.user_pf_options
     """
     net = local_parameters.pop("net")
     if "user_pf_options" not in net or len(net.user_pf_options) == 0:
