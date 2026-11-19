@@ -8,6 +8,8 @@ Change Log
 - [CHANGED] runpp: the DC grid is solved with current balance equations and a revised Jacobian; several VSC in DC voltage control at the same DC bus share the current equally
 - [DEPRECATED] create_vsc_stacked and DmrControl, use create_vsc_bipolar instead
 - [FIXED] runpp: out of service VSC in AC slack mode defined a slack bus
+- [FIXED] cim2pp: ``from_cim`` with ``cgmes_version="3.0"`` failed with ``AttributeError: 'DataFrame' object has no attribute 'inService'`` for models with ACLineSegments or DCLineSegments, ``Equipment.inService`` of the lines is now read from the SSH profile (#3322)
+- [ADDED] description of BusbarSections in CGMES 2.4.15 and 3.0
 
 [3.5.6] - 2026-10-07
 -------------------------------

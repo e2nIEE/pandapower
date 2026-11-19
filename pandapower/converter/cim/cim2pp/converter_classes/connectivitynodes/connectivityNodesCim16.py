@@ -264,8 +264,8 @@ class ConnectivityNodesCim16:
                     message="The ConnectivityNode with RDF ID %s has %s TopologicalNodes!" % (rdfId, count)))
             connectivity_nodes = connectivity_nodes.drop_duplicates(subset=['rdfId'], keep='first')
         # add the busbars: Terminals.ConductingEquipment -> BusbarSection
-        bb = self.cimConverter.cim['eq']['BusbarSection'][['rdfId', 'name']]
-        bb = bb.rename(columns={'rdfId': sc['bb_id'], 'name': sc['bb_name']})
+        bb = self.cimConverter.cim['eq']['BusbarSection'][['rdfId', 'name', 'description']]
+        bb = bb.rename(columns={'rdfId': sc['bb_id'], 'name': sc['bb_name'], 'description': sc['bb_desc']})
         # terminals for node breaker and bus branch model
         t = pd.merge(self.cimConverter.cim['eq']['Terminal'][['rdfId', 'ConnectivityNode', 'ConductingEquipment']],
                      self.cimConverter.cim['tp']['Terminal'][['rdfId', 'TopologicalNode']], how='left', on='rdfId')
