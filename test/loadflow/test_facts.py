@@ -138,7 +138,7 @@ def compare_ssc_impedance_gen(net, net_ref, element="ssc"):
     net_ref.res_bus.loc[net[element].bus.values, "q_mvar"] = backup_q
 
 
-def copy_with_impedance(net):
+def copy_with_impedance(net: pandapowerNet):
     baseMVA = net.sn_mva  # MVA
     baseV = net.bus.vn_kv.values  # kV
     baseZ = baseV**2 / baseMVA

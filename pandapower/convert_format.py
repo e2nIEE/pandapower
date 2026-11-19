@@ -9,6 +9,7 @@ __all__ = [
 
 import logging
 from collections import defaultdict
+from typing import Any, cast
 
 import geojson
 import numpy as np
@@ -24,6 +25,7 @@ from pandapower.create.trafo_characteristic_create import create_trafo_character
 from pandapower.network import pandapowerNet
 from pandapower.network_structure import get_default_value, get_structure_dict
 from pandapower.plotting.geo import _is_valid_number, convert_geodata_to_geojson
+from pandapower.pp_types import StandardTypesDictKeys
 from pandapower.results import reset_results
 
 logger = logging.getLogger(__name__)
@@ -105,7 +107,7 @@ def convert_format(net, elements_to_deserialize=None, drop_invalid_geodata=False
     return net
 
 
-def _drop_empty_if_not_required(net):
+def _drop_empty_if_not_required(net: pandapowerNet):
     """
     Removes empty columns and DataFrames if not required by network_structure_dict
     """
@@ -192,7 +194,7 @@ def _convert_geo_data(net, elements_to_deserialize=None, drop_invalid_geodata=Tr
         convert_geodata_to_geojson(net)
 
 
-def _restore_index_names(net):
+def _restore_index_names(net: pandapowerNet):
     """Restores dataframes index names stored as dictionary. With newer pp to_json() this
     information is stored to the dataframe its self.
     """
@@ -237,14 +239,14 @@ def correct_dtypes(net, error):
             logger.info(msg)
 
 
-def _convert_group_element_index(net):
+def _convert_group_element_index(net: pandapowerNet):
     if isinstance(net.group, pd.DataFrame) and "element" in net.group.columns:
         if "element_index" in net.group.columns:
             logger.warning("element cannot be renamed by element_index because columns exist already.")
         net.group = net.group.rename(columns={"element": "element_index"})
 
 
-def _convert_trafo_controller_parameter_names(net):
+def _convert_trafo_controller_parameter_names(net: pandapowerNet):
     if not isinstance(net.controller, pd.DataFrame):
         return
     for ctrl_idx in net.controller.index:
@@ -298,7 +300,7 @@ def _convert_to_generation_system(net, elements_to_deserialize):
     net.measurement.loc[pq_measurements, ["value", "std_dev"]] *= 1e-3
 
 
-def _convert_costs(net):
+def _convert_costs(net: pandapowerNet):
     if "polynomial_cost" in net:
         for cost in net.polynomial_cost.itertuples():
             values = cost.c[0]
@@ -325,7 +327,7 @@ def _convert_costs(net):
         del net.piecewise_linear_cost
 
 
-def _add_nominal_power(net):
+def _add_nominal_power(net: pandapowerNet):
     if "sn_kva" in net:
         net.sn_mva = net.pop("sn_kva") * 1e-3
 
@@ -334,7 +336,7 @@ def _add_nominal_power(net):
         net.sn_mva = 1.0
 
 
-def _add_missing_tables(net):
+def _add_missing_tables(net: pandapowerNet):
     net_new = pandapowerNet(name="missing_tables_net")
     net_new.name = ""  # name is set to avoid warnings, then unset here to avoid adding it to any network
     for key in net_new:
@@ -648,7 +650,7 @@ def _add_missing_columns(net, elements_to_deserialize):
         net.res_line_3ph["loading_c_percent"] = np.nan
 
 
-def _update_trafo_type_parameter_names(net):
+def _update_trafo_type_parameter_names(net: pandapowerNet):
     for element in ("trafo", "trafo3w"):
         for type in net.std_types[element]:
             keys = {col: _update_column(col) for col in net.std_types[element][type] if col.startswith(("tp", "vsc"))}
@@ -676,7 +678,7 @@ def _update_column(column):
     return column
 
 
-def _set_data_type_of_columns(net):
+def _set_data_type_of_columns(net: pandapowerNet):
     new_net = pandapowerNet(name="")
     for key, item in net.items():
         if isinstance(item, pd.DataFrame):
@@ -689,7 +691,7 @@ def _set_data_type_of_columns(net):
                     net[key][col] = net[key][col].astype(new_net[key][col].dtype, errors="ignore")
 
 
-def _convert_to_mw(net):
+def _convert_to_mw(net: pandapowerNet):
     replace = [("kw", "mw"), ("kvar", "mvar"), ("kva", "mva")]
     for element in net:
         if isinstance(net[element], pd.DataFrame):
@@ -706,7 +708,7 @@ def _convert_to_mw(net):
                     net[element][new] *= 1e-3
 
     for element, std_types in net.std_types.items():
-        for parameters in std_types.values():
+        for parameters in cast(dict[str, dict[str, Any]], std_types).values():
             for parameter in set(parameters.keys()):
                 for old, new in replace:
                     if old in parameter and parameter != "pfe_kw":
@@ -773,8 +775,8 @@ def _check_elements_to_deserialize(element, elements_to_deserialize):
         return element in elements_to_deserialize
 
 
-def _add_missing_std_type_tables(net):
-    type_names = ("fuse", "line_dc")
+def _add_missing_std_type_tables(net: pandapowerNet):
+    type_names: tuple[StandardTypesDictKeys, ...] = ("fuse", "line_dc")
     for tn in type_names:
         if tn not in net.std_types:
             net.std_types[tn] = {}
@@ -854,7 +856,7 @@ def _update_characteristics(net, elements_to_deserialize):
         net[table] = net[table].drop(columns=columns, errors="ignore")  # ignore errors if columns are not present
 
 
-def convert_trafo_pst_logic(net):
+def convert_trafo_pst_logic(net: pandapowerNet):
     """
     Converts trafo and trafo3w phase shifter logic to version 3.0 or later
     """

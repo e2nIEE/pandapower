@@ -54,6 +54,7 @@ from pandapower.create import (
     create_vsc as _create_vsc,
 )
 from pandapower.network import ADict, pandapowerNet
+from pandapower.pp_types import StandardTypesDictKeys
 from pandapower.results import init_results, reset_results
 from pandapower.run import set_user_pf_options
 from pandapower.std_types import (
@@ -81,7 +82,7 @@ def ga(element, attr):
     return element.GetAttribute(attr)
 
 
-def _existing_result_tables(net):
+def _existing_result_tables(net: pandapowerNet):
     """
     Returns the names of all result tables (DataFrames whose name starts with "res_") that already exist in net, so
     that init_results keeps the PowerFactory results that were already imported for other elements.
@@ -5393,7 +5394,7 @@ def get_pos_at_sec(net, lvp_dict, line_item, load_item):
 
 
 # write order of sections
-def write_line_order(net):
+def write_line_order(net: pandapowerNet):
     net.line["order"] = ""
     line_names = net.line.name.unique()
 
@@ -5430,12 +5431,13 @@ def split_all_lines(net, lvp_dict):
             net.res_load.at[new_load, "pf_q"] = q
 
 
-def remove_folder_of_std_types(net):
+def remove_folder_of_std_types(net: pandapowerNet):
     """
     Removes the folder name from all standard types that do not have duplicates, or where
     duplicates have the same parameters
     """
-    for element in ["line", "trafo", "trafo3w"]:
+    elements: tuple[StandardTypesDictKeys, ...] = ("line", "trafo", "trafo3w")
+    for element in elements:
         std_types = available_std_types(net, element=element).index
         renaming = {}  # old name (with folder) -> new name (without folder)
         for std_type in {name.split("\\")[-1] for name in std_types}:

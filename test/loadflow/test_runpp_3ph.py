@@ -91,7 +91,7 @@ def test_net():
     return net
 
 
-def check_it(net):
+def check_it(net: pandapowerNet):
     bus_pp = np.abs(net.res_bus_3ph[["vm_a_pu", "vm_b_pu", "vm_c_pu"]][~np.isnan(net.res_bus_3ph.vm_a_pu)].values)
     bus_pf = np.abs(np.array([[0.96742893, 1.01302766, 1.019784], [0.74957533, 1.09137945, 1.05124282]]))
     assert np.max(np.abs(bus_pp - bus_pf)) < 1.1e-6

@@ -277,7 +277,7 @@ def _prepare_geodata_table(
             raise UserWarning(f"Table {geodata_table} is not empty - use overwrite=True to overwrite existing geodata")
 
 
-def fuse_geodata(net):
+def fuse_geodata(net: pandapowerNet):
     mg = create_nxgraph(net, include_lines=False, include_impedances=False, respect_switches=False)
     geocoords = set(net.bus.dropna(subset=["geo"]).index)
     for area in connected_components(mg):

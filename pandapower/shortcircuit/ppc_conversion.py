@@ -9,6 +9,7 @@ import pandas as pd
 
 from pandapower.auxiliary import _add_auxiliary_elements, _sum_by_group
 from pandapower.build_branch import _transformer_correction_factor, get_trafo_values
+from pandapower.network import pandapowerNet
 from pandapower.pd2ppc import _pd2ppc, _ppc2ppci
 from pandapower.pypower.idx_brch import BR_R, BR_X, T_BUS
 from pandapower.pypower.idx_brch_sc import K_ST, K_T
@@ -24,7 +25,7 @@ def _get_is_ppci_bus(net, bus):
     return ppci_bus
 
 
-def _init_ppc(net):
+def _init_ppc(net: pandapowerNet):
     _check_sc_data_integrity(net)
     _add_auxiliary_elements(net)
     ppc, _ = _pd2ppc(net)
@@ -44,7 +45,7 @@ def _init_ppc(net):
     return ppc, ppci
 
 
-def _check_sc_data_integrity(net):
+def _check_sc_data_integrity(net: pandapowerNet):
     if not net.gen.empty:
         for col in ("power_station_trafo", "pg_percent"):
             if col not in net.gen.columns:

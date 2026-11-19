@@ -11,6 +11,7 @@ from pandapower.auxiliary import (
     _sum_by_group_nvals,
     sequence_to_phase,
 )
+from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_bus import BASE_KV, VA, VM
 from pandapower.pypower.idx_bus_dc import DC_PD
 from pandapower.pypower.idx_gen import GEN_BUS, PG, QG
@@ -380,7 +381,7 @@ def _get_pp_gen_results_3ph(net, ppc0, ppc1, ppc2, b, pA, qA, pB, qB, pC, qC):
     return b, pA, qA, pB, qB, pC, qC
 
 
-def _get_dcline_results(net):
+def _get_dcline_results(net: pandapowerNet):
     dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2) :]
     from_gens = net.res_gen.loc[dc_gens[1::2]]
     to_gens = net.res_gen.loc[dc_gens[::2]]

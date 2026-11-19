@@ -8,6 +8,7 @@ import pytest
 
 from pandapower.converter.pandamodels.to_pm import convert_pp_to_pm, init_ne_line
 from pandapower.create import create_poly_cost
+from pandapower.network import pandapowerNet
 from pandapower.networks.cigre_networks import create_cigre_network_mv
 from pandapower.run import runpp
 from pandapower.runpm import runpm_tnep
@@ -30,7 +31,7 @@ def cigre_grid():
     return net
 
 
-def define_possible_new_lines(net):
+def define_possible_new_lines(net: pandapowerNet):
     # Here the possible new lines are a copy of all the lines which are already in the grid
     max_idx = max(net["line"].index)
     net["line"] = pd.concat([net["line"]] * 2, ignore_index=True)  # duplicate
@@ -72,7 +73,7 @@ def test_pm_tnep_cigre_dc():
     assert not np.any(net["res_line"].loc[:, "loading_percent"] > net["line"].loc[:, "max_loading_percent"])
 
 
-def define_ext_grid_limits(net):
+def define_ext_grid_limits(net: pandapowerNet):
     # define limits
     net["ext_grid"].loc[:, "min_p_mw"] = -9999.0
     net["ext_grid"].loc[:, "max_p_mw"] = 9999.0

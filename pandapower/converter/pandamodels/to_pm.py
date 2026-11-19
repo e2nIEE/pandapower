@@ -690,13 +690,13 @@ def add_params_to_pm(net, pm):
     return pm
 
 
-def _get_redispatch_elements(net):
+def _get_redispatch_elements(net: pandapowerNet):
     """
     Returns a list of (element_type, pp_index, cost_up, cost_down) tuples for every controllable
     gen / sgen that is selected for redispatch, i.e. that is controllable and has a poly_cost entry
     with non-NaN redispatch up/down costs.
     """
-    selected = []
+    selected: list[tuple[str, int, float, float]] = []
     if "poly_cost" not in net or len(net.poly_cost) == 0:
         return selected
     pc = net.poly_cost
@@ -720,7 +720,7 @@ def _get_redispatch_elements(net):
     return selected
 
 
-def _get_controllable_gen_elements(net):
+def _get_controllable_gen_elements(net: pandapowerNet):
     """
     Returns a list of (element_type, pp_index) tuples for every controllable gen / sgen. These are
     exactly the gens / sgens that become free PowerModels generators (non-controllable sgens are

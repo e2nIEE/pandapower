@@ -5,6 +5,7 @@
 import numpy as np
 
 from pandapower.auxiliary import I_from_SV_elementwise, S_from_VI_elementwise, _sum_by_group, sequence_to_phase
+from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_brch import BR_R, F_BUS, PF, PT, QF, QT, T_BUS
 from pandapower.pypower.idx_brch_dc import DC_BR_R, DC_F_BUS, DC_IF, DC_IT, DC_PF, DC_PT, DC_T_BUS, DC_TDPF
 from pandapower.pypower.idx_brch_tdpf import TDPF
@@ -452,7 +453,7 @@ def _get_trafo_results_3ph(net, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
     res_trafo_df.index = net["trafo"].index.values
 
 
-def _get_trafo3w_lookups(net):
+def _get_trafo3w_lookups(net: pandapowerNet):
     f, t = net._pd2ppc_lookups["branch"]["trafo3w"]
     hv = int(f + (t - f) / 3)
     mv = int(f + 2 * (t - f) / 3)

@@ -642,7 +642,7 @@ def merge_same_bus_generation_plants(
     return something_merged
 
 
-def close_switch_at_line_with_two_open_switches(net):
+def close_switch_at_line_with_two_open_switches(net: pandapowerNet):
     """
     Finds lines that have opened switches at both ends and closes one of them.
     Function is usually used when optimizing section points to
@@ -1006,7 +1006,7 @@ def drop_inner_branches(net, buses, branch_elements=None):
     _inner_branches(net, buses, "drop", branch_elements=branch_elements)
 
 
-def __drop_inactive_elements_other(net):
+def __drop_inactive_elements_other(net: pandapowerNet):
     """
     Drops inactive elements other than branches and buses
     """
@@ -1030,7 +1030,7 @@ def __drop_inactive_elements_other(net):
             drop_elements_simple(net, elm, idx)
 
 
-def __drop_inactive_other_branches(net):
+def __drop_inactive_other_branches(net: pandapowerNet):
     """
     Cleans up a pandapower network by removing all out-of-service “other branch elements”.
     """
@@ -1046,7 +1046,7 @@ def __drop_inactive_other_branches(net):
                 drop_elements_simple(net, elm, idx)
 
 
-def drop_out_of_service_elements(net):
+def drop_out_of_service_elements(net: pandapowerNet):
     """
     Drop all elements (including corresponding dataframes such as switches, measurements,
     result tables, geodata) with "in_service" is False. Buses that are connected to in-service
