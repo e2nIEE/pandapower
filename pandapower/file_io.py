@@ -16,8 +16,9 @@ import logging
 import os
 import pickle
 import sys
+from io import StringIO
 from os import PathLike
-from typing import TextIO
+from typing import BinaryIO, TextIO
 from typing import overload as function_overload
 from warnings import warn
 
@@ -160,7 +161,7 @@ def to_json(
 
 
 def from_pickle(
-    filename: str | PathLike,
+    filename: str | PathLike | BinaryIO,
     convert: bool = True,
     drop_invalid_geodata: bool = False,
     ignore_version_conflicts: bool = False,
@@ -171,13 +172,14 @@ def from_pickle(
     Parameters:
         filename: The absolute or relative path to the input file or file-like object
         convert: If True, converts the format of the net loaded from pickle from the older version of
-            pandapower to the newer version format
+            pandapower to the newer version format. This can lead to errors when loading nets saved in older formats.
+            Use with caution!
         drop_invalid_geodata: If set to True, drop geodata entries with invalid coordinates instead of
             raising an error. Defaults to False, so callers must explicitly opt in to dropping invalid geodata during
             conversion.
         ignore_version_conflicts: If set to True, ignore version conflicts between the net being loaded and the
             pandapower version. This can lead to errors when loading nets saved in older formats. Use with caution!
-            default False
+            It has no effect if convert is set to False.
 
     Returns:
         pandapowerNet: The pandapower network
@@ -208,15 +210,11 @@ def from_excel(
 
     Parameters:
         filename: The absolute or relative path to the input file.
-        convert: If True, converts the format of the net loaded from Excel from the older version of
-            pandapower to the newer version format
-        add_basic_std_types: If True, Adds missing standard-types from pandapower standard type library,
-            default True. the older version of pandapower to the newer version format
-        drop_invalid_geodata: If set to True, drop geodata entries with invalid coordinates instead of
-            raising an error
-        ignore_version_conflicts: If set to True, ignore version conflicts between the net being loaded and the
-            pandapower version. This can lead to errors when loading nets saved in older formats. Use with caution!
-            default False
+        convert: convert the format of the net loaded from Excel from the older version to the newer version format
+        add_basic_std_types: Add missing standard-types from pandapower standard type library.
+        drop_invalid_geodata: Drop geodata entries with invalid coordinates instead of raising an error
+        ignore_version_conflicts: Ignore version conflicts between the net being loaded and the pandapower version.
+            This can lead to errors when loading nets saved in older formats. Use with caution!
 
     Returns:
         pandapowerNet: The pandapower network
@@ -269,7 +267,7 @@ def _from_excel_old(xls, add_basic_std_types=True):
 
 
 def from_json(
-    filename_or_str: str | PathLike,
+    filename_or_str: str | bytes | StringIO | PathLike,
     convert: bool = True,
     encryption_key=None,
     elements_to_deserialize=None,
@@ -289,7 +287,8 @@ def from_json(
     order as the original network. Index columns of all pandas DataFrames are sorted in ascending order.
 
     Parameters:
-        filename_or_str: The absolute or relative path to the input file or file-like object or a JSON String
+        filename_or_str: The absolute or relative path to the input file or file-like object, or a JSON string,
+            or UTF-8 encoded JSON bytes
         convert: If True, converts the format of the net loaded from json from the older version of
             pandapower to the newer version format
         encryption_key (str or None, None): If given, key to decrypt an encrypted pandapower network
@@ -321,13 +320,13 @@ def from_json(
         >>> from pandapower.file_io import from_json
         >>> net = from_json("example.json")
     """
-    json_string: str
+    json_string: str | bytes
     if hasattr(filename_or_str, "read"):
         json_string = filename_or_str.read()
     elif os.path.isfile(filename_or_str):
         with open(filename_or_str, "r") as fp:
             json_string = fp.read()
-    elif isinstance(filename_or_str, str):
+    elif isinstance(filename_or_str, (str, bytes)):
         json_string = filename_or_str
     else:
         raise TypeError(f"from_json could not read {filename_or_str=}")
@@ -353,7 +352,7 @@ def from_json(
 
 
 def from_json_string(
-    json_string,
+    json_string: str | bytes,
     convert=False,
     encryption_key=None,
     elements_to_deserialize=None,
@@ -373,7 +372,7 @@ def from_json_string(
     order as the original network. Index columns of all pandas DataFrames are sorted in ascending order.
 
     Parameters:
-        json_string (str): The json string representation of the network
+        json_string (str or bytes): The json string representation of the network, or its UTF-8 encoding
         convert (bool, False): If True, converts the format of the net loaded from json_string from the older version of
             pandapower to the newer version format
         encryption_key (str or None, None): If given, key to decrypt an encrypted json_string
@@ -405,6 +404,9 @@ def from_json_string(
         >>> from pandapower.file_io import from_json_string
         >>> net = from_json_string("{…}")
     """
+    if isinstance(json_string, bytes):
+        json_string = json_string.decode("utf-8")
+
     if replace_elements is not None:
         for k, v in replace_elements.items():
             json_string = json_string.replace(k, v)
@@ -522,8 +524,9 @@ def from_json_dict(json_dict):
             or key == "polynomial_cost"
             or (key.startswith("res_") and key[4:] in net and isinstance(net[key[4:]], pd.DataFrame))
         ):
-            net[key] = pd.DataFrame.from_dict(json_dict[key], orient="columns")
-            net[key].set_index(net[key].index.astype(numpy.int64), inplace=True)
+            table = pd.DataFrame.from_dict(json_dict[key], orient="columns")
+            table.set_index(table.index.astype(numpy.int64), inplace=True)
+            net[key] = table.sort_index()
         else:
             net[key] = json_dict[key]
     return net

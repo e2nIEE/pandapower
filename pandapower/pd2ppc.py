@@ -146,8 +146,9 @@ def _pd2ppc(net, sequence=None, **kwargs):
         sequence: Used for three phase analysis ( 0 - Zero Sequence 1 - Positive Sequence 2 - Negative Sequence )
 
     Returns:
-        ppc: The simple matpower format network. Its fields are created empty by
-            ``_init_ppc`` and filled during the conversion:
+        ppc: The simple matpower format network. Its fields are created empty by ``_init_ppc``. The conversion does not
+            fill ``internal["branch_is"]`` or ``internal["gen_is"]`` in the returned ppc;
+            those masks are written to ppci:
             ppc = {
                   "baseMVA": taken from net.sn_mva, *float*
                   "version": 2, *int*
@@ -156,13 +157,13 @@ def _pd2ppc(net, sequence=None, **kwargs):
                         *float64* for the balanced (positive/negative sequence)
                         path, *complex128* for the zero-sequence path
                   "gen": generator matrix, *float*
-                  "gencost": cost matrix, *float*, only for OPF
+                  "gencost": empty *float* array, present only in OPF mode; the populated cost matrix is ``ppci["gencost"]``
                   "internal": {
                         "Ybus": *complex128*
                         , "Yf": *complex128*
                         , "Yt": *complex128*
-                        , "branch_is": *bool*
-                        , "gen_is": *bool*
+                        , "branch_is": *bool*, empty in the returned ppc; computed masks are in ppci["internal"]
+                        , "gen_is": *bool*, empty in the returned ppc; computed masks are in ppci["internal"]
                         }
         ppci: The "internal" pypower format network for PF calculations
     """
