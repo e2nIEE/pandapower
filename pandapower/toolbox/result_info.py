@@ -27,7 +27,7 @@ from pandapower.toolbox.element_selection import pp_elements
 logger = logging.getLogger(__name__)
 
 
-def lf_info(net, numv=1, numi=2):  # pragma: no cover
+def lf_info(net: pandapowerNet, numv=1, numi=2):  # pragma: no cover
     """
     Prints some basic information of the results in a net
     (max/min voltage, max trafo load, max line load).
@@ -51,7 +51,7 @@ def lf_info(net, numv=1, numi=2):  # pragma: no cover
         logger.info("  %s loading at line %s (%s)", r.loading_percent, r.name, net.line.name.at[r.name])
 
 
-def opf_task(net, delta_pq=1e-3, keep=False, log=True):
+def opf_task(net: pandapowerNet, delta_pq=1e-3, keep=False, log=True):
     """
     Collects some basic inforamtion of the optimal powerflow task und prints them.
     """
@@ -59,7 +59,11 @@ def opf_task(net, delta_pq=1e-3, keep=False, log=True):
         net = copy.deepcopy(net)
     _check_necessary_opf_parameters(net, logger)
 
-    opf_task_overview = {"flexibilities": {}, "network_constraints": {}, "flexibilities_without_costs": {}}
+    opf_task_overview: dict[str, dict] = {
+        "flexibilities": {},
+        "network_constraints": {},
+        "flexibilities_without_costs": {},
+    }
     _determine_flexibilities_dict(net, opf_task_overview["flexibilities"], delta_pq)
     _determine_network_constraints_dict(net, opf_task_overview["network_constraints"])
     _determine_costs_dict(net, opf_task_overview)
@@ -139,26 +143,18 @@ def _find_idx_without_numerical_difference(df, column1, column2, delta, idx=None
     """
     Returns indices where comlumn1 and column2 have a numerical difference bigger than delta.
 
-    INPUT:
-        **df** (DataFrame)
+    Parameters:
+        df (DataFrame):
+        column1 (str): name of first column within df to compare. The values of df[column1] must be numericals.
+        column2 (str): name of second column within df to compare. The values of df[column2] must be numericals.
+        delta (numerical): value which defines whether indices are returned or not
+        idx (iterable, None): list of indices which should be considered only
+        equal_nan (bool, False): if False, indices are included where at least one value in df[column1] and df[column2]
+            is NaN
 
-        **column1** (str) - name of first column within df to compare.
-        The values of df[column1] must be numericals.
-
-        **column2** (str) - name of second column within df to compare.
-        The values of df[column2] must be numericals.
-
-        **delta** (numerical) - value which defines whether indices are returned or not
-
-    OPTIONAL:
-        **idx** (iterable, None) - list of indices which should be considered only
-
-        **equal_nan** (bool, False) - if False, indices are included where at least one value in
-        df[column1] and df[column2] is NaN
-
-    OUTPUT:
-        **index** (pandas.Index) - index within idx where df[column1] and df[column2] deviates by
-        at least delta or, if equal_na is True, one value is NaN
+    Returns:
+        index (pandas.Index): index within idx where df[column1] and df[column2] deviates by at least delta or, if
+            equal_na is True, one value is NaN
     """
     idx = idx if idx is not None else df.index
     idx_isnull = df.index[df[[column1, column2]].isnull().any(axis=1)]
@@ -377,7 +373,7 @@ def _get_keys_and_elements_from_opf_task_dict(dict_):
     return keys, elms
 
 
-def switch_info(net, sidx):  # pragma: no cover
+def switch_info(net: pandapowerNet, sidx):  # pragma: no cover
     """
     Prints what buses and elements are connected by a certain switch.
     """
@@ -390,7 +386,7 @@ def switch_info(net, sidx):  # pragma: no cover
     logger.info(f"Switch {sidx:u} connects bus {bidx:u} ({bus_name}) with trafo {eidx:u} ({name})")
 
 
-def overloaded_lines(net, max_load=100):
+def overloaded_lines(net: pandapowerNet, max_load=100):
     """
     Returns the results for all lines with loading_percent > max_load or None, if
     there are none.
@@ -401,7 +397,7 @@ def overloaded_lines(net, max_load=100):
         raise UserWarning("The last loadflow terminated erratically, results are invalid!")
 
 
-def violated_buses(net, min_vm_pu, max_vm_pu):
+def violated_buses(net: pandapowerNet, min_vm_pu, max_vm_pu):
     """
     Returns all bus indices where vm_pu is not within min_vm_pu and max_vm_pu or returns None, if
     there are none of those buses.
@@ -412,7 +408,7 @@ def violated_buses(net, min_vm_pu, max_vm_pu):
         raise UserWarning("The last loadflow terminated erratically, results are invalid!")
 
 
-def clear_result_tables(net):
+def clear_result_tables(net: pandapowerNet):
     """
     Clears all ``res_`` DataFrames in net.
     """
@@ -421,48 +417,38 @@ def clear_result_tables(net):
             net[key] = net[key].drop(net[key].index)
 
 
-def compute_switch_flows(net):
-    """Compute power flow through zero-impedance bus-bus switches via nodal balance.
+def compute_switch_flows(net: pandapowerNet):
+    """
+    Compute power flow through zero-impedance bus-bus switches via nodal balance.
 
-    After a converged load flow, switches with ``z_ohm=0`` (the default) have
-    ``NaN`` values in ``res_switch`` because Pandapower fuses the adjacent buses
-    into a single internal node.  This function reconstructs the individual
-    switch flows by calculating the net local injection at each bus within a
-    fused group and propagating the residual through the switch tree.
+    After a converged load flow, switches with ``z_ohm=0`` (the default) have ``NaN`` values in ``res_switch``
+    because Pandapower fuses the adjacent buses into a single internal node. This function reconstructs the
+    individual switch flows by calculating the net local injection at each bus within a fused group and propagating
+    the residual through the switch tree.
 
-    The function writes ``p_from_mw``, ``q_from_mvar``, ``p_to_mw``,
-    ``q_to_mvar``, and ``i_ka`` into ``net.res_switch`` for every closed
-    bus-bus switch that has ``z_ohm <= 0``.  Results for open switches are set
-    to zero.  Switches that already have results (``z_ohm > 0``) are not
-    modified.
+    The function writes ``p_from_mw``, ``q_from_mvar``, ``p_to_mw``, ``q_to_mvar``, and ``i_ka`` into
+    ``net.res_switch`` for every closed bus-bus switch that has ``z_ohm <= 0``. Results for open switches are set to
+    zero. Switches that already have results (``z_ohm > 0``) are not modified.
 
-    **Assumption:** Within each fused-bus group the zero-impedance switches
-    must form a *tree* (no parallel zero-impedance paths between the same pair
-    of buses).  If a cycle is detected a ``ValueError`` is raised, since the
-    flow split is physically indeterminate without impedance information.
+    **Assumption:** Within each fused-bus group the zero-impedance switches must form a *tree* (no parallel
+    zero-impedance paths between the same pair of buses). If a cycle is detected a ``ValueError`` is raised, since
+    the flow split is physically indeterminate without impedance information.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        A pandapower network with valid load flow results
-        (``net.converged is True``).
+    Parameters:
+        net (pandapowerNet): A pandapower network with valid load flow results (``net.converged is True``).
 
-    Raises
-    ------
-    UserWarning
-        If ``net.converged`` is ``False``.
-    ValueError
-        If zero-impedance bus-bus switches form a cycle within a fused group.
+    Raises:
+        UserWarning: If ``net.converged`` is ``False``.
+        ValueError: If zero-impedance bus-bus switches form a cycle within a fused group.
 
-    Examples
-    --------
-    >>> import pandapower as pp
-    >>> import pandapower.networks as pn
-    >>> net = pn.example_simple()
-    >>> pp.runpp(net)
-    >>> from pandapower.toolbox import compute_switch_flows
-    >>> compute_switch_flows(net)
-    >>> net.res_switch  # p_from_mw, q_from_mvar etc. now populated
+    Example:
+        >>> import pandapower as pp
+        >>> import pandapower.networks as pn
+        >>> net = pn.example_simple()
+        >>> pp.runpp(net)
+        >>> from pandapower.toolbox import compute_switch_flows
+        >>> compute_switch_flows(net)
+        >>> net.res_switch  # p_from_mw, q_from_mvar etc. now populated
     """
     from collections import defaultdict
 
@@ -486,8 +472,8 @@ def compute_switch_flows(net):
         return
 
     # Per-bus net local consumption: positive = power leaving the bus
-    bus_p = defaultdict(float)
-    bus_q = defaultdict(float)
+    bus_p: defaultdict[int, float] = defaultdict(float)
+    bus_q: defaultdict[int, float] = defaultdict(float)
 
     _bus_element_names = [
         ("load", 1.0),
@@ -574,7 +560,7 @@ def compute_switch_flows(net):
         if grp is not None and grp in multi_groups:
             sw_by_group[grp].append((sw_idx, a, b))
 
-    computed_switches = set()
+    computed_switches: set[int] = set()
 
     # For each fused group, build the coupler subgraph and compute flows
     for grp_id, grp_buses in multi_groups.items():
@@ -607,8 +593,8 @@ def compute_switch_flows(net):
         # DFS to build tree order
         root = next(iter(grp_buses))
         visited = set()
-        stack = [(root, None, None)]
-        order = []
+        stack: list[tuple[int, int | None, int | None]] = [(root, None, None)]
+        order: list[tuple[int, int | None, int | None]] = []
         while stack:
             bus, parent, parent_sw = stack.pop()
             if bus in visited:
@@ -620,8 +606,8 @@ def compute_switch_flows(net):
                     stack.append((nb, bus, sw_idx))
 
         # Accumulate subtree demand from leaves to root
-        subtree_p = {}
-        subtree_q = {}
+        subtree_p: dict[int, float] = {}
+        subtree_q: dict[int, float] = {}
         for bus, parent, parent_sw in reversed(order):
             sp = bus_p.get(bus, 0.0)
             sq = bus_q.get(bus, 0.0)
@@ -666,30 +652,25 @@ def compute_switch_flows(net):
 
 
 def res_power_columns(element_type, side=0):
-    """Returns columns names of result tables for active and reactive power
+    """
+    Returns columns names of result tables for active and reactive power
 
-    Parameters
-    ----------
-    element_type : str
-        name of element table, e.g. "gen"
-    side : typing.Union[int, str], optional
-        Defines for branch elements which branch side is considered, by default 0
+    Parameters:
+        element_type (str): name of element table, e.g. "gen"
+        side (typing.Union[int, str]): Defines for branch elements which branch side is considered, by default 0
 
-    Returns
-    -------
-    list[str]
+    Returns:
         columns names of result tables for active and reactive power
 
-    Examples
-    --------
-    >>> res_power_columns("gen")
-    ["p_mw", "q_mvar"]
-    >>> res_power_columns("line", "from")
-    ["p_from_mw", "q_from_mvar"]
-    >>> res_power_columns("line", 0)
-    ["p_from_mw", "q_from_mvar"]
-    >>> res_power_columns("line", "all")
-    ["p_from_mw", "q_from_mvar", "p_to_mw", "q_to_mvar"]
+    Example:
+        >>> res_power_columns("gen")
+        ["p_mw", "q_mvar"]
+        >>> res_power_columns("line", "from")
+        ["p_from_mw", "q_from_mvar"]
+        >>> res_power_columns("line", 0)
+        ["p_from_mw", "q_from_mvar"]
+        >>> res_power_columns("line", "all")
+        ["p_from_mw", "q_from_mvar", "p_to_mw", "q_to_mvar"]
     """
     if element_type in pp_elements(branch_elements=False, other_elements=False):
         return ["p_mw", "q_mvar"]

@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 
 @pytest.fixture
-def simple_test_net():
+def simple_test_net() -> pandapowerNet:
     net = pandapowerNet(name="simple_test_net")
     set_user_pf_options(net, init="dc", calculate_voltage_angles=True)
     b0, b1, b2, b3, b4 = create_buses(net, 5, [110, 110, 20, 20, 6])
@@ -79,7 +79,7 @@ def simple_test_net():
     return net
 
 
-def create_rand_data_source(net, n_timesteps=10):
+def create_rand_data_source(net: pandapowerNet, n_timesteps=10):
     profiles = {}
     elements = ["load", "sgen"]
     for el in elements:
@@ -117,7 +117,7 @@ def create_data_source(n_timesteps=10):
     return profiles, ds
 
 
-def setup_output_writer(net, time_steps):
+def setup_output_writer(net: pandapowerNet, time_steps):
     ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir())
     ow.log_variable("load", "p_mw")
     ow.log_variable("res_bus", "vm_pu")
@@ -126,7 +126,7 @@ def setup_output_writer(net, time_steps):
     return ow
 
 
-def setup_output_streamer(net, time_steps):
+def setup_output_streamer(net: pandapowerNet, time_steps):
     output_streamer = OutputStreamer(net, time_steps, output_path=tempfile.gettempdir())
     output_streamer.log_variable("load", "p_mw")
     output_streamer.log_variable("res_bus", "vm_pu")

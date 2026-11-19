@@ -5,6 +5,7 @@ import logging
 from typing import ClassVar
 
 import numpy as np
+import numpy.typing as npt
 from numpy import interp
 from scipy.interpolate import PchipInterpolator, interp1d
 
@@ -179,7 +180,7 @@ class SplineCharacteristic(Characteristic):
                 raise NotImplementedError(f"Interpolator {self.interpolator_kind} not implemented!")
         return self._interpolator
 
-    def __call__(self, x: float):
+    def __call__(self, x: float | npt.NDArray):
         """
         This method allows calling the SciPy interpolator object directly.
         Codacy is complaining about this, but it is not a problem.

@@ -16,6 +16,7 @@ from itertools import combinations
 
 import networkx as nx
 import numpy as np
+from numpy.typing import ArrayLike
 
 from pandapower.auxiliary import _init_nx_options
 from pandapower.build_branch import (
@@ -24,6 +25,7 @@ from pandapower.build_branch import (
     _trafo_df_from_trafo3w,
 )
 from pandapower.build_bus import _build_bus_ppc
+from pandapower.network import pandapowerNet
 from pandapower.pd2ppc import _init_ppc
 from pandapower.pf.make_y_bus_facts import calc_y_svc_pu
 from pandapower.pypower.idx_bus import BASE_KV
@@ -310,20 +312,18 @@ def create_nxgraph(
     return mg
 
 
-def get_edge_table(net, table_name, include_edges):
+def get_edge_table(net: pandapowerNet, table_name: str, include_edges: bool | ArrayLike):
     """
-    Returns the table for the specified name according to parameter include_edges. If it is True,
-    the whole table is returnedif False, None is returned. If it is an iterable, only the included
-    indices are chosen.
+    Returns the table for the specified name according to parameter include_edges. If it is True, the whole table is
+    returnedif False, None is returned. If it is an iterable, only the included indices are chosen.
 
-    :param net: pandapower network
-    :type net: pandapowerNet
-    :param table_name: name of table to choose from
-    :type table_name: str
-    :param include_edges: whether to include this table or not, or the indices to include
-    :type include_edges: bool, iterable
-    :return: table - the chosen edge table
-    :rtype: pd.DataFrame
+    Parameters:
+        net: pandapower network
+        table_name: name of table to choose from
+        include_edges: whether to include this table or not, or the indices to include
+
+    Returns:
+        table (pd.DataFrame): the chosen edge table
     """
     table = None
     if isinstance(include_edges, bool):
@@ -371,7 +371,7 @@ def add_edges(
             mg.add_edge(idx[F_BUS], idx[T_BUS], key=(element, idx[INDEX]), weight=p[WEIGHT], path=1)
 
 
-def get_baseR(net, ppc, buses):
+def get_baseR(net: pandapowerNet, ppc, buses):
     bus_lookup = net._pd2ppc_lookups["bus"]
     base_kv = ppc["bus"][bus_lookup[buses], BASE_KV]
     return np.square(base_kv) / net.sn_mva
@@ -392,7 +392,7 @@ def init_par(tab, calc_branch_impedances=False, include_out_of_service=False):
         return indices, parameters
 
 
-def get_nx_ppc(net):
+def get_nx_ppc(net: pandapowerNet):
     _init_nx_options(net)
     ppc = _init_ppc(net)
     _build_bus_ppc(net, ppc)

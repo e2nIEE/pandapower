@@ -76,7 +76,7 @@ def add_gen_order(gen_order, element, _is_elements, f):
     return f
 
 
-def _init_ppc_gen(net, ppc, nr_gens):
+def _init_ppc_gen(net: pandapowerNet, ppc, nr_gens):
     # initialize generator matrix
     ppc["gen"] = np.zeros(shape=(nr_gens, GEN_COLS), dtype=np.float64)
     ppc["gen"][:] = np.array([0, 0, 0, 0, 0, 1.0, 1.0, 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0])
@@ -88,7 +88,7 @@ def _init_ppc_gen(net, ppc, nr_gens):
     ppc["gen"][:, QMIN] = -q_lim_default
 
 
-def add_element_to_gen(net, ppc, element, f, t, sequence):
+def add_element_to_gen(net: pandapowerNet, ppc, element, f, t, sequence):
     if element == "ext_grid":
         _build_pp_ext_grid(net, ppc, f, t)
     elif element == "gen":
@@ -105,7 +105,7 @@ def add_element_to_gen(net, ppc, element, f, t, sequence):
         raise ValueError(f"Unknown element {element}")
 
 
-def _build_pp_ext_grid(net, ppc, f, t):
+def _build_pp_ext_grid(net: pandapowerNet, ppc, f, t):
     delta = net._options["delta"]
     eg_is = net._is_elements["ext_grid"]
     calculate_voltage_angles = net["_options"]["calculate_voltage_angles"]
@@ -141,7 +141,7 @@ def _build_pp_ext_grid(net, ppc, f, t):
         ppc["gen"][f:t, QMAX] = 0
 
 
-def _check_gen_vm_limits(net, ppc, gen_buses, gen_is):
+def _check_gen_vm_limits(net: pandapowerNet, ppc, gen_buses, gen_is):
     # check vm_pu limit violation
     v_max_bound = ppc["bus"][gen_buses, VMAX] < net["gen"]["vm_pu"].values[gen_is]
     if np.any(v_max_bound):
@@ -178,7 +178,7 @@ def _check_gen_vm_limits(net, ppc, gen_buses, gen_is):
     return ppc
 
 
-def _enforce_controllable_vm_pu_p_mw(net, ppc, gen_is, f, t):
+def _enforce_controllable_vm_pu_p_mw(net: pandapowerNet, ppc, gen_is, f, t):
     delta = net["_options"]["delta"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     controllable = net["gen"]["controllable"].values[gen_is]
@@ -200,7 +200,7 @@ def _enforce_controllable_vm_pu_p_mw(net, ppc, gen_is, f, t):
     return ppc
 
 
-def _build_pp_gen(net, ppc, f, t, sequence):
+def _build_pp_gen(net: pandapowerNet, ppc, f, t, sequence):
     delta = net["_options"]["delta"]
     gen_is = net._is_elements["gen"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -270,7 +270,7 @@ def _build_pp_gen(net, ppc, f, t, sequence):
             ppc = _enforce_controllable_vm_pu_p_mw(net, ppc, gen_is, f, t)
 
 
-def _build_pp_xward(net, ppc, f, t):
+def _build_pp_xward(net: pandapowerNet, ppc, f, t):
     delta = net["_options"]["delta"]
     q_lim_default = net._options["q_lim_default"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -292,7 +292,7 @@ def _build_pp_xward(net, ppc, f, t):
         ppc["bus"][xward_buses, VM] = net["xward"]["vm_pu"].values
 
 
-def _build_pp_pq_element(net, ppc, element, f, t, inverted=False):
+def _build_pp_pq_element(net: pandapowerNet, ppc, element, f, t, inverted=False):
     delta = net._options["delta"]
     sign = -1 if inverted else 1
     is_element = net._is_elements[f"{element}_controllable"]
@@ -312,7 +312,7 @@ def _build_pp_pq_element(net, ppc, element, f, t, inverted=False):
     add_p_constraints(net, element, is_element, ppc, f, t, delta, inverted)
 
 
-def add_q_constraints(net, element, is_element, ppc, f, t, delta, inverted=False):
+def add_q_constraints(net: pandapowerNet, element, is_element, ppc, f, t, delta, inverted=False):
     tab = net[element]
     elem_idx = tab.index[is_element]
     gen_rows = np.arange(f, t)
@@ -359,7 +359,7 @@ def add_q_constraints(net, element, is_element, ppc, f, t, delta, inverted=False
         ppc["gen"][gen_rows[valid_max], qmax_dest_col] = qmax_sign * qmax[valid_max] + qmax_delta
 
 
-def add_p_constraints(net, element, is_element, ppc, f, t, delta, inverted=False):
+def add_p_constraints(net: pandapowerNet, element, is_element, ppc, f, t, delta, inverted=False):
     tab = net[element]
     if "min_p_mw" in tab.columns:
         if inverted:
@@ -420,7 +420,7 @@ def _check_voltage_setpoints_at_same_bus(ppc: dict):
         )
 
 
-def _check_voltage_angles_at_same_bus(net, ppc):
+def _check_voltage_angles_at_same_bus(net: pandapowerNet, ppc):
     if net._is_elements["ext_grid"].any():
         gen_va = net.ext_grid.va_degree.values[net._is_elements["ext_grid"]]
         eg_gens = net._pd2ppc_lookups["ext_grid"][net.ext_grid.index[net._is_elements["ext_grid"]]]
@@ -467,13 +467,13 @@ def _different_values_at_one_bus(buses, values):
     return not np.allclose(values, values_equal)
 
 
-def _gen_xward_mask(net, ppc):
+def _gen_xward_mask(net: pandapowerNet, ppc):
     gen_mask = ~np.isin(ppc["gen"][:, GEN_BUS], net["_pd2ppc_lookups"].get("aux", {}).get("xward", []))
     xward_mask = np.isin(ppc["gen"][:, GEN_BUS], net["_pd2ppc_lookups"].get("aux", {}).get("xward", []))
     return gen_mask, xward_mask
 
 
-def _get_xward_pq_buses(net, ppc):
+def _get_xward_pq_buses(net: pandapowerNet, ppc):
     # find the PQ and PV buses of the xwards; in build_branch.py the F_BUS is set to the PQ bus and T_BUS is set to
     # the auxiliary PV bus
     ft = net["_pd2ppc_lookups"].get("branch", {}).get("xward", [])
@@ -540,7 +540,7 @@ def _normalise_slack_weights(ppc, gen_mask, xward_mask, xward_pq_buses):
         )
 
 
-def _calculate_qmin_qmax_from_q_capability_characteristics(net, element):
+def _calculate_qmin_qmax_from_q_capability_characteristics(net: pandapowerNet, element):
     """
     For gen/sgen elements with reactive_capability_curve == True, compute min_q_mvar / max_q_mvar from the
     q_capability_characteristic table at the current p_mw.

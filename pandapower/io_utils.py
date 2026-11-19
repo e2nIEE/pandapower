@@ -255,7 +255,7 @@ def dicts_to_pandas(json_dict):
     return pd_dict
 
 
-def df_to_coords(net, item, table):
+def df_to_coords(net: pandapowerNet, item, table):
     # converts dataframe to coords in net
     num_points = len(table.columns) // 2
     net[item] = pd.DataFrame(index=table.index, columns=net[item].columns)
@@ -341,7 +341,7 @@ def from_dict_of_dfs(dodfs, net=None, add_basic_std_types=True):
     return net
 
 
-def restore_all_dtypes(net, dtypes):
+def restore_all_dtypes(net: pandapowerNet, dtypes):
     for _, v in dtypes.iterrows():
         try:
             if v["dtype"] == "object":
@@ -354,7 +354,7 @@ def restore_all_dtypes(net, dtypes):
             logger.info(f"could not convert dtype in {v.element}: {v.column}")
 
 
-def to_dict_with_coord_transform(net, point_geo_columns, line_geo_columns):
+def to_dict_with_coord_transform(net: pandapowerNet, point_geo_columns, line_geo_columns):
     save_net = {}
     for key, item in net.items():
         if hasattr(item, "columns") and "geometry" in item.columns:
@@ -384,7 +384,7 @@ def get_raw_data_from_pickle(filename):
     return net
 
 
-def transform_net_with_df_and_geo(net, point_geo_columns, line_geo_columns):
+def transform_net_with_df_and_geo(net: pandapowerNet, point_geo_columns, line_geo_columns):
     try:
         epsg = net.gis_epsg_code
     except AttributeError:

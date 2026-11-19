@@ -15,6 +15,7 @@ import numpy as np
 import pandas as pd
 
 from pandapower.auxiliary import soft_dependency_error
+from pandapower.network import pandapowerNet
 
 try:
     import matplotlib.pyplot as plt
@@ -28,57 +29,42 @@ from pandapower.topology.graph_searches import calc_distance_to_bus
 
 
 def plot_voltage_profile(
-    net,
+    net: pandapowerNet,
     ax=None,
     plot_transformers=True,
-    xlabel="Distance from Slack [km]",
-    ylabel="Voltage [pu]",
-    x0=0,
-    line_color="grey",
-    trafo_color="r",
-    bus_colors="b",
-    line_loading_weight=False,
-    voltage_column=None,
-    bus_size=3,
+    xlabel: str = "Distance from Slack [km]",
+    ylabel: str = "Voltage [pu]",
+    x0: int = 0,
+    line_color: str = "grey",
+    trafo_color: str = "r",
+    bus_colors: str | dict[int, str] = "b",
+    line_loading_weight: bool = False,
+    bus_size: int = 3,
     lines=None,
     **kwargs,
 ):
-    """Plot the voltage profile depending on the distance from the slack.
+    """
+    Plot the voltage profile depending on the distance from the slack.
 
-    Parameters
-    ----------
-    net : pp.PandapowerNet
-        net including power flow results
-    ax : matplotlib.axes, optional
-        axis to plot to, by default None
-    plot_transformers : bool, optional
-        Whether vertical lines should be plotted to display the voltage drop of the transformers,
-        by default True
-    xlabel : str, optional
-        xlable of the figure, by default "Distance from Slack [km]"
-    ylabel : str, optional
-        ylable of the figure, by default "Voltage [pu]"
-    x0 : int, optional
-        slack position at the xaxis, by default 0
-    line_color : str, optional
-        color used to plot the lines, by default "grey"
-    trafo_color : str, optional
-        color used to plot the trafos, by default "r"
-    bus_colors : [str, dict[int, str]], optional
-        colors used to plot the buses. Can be passed as string (to give all buses the same color),
-        or as dict, by default "b"
-    line_loading_weight : bool, optional
-        enables loading dependent width of the lines, by default False
-    bus_size : int, optional
-        size of bus representations, by default 3
-    lines : Any[list[int], pd.Index[int]], optional
-        list of line indices which should be plottet. If None, all lines are plotted, by default None
+    Parameters:
+        net: net including power flow results
+        ax (matplotlib.axes): axis to plot to, by default None
+        plot_transformers: Whether vertical lines should be plotted to display the voltage drop of the
+            transformers, by default True
+        xlabel: xlable of the figure, by default "Distance from Slack [km]"
+        ylabel: ylable of the figure, by default "Voltage [pu]"
+        x0: slack position at the xaxis, by default 0
+        line_color: color used to plot the lines, by default "grey"
+        trafo_color: color used to plot the trafos, by default "r"
+        bus_colors: colors used to plot the buses. Can be passed as string (to give all buses
+            the same color), or as dict, by default "b"
+        line_loading_weight: enables loading dependent width of the lines, by default False
+        bus_size: size of bus representations, by default 3
+        lines (Any[list[int], pd.Index[int]]): list of line indices which should be plottet. If None, all lines are
+            plotted, by default None
 
-    Returns
-    -------
-    matplotlib.axes
+    Returns:
         axis of the plot
-
     """
     # handle exceptions and inputs
     if not MATPLOTLIB_INSTALLED:
@@ -150,31 +136,28 @@ def plot_voltage_profile(
 
 
 def plot_loading(
-    net, ax=None, element_type="line", box_color="b", median_color="r", whisker_color="k", index_subset=None, **kwargs
+    net: pandapowerNet,
+    ax=None,
+    element_type: str = "line",
+    box_color: str = "b",
+    median_color: str = "r",
+    whisker_color: str = "k",
+    index_subset=None,
 ):
-    """Plot a boxplot of loadings
+    """
+    Plot a boxplot of loadings
 
-    Parameters
-    ----------
-    net : pp.PandapowerNet
-        net including power flow results
-    ax : matplotlib.axes, optional
-        axis to plot to, by default None
-    element : str, optional
-        name of element which loadings should be plotted, by default "line"
-    box_color : str, optional
-        color of the box, by default "b"
-    median_color : str, optional
-        color of the median line, by default "r"
-    whisker_color : str, optional
-        color of the whiskers, by default "k"
-    index_subset : Any[list[int], pd.Index[int]], optional
-        list of element indices which should be considered. If None, all elements are considered,
-        by default None
+    Parameters:
+        net: net including power flow results
+        ax (matplotlib.axes): axis to plot to, by default None
+        element_type: name of element which loadings should be plotted, by default "line"
+        box_color: color of the box, by default "b"
+        median_color: color of the median line, by default "r"
+        whisker_color: color of the whiskers, by default "k"
+        index_subset (Any[list[int], pd.Index[int]]): list of element indices which should be considered. If None, all
+            elements are considered, by default None
 
-    Returns
-    -------
-    matplotlib.axes
+    Returns:
         axis of the plot
     """
     # handle exceptions and inputs
@@ -202,7 +185,7 @@ def plot_loading(
     return ax
 
 
-def voltage_profile_to_bus_geodata(net, voltages=None, root_bus=None):
+def voltage_profile_to_bus_geodata(net: pandapowerNet, voltages=None, root_bus=None):
     if voltages is None:
         if not net.converged:
             raise ValueError("no results in this pandapower network")

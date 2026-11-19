@@ -41,7 +41,7 @@ def _create_net_with_buses():
     return net
 
 
-def _create_valid_vsc(net, bus=0, bus_dc=0, name="VSC-1"):
+def _create_valid_vsc(net: pandapowerNet, bus=0, bus_dc=0, name="VSC-1"):
     """Helper to create a valid VSC element."""
     create_vsc(
         net,

@@ -70,7 +70,7 @@ from pandapower.groups import (
     detach_from_groups,
     element_associated_groups,
 )
-from pandapower.network import pandapowerNet, plural_s
+from pandapower.network import ADict, pandapowerNet, plural_s
 from pandapower.pp_types import Int, StandardTypesDict, StandardTypesDictKeys
 from pandapower.results import EmptyResults
 from pandapower.run import runpp
@@ -88,7 +88,7 @@ from pandapower.toolbox.result_info import clear_result_tables
 logger = logging.getLogger(__name__)
 
 
-def _select_cost_df(net, p2, cost_type):
+def _select_cost_df(net: pandapowerNet, p2, cost_type):
     isin = np.array([False] * net[cost_type].shape[0])
     for et in net[cost_type].et.unique():
         isin_et = net[cost_type].element.isin(p2[et].index)
@@ -97,7 +97,9 @@ def _select_cost_df(net, p2, cost_type):
     p2[cost_type] = net[cost_type].loc[isin]
 
 
-def select_subnet(net, buses, include_switch_buses=False, include_results=False, keep_everything_else=False):
+def select_subnet(
+    net: pandapowerNet, buses, include_switch_buses=False, include_results=False, keep_everything_else=False
+):
     """
     Selects a subnet by a list of bus indices and returns a net with all elements
     connected to them.
@@ -222,11 +224,11 @@ def merge_nets(
     **runpp_kwargs,
 ):
     """
-    Function to concatenate two nets into one data structure. The elements keep their indices
-    unless both nets have the same indices. In that case, net2 elements get reindexed. The reindex
-    lookup of net2 elements can be retrieved by passing return_net2_reindex_lookup=True.
+    Function to concatenate two nets into one data structure. The elements keep their indices unless both nets have
+    the same indices. In that case, net2 elements get reindexed. The reindex lookup of net2 elements can be
+    retrieved by passing return_net2_reindex_lookup=True.
 
-    Arguments:
+    Parameters:
         net1: first net to concatenate
         net2: second net to concatenate
         validate: whether power flow results should be compared against the results of the input nets
@@ -234,8 +236,8 @@ def merge_nets(
         tol: tolerance which is allowed to pass the results validate check (relevant if validate is True)
         std_prio_on_net1: whether net1 standard type should be kept if net2 has types with same names
         return_net2_reindex_lookup: if True, the merged net AND a dict of lookups is returned
-        net2_reindex_log_level: logging level of the message which element types of net2 got reindexed elements.
-            Options are, for example "debug", "info", "warning", "error", or None, by default "info"
+        net2_reindex_log_level: logging level of the message which element types of net2 got reindexed elements. Options
+            are, for example "debug", "info", "warning", "error", or None, by default "info"
 
     Returns:
         net with concatenated element tables
@@ -327,7 +329,7 @@ def merge_nets(
         return net
 
 
-def set_element_status(net, buses, in_service):
+def set_element_status(net: pandapowerNet, buses, in_service):
     """
     Sets buses and all elements connected to them in or out of service.
     """
@@ -352,7 +354,7 @@ def __close_switches_for_oos(closed_switches, switches, et_label, elements_oos_i
     switches.loc[mask, "closed"] = True
 
 
-def set_isolated_areas_out_of_service(net, respect_switches=True):
+def set_isolated_areas_out_of_service(net: pandapowerNet, respect_switches=True):
     """
     Set all isolated buses and all elements connected to isolated buses out of service.
     """
@@ -382,7 +384,7 @@ def set_isolated_areas_out_of_service(net, respect_switches=True):
         if t3_oos.any():
             trafo3ws.loc[t3_oos, "in_service"] = False
 
-    closed_switches = set()
+    closed_switches: set[int] = set()
 
     if len(net["line"]):
         oos_idx = net["line"].index[~net["line"]["in_service"]]
@@ -421,12 +423,11 @@ def set_isolated_areas_out_of_service(net, respect_switches=True):
         logger.info(f"closed {len(closed_switches)} switches: {sorted(closed_switches)}")
 
 
-def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
+def repl_to_line(net: pandapowerNet, idx, std_type, name=None, in_service=False, **kwargs):
     """
-    creates a power line in parallel to the existing power line based on the values of the new
-    std_type. The new parallel line has an impedance value, which is chosen so that the resulting
-    impedance of the new line and the already existing line is equal to the impedance of the
-    replaced line. Or for electrical engineers:
+    creates a power line in parallel to the existing power line based on the values of the new std_type. The new
+    parallel line has an impedance value, which is chosen so that the resulting impedance of the new line and the
+    already existing line is equal to the impedance of the replaced line. Or for electrical engineers:
 
         Z0 = impedance of the existing line
 
@@ -441,19 +442,16 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
         ---|          |---   =  --- Z1 ---
             --- Z0 ---
 
-    Parameters
-    ----------
-    net - pandapower net
-    idx (int) - idx of the existing line
-    std_type (str) - pandapower standard type
-    name (str, None) - name of the new power line
-    in_service (bool, False) - if the new power line is in service
-    **kwargs - additional line parameters you want to set for the new line
+    Parameters:
+        net: pandapower net
+        idx (int): idx of the existing line
+        std_type (str): pandapower standard type
+        name (str, None): name of the new power line
+        in_service (bool, False): if the new power line is in service
+        kwargs: additional line parameters you want to set for the new line
 
-    Returns
-    -------
-    new_idx (int) - index of the created power line
-
+    Returns:
+        new_idx (int): index of the created power line
     """
 
     # impedance before changing the standard type
@@ -516,7 +514,7 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
     return new_idx
 
 
-def merge_parallel_line(net, idx):
+def merge_parallel_line(net: pandapowerNet, idx):
     """
     Changes the impedances of the parallel line so that it equals a single line.
 
@@ -531,15 +529,9 @@ def merge_parallel_line(net, idx):
         ---|          |---   =  --- Z1 ---
             --- Z0 ---
 
-    Parameters
-    ----------
-        net - pandapower net
-
-        idx (int) - idx of the line to merge
-
-    Returns
-    -------
-    net
+    Parameters:
+        net: pandapower net
+        idx (int): idx of the line to merge
     """
     # impedance before changing the standard type
     r0 = net.line.at[idx, "r_ohm_per_km"]
@@ -652,7 +644,7 @@ def merge_same_bus_generation_plants(
     return something_merged
 
 
-def close_switch_at_line_with_two_open_switches(net):
+def close_switch_at_line_with_two_open_switches(net: pandapowerNet):
     """
     Finds lines that have opened switches at both ends and closes one of them.
     Function is usually used when optimizing section points to
@@ -671,7 +663,7 @@ def close_switch_at_line_with_two_open_switches(net):
         )
 
 
-def fuse_buses(net, b1, b2, drop=True, fuse_bus_measurements=True):
+def fuse_buses(net: pandapowerNet, b1, b2, drop=True, fuse_bus_measurements=True):
     """
     Reroutes any connections to buses in b2 to the given bus b1. Additionally drops the buses b2,
     if drop=True (default).
@@ -707,7 +699,7 @@ def fuse_buses(net, b1, b2, drop=True, fuse_bus_measurements=True):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def drop_elements(net, element_type, element_index, **kwargs):
+def drop_elements(net: pandapowerNet, element_type, element_index, **kwargs):
     """
     Drops element, result and group entries, as well as, associated elements from the pandapower
     net.
@@ -722,13 +714,12 @@ def drop_elements(net, element_type, element_index, **kwargs):
         drop_elements_simple(net, element_type, element_index)
 
 
-def drop_elements_simple(net, element_type, element_index):
+def drop_elements_simple(net: ADict, element_type, element_index):
     """
     Drops element, result and group entries from the pandapower net.
 
-    See Also
-    --------
-    drop_elements : providing more generic usage (inter-element connections considered)
+    See Also:
+        drop_elements : providing more generic usage (inter-element connections considered)
     """
     if element_type in ["bus", "line", "trafo", "trafo3w"]:
         logger.warning(
@@ -751,7 +742,7 @@ def drop_elements_simple(net, element_type, element_index):
         logger.debug(f"Dropped {number} {element_type}{plural_s(number)}!")
 
 
-def drop_buses(net, buses, drop_elements=True):
+def drop_buses(net: pandapowerNet, buses, drop_elements=True):
     """
     Drops specified buses, their bus_geodata and by default drops all elements connected to
     them as well.
@@ -770,7 +761,7 @@ def drop_buses(net, buses, drop_elements=True):
         drop_controllers_at_buses(net, buses)
 
 
-def drop_trafos(net, trafos, table="trafo"):
+def drop_trafos(net: pandapowerNet, trafos, table="trafo"):
     """
     Deletes all trafos and in the given list of indices and removes
     any switches connected to it.
@@ -800,7 +791,7 @@ def drop_trafos(net, trafos, table="trafo"):
     logger.debug(f"Dropped {len(trafos)} {table}{plural_s(len(trafos))} with {num_switches} switches")
 
 
-def drop_lines(net, lines):
+def drop_lines(net: pandapowerNet, lines):
     """
     Deletes all lines and their geodata in the given list of indices and removes
     any switches connected to it.
@@ -827,7 +818,7 @@ def drop_lines(net, lines):
     logger.debug(f"Dropped {len(lines)} line{plural_s(len(lines))} with {len(i)} line switches")
 
 
-def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True, drop_measurements=True):
+def drop_elements_at_buses(net: pandapowerNet, buses, bus_elements=True, branch_elements=True, drop_measurements=True):
     """
     drop elements connected to given buses
     """
@@ -863,7 +854,7 @@ def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True, 
         drop_measurements_at_elements(net, "bus", idx=buses)
 
 
-def drop_switches_at_buses(net, buses):
+def drop_switches_at_buses(net: pandapowerNet, buses):
     i = net["switch"][
         (net["switch"]["bus"].isin(buses)) | ((net["switch"]["element"].isin(buses)) & (net["switch"]["et"] == "b"))
     ].index
@@ -871,7 +862,7 @@ def drop_switches_at_buses(net, buses):
     logger.debug(f"Dropped {len(i)} switches")
 
 
-def drop_measurements_at_elements(net, element_type, idx=None, side=None):
+def drop_measurements_at_elements(net: ADict, element_type, idx=None, side=None):
     """
     Drop measurements of given element_type and (if given) given elements (idx) and side.
     """
@@ -883,18 +874,18 @@ def drop_measurements_at_elements(net, element_type, idx=None, side=None):
     net.measurement = net.measurement.drop(to_drop)
 
 
-def drop_controllers_at_elements(net, element_type, idx=None):
+def drop_controllers_at_elements(net: ADict, element_type, idx=None):
     """
     Drop all the controllers for the given elements (idx).
     """
     idx = ensure_iterability(idx) if idx is not None else net[element_type].index
-    to_drop = []
+    to_drop: list[int] = []
     for ctrl_idx in net.controller.index:
         _drop_controller_at_elements(net, element_type, idx, ctrl_idx, to_drop)
     net.controller = net.controller.drop(to_drop)
 
 
-def _drop_controller_at_elements(net, element_type, idx, ctrl_idx, to_drop):
+def _drop_controller_at_elements(net: ADict, element_type, idx, ctrl_idx, to_drop):
     ctrl_dict = net.controller.at[ctrl_idx, "object"].__dict__
     et = ctrl_dict.get("element")
     if element_type != et:
@@ -911,7 +902,7 @@ def _drop_controller_at_elements(net, element_type, idx, ctrl_idx, to_drop):
         _update_further_controller_parameters(net, ctrl_idx, elm_staying)
 
 
-def _update_further_controller_parameters(net, ctrl_idx, elm_staying):
+def _update_further_controller_parameters(net: ADict, ctrl_idx, elm_staying):
     ctrl_dict = net.controller.at[ctrl_idx, "object"].__dict__
     further_vars_to_adapt = [
         "bus",
@@ -943,7 +934,7 @@ def _update_further_controller_parameters(net, ctrl_idx, elm_staying):
             ctrl_dict[ctrl_col] = ctrl_dict[ctrl_col].loc[ctrl_dict["element_index"]]
 
 
-def drop_controllers_at_buses(net, buses):
+def drop_controllers_at_buses(net: pandapowerNet, buses):
     """
     Drop all the controllers for the elements connected to the given buses.
     """
@@ -952,7 +943,7 @@ def drop_controllers_at_buses(net, buses):
         drop_controllers_at_elements(net, elm, elms[elm])
 
 
-def drop_duplicated_measurements(net, buses=None, keep="first"):
+def drop_duplicated_measurements(net: pandapowerNet, buses=None, keep="first"):
     """
     Drops duplicated measurements at given set of buses. If buses is None, all buses are considered.
     """
@@ -968,7 +959,7 @@ def drop_duplicated_measurements(net, buses=None, keep="first"):
         net.measurement = net.measurement.drop(idx_to_drop)
 
 
-def _inner_branches(net, buses, task, branch_elements=None):
+def _inner_branches(net: pandapowerNet, buses, task, branch_elements=None):
     """
     Drops or finds branches that connects buses within 'buses' at all branch sides (e.g. 'from_bus'
     and 'to_bus').
@@ -1001,7 +992,7 @@ def _inner_branches(net, buses, task, branch_elements=None):
     return inner_branches
 
 
-def get_inner_branches(net, buses, branch_elements=None):
+def get_inner_branches(net: pandapowerNet, buses, branch_elements=None):
     """
     Returns indices of branches that connects buses within 'buses' at all branch sides (e.g.
     'from_bus' and 'to_bus').
@@ -1009,7 +1000,7 @@ def get_inner_branches(net, buses, branch_elements=None):
     return _inner_branches(net, buses, "get", branch_elements=branch_elements)
 
 
-def drop_inner_branches(net, buses, branch_elements=None):
+def drop_inner_branches(net: pandapowerNet, buses, branch_elements=None):
     """
     Drops branches that connects buses within 'buses' at all branch sides (e.g. 'from_bus' and
     'to_bus').
@@ -1017,7 +1008,7 @@ def drop_inner_branches(net, buses, branch_elements=None):
     _inner_branches(net, buses, "drop", branch_elements=branch_elements)
 
 
-def __drop_inactive_elements_other(net):
+def __drop_inactive_elements_other(net: pandapowerNet):
     """
     Drops inactive elements other than branches and buses
     """
@@ -1041,7 +1032,7 @@ def __drop_inactive_elements_other(net):
             drop_elements_simple(net, elm, idx)
 
 
-def __drop_inactive_other_branches(net):
+def __drop_inactive_other_branches(net: pandapowerNet):
     """
     Cleans up a pandapower network by removing all out-of-service “other branch elements”.
     """
@@ -1057,7 +1048,7 @@ def __drop_inactive_other_branches(net):
                 drop_elements_simple(net, elm, idx)
 
 
-def drop_out_of_service_elements(net):
+def drop_out_of_service_elements(net: pandapowerNet):
     """
     Drop all elements (including corresponding dataframes such as switches, measurements,
     result tables, geodata) with "in_service" is False. Buses that are connected to in-service
@@ -1101,7 +1092,7 @@ def drop_out_of_service_elements(net):
     __drop_inactive_elements_other(net)
 
 
-def drop_inactive_elements(net, respect_switches=True):
+def drop_inactive_elements(net: pandapowerNet, respect_switches=True):
     """
     Drops any elements not in service AND any elements connected to inactive
     buses.
@@ -1110,17 +1101,19 @@ def drop_inactive_elements(net, respect_switches=True):
     drop_out_of_service_elements(net)
 
 
-def create_replacement_switch_for_branch(net, element_type, element_index):
+def create_replacement_switch_for_branch(net: pandapowerNet, element_type, element_index):
     """
-    Creates a switch parallel to a branch, connecting the same buses as the branch.
-    The switch is closed if the branch is in service and open if the branch is out of service.
-    The in_service status of the original branch is not affected and should be set separately,
-    if needed.
+    Creates a switch parallel to a branch, connecting the same buses as the branch. The switch is closed if the
+    branch is in service and open if the branch is out of service. The in_service status of the original branch is
+    not affected and should be set separately, if needed.
 
-    :param net: pandapower network
-    :param element_type: element_type table e. g. 'line', 'impedance'
-    :param element_index: index of the branch e. g. 0
-    :return: None
+    Parameters:
+        net: pandapower network
+        element_type: element_type table e. g. 'line', 'impedance'
+        element_index: index of the branch e. g. 0
+
+    Returns:
+        None
     """
     bus_i = net[element_type].from_bus.at[element_index]
     bus_j = net[element_type].to_bus.at[element_index]
@@ -1165,24 +1158,23 @@ def replace_zero_branches_with_switches(
     drop_affected=False,
 ):
     """
-    Creates a replacement switch for branches with zero impedance (line, impedance) and sets them
-    out of service.
+    Creates a replacement switch for branches with zero impedance (line, impedance) and sets them out of service.
 
-    :param net: pandapower network
-    :param elements: a tuple of names of element tables e. g. ('line', 'impedance') or (line)
-    :param zero_length: whether zero length lines will be affected
-    :param zero_impedance: whether zero impedance branches will be affected
-    :param in_service_only: whether the branches that are not in service will be affected
-    :param drop_affected: wheter the affected branch elements are dropped
-    :param min_length_km: threshhold for line length for a line to be considered zero line
-    :param min_r_ohm_per_km: threshhold for line R' value for a line to be considered zero line
-    :param min_x_ohm_per_km: threshhold for line X' value for a line to be considered zero line
-    :param min_c_nf_per_km: threshhold for line C' for a line to be considered zero line
-    :param min_rft_pu: threshhold for R from-to value for impedance to be considered zero impedance
-    :param min_xft_pu: threshhold for X from-to value for impedance to be considered zero impedance
-    :param min_rtf_pu: threshhold for R to-from value for impedance to be considered zero impedance
-    :param min_xtf_pu: threshhold for X to-from value for impedance to be considered zero impedance
-    :return:
+    Parameters:
+        net: pandapower network
+        elements: a tuple of names of element tables e. g. ('line', 'impedance') or (line)
+        zero_length: whether zero length lines will be affected
+        zero_impedance: whether zero impedance branches will be affected
+        in_service_only: whether the branches that are not in service will be affected
+        drop_affected: wheter the affected branch elements are dropped
+        min_length_km: threshhold for line length for a line to be considered zero line
+        min_r_ohm_per_km: threshhold for line R' value for a line to be considered zero line
+        min_x_ohm_per_km: threshhold for line X' value for a line to be considered zero line
+        min_c_nf_per_km: threshhold for line C' for a line to be considered zero line
+        min_rft_pu: threshhold for R from-to value for impedance to be considered zero impedance
+        min_xft_pu: threshhold for X from-to value for impedance to be considered zero impedance
+        min_rtf_pu: threshhold for R to-from value for impedance to be considered zero impedance
+        min_xtf_pu: threshhold for X to-from value for impedance to be considered zero impedance
     """
 
     if not isinstance(elements, tuple):
@@ -1956,22 +1948,16 @@ def replace_ward_by_internal_elements(net: pandapowerNet, wards: Collection[int]
     drop_elements_simple(net, "ward", wards)
 
 
-def replace_xward_by_internal_elements(net, xwards=None, set_xward_bus_limits=False):
+def replace_xward_by_internal_elements(net: pandapowerNet, xwards=None, set_xward_bus_limits=False):
     """
     Replaces xward by loads, shunts, impedance and generators
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        pandapower net
-    xwards : iterable, optional
-        indices of xwards which should be replaced. If None, all xwards are replaced, by default None
-    set_xward_bus_limits : bool, optional
-        if True, the buses internal in xwards get vm limits from the connected buses
+    Parameters:
+        net (pandapowerNet): pandapower net
+        xwards (iterable): indices of xwards which should be replaced. If None, all xwards are replaced, by default None
+        set_xward_bus_limits (bool): if True, the buses internal in xwards get vm limits from the connected buses
 
-    Returns
-    -------
-    None
+    Returns:
         the given xwards in pandapower are replaced by buses, loads, shunts, impadance and generators
     """
     # --- determine xwards index
@@ -2030,36 +2016,27 @@ def replace_xward_by_internal_elements(net, xwards=None, set_xward_bus_limits=Fa
     drop_elements_simple(net, "xward", xwards)
 
 
-def replace_xward_by_ward(net, index=None, drop=True):
+def replace_xward_by_ward(net: pandapowerNet, index=None, drop=True):
     """
-    Replace xward elements by ward elements in the given grid model.
-    The series impedance component of xward is ignored and lost after the replacement.
+    Replace xward elements by ward elements in the given grid model. The series impedance component of xward is
+    ignored and lost after the replacement.
 
     This function replaces xward elements in a pandapower net with equivalent ward elements (sans series impedance).
     The original xward elements can be dropped (default) or set out of service.
 
     Parameters:
-    -----------
-    net : pandapowerNet
-        The pandapower grid containing the xward elements to be replaced.
-
-    index : int, list of int, or None, optional (default: None)
-        The index or list of indices of the xward elements to replace.
-        If None, all xward elements in the grid will be replaced.
-
-    drop : bool, optional (default: True)
-        If True, the original xward elements will be removed from the grid.
-        If False, the xward elements will be set out of service instead of being removed.
+        net (pandapowerNet): The pandapower grid containing the xward elements to be replaced.
+        index (int, list of int, or None, None): The index or list of indices of the xward elements to replace. If None,
+            all xward elements in the grid will be replaced.
+        drop (bool, True): If True, the original xward elements will be removed from the grid. If False, the xward
+            elements will be set out of service instead of being removed.
 
     Returns:
-    --------
-    new_index : list of int
-        A list of indices of the newly created ward elements in the network.
+        new_index (list of int): A list of indices of the newly created ward elements in the network.
 
     Notes:
-    ------
-    The function ensures that the group membership and associated element type of the replaced
-    elements are updated accordingly.
+        The function ensures that the group membership and associated element type of the replaced
+        elements are updated accordingly.
     """
     # TODO: parameter `drop` is implemented only to this replace function. needed if yes why not
     # implementing at the other replace functions?
@@ -2128,7 +2105,9 @@ def _adapt_result_tables_in_replace_functions(
         net[et_old] = net[et_old].drop(idx_old[in_res])
 
 
-def _adapt_profiles_in_replace_functions(net, element_type_old, element_index_old, element_type_new, element_index_new):
+def _adapt_profiles_in_replace_functions(
+    net: pandapowerNet, element_type_old, element_index_old, element_type_new, element_index_new
+):
     if "profiles" not in net or not isinstance(net.profiles, dict):
         return
     et_old, et_new = element_type_old, element_type_new

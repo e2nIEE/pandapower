@@ -38,6 +38,7 @@ from pandapower.build_gen import (
     _check_voltage_angles_at_same_bus,
     _check_voltage_setpoints_at_same_bus,
 )
+from pandapower.network import pandapowerNet
 from pandapower.opf.make_objective import _make_objective
 from pandapower.pypower.idx_area import PRICE_REF_BUS
 from pandapower.pypower.idx_brch import BR_STATUS, F_BUS, T_BUS
@@ -64,7 +65,7 @@ from pandapower.pypower.idx_vsc import (
 from pandapower.pypower.run_userfcn import run_userfcn
 
 
-def _pd2ppc_recycle(net, sequence, recycle):
+def _pd2ppc_recycle(net: pandapowerNet, sequence, recycle):
     # TODO: for FACTS and DC elements: SVC, TCSC, SSC, VSC
     key = "_ppc" if sequence is None else f"_ppc{sequence}"
     if not recycle or not net.get(key, None):
@@ -129,45 +130,43 @@ def _check_slack_at_vsc_bus(ppci):
         )
 
 
-def _pd2ppc(net, sequence=None, **kwargs):
+def _pd2ppc(net: pandapowerNet, sequence=None, **kwargs):
     """
     Converter Flow:
         1. Create an empty pypower datatructure
         2. Calculate loads and write the bus matrix
         3. Build the gen (Infeeder)- Matrix
         4. Calculate the line parameter and the transformer parameter,
-           and fill it in the branch matrix.
-           Order: 1st: Line values, 2nd: Trafo values
+           and fill it in the branch matrix. Order: 1st: Line values, 2nd: Trafo values
         5. if opf: make opf objective (gencost)
         6. convert internal ppci format for pypower powerflow /
         opf without out of service elements and rearanged buses
 
-    INPUT:
-        **net** - The pandapower format network
-        **sequence** - Used for three phase analysis
-        ( 0 - Zero Sequence
-          1 - Positive Sequence
-          2 - Negative Sequence
-        )
+    Parameters:
+        net: The pandapower format network
+        sequence: Used for three phase analysis ( 0 - Zero Sequence 1 - Positive Sequence 2 - Negative Sequence )
 
-    OUTPUT:
-        **ppc** - The simple matpower format network. Which consists of:
-                  ppc = {
-                        "baseMVA": 1., *float*
-                        "version": 2,  *int*
-                        "bus": np.array([], dtype=float),
-                        "branch": np.array([], dtype=np.complex128),
-                        "gen": np.array([], dtype=float),
-                        "gencost" =  np.array([], dtype=float), only for OPF
-                        "internal": {
-                              "Ybus": np.array([], dtype=np.complex128)
-                              , "Yf": np.array([], dtype=np.complex128)
-                              , "Yt": np.array([], dtype=np.complex128)
-                              , "branch_is": np.array([], dtype=bool)
-                              , "gen_is": np.array([], dtype=bool)
-                              }
-        **ppci** - The "internal" pypower format network for PF calculations
-
+    Returns:
+        ppc: The simple matpower format network. Its fields are created empty by ``_init_ppc``. The conversion does not
+            fill ``internal["branch_is"]`` or ``internal["gen_is"]`` in the returned ppc;
+            those masks are written to ppci:
+            ppc = {
+                  "baseMVA": taken from net.sn_mva, *float*
+                  "version": 2, *int*
+                  "bus": bus matrix, *float*
+                  "branch": branch matrix, dtype depends on the analysis path:
+                        *float64* for the balanced (positive/negative sequence)
+                        path, *complex128* for the zero-sequence path
+                  "gen": generator matrix, *float*
+                  "gencost": empty *float* array, present only in OPF mode; the populated cost matrix is ``ppci["gencost"]``
+                  "internal": {
+                        "Ybus": *complex128*
+                        , "Yf": *complex128*
+                        , "Yt": *complex128*
+                        , "branch_is": *bool*, empty in the returned ppc; computed masks are in ppci["internal"]
+                        , "gen_is": *bool*, empty in the returned ppc; computed masks are in ppci["internal"]
+                        }
+        ppci: The "internal" pypower format network for PF calculations
     """
     # select elements in service (time consuming, so we do it once)
     net["_is_elements"] = _select_is_elements_numba(net, sequence=sequence)
@@ -268,7 +267,7 @@ def _pd2ppc(net, sequence=None, **kwargs):
     return ppc, ppci
 
 
-def _init_ppc(net, mode="pf", sequence=None):
+def _init_ppc(net: pandapowerNet, mode="pf", sequence=None):
     # init empty ppc
     ppc = {
         "baseMVA": net.sn_mva,
@@ -309,20 +308,19 @@ def _init_ppc(net, mode="pf", sequence=None):
 
 def _ppc2ppci(ppc, net, ppci=None):
     """
-    Creates the ppci which is used to run the power flow / OPF...
-    The ppci is similar to the ppc except that:
+    Creates the ppci which is used to run the power flow / OPF... The ppci is similar to the ppc except that:
     1. it contains no out of service elements
     2. buses are sorted
 
-    Parameters
-    ----------
-    ppc - the ppc
-    net - the pandapower net
+    Parameters:
+        ppc: the ppc
+        net: the pandapower net
+        ppci: optional ppci to fill. If provided, no new ppci is initialized and the
+            ppci arrays and internal masks are written into this object. If None
+            (default), a new ppci is initialized from the net.
 
-    Returns
-    -------
-    ppci - the "internal" ppc
-
+    Returns:
+        the "internal" ppc
     """
     # get empty ppci
     if ppci is None:
@@ -511,14 +509,14 @@ def _ppc2ppci(ppc, net, ppci=None):
     return ppci
 
 
-def _update_lookup_entries(net, lookup, e2i, element):
+def _update_lookup_entries(net: pandapowerNet, lookup, e2i, element):
     valid_bus_lookup_entries = lookup >= 0
     # update entries
     lookup[valid_bus_lookup_entries] = e2i[lookup[valid_bus_lookup_entries]]
     _write_lookup_to_net(net, element, lookup)
 
 
-def _build_gen_lookups(net, element, f, t):
+def _build_gen_lookups(net: pandapowerNet, element, f, t):
     in_service = net._is_elements[element]
     if "controllable" in element:
         pandapower_index = net[element.split("_")[0]].index.values[in_service]
@@ -529,7 +527,7 @@ def _build_gen_lookups(net, element, f, t):
         _init_lookup(net, element, pandapower_index, ppc_index)
 
 
-def _init_lookup(net, lookup_name, pandapower_index, ppc_index):
+def _init_lookup(net: pandapowerNet, lookup_name, pandapower_index, ppc_index):
     # init lookup
     lookup = -np.ones(max(pandapower_index) + 1, dtype=np.int64)
 

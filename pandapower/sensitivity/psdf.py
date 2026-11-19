@@ -19,7 +19,7 @@ from numpy import arange, int64, isscalar, ones, r_, real
 from numpy import flatnonzero as find
 from scipy.sparse import csc_matrix, csr_matrix
 
-from pandapower import pandapowerNet
+from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pypower.idx_bus import BUS_TYPE, REF
 from pandapower.pypower.make_b_dc import calc_b_from_branch
@@ -242,36 +242,38 @@ def run_psdf(
     branch_dict: dict[str, list[int] | None] | None = None,
     reduced: bool = True,
 ) -> dict[tuple[str, str], pd.DataFrame]:
-    """Calculate the PSDF of pp branches from the phase shift through a pp branch.
+    """
+    Calculate the PSDF of pp branches from the phase shift through a pp branch.
 
     The PSDF is calculated with pypower matrices or with the perturb method.
 
-    The PSDF is defined as: (p_{side}_mw_new - p_{side}_mw_old) / 1 degree
-    Side corresponds to the pandapower results definition, for PSDF calculation both
-    sides give the same result, thus no side definition required.
-    A positive PSDF means the flow increases if shift_degree increases.
-    A phase shifting tap changer (tap_step_degree) on the hv side has the same sign; on the lv side pandapower applies
-    the tap angle with the opposite sign, so there the flow change per tap step is -PSDF * tap_step_degree.
+    The PSDF is defined as: (p_{side}_mw_new - p_{side}_mw_old) / 1 degree Side corresponds to the pandapower
+    results definition, for PSDF calculation both sides give the same result, thus no side definition required. A
+    positive PSDF means the flow increases if shift_degree increases. A phase shifting tap changer (tap_step_degree)
+    on the hv side has the same sign; on the lv side pandapower applies the tap angle with the opposite sign, so
+    there the flow change per tap step is -PSDF * tap_step_degree.
 
-    :param net: A pandapower network
-    :param phase_shift_branch_type: The name of the type of the phase shift branch. Default "trafo".
-    :param phase_shift_branch_ix: The pandapower index of the phase shift branch (int/list/np.ndarray), if None then all branches
-        will be used
-    :param distributed_slack: Only passed to the DC power flows of the perturb method, where it currently has no
-        effect, since rundcpp does not support a distributed slack. The PSDF does not depend on the slack, since a
-        phase shift does not change the injections. The direct method logs a warning if this is True, so pass False
-        with perturb=False.
-    :param perturb: Set True to use the perturb version (brute-force): the shift_degree of each selected trafo is
-        increased by 1 degree and a DC power flow is run. Faster for only a few elements on large networks, if a lot
-        of elements required please set to False
-    :param using_sparse_solver: Select whether sparse linear system should be used (more efficient for large network)
-    :param branch_dict: dictionary with keys "line", "trafo", "impedance", "trafo3w"; if not None the computation is
-        restricted to the branch indices given in the dict
-    :param reduced: if True, the output is reduced to the branches given in branch_dict
-    :return: {(goal_branch_type, phase_shift_branch_type):
-        DataFrame(data=psdf, index=goal_branch_pp_index, columns=phase_shift_branch_ix)}
-        with goal_branch_type in ("line", "trafo", "impedance", "trafo3w_{hv,mv,lv}")
-        and phase_shift_branch_type in ("line", "trafo", "impedance")
+    Parameters:
+        net: A pandapower network
+        phase_shift_branch_type: The name of the type of the phase shift branch. Default "trafo".
+        phase_shift_branch_ix: The pandapower index of the phase shift branch (int/list/np.ndarray), if None then all
+            branches will be used
+        distributed_slack: Only passed to the DC power flows of the perturb method, where it currently has no effect,
+            since rundcpp does not support a distributed slack. The PSDF does not depend on the slack, since a phase
+            shift does not change the injections. The direct method logs a warning if this is True, so pass False with
+            perturb=False.
+        perturb: Set True to use the perturb version (brute-force): the shift_degree of each selected trafo is increased
+            by 1 degree and a DC power flow is run. Faster for only a few elements on large networks, if a lot of
+            elements required please set to False
+        using_sparse_solver: Select whether sparse linear system should be used (more efficient for large network)
+        branch_dict: dictionary with keys "line", "trafo", "impedance", "trafo3w"; if not None the computation is
+            restricted to the branch indices given in the dict
+        reduced: if True, the output is reduced to the branches given in branch_dict
+
+    Returns:
+        DataFrame(data=psdf, index=goal_branch_pp_index, columns=phase_shift_branch_ix)} with goal_branch_type in
+            ("line", "trafo", "impedance", "trafo3w_{hv,mv,lv}") and phase_shift_branch_type in ("line", "trafo",
+            "impedance")
     """
     # ToDo: check if distributed slack makes any difference
 

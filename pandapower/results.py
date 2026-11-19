@@ -13,6 +13,7 @@ __all__ = [
 from typing import ClassVar
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from pandapower.auxiliary import get_vsc_stacked_names, pandapowerNet
@@ -114,7 +115,7 @@ def _overwrite_out_of_service(net: pandapowerNet) -> None:
             net[f"res_{elem}"][~net[elem].in_service] = np.nan
 
 
-def _extract_results(net, ppc):
+def _extract_results(net: pandapowerNet, ppc):
     """
     Writes the results of the power flow in ppc to the result tables of net (res_bus, res_line, res_vsc, res_vsc_bipolar,
     ...).
@@ -143,7 +144,7 @@ def _extract_results(net, ppc):
         _remove_costs(net)
 
 
-def _get_vsc_stacked_results(net):
+def _get_vsc_stacked_results(net: pandapowerNet):
     """
     Extract the results for the bipolar VSC from the monopolar VSC table.
     This done via the indexes, since we have created at the beginning two net.vsc entries, for every net.b2b_vsc entry.
@@ -179,7 +180,7 @@ def _get_vsc_stacked_results(net):
         net.res_vsc.drop(vsc_idx, axis=0, inplace=True)
 
 
-def _get_vsc_bipolar_results(net, ppc):
+def _get_vsc_bipolar_results(net: pandapowerNet, ppc):
     """
     Writes the results of the auxiliary net.vsc entries (see _add_vsc_bipolar) to net.res_vsc_bipolar.
     The auxiliary entries are removed from net.res_vsc in _clean_up.
@@ -220,7 +221,7 @@ def _get_vsc_bipolar_results(net, ppc):
     net.res_vsc_bipolar = res
 
 
-def _extract_results_3ph(net, ppc0, ppc1, ppc2):
+def _extract_results_3ph(net: pandapowerNet, ppc0, ppc1, ppc2):
     # reset_results(net, False)
     _set_buses_out_of_service(ppc0)
     _set_buses_out_of_service(ppc1)
@@ -235,24 +236,24 @@ def _extract_results_3ph(net, ppc0, ppc1, ppc2):
     _get_bus_results_3ph(net, bus_pq)
 
 
-def _extract_results_se(net, ppc):
+def _extract_results_se(net: pandapowerNet, ppc):
     _set_buses_out_of_service(ppc)
     bus_lookup_aranged = _get_aranged_lookup(net)
     _get_bus_v_results(net, ppc, suffix="_est")
-    bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=float)
+    bus_pq: npt.NDArray = np.zeros(shape=(len(net["bus"].index), 2), dtype=float)
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, suffix="_est")
 
 
-def _get_costs(net, ppc):
+def _get_costs(net: pandapowerNet, ppc):
     net.res_cost = ppc["obj"]
 
 
-def _remove_costs(net):
+def _remove_costs(net: pandapowerNet):
     if "res_cost" in net:
         del net["res_cost"]
 
 
-def _get_aranged_lookup(net, bus_table="bus"):
+def _get_aranged_lookup(net: pandapowerNet, bus_table="bus"):
     # generate bus_lookup net -> consecutive ordering
     if len(net[bus_table]) == 0:
         return np.array([], dtype=np.int64)
@@ -263,7 +264,7 @@ def _get_aranged_lookup(net, bus_table="bus"):
     return bus_lookup_aranged
 
 
-def verify_results(net, mode="pf"):
+def verify_results(net: pandapowerNet, mode="pf"):
     elements = get_relevant_elements(net, mode)
     suffix = suffix_mode.get(mode, None)
     for element in elements:
@@ -293,7 +294,7 @@ def get_result_tables(element, suffix=None):
 # TODO: check if it would be better to only use init_element and not use this directly.
 #  init_element creates the res_tables with the index from the relevant element
 #  empty_res_element creates the res_tables without the index, but why should they not get the index?
-def empty_res_element(net, element, suffix=None):
+def empty_res_element(net: pandapowerNet, element, suffix=None):
     res_element = get_result_tables(element, suffix)
     try:
         net[res_element] = EmptyResults[res_element]
@@ -301,14 +302,14 @@ def empty_res_element(net, element, suffix=None):
         net[res_element] = pd.DataFrame(columns=pd.Index([], dtype=object), index=pd.Index([], dtype=np.int64))
 
 
-def init_element(net, element, suffix=None):
+def init_element(net: pandapowerNet, element, suffix=None):
     res_element = get_result_tables(element, suffix)
     empty_res_element(net, element, suffix)
     if not net[element].empty:
         net[res_element] = net[res_element].reindex(net[element].index)
 
 
-def get_relevant_elements(net, mode="pf"):
+def get_relevant_elements(net: pandapowerNet, mode="pf"):
     elements = {
         "pf": [
             "bus",
@@ -362,7 +363,7 @@ def get_relevant_elements(net, mode="pf"):
     return [elem for elem in elements.get(mode, []) if not net[elem].empty]
 
 
-def init_results(net, mode="pf", exclude_result_tables=None):
+def init_results(net: pandapowerNet, mode="pf", exclude_result_tables=None):
     exclude = set() if exclude_result_tables is None else set(exclude_result_tables)
     elements = get_relevant_elements(net, mode)
     suffix = suffix_mode.get(mode, None)
@@ -374,7 +375,7 @@ def init_results(net, mode="pf", exclude_result_tables=None):
         init_element(net, element, suffix)
 
 
-def reset_results(net, mode="pf"):
+def reset_results(net: pandapowerNet, mode="pf"):
     elements = get_relevant_elements(net, mode)
     suffix = suffix_mode.get(mode, None)
     for element in elements:
@@ -456,24 +457,27 @@ def _ppci_internal_to_ppc(result, ppc):
 
 def _copy_results_ppci_to_ppc(result, ppc, mode):
     """
-    result contains results for all in service elements
-    ppc gets the results for in- and out of service elements
-    -> results must be copied
+    Copies the results of the in-service elements from the ppci (result) back into the ppc.
 
-    ppc and ppci are structured as follows:
-          [in_service elements]
-    ppc = [out_of_service elements]
-    result = [in_service elements]
+    The ppc contains the in-service and the out-of-service elements, whereas the ppci (result) only
+    contains the in-service elements, so the results have to be copied back. Bus results and the
+    results of branches, generators and converters are copied differently:
 
-    Parameters
-    ----------
-    result - ppci with results
-    ppc - ppc without results
-    mode - "pf","opf", "sc"...
+    - bus results ("bus", "bus_dc"): the solved rows are written into the prefix of the ppc tables,
+      the trailing rows of out-of-service buses (type NONE) are preserved as they are.
+    - branch, generator and converter results ("branch", "branch_dc", "gen", "tcsc", "svc", "ssc",
+      "vsc"): the ppc rows selected by the respective internal "_is" masks are updated at the
+      matching indices, so the rows of out-of-service elements keep their previous values.
 
-    Returns
-    -------
-    ppc with results
+    The supplied ppc is mutated in place and returned.
+
+    Parameters:
+        result: ppci with results
+        ppc: ppc without results, updated in place
+        mode: "pf","opf", "sc"...
+
+    Returns:
+        the supplied ppc with results
     """
 
     # copy the results for bus, gen and branch and some additional values like "success"

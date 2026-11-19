@@ -36,12 +36,12 @@ def makeBdc(
     """
     Builds the B matrices and phase shift injections for DC power flow.
 
-    Returns the B matrices and phase shift injection vectors needed for a DC power flow.
-    The bus real power injections are related to bus voltage angles by::
         P = Bbus * Va + PBusinj
     The real power flows at the from end the lines are related to the bus voltage angles by:
         Pf = Bf * Va + Pfinj
     Does appropriate conversions to p.u.
+    Returns the B matrices and phase shift injection vectors needed for a DC power flow. The bus real power
+    injections are related to bus voltage angles by::
 
     @see: L{dcpf}
 
@@ -50,12 +50,13 @@ def makeBdc(
     @author: Ray Zimmerman (PSERC Cornell)
     @author: Richard Lincoln
 
-    :param bus: the ppci buses
-    :param branch: the ppci branches
-    :param bus_dc: the ppci dc buses
-    :param branch_dc: the ppci dc branches
-    :param vsc: the ppci vscs
-    :param return_csr: return a csr matrix instead of a csc matrix
+    Parameters:
+        bus: the ppci buses
+        branch: the ppci branches
+        bus_dc: the ppci dc buses
+        branch_dc: the ppci dc branches
+        vsc: the ppci vscs
+        return_csr: return a csr matrix instead of a csc matrix
     """
     if bus_dc is None:
         bus_dc = np.empty((0, DC_BUS_COLS))

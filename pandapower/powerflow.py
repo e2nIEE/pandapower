@@ -16,6 +16,7 @@ from pandapower.auxiliary import (
 )
 from pandapower.build_branch import _calc_trafo3w_parameter, _calc_trafo_parameter
 from pandapower.build_gen import _build_gen_ppc
+from pandapower.network import pandapowerNet
 from pandapower.pd2ppc import _calc_pq_elements_and_add_on_ppc, _pd2ppc, _ppc2ppci
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
 from pandapower.pf.run_bfswpf import _run_bfswpf
@@ -40,7 +41,7 @@ from pandapower.results import (
 logger = logging.getLogger(__name__)
 
 
-def _powerflow(net, **kwargs):
+def _powerflow(net: pandapowerNet, **kwargs):
     """
     Gets called by runpp or rundcpp with different arguments.
     """
@@ -55,7 +56,7 @@ def _powerflow(net, **kwargs):
         raise
 
 
-def _powerflow_with_auxiliary_elements(net, **kwargs):
+def _powerflow_with_auxiliary_elements(net: pandapowerNet, **kwargs):
     """
     Runs the power flow after the auxiliary elements were added to net (see _powerflow).
     """
@@ -103,7 +104,7 @@ def _powerflow_with_auxiliary_elements(net, **kwargs):
     _ppci_to_net(result, net)
 
 
-def _recycled_powerflow(net, **kwargs):
+def _recycled_powerflow(net: pandapowerNet, **kwargs):
     options = net["_options"]
     options["recycle"] = kwargs.get("recycle", None)
     options["init_vm_pu"] = "results"

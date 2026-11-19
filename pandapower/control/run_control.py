@@ -13,6 +13,7 @@ __all__ = [
 ]
 
 import logging
+from typing import Any
 
 import numpy as np
 
@@ -94,8 +95,8 @@ def check_for_initial_run(controller_order):
     return False
 
 
-def ctrl_variables_default(net, **kwargs):
-    ctrl_variables = {}
+def ctrl_variables_default(net: pandapowerNet, **kwargs):
+    ctrl_variables: dict[str, Any] = {}
     if not hasattr(net, "controller") or len(net.controller[net.controller.in_service]) == 0:
         ctrl_variables["level"], ctrl_variables["controller_order"] = [0], [[]]
     else:
@@ -157,7 +158,7 @@ def get_recycle(ctrl_variables):
     return recycle, only_v_results
 
 
-def net_initialization(net, ctrl_variables, **kwargs):
+def net_initialization(net: pandapowerNet, ctrl_variables, **kwargs):
     # initial power flow (takes time, but is not needed for every kind of controller)
     initial_run = ctrl_variables["initial_run"]
     run_funct = ctrl_variables["run"]
@@ -176,7 +177,7 @@ def control_initialization(controller_order):
             ctrl.initialize_control(net)
 
 
-def _evaluate_net(net, levelorder, ctrl_variables, **kwargs):
+def _evaluate_net(net: pandapowerNet, levelorder, ctrl_variables, **kwargs):
     run_funct = ctrl_variables["run"]
     errors = ctrl_variables["errors"]
     try:
@@ -201,7 +202,9 @@ def _evaluate_net(net, levelorder, ctrl_variables, **kwargs):
     return ctrl_variables
 
 
-def control_implementation(net, controller_order, ctrl_variables, max_iter, evaluate_net_fct=_evaluate_net, **kwargs):
+def control_implementation(
+    net: pandapowerNet, controller_order, ctrl_variables, max_iter, evaluate_net_fct=_evaluate_net, **kwargs
+):
     run_count = 0
     # run each controller step in given controller order
     for levelorder in controller_order:

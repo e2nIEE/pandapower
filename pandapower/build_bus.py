@@ -6,10 +6,12 @@ from collections import defaultdict
 from itertools import chain
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from pandapower.auxiliary import _sum_by_group, phase_to_sequence, version_check
 from pandapower.build_gen import _calculate_qmin_qmax_from_q_capability_characteristics
+from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_bus import (
     BASE_KV,
     BS,
@@ -170,8 +172,8 @@ def fill_bus_lookup(ar, bus_lookup, bus_index):
         bus_lookup[b] = bus_lookup[ar[ds]]
 
 
-def create_bus_lookup_numba(net, bus_index, bus_is_idx):
-    max_bus_idx = np.max(bus_index)
+def create_bus_lookup_numba(net: pandapowerNet, bus_index, bus_is_idx):
+    max_bus_idx: int = np.max(bus_index)
     # extract numpy arrays of switch table data
     switch = net["switch"]
     switch_bus = switch["bus"].values
@@ -180,7 +182,7 @@ def create_bus_lookup_numba(net, bus_index, bus_is_idx):
     switch_closed = switch["closed"].values
     switch_z_ohm = switch["z_ohm"].values
     # create array for fast checking if a bus is in_service
-    bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
+    bus_in_service: npt.NDArray = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_in_service[bus_is_idx] = True
     # create mask arrays to distinguish different grid elements
     _is_elements = net["_is_elements"]
@@ -193,11 +195,11 @@ def create_bus_lookup_numba(net, bus_index, bus_is_idx):
     ward_is_mask = _is_elements["ward"]
     xward_is_mask = _is_elements["xward"]
     # create array for fast checking if a bus is pv bus
-    bus_is_pv = np.zeros(max_bus_idx + 1, dtype=bool)
+    bus_is_pv: npt.NDArray = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_is_pv[net["ext_grid"]["bus"].values[eg_is_mask]] = True
     bus_is_pv[net["gen"]["bus"].values[gen_is_mask]] = True
     # create array for checking if a bus is active (i.e., it has some element connected to it)
-    bus_is_active = np.zeros(max_bus_idx + 1, dtype=bool)
+    bus_is_active: npt.NDArray = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_is_active[net["ext_grid"]["bus"].values[eg_is_mask]] = True
     bus_is_active[net["gen"]["bus"].values[gen_is_mask]] = True
     bus_is_active[net["load"]["bus"].values[load_is_mask]] = True
@@ -208,7 +210,7 @@ def create_bus_lookup_numba(net, bus_index, bus_is_idx):
     bus_is_active[net["xward"]["bus"].values[xward_is_mask]] = True
     # create array that represents the disjoint set
     ar = np.arange(max_bus_idx + 1)
-    merged_bus = np.zeros(len(ar), dtype=bool)
+    merged_bus: npt.NDArray = np.zeros(len(ar), dtype=bool)
     ds_create(
         ar,
         switch_bus,
@@ -222,7 +224,7 @@ def create_bus_lookup_numba(net, bus_index, bus_is_idx):
         merged_bus,
     )
     # finally create and fill bus lookup
-    bus_lookup = -np.ones(max_bus_idx + 1, dtype=np.int64)
+    bus_lookup: npt.NDArray = -np.ones(max_bus_idx + 1, dtype=np.int64)
     fill_bus_lookup(ar, bus_lookup, bus_index)
     return bus_lookup, merged_bus
 
@@ -247,10 +249,9 @@ class DisjointSet(dict):
 def create_consecutive_bus_lookup(bus_index: np.ndarray):
     """
     create a mapping from arbitrary pp-index to a consecutive index starting at zero (ppc-index)
-    Args:
-        bus_index: the original bus index to create a mapping from.
-    Returns:
 
+    Parameters:
+        bus_index: the original bus index to create a mapping from.
     """
     if len(bus_index) == 0:
         return np.array([], dtype=np.int64)
@@ -263,10 +264,10 @@ def create_consecutive_bus_lookup(bus_index: np.ndarray):
     return bus_lookup
 
 
-def create_bus_lookup_numpy(net, bus_index, closed_bb_switch_mask):
+def create_bus_lookup_numpy(net: pandapowerNet, bus_index, closed_bb_switch_mask):
     bus_lookup = create_consecutive_bus_lookup(bus_index)
     net._fused_bb_switches = closed_bb_switch_mask & (net["switch"]["z_ohm"].values <= 0)
-    merged_bus = np.zeros(len(bus_lookup), dtype=bool)
+    merged_bus: npt.NDArray = np.zeros(len(bus_lookup), dtype=bool)
     if net._fused_bb_switches.any():
         # Note: this might seem a little odd - first constructing a pp to ppc mapping without
         # fused busses and then update the entries. The alternative (to construct the final
@@ -362,7 +363,7 @@ def create_bus_lookup_numpy(net, bus_index, closed_bb_switch_mask):
     return bus_lookup, merged_bus
 
 
-def create_bus_lookup(net, bus_index, bus_is_idx, numba):
+def create_bus_lookup(net: pandapowerNet, bus_index, bus_is_idx, numba):
     switches_with_pos_z_ohm = net["switch"]["z_ohm"].values > 0
     if switches_with_pos_z_ohm.any() or not numba:
         # if there are any closed bus-bus switches find them
@@ -384,7 +385,7 @@ def create_bus_lookup(net, bus_index, bus_is_idx, numba):
         return create_bus_lookup_numpy(net, bus_index, closed_bb_switch_mask)
 
 
-def get_voltage_init_vector(net, init_v, mode, sequence=None):
+def get_voltage_init_vector(net: pandapowerNet, init_v, mode, sequence=None):
     if isinstance(init_v, str):
         if init_v == "results":
             res_table = "res_bus" if sequence is None else "res_bus_3ph"
@@ -428,7 +429,7 @@ def get_voltage_init_vector(net, init_v, mode, sequence=None):
             raise UserWarning("Voltage starting vector indices do not match bus indices")
 
 
-def _build_bus_ppc(net, ppc, sequence=None):
+def _build_bus_ppc(net: pandapowerNet, ppc, sequence=None):
     """
     Generates the ppc["bus"] array and the lookup pandapower indices -> ppc indices
     """
@@ -488,7 +489,7 @@ def _build_bus_ppc(net, ppc, sequence=None):
         ppc["bus"][:, VM] = 0.0
 
     if mode == "sc":
-        bus_sc = np.empty(shape=(n_bus_ppc, BUS_COLS_SC), dtype=np.float64)
+        bus_sc: npt.NDArray = np.empty(shape=(n_bus_ppc, BUS_COLS_SC), dtype=np.float64)
         bus_sc.fill(np.nan)
         ppc["bus"] = np.hstack((ppc["bus"], bus_sc))
 
@@ -552,7 +553,7 @@ def _build_bus_ppc(net, ppc, sequence=None):
         net["_pd2ppc_lookups"]["merged_bus"] = merged_bus
 
 
-def _build_bus_dc_ppc(net, ppc):
+def _build_bus_dc_ppc(net: pandapowerNet, ppc):
     """
     Generates the ppc["bus_dc"] array and the lookup pandapower indices -> ppc indices
     """
@@ -646,7 +647,7 @@ def _build_bus_dc_ppc(net, ppc):
         set_reference_buses_dc(net, ppc, bus_lookup)
 
 
-def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux, bus_table="bus"):
+def _fill_auxiliary_buses(net: pandapowerNet, ppc, bus_lookup, element, bus_column, aux, bus_table="bus"):
     """
     Fills the auxiliary buses of an element (e.g. the internal AC or DC bus of a VSC) in ppc[bus_table] with the base
     voltage (and for the OPF the voltage limits) of the bus the element is connected to. The initial voltage is taken
@@ -680,7 +681,7 @@ def _fill_auxiliary_buses(net, ppc, bus_lookup, element, bus_column, aux, bus_ta
         ppc[bus_table][aux_idx, VA] = ppc[bus_table][element_bus_idx, VA]
 
 
-def set_reference_buses(net, ppc, bus_lookup, mode):
+def set_reference_buses(net: pandapowerNet, ppc, bus_lookup, mode):
     if mode == "nx":
         return
     eg_buses = bus_lookup[net.ext_grid.bus.values[net._is_elements["ext_grid"]]]
@@ -697,7 +698,7 @@ def set_reference_buses(net, ppc, bus_lookup, mode):
     ppc["internal"]["ac_slack_buses"] = list(ppc["internal"]["ac_slack_buses"])
 
 
-def set_reference_buses_dc(net, ppc, bus_lookup):
+def set_reference_buses_dc(net: pandapowerNet, ppc, bus_lookup):
     vsc_dc_slack = net.vsc.control_mode_dc.values != "p_mw"
     vsc_ac_slack = net.vsc.control_mode_ac.values == "slack"  # VSC that defines AC slack cannot define DC slack
 
@@ -716,7 +717,7 @@ def set_reference_buses_dc(net, ppc, bus_lookup):
         ppc["bus_dc"][b2b_buses, DC_BUS_TYPE] = DC_B2B
 
 
-def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
+def _calc_pq_elements_and_add_on_ppc(net: pandapowerNet, ppc, sequence=None):
     # init values
     b, p, q = np.array([], dtype=np.int64), np.array([]), np.array([])
 
@@ -858,14 +859,14 @@ def _calc_pq_elements_and_add_on_ppc(net, ppc, sequence=None):
         ppc["bus_dc"][b_dc, DC_PD] = vp_dc
 
 
-def _get_symmetric_pq_of_unsymetric_element(net, element):
+def _get_symmetric_pq_of_unsymetric_element(net: pandapowerNet, element):
     scale = net["_is_elements"][element] * net[element]["scaling"].values.T
     q_mvar = np.sum(net[element][["q_a_mvar", "q_b_mvar", "q_c_mvar"]].values, axis=1)
     p_mw = np.sum(net[element][["p_a_mw", "p_b_mw", "p_c_mw"]].values, axis=1)
     return p_mw * scale, q_mvar * scale
 
 
-def _get_motor_pq(net):
+def _get_motor_pq(net: pandapowerNet):
     tab = net["motor"]
     active = net._is_elements["motor"]
     scale = tab["loading_percent"].values / 100 * tab["scaling"].values * active
@@ -880,7 +881,7 @@ def _get_motor_pq(net):
     return p_mw, q_mvar
 
 
-def _calc_shunts_and_add_on_ppc(net, ppc):
+def _calc_shunts_and_add_on_ppc(net: pandapowerNet, ppc):
     # init values
     b, p, q = np.array([], dtype=np.int64), np.array([]), np.array([])
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
@@ -976,7 +977,7 @@ def _calc_shunts_and_add_on_ppc(net, ppc):
         ppc["bus"][b, BS] = -vq
 
 
-def _build_svc_ppc(net, ppc, mode):
+def _build_svc_ppc(net: pandapowerNet, ppc, mode):
     length = len(net.svc)
     ppc["svc"] = np.zeros(shape=(length, SVC_COLS), dtype=np.float64)
 
@@ -1010,7 +1011,7 @@ def _build_svc_ppc(net, ppc, mode):
         ].values.astype(bool)
 
 
-def _build_ssc_ppc(net, ppc, mode):
+def _build_ssc_ppc(net: pandapowerNet, ppc, mode):
     length = len(net.ssc)
     ppc["ssc"] = np.zeros(shape=(length, SSC_COLS), dtype=np.float64)
 
@@ -1046,7 +1047,7 @@ def _build_ssc_ppc(net, ppc, mode):
         ppc["bus"][aux["ssc"][~controllable], VM] = net["ssc"].loc[~controllable, "vm_internal_pu"].values
 
 
-def _build_vsc_ppc(net, ppc, mode):
+def _build_vsc_ppc(net: pandapowerNet, ppc, mode):
     """
     Builds ppc["vsc"] from net.vsc (including the auxiliary VSC of vsc_stacked and vsc_bipolar): connection buses,
     minus terminal bus of bipolar VSC (-1 for VSC connected to ground), impedances in p.u., control modes and values.
@@ -1143,7 +1144,7 @@ def _build_vsc_ppc(net, ppc, mode):
 
 
 # Short circuit relevant routines
-def _add_ext_grid_sc_impedance(net, ppc):
+def _add_ext_grid_sc_impedance(net: pandapowerNet, ppc):
     mode = net._options["mode"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     if mode == "sc":
@@ -1192,7 +1193,7 @@ def _add_ext_grid_sc_impedance(net, ppc):
     return gs * ppc["baseMVA"], bs * ppc["baseMVA"]
 
 
-def _add_motor_impedances_ppc(net, ppc):
+def _add_motor_impedances_ppc(net: pandapowerNet, ppc):
     if net._options["case"] == "min":
         return
     motor = net["motor"][net._is_elements["motor"]]
@@ -1225,7 +1226,7 @@ def _add_motor_impedances_ppc(net, ppc):
     ppc["bus"][buses, BS] += bs
 
 
-def _add_load_sc_impedances_ppc(net, ppc):
+def _add_load_sc_impedances_ppc(net: pandapowerNet, ppc):
     baseMVA = ppc["baseMVA"]
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
 
@@ -1257,7 +1258,7 @@ def _add_load_sc_impedances_ppc(net, ppc):
         ppc["bus"][buses, BS] += bs * baseMVA
 
 
-def _add_c_to_ppc(net, ppc):
+def _add_c_to_ppc(net: pandapowerNet, ppc):
     ppc["bus"][:, C_MAX] = 1.1
     ppc["bus"][:, C_MIN] = 1.0
     lv_buses = np.nonzero(ppc["bus"][:, BASE_KV] < 1.0)

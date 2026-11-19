@@ -2,6 +2,7 @@ from cmath import rect
 
 from numpy import deg2rad, empty, int64, maximum, nan, real, sqrt, vectorize
 
+from pandapower.network import pandapowerNet
 from pandapower.pf.pfsoln_numba import calc_branch_flows_batch
 from pandapower.pypower.idx_brch import F_BUS, T_BUS
 from pandapower.pypower.idx_bus import BASE_KV
@@ -9,7 +10,7 @@ from pandapower.results_branch import _get_trafo3w_lookups
 from pandapower.results_bus import _get_bus_idx
 
 
-def get_batch_bus_results(net, vm, va):
+def get_batch_bus_results(net: pandapowerNet, vm, va):
     # convert ppci bus results to net.res_bus results
     # we need va, vm with out of service elements
     # create matrix of proper size
@@ -26,7 +27,7 @@ def get_batch_bus_results(net, vm, va):
     return vm_full[:, bus_idx], va_full[:, bus_idx]
 
 
-def get_batch_line_results(net, i_abs):
+def get_batch_line_results(net: pandapowerNet, i_abs):
     f, t = net._pd2ppc_lookups["branch"]["line"]
     line_df = net["line"]
     i_max = line_df["max_i_ka"].values * line_df["df"].values * line_df["parallel"].values
@@ -37,7 +38,7 @@ def get_batch_line_results(net, i_abs):
     return i_ka, i_from_ka, i_to_ka, loading_percent
 
 
-def get_batch_trafo_results(net, i_abs, s_abs):
+def get_batch_trafo_results(net: pandapowerNet, i_abs, s_abs):
     if "trafo" not in net._pd2ppc_lookups["branch"]:
         return
     f, t = net._pd2ppc_lookups["branch"]["trafo"]
@@ -66,7 +67,7 @@ def get_batch_trafo_results(net, i_abs, s_abs):
     return i_ka, i_hv_ka, i_lv_ka, s_mva, loading_percent
 
 
-def get_batch_trafo3w_results(net, i_abs, s_abs):
+def get_batch_trafo3w_results(net: pandapowerNet, i_abs, s_abs):
     if "trafo3w" not in net._pd2ppc_lookups["branch"]:
         return
 
@@ -107,7 +108,7 @@ def _get_empty_branch(ppc_branch_shape):
     return empties
 
 
-def v_to_i_s(net, vm, va):
+def v_to_i_s(net: pandapowerNet, vm, va):
     ppc = net["_ppc"]
     internal = ppc["internal"]
     Yf = internal["Yf"]

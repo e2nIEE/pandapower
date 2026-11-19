@@ -8,6 +8,7 @@ import numpy as np
 import pytest
 
 from pandapower.control import Characteristic, CharacteristicControl, ConstControl, ContinuousTapControl
+from pandapower.network import pandapowerNet
 from pandapower.run import runpp
 from pandapower.timeseries import OutputWriter
 from pandapower.timeseries.run_time_series import run_timeseries
@@ -30,7 +31,7 @@ log_variables = [
 ]
 
 
-def add_const(net, ds, recycle):
+def add_const(net: pandapowerNet, ds, recycle):
     return ConstControl(
         net,
         element="load",
@@ -42,14 +43,14 @@ def add_const(net, ds, recycle):
     )
 
 
-def create_output_writer(net):
+def create_output_writer(net: pandapowerNet):
     ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
     for table, variable in log_variables:
         ow.log_variable(table, variable)
     return ow
 
 
-def clear_controllers(net):
+def clear_controllers(net: pandapowerNet):
     """Remove controllers and output writers so a fresh time series setup can be created."""
     net.controller = net.controller.drop(index=net.controller.index)
     if "output_writer" in net:
@@ -57,7 +58,7 @@ def clear_controllers(net):
     return net
 
 
-def run_ts_runpp(net, ds, setup=None):
+def run_ts_runpp(net: pandapowerNet, ds, setup=None):
     net_ts = clear_controllers(copy.deepcopy(net))
     add_const(net_ts, ds, recycle=True)
     if setup is not None:
@@ -68,7 +69,7 @@ def run_ts_runpp(net, ds, setup=None):
     return ow, ts_runpp
 
 
-def run_reference(net, ds, setup=None):
+def run_reference(net: pandapowerNet, ds, setup=None):
     net_ref = clear_controllers(copy.deepcopy(net))
     add_const(net_ref, ds, recycle=False)
     if setup is not None:
