@@ -118,11 +118,7 @@ def add_test_ext_grid(net: pandapowerNet):
 def add_test_ext_grid_gen_switch(net: pandapowerNet):
     zone = "test_ext_grid_gen_switch"
     vn_kv = 20.0
-    (b1,) = create_buses(net, 1, vn_kv=vn_kv, zone=zone)
-    (b2,) = create_buses(net, 1, vn_kv=vn_kv, zone=zone)
-    (b3,) = create_buses(net, 1, vn_kv=vn_kv, zone=zone)
-    (b4,) = create_buses(net, 1, vn_kv=vn_kv, zone=zone)
-    (b5,) = create_buses(net, 1, vn_kv=vn_kv, zone=zone)
+    b1, b2, b3, b4, b5 = create_buses(net, 5, vn_kv=vn_kv, zone=zone)
 
     create_switch(net, bus=b1, element=b2, et="b")
     create_test_line(net, b2, b3)
@@ -470,9 +466,8 @@ def add_test_enforce_plims_sgen(net: pandapowerNet):
 
 def add_test_trafo3w(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_trafo3w")
-    (b3,) = create_buses(net, 1, vn_kv=0.6, zone="test_trafo3w")
+    b3, b4 = create_buses(net, 2, vn_kv=[0.6, 0.4], zone="test_trafo3w")
     create_load(net, b3, p_mw=0.2, q_mvar=0)
-    (b4,) = create_buses(net, 1, vn_kv=0.4, zone="test_trafo3w")
     create_load(net, b4, p_mw=0.1, q_mvar=0)
 
     create_transformer3w_from_parameters(
@@ -626,42 +621,12 @@ def add_test_oos_bus_with_is_element(net: pandapowerNet):
     x_ohm = 70
 
     # OOS buses
-    (b3,) = create_buses(net, 1, zone="test_oos_bus_with_is_element", vn_kv=0.4, in_service=False)
-    (b4,) = create_buses(net, 1, zone="test_oos_bus_with_is_element", vn_kv=0.4, in_service=False)
-    (b5,) = create_buses(net, 1, zone="test_oos_bus_with_is_element", vn_kv=0.4, in_service=False)
+    b3, b4, b5 = create_buses(net, 3, zone="test_oos_bus_with_is_element", vn_kv=0.4, in_service=False)
 
     create_lines(
         net,
-        b2,
-        b3,
-        12.2,
-        line_params={
-            "r_ohm_per_km": 0.08,
-            "x_ohm_per_km": 0.12,
-            "c_nf_per_km": 300,
-            "max_i_ka": 0.2,
-            "g0_us_per_km": 0.0,
-        },
-        df=0.8,
-    )
-    create_lines(
-        net,
-        b2,
-        b4,
-        12.2,
-        line_params={
-            "r_ohm_per_km": 0.08,
-            "x_ohm_per_km": 0.12,
-            "c_nf_per_km": 300,
-            "max_i_ka": 0.2,
-            "g0_us_per_km": 0.0,
-        },
-        df=0.8,
-    )
-    create_lines(
-        net,
-        b2,
-        b5,
+        [b2, b2, b2],
+        [b3, b4, b5],
         12.2,
         line_params={
             "r_ohm_per_km": 0.08,
