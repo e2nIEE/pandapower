@@ -7,54 +7,55 @@ from numpy import allclose, isclose
 
 from pandapower import rundcpp, runpp, runpp_pgm
 from pandapower.build_branch import _calc_tap_from_dataframe
+from pandapower.network import pandapowerNet
 from pandapower.pf.runpp_3ph import runpp_3ph
 from pandapower.results import get_relevant_elements
 
 phases = ["a", "b", "c"]
 
 
-def runpp_with_consistency_checks(net, **kwargs):
+def runpp_with_consistency_checks(net: pandapowerNet, **kwargs):
     runpp(net, **kwargs)
     consistency_checks(net)
     return True
 
 
-def runpp_3ph_with_consistency_checks(net, **kwargs):
+def runpp_3ph_with_consistency_checks(net: pandapowerNet, **kwargs):
     runpp_3ph(net, **kwargs)
     consistency_checks_3ph(net)
     return True
 
 
-def rundcpp_with_consistency_checks(net, **kwargs):
+def rundcpp_with_consistency_checks(net: pandapowerNet, **kwargs):
     rundcpp(net, **kwargs)
     consistency_checks(net, test_q=False)
     return True
 
 
-def runpp_pgm_with_consistency_checks(net):
+def runpp_pgm_with_consistency_checks(net: pandapowerNet):
     runpp_pgm(net, error_tolerance_vm_pu=1e-11, symmetric=True)
     consistency_checks(net)
     return True
 
 
-def runpp_pgm_3ph_with_consistency_checks(net):
+def runpp_pgm_3ph_with_consistency_checks(net: pandapowerNet):
     runpp_pgm(net, error_tolerance_vm_pu=1e-11, symmetric=False)
     consistency_checks_3ph(net)
     return True
 
 
-def consistent_vsc_stacked(net, rtol):
+def consistent_vsc_stacked(net: pandapowerNet, rtol):
     pass
 
 
-def consistency_checks(net, rtol=1e-3, test_q=True):
+def consistency_checks(net: pandapowerNet, rtol=1e-3, test_q=True):
     indices_consistent(net)
     branch_loss_consistent_with_bus_feed_in(net, rtol)
     element_power_consistent_with_bus_power(net, rtol, test_q)
     # consistent_vsc_stacked(net, rtol)  # todo
 
 
-def indices_consistent(net):
+def indices_consistent(net: pandapowerNet):
     elements = get_relevant_elements(net)
     for element in elements:
         e_idx = net[element].index
@@ -63,13 +64,13 @@ def indices_consistent(net):
         assert all(e_idx == res_idx), f"{element} bus and res_{element} indices do not match"
 
 
-def branch_loss_consistent_with_bus_feed_in(net, atol=1e-2):
+def branch_loss_consistent_with_bus_feed_in(net: pandapowerNet, atol=1e-2):
     """
     The surplus of bus feed summed over all buses always has to be equal to the sum of losses in
     all branches.
     """
 
-    def safe_sum(net, attr_name, column_name):
+    def safe_sum(net: pandapowerNet, attr_name, column_name):
         """Safely sum a column from a result DataFrame if it exists."""
         if hasattr(net, attr_name):
             df = getattr(net, attr_name)
@@ -123,7 +124,7 @@ def branch_loss_consistent_with_bus_feed_in(net, atol=1e-2):
         )
 
 
-def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
+def element_power_consistent_with_bus_power(net: pandapowerNet, rtol=1e-2, test_q=True):
     """
     The bus feed-in at each node has to be equal to the sum of the element feed ins at each node.
     """
@@ -187,14 +188,14 @@ def element_power_consistent_with_bus_power(net, rtol=1e-2, test_q=True):
         assert allclose(net.res_bus_dc.p_mw.values, bus_p_dc.values, equal_nan=True, rtol=rtol)
 
 
-def consistency_checks_3ph(net, rtol=2e-3):
+def consistency_checks_3ph(net: pandapowerNet, rtol=2e-3):
     assert net.converged
     indices_consistent_3ph(net)
     branch_loss_consistent_with_bus_feed_in_3ph(net, rtol)
     element_power_consistent_with_bus_power_3ph(net, rtol)
 
 
-def indices_consistent_3ph(net):
+def indices_consistent_3ph(net: pandapowerNet):
     elements = get_relevant_elements(net, mode="pf_3ph")
     for element in elements:
         e_idx = net[element].index
@@ -203,7 +204,7 @@ def indices_consistent_3ph(net):
         assert all(e_idx == res_idx), f"{element} bus and res_{element} indices do not match"
 
 
-def branch_loss_consistent_with_bus_feed_in_3ph(net, atol=1e-2):
+def branch_loss_consistent_with_bus_feed_in_3ph(net: pandapowerNet, atol=1e-2):
     """
     The surpluss of bus feed summed over all buses always has to be equal to the sum of losses in
     all branches.
@@ -234,7 +235,7 @@ def branch_loss_consistent_with_bus_feed_in_3ph(net, atol=1e-2):
         )
 
 
-def element_power_consistent_with_bus_power_3ph(net, rtol=1e-2):
+def element_power_consistent_with_bus_power_3ph(net: pandapowerNet, rtol=1e-2):
     """
     The bus feed-in at each node has to be equal to the sum of the element feed ins at each node.
     """
@@ -293,7 +294,7 @@ def element_power_consistent_with_bus_power_3ph(net, rtol=1e-2):
     assert allclose(net.res_bus_3ph.q_c_mvar.values, bus_q_c.values, equal_nan=True, rtol=rtol)
 
 
-def get_trafo_s_3ph(net, tf_index, side):
+def get_trafo_s_3ph(net: pandapowerNet, tf_index, side):
     s = np.array(
         [
             (
@@ -308,7 +309,7 @@ def get_trafo_s_3ph(net, tf_index, side):
     return s
 
 
-def get_trafo_v_3ph(net, tf_index, side):
+def get_trafo_v_3ph(net: pandapowerNet, tf_index, side):
     bus_id = net.trafo.at[tf_index, side + "_bus"]
     v = np.array(
         [
@@ -323,7 +324,7 @@ def get_trafo_v_3ph(net, tf_index, side):
     return v
 
 
-def get_trafo_currents_3ph(net, tf_index, side):
+def get_trafo_currents_3ph(net: pandapowerNet, tf_index, side):
     s = get_trafo_s_3ph(net, tf_index, side)
     v = get_trafo_v_3ph(net, tf_index, side)
     i = np.conjugate(s / v)
@@ -367,7 +368,7 @@ def check_ynyn_traformer_currents(i_hv, i_lv, ratio, shift_degree, rtol):
         assert isclose(i_hv[2], -i_lv[2] / ratio, rtol)
 
 
-def trafo_currents_consistent_3ph(net, rtol):
+def trafo_currents_consistent_3ph(net: pandapowerNet, rtol):
     """
     The HV and LV currents of the transformer has to be related in accordance with trafo vector_group and clock
     """
@@ -393,7 +394,7 @@ def trafo_currents_consistent_3ph(net, rtol):
                 check_ynyn_traformer_currents(i_hv, i_lv, ratio[tf_index], trafo["shift_degree"], rtol)
 
 
-def safe_sum(net, attr_name, column_name):
+def safe_sum(net: pandapowerNet, attr_name, column_name):
     """Safely sum a column from a result DataFrame if it exists."""
     if hasattr(net, attr_name):
         df = getattr(net, attr_name)
@@ -402,7 +403,7 @@ def safe_sum(net, attr_name, column_name):
     return 0.0
 
 
-def safe_sum_multiple_columns(net, attr_name, column_names):
+def safe_sum_multiple_columns(net: pandapowerNet, attr_name, column_names):
     """Safely sum multiple columns from a result DataFrame if they exist."""
     if hasattr(net, attr_name):
         df = getattr(net, attr_name)

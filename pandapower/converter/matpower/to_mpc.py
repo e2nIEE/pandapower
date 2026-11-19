@@ -5,29 +5,35 @@ __all__ = ["to_mpc"]
 
 import copy
 import logging
+from os import PathLike
 
 import numpy as np
+import numpy.typing as npt
 from scipy.io import savemat
 
+from pandapower import pandapowerNet
 from pandapower.converter.pypower import to_ppc
 
 logger = logging.getLogger(__name__)
 
 
-def to_mpc(net, filename=None, **kwargs):
+def to_mpc(net: pandapowerNet, filename: str | PathLike | None = None, **kwargs):
     """
     This function converts a pandapower net to a matpower case files (.mat) version 2.
     Note: python is 0-based while Matlab is 1-based.
 
     Parameters:
         net: The pandapower net.
-        filename (str, None): File path + name of the mat file which will be created. If None the mpc will only be
+        filename: File path including name of the mat file which will be created. If None the mpc will only be
             returned
 
     Keyword Arguments:
         any: are passed to :func:`to_ppc`
 
-    EXAMPLE:
+    Returns:
+        the mpc object
+
+    Example:
         >>> from pandapower.converter.matpower import to_mpc
         >>> from pandapower.networks.power_system_test_cases import case9
         >>>
@@ -45,7 +51,7 @@ def to_mpc(net, filename=None, **kwargs):
     return mpc
 
 
-def _trafo_branch_mask(net, ppc):
+def _trafo_branch_mask(net: pandapowerNet, ppc):
     """
     Boolean mask of the branch rows of ppc that belong to transformer elements (trafo and
     trafo3w), based on the branch lookup that was created when the net was converted to ppc.
@@ -57,7 +63,7 @@ def _trafo_branch_mask(net, ppc):
     """
     branch_is = ppc.get("internal", {}).get("branch_is")
     n_branch = len(branch_is) if branch_is is not None else ppc["branch"].shape[0]
-    mask = np.zeros(n_branch, dtype=bool)
+    mask: npt.NDArray = np.zeros(n_branch, dtype=bool)
     try:
         branch_lookup = net["_pd2ppc_lookups"]["branch"]
     except (KeyError, TypeError):

@@ -17,6 +17,7 @@ __all__ = [
 import ast
 import logging
 import re
+from collections.abc import Iterable, Sequence
 
 import geojson
 import numpy as np
@@ -177,7 +178,7 @@ def get_linewidth_list(linewidth, number_entries, name_entries="lines"):
 def get_index_array(indices, net_table_indices):
     if indices is None:
         return np.copy(net_table_indices.values)
-    elif isinstance(indices, set):
+    elif isinstance(indices, Iterable) and not isinstance(indices, Sequence) and not hasattr(indices, "__array__"):
         return np.array(list(indices))
     return np.array(indices)
 
@@ -258,7 +259,7 @@ def coords_from_node_geodata(
         return coords[~no_geo_diff], np.array(element_indices)[in_geo & not_nan][~no_geo_diff]
 
 
-def set_line_geodata_from_bus_geodata(net, line_index=None, overwrite=False, ignore_no_geo_diff=True):
+def set_line_geodata_from_bus_geodata(net: pandapowerNet, line_index=None, overwrite=False, ignore_no_geo_diff=True):
     """
     Sets coordinates in net.line.geo based on the from_bus and to_bus coordinates in net.bus.geo
 

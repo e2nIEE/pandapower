@@ -27,7 +27,6 @@ __all__ = [
 ]
 
 import logging
-import warnings
 from typing import TYPE_CHECKING, Literal, cast, get_args
 
 import pandas as pd
@@ -35,7 +34,7 @@ import pandas as pd
 from pandapower.pp_types import StandardTypesDictKeys
 
 if TYPE_CHECKING:
-    from pandapower.network import pandapowerNet
+    from pandapower.network import ADict, pandapowerNet
 
 logger = logging.getLogger(__name__)
 
@@ -85,7 +84,7 @@ def required_std_type_parameters(element: DefaultStandardTypes = "line"):
 
 
 def create_std_type(
-    net: "pandapowerNet",
+    net: "ADict",
     data: dict,
     name: str,
     element: StandardTypesDictKeys = "line",
@@ -155,7 +154,7 @@ def create_std_type(
         library.update({name: data})
 
 
-def create_std_types(net, data, element="line", overwrite=True, check_required=True):
+def create_std_types(net: "ADict", data, element="line", overwrite=True, check_required=True):
     """
     Creates multiple standard types in the type database.
 
@@ -200,7 +199,7 @@ def copy_std_types(to_net, from_net, element="line", overwrite=True):
         create_std_type(to_net, typdata, name, element=element, overwrite=overwrite)
 
 
-def load_std_type(net, name, element="line"):
+def load_std_type(net: "ADict", name, element="line"):
     """
     Loads standard type data from the linetypes database. Issues a warning if
     linetype is unknown.
@@ -220,7 +219,7 @@ def load_std_type(net, name, element="line"):
         raise UserWarning(f"Unknown standard {element} type {name}")
 
 
-def std_type_exists(net, name, element="line"):
+def std_type_exists(net: "ADict", name, element="line"):
     """
     Checks if a standard type exists.
 
@@ -236,7 +235,7 @@ def std_type_exists(net, name, element="line"):
     return name in library
 
 
-def delete_std_type(net, name, element="line"):
+def delete_std_type(net: "ADict", name, element="line"):
     """
     Deletes standard type parameters from database.
 
@@ -252,7 +251,7 @@ def delete_std_type(net, name, element="line"):
         raise UserWarning(f"Unknown standard {element} type {name}")
 
 
-def rename_std_type(net, old_name, new_name, element="line"):
+def rename_std_type(net: "ADict", old_name, new_name, element="line"):
     """Renames an existing standard type in the standard type library and the element table.
 
     Parameters:
@@ -271,7 +270,7 @@ def rename_std_type(net, old_name, new_name, element="line"):
         net[element].loc[net[element].std_type == old_name, "std_type"] = new_name
 
 
-def available_std_types(net, element="line"):
+def available_std_types(net: "ADict", element="line"):
     """
     Returns all standard types available for this network as a table.
 
@@ -283,16 +282,10 @@ def available_std_types(net, element="line"):
         table of standard type parameters
 
     """
-    std_types = pd.DataFrame(net.std_types[element]).T
-    try:
-        return std_types.infer_objects()
-    except AttributeError:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            return std_types.convert_objects()
+    return pd.DataFrame(net.std_types[element]).T.infer_objects()
 
 
-def parameter_from_std_type(net, parameter, element="line", fill=None):
+def parameter_from_std_type(net: "ADict", parameter, element="line", fill=None):
     """
     Loads standard types data for a parameter, which can be used to add an additional parameter,
     that is not included in the original pandapower datastructure but is available in the standard
@@ -326,7 +319,7 @@ def parameter_from_std_type(net, parameter, element="line", fill=None):
         net[element].loc[pd.isnull(net[element][parameter]).values, parameter] = fill
 
 
-def change_std_type(net, eid, name, element="line"):
+def change_std_type(net: "ADict", eid, name, element="line"):
     """
     Changes the type of a given element in pandapower. Changes only parameter that are given
     for the type.
@@ -348,7 +341,7 @@ def change_std_type(net, eid, name, element="line"):
     table.at[eid, "std_type"] = name
 
 
-def find_std_type_by_parameter(net, data, element="line", epsilon=0.0):
+def find_std_type_by_parameter(net: "ADict", data, element="line", epsilon=0.0):
     """
     Searches for a std_type that fits all values given in the data dictionary with the margin of
     epsilon.
@@ -403,7 +396,7 @@ def find_std_type_alternative(data, voltage_rating="", epsilon=0.0):
     return fitting_types
 
 
-def add_zero_impedance_parameters(net):
+def add_zero_impedance_parameters(net: "pandapowerNet"):
     """
     Adds all parameters required for zero sequence impedance calculations.
 
@@ -441,7 +434,7 @@ def add_zero_impedance_parameters(net):
         net.ext_grid["r0x0_max"] = 0.1
 
 
-def add_temperature_coefficient(net, fill=None):
+def add_temperature_coefficient(net: "pandapowerNet", fill=None):
     """
     Adds alpha parameter for calculations of line temperature
 

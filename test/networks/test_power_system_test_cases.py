@@ -5,6 +5,7 @@
 import numpy as np
 import pytest
 
+from pandapower.network import pandapowerNet
 from pandapower.networks.power_system_test_cases import (
     GBnetwork,
     GBreducednetwork,
@@ -62,7 +63,7 @@ def compare_arrays(arr1, arr2, atol=0.1):
         raise ValueError(f"In {name}, the following elements are not equal: {where}")
 
 
-def _ppc_element_test(net, n_bus=None, n_branch=None, n_gen=None, gencost=False):
+def _ppc_element_test(net: pandapowerNet, n_bus=None, n_branch=None, n_gen=None, gencost=False):
     runpp(net, trafo_model="pi")
     if n_bus:
         assert len(net.bus) == n_bus

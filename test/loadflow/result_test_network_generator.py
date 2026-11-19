@@ -95,7 +95,7 @@ def result_test_network_generator_dcpp(sn_mva=1):
     yield add_test_shunt_split(net)
 
 
-def add_test_line(net):
+def add_test_line(net: pandapowerNet):
     b1, b2, l1 = add_grid_connection(net, zone="test_line")
     net.line.at[l1, "parallel"] = 2
     net.line.at[l1, "g_us_per_km"] = 1
@@ -108,7 +108,7 @@ def add_test_line(net):
     return net
 
 
-def add_test_ext_grid(net):
+def add_test_ext_grid(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_ext_grid")
     (b3,) = create_buses(net, 1, vn_kv=20.0, zone="test_ext_grid")
     create_test_line(net, b2, b3)
@@ -116,7 +116,7 @@ def add_test_ext_grid(net):
     return net
 
 
-def add_test_ext_grid_gen_switch(net):
+def add_test_ext_grid_gen_switch(net: pandapowerNet):
     zone = "test_ext_grid_gen_switch"
     vn_kv = 20.0
     b1 = create_bus(net, vn_kv=vn_kv, zone=zone)
@@ -135,7 +135,7 @@ def add_test_ext_grid_gen_switch(net):
     return net
 
 
-def add_test_load_sgen(net):
+def add_test_load_sgen(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_load_sgen")
     pl = 1.2
     ql = 1.1
@@ -151,7 +151,7 @@ def add_test_load_sgen(net):
     return net
 
 
-def add_test_load_sgen_split(net):
+def add_test_load_sgen_split(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_load_sgen_split")
     nr = 2
     pl = 1.2
@@ -165,7 +165,7 @@ def add_test_load_sgen_split(net):
     return net
 
 
-def add_test_trafo(net):
+def add_test_trafo(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_trafo")
     (b3,) = create_buses(net, 1, vn_kv=0.4, zone="test_trafo")
     create_transformer_from_parameters(  # TODO: missing tap_step_degree
@@ -237,7 +237,7 @@ def add_test_single_load_single_eg(net: pandapowerNet):
     return net
 
 
-def add_test_ward(net):
+def add_test_ward(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_ward")
 
     pz = 1.2
@@ -252,7 +252,7 @@ def add_test_ward(net):
     return net
 
 
-def add_test_ward_split(net):
+def add_test_ward_split(net: pandapowerNet):
     # splitting up the wards should not change results
     pz = 1.2
     qz = 1.1
@@ -265,7 +265,7 @@ def add_test_ward_split(net):
     return net
 
 
-def add_test_xward(net):
+def add_test_xward(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_xward")
     pz = 1.200
     qz = 1.100
@@ -294,7 +294,7 @@ def add_test_xward(net):
     return net
 
 
-def add_test_xward_combination(net):
+def add_test_xward_combination(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_xward_combination")
 
     pz = 1.200
@@ -316,7 +316,7 @@ def add_test_xward_combination(net):
     return net
 
 
-def add_test_gen(net):
+def add_test_gen(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_gen")
     pl = 1.200
     ql = 1.100
@@ -337,7 +337,7 @@ def add_test_gen(net):
     return net
 
 
-def add_test_enforce_qlims(net):
+def add_test_enforce_qlims(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_enforce_qlims")
     pl = 1.200
     ql = 1.100
@@ -357,7 +357,7 @@ def add_test_enforce_qlims(net):
     return net
 
 
-def add_test_enforce_plims(net):
+def add_test_enforce_plims(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_enforce_plims")
     pl = 1.200
     ql = 1.100
@@ -376,7 +376,7 @@ def add_test_enforce_plims(net):
     return net
 
 
-def add_test_enforce_qlims_sgen(net):
+def add_test_enforce_qlims_sgen(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_enforce_qlims_sgen")
     pl = 1.200
     ql = 1.100
@@ -395,7 +395,7 @@ def add_test_enforce_qlims_sgen(net):
     return net
 
 
-def add_test_enforce_plims_sgen(net):
+def add_test_enforce_plims_sgen(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_enforce_plims_sgen")
     pl = 1.200
     ql = 1.100
@@ -414,7 +414,7 @@ def add_test_enforce_plims_sgen(net):
     return net
 
 
-def add_test_trafo3w(net):
+def add_test_trafo3w(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_trafo3w")
     b3 = create_bus(net, vn_kv=0.6, zone="test_trafo3w")
     create_load(net, b3, p_mw=0.2, q_mvar=0)
@@ -478,7 +478,7 @@ def add_test_trafo3w(net):
     return net
 
 
-def add_test_impedance(net):
+def add_test_impedance(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_impedance")
     b3 = create_bus(net, vn_kv=220.0, zone="test_impedance")
     rij = 0.02
@@ -510,7 +510,7 @@ def add_test_impedance(net):
     return net
 
 
-def add_test_bus_bus_switch(net):
+def add_test_bus_bus_switch(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_bus_bus_switch")
     b3 = create_bus(net, vn_kv=20.0, zone="test_bus_bus_switch")
     create_switch(net, b2, b3, et="b")
@@ -555,7 +555,7 @@ def add_test_bus_bus_switch(net):
     return net
 
 
-def add_test_oos_bus_with_is_element(net):
+def add_test_oos_bus_with_is_element(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_oos_bus_with_is_element")
 
     pl = 1.200
@@ -608,7 +608,7 @@ def add_test_oos_bus_with_is_element(net):
     return net
 
 
-def add_test_shunt(net):
+def add_test_shunt(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_shunt")
     pz = 0.12
     qz = -1.2
@@ -620,7 +620,7 @@ def add_test_shunt(net):
     return net
 
 
-def add_test_shunt_split(net):
+def add_test_shunt_split(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_shunt_split")
     pz = 0.120
     qz = -1.200
@@ -631,7 +631,7 @@ def add_test_shunt_split(net):
     return net
 
 
-def add_test_two_open_switches_on_deactive_line(net):
+def add_test_two_open_switches_on_deactive_line(net: pandapowerNet):
     b1, b2, _ = add_grid_connection(net, zone="two_open_switches_on_deactive_line")
     b3 = create_bus(net, vn_kv=20.0, zone="two_open_switches_on_deactive_line")
     l2 = create_test_line(net, b2, b3, in_service=False)

@@ -5,6 +5,7 @@
 import numpy as np
 
 from pandapower.auxiliary import I_from_SV_elementwise, S_from_VI_elementwise, _sum_by_group, sequence_to_phase
+from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_brch import BR_R, F_BUS, PF, PT, QF, QT, T_BUS
 from pandapower.pypower.idx_brch_dc import DC_BR_R, DC_F_BUS, DC_IF, DC_IT, DC_PF, DC_PT, DC_T_BUS, DC_TDPF
 from pandapower.pypower.idx_brch_tdpf import TDPF
@@ -22,7 +23,7 @@ from pandapower.pypower.idx_tcsc import (
 )
 
 
-def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=None):
+def _get_branch_results(net: pandapowerNet, ppc, bus_lookup_aranged, pq_buses, suffix=None):
     """
     Extract the branch results and writes it in the Dataframe net.res_line, net.res_trafo, net.res_trafo3w...
 
@@ -46,7 +47,7 @@ def _get_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=None):
     _get_tcsc_results(net, ppc, suffix=suffix)
 
 
-def _get_branch_results_3ph(net, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_buses):
+def _get_branch_results_3ph(net: pandapowerNet, ppc0, ppc1, ppc2, bus_lookup_aranged, pq_buses):
     """
     Extract the bus results and writes it in the Dataframe net.res_line and net.res_trafo.
 
@@ -98,7 +99,7 @@ def _get_branch_flows_3ph(ppc0, ppc1, ppc2):
     return I012_f, S012_f, V012_f, I012_t, S012_t, V012_t
 
 
-def _get_line_results(net, ppc, i_ft, suffix=None):
+def _get_line_results(net: pandapowerNet, ppc, i_ft, suffix=None):
     # create res_line_vals which are written to the pandas dataframe
     if "line" not in net._pd2ppc_lookups["branch"]:
         return
@@ -165,7 +166,7 @@ def _get_line_results(net, ppc, i_ft, suffix=None):
             res_line_df.loc[~tdpf_lines, "temperature_degree_celsius"] = no_tdpf_t
 
 
-def _get_line_dc_results(net, ppc):
+def _get_line_dc_results(net: pandapowerNet, ppc):
     # create res_line_vals which are written to the pandas dataframe
     if "line_dc" not in net._pd2ppc_lookups["branch_dc"]:
         return
@@ -221,7 +222,7 @@ def _get_line_dc_results(net, ppc):
             res_line_df.loc[~tdpf_lines, "temperature_degree_celsius"] = no_tdpf_t
 
 
-def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
+def _get_line_results_3ph(net: pandapowerNet, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
     # create res_line_vals which are written to the pandas dataframe
     ac = net["_options"]["ac"]
 
@@ -306,7 +307,7 @@ def _get_line_results_3ph(net, ppc0, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t)
     net["res_line_3ph"].index = net["line"].index
 
 
-def _get_trafo_results(net, ppc, s_ft, i_ft, suffix=None):
+def _get_trafo_results(net: pandapowerNet, ppc, s_ft, i_ft, suffix=None):
     if "trafo" not in net._pd2ppc_lookups["branch"]:
         return
     ac = net["_options"]["ac"]
@@ -369,7 +370,7 @@ def _get_trafo_results(net, ppc, s_ft, i_ft, suffix=None):
     res_trafo_df.loc[:, "loading_percent"] = loading_percent
 
 
-def _get_trafo_results_3ph(net, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
+def _get_trafo_results_3ph(net: pandapowerNet, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
     ac = net["_options"]["ac"]
     trafo_loading = net["_options"]["trafo_loading"]
 
@@ -452,7 +453,7 @@ def _get_trafo_results_3ph(net, ppc1, ppc2, I012_f, V012_f, I012_t, V012_t):
     res_trafo_df.index = net["trafo"].index.values
 
 
-def _get_trafo3w_lookups(net):
+def _get_trafo3w_lookups(net: pandapowerNet):
     f, t = net._pd2ppc_lookups["branch"]["trafo3w"]
     hv = int(f + (t - f) / 3)
     mv = int(f + 2 * (t - f) / 3)
@@ -460,7 +461,7 @@ def _get_trafo3w_lookups(net):
     return f, hv, mv, lv
 
 
-def _get_trafo3w_results(net, ppc, s_ft, i_ft, suffix=None):
+def _get_trafo3w_results(net: pandapowerNet, ppc, s_ft, i_ft, suffix=None):
     if "trafo3w" not in net._pd2ppc_lookups["branch"]:
         return
 
@@ -540,7 +541,7 @@ def _get_trafo3w_results(net, ppc, s_ft, i_ft, suffix=None):
     res_trafo3w_df.loc[:, "loading_percent"] = loading_percent
 
 
-def _get_impedance_results(net, ppc, i_ft, suffix=None):
+def _get_impedance_results(net: pandapowerNet, ppc, i_ft, suffix=None):
     ac = net["_options"]["ac"]
 
     if "impedance" not in net._pd2ppc_lookups["branch"]:
@@ -581,7 +582,7 @@ def _get_impedance_results(net, ppc, i_ft, suffix=None):
     res_impedance_df.loc[:, "i_to_ka"] = i_to_ka
 
 
-def _get_tcsc_results(net, ppc, suffix=None):
+def _get_tcsc_results(net: pandapowerNet, ppc, suffix=None):
     tcsc = net.get("tcsc")  # todo: it used to be "if len(net.tcsc) == 0:"  <- change back when pandamodels bug is fixed
     if tcsc is None or len(tcsc) == 0:
         return
@@ -644,7 +645,7 @@ def _get_tcsc_results(net, ppc, suffix=None):
     res_tcsc_df.loc[:, "va_to_degree"] = ppc["bus"][t_bus, VA]
 
 
-def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=None):
+def _get_xward_branch_results(net: pandapowerNet, ppc, bus_lookup_aranged, pq_buses, suffix=None):
     ac = net["_options"]["ac"]
 
     if "xward" not in net._pd2ppc_lookups["branch"]:
@@ -671,7 +672,7 @@ def _get_xward_branch_results(net, ppc, bus_lookup_aranged, pq_buses, suffix=Non
     res_xward_df.index = net["xward"].index
 
 
-def _get_switch_results(net, ppc, i_ft, suffix=None):
+def _get_switch_results(net: pandapowerNet, ppc, i_ft, suffix=None):
     if len(net.switch) == 0:
         return
     res_switch_df = "res_switch" if suffix is None else f"res_switch{suffix}"
@@ -698,7 +699,7 @@ def _get_switch_results(net, ppc, i_ft, suffix=None):
         net[res_switch_df]["loading_percent"] = net[res_switch_df]["i_ka"].values / net.switch["in_ka"].values * 100
 
 
-def _copy_switch_results_from_branches(net, suffix=None, current_parameter="i_ka"):
+def _copy_switch_results_from_branches(net: pandapowerNet, suffix=None, current_parameter="i_ka"):
     res_switch_df = "res_switch" if suffix is None else f"res_switch{suffix}"
 
     switch_lines = net.switch.element[net.switch.et == "l"]

@@ -21,6 +21,7 @@ from itertools import combinations, pairwise
 import networkx as nx
 import pandas as pd
 
+from pandapower.network import pandapowerNet
 from pandapower.topology.create_graph import create_nxgraph
 
 
@@ -90,7 +91,9 @@ def connected_components(mg, notravbuses=None):
                 yield {f, t}
 
 
-def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None, notravbuses=None, weight="weight", g=None):
+def calc_distance_to_bus(
+    net: pandapowerNet, bus, respect_switches=True, nogobuses=None, notravbuses=None, weight="weight", g=None
+):
     """
     Calculates the shortest distance between a source bus and all buses connected to it.
 
@@ -120,7 +123,7 @@ def calc_distance_to_bus(net, bus, respect_switches=True, nogobuses=None, notrav
     return pd.Series(nx.single_source_dijkstra_path_length(g, bus, weight=weight))
 
 
-def unsupplied_buses(net, mg=None, slacks=None, respect_switches=True):
+def unsupplied_buses(net: pandapowerNet, mg=None, slacks=None, respect_switches=True):
     """
     Finds buses, that are not connected electrically (no lines, trafos etc or if respect_switches
     is True only connected via open switches) to an external grid and that are in service.
@@ -343,7 +346,7 @@ def get_2connected_buses(g, roots):
     return connected, two_connected
 
 
-def determine_stubs(net, roots=None, mg=None, respect_switches=False):
+def determine_stubs(net: pandapowerNet, roots=None, mg=None, respect_switches=False):
     """
     Finds stubs in a network. Open switches are being ignored. Results are being written in a new column in the bus
     table ("on_stub") and line table ("is_stub") as True/False value.
@@ -426,15 +429,18 @@ def elements_on_path(mg, path, element="line"):
         ]
 
 
-def get_end_points_of_continuously_connected_lines(net, lines):
-    mg = nx.MultiGraph()
+from pandapower.network import pandapowerNet
+
+
+def get_end_points_of_continuously_connected_lines(net: pandapowerNet, lines):
+    mg: nx.MultiGraph = nx.MultiGraph()
     line_buses = net.line.loc[lines, ["from_bus", "to_bus"]].values
     mg.add_edges_from(line_buses)
     switch_buses = net.switch[["bus", "element"]].values[net.switch.et.values == "b"]
     mg.add_edges_from(switch_buses)
 
     all_buses = set(line_buses.flatten())
-    longest_path = []
+    longest_path: list = []
     for b1, b2 in combinations(all_buses, 2):
         try:
             path = nx.shortest_path(mg, b1, b2)

@@ -14,6 +14,7 @@ import pytest
 from pandapower.converter.pypower import from_ppc, to_ppc, validate_from_ppc
 from pandapower.converter.pypower.from_ppc import _branch_to_which, _gen_to_which
 from pandapower.file_io import from_json
+from pandapower.network import pandapowerNet
 from pandapower.networks.power_system_test_cases import case9, case24_ieee_rts
 from pandapower.pypower.idx_brch import (
     ANGMAX,
@@ -156,7 +157,7 @@ def _ppc_ybus(ppc):
     return *_ybus(ppc["baseMVA"], bus, branch), bus_pos, branch
 
 
-def _net_ybus(net, ppc):
+def _net_ybus(net: pandapowerNet, ppc):
     """bus admittance matrix of the last power flow of a net converted from a ppc, in the bus order of the ppc"""
     pp_bus = net._pd2ppc_lookups["bus"][ppc["bus"][:, BUS_I].astype(np.int64)]
     return _ybus(net._ppc["baseMVA"], net._ppc["bus"], net._ppc["branch"])[0][np.ix_(pp_bus, pp_bus)]

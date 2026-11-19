@@ -8,6 +8,7 @@ __all__ = [
 
 from copy import deepcopy
 
+import numpy.typing as npt
 from numpy import append, ceil
 
 from pandapower.create import create_buses, create_ext_grid, create_lines, create_load, create_transformer
@@ -17,7 +18,7 @@ from pandapower.toolbox.element_selection import get_connected_elements
 from pandapower.toolbox.power_factor import pq_from_cosphi
 
 
-def _change_to_ohl(net, idx_busbar, new_lines, n_cable):
+def _change_to_ohl(net: pandapowerNet, idx_busbar, new_lines, n_cable):
     """
     This function changes line types from cable to ohl beginning at the end of the feeders in a \
     way, that the tapped line has the most portions of overhead-lines.
@@ -37,7 +38,7 @@ def _change_to_ohl(net, idx_busbar, new_lines, n_cable):
         change_std_type(net, idx_line, "NFA2X 4x70", element="line")
 
 
-def _create_loads_with_coincidence(net, buses):
+def _create_loads_with_coincidence(net: pandapowerNet, buses):
     """
     This function creates loads to lv feeders with respect to coincidence factor c. c is \
     calculated by the number of feeder buses as described in Dickert, Schegner - \
@@ -60,7 +61,7 @@ def _create_loads_with_coincidence(net, buses):
         create_load(net, i, p_mw=p_mw, q_mvar=q_mvar, sn_mva=P_max1)
 
 
-def _create_feeder(net, net_data, branching, idx_busbar, linetype, lv_vn_kv):
+def _create_feeder(net: pandapowerNet, net_data, branching, idx_busbar, linetype, lv_vn_kv):
     """
     This function creates the dickert lv network feeders by creating the buses and lines. In case \
     of branching the right position of branching must be found with respect to sum of feeder nodes \
@@ -69,7 +70,7 @@ def _create_feeder(net, net_data, branching, idx_busbar, linetype, lv_vn_kv):
     n_DP = net_data[1]
     d_DP = net_data[0]
     buses = create_buses(net, int(n_DP), lv_vn_kv, zone="Feeder B" + str(branching), type="m")
-    from_bus = append(idx_busbar, buses[:-1])
+    from_bus: npt.NDArray = append(idx_busbar, buses[:-1])
     # branch consideration
     if branching == 1:
         n_LS = int(ceil(n_DP / 3))

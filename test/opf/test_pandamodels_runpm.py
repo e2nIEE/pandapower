@@ -172,7 +172,7 @@ def create_cigre_grid_with_time_series(json_path, net=None, add_ts_constaints=Fa
     return net
 
 
-def assert_pf(net, dc=False):
+def assert_pf(net: pandapowerNet, dc=False):
     if dc:
         model = "DCMPPowerModel"
     else:

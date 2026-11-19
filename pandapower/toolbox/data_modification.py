@@ -29,7 +29,7 @@ from pandapower.toolbox.element_selection import element_bus_tuples, pp_elements
 logger = logging.getLogger(__name__)
 
 
-def add_column_from_node_to_elements(net, column, replace, elements=None, branch_bus=None, verbose=True):
+def add_column_from_node_to_elements(net: pandapowerNet, column, replace, elements=None, branch_bus=None, verbose=True):
     """
     Adds column data to elements, inferring them from the column data of buses they are
     connected to.
@@ -82,7 +82,9 @@ def add_column_from_node_to_elements(net, column, replace, elements=None, branch
                     logger.debug(msg)
 
 
-def add_column_from_element_to_elements(net, column, replace, elements=None, continue_on_missing_column=True):
+def add_column_from_element_to_elements(
+    net: pandapowerNet, column, replace, elements=None, continue_on_missing_column=True
+):
     """
     Adds column data to elements, inferring them from the column data of the elements linked by the
     columns "element" and "element_type" or "et".
@@ -144,7 +146,7 @@ def add_column_from_element_to_elements(net, column, replace, elements=None, con
             net[el].loc[idx_et, column] = net[et][column].loc[net[el].element[idx_et]].values
 
 
-def add_zones_to_elements(net, replace=True, elements=None, **kwargs):
+def add_zones_to_elements(net: pandapowerNet, replace=True, elements=None, **kwargs):
     """
     Adds zones to elements, inferring them from the zones of buses they are connected to.
     """
@@ -152,7 +154,7 @@ def add_zones_to_elements(net, replace=True, elements=None, **kwargs):
     add_column_from_node_to_elements(net, "zone", replace=replace, elements=elements, **kwargs)
 
 
-def reindex_buses(net, bus_lookup, allow_duplicate_index=False):
+def reindex_buses(net: pandapowerNet, bus_lookup, allow_duplicate_index=False):
     """
     Changes the index of net.bus and considers the new bus indices in all other pandapower element
     tables.
@@ -220,7 +222,7 @@ def reindex_buses(net, bus_lookup, allow_duplicate_index=False):
     return bus_lookup
 
 
-def create_continuous_bus_index(net, start=0, store_old_index=False):
+def create_continuous_bus_index(net: pandapowerNet, start=0, store_old_index=False):
     """
     Creates a continuous bus index starting at 'start' and replaces all
     references of old indices by the new ones.
@@ -242,7 +244,7 @@ def create_continuous_bus_index(net, start=0, store_old_index=False):
     return bus_lookup
 
 
-def reindex_elements(net, element_type, new_indices=None, old_indices=None, lookup=None):
+def reindex_elements(net: pandapowerNet, element_type, new_indices=None, old_indices=None, lookup=None):
     """
     Changes the index of the DataFrame net[element_type].
 
@@ -367,7 +369,7 @@ def reindex_elements(net, element_type, new_indices=None, old_indices=None, look
         net["trafo3w"]["id_characteristic_table"] = net["trafo3w"]["id_characteristic_table"].map(lookup)
 
 
-def create_continuous_elements_index(net, start=0, add_df_to_reindex=None):
+def create_continuous_elements_index(net: pandapowerNet, start=0, add_df_to_reindex=None):
     """
     Creating a continuous index for all the elements, starting at zero and replaces all references
     of old indices by the new ones.
@@ -417,7 +419,7 @@ def create_continuous_elements_index(net, start=0, add_df_to_reindex=None):
                 logger.debug(f"No indices could be changed for element '{et}'.")
 
 
-def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
+def set_scaling_by_type(net: pandapowerNet, scalings, scale_load=True, scale_sgen=True):
     """
     Sets scaling of loads and/or sgens according to a dictionary mapping type to a scaling factor. Note that the
     type-string is case sensitive. E.g. scaling = {"pv": 0.8, "bhkw": 0.6}
@@ -442,7 +444,7 @@ def set_scaling_by_type(net, scalings, scale_load=True, scale_sgen=True):
         scaleit("sgen")
 
 
-def set_data_type_of_columns_to_default(net):
+def set_data_type_of_columns_to_default(net: pandapowerNet):
     """
     Overwrites dtype of DataFrame columns of PandapowerNet elements to default dtypes defined in
     pandapower. The function "convert_format" does that automatically for nets saved with

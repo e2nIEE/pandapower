@@ -37,7 +37,7 @@ import inspect
 import logging
 import re
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from importlib.util import find_spec
 from itertools import combinations
 from typing import TYPE_CHECKING, Literal
@@ -459,7 +459,7 @@ def _create_complex_branch_collection(
 
 def create_bus_collection(
     net: pandapowerNet,
-    buses: list | None = None,
+    buses: Iterable | None = None,
     size: float = 5.0,
     patch_type: str = "circle",
     color=None,
@@ -713,7 +713,9 @@ def create_dcline_collection(
     return lc
 
 
-def create_impedance_collection(net, impedances=None, bus_geodata=None, infofunc=None, picker=False, **kwargs):
+def create_impedance_collection(
+    net: pandapowerNet, impedances=None, bus_geodata=None, infofunc=None, picker=False, **kwargs
+):
     """
     Creates a matplotlib line collection of pandapower lines.
 
@@ -836,7 +838,7 @@ def create_trafo_connection_collection(
     return lc
 
 
-def create_trafo3w_connection_collection(net, trafos=None, bus_geodata=None, infofunc=None, **kwargs):
+def create_trafo3w_connection_collection(net: pandapowerNet, trafos=None, bus_geodata=None, infofunc=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower 3W-transformers.
     This function can be used to create line collections for voltage fall diagrams.
@@ -881,7 +883,7 @@ def create_trafo3w_connection_collection(net, trafos=None, bus_geodata=None, inf
     info = [infofunc(x) if infofunc is not None else [] for tr in [(t, t, t) for t in trafos] for x in tr]
 
     lc = LineCollection(tg, **kwargs)
-    lc.info = info
+    lc.info = info  # type: ignore[attr-defined]
 
     return lc
 
@@ -1063,9 +1065,9 @@ def create_trafo3w_collection(
     if len(circles) == 0:
         return None, None
     lc = LineCollection(lines, color=color, picker=picker, linewidths=linewidth, **kwargs)
-    lc.info = infos
+    lc.info = infos  # type: ignore[attr-defined]
     pc = PatchCollection(circles, match_original=True, picker=picker, linewidth=linewidth, **kwargs)
-    pc.info = infos
+    pc.info = infos  # type: ignore[attr-defined]
     if cmap is not None:
         z_duplicated = np.repeat(z.values, 3)
         lc.set_cmap(cmap)
@@ -1478,7 +1480,9 @@ def create_sgen_collection(
     )
 
 
-def create_storage_collection(net, storages=None, size=1.0, infofunc=None, orientation=np.pi, picker=False, **kwargs):
+def create_storage_collection(
+    net: pandapowerNet, storages=None, size=1.0, infofunc=None, orientation=np.pi, picker=False, **kwargs
+):
     """
     Creates a matplotlib patch collection of pandapower storage element.
 
@@ -1573,7 +1577,9 @@ def create_ext_grid_collection(
     return ext_grid_pc, ext_grid_lc
 
 
-def create_line_switch_collection(net, switches=None, size=1, distance_to_bus=3, use_line_geodata=False, **kwargs):
+def create_line_switch_collection(
+    net: pandapowerNet, switches=None, size=1, distance_to_bus=3, use_line_geodata=False, **kwargs
+):
     """
     Creates a matplotlib patch collection of pandapower line-bus switches.
 
