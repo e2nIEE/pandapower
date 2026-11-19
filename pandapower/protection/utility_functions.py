@@ -328,9 +328,7 @@ def plot_tripped_grid(net: pandapowerNet, trip_decisions, sc_location, bus_size=
         tripping_times.append(trip_time)
     tripping_times = [v for v in tripping_times if not isinf(v)]
     backup_tripping_times = copy.deepcopy(tripping_times)
-    backup_tripping_times.remove(min(backup_tripping_times)) and backup_tripping_times.remove(
-        heapq.nsmallest(2, backup_tripping_times)[-1]
-    )
+    backup_tripping_times.remove(min(backup_tripping_times))
 
     inst_trip_switches = []
     backup_trip_switches = []
@@ -514,9 +512,7 @@ def plot_tripped_grid_protection_device(
     if len(tripping_times) == 0:
         return
     backup_tripping_times = copy.deepcopy(tripping_times)
-    backup_tripping_times.remove(min(backup_tripping_times)) and backup_tripping_times.remove(
-        heapq.nsmallest(2, backup_tripping_times)[-1]
-    )
+    backup_tripping_times.remove(min(backup_tripping_times))
 
     inst_trip_switches = []
     backup_trip_switches = []
@@ -714,7 +710,7 @@ def source_to_end_path(net: pandapowerNet, start_bus, bus_list, bus_order):
 def switch_geodatas(net: pandapowerNet, size, distance_to_bus):
     """get the coordinates for switches at middle of the line"""
     switch_geo = []
-    switches = []
+    switches: list = []
 
     if len(switches) == 0:
         lbs_switches = net.switch.index[net.switch.et == "l"]

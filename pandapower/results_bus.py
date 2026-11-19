@@ -5,6 +5,7 @@
 import logging
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from numpy import complex128
 
@@ -83,7 +84,7 @@ def _get_bus_v_results_3ph(net: pandapowerNet, ppc0, ppc1, ppc2):
 
 def _V012_from_ppc012(net: pandapowerNet, ppc0, ppc1, ppc2):
     bus_idx = _get_bus_idx(net)
-    V012_pu = np.zeros((3, len(bus_idx)), dtype=complex128)
+    V012_pu: npt.NDArray = np.zeros((3, len(bus_idx)), dtype=complex128)
     V012_pu[0, :] = ppc0["bus"][bus_idx][:, VM] * np.exp(1j * np.deg2rad(ppc0["bus"][bus_idx][:, VA]))
     V012_pu[1, :] = ppc1["bus"][bus_idx][:, VM] * np.exp(1j * np.deg2rad(ppc1["bus"][bus_idx][:, VA]))
     V012_pu[2, :] = ppc2["bus"][bus_idx][:, VM] * np.exp(1j * np.deg2rad(ppc2["bus"][bus_idx][:, VA]))
@@ -466,7 +467,7 @@ def get_p_q_b_3ph(net: pandapowerNet, element):
 
 
 def _get_p_q_results(net: pandapowerNet, ppc, bus_lookup_aranged):
-    bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float64)
+    bus_pq: npt.NDArray = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float64)
     b, p, q = np.array([]), np.array([]), np.array([])
 
     ac = net["_options"]["ac"]
@@ -509,7 +510,7 @@ def _get_p_dc_results(net: pandapowerNet, ppc, bus_lookup_aranged):
     Returns:
         bus_p_dc: DC power per DC bus (rows ordered as bus_lookup_aranged)
     """
-    bus_p_dc = np.zeros(shape=(len(net["bus_dc"].index), 1), dtype=np.float64)  # 1 because only p relevant
+    bus_p_dc: npt.NDArray = np.zeros(shape=(len(net["bus_dc"].index), 1), dtype=np.float64)  # 1 because only p relevant
     b, p = np.array([]), np.array([])
 
     # elements = ["load", "motor", "sgen", "storage", "ward", "xward",
@@ -543,7 +544,7 @@ def _get_p_dc_results(net: pandapowerNet, ppc, bus_lookup_aranged):
 
 def _get_p_q_results_3ph(net: pandapowerNet, bus_lookup_aranged):
     # results to be filled (bus, p in kw, q in kvar)
-    bus_pq = np.zeros(shape=(len(net["bus"].index), 6), dtype=float)
+    bus_pq: npt.NDArray = np.zeros(shape=(len(net["bus"].index), 6), dtype=float)
     b, pA, pB, pC, qA, qB, qC = (
         np.array([]),
         np.array([]),

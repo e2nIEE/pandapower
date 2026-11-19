@@ -8,6 +8,7 @@ __all__ = [
 
 from copy import deepcopy
 
+import numpy.typing as npt
 from numpy import append, ceil
 
 from pandapower.create import create_buses, create_ext_grid, create_lines, create_load, create_transformer
@@ -69,7 +70,7 @@ def _create_feeder(net: pandapowerNet, net_data, branching, idx_busbar, linetype
     n_DP = net_data[1]
     d_DP = net_data[0]
     buses = create_buses(net, int(n_DP), lv_vn_kv, zone="Feeder B" + str(branching), type="m")
-    from_bus = append(idx_busbar, buses[:-1])
+    from_bus: npt.NDArray = append(idx_busbar, buses[:-1])
     # branch consideration
     if branching == 1:
         n_LS = int(ceil(n_DP / 3))

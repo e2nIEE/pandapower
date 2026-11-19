@@ -15,6 +15,7 @@ from functools import partial
 from typing import Any, Literal, overload
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from numpy.typing import ArrayLike, NDArray
 
@@ -1875,7 +1876,7 @@ def _calculate_3w_tap_changers(net: pandapowerNet, t2, sides):
     tap_arrays["tap_side"] = {side: np.array([None] * nr_trafos) for side in sides}
     at_star_point = net.trafo3w.tap_at_star_point.values
     any_at_star_point = at_star_point.any()
-    ideal_tap = np.zeros(nr_trafos, dtype=bool)
+    ideal_tap: npt.NDArray = np.zeros(nr_trafos, dtype=bool)
     if "tap_changer_type" in net.trafo3w:
         ideal_tap = net.trafo3w.tap_changer_type.eq("Ideal").fillna(False).to_numpy(dtype=bool)
     for side in sides:

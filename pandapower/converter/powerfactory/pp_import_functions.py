@@ -7,11 +7,12 @@ import logging
 import numbers
 import re
 from itertools import combinations
-from typing import Literal
+from typing import Literal, cast
 
 import geojson
 import networkx as nx
 import numpy as np
+import numpy.typing as npt
 from pandas import DataFrame, Series, concat, isna
 
 from pandapower.auxiliary import get_free_id
@@ -22,6 +23,7 @@ from pandapower.control import (
     DroopControl,
     VDroopControl_local,
 )
+from pandapower.control.controller.station_control import ControlModusEnum
 from pandapower.control.util.auxiliary import (
     create_q_capability_characteristics_object,
     get_min_max_q_mvar_from_characteristics_object,
@@ -54,6 +56,7 @@ from pandapower.create import (
     create_vsc as _create_vsc,
 )
 from pandapower.network import ADict, pandapowerNet
+from pandapower.pp_types import Int, SwitchType
 from pandapower.results import init_results, reset_results
 from pandapower.run import set_user_pf_options
 from pandapower.std_types import (
@@ -72,6 +75,7 @@ logger = logging.getLogger(__name__)
 line_dict: dict = {}
 trafo_dict: dict = {}
 trafo3w_dict: dict = {}
+impedance_dict: dict = {}
 switch_dict: dict = {}
 bus_dict: dict = {}
 grf_map: dict = {}
@@ -107,7 +111,7 @@ def from_pf(
     line_dict = {}
     trafo_dict = {}
     trafo3w_dict = {}
-    impedance_dict = {}  # type: ignore[name-defined]
+    impedance_dict = {}
     switch_dict = {}
     logger.debug(f"__name__: {__name__}")
     logger.debug("started from_pf")
@@ -821,7 +825,7 @@ def get_connection_nodes(net: pandapowerNet, item, num_nodes):
         for b, vv in zip(buses, v):
             if b is None:
                 if table == "bus":
-                    aux_bus = create_buses(net, 1, vv, type="n", name=name)
+                    (aux_bus,) = create_buses(net, 1, vv, type="n", name=name)
                 else:
                     aux_bus = create_bus_dc(net, vv, type="n", name=name)
                 new_buses.append(aux_bus)
@@ -880,18 +884,18 @@ def create_connection_switches(net: pandapowerNet, item, number_switches, et, bu
 
 
 def get_coords_from_buses(net: pandapowerNet, from_bus, to_bus, **kwargs):
-    coords: list[list[float, float]] = []
+    coords: list[list[float]] = []
     from_geo: str | None = None
     to_geo: str | None = None
     if from_bus in net.bus.index:
-        from_geo: str = net.bus.loc[from_bus, "geo"]
+        from_geo = net.bus.loc[from_bus, "geo"]
 
     if to_bus in net.bus.index:
-        to_geo: str = net.bus.loc[to_bus, "geo"]
+        to_geo = net.bus.loc[to_bus, "geo"]
 
     if from_geo and to_geo:
-        coords = [geojson.utils.coords(geojson.loads(from_geo)), geojson.utils.coords(geojson.loads(to_geo))]
-        coords = [[x, y] for item in coords for x, y in item]
+        coords_iterators = [geojson.utils.coords(geojson.loads(from_geo)), geojson.utils.coords(geojson.loads(to_geo))]
+        coords = [[x, y] for item in coords_iterators for x, y in item]
         logger.debug(f"got coords from buses: {coords}")
     else:
         logger.debug(f"no coords for line between buses {from_bus:.0f} and {to_bus:.0f}")
@@ -1150,7 +1154,8 @@ def segment_buses(net: pandapowerNet, bus1, bus2, num_sections, line_name):  # ,
         bus_name = f"{line_name} (Muff {m})"
         vn_kv = net.bus.at[bus1, "vn_kv"]
         zone = net.bus.at[bus1, "zone"]
-        bus = create_buses(net, 1, name=bus_name, type="ls", vn_kv=vn_kv, zone=zone)
+        # PowerFactory line section buses use type "ls", which pandapower does not restrict
+        bus = create_buses(net, 1, name=bus_name, type="ls", vn_kv=vn_kv, zone=zone)  # type: ignore[arg-type]
 
         # TODO: implement coords for segmentation buses.
         #  Handle coords if line has multiple coords.
@@ -1924,7 +1929,7 @@ def split_line_add_bus_old(net: pandapowerNet, item, parent):
         # create new bus
         vn_kv = net.bus.at[net.line.at[sid, "from_bus"], "vn_kv"]
         name = f"LodLV-{item.loc_name}"
-        bus = create_buses(net, 1, vn_kv=vn_kv, name=name, geodata=bus_coords, type="n")
+        (bus,) = create_buses(net, 1, vn_kv=vn_kv, name=name, geodata=bus_coords, type="n")
         net.bus.loc[bus, "description"] = f"Partial load {item.loc_name} = {item.plini:.3f} kW"
         logger.debug(f"created new bus in net: {net.bus.loc[bus]}")
 
@@ -2340,7 +2345,7 @@ def create_sgen_genstat(net: pandapowerNet, item, pv_as_slack, pf_variable_p_gen
                         input_inverted=[False],
                         input_element_index=[next_index],
                         set_point=item.usetp,
-                        control_modus="V_ctrl_Q_droop_local",
+                        control_modus=ControlModusEnum.v_ctrl_q_droop_local,
                         bus_idx=bus,
                         tol=1e-5,
                     )
@@ -2350,7 +2355,7 @@ def create_sgen_genstat(net: pandapowerNet, item, pv_as_slack, pf_variable_p_gen
                         q_droop_mvar=item.sgn * 100 / ddroop,
                         q_set_mvar=item.qgini,
                         vm_set_pu_bsc=item.usetp,
-                        control_modus="V_ctrl_Q_droop_local",
+                        control_modus=ControlModusEnum.v_ctrl_q_droop_local,
                         bus_idx=bus,
                         controller_idx=bsc.index,
                     )
@@ -2455,7 +2460,7 @@ def create_sgen_genstat(net: pandapowerNet, item, pv_as_slack, pf_variable_p_gen
 
 
 def get_pf_sgen_results(net: pandapowerNet, item, sg, is_unbalanced, element="sgen"):
-    result_variables = None
+    result_variables: dict[str, str | None] = {}
 
     if is_unbalanced:
         technology = item.phtech
@@ -2928,7 +2933,7 @@ def create_trafo(
 
     # figure out the connection terminals
     try:
-        (bus1, bus2), _ = get_connection_nodes(net, item, 2)  # type: int
+        (bus1, bus2), _ = get_connection_nodes(net, item, 2)
     except IndexError:
         logger.error(f"Cannot add Trafo '{name}': not connected")
         return
@@ -3093,7 +3098,7 @@ def create_trafo(
     ):
         if item.t2ldc == 0:
             logger.debug(f"tap controller of trafo <{name}> at hv")
-            side = "hv"
+            side: Literal["hv", "lv"] = "hv"
         else:
             logger.debug(f"tap controller of trafo <{name}> at lv")
             side = "lv"
@@ -3563,7 +3568,7 @@ def create_trafo3w(net: pandapowerNet, item, tap_opt="nntap"):
 
     logger.debug(f"collected params: {params}")
     logger.debug("creating trafo3w from parameters")
-    tid = create_transformer3w_from_parameters(net, **params)  # type:int
+    tid = create_transformer3w_from_parameters(net, **params)
     trafo3w_dict[item] = tid
 
     # adding switches
@@ -3637,7 +3642,7 @@ def add_tap_dependant_impedance_for_trafo3W(net: pandapowerNet, pf_type, tid):
     )
     x_points = (tap_min, tap_neutral, tap_max)
 
-    steps = np.arange(tap_min, tap_max + 1, 1).astype(int)
+    steps: npt.NDArray = np.arange(tap_min, tap_max + 1, 1).astype(int)
     tap_diff = steps - tap_neutral
 
     index = int(net.trafo_characteristic_table.iat[-1, 0] + 1) if not net["trafo_characteristic_table"].empty else 0
@@ -3740,7 +3745,15 @@ def create_coup(net: pandapowerNet, item, is_fuse=False):
     switch_is_closed = switch_is_closed and in_service
     switch_usage = switch_types.get(item.aUsage, "unknown")
 
-    cd = create_switch(net, name=name, bus=bus1, element=bus2, et="b", closed=switch_is_closed, type=switch_usage)
+    cd = create_switch(
+        net,
+        name=name,
+        bus=bus1,
+        element=bus2,
+        et="b",
+        closed=switch_is_closed,
+        type=cast(SwitchType, switch_usage),
+    )
     switch_dict[item] = cd
 
     add_additional_attributes(
@@ -3920,7 +3933,7 @@ def create_zpu(net: pandapowerNet, item):
     logger.debug(f"params = {params}")
 
     # create auxilary buses
-    aux_bus1 = create_buses(
+    (aux_bus1,) = create_buses(
         net,
         nr_buses=1,
         vn_kv=net.bus.vn_kv.at[bus1],
@@ -3931,7 +3944,7 @@ def create_zpu(net: pandapowerNet, item):
     )
     net.bus.loc[aux_bus1, "geo"] = net.bus.geo.at[bus1]
     params["from_bus"] = aux_bus1
-    aux_bus2 = create_buses(
+    (aux_bus2,) = create_buses(
         net,
         nr_buses=1,
         vn_kv=net.bus.vn_kv.at[bus2],
@@ -4084,7 +4097,7 @@ def create_sind(net: pandapowerNet, item):
         return
 
     # create auxilary buses
-    aux_bus1 = create_buses(
+    (aux_bus1,) = create_buses(
         net,
         nr_buses=1,
         vn_kv=net.bus.vn_kv.at[bus1],
@@ -4094,7 +4107,7 @@ def create_sind(net: pandapowerNet, item):
         in_service=True,
     )
     net.bus.loc[aux_bus1, "geo"] = net.bus.geo.at[bus1]
-    aux_bus2 = create_buses(
+    (aux_bus2,) = create_buses(
         net,
         nr_buses=1,
         vn_kv=net.bus.vn_kv.at[bus2],
@@ -4161,7 +4174,7 @@ def create_scap(net: pandapowerNet, item):
         x_ohm = -item.bcap / (item.gcap**2 + item.bcap**2)
 
         # create auxilary buses
-        aux_bus1 = create_buses(
+        (aux_bus1,) = create_buses(
             net,
             nr_buses=1,
             vn_kv=net.bus.vn_kv.at[bus1],
@@ -4171,7 +4184,7 @@ def create_scap(net: pandapowerNet, item):
             in_service=True,
         )
         net.bus.loc[aux_bus1, "geo"] = net.bus.geo.at[bus1]
-        aux_bus2 = create_buses(
+        (aux_bus2,) = create_buses(
             net,
             nr_buses=1,
             vn_kv=net.bus.vn_kv.at[bus2],
@@ -4427,7 +4440,8 @@ def create_stactrl(net: pandapowerNet, item, top, top_all, **kwargs):
     else:
         duplicated_sgen_names = False
 
-    gen_types = []
+    gen_types: list[Literal["gen", "sgen", "other"]] = []
+    gt: Literal["gen", "sgen", "other"]
     for s in machines:
         if s.GetClassName() == "ElmAsm":
             if not hasattr(s, "av_mode"):
@@ -4454,7 +4468,7 @@ def create_stactrl(net: pandapowerNet, item, top, top_all, **kwargs):
             logger.error(f"Generator {s.loc_name} is set as slack, Station Controller {item.loc_name} is skipped")
             return
 
-    input_inverted = []
+    input_inverted: list[bool] = []
     control_mode = item.i_ctrl
 
     # Overwrite gen_type if local control differs from station controller type
@@ -4473,7 +4487,7 @@ def create_stactrl(net: pandapowerNet, item, top, top_all, **kwargs):
         logger.error(f"Generator type not supported {gen_types} for {item.loc_name}")
         return
 
-    gen_element = gen_types[0]
+    gen_element: Literal["gen", "sgen"] = "gen" if gen_types[0] == "gen" else "sgen"
     gen_element_index = []
     if not duplicated_sgen_names:
         for s in machines:
@@ -4530,9 +4544,9 @@ def create_stactrl(net: pandapowerNet, item, top, top_all, **kwargs):
     if item.selBus != 0:
         raise NotImplementedError(f"{item}: controlled node selection {item.selBus=} not implemented")
 
-    variable = None
-    res_element_table = None
-    res_element_index = None
+    variable: list[str] = []
+    res_element_table: str = "res_bus"
+    res_element_index: list[Int] = []
     if control_mode >= 1 or item.i_droop:  # droop control
         # q_control_cubicle = item.p_cub if control_mode == 1 else item.pQmeas #Feld #pqmeas if V_ctrl and droop
         q_control_cubicle = item.p_cub if control_mode != 0 else item.pQmeas  # item.p_cub if other mode and droop?
@@ -4613,25 +4627,27 @@ def create_stactrl(net: pandapowerNet, item, top, top_all, **kwargs):
                     element_type, element_index, direction, connection_side = None, None, None, None
                 if element_type == "trafo":
                     res_element_table = "res_trafo"
-                    res_element_index.append(element_index)
+                    res_element_index.append(cast(Int, element_index))
                     # invert if control_side and actual_side are same
                     # q_control_side: 0 = terminal side, 1 = element side (measurment side)
                     # direction: 0 = dir1 (direction is terminal side of switch), 1 = dir2 (direction is element side of switch)
                     input_inverted.append(direction == q_control_side[0])
-                    variable.append({"hv_bus": "q_hv_mvar", "lv_bus": "q_lv_mvar"}[connection_side])
+                    variable.append({"hv_bus": "q_hv_mvar", "lv_bus": "q_lv_mvar"}[cast(str, connection_side)])
                 elif element_type == "trafo3w":
                     res_element_table = "res_trafo3w"
-                    res_element_index.append(element_index)
+                    res_element_index.append(cast(Int, element_index))
                     # invert if control_side and actual_side are same
                     # q_control_side: 0 = terminal side, 1 = element side
                     # direction: 0 = dir1 (terminal side of switch), 1 = dir2 (element side of switch)
                     input_inverted.append(direction == q_control_side[0])
                     variable.append(
-                        {"hv_bus": "q_hv_mvar", "mv_bus": "q_mv_mvar", "lv_bus": "q_lv_mvar"}[connection_side]
+                        {"hv_bus": "q_hv_mvar", "mv_bus": "q_mv_mvar", "lv_bus": "q_lv_mvar"}[
+                            cast(str, connection_side)
+                        ]
                     )
                 elif element_type == "line":
                     res_element_table = "res_line"
-                    res_element_index.append(element_index)
+                    res_element_index.append(cast(Int, element_index))
                     # invert if control_side and actual_side are same
                     # q_control_side: 0 = from side, 1 = to side
                     # direction: 0 = dir1 (terminal side of switch), 1 = dir2 (element side of switch)
@@ -4639,7 +4655,7 @@ def create_stactrl(net: pandapowerNet, item, top, top_all, **kwargs):
                     variable.append("q_from_mvar" if connection_side == "from_bus" else "q_to_mvar")
                 elif element_type == "impedance":
                     res_element_table = "res_impedance"
-                    res_element_index.append(element_index)
+                    res_element_index.append(cast(Int, element_index))
                     # invert if control_side and actual_side are same
                     # q_control_side: 0 = from side, 1 = to side
                     # direction: 0 = dir1 (terminal side of switch), 1 = dir2 (element side of switch)
@@ -4727,7 +4743,7 @@ def create_stactrl(net: pandapowerNet, item, top, top_all, **kwargs):
                 input_inverted=input_inverted,
                 input_element_index=res_element_index,
                 set_point=v_setpoint_pu,
-                control_modus="V_ctrl_Q_droop",
+                control_modus=ControlModusEnum.v_ctrl_q_droop,
                 bus_idx=bus,
                 tol=1e-6,
                 machines=[machine_obj.loc_name for machine_obj in item.psym],
@@ -4740,7 +4756,7 @@ def create_stactrl(net: pandapowerNet, item, top, top_all, **kwargs):
                 bus_idx=bus,
                 vm_set_pu_bsc=v_setpoint_pu,
                 controller_idx=bsc.index,
-                control_modus="V_ctrl_Q_droop",
+                control_modus=ControlModusEnum.v_ctrl_q_droop,
             )
             net.controller.loc[max(net.controller.index), "name"] = item.loc_name
         else:
@@ -4758,7 +4774,7 @@ def create_stactrl(net: pandapowerNet, item, top, top_all, **kwargs):
                 input_inverted=input_inverted,
                 input_element_index=bus,
                 set_point=v_setpoint_pu,
-                control_modus="V_ctrl",
+                control_modus=ControlModusEnum.v_ctrl,
                 damping_factor=0.9,
                 tol=1e-6,
                 machines=[machine_obj.loc_name for machine_obj in item.psym],
@@ -4786,7 +4802,7 @@ def create_stactrl(net: pandapowerNet, item, top, top_all, **kwargs):
                 input_inverted=input_inverted,
                 input_element_index=res_element_index,
                 set_point=item.qsetp,
-                control_modus="Q_ctrl",
+                control_modus=ControlModusEnum.q_ctrl,
                 damping_factor=0.9,
                 tol=1e-6,
                 machines=[machine_obj.loc_name for machine_obj in item.psym],
@@ -4808,7 +4824,7 @@ def create_stactrl(net: pandapowerNet, item, top, top_all, **kwargs):
                 input_inverted=input_inverted,
                 input_element_index=res_element_index,
                 set_point=item.qsetp,
-                control_modus="Q_ctrl_V_droop",
+                control_modus=ControlModusEnum.q_ctrl_v_droop,
                 bus_idx=bus,
                 damping_factor=0.9,
                 tol=1e-6,
@@ -4825,7 +4841,7 @@ def create_stactrl(net: pandapowerNet, item, top, top_all, **kwargs):
                 vm_set_lb=item.udeadblow,
                 q_set_mvar_bsc=item.qsetp,
                 controller_idx=bsc.index,
-                control_modus="Q_ctrl_V_droop",
+                control_modus=ControlModusEnum.q_ctrl_v_droop,
                 machines=[machine_obj.loc_name for machine_obj in item.psym],
             )
         else:
@@ -4855,7 +4871,7 @@ def create_stactrl(net: pandapowerNet, item, top, top_all, **kwargs):
                 input_variable=variable,
                 input_element_index=res_element_index,
                 set_point=item.pfsetp,
-                control_modus=control_modus,
+                control_modus=ControlModusEnum(control_modus),
                 tol=1e-6,
                 name=item.loc_name,
             )
@@ -4879,7 +4895,7 @@ def create_stactrl(net: pandapowerNet, item, top, top_all, **kwargs):
             input_element_index=res_element_index,
             set_point=item.tansetp,
             input_inverted=input_inverted,
-            control_modus="tan_phi_ctrl",
+            control_modus=ControlModusEnum.tan_phi_ctrl,
             tol=1e-6,
         )
     else:
@@ -4899,7 +4915,7 @@ def GetBranchElementFromSwitch(net: pandapowerNet, q_control_element, graph):
 
     trafo3w is treated as a regular branch (NOT a split); connection_side is the winding we hit.
     """
-    result = {}
+    result: dict = {}
 
     def find_branch(graph, start_bus, blocked_bus):
         visited = set()
@@ -5068,7 +5084,8 @@ def split_line_at_length(net: pandapowerNet, line, length_pos):
         vn_kv = net.bus.at[bus1, "vn_kv"]
         zone = net.bus.at[bus1, "zone"]
 
-        (bus,) = create_buses(net, 1, name=bus_name, type="ls", vn_kv=vn_kv, zone=zone)
+        # PowerFactory line section buses use type "ls", which pandapower does not restrict
+        (bus,) = create_buses(net, 1, name=bus_name, type="ls", vn_kv=vn_kv, zone=zone)  # type: ignore[arg-type]
 
         net.line.at[line, "to_bus"] = bus
         old_length = net.line.at[line, "length_km"]

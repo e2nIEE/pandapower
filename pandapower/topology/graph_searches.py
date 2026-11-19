@@ -433,14 +433,14 @@ from pandapower.network import pandapowerNet
 
 
 def get_end_points_of_continuously_connected_lines(net: pandapowerNet, lines):
-    mg = nx.MultiGraph()
+    mg: nx.MultiGraph = nx.MultiGraph()
     line_buses = net.line.loc[lines, ["from_bus", "to_bus"]].values
     mg.add_edges_from(line_buses)
     switch_buses = net.switch[["bus", "element"]].values[net.switch.et.values == "b"]
     mg.add_edges_from(switch_buses)
 
     all_buses = set(line_buses.flatten())
-    longest_path = []
+    longest_path: list = []
     for b1, b2 in combinations(all_buses, 2):
         try:
             path = nx.shortest_path(mg, b1, b2)

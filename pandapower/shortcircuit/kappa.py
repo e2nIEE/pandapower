@@ -105,7 +105,7 @@ def _kappa_method_b(net: pandapowerNet, ppc):
 
 def nxgraph_from_ppc(net: pandapowerNet, ppc):
     bus_lookup = net._pd2ppc_lookups["bus"]
-    mg = nx.MultiGraph()
+    mg: nx.MultiGraph = nx.MultiGraph()
     mg.add_nodes_from(ppc["bus"][:, BUS_I].astype(np.int64))
     mg.add_edges_from(
         (int(branch[T_BUS]), int(branch[F_BUS]), {"r": branch[BR_R], "x": branch[BR_X]})

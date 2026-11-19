@@ -6,6 +6,7 @@ from collections import defaultdict
 from itertools import chain
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from pandapower.auxiliary import _sum_by_group, phase_to_sequence, version_check
@@ -172,7 +173,7 @@ def fill_bus_lookup(ar, bus_lookup, bus_index):
 
 
 def create_bus_lookup_numba(net: pandapowerNet, bus_index, bus_is_idx):
-    max_bus_idx = np.max(bus_index)
+    max_bus_idx: int = np.max(bus_index)
     # extract numpy arrays of switch table data
     switch = net["switch"]
     switch_bus = switch["bus"].values
@@ -181,7 +182,7 @@ def create_bus_lookup_numba(net: pandapowerNet, bus_index, bus_is_idx):
     switch_closed = switch["closed"].values
     switch_z_ohm = switch["z_ohm"].values
     # create array for fast checking if a bus is in_service
-    bus_in_service = np.zeros(max_bus_idx + 1, dtype=bool)
+    bus_in_service: npt.NDArray = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_in_service[bus_is_idx] = True
     # create mask arrays to distinguish different grid elements
     _is_elements = net["_is_elements"]
@@ -194,11 +195,11 @@ def create_bus_lookup_numba(net: pandapowerNet, bus_index, bus_is_idx):
     ward_is_mask = _is_elements["ward"]
     xward_is_mask = _is_elements["xward"]
     # create array for fast checking if a bus is pv bus
-    bus_is_pv = np.zeros(max_bus_idx + 1, dtype=bool)
+    bus_is_pv: npt.NDArray = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_is_pv[net["ext_grid"]["bus"].values[eg_is_mask]] = True
     bus_is_pv[net["gen"]["bus"].values[gen_is_mask]] = True
     # create array for checking if a bus is active (i.e., it has some element connected to it)
-    bus_is_active = np.zeros(max_bus_idx + 1, dtype=bool)
+    bus_is_active: npt.NDArray = np.zeros(max_bus_idx + 1, dtype=bool)
     bus_is_active[net["ext_grid"]["bus"].values[eg_is_mask]] = True
     bus_is_active[net["gen"]["bus"].values[gen_is_mask]] = True
     bus_is_active[net["load"]["bus"].values[load_is_mask]] = True
@@ -209,7 +210,7 @@ def create_bus_lookup_numba(net: pandapowerNet, bus_index, bus_is_idx):
     bus_is_active[net["xward"]["bus"].values[xward_is_mask]] = True
     # create array that represents the disjoint set
     ar = np.arange(max_bus_idx + 1)
-    merged_bus = np.zeros(len(ar), dtype=bool)
+    merged_bus: npt.NDArray = np.zeros(len(ar), dtype=bool)
     ds_create(
         ar,
         switch_bus,
@@ -223,7 +224,7 @@ def create_bus_lookup_numba(net: pandapowerNet, bus_index, bus_is_idx):
         merged_bus,
     )
     # finally create and fill bus lookup
-    bus_lookup = -np.ones(max_bus_idx + 1, dtype=np.int64)
+    bus_lookup: npt.NDArray = -np.ones(max_bus_idx + 1, dtype=np.int64)
     fill_bus_lookup(ar, bus_lookup, bus_index)
     return bus_lookup, merged_bus
 
@@ -266,7 +267,7 @@ def create_consecutive_bus_lookup(bus_index: np.ndarray):
 def create_bus_lookup_numpy(net: pandapowerNet, bus_index, closed_bb_switch_mask):
     bus_lookup = create_consecutive_bus_lookup(bus_index)
     net._fused_bb_switches = closed_bb_switch_mask & (net["switch"]["z_ohm"].values <= 0)
-    merged_bus = np.zeros(len(bus_lookup), dtype=bool)
+    merged_bus: npt.NDArray = np.zeros(len(bus_lookup), dtype=bool)
     if net._fused_bb_switches.any():
         # Note: this might seem a little odd - first constructing a pp to ppc mapping without
         # fused busses and then update the entries. The alternative (to construct the final
@@ -488,7 +489,7 @@ def _build_bus_ppc(net: pandapowerNet, ppc, sequence=None):
         ppc["bus"][:, VM] = 0.0
 
     if mode == "sc":
-        bus_sc = np.empty(shape=(n_bus_ppc, BUS_COLS_SC), dtype=np.float64)
+        bus_sc: npt.NDArray = np.empty(shape=(n_bus_ppc, BUS_COLS_SC), dtype=np.float64)
         bus_sc.fill(np.nan)
         ppc["bus"] = np.hstack((ppc["bus"], bus_sc))
 

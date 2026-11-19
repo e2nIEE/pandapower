@@ -384,7 +384,7 @@ def set_isolated_areas_out_of_service(net: pandapowerNet, respect_switches=True)
         if t3_oos.any():
             trafo3ws.loc[t3_oos, "in_service"] = False
 
-    closed_switches = set()
+    closed_switches: set[int] = set()
 
     if len(net["line"]):
         oos_idx = net["line"].index[~net["line"]["in_service"]]
@@ -879,7 +879,7 @@ def drop_controllers_at_elements(net: ADict, element_type, idx=None):
     Drop all the controllers for the given elements (idx).
     """
     idx = ensure_iterability(idx) if idx is not None else net[element_type].index
-    to_drop = []
+    to_drop: list[int] = []
     for ctrl_idx in net.controller.index:
         _drop_controller_at_elements(net, element_type, idx, ctrl_idx, to_drop)
     net.controller = net.controller.drop(to_drop)

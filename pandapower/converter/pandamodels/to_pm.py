@@ -30,6 +30,7 @@ from os.path import isfile
 from typing import Literal
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from pandapower.auxiliary import _add_auxiliary_elements, _add_opf_options, _add_ppc_options
@@ -392,17 +393,20 @@ def _branch_to_pm(row, idx, opf_flow_lim, correct_pm_network_data, z_scale=1.0):
 
 def create_pm_lookups(net: pandapowerNet, pm_lookup):
     for key, val in net._pd2ppc_lookups.items():
+        pm_val: dict | int | npt.NDArray
         if isinstance(val, dict):
             # lookup is something like "branch" with dict as val -> iterate over the subdicts
             pm_val = {}
             for subkey, subval in val.items():
                 pm_val[subkey] = tuple(v + 1 for v in subval)
-        elif isinstance(val, (int, np.ndarray)):
+        elif isinstance(val, np.ndarray):
             # lookup is a numpy array
             # julia starts counting at 1 instead of 0
             pm_val = val + 1
             # restore -1 for not existing elements
             pm_val[pm_val == 0] = -1
+        elif isinstance(val, int):
+            pm_val = val + 1
         else:
             # val not supported
             continue
@@ -443,8 +447,8 @@ def ppc_to_pm(net: pandapowerNet, ppci):
     # PowerModels has a load model -> add loads and sgens to pm["load"]
 
     # temp dicts which hold the sum of p, q of loads + sgens
-    pd_bus = {}
-    qd_bus = {}
+    pd_bus: dict = {}
+    qd_bus: dict = {}
     load_idx, load_lookup = _pp_element_to_pm(net, pm, "load", pd_bus, qd_bus, load_idx)
     load_idx, sgen_lookup = _pp_element_to_pm(net, pm, "sgen", pd_bus, qd_bus, load_idx)
     load_idx, storage_lookup = _pp_element_to_pm(net, pm, "storage", pd_bus, qd_bus, load_idx)
@@ -608,7 +612,7 @@ def init_ne_line(net: pandapowerNet, new_line_index: list[Int], construction_cos
 def add_params_to_pm(net: pandapowerNet, pm):
     # add user defined parameters to pm
     pd_idxs_br = []
-    pm_idxs_br = []
+    pm_idxs_br: list = []
     br_elms = ["line", "trafo"]
     pm["user_defined_params"] = {}
     for elm in ["bus", "line", "gen", "load", "trafo", "sgen"]:
@@ -696,7 +700,7 @@ def _get_redispatch_elements(net: pandapowerNet):
     gen / sgen that is selected for redispatch, i.e. that is controllable and has a poly_cost entry
     with non-NaN redispatch up/down costs.
     """
-    selected = []
+    selected: list[tuple[str, int, float, float]] = []
     if "poly_cost" not in net or len(net.poly_cost) == 0:
         return selected
     pc = net.poly_cost
@@ -829,7 +833,8 @@ def add_time_series_to_pm(net: pandapowerNet, pm, from_time_step, to_time_step):
         raise ValueError("please define 'from_time_step' " + "and 'to_time_step' to call time-series optimizaiton ")
     tp_list = list(range(from_time_step, to_time_step))
     if len(net.controller):
-        load_dict, gen_dict = {}, {}
+        load_dict: dict = {}
+        gen_dict: dict = {}
         pm["time_series"] = {
             "load": load_dict,
             "gen": gen_dict,

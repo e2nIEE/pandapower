@@ -375,9 +375,8 @@ def runpp_pgm(
         # each element in the input data.
         if validation_errors:
             for i, error in enumerate(validation_errors, start=1):
-                pp_obj = (pgm_converter.lookup_id(pgm_id) for pgm_id in error.ids)
-                pp_obj = (f"{obj['table']}-{obj['index']}" for obj in pp_obj)
-                pp_obj = ", ".join(pp_obj)
+                pgm_objs = (pgm_converter.lookup_id(pgm_id) for pgm_id in error.ids)
+                pp_obj = ", ".join(f"{obj['table']}-{obj['index']}" for obj in pgm_objs)
                 logger.error(f"{i}. Power Grid Model validation error: Check {pp_obj}")
                 logger.debug(f"{i}. Native Power Grid Model error: {error}")
 

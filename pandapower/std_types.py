@@ -27,7 +27,6 @@ __all__ = [
 ]
 
 import logging
-import warnings
 from typing import TYPE_CHECKING, Literal, cast, get_args
 
 import pandas as pd
@@ -283,13 +282,7 @@ def available_std_types(net: "ADict", element="line"):
         table of standard type parameters
 
     """
-    std_types = pd.DataFrame(net.std_types[element]).T
-    try:
-        return std_types.infer_objects()
-    except AttributeError:
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            return std_types.convert_objects()
+    return pd.DataFrame(net.std_types[element]).T.infer_objects()
 
 
 def parameter_from_std_type(net: "ADict", parameter, element="line", fill=None):

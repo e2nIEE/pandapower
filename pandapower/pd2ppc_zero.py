@@ -8,6 +8,7 @@ import math
 from itertools import product
 
 import numpy as np
+import numpy.typing as npt
 
 from pandapower.auxiliary import _select_is_elements_numba, _sum_by_group
 from pandapower.build_branch import (
@@ -310,7 +311,7 @@ def _add_trafo_sc_impedance_zero(net: pandapowerNet, ppc, trafo_df=None, k_st=No
         # transformer impedance and must not be scaled by kt).
         _earthed_hv = ("ynd", "yny", "ynyn", "znyn", "znd", "zny", "zd")
         _zigzag = ("znyn", "znd", "zny", "zd")
-        zn_pu = np.zeros(len(trafos), dtype=np.complex128)
+        zn_pu: npt.NDArray = np.zeros(len(trafos), dtype=np.complex128)
         if np.any(np.abs(zn_ohm) > 0) and vector_group.lower() in (
             "dyn",
             "ynd",
@@ -369,7 +370,7 @@ def _add_trafo_sc_impedance_zero(net: pandapowerNet, ppc, trafo_df=None, k_st=No
 
         YAB_AN = 1 / (zc + za).astype(complex)  # Series conn YAB and YAN
         YAB_BN = 1 / (zc + zb).astype(complex)  # Series conn YAB and YBN
-        y_sym = np.zeros(len(trafos), dtype=np.complex128)
+        y_sym: npt.NDArray = np.zeros(len(trafos), dtype=np.complex128)
         # y0_k = 1 / z0_k #adding admittance for "pi" model
         if vector_group.lower() == "dyn":
             if trafo_model == "pi":

@@ -13,6 +13,7 @@ __all__ = [
 from typing import ClassVar
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from pandapower.auxiliary import get_vsc_stacked_names, pandapowerNet
@@ -239,7 +240,7 @@ def _extract_results_se(net: pandapowerNet, ppc):
     _set_buses_out_of_service(ppc)
     bus_lookup_aranged = _get_aranged_lookup(net)
     _get_bus_v_results(net, ppc, suffix="_est")
-    bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=float)
+    bus_pq: npt.NDArray = np.zeros(shape=(len(net["bus"].index), 2), dtype=float)
     _get_branch_results(net, ppc, bus_lookup_aranged, bus_pq, suffix="_est")
 
 

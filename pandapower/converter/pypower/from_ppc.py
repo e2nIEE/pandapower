@@ -8,6 +8,7 @@ __all__ = [
 
 import logging
 from math import pi
+from typing import cast
 
 import numpy as np
 import pandas as pd
@@ -173,7 +174,7 @@ def _from_ppc_gen(net: pandapowerNet, ppc):
             create_ext_grid(
                 net,
                 bus=net.bus.index[bus_pos[i]],
-                vm_pu=vg_bus_lookup.at[bus_pos[i]],
+                vm_pu=cast(float, vg_bus_lookup.at[bus_pos[i]]),
                 va_degree=ppc["bus"][bus_pos[i], VA],
                 in_service=(ppc["gen"][i, GEN_STATUS] > 0).astype(bool),
                 max_p_mw=ppc["gen"][i, PMAX],

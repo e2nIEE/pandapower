@@ -340,8 +340,8 @@ def _create_node_trace(
 def _get_branch_geodata_plotly(
     net: pandapowerNet, branches, use_branch_geodata, branch_element="line", node_element="bus"
 ):
-    xs = []
-    ys = []
+    xs: list[float | None] = []
+    ys: list[float | None] = []
     if use_branch_geodata:
         for line_ind, _ in branches.iterrows():
             line_coords = list(geojson.utils.coords(geojson.loads(net[branch_element].at[line_ind, "geo"])))

@@ -59,7 +59,11 @@ def opf_task(net: pandapowerNet, delta_pq=1e-3, keep=False, log=True):
         net = copy.deepcopy(net)
     _check_necessary_opf_parameters(net, logger)
 
-    opf_task_overview = {"flexibilities": {}, "network_constraints": {}, "flexibilities_without_costs": {}}
+    opf_task_overview: dict[str, dict] = {
+        "flexibilities": {},
+        "network_constraints": {},
+        "flexibilities_without_costs": {},
+    }
     _determine_flexibilities_dict(net, opf_task_overview["flexibilities"], delta_pq)
     _determine_network_constraints_dict(net, opf_task_overview["network_constraints"])
     _determine_costs_dict(net, opf_task_overview)

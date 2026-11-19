@@ -325,7 +325,7 @@ def _convert_costs(net):
         del net.piecewise_linear_cost
 
 
-def _add_nominal_power(net):
+def _add_nominal_power(net: pandapowerNet):
     if "sn_kva" in net:
         net.sn_mva = net.pop("sn_kva") * 1e-3
 
@@ -374,7 +374,7 @@ def _create_seperate_cost_tables(net: pandapowerNet, elements_to_deserialize):
                 create_poly_cost(net, index, "ext_grid", cp1_eur_per_mw=0, cq1_eur_per_mvar=cost * 1e3)
 
 
-def _rename_columns(net: ADict, elements_to_deserialize):
+def _rename_columns(net: pandapowerNet, elements_to_deserialize):
     """
     Renames the columns of networks stored with older pandapower versions to the current names (e.g. of line, load, gen,
     trafo, measurement, controller, vsc_bipolar and some result tables). If elements_to_deserialize is given, only these

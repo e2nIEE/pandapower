@@ -8,6 +8,7 @@ import logging
 from os import PathLike
 
 import numpy as np
+import numpy.typing as npt
 from scipy.io import savemat
 
 from pandapower import pandapowerNet
@@ -62,7 +63,7 @@ def _trafo_branch_mask(net: pandapowerNet, ppc):
     """
     branch_is = ppc.get("internal", {}).get("branch_is")
     n_branch = len(branch_is) if branch_is is not None else ppc["branch"].shape[0]
-    mask = np.zeros(n_branch, dtype=bool)
+    mask: npt.NDArray = np.zeros(n_branch, dtype=bool)
     try:
         branch_lookup = net["_pd2ppc_lookups"]["branch"]
     except (KeyError, TypeError):

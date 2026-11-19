@@ -13,6 +13,7 @@ __all__ = [
 ]
 
 import logging
+from typing import Any
 
 import numpy as np
 
@@ -95,7 +96,7 @@ def check_for_initial_run(controller_order):
 
 
 def ctrl_variables_default(net: pandapowerNet, **kwargs):
-    ctrl_variables = {}
+    ctrl_variables: dict[str, Any] = {}
     if not hasattr(net, "controller") or len(net.controller[net.controller.in_service]) == 0:
         ctrl_variables["level"], ctrl_variables["controller_order"] = [0], [[]]
     else:

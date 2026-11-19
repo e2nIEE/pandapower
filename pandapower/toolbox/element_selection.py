@@ -33,7 +33,7 @@ from packaging.version import Version
 
 from pandapower._version import __version__
 from pandapower.auxiliary import ets_to_element_types
-from pandapower.network import pandapowerNet
+from pandapower.network import ADict, pandapowerNet
 
 logger = logging.getLogger(__name__)
 
@@ -145,7 +145,7 @@ def next_bus(
     return nb[0]
 
 
-def get_connected_elements(net: pandapowerNet, element_type, buses, respect_switches=True, respect_in_service=False):
+def get_connected_elements(net: ADict, element_type, buses, respect_switches=True, respect_in_service=False):
     """
     Returns elements connected to a given buses.
 
@@ -558,7 +558,7 @@ def get_connecting_branches(net: pandapowerNet, buses1, buses2, branch_elements=
     if "switch" in branch_dict:
         branch_dict["switch"].append("element")
 
-    found = {et: set() for et in branch_dict}
+    found: dict[str, set[int]] = {et: set() for et in branch_dict}
     for et, bus_types in branch_dict.items():
         for bus1 in bus_types:
             for bus2 in bus_types:

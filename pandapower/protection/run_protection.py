@@ -26,5 +26,5 @@ def calculate_protection_times(net: pandapowerNet, scenario="sc"):
         protection_result = p.protection_function(net=net, scenario=scenario)
         protection_results.append(protection_result)
 
-    df_protection_results = pd.DataFrame.from_dict(protection_results)
+    df_protection_results = pd.DataFrame(protection_results)
     return df_protection_results

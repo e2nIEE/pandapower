@@ -468,7 +468,7 @@ def make_ptdf_multi_area(
 
         # Reindex bus_ix from 1-Nbus and create a lookup
         ppci_bus_ix = ppci_bus_this_area[:, BUS_I].astype(int).copy()
-        ppci_bus_old_new_lookup = np.ones(np.max(ppci_bus_ix) + 1, dtype=int) * -1
+        ppci_bus_old_new_lookup: npt.NDArray = np.ones(np.max(ppci_bus_ix) + 1, dtype=int) * -1
         ppci_bus_old_new_lookup[ppci_bus_this_area[:, BUS_I].astype(int)] = np.arange(this_ppci_bus_aux_bus.shape[0])
 
         # Update the area ppci bus indexing
