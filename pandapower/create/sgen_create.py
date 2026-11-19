@@ -194,7 +194,7 @@ def create_sgens(
     name: Iterable[str] | NAType = pd.NA,
     index: Int | Iterable[Int] | None = None,
     scaling: float | Iterable[float] = _scaling,
-    type: WyeDeltaType = _type,
+    type: str | None = _type,
     in_service: bool | Iterable[bool] = _in_service,
     max_p_mw: float | Iterable[float] = nan,
     min_p_mw: float | Iterable[float] = nan,

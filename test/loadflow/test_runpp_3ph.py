@@ -630,7 +630,7 @@ def test_3ph_two_bus_line_powerfactory():
     assert np.max(np.abs(line_load_pp - line_load_pf)) < 1e-2
 
 
-def check_bus_voltages(net, result, trafo_vector_group):
+def check_bus_voltages(net: pandapowerNet, result, trafo_vector_group):
     res_vm_pu = []
     ordered_bus_table = net.bus.sort_values(by="name").reset_index(drop=True)
     for i in range(len(ordered_bus_table)):
@@ -652,7 +652,7 @@ def check_bus_voltages(net, result, trafo_vector_group):
     )
 
 
-def check_line_currents(net, result, trafo_vector_group):
+def check_line_currents(net: pandapowerNet, result, trafo_vector_group):
     res_line_i_ka = []
     ordered_line_table = net.line.sort_values(by="name").reset_index(drop=True)
     for i in range(len(ordered_line_table)):
@@ -677,7 +677,7 @@ def check_line_currents(net, result, trafo_vector_group):
         raise ValueError(f"Incorrect results for vector group {trafo_vector_group}", res_line_i_ka, result)
 
 
-def check_trafo_currents(net, result, trafo_vector_group):
+def check_trafo_currents(net: pandapowerNet, result, trafo_vector_group):
     res_trafo_i_ka = []
     ordered_trafo_table = net.trafo.sort_values(by="name").reset_index(drop=True)
     for i in range(len(ordered_trafo_table)):
@@ -708,7 +708,7 @@ def check_results(_net, trafo_vector_group, results):
     check_trafo_currents(_net, results[2], trafo_vector_group)
 
 
-def make_nw(net, bushv, tap_ps, case, vector_group):
+def make_nw(net: pandapowerNet, bushv, tap_ps, case, vector_group):
     b1 = create_bus(net, bushv, zone=vector_group, index=get_free_id(net.bus))
     b2 = create_bus(net, 0.4, zone=vector_group)
     b3 = create_bus(net, 0.4, zone=vector_group)
@@ -810,7 +810,7 @@ def test_trafo_asym():
         check_results(net, trafo_vector_group, get_pf_results(trafo_vector_group))
 
 
-def _test_trafo_shifts(net, rtol):
+def _test_trafo_shifts(net: pandapowerNet, rtol):
     # Dyn
     for clock in [-30, 30, 150, 210, -150]:
         net.trafo.vector_group = "Dyn"

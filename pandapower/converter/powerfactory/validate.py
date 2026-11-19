@@ -15,7 +15,7 @@ from pandapower.toolbox.grid_modification import replace_zero_branches_with_swit
 logger = logging.getLogger(__name__)
 
 
-def _get_pf_results(net, is_unbalanced=False):
+def _get_pf_results(net: pandapowerNet, is_unbalanced=False):
     if not net["pf_converged"]:
         raise UserWarning("Load flow didn't converge in PowerFactory, no validation possible!")
 
@@ -127,7 +127,7 @@ def _get_pf_results_unbalanced(net: pandapowerNet):
     return pf_results
 
 
-def _set_pf_results(net, pf_results, is_unbalanced=False):
+def _set_pf_results(net: pandapowerNet, pf_results, is_unbalanced=False):
     logger.debug("copying powerfactory results to pandapower")
 
     if is_unbalanced:
@@ -136,7 +136,7 @@ def _set_pf_results(net, pf_results, is_unbalanced=False):
         _set_pf_results_balanced(net, pf_results)
 
 
-def _set_pf_results_balanced(net, pf_results):
+def _set_pf_results_balanced(net: pandapowerNet, pf_results):
     if "res_switch" in net:
         net.res_switch["pf_closed"] = pf_results["pf_switch_status"]
 
@@ -165,7 +165,7 @@ def _set_pf_results_balanced(net, pf_results):
     net.res_bus_dc["pf_vm_pu"] = pf_results["pf_bus_dc_vm"]
 
 
-def _set_pf_results_unbalanced(net, pf_results):
+def _set_pf_results_unbalanced(net: pandapowerNet, pf_results):
     if "res_switch" in net:
         net.res_switch["pf_closed"] = pf_results["pf_switch_status"]
 
@@ -398,7 +398,7 @@ def validate_pf_conversion(net: pandapowerNet, is_unbalanced: bool = False, **kw
     return all_diffs
 
 
-def calculate_element_diff_with_is_element_results(net, element, pf_variable, pp_variable):
+def calculate_element_diff_with_is_element_results(net: pandapowerNet, element, pf_variable, pp_variable):
     logger.debug("verifying " + element)
     pp_res = net["res_" + element][pp_variable]
     pf_res = net["res_" + element][pf_variable].replace(np.nan, 0)
@@ -410,7 +410,7 @@ def calculate_element_diff_with_is_element_results(net, element, pf_variable, pp
     return pp_res, pf_res, pp_res_is, pf_res_is, diff, diff_is
 
 
-def calculate_element_diff_with_specific_index(net, element, pf_variable, pp_variable, element_index):
+def calculate_element_diff_with_specific_index(net: pandapowerNet, element, pf_variable, pp_variable, element_index):
     logger.debug("verifying " + element)
     pp_res = net["res_" + element].loc[element_index, pp_variable]
     pf_res = net["res_" + element].loc[element_index, pf_variable].replace(0, np.nan)
@@ -418,7 +418,7 @@ def calculate_element_diff_with_specific_index(net, element, pf_variable, pp_var
     return pp_res, pf_res, diff
 
 
-def _validate_pf_conversion_balanced(net, in_both, all_diffs):
+def _validate_pf_conversion_balanced(net: pandapowerNet, in_both, all_diffs):
     logger.debug(f"res_bus:\n{net.res_bus}")
     logger.debug(f"res_line:\n{net.res_line}")
     logger.debug(f"res_load:\n{net.res_load}")
@@ -588,7 +588,7 @@ def _validate_pf_conversion_balanced(net, in_both, all_diffs):
     return all_diffs
 
 
-def _validate_pf_conversion_unbalanced(net, in_both, all_diffs):
+def _validate_pf_conversion_unbalanced(net: pandapowerNet, in_both, all_diffs):
     logger.debug(f"res_bus_3ph:\n{net.res_bus_3ph}")
     logger.debug(f"res_line_3ph:\n{net.res_line_3ph}")
     logger.debug(f"res_asymmetric_load_3ph:\n{net.res_asymmetric_load_3ph}")

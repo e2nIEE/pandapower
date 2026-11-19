@@ -30,6 +30,7 @@ from os.path import isfile
 from typing import Literal
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from pandapower.auxiliary import _add_auxiliary_elements, _add_opf_options, _add_ppc_options
@@ -211,7 +212,7 @@ def convert_pp_to_pm(
 logger = logging.getLogger(__name__)
 
 
-def convert_to_pm_structure(net, from_time_step=None, to_time_step=None, **kwargs):
+def convert_to_pm_structure(net: pandapowerNet, from_time_step=None, to_time_step=None, **kwargs):
     """
     Converts the pandapower net to the PowerModels data structure with the options in net._options.
 
@@ -252,7 +253,7 @@ def convert_to_pm_structure(net, from_time_step=None, to_time_step=None, **kwarg
     return net, pm, ppc, ppci
 
 
-def add_pm_gen_start_values_from_results(net, pm):
+def add_pm_gen_start_values_from_results(net: pandapowerNet, pm):
     pm_gens = pm.get("gen", {})
     if not pm_gens:
         return
@@ -299,7 +300,7 @@ def dump_pm_json(pm, buffer_file=None):
     return buffer_file
 
 
-def _pp_element_to_pm(net, pm, element, pd_bus, qd_bus, load_idx):
+def _pp_element_to_pm(net: pandapowerNet, pm, element, pd_bus, qd_bus, load_idx):
     bus_lookup = net._pd2ppc_lookups["bus"]
 
     pm_lookup = (
@@ -390,19 +391,22 @@ def _branch_to_pm(row, idx, opf_flow_lim, correct_pm_network_data, z_scale=1.0):
     return branch
 
 
-def create_pm_lookups(net, pm_lookup):
+def create_pm_lookups(net: pandapowerNet, pm_lookup):
     for key, val in net._pd2ppc_lookups.items():
+        pm_val: dict | int | npt.NDArray
         if isinstance(val, dict):
             # lookup is something like "branch" with dict as val -> iterate over the subdicts
             pm_val = {}
             for subkey, subval in val.items():
                 pm_val[subkey] = tuple(v + 1 for v in subval)
-        elif isinstance(val, (int, np.ndarray)):
+        elif isinstance(val, np.ndarray):
             # lookup is a numpy array
             # julia starts counting at 1 instead of 0
             pm_val = val + 1
             # restore -1 for not existing elements
             pm_val[pm_val == 0] = -1
+        elif isinstance(val, int):
+            pm_val = val + 1
         else:
             # val not supported
             continue
@@ -411,13 +415,13 @@ def create_pm_lookups(net, pm_lookup):
     return net
 
 
-def pm_base_mva(net, ppci):
+def pm_base_mva(net: pandapowerNet, ppci):
     """power base (MVA) of the PowerModels data, independent of net.sn_mva"""
     base_mva = net._options.get("pm_base_mva")
     return float(ppci["baseMVA"] if base_mva is None else base_mva)
 
 
-def ppc_to_pm(net, ppci):
+def ppc_to_pm(net: pandapowerNet, ppci):
     # create power models dict. Similar to matpower case file. ne_branch is for a tnep case
     # "per_unit == False": the data is in MATPOWER units (MW, MVAr, degrees, impedances in per unit
     # on baseMVA). PandaModels.jl converts it to per unit and returns the results in MW / degrees.
@@ -443,8 +447,8 @@ def ppc_to_pm(net, ppci):
     # PowerModels has a load model -> add loads and sgens to pm["load"]
 
     # temp dicts which hold the sum of p, q of loads + sgens
-    pd_bus = {}
-    qd_bus = {}
+    pd_bus: dict = {}
+    qd_bus: dict = {}
     load_idx, load_lookup = _pp_element_to_pm(net, pm, "load", pd_bus, qd_bus, load_idx)
     load_idx, sgen_lookup = _pp_element_to_pm(net, pm, "sgen", pd_bus, qd_bus, load_idx)
     load_idx, storage_lookup = _pp_element_to_pm(net, pm, "storage", pd_bus, qd_bus, load_idx)
@@ -570,7 +574,7 @@ def add_pm_options(pm, net):
     return pm
 
 
-def build_ne_branch(net, ppc):
+def build_ne_branch(net: pandapowerNet, ppc):
     # this is only used by pm tnep
     if "ne_line" in net:
         length = len(net["ne_line"])
@@ -584,7 +588,7 @@ def build_ne_branch(net, ppc):
     return ppc
 
 
-def init_ne_line(net, new_line_index: list[Int], construction_costs: list[float] | None = None):
+def init_ne_line(net: pandapowerNet, new_line_index: list[Int], construction_costs: list[float] | None = None):
     """
     init function for new line dataframe, which specifies the possible new lines being built by power models tnep
     opt
@@ -605,10 +609,10 @@ def init_ne_line(net, new_line_index: list[Int], construction_costs: list[float]
     net["res_ne_line"] = pd.DataFrame(data=0, index=new_line_index, columns=["built"], dtype=np.int64)
 
 
-def add_params_to_pm(net, pm):
+def add_params_to_pm(net: pandapowerNet, pm):
     # add user defined parameters to pm
     pd_idxs_br = []
-    pm_idxs_br = []
+    pm_idxs_br: list = []
     br_elms = ["line", "trafo"]
     pm["user_defined_params"] = {}
     for elm in ["bus", "line", "gen", "load", "trafo", "sgen"]:
@@ -737,7 +741,7 @@ def _get_controllable_gen_elements(net: pandapowerNet):
     return elements
 
 
-def _pm_gen_index_for(net, elm, pp_idx):
+def _pm_gen_index_for(net: pandapowerNet, elm, pp_idx):
     """
     Maps a pandapower gen / controllable-sgen index to the PowerModels gen index (1-based) using the
     lookups built during conversion. Returns None if the element has no PowerModels gen.
@@ -752,7 +756,7 @@ def _pm_gen_index_for(net, elm, pp_idx):
     return None if pm_idx == -1 else pm_idx
 
 
-def _redispatch_base_p_mw(net, elm, pp_idx, res_lookup):
+def _redispatch_base_p_mw(net: pandapowerNet, elm, pp_idx, res_lookup):
     """base dispatch p_mw of a gen / sgen from its result table (raises if no power flow result)."""
     res_table = res_lookup[elm]
     if res_table not in net or pp_idx not in net[res_table].index:
@@ -763,7 +767,7 @@ def _redispatch_base_p_mw(net, elm, pp_idx, res_lookup):
     return float(net[res_table].at[pp_idx, "p_mw"])
 
 
-def add_redispatch_params(net, ppci, pm, redispatch_cost=False):
+def add_redispatch_params(net: pandapowerNet, ppci, pm, redispatch_cost=False):
     """
     pp_to_pm_callback for :func:`runpm_redispatch`. Writes the base dispatch (pg0) and, in cost mode,
     per-generator up/down redispatch costs into pm["user_defined_params"].
@@ -822,14 +826,15 @@ def add_redispatch_params(net, ppci, pm, redispatch_cost=False):
     return pm
 
 
-def add_time_series_to_pm(net, pm, from_time_step, to_time_step):
+def add_time_series_to_pm(net: pandapowerNet, pm, from_time_step, to_time_step):
     from pandapower.control import ConstControl
 
     if from_time_step is None or to_time_step is None:
         raise ValueError("please define 'from_time_step' " + "and 'to_time_step' to call time-series optimizaiton ")
     tp_list = list(range(from_time_step, to_time_step))
     if len(net.controller):
-        load_dict, gen_dict = {}, {}
+        load_dict: dict = {}
+        gen_dict: dict = {}
         pm["time_series"] = {
             "load": load_dict,
             "gen": gen_dict,
@@ -866,7 +871,7 @@ def add_time_series_to_pm(net, pm, from_time_step, to_time_step):
     return pm
 
 
-def allow_multi_ext_grids(net, pm, ext_grids=None):
+def allow_multi_ext_grids(net: pandapowerNet, pm, ext_grids=None):
     ext_grids = net.ext_grid.index.tolist() if ext_grids is None else ext_grids
     target_pp_buses = net.ext_grid.bus[ext_grids]
     target_pm_buses = net._pd2pm_lookups["bus"][target_pp_buses]

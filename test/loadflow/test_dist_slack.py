@@ -147,7 +147,7 @@ def _get_inputs_results(net: pandapowerNet):
     return inputs, results
 
 
-def assert_results_correct(net, tol=1e-8):
+def assert_results_correct(net: pandapowerNet, tol=1e-8):
     # first, collect slack_weights, injection and consumption, inputs and reults from net
     injected_p_mw, consumed_p_mw, consumed_xward_p_mw = _get_injection_consumption(net)
     input_p_mw, result_p_mw = _get_inputs_results(net)
@@ -164,12 +164,12 @@ def assert_results_correct(net, tol=1e-8):
     ), "distributed slack weights formula has a wrong result"
 
 
-def check_xward_results(net, tol=1e-9):
+def check_xward_results(net: pandapowerNet, tol=1e-9):
     xward_pq_res, xward_internal = _get_xward_result(net)
     assert np.allclose(xward_pq_res + xward_internal, net.res_xward.p_mw, atol=tol, rtol=0)
 
 
-def run_and_assert_numba(net, **kwargs):
+def run_and_assert_numba(net: pandapowerNet, **kwargs):
     if numba_installed:
         net_temp = copy.deepcopy(net)
         runpp(net_temp, distributed_slack=True, numba=False, **kwargs)

@@ -20,6 +20,7 @@ import geojson
 import networkx
 import networkx as nx
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from pandapower.auxiliary import pandapowerNet, soft_dependency_error
@@ -122,15 +123,15 @@ def _igraph_meshed(g):
     return False
 
 
-def _get_element_mask_from_nodes(net, element, node_elements, nodes=None):
-    mask = np.ones(len(net[element])).astype(bool)
+def _get_element_mask_from_nodes(net: pandapowerNet, element, node_elements, nodes=None):
+    mask: npt.NDArray = np.ones(len(net[element])).astype(bool)
     if nodes is not None:
         for node_element in node_elements:
             mask &= np.isin(net[element][node_element].values, nodes)
     return mask
 
 
-def _get_switch_mask(net, element, switch_element, open_switches):
+def _get_switch_mask(net: pandapowerNet, element, switch_element, open_switches):
     element_switches = net.switch.et.values == switch_element
     open_elements = net.switch.element.values[open_switches & element_switches]
     open_element_mask = np.isin(net[element].index, open_elements, invert=True)

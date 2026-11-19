@@ -371,7 +371,7 @@ def add_edges(
             mg.add_edge(idx[F_BUS], idx[T_BUS], key=(element, idx[INDEX]), weight=p[WEIGHT], path=1)
 
 
-def get_baseR(net, ppc, buses):
+def get_baseR(net: pandapowerNet, ppc, buses):
     bus_lookup = net._pd2ppc_lookups["bus"]
     base_kv = ppc["bus"][bus_lookup[buses], BASE_KV]
     return np.square(base_kv) / net.sn_mva

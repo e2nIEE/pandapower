@@ -185,7 +185,7 @@ def plot_loading(
     return ax
 
 
-def voltage_profile_to_bus_geodata(net, voltages=None, root_bus=None):
+def voltage_profile_to_bus_geodata(net: pandapowerNet, voltages=None, root_bus=None):
     if voltages is None:
         if not net.converged:
             raise ValueError("no results in this pandapower network")

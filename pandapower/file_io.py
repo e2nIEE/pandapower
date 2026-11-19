@@ -48,7 +48,7 @@ openpyxl_INSTALLED = importlib.util.find_spec("openpyxl") is not None
 logger = logging.getLogger(__name__)
 
 
-def to_pickle(net, filename) -> None:
+def to_pickle(net: pandapowerNet, filename) -> None:
     """
     Saves a pandapower Network with the pickle library.
 
@@ -72,7 +72,7 @@ def to_pickle(net, filename) -> None:
         pickle.dump(save_net, f, protocol=2)  # use protocol 2 for py2 / py3 compatibility
 
 
-def to_excel(net, filename, include_empty_tables=False, include_results=True):
+def to_excel(net: pandapowerNet, filename, include_empty_tables=False, include_results=True):
     """
     Saves a pandapower Network to an Excel file.
 

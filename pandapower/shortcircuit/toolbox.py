@@ -80,7 +80,7 @@ def detect_power_station_unit(
             net.gen.loc[np.isin(net.gen.bus.values, gen_bus_at_lv_side), "power_station_trafo"] = t_ix
 
 
-def _create_element_from_exisiting(net, ele_type, ele_ix):
+def _create_element_from_exisiting(net: pandapowerNet, ele_type, ele_ix):
     dtypes = net[ele_type].dtypes
     ps = pd.Series(net[ele_type].loc[ele_ix, :].to_dict(), name=_get_index_with_check(net, ele_type, None))
 
@@ -90,7 +90,7 @@ def _create_element_from_exisiting(net, ele_type, ele_ix):
     return net[ele_type].index.to_numpy()[-1]
 
 
-def _create_aux_net(net, line_ix, distance_to_bus0):
+def _create_aux_net(net: pandapowerNet, line_ix, distance_to_bus0):
     if distance_to_bus0 < 0 or distance_to_bus0 > 1:
         raise UserWarning("Calculating SC current on line failed! distance_to_bus0 must be between 0-1!")
     aux_net = deepcopy(net)

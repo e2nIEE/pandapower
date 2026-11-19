@@ -19,7 +19,7 @@ from pandapower.pypower.idx_bus_sc import BS_GEN, BS_P, C_MAX, GS_GEN, GS_P, K_G
 logger = logging.getLogger(__name__)
 
 
-def _get_is_ppci_bus(net, bus):
+def _get_is_ppci_bus(net: pandapowerNet, bus):
     is_bus = bus[np.isin(bus, net._is_elements_final["bus_is_idx"])]
     ppci_bus = np.unique(net._pd2ppc_lookups["bus"][is_bus])
     return ppci_bus
@@ -64,7 +64,7 @@ def _check_sc_data_integrity(net: pandapowerNet):
                 net.trafo[col] = False
 
 
-def _add_kt(net, ppc):
+def _add_kt(net: pandapowerNet, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     branch = ppc["branch"]
     # "trafo/trafo3w" are already corrected in pd2ppc, write parameter kt for trafo
@@ -79,7 +79,7 @@ def _add_kt(net, ppc):
         branch[f:t, K_T] = kt
 
 
-def _add_ward_sc_z(net, ppc):
+def _add_ward_sc_z(net: pandapowerNet, ppc):
     for element in ("ward", "xward"):
         ward = net[element][net._is_elements_final[element]]
         if len(ward) == 0:
@@ -101,7 +101,7 @@ def _add_ward_sc_z(net, ppc):
         ppc["bus"][buses, BS] += bs
 
 
-def _add_sgen_sc_z(net, ppc):
+def _add_sgen_sc_z(net: pandapowerNet, ppc):
     # implement wind power station unit
     # implement doubly fed asynchronous generator
     # todo: what is this "_is_elements_final" thing?
@@ -149,7 +149,7 @@ def _add_sgen_sc_z(net, ppc):
         ppc["bus"][bus_idx, BS] = sgen_bs
 
 
-def _add_gen_sc_z_kg_ks(net, ppc):
+def _add_gen_sc_z_kg_ks(net: pandapowerNet, ppc):
     gen = net["gen"][net._is_elements_final["gen"]]
     if len(gen) == 0:
         return
@@ -293,7 +293,7 @@ def _add_gen_sc_z_kg_ks(net, ppc):
             ppc["bus"][ps_gen_buses_ppc[~ps_trafo_oltc_mask], K_G] = kg[~ps_trafo_oltc_mask]
 
 
-def _create_k_updated_ppci(net, ppci_orig, ppci_bus, zero_sequence=False):
+def _create_k_updated_ppci(net: pandapowerNet, ppci_orig, ppci_bus, zero_sequence=False):
     ppci = deepcopy(ppci_orig)
 
     non_ps_gen_bus = ppci_bus[np.isnan(ppci["bus"][ppci_bus, K_SG])]

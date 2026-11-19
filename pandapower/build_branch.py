@@ -15,6 +15,7 @@ from functools import partial
 from typing import Any, Literal, overload
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from numpy.typing import ArrayLike, NDArray
 
@@ -258,7 +259,7 @@ def _calc_trafo3w_parameter(net: pandapowerNet, ppc: dict) -> None:
         branch[f:t, ANGMAX] = hi
 
 
-def _calc_line_parameter(net, ppc, elm="line", ppc_elm="branch"):
+def _calc_line_parameter(net: pandapowerNet, ppc, elm="line", ppc_elm="branch"):
     """
     calculates the line parameter in per unit.
 
@@ -426,7 +427,7 @@ def _calc_line_dc_parameter(net: pandapowerNet, ppc: dict, elm: str = "line_dc",
         branch_dc[f:t, DC_RATE_A] = 0.0 if mode == "opf" else 100.0
 
 
-def _calc_trafo_parameter(net, ppc, sequence=1):
+def _calc_trafo_parameter(net: pandapowerNet, ppc, sequence=1):
     """
     Calculates the transformer parameter in per unit.
 
@@ -557,7 +558,7 @@ def _get_branch_angle_limits(branch_df: pd.DataFrame | dict, n_elements: int) ->
     return lo.astype(np.float64), hi.astype(np.float64)
 
 
-def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None, sequence=1):
+def _calc_branch_values_from_trafo_df(net: pandapowerNet, ppc, trafo_df=None, sequence=1):
     """
     Calculates the MAT/PYPOWER-branch-attributes from the pandapower trafo dataframe.
 
@@ -602,7 +603,7 @@ def _calc_branch_values_from_trafo_df(net, ppc, trafo_df=None, sequence=1):
     return r, x, g, b, g_asym, b_asym, ratio, shift
 
 
-def _calc_r_x_y_from_dataframe(net, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=1):
+def _calc_r_x_y_from_dataframe(net: pandapowerNet, trafo_df, vn_trafo_lv, vn_lv, ppc, sequence=1):
     mode = net["_options"]["mode"]
     trafo_model = net["_options"]["trafo_model"]
     if "tap_dependency_table" in trafo_df and "trafo_characteristic_table" in net:
@@ -1219,7 +1220,7 @@ def _calc_nominal_ratio_from_dataframe(
     return tap_rat / nom_rat
 
 
-def _calc_impedance_parameter(net, ppc):
+def _calc_impedance_parameter(net: pandapowerNet, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     f, t = net["_pd2ppc_lookups"]["branch"]["impedance"]
     branch = ppc["branch"]
@@ -1243,7 +1244,7 @@ def _calc_impedance_parameter(net, ppc):
         branch[f:t, ANGMAX] = hi
 
 
-def _calc_tcsc_parameter(net, ppc):
+def _calc_tcsc_parameter(net: pandapowerNet, ppc):
     f = 0
     t = len(net.tcsc)
 
@@ -1276,7 +1277,7 @@ def _calc_tcsc_parameter(net, ppc):
     ].values.astype(bool)
 
 
-def _calc_impedance_parameters_from_dataframe(net, zero_sequence=False):
+def _calc_impedance_parameters_from_dataframe(net: pandapowerNet, zero_sequence=False):
     impedance = net.impedance
     suffix = "0" if zero_sequence else ""
 
@@ -1316,7 +1317,7 @@ def _calc_impedance_parameters_from_dataframe(net, zero_sequence=False):
     return r_f, x_f, r_asym, x_asym, g_f, b_f, g_asym, b_asym
 
 
-def _calc_xward_parameter(net, ppc):
+def _calc_xward_parameter(net: pandapowerNet, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     f, t = net["_pd2ppc_lookups"]["branch"]["xward"]
     branch = ppc["branch"]
@@ -1581,7 +1582,7 @@ def _calc_switch_parameter(net: pandapowerNet, ppc):
     branch[f:t, BR_X] = z_switch / base_r * xz_ratio
 
 
-def _end_temperature_correction_factor(net, short_circuit=False, dc=False):
+def _end_temperature_correction_factor(net: pandapowerNet, short_circuit=False, dc=False):
     """
     Function to calculate resistance correction factor for the given temperature ("endtemp_degree").
     When multiplied by the factor, the value of r_ohm_per_km will correspond to the resistance at
@@ -1866,7 +1867,7 @@ def wye_delta_vector(zbr_n, s):
     )
 
 
-def _calculate_3w_tap_changers(net, t2, sides):
+def _calculate_3w_tap_changers(net: pandapowerNet, t2, sides):
     tap_variables = ["tap_side", "tap_pos", "tap_neutral", "tap_max", "tap_min", "tap_step_percent", "tap_step_degree"]
     nr_trafos = len(net.trafo3w)
     empty = np.zeros(nr_trafos)
@@ -1875,7 +1876,7 @@ def _calculate_3w_tap_changers(net, t2, sides):
     tap_arrays["tap_side"] = {side: np.array([None] * nr_trafos) for side in sides}
     at_star_point = net.trafo3w.tap_at_star_point.values
     any_at_star_point = at_star_point.any()
-    ideal_tap = np.zeros(nr_trafos, dtype=bool)
+    ideal_tap: npt.NDArray = np.zeros(nr_trafos, dtype=bool)
     if "tap_changer_type" in net.trafo3w:
         ideal_tap = net.trafo3w.tap_changer_type.eq("Ideal").fillna(False).to_numpy(dtype=bool)
     for side in sides:

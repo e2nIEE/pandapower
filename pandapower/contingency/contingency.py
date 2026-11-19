@@ -406,7 +406,7 @@ def run_contingency_ls2g(
             ] = congestion_caused
 
 
-def _convert_trafo_phase_shifter(net, trafotable="trafo"):
+def _convert_trafo_phase_shifter(net: pandapowerNet, trafotable="trafo"):
     """
     Moves tap_step_degree values for ideal phase shifters (tap_changer_type "Ideal") to the shift_degree values.
     """

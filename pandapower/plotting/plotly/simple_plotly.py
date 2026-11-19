@@ -11,6 +11,7 @@ import logging
 import numpy as np
 import pandas as pd
 
+from pandapower.network import pandapowerNet
 from pandapower.plotting.generic_geodata import create_generic_coordinates
 from pandapower.plotting.plotly.traces import (
     _create_node_trace,
@@ -25,7 +26,7 @@ from pandapower.plotting.plotly.traces import (
 logger = logging.getLogger(__name__)
 
 
-def get_hoverinfo(net, element, precision=3, sub_index=None):
+def get_hoverinfo(net: pandapowerNet, element, precision=3, sub_index=None):
     hover_index = net[element].index
     if element == "bus":
         load_str, sgen_str = [], []

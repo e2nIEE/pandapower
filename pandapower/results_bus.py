@@ -5,6 +5,7 @@
 import logging
 
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 from numpy import complex128
 
@@ -44,7 +45,7 @@ def _set_dc_buses_out_of_service(ppc):
     ppc["bus_dc"][disco, DC_PD] = 0
 
 
-def _get_bus_v_results(net, ppc, suffix=None):
+def _get_bus_v_results(net: pandapowerNet, ppc, suffix=None):
     bus_idx = _get_bus_idx(net)
 
     res_table = "res_bus" if suffix is None else f"res_bus{suffix}"
@@ -54,13 +55,13 @@ def _get_bus_v_results(net, ppc, suffix=None):
     net[res_table]["va_degree"] = ppc["bus"][bus_idx][:, VA]
 
 
-def _get_bus_dc_v_results(net, ppc):
+def _get_bus_dc_v_results(net: pandapowerNet, ppc):
     bus_idx = _get_bus_idx(net, "bus_dc")
     if "res_bus_dc" in net:
         net["res_bus_dc"]["vm_pu"] = ppc["bus_dc"][bus_idx][:, DC_VM]
 
 
-def _get_bus_v_results_3ph(net, ppc0, ppc1, ppc2):
+def _get_bus_v_results_3ph(net: pandapowerNet, ppc0, ppc1, ppc2):
     ac = net["_options"]["ac"]
     V012_pu = _V012_from_ppc012(net, ppc0, ppc1, ppc2)
     # Uncomment for results in kV instead of pu
@@ -81,29 +82,29 @@ def _get_bus_v_results_3ph(net, ppc0, ppc1, ppc2):
     net["res_bus_3ph"].index = net["bus"].index
 
 
-def _V012_from_ppc012(net, ppc0, ppc1, ppc2):
+def _V012_from_ppc012(net: pandapowerNet, ppc0, ppc1, ppc2):
     bus_idx = _get_bus_idx(net)
-    V012_pu = np.zeros((3, len(bus_idx)), dtype=complex128)
+    V012_pu: npt.NDArray = np.zeros((3, len(bus_idx)), dtype=complex128)
     V012_pu[0, :] = ppc0["bus"][bus_idx][:, VM] * np.exp(1j * np.deg2rad(ppc0["bus"][bus_idx][:, VA]))
     V012_pu[1, :] = ppc1["bus"][bus_idx][:, VM] * np.exp(1j * np.deg2rad(ppc1["bus"][bus_idx][:, VA]))
     V012_pu[2, :] = ppc2["bus"][bus_idx][:, VM] * np.exp(1j * np.deg2rad(ppc2["bus"][bus_idx][:, VA]))
     return V012_pu
 
 
-def _get_bus_idx(net, bus_table="bus"):
+def _get_bus_idx(net: pandapowerNet, bus_table="bus"):
     bus_lookup = net["_pd2ppc_lookups"][bus_table]
     ppi = net[bus_table].index.values
     bus_idx = bus_lookup[ppi]
     return bus_idx
 
 
-def _get_opf_marginal_prices(net, ppc):
+def _get_opf_marginal_prices(net: pandapowerNet, ppc):
     bus_idx = _get_bus_idx(net)
     net["res_bus"]["lam_p"] = ppc["bus"][bus_idx][:, LAM_P]
     net["res_bus"]["lam_q"] = ppc["bus"][bus_idx][:, LAM_Q]
 
 
-def _get_bus_results(net, ppc, bus_pq):
+def _get_bus_results(net: pandapowerNet, ppc, bus_pq):
     ac = net["_options"]["ac"]
     mode = net["_options"]["mode"]
 
@@ -120,7 +121,7 @@ def _get_bus_results(net, ppc, bus_pq):
     net["res_bus"].index = net["bus"].index
 
 
-def _get_bus_dc_results(net, bus_p_dc):
+def _get_bus_dc_results(net: pandapowerNet, bus_p_dc):
     if "res_bus_dc" in net:
         # write sum of p and q values to bus
         net["res_bus_dc"].loc[:, "p_mw"] = bus_p_dc[:, 0]
@@ -129,7 +130,7 @@ def _get_bus_dc_results(net, bus_p_dc):
         net["res_bus_dc"].index = net["bus_dc"].index
 
 
-def _get_bus_results_3ph(net, bus_pq):
+def _get_bus_results_3ph(net: pandapowerNet, bus_pq):
     ac = net["_options"]["ac"]
 
     # write sum of p and q values to bus
@@ -147,7 +148,7 @@ def _get_bus_results_3ph(net, bus_pq):
     net["res_bus_3ph"].index = net["bus"].index
 
 
-def write_voltage_dependend_load_results(net, p, q, b):
+def write_voltage_dependend_load_results(net: pandapowerNet, p, q, b):
     load_df = net["load"]
 
     if load_df.empty:
@@ -318,7 +319,7 @@ def write_pq_results_to_element(net: pandapowerNet, ppc: pd.DataFrame, element, 
     return net
 
 
-def write_p_dc_results_to_element(net, ppc, element):
+def write_p_dc_results_to_element(net: pandapowerNet, ppc, element):
     """
     get p_mw for a specific DC pq element ("vsc"). This function basically writes values element table to
     res_element table
@@ -346,7 +347,7 @@ def write_p_dc_results_to_element(net, ppc, element):
     return net
 
 
-def _extract_dist_slack_pq_results(net, ppc, element, res_):
+def _extract_dist_slack_pq_results(net: pandapowerNet, ppc, element, res_):
     node_elements = ["sgen", "load", "ward", "xward", "storage"]
     for b in net[element].bus.values:
         connected = {}
@@ -373,7 +374,7 @@ def _extract_dist_slack_pq_results(net, ppc, element, res_):
                     net[res_]["p_mw"] += p_bus * elm_weight / total_weight
 
 
-def write_pq_results_to_element_3ph(net, element):
+def write_pq_results_to_element_3ph(net: pandapowerNet, element):
     """
     get p_mw and q_mvar for a specific pq element ("load", "sgen"...). This function basically writes values element
     table to res_element table
@@ -437,7 +438,7 @@ def write_pq_results_to_element_3ph(net, element):
     return net
 
 
-def get_p_q_b(net, element, suffix=None):
+def get_p_q_b(net: pandapowerNet, element, suffix=None):
     ac = net["_options"]["ac"]
     res_ = "res_" + element
     if suffix is not None:
@@ -450,7 +451,7 @@ def get_p_q_b(net, element, suffix=None):
     return p, q, b
 
 
-def get_p_q_b_3ph(net, element):
+def get_p_q_b_3ph(net: pandapowerNet, element):
     ac = net["_options"]["ac"]
     res_ = f"res_{element}_3ph"
 
@@ -465,8 +466,8 @@ def get_p_q_b_3ph(net, element):
     return pA, qA, pB, qB, pC, qC, b
 
 
-def _get_p_q_results(net, ppc, bus_lookup_aranged):
-    bus_pq = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float64)
+def _get_p_q_results(net: pandapowerNet, ppc, bus_lookup_aranged):
+    bus_pq: npt.NDArray = np.zeros(shape=(len(net["bus"].index), 2), dtype=np.float64)
     b, p, q = np.array([]), np.array([]), np.array([])
 
     ac = net["_options"]["ac"]
@@ -501,7 +502,7 @@ def _get_p_q_results(net, ppc, bus_lookup_aranged):
     return bus_pq
 
 
-def _get_p_dc_results(net, ppc, bus_lookup_aranged):
+def _get_p_dc_results(net: pandapowerNet, ppc, bus_lookup_aranged):
     """
     Writes the DC power results of the VSC and DC loads to their result tables and sums the DC power per DC bus. The DC
     power of bipolar VSC is assigned to the plus and to the minus terminal bus.
@@ -509,7 +510,7 @@ def _get_p_dc_results(net, ppc, bus_lookup_aranged):
     Returns:
         bus_p_dc: DC power per DC bus (rows ordered as bus_lookup_aranged)
     """
-    bus_p_dc = np.zeros(shape=(len(net["bus_dc"].index), 1), dtype=np.float64)  # 1 because only p relevant
+    bus_p_dc: npt.NDArray = np.zeros(shape=(len(net["bus_dc"].index), 1), dtype=np.float64)  # 1 because only p relevant
     b, p = np.array([]), np.array([])
 
     # elements = ["load", "motor", "sgen", "storage", "ward", "xward",
@@ -541,9 +542,9 @@ def _get_p_dc_results(net, ppc, bus_lookup_aranged):
     return bus_p_dc
 
 
-def _get_p_q_results_3ph(net, bus_lookup_aranged):
+def _get_p_q_results_3ph(net: pandapowerNet, bus_lookup_aranged):
     # results to be filled (bus, p in kw, q in kvar)
-    bus_pq = np.zeros(shape=(len(net["bus"].index), 6), dtype=float)
+    bus_pq: npt.NDArray = np.zeros(shape=(len(net["bus"].index), 6), dtype=float)
     b, pA, pB, pC, qA, qB, qC = (
         np.array([]),
         np.array([]),
@@ -595,7 +596,7 @@ def _get_p_q_results_3ph(net, bus_lookup_aranged):
     return bus_pq
 
 
-def _get_shunt_results(net, ppc, bus_lookup_aranged, bus_pq):
+def _get_shunt_results(net: pandapowerNet, ppc, bus_lookup_aranged, bus_pq):
     ac = net["_options"]["ac"]
 
     b, p, q = np.array([]), np.array([]), np.array([])

@@ -27,7 +27,7 @@ from pandapower.run import runpp, set_user_pf_options
 logger = log.getLogger(__name__)
 
 
-def _vm_in_desired_area(net, lower_vm, higher_vm, side, idx=None, trafo_table="trafo"):
+def _vm_in_desired_area(net: pandapowerNet, lower_vm, higher_vm, side, idx=None, trafo_table="trafo"):
     if idx is None:
         idx = net[trafo_table].index
     return (lower_vm <= net.res_bus.vm_pu.loc[net[trafo_table].loc[idx, f"{side}_bus"].tolist()]) & (

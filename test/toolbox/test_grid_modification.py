@@ -82,7 +82,7 @@ def mock_logger(monkeypatch):
     return mock
 
 
-def __create_trafo3w(net, bus_sl, service: bool = True):
+def __create_trafo3w(net: pandapowerNet, bus_sl, service: bool = True):
     create_ext_grid(net, bus_sl, in_service=service)
     bus0, bus1, bus2, bus3, bus4 = create_buses(net, 5, vn_kv=0.4, in_service=service)
     create_switch(net, bus_sl, bus0, "b", not service)
@@ -826,7 +826,7 @@ def test_replace_gen_sgen(replace_gen_or_sgen):
 
 
 def test_replace_pq_elmtype():
-    def check_elm_shape(net, elm_shape: dict):
+    def check_elm_shape(net: pandapowerNet, elm_shape: dict):
         for elm, no in elm_shape.items():
             assert net[elm].shape[0] == no
 

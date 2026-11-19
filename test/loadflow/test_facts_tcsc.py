@@ -18,7 +18,7 @@ from test.consistency_checks import runpp_with_consistency_checks
 from test.loadflow.test_facts import compare_tcsc_impedance, copy_with_impedance, facts_case_study_grid
 
 
-def add_tcsc_to_line(net, xl, xc, set_p_mw, from_bus, line, side="from_bus"):
+def add_tcsc_to_line(net: pandapowerNet, xl, xc, set_p_mw, from_bus, line, side="from_bus"):
     aux = create_bus(net, net.bus.at[from_bus, "vn_kv"], "aux")
     net.line.loc[line, side] = aux
 

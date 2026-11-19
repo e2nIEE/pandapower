@@ -8,6 +8,7 @@ __all__ = [
 
 import logging
 from math import pi
+from typing import cast
 
 import numpy as np
 import pandas as pd
@@ -104,7 +105,7 @@ def from_ppc(ppc, f_hz=50, validate_conversion=False, **kwargs) -> pandapowerNet
     return net
 
 
-def _from_ppc_bus(net, ppc):
+def _from_ppc_bus(net: pandapowerNet, ppc):
     """bus data -> create buses, sgen, load, shunt"""
     # create buses
     idx_buses = create_buses(
@@ -146,7 +147,7 @@ def _from_ppc_bus(net, ppc):
     # unused data from ppc: VM, VA (partwise: in ext_grid), BUS_AREA
 
 
-def _from_ppc_gen(net, ppc):
+def _from_ppc_gen(net: pandapowerNet, ppc):
     """gen data -> create ext_grid, gen, sgen"""
     n_gen = ppc["gen"].shape[0]
 
@@ -173,7 +174,7 @@ def _from_ppc_gen(net, ppc):
             create_ext_grid(
                 net,
                 bus=net.bus.index[bus_pos[i]],
-                vm_pu=vg_bus_lookup.at[bus_pos[i]],
+                vm_pu=cast(float, vg_bus_lookup.at[bus_pos[i]]),
                 va_degree=ppc["bus"][bus_pos[i], VA],
                 in_service=(ppc["gen"][i, GEN_STATUS] > 0).astype(bool),
                 max_p_mw=ppc["gen"][i, PMAX],
@@ -238,7 +239,7 @@ def _from_ppc_gen(net, ppc):
     return gen_lookup
 
 
-def _from_ppc_branch(net, ppc, f_hz, **kwargs):
+def _from_ppc_branch(net: pandapowerNet, ppc, f_hz, **kwargs):
     """
     branch data -> create line, trafo
 
@@ -559,7 +560,7 @@ def _add_polys_to_gencost(gencost, n_rows):
     return _add_to_gencost(gencost, n_rows, 2)
 
 
-def _from_ppc_gencost(net, ppc, gen_lookup, check=True):
+def _from_ppc_gencost(net: pandapowerNet, ppc, gen_lookup, check=True):
     # --- gencost -> create polynomial_cost, piecewise_cost
 
     if "gencost" not in ppc:

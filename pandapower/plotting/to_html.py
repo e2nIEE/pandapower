@@ -19,7 +19,9 @@ except ImportError:
 import json
 
 
-def to_html(net, filename, respect_switches=True, include_lines=True, include_trafos=True, show_tables=True):
+def to_html(
+    net: pandapowerNet, filename, respect_switches=True, include_lines=True, include_trafos=True, show_tables=True
+):
     """
     Saves a pandapower Network to an html file.
 

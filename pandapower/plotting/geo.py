@@ -533,7 +533,7 @@ def abstract_convert_geodata_to_geojson(
 
 
 def convert_geodata_to_geojson(
-    net: pandapowerNet, delete: bool = True, lonlat: bool = False, drop_invalid_geodata: bool = True
+    net: ADict, delete: bool = True, lonlat: bool = False, drop_invalid_geodata: bool = True
 ) -> None:
     """
     Converts bus_geodata and line_geodata to bus.geo and line.geo column entries.

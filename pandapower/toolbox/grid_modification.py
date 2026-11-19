@@ -70,7 +70,7 @@ from pandapower.groups import (
     detach_from_groups,
     element_associated_groups,
 )
-from pandapower.network import pandapowerNet, plural_s
+from pandapower.network import ADict, pandapowerNet, plural_s
 from pandapower.pp_types import Int, StandardTypesDict, StandardTypesDictKeys
 from pandapower.results import EmptyResults
 from pandapower.run import runpp
@@ -88,7 +88,7 @@ from pandapower.toolbox.result_info import clear_result_tables
 logger = logging.getLogger(__name__)
 
 
-def _select_cost_df(net, p2, cost_type):
+def _select_cost_df(net: pandapowerNet, p2, cost_type):
     isin = np.array([False] * net[cost_type].shape[0])
     for et in net[cost_type].et.unique():
         isin_et = net[cost_type].element.isin(p2[et].index)
@@ -97,7 +97,9 @@ def _select_cost_df(net, p2, cost_type):
     p2[cost_type] = net[cost_type].loc[isin]
 
 
-def select_subnet(net, buses, include_switch_buses=False, include_results=False, keep_everything_else=False):
+def select_subnet(
+    net: pandapowerNet, buses, include_switch_buses=False, include_results=False, keep_everything_else=False
+):
     """
     Selects a subnet by a list of bus indices and returns a net with all elements
     connected to them.
@@ -327,7 +329,7 @@ def merge_nets(
         return net
 
 
-def set_element_status(net, buses, in_service):
+def set_element_status(net: pandapowerNet, buses, in_service):
     """
     Sets buses and all elements connected to them in or out of service.
     """
@@ -352,7 +354,7 @@ def __close_switches_for_oos(closed_switches, switches, et_label, elements_oos_i
     switches.loc[mask, "closed"] = True
 
 
-def set_isolated_areas_out_of_service(net, respect_switches=True):
+def set_isolated_areas_out_of_service(net: pandapowerNet, respect_switches=True):
     """
     Set all isolated buses and all elements connected to isolated buses out of service.
     """
@@ -382,7 +384,7 @@ def set_isolated_areas_out_of_service(net, respect_switches=True):
         if t3_oos.any():
             trafo3ws.loc[t3_oos, "in_service"] = False
 
-    closed_switches = set()
+    closed_switches: set[int] = set()
 
     if len(net["line"]):
         oos_idx = net["line"].index[~net["line"]["in_service"]]
@@ -421,7 +423,7 @@ def set_isolated_areas_out_of_service(net, respect_switches=True):
         logger.info(f"closed {len(closed_switches)} switches: {sorted(closed_switches)}")
 
 
-def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
+def repl_to_line(net: pandapowerNet, idx, std_type, name=None, in_service=False, **kwargs):
     """
     creates a power line in parallel to the existing power line based on the values of the new std_type. The new
     parallel line has an impedance value, which is chosen so that the resulting impedance of the new line and the
@@ -512,7 +514,7 @@ def repl_to_line(net, idx, std_type, name=None, in_service=False, **kwargs):
     return new_idx
 
 
-def merge_parallel_line(net, idx):
+def merge_parallel_line(net: pandapowerNet, idx):
     """
     Changes the impedances of the parallel line so that it equals a single line.
 
@@ -661,7 +663,7 @@ def close_switch_at_line_with_two_open_switches(net: pandapowerNet):
         )
 
 
-def fuse_buses(net, b1, b2, drop=True, fuse_bus_measurements=True):
+def fuse_buses(net: pandapowerNet, b1, b2, drop=True, fuse_bus_measurements=True):
     """
     Reroutes any connections to buses in b2 to the given bus b1. Additionally drops the buses b2,
     if drop=True (default).
@@ -697,7 +699,7 @@ def fuse_buses(net, b1, b2, drop=True, fuse_bus_measurements=True):
 # ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
-def drop_elements(net, element_type, element_index, **kwargs):
+def drop_elements(net: pandapowerNet, element_type, element_index, **kwargs):
     """
     Drops element, result and group entries, as well as, associated elements from the pandapower
     net.
@@ -712,7 +714,7 @@ def drop_elements(net, element_type, element_index, **kwargs):
         drop_elements_simple(net, element_type, element_index)
 
 
-def drop_elements_simple(net, element_type, element_index):
+def drop_elements_simple(net: ADict, element_type, element_index):
     """
     Drops element, result and group entries from the pandapower net.
 
@@ -740,7 +742,7 @@ def drop_elements_simple(net, element_type, element_index):
         logger.debug(f"Dropped {number} {element_type}{plural_s(number)}!")
 
 
-def drop_buses(net, buses, drop_elements=True):
+def drop_buses(net: pandapowerNet, buses, drop_elements=True):
     """
     Drops specified buses, their bus_geodata and by default drops all elements connected to
     them as well.
@@ -759,7 +761,7 @@ def drop_buses(net, buses, drop_elements=True):
         drop_controllers_at_buses(net, buses)
 
 
-def drop_trafos(net, trafos, table="trafo"):
+def drop_trafos(net: pandapowerNet, trafos, table="trafo"):
     """
     Deletes all trafos and in the given list of indices and removes
     any switches connected to it.
@@ -789,7 +791,7 @@ def drop_trafos(net, trafos, table="trafo"):
     logger.debug(f"Dropped {len(trafos)} {table}{plural_s(len(trafos))} with {num_switches} switches")
 
 
-def drop_lines(net, lines):
+def drop_lines(net: pandapowerNet, lines):
     """
     Deletes all lines and their geodata in the given list of indices and removes
     any switches connected to it.
@@ -816,7 +818,7 @@ def drop_lines(net, lines):
     logger.debug(f"Dropped {len(lines)} line{plural_s(len(lines))} with {len(i)} line switches")
 
 
-def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True, drop_measurements=True):
+def drop_elements_at_buses(net: pandapowerNet, buses, bus_elements=True, branch_elements=True, drop_measurements=True):
     """
     drop elements connected to given buses
     """
@@ -852,7 +854,7 @@ def drop_elements_at_buses(net, buses, bus_elements=True, branch_elements=True, 
         drop_measurements_at_elements(net, "bus", idx=buses)
 
 
-def drop_switches_at_buses(net, buses):
+def drop_switches_at_buses(net: pandapowerNet, buses):
     i = net["switch"][
         (net["switch"]["bus"].isin(buses)) | ((net["switch"]["element"].isin(buses)) & (net["switch"]["et"] == "b"))
     ].index
@@ -860,7 +862,7 @@ def drop_switches_at_buses(net, buses):
     logger.debug(f"Dropped {len(i)} switches")
 
 
-def drop_measurements_at_elements(net, element_type, idx=None, side=None):
+def drop_measurements_at_elements(net: ADict, element_type, idx=None, side=None):
     """
     Drop measurements of given element_type and (if given) given elements (idx) and side.
     """
@@ -872,18 +874,18 @@ def drop_measurements_at_elements(net, element_type, idx=None, side=None):
     net.measurement = net.measurement.drop(to_drop)
 
 
-def drop_controllers_at_elements(net, element_type, idx=None):
+def drop_controllers_at_elements(net: ADict, element_type, idx=None):
     """
     Drop all the controllers for the given elements (idx).
     """
     idx = ensure_iterability(idx) if idx is not None else net[element_type].index
-    to_drop = []
+    to_drop: list[int] = []
     for ctrl_idx in net.controller.index:
         _drop_controller_at_elements(net, element_type, idx, ctrl_idx, to_drop)
     net.controller = net.controller.drop(to_drop)
 
 
-def _drop_controller_at_elements(net, element_type, idx, ctrl_idx, to_drop):
+def _drop_controller_at_elements(net: ADict, element_type, idx, ctrl_idx, to_drop):
     ctrl_dict = net.controller.at[ctrl_idx, "object"].__dict__
     et = ctrl_dict.get("element")
     if element_type != et:
@@ -900,7 +902,7 @@ def _drop_controller_at_elements(net, element_type, idx, ctrl_idx, to_drop):
         _update_further_controller_parameters(net, ctrl_idx, elm_staying)
 
 
-def _update_further_controller_parameters(net, ctrl_idx, elm_staying):
+def _update_further_controller_parameters(net: ADict, ctrl_idx, elm_staying):
     ctrl_dict = net.controller.at[ctrl_idx, "object"].__dict__
     further_vars_to_adapt = [
         "bus",
@@ -932,7 +934,7 @@ def _update_further_controller_parameters(net, ctrl_idx, elm_staying):
             ctrl_dict[ctrl_col] = ctrl_dict[ctrl_col].loc[ctrl_dict["element_index"]]
 
 
-def drop_controllers_at_buses(net, buses):
+def drop_controllers_at_buses(net: pandapowerNet, buses):
     """
     Drop all the controllers for the elements connected to the given buses.
     """
@@ -941,7 +943,7 @@ def drop_controllers_at_buses(net, buses):
         drop_controllers_at_elements(net, elm, elms[elm])
 
 
-def drop_duplicated_measurements(net, buses=None, keep="first"):
+def drop_duplicated_measurements(net: pandapowerNet, buses=None, keep="first"):
     """
     Drops duplicated measurements at given set of buses. If buses is None, all buses are considered.
     """
@@ -957,7 +959,7 @@ def drop_duplicated_measurements(net, buses=None, keep="first"):
         net.measurement = net.measurement.drop(idx_to_drop)
 
 
-def _inner_branches(net, buses, task, branch_elements=None):
+def _inner_branches(net: pandapowerNet, buses, task, branch_elements=None):
     """
     Drops or finds branches that connects buses within 'buses' at all branch sides (e.g. 'from_bus'
     and 'to_bus').
@@ -990,7 +992,7 @@ def _inner_branches(net, buses, task, branch_elements=None):
     return inner_branches
 
 
-def get_inner_branches(net, buses, branch_elements=None):
+def get_inner_branches(net: pandapowerNet, buses, branch_elements=None):
     """
     Returns indices of branches that connects buses within 'buses' at all branch sides (e.g.
     'from_bus' and 'to_bus').
@@ -998,7 +1000,7 @@ def get_inner_branches(net, buses, branch_elements=None):
     return _inner_branches(net, buses, "get", branch_elements=branch_elements)
 
 
-def drop_inner_branches(net, buses, branch_elements=None):
+def drop_inner_branches(net: pandapowerNet, buses, branch_elements=None):
     """
     Drops branches that connects buses within 'buses' at all branch sides (e.g. 'from_bus' and
     'to_bus').
@@ -1090,7 +1092,7 @@ def drop_out_of_service_elements(net: pandapowerNet):
     __drop_inactive_elements_other(net)
 
 
-def drop_inactive_elements(net, respect_switches=True):
+def drop_inactive_elements(net: pandapowerNet, respect_switches=True):
     """
     Drops any elements not in service AND any elements connected to inactive
     buses.
@@ -1099,7 +1101,7 @@ def drop_inactive_elements(net, respect_switches=True):
     drop_out_of_service_elements(net)
 
 
-def create_replacement_switch_for_branch(net, element_type, element_index):
+def create_replacement_switch_for_branch(net: pandapowerNet, element_type, element_index):
     """
     Creates a switch parallel to a branch, connecting the same buses as the branch. The switch is closed if the
     branch is in service and open if the branch is out of service. The in_service status of the original branch is
@@ -1946,7 +1948,7 @@ def replace_ward_by_internal_elements(net: pandapowerNet, wards: Collection[int]
     drop_elements_simple(net, "ward", wards)
 
 
-def replace_xward_by_internal_elements(net, xwards=None, set_xward_bus_limits=False):
+def replace_xward_by_internal_elements(net: pandapowerNet, xwards=None, set_xward_bus_limits=False):
     """
     Replaces xward by loads, shunts, impedance and generators
 
@@ -2014,7 +2016,7 @@ def replace_xward_by_internal_elements(net, xwards=None, set_xward_bus_limits=Fa
     drop_elements_simple(net, "xward", xwards)
 
 
-def replace_xward_by_ward(net, index=None, drop=True):
+def replace_xward_by_ward(net: pandapowerNet, index=None, drop=True):
     """
     Replace xward elements by ward elements in the given grid model. The series impedance component of xward is
     ignored and lost after the replacement.
@@ -2103,7 +2105,9 @@ def _adapt_result_tables_in_replace_functions(
         net[et_old] = net[et_old].drop(idx_old[in_res])
 
 
-def _adapt_profiles_in_replace_functions(net, element_type_old, element_index_old, element_type_new, element_index_new):
+def _adapt_profiles_in_replace_functions(
+    net: pandapowerNet, element_type_old, element_index_old, element_type_new, element_index_new
+):
     if "profiles" not in net or not isinstance(net.profiles, dict):
         return
     et_old, et_new = element_type_old, element_type_new
