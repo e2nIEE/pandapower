@@ -456,24 +456,27 @@ def _ppci_internal_to_ppc(result, ppc):
 
 def _copy_results_ppci_to_ppc(result, ppc, mode):
     """
-    result contains results for all in service elements
-    ppc gets the results for in- and out of service elements
-    -> results must be copied
+    Copies the results of the in-service elements from the ppci (result) back into the ppc.
 
-    ppc and ppci are structured as follows:
-          [in_service elements]
-    ppc = [out_of_service elements]
-    result = [in_service elements]
+    The ppc contains the in-service and the out-of-service elements, whereas the ppci (result) only
+    contains the in-service elements, so the results have to be copied back. Bus results and the
+    results of branches, generators and converters are copied differently:
 
-    Parameters
-    ----------
-    result - ppci with results
-    ppc - ppc without results
-    mode - "pf","opf", "sc"...
+    - bus results ("bus", "bus_dc"): the solved rows are written into the prefix of the ppc tables,
+      the trailing rows of out-of-service buses (type NONE) are preserved as they are.
+    - branch, generator and converter results ("branch", "branch_dc", "gen", "tcsc", "svc", "ssc",
+      "vsc"): the ppc rows selected by the respective internal "_is" masks are updated at the
+      matching indices, so the rows of out-of-service elements keep their previous values.
 
-    Returns
-    -------
-    ppc with results
+    The supplied ppc is mutated in place and returned.
+
+    Parameters:
+        result: ppci with results
+        ppc: ppc without results, updated in place
+        mode: "pf","opf", "sc"...
+
+    Returns:
+        the supplied ppc with results
     """
 
     # copy the results for bus, gen and branch and some additional values like "success"

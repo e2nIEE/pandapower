@@ -377,6 +377,16 @@ def test_json_io_same_net(net_in, tmp_path):
     assert isinstance(net2.controller.object.at[0], ConstControl)
 
 
+def test_json_io_from_string_and_bytes_payload(net_in):
+    json_string = to_json(net_in)
+
+    net_from_str = from_json(json_string)
+    net_from_bytes = from_json(json_string.encode("utf-8"))
+
+    assert_net_equal(net_in, net_from_str)
+    assert_net_equal(net_in, net_from_bytes)
+
+
 def test_json_different_nets():
     net = mv_oberrhein()
     net2 = simple_four_bus_system()
