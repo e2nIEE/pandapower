@@ -56,7 +56,7 @@ from pandapower.create import (
     create_vsc as _create_vsc,
 )
 from pandapower.network import ADict, pandapowerNet
-from pandapower.pp_types import Int, SwitchType, StandardTypesDictKeys
+from pandapower.pp_types import Int, StandardTypesDictKeys, SwitchType
 from pandapower.results import init_results, reset_results
 from pandapower.run import set_user_pf_options
 from pandapower.std_types import (
