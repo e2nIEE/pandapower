@@ -139,26 +139,18 @@ def _find_idx_without_numerical_difference(df, column1, column2, delta, idx=None
     """
     Returns indices where comlumn1 and column2 have a numerical difference bigger than delta.
 
-    INPUT:
-        **df** (DataFrame)
+    Parameters:
+        df (DataFrame):
+        column1 (str): name of first column within df to compare. The values of df[column1] must be numericals.
+        column2 (str): name of second column within df to compare. The values of df[column2] must be numericals.
+        delta (numerical): value which defines whether indices are returned or not
+        idx (iterable, None): list of indices which should be considered only
+        equal_nan (bool, False): if False, indices are included where at least one value in df[column1] and df[column2]
+            is NaN
 
-        **column1** (str) - name of first column within df to compare.
-        The values of df[column1] must be numericals.
-
-        **column2** (str) - name of second column within df to compare.
-        The values of df[column2] must be numericals.
-
-        **delta** (numerical) - value which defines whether indices are returned or not
-
-    OPTIONAL:
-        **idx** (iterable, None) - list of indices which should be considered only
-
-        **equal_nan** (bool, False) - if False, indices are included where at least one value in
-        df[column1] and df[column2] is NaN
-
-    OUTPUT:
-        **index** (pandas.Index) - index within idx where df[column1] and df[column2] deviates by
-        at least delta or, if equal_na is True, one value is NaN
+    Returns:
+        index (pandas.Index): index within idx where df[column1] and df[column2] deviates by at least delta or, if
+            equal_na is True, one value is NaN
     """
     idx = idx if idx is not None else df.index
     idx_isnull = df.index[df[[column1, column2]].isnull().any(axis=1)]
@@ -422,47 +414,37 @@ def clear_result_tables(net):
 
 
 def compute_switch_flows(net):
-    """Compute power flow through zero-impedance bus-bus switches via nodal balance.
+    """
+    Compute power flow through zero-impedance bus-bus switches via nodal balance.
 
-    After a converged load flow, switches with ``z_ohm=0`` (the default) have
-    ``NaN`` values in ``res_switch`` because Pandapower fuses the adjacent buses
-    into a single internal node.  This function reconstructs the individual
-    switch flows by calculating the net local injection at each bus within a
-    fused group and propagating the residual through the switch tree.
+    After a converged load flow, switches with ``z_ohm=0`` (the default) have ``NaN`` values in ``res_switch``
+    because Pandapower fuses the adjacent buses into a single internal node. This function reconstructs the
+    individual switch flows by calculating the net local injection at each bus within a fused group and propagating
+    the residual through the switch tree.
 
-    The function writes ``p_from_mw``, ``q_from_mvar``, ``p_to_mw``,
-    ``q_to_mvar``, and ``i_ka`` into ``net.res_switch`` for every closed
-    bus-bus switch that has ``z_ohm <= 0``.  Results for open switches are set
-    to zero.  Switches that already have results (``z_ohm > 0``) are not
-    modified.
+    The function writes ``p_from_mw``, ``q_from_mvar``, ``p_to_mw``, ``q_to_mvar``, and ``i_ka`` into
+    ``net.res_switch`` for every closed bus-bus switch that has ``z_ohm <= 0``. Results for open switches are set to
+    zero. Switches that already have results (``z_ohm > 0``) are not modified.
 
-    **Assumption:** Within each fused-bus group the zero-impedance switches
-    must form a *tree* (no parallel zero-impedance paths between the same pair
-    of buses).  If a cycle is detected a ``ValueError`` is raised, since the
-    flow split is physically indeterminate without impedance information.
+    **Assumption:** Within each fused-bus group the zero-impedance switches must form a *tree* (no parallel
+    zero-impedance paths between the same pair of buses). If a cycle is detected a ``ValueError`` is raised, since
+    the flow split is physically indeterminate without impedance information.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        A pandapower network with valid load flow results
-        (``net.converged is True``).
+    Parameters:
+        net (pandapowerNet): A pandapower network with valid load flow results (``net.converged is True``).
 
-    Raises
-    ------
-    UserWarning
-        If ``net.converged`` is ``False``.
-    ValueError
-        If zero-impedance bus-bus switches form a cycle within a fused group.
+    Raises:
+        UserWarning: If ``net.converged`` is ``False``.
+        ValueError: If zero-impedance bus-bus switches form a cycle within a fused group.
 
-    Examples
-    --------
-    >>> import pandapower as pp
-    >>> import pandapower.networks as pn
-    >>> net = pn.example_simple()
-    >>> pp.runpp(net)
-    >>> from pandapower.toolbox import compute_switch_flows
-    >>> compute_switch_flows(net)
-    >>> net.res_switch  # p_from_mw, q_from_mvar etc. now populated
+    Example:
+        >>> import pandapower as pp
+        >>> import pandapower.networks as pn
+        >>> net = pn.example_simple()
+        >>> pp.runpp(net)
+        >>> from pandapower.toolbox import compute_switch_flows
+        >>> compute_switch_flows(net)
+        >>> net.res_switch  # p_from_mw, q_from_mvar etc. now populated
     """
     from collections import defaultdict
 
@@ -666,30 +648,25 @@ def compute_switch_flows(net):
 
 
 def res_power_columns(element_type, side=0):
-    """Returns columns names of result tables for active and reactive power
+    """
+    Returns columns names of result tables for active and reactive power
 
-    Parameters
-    ----------
-    element_type : str
-        name of element table, e.g. "gen"
-    side : typing.Union[int, str], optional
-        Defines for branch elements which branch side is considered, by default 0
+    Parameters:
+        element_type (str): name of element table, e.g. "gen"
+        side (typing.Union[int, str]): Defines for branch elements which branch side is considered, by default 0
 
-    Returns
-    -------
-    list[str]
+    Returns:
         columns names of result tables for active and reactive power
 
-    Examples
-    --------
-    >>> res_power_columns("gen")
-    ["p_mw", "q_mvar"]
-    >>> res_power_columns("line", "from")
-    ["p_from_mw", "q_from_mvar"]
-    >>> res_power_columns("line", 0)
-    ["p_from_mw", "q_from_mvar"]
-    >>> res_power_columns("line", "all")
-    ["p_from_mw", "q_from_mvar", "p_to_mw", "q_to_mvar"]
+    Example:
+        >>> res_power_columns("gen")
+        ["p_mw", "q_mvar"]
+        >>> res_power_columns("line", "from")
+        ["p_from_mw", "q_from_mvar"]
+        >>> res_power_columns("line", 0)
+        ["p_from_mw", "q_from_mvar"]
+        >>> res_power_columns("line", "all")
+        ["p_from_mw", "q_from_mvar", "p_to_mw", "q_to_mvar"]
     """
     if element_type in pp_elements(branch_elements=False, other_elements=False):
         return ["p_mw", "q_mvar"]

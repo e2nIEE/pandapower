@@ -248,41 +248,33 @@ def reindex_elements(net: pandapowerNet, element_type, new_indices=None, old_ind
     """
     Changes the index of the DataFrame net[element_type].
 
-    Parameters
-    ----------
-    net : pp.pandapowerNet
-        net with elements to reindex
-    element_type : str
-        name of element type to rename, e.g. "gen" or "load"
-    new_indices : typing.Union[list[int], pandas.Index[int]], optional
-        new indices to set, by default None
-    old_indices : typing.Union[list[int], pandas.Index[int]], optional
-        old indices to be replaced. If not given, all indices are
-        assumed in case of given new_indices, and all lookup keys are assumed in case of given
-        lookup, by default None
-    lookup : dict[int,int], optional
-        lookup to assign new indices to old indices, by default None
+    Parameters:
+        net (pp.pandapowerNet): net with elements to reindex
+        element_type (str): name of element type to rename, e.g. "gen" or "load"
+        new_indices (typing.Union[list[int], pandas.Index[int]]): new indices to set, by default None
+        old_indices (typing.Union[list[int], pandas.Index[int]]): old indices to be replaced. If not given, all indices
+            are assumed in case of given new_indices, and all lookup keys are assumed in case of given lookup, by
+            default None
+        lookup (dict[int,int]): lookup to assign new indices to old indices, by default None
+            .. note::
+            Either new_indices or lookup must be given.
+            old_indices can be given to limit the indices to be replaced. In case of given new_indices, both must have
+            the same length.
+            If element_type is "group", be careful to give new_indices without passing old_indices because
+            group indices do not need to be unique.
 
-    .. note::
-        Either new_indices or lookup must be given.
-        old_indices can be given to limit the indices to be replaced. In case of given new_indices,
-        both must have the same length.
-        If element_type is "group", be careful to give new_indices without passing old_indices because
-        group indices do not need to be unique.
-
-    Examples
-    --------
-    >>> net = pandapowerNet(name='Example')
-    >>> idx0 = create_bus(net, 110)
-    >>> idx1 = 4
-    >>> idx2 = 7
-    >>> # Reindex using 'new_indices':
-    >>> pp.reindex_elements(net, "bus", [idx1])  # passing old_indices=[idx0] is optional
-    >>> net.bus.index
-    Int64Index([4], dtype='int64')
-    >>> # Reindex using 'lookup':
-    >>> pp.reindex_elements(net, "bus", lookup={idx1: idx2})
-    Int64Index([7], dtype='int64')
+    Example:
+        >>> net = pandapowerNet(name='Example')
+        >>> idx0 = create_bus(net, 110)
+        >>> idx1 = 4
+        >>> idx2 = 7
+        >>> # Reindex using 'new_indices':
+        >>> pp.reindex_elements(net, "bus", [idx1])  # passing old_indices=[idx0] is optional
+        >>> net.bus.index
+        Int64Index([4], dtype='int64')
+        >>> # Reindex using 'lookup':
+        >>> pp.reindex_elements(net, "bus", lookup={idx1: idx2})
+        Int64Index([7], dtype='int64')
     """
     if not net[element_type].shape[0]:
         return
@@ -429,15 +421,14 @@ def create_continuous_elements_index(net: pandapowerNet, start=0, add_df_to_rein
 
 def set_scaling_by_type(net: pandapowerNet, scalings, scale_load=True, scale_sgen=True):
     """
-    Sets scaling of loads and/or sgens according to a dictionary
-    mapping type to a scaling factor. Note that the type-string is case
-    sensitive.
-    E.g. scaling = {"pv": 0.8, "bhkw": 0.6}
+    Sets scaling of loads and/or sgens according to a dictionary mapping type to a scaling factor. Note that the
+    type-string is case sensitive. E.g. scaling = {"pv": 0.8, "bhkw": 0.6}
 
-    :param net:
-    :param scalings: A dictionary containing a mapping from element type to
-    :param scale_load:
-    :param scale_sgen:
+    Parameters:
+        net:
+        scalings: A dictionary containing a mapping from element type to
+        scale_load:
+        scale_sgen:
     """
     if not isinstance(scalings, dict):
         raise UserWarning("The parameter scaling has to be a dictionary, see docstring")

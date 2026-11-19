@@ -16,6 +16,7 @@ from itertools import combinations
 
 import networkx as nx
 import numpy as np
+from numpy.typing import ArrayLike
 
 from pandapower.auxiliary import _init_nx_options
 from pandapower.build_branch import (
@@ -311,20 +312,18 @@ def create_nxgraph(
     return mg
 
 
-def get_edge_table(net: pandapowerNet, table_name, include_edges):
+def get_edge_table(net: pandapowerNet, table_name: str, include_edges: bool | ArrayLike):
     """
-    Returns the table for the specified name according to parameter include_edges. If it is True,
-    the whole table is returnedif False, None is returned. If it is an iterable, only the included
-    indices are chosen.
+    Returns the table for the specified name according to parameter include_edges. If it is True, the whole table is
+    returnedif False, None is returned. If it is an iterable, only the included indices are chosen.
 
-    :param net: pandapower network
-    :type net: pandapowerNet
-    :param table_name: name of table to choose from
-    :type table_name: str
-    :param include_edges: whether to include this table or not, or the indices to include
-    :type include_edges: bool, iterable
-    :return: table - the chosen edge table
-    :rtype: pd.DataFrame
+    Parameters:
+        net: pandapower network
+        table_name: name of table to choose from
+        include_edges: whether to include this table or not, or the indices to include
+
+    Returns:
+        table (pd.DataFrame): the chosen edge table
     """
     table = None
     if isinstance(include_edges, bool):

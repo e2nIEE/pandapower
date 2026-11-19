@@ -610,7 +610,7 @@ def create_pp_bus(net: pandapowerNet, item, flag_graphics, is_unbalanced, export
     logger.debug(f">> creating {system_type} bus <{params['name']}>")
 
     if system_type == "ac":
-        bid = create_bus(net, **params)
+        bid = create_buses(net, 1, **params)
         table = "bus"
     elif system_type == "dc":
         bid = create_bus_dc(net, **params)
@@ -821,7 +821,7 @@ def get_connection_nodes(net: pandapowerNet, item, num_nodes):
         for b, vv in zip(buses, v):
             if b is None:
                 if table == "bus":
-                    aux_bus = create_bus(net, vv, type="n", name=name)
+                    aux_bus = create_buses(net, 1, vv, type="n", name=name)
                 else:
                     aux_bus = create_bus_dc(net, vv, type="n", name=name)
                 new_buses.append(aux_bus)
@@ -1150,7 +1150,7 @@ def segment_buses(net: pandapowerNet, bus1, bus2, num_sections, line_name):  # ,
         bus_name = f"{line_name} (Muff {m})"
         vn_kv = net.bus.at[bus1, "vn_kv"]
         zone = net.bus.at[bus1, "zone"]
-        bus = create_bus(net, name=bus_name, type="ls", vn_kv=vn_kv, zone=zone)
+        bus = create_buses(net, 1, name=bus_name, type="ls", vn_kv=vn_kv, zone=zone)
 
         # TODO: implement coords for segmentation buses.
         #  Handle coords if line has multiple coords.
@@ -1814,7 +1814,7 @@ def split_line_add_bus(net: pandapowerNet, split_dict):
         for i in range(len(len_sections)):
             # create bus
             name = "Muff Partial Load"
-            bus = create_bus(net, name=name, vn_kv=vn_kv, geodata=list_bus_coords[i])
+            bus = create_buses(net, 1, name=name, vn_kv=vn_kv, geodata=list_bus_coords[i])
             # create new line
             from_bus = net.line.at[lix, "from_bus"]
             to_bus = net.line.at[lix, "to_bus"]
@@ -1924,7 +1924,7 @@ def split_line_add_bus_old(net: pandapowerNet, item, parent):
         # create new bus
         vn_kv = net.bus.at[net.line.at[sid, "from_bus"], "vn_kv"]
         name = f"LodLV-{item.loc_name}"
-        bus = create_bus(net, vn_kv=vn_kv, name=name, geodata=bus_coords, type="n")
+        bus = create_buses(net, 1, vn_kv=vn_kv, name=name, geodata=bus_coords, type="n")
         net.bus.loc[bus, "description"] = f"Partial load {item.loc_name} = {item.plini:.3f} kW"
         logger.debug(f"created new bus in net: {net.bus.loc[bus]}")
 
@@ -3920,8 +3920,9 @@ def create_zpu(net: pandapowerNet, item):
     logger.debug(f"params = {params}")
 
     # create auxilary buses
-    aux_bus1 = create_bus(
+    aux_bus1 = create_buses(
         net,
+        nr_buses=1,
         vn_kv=net.bus.vn_kv.at[bus1],
         name=net.bus.name.at[bus1] + "_aux",
         type="b",
@@ -3930,8 +3931,9 @@ def create_zpu(net: pandapowerNet, item):
     )
     net.bus.loc[aux_bus1, "geo"] = net.bus.geo.at[bus1]
     params["from_bus"] = aux_bus1
-    aux_bus2 = create_bus(
+    aux_bus2 = create_buses(
         net,
+        nr_buses=1,
         vn_kv=net.bus.vn_kv.at[bus2],
         name=net.bus.name.at[bus2] + "_aux",
         type="b",
@@ -4082,8 +4084,9 @@ def create_sind(net: pandapowerNet, item):
         return
 
     # create auxilary buses
-    aux_bus1 = create_bus(
+    aux_bus1 = create_buses(
         net,
+        nr_buses=1,
         vn_kv=net.bus.vn_kv.at[bus1],
         name=net.bus.name.at[bus1] + "_aux",
         type="b",
@@ -4091,8 +4094,9 @@ def create_sind(net: pandapowerNet, item):
         in_service=True,
     )
     net.bus.loc[aux_bus1, "geo"] = net.bus.geo.at[bus1]
-    aux_bus2 = create_bus(
+    aux_bus2 = create_buses(
         net,
+        nr_buses=1,
         vn_kv=net.bus.vn_kv.at[bus2],
         name=net.bus.name.at[bus2] + "_aux",
         type="b",
@@ -4157,8 +4161,9 @@ def create_scap(net: pandapowerNet, item):
         x_ohm = -item.bcap / (item.gcap**2 + item.bcap**2)
 
         # create auxilary buses
-        aux_bus1 = create_bus(
+        aux_bus1 = create_buses(
             net,
+            nr_buses=1,
             vn_kv=net.bus.vn_kv.at[bus1],
             name=net.bus.name.at[bus1] + "_aux",
             type="b",
@@ -4166,8 +4171,9 @@ def create_scap(net: pandapowerNet, item):
             in_service=True,
         )
         net.bus.loc[aux_bus1, "geo"] = net.bus.geo.at[bus1]
-        aux_bus2 = create_bus(
+        aux_bus2 = create_buses(
             net,
+            nr_buses=1,
             vn_kv=net.bus.vn_kv.at[bus2],
             name=net.bus.name.at[bus2] + "_aux",
             type="b",

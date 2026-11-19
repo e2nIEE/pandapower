@@ -236,17 +236,12 @@ def find_graph_characteristics(g, roots, characteristics):
     """
     Finds and returns different characteristics of the given graph which can be specified.
 
-    INPUT:
-        **g** (NetworkX graph) - Graph of the network
-
-        **roots** (list) - Root buses of the graphsearch
-
-        **characteristics** (list) - List of characteristics this function determines and returns
-
-        .. note::
-
+    Parameters:
+        g (NetworkX graph): Graph of the network
+        roots (list): Root buses of the graphsearch
+        characteristics (list): List of characteristics this function determines and returns
+        .. note: :
             Possible characteristics:
-
             - 'connected' - All buses which have a connection to at least one of the root buses
             - 'articulation_points' - Buses which lead to disconnected areas if they get removed
             - 'bridges' - Edges which lead to disconnected areas if they get removed
@@ -254,30 +249,33 @@ def find_graph_characteristics(g, roots, characteristics):
             - 'required_bridges' - Bridges which are strictly needed to connect a specific bus
             - 'notn1_areas' - Areas which aren't connected if one specific bus gets removed
 
-    OUTPUT:
+    Returns:
+        char_dict (dict): dictionary which contains the wanted characteristics
 
-        **char_dict** (dict) - dictionary which contains the wanted characteristics
+                +-----------------------+----------------------------------------------------------------+
+                | key                   | dict value                                                     |
+                ========================+================================================================+
+                | `connected`           | set of all connected buses                                     |
+                +-----------------------+----------------------------------------------------------------+
+                | 'articulation_points' | set of all articulation points                                 |
+                +-----------------------+----------------------------------------------------------------+
+                | 'bridges'             | set of tuples which represent start and end bus of each bridge |
+                +-----------------------+----------------------------------------------------------------+
+                | 'stub_buses'          | set of all buses which lie on a stub                           |
+                +-----------------------+----------------------------------------------------------------+
+                | 'required_bridges'    | dict of all buses which are connected via at least one bridge. |
+                |                       | The dict values contain a set of bridges which are needed to   |
+                |                       | connect the key buses                                          |
+                +-----------------------+----------------------------------------------------------------+
+                | 'notn1_areas'         | dict of not n-1 safe areas. The dict values contain a set of   |
+                |                       | not n-1 safe buses which aren't connected if the key bus gets  |
+                |                       | removed                                                        |
+                +-----------------------+----------------------------------------------------------------+
 
-        ======================= ================================================================
-        key                     dict value
-        ======================= ================================================================
-        'connected'             set of all connected buses
-        'articulation_points'   set of all articulation points
-        'bridges'               set of tuples which represent start and end bus of each bridge
-        'stub_buses'            set of all buses which lie on a stub
-        'required_bridges'      dict of all buses which are connected via at least one bridge.
-                                The dict values contain a set of bridges which are needed to
-                                connect the key buses
-        'notn1_areas'           dict of not n-1 safe areas. The dict values contain a set of
-                                not n-1 safe buses which aren't connected if the key bus gets
-                                removed
-        ======================= ================================================================
-
-    EXAMPLE::
-
-        import topology as top
-        g = top.create_nxgraph(net, respect_switches=False)
-        char_dict = top.find_graph_characteristics(g, roots=[0, 3], characteristics=['connected', 'stub_buses'])
+    Example:
+        >>> import pandapower.topology as top
+        >>> g = top.create_nxgraph(net, respect_switches=False)
+        >>> char_dict = top.find_graph_characteristics(g, roots=[0, 3], characteristics=['connected', 'stub_buses'])
     """
     char_dict = find_basic_graph_characteristics(g, roots, characteristics)
 
@@ -386,20 +384,17 @@ def lines_on_path(mg, path):
     """
     Finds all lines that connect a given path of buses.
 
-    INPUT:
-       **mg** (NetworkX graph) - NetworkX Graph or MultiGraph that represents a pandapower network.
+    Parameters:
+        mg (NetworkX graph): NetworkX Graph or MultiGraph that represents a pandapower network.
+        path (list): List of connected buses.
 
-       **path** (list) - List of connected buses.
+    Returns:
+        lines (list): Returns a list of all lines on the path.
 
-    OUTPUT:
-       **lines** (list) - Returns a list of all lines on the path.
-
-    EXAMPLE:
-        import topology as top
-
-        mg = top.create_nxgraph(net)
-        lines = top.lines_on_path(mg, [4, 5, 6])
-
+    Example:
+        >>> import pandapower.topology as top
+        >>> mg = top.create_nxgraph(net)
+        >>> lines = top.lines_on_path(mg, [4, 5, 6])
     """
 
     return elements_on_path(mg, path, "line")
@@ -409,22 +404,18 @@ def elements_on_path(mg, path, element="line"):
     """
     Finds all elements that connect a given path of buses.
 
-    INPUT:
-       **mg** (NetworkX graph) - NetworkX Graph or MultiGraph that represents a pandapower network.
+    Parameters:
+        mg (NetworkX graph): NetworkX Graph or MultiGraph that represents a pandapower network.
+        path (list): List of connected buses.
+        element (string, "line"): element type
 
-       **path** (list) - List of connected buses.
+    Returns:
+        elements (list): Returns a list of all lines on the path.
 
-       **element** (string, "line") - element type
-
-    OUTPUT:
-       **elements** (list) - Returns a list of all lines on the path.
-
-    EXAMPLE:
-        import topology as top
-
-        mg = top.create_nxgraph(net)
-        elements = top.elements_on_path(mg, [4, 5, 6])
-
+    Example:
+        >>> import pandapower.topology as top
+        >>> mg = top.create_nxgraph(net)
+        >>> elements = top.elements_on_path(mg, [4, 5, 6])
     """
     if element not in ["line", "switch", "trafo", "trafo3w"]:
         raise ValueError(f"Invalid element type {element}")

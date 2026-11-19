@@ -199,10 +199,10 @@ def write_voltage_dependend_load_results(net: pandapowerNet, p, q, b):
 # TODO: many tests fail if this function fails, yet i could not find tests for it
 def write_pq_results_to_element(net: pandapowerNet, ppc: pd.DataFrame, element, suffix=None) -> pandapowerNet:
     """
-    get p_mw and q_mvar for a specific pq element ("load", "sgen"...).
-    This function basically writes values element table to res_element table
+    get p_mw and q_mvar for a specific pq element ("load", "sgen"...). This function basically writes values element
+    table to res_element table
 
-    Parameter:
+    Parameters:
         net: the pandapower net
         ppc: a ppc DataFrame
         element: element name (str)
@@ -320,11 +320,12 @@ def write_pq_results_to_element(net: pandapowerNet, ppc: pd.DataFrame, element, 
 
 def write_p_dc_results_to_element(net: pandapowerNet, ppc, element):
     """
-    get p_mw for a specific DC pq element ("vsc").
-    This function basically writes values element table to res_element table
-    :param net: pandapower net
-    :param element: element name (str)
-    :return:
+    get p_mw for a specific DC pq element ("vsc"). This function basically writes values element table to
+    res_element table
+
+    Parameters:
+        net: pandapower net
+        element: element name (str)
     """
     # info from net
     _is_elements = net["_is_elements"]
@@ -374,12 +375,12 @@ def _extract_dist_slack_pq_results(net: pandapowerNet, ppc, element, res_):
 
 def write_pq_results_to_element_3ph(net: pandapowerNet, element):
     """
-    get p_mw and q_mvar for a specific pq element ("load", "sgen"...).
-    This function basically writes values element table to res_element table
+    get p_mw and q_mvar for a specific pq element ("load", "sgen"...). This function basically writes values element
+    table to res_element table
 
-    :param net: pandapower net
-    :param element: element name (str)
-    :return:
+    Parameters:
+        net: pandapower net
+        element: element name (str)
     """
 
     # info from net
