@@ -444,7 +444,7 @@ def set_scaling_by_type(net: pandapowerNet, scalings, scale_load=True, scale_sge
         scaleit("sgen")
 
 
-def set_data_type_of_columns_to_default(net):
+def set_data_type_of_columns_to_default(net: pandapowerNet):
     """
     Overwrites dtype of DataFrame columns of PandapowerNet elements to default dtypes defined in
     pandapower. The function "convert_format" does that automatically for nets saved with

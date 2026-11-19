@@ -25,7 +25,7 @@ def _get_is_ppci_bus(net: pandapowerNet, bus):
     return ppci_bus
 
 
-def _init_ppc(net):
+def _init_ppc(net: pandapowerNet):
     _check_sc_data_integrity(net)
     _add_auxiliary_elements(net)
     ppc, _ = _pd2ppc(net)
@@ -45,7 +45,7 @@ def _init_ppc(net):
     return ppc, ppci
 
 
-def _check_sc_data_integrity(net):
+def _check_sc_data_integrity(net: pandapowerNet):
     if not net.gen.empty:
         for col in ("power_station_trafo", "pg_percent"):
             if col not in net.gen.columns:

@@ -453,7 +453,7 @@ def _get_trafo_results_3ph(net: pandapowerNet, ppc1, ppc2, I012_f, V012_f, I012_
     res_trafo_df.index = net["trafo"].index.values
 
 
-def _get_trafo3w_lookups(net):
+def _get_trafo3w_lookups(net: pandapowerNet):
     f, t = net._pd2ppc_lookups["branch"]["trafo3w"]
     hv = int(f + (t - f) / 3)
     mv = int(f + 2 * (t - f) / 3)

@@ -144,7 +144,7 @@ def _extract_results(net: pandapowerNet, ppc):
         _remove_costs(net)
 
 
-def _get_vsc_stacked_results(net):
+def _get_vsc_stacked_results(net: pandapowerNet):
     """
     Extract the results for the bipolar VSC from the monopolar VSC table.
     This done via the indexes, since we have created at the beginning two net.vsc entries, for every net.b2b_vsc entry.
@@ -248,7 +248,7 @@ def _get_costs(net: pandapowerNet, ppc):
     net.res_cost = ppc["obj"]
 
 
-def _remove_costs(net):
+def _remove_costs(net: pandapowerNet):
     if "res_cost" in net:
         del net["res_cost"]
 

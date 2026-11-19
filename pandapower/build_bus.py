@@ -866,7 +866,7 @@ def _get_symmetric_pq_of_unsymetric_element(net: pandapowerNet, element):
     return p_mw * scale, q_mvar * scale
 
 
-def _get_motor_pq(net):
+def _get_motor_pq(net: pandapowerNet):
     tab = net["motor"]
     active = net._is_elements["motor"]
     scale = tab["loading_percent"].values / 100 * tab["scaling"].values * active

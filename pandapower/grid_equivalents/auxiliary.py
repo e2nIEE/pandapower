@@ -353,7 +353,7 @@ def drop_assist_elms_by_creating_ext_net(net: pandapowerNet, elms=None):
         net.bus = net.bus.drop(columns=["name_equivalent"])
 
 
-def build_ppc_and_Ybus(net):
+def build_ppc_and_Ybus(net: pandapowerNet):
     """This function build ppc and gets the Ybus of given network without
     runing power flow calculation
     """
@@ -471,7 +471,7 @@ def match_cost_functions_and_eq_net(net: pandapowerNet, boundary_buses, eq_type)
             net[cost_elm] = net[cost_elm].drop(columns=["bus", "et_origin_id", "origin_idx", "origin_seq"])
 
 
-def _check_network(net):
+def _check_network(net: pandapowerNet):
     """
     This function will perform some checks and modifications on the given grid model.
 

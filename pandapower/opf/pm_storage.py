@@ -138,7 +138,7 @@ def _deactivate_storage_gens(net: pandapowerNet, ppci, pm):
         pm["gen"][str(ppci_gen + 1)]["gen_status"] = 0
 
 
-def read_pm_storage_results(net):
+def read_pm_storage_results(net: pandapowerNet):
     """
     Returns the storage results of a time series optimization as dict storage index -> DataFrame
     (index: time steps, columns: p_mw, q_mvar, soc_mwh, soc_percent). The state of charge of storages

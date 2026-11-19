@@ -60,7 +60,7 @@ def control_diagnostic(net: pandapowerNet, respect_in_service=True):
                 trafo_ctrl.remove(val)
 
 
-def trafo_characteristic_table_diagnostic(net):
+def trafo_characteristic_table_diagnostic(net: pandapowerNet):
     logger.info("Checking transformer characteristic table")
     if "trafo_characteristic_table" not in net:
         logger.info("No transformer characteristic table found")
@@ -191,7 +191,7 @@ def trafo_characteristic_table_diagnostic(net):
     return warnings_count == 0
 
 
-def shunt_characteristic_table_diagnostic(net):
+def shunt_characteristic_table_diagnostic(net: pandapowerNet):
     logger.info("Checking shunt characteristic table")
     if "shunt_characteristic_table" not in net:
         logger.info("No shunt characteristic table found")

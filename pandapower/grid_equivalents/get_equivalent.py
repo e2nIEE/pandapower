@@ -478,7 +478,7 @@ def merge_internal_net_and_equivalent_external_net(
     return merged_net
 
 
-def drop_repeated_characteristic(net):
+def drop_repeated_characteristic(net: pandapowerNet):
     for characteristic in [
         "trafo_characteristic_table",
         "shunt_characteristic_table",

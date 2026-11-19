@@ -797,7 +797,7 @@ def create_I_t_plot(trip_decisions, switch_id):
         )
 
 
-def power_flow_end_points(net):
+def power_flow_end_points(net: pandapowerNet):
     """function calculate end point from meshed grid and the start point from the radial grid to ext grid"""
 
     pf_net = copy.deepcopy(net)
@@ -903,7 +903,7 @@ def get_vi_angle(net: pandapowerNet, switch_id: int, **kwargs) -> float:
     return vi_angle
 
 
-def bus_path_multiple_ext_bus(net):
+def bus_path_multiple_ext_bus(net: pandapowerNet):
     G = create_nxgraph(net)
     bus_path = []
     for line_id in net.line.index:
@@ -959,11 +959,11 @@ def get_line_path(net: pandapowerNet, bus_path):  # type: ignore[no-redef]
     return line_path
 
 
-def parallel_lines(net):
+def parallel_lines(net: pandapowerNet):
     """Function return the list of parallel lines in the network"""
 
     parallel = []
-    new_parallel = []
+    new_parallel: list[list] = []
 
     # parallel_lines
     for i in net.line.index:

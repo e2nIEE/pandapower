@@ -43,14 +43,14 @@ def add_const(net: pandapowerNet, ds, recycle):
     )
 
 
-def create_output_writer(net):
+def create_output_writer(net: pandapowerNet):
     ow = OutputWriter(net, time_steps, output_path=tempfile.gettempdir(), output_file_type=".json")
     for table, variable in log_variables:
         ow.log_variable(table, variable)
     return ow
 
 
-def clear_controllers(net):
+def clear_controllers(net: pandapowerNet):
     """Remove controllers and output writers so a fresh time series setup can be created."""
     net.controller = net.controller.drop(index=net.controller.index)
     if "output_writer" in net:

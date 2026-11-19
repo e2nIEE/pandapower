@@ -1682,7 +1682,7 @@ def _transformer_correction_factor(trafo_df, vk, vkr, sn, cmax, case):
     return np.where(~power_station_unit, kt, 1)
 
 
-def get_is_lines(net):
+def get_is_lines(net: pandapowerNet):
     """
     get indices of lines that are in service and save that information in net
     """

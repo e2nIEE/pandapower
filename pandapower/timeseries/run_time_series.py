@@ -167,7 +167,7 @@ def _create_transformer_thermal_tracker():
     return TransformerThermalTracker() if TRANSFORMER_THERMAL_AVAILABLE else None
 
 
-def _check_controller_recyclability(net):
+def _check_controller_recyclability(net: pandapowerNet):
     # if a parameter is set to True here, it will be recalculated during the time series simulation
     recycle = {"trafo": False, "gen": False, "bus_pq": False}
     if "controller" not in net:

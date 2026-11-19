@@ -381,7 +381,7 @@ def _get_pp_gen_results_3ph(net: pandapowerNet, ppc0, ppc1, ppc2, b, pA, qA, pB,
     return b, pA, qA, pB, qB, pC, qC
 
 
-def _get_dcline_results(net):
+def _get_dcline_results(net: pandapowerNet):
     dc_gens = net.gen.index[(len(net.gen) - len(net.dcline) * 2) :]
     from_gens = net.res_gen.loc[dc_gens[1::2]]
     to_gens = net.res_gen.loc[dc_gens[::2]]

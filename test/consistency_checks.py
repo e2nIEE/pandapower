@@ -32,13 +32,13 @@ def rundcpp_with_consistency_checks(net: pandapowerNet, **kwargs):
     return True
 
 
-def runpp_pgm_with_consistency_checks(net):
+def runpp_pgm_with_consistency_checks(net: pandapowerNet):
     runpp_pgm(net, error_tolerance_vm_pu=1e-11, symmetric=True)
     consistency_checks(net)
     return True
 
 
-def runpp_pgm_3ph_with_consistency_checks(net):
+def runpp_pgm_3ph_with_consistency_checks(net: pandapowerNet):
     runpp_pgm(net, error_tolerance_vm_pu=1e-11, symmetric=False)
     consistency_checks_3ph(net)
     return True
@@ -55,7 +55,7 @@ def consistency_checks(net: pandapowerNet, rtol=1e-3, test_q=True):
     # consistent_vsc_stacked(net, rtol)  # todo
 
 
-def indices_consistent(net):
+def indices_consistent(net: pandapowerNet):
     elements = get_relevant_elements(net)
     for element in elements:
         e_idx = net[element].index
@@ -195,7 +195,7 @@ def consistency_checks_3ph(net: pandapowerNet, rtol=2e-3):
     element_power_consistent_with_bus_power_3ph(net, rtol)
 
 
-def indices_consistent_3ph(net):
+def indices_consistent_3ph(net: pandapowerNet):
     elements = get_relevant_elements(net, mode="pf_3ph")
     for element in elements:
         e_idx = net[element].index

@@ -25,7 +25,7 @@ def _get_pf_results(net: pandapowerNet, is_unbalanced=False):
     return _get_pf_results_balanced(net)
 
 
-def _get_pf_results_balanced(net):
+def _get_pf_results_balanced(net: pandapowerNet):
     pf_switch_status = (
         net.res_switch.pf_closed & net.res_switch.get("pf_in_service", True)
         if len(net.switch) > 0 and "res_switch" in net
@@ -68,7 +68,7 @@ def _get_pf_results_balanced(net):
     return pf_results
 
 
-def _get_pf_results_unbalanced(net):
+def _get_pf_results_unbalanced(net: pandapowerNet):
     pf_results = {}
     for phase in ["a", "b", "b"]:
         # unbalanced get results

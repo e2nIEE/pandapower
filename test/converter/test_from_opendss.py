@@ -17,6 +17,7 @@ import pandas as pd
 import pytest
 
 import pandapower as pp
+from pandapower.network import pandapowerNet
 
 # pytest enables faulthandler by default, which on Windows intercepts a first-chance
 # structured exception that OpenDSSDirect.py's native backend raises (and normally
@@ -224,7 +225,7 @@ def reactor_net(tmp_path):
     return from_opendss(str(p))
 
 
-def test_element_counts(net):
+def test_element_counts(net: pandapowerNet):
     assert len(net.bus) == 4  # sourcebus, b1, b2, b3
     assert len(net.line) == 2  # l1, l2
     assert len(net.trafo) == 1  # t1
@@ -233,7 +234,7 @@ def test_element_counts(net):
     assert net["opendss_import"]["warnings"] == []
 
 
-def test_bus_voltage_bases_are_line_to_line(net):
+def test_bus_voltage_bases_are_line_to_line(net: pandapowerNet):
     vn = dict(zip(net.bus["name"].str.lower(), net.bus["vn_kv"]))
     assert vn["sourcebus"] == pytest.approx(12.47, rel=1e-6)
     assert vn["b1"] == pytest.approx(12.47, rel=1e-6)
@@ -241,7 +242,7 @@ def test_bus_voltage_bases_are_line_to_line(net):
     assert vn["b3"] == pytest.approx(0.48, rel=1e-6)
 
 
-def test_linecode_captured_as_std_type(net):
+def test_linecode_captured_as_std_type(net: pandapowerNet):
     # l1 references LineCode lc1 -> its name is carried through as std_type;
     # l2 sets R1/X1 inline (no LineCode) -> std_type stays unset.
     std = dict(zip(net.line["name"], net.line["std_type"]))
@@ -249,13 +250,13 @@ def test_linecode_captured_as_std_type(net):
     assert pd.isna(std["l2"])
 
 
-def test_total_series_resistance_matches_opendss(net):
+def test_total_series_resistance_matches_opendss(net: pandapowerNet):
     # OpenDSS: l1 = 0.1 ohm/km * 1.0 km, l2 = 0.05 ohm/km * 0.2 km -> 0.11 ohm.
     total_r = float((net.line["r_ohm_per_km"] * net.line["length_km"]).sum())
     assert total_r == pytest.approx(0.11, rel=0.02)
 
 
-def test_transformer_impedance(net):
+def test_transformer_impedance(net: pandapowerNet):
     t = net.trafo.iloc[0]
     assert t["vn_hv_kv"] == pytest.approx(12.47)
     assert t["vn_lv_kv"] == pytest.approx(0.48)
@@ -264,7 +265,7 @@ def test_transformer_impedance(net):
     assert t["vk_percent"] == pytest.approx(np.hypot(1.0, 5.0), rel=1e-6)
 
 
-def test_runpp_converges(net):
+def test_runpp_converges(net: pandapowerNet):
     pp.runpp(net)
     assert net["converged"]
 
@@ -282,7 +283,7 @@ def test_center_tapped_feeder_converges(center_tapped_net):
     assert center_tapped_net["converged"]
 
 
-def test_roundtrip_voltage_matches_opendss(net):
+def test_roundtrip_voltage_matches_opendss(net: pandapowerNet):
     pp.runpp(net)
     odss = net["opendss_import"]["vm_pu_opendss"]
     diffs = [
