@@ -9,6 +9,7 @@ __all__ = [
 
 import logging
 from collections import defaultdict
+from typing import Any, cast
 
 import geojson
 import numpy as np
@@ -24,6 +25,7 @@ from pandapower.create.trafo_characteristic_create import create_trafo_character
 from pandapower.network import pandapowerNet
 from pandapower.network_structure import get_default_value, get_structure_dict
 from pandapower.plotting.geo import _is_valid_number, convert_geodata_to_geojson
+from pandapower.pp_types import StandardTypesDictKeys
 from pandapower.results import reset_results
 
 logger = logging.getLogger(__name__)
@@ -706,7 +708,7 @@ def _convert_to_mw(net: pandapowerNet):
                     net[element][new] *= 1e-3
 
     for element, std_types in net.std_types.items():
-        for parameters in std_types.values():
+        for parameters in cast(dict[str, dict[str, Any]], std_types).values():
             for parameter in set(parameters.keys()):
                 for old, new in replace:
                     if old in parameter and parameter != "pfe_kw":
@@ -774,7 +776,7 @@ def _check_elements_to_deserialize(element, elements_to_deserialize):
 
 
 def _add_missing_std_type_tables(net: pandapowerNet):
-    type_names = ("fuse", "line_dc")
+    type_names: tuple[StandardTypesDictKeys, ...] = ("fuse", "line_dc")
     for tn in type_names:
         if tn not in net.std_types:
             net.std_types[tn] = {}

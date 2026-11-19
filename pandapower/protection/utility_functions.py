@@ -965,7 +965,7 @@ def parallel_lines(net: pandapowerNet):
     """Function return the list of parallel lines in the network"""
 
     parallel = []
-    new_parallel = []
+    new_parallel: list[list] = []
 
     # parallel_lines
     for i in net.line.index:

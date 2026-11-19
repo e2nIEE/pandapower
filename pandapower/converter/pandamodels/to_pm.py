@@ -696,7 +696,7 @@ def _get_redispatch_elements(net: pandapowerNet):
     gen / sgen that is selected for redispatch, i.e. that is controllable and has a poly_cost entry
     with non-NaN redispatch up/down costs.
     """
-    selected = []
+    selected: list[tuple[str, int, float, float]] = []
     if "poly_cost" not in net or len(net.poly_cost) == 0:
         return selected
     pc = net.poly_cost

@@ -468,8 +468,8 @@ def compute_switch_flows(net: pandapowerNet):
         return
 
     # Per-bus net local consumption: positive = power leaving the bus
-    bus_p = defaultdict(float)
-    bus_q = defaultdict(float)
+    bus_p: defaultdict[int, float] = defaultdict(float)
+    bus_q: defaultdict[int, float] = defaultdict(float)
 
     _bus_element_names = [
         ("load", 1.0),
@@ -556,7 +556,7 @@ def compute_switch_flows(net: pandapowerNet):
         if grp is not None and grp in multi_groups:
             sw_by_group[grp].append((sw_idx, a, b))
 
-    computed_switches = set()
+    computed_switches: set[int] = set()
 
     # For each fused group, build the coupler subgraph and compute flows
     for grp_id, grp_buses in multi_groups.items():
@@ -589,8 +589,8 @@ def compute_switch_flows(net: pandapowerNet):
         # DFS to build tree order
         root = next(iter(grp_buses))
         visited = set()
-        stack = [(root, None, None)]
-        order = []
+        stack: list[tuple[int, int | None, int | None]] = [(root, None, None)]
+        order: list[tuple[int, int | None, int | None]] = []
         while stack:
             bus, parent, parent_sw = stack.pop()
             if bus in visited:
@@ -602,8 +602,8 @@ def compute_switch_flows(net: pandapowerNet):
                     stack.append((nb, bus, sw_idx))
 
         # Accumulate subtree demand from leaves to root
-        subtree_p = {}
-        subtree_q = {}
+        subtree_p: dict[int, float] = {}
+        subtree_q: dict[int, float] = {}
         for bus, parent, parent_sw in reversed(order):
             sp = bus_p.get(bus, 0.0)
             sq = bus_q.get(bus, 0.0)
