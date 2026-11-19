@@ -25,7 +25,7 @@ logger = logging.getLogger(__name__)
 
 def from_mpc(
     mpc_file: str | os.PathLike,
-    f_hz: int = 50,
+    f_hz: float = 50.0,
     casename_mpc_file: str = "mpc",
     validate_conversion: bool = False,
     load_case_engine: object | None = None,

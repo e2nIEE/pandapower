@@ -614,7 +614,7 @@ def create_pp_bus(net: pandapowerNet, item, flag_graphics, is_unbalanced, export
     logger.debug(f">> creating {system_type} bus <{params['name']}>")
 
     if system_type == "ac":
-        bid = create_buses(net, 1, **params)
+        (bid,) = create_buses(net, 1, **params)
         table = "bus"
     elif system_type == "dc":
         bid = create_bus_dc(net, **params)

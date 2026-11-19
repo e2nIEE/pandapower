@@ -17,6 +17,7 @@ __all__ = [
 import ast
 import logging
 import re
+from collections.abc import Iterator
 
 import geojson
 import numpy as np
@@ -177,7 +178,7 @@ def get_linewidth_list(linewidth, number_entries, name_entries="lines"):
 def get_index_array(indices, net_table_indices):
     if indices is None:
         return np.copy(net_table_indices.values)
-    elif isinstance(indices, set):
+    elif isinstance(indices, (set, Iterator)):
         return np.array(list(indices))
     return np.array(indices)
 
