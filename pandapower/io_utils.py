@@ -353,9 +353,14 @@ def _geo_type(geo) -> str | None:
     return geo.get("type") if isinstance(geo, dict) else None
 
 
+def _is_missing(value) -> bool:
+    """True for None, NaN and pd.NA. A list or another container is not a missing value."""
+    return value is None or (pd.api.types.is_scalar(value) and bool(pd.isna(value)))
+
+
 def _warn_non_point_bus_geo(geo: pd.Series) -> None:
     """Log a warning for bus geodata that is not a geojson Point, as create_bus does for coords."""
-    not_point = [idx for idx, g in geo.items() if not pd.isna(g) and _geo_type(g) != "Point"]
+    not_point = [idx for idx, g in geo.items() if not _is_missing(g) and _geo_type(g) != "Point"]
     if not_point:
         logger.warning(
             f"The geodata of the buses {not_point} is not a geojson Point. There is no support for other"

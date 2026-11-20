@@ -23,7 +23,7 @@ from pandapower.control import (
 from pandapower.convert_format import convert_format
 from pandapower.create import create_buses, create_transformer
 from pandapower.file_io import from_excel, from_json, from_json_string, from_pickle, to_excel, to_json, to_pickle
-from pandapower.io_utils import PPJSONDecoder, PPJSONEncoder, to_serializable
+from pandapower.io_utils import PPJSONDecoder, PPJSONEncoder, _warn_non_point_bus_geo, to_serializable
 from pandapower.network import pandapowerNet
 from pandapower.networks import create_kerber_dorfnetz, mv_oberrhein, simple_four_bus_system
 from pandapower.run import runpp, set_user_pf_options
@@ -88,7 +88,8 @@ def test_excel(net_in, tmp_path):
 
 
 @pytest.mark.skipif(
-    not xlsxwriter_INSTALLED, reason="xlsxwriter is mandatory to write excel files, but is not installed."
+    not xlsxwriter_INSTALLED or not openpyxl_INSTALLED,
+    reason=("xlsxwriter is mandatory to write excel files and openpyxl to read excels, but is not installed."),
 )
 def test_excel_warns_on_bus_geodata_that_is_not_a_point(tmp_path, caplog):
     net = pandapowerNet(name="bus geodata")
@@ -114,6 +115,24 @@ def test_excel_warns_on_bus_geodata_that_is_not_a_point(tmp_path, caplog):
         net_out = from_excel(filename)
     assert "The geodata of the buses [1] is not a geojson Point" in caplog.text
     assert len(net_out.bus) == 3
+
+
+def test_warn_non_point_bus_geo(caplog):
+    geo = pd.Series(
+        {
+            0: '{"coordinates": [1, 2], "type": "Point"}',
+            1: '{"coordinates": [[1, 2], [2, 3]], "type": "LineString"}',
+            2: [1, 2],
+            3: "not json",
+            4: None,
+            5: np.nan,
+            6: pd.NA,
+        },
+        dtype=object,
+    )
+    with caplog.at_level(logging.WARNING, logger="pandapower.io_utils"):
+        _warn_non_point_bus_geo(geo)
+    assert "The geodata of the buses [1, 2, 3] is not a geojson Point" in caplog.text
 
 
 @pytest.mark.skipif(
