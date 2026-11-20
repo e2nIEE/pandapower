@@ -9,6 +9,7 @@ import pandas as pd
 
 from pandapower.auxiliary import _add_auxiliary_elements, _sum_by_group
 from pandapower.build_branch import _transformer_correction_factor, get_trafo_values
+from pandapower.network import pandapowerNet
 from pandapower.pd2ppc import _pd2ppc, _ppc2ppci
 from pandapower.pypower.idx_brch import BR_R, BR_X, T_BUS
 from pandapower.pypower.idx_brch_sc import K_ST, K_T
@@ -18,13 +19,13 @@ from pandapower.pypower.idx_bus_sc import BS_GEN, BS_P, C_MAX, GS_GEN, GS_P, K_G
 logger = logging.getLogger(__name__)
 
 
-def _get_is_ppci_bus(net, bus):
+def _get_is_ppci_bus(net: pandapowerNet, bus):
     is_bus = bus[np.isin(bus, net._is_elements_final["bus_is_idx"])]
     ppci_bus = np.unique(net._pd2ppc_lookups["bus"][is_bus])
     return ppci_bus
 
 
-def _init_ppc(net):
+def _init_ppc(net: pandapowerNet):
     _check_sc_data_integrity(net)
     _add_auxiliary_elements(net)
     ppc, _ = _pd2ppc(net)
@@ -44,7 +45,7 @@ def _init_ppc(net):
     return ppc, ppci
 
 
-def _check_sc_data_integrity(net):
+def _check_sc_data_integrity(net: pandapowerNet):
     if not net.gen.empty:
         for col in ("power_station_trafo", "pg_percent"):
             if col not in net.gen.columns:
@@ -63,7 +64,7 @@ def _check_sc_data_integrity(net):
                 net.trafo[col] = False
 
 
-def _add_kt(net, ppc):
+def _add_kt(net: pandapowerNet, ppc):
     bus_lookup = net["_pd2ppc_lookups"]["bus"]
     branch = ppc["branch"]
     # "trafo/trafo3w" are already corrected in pd2ppc, write parameter kt for trafo
@@ -78,7 +79,7 @@ def _add_kt(net, ppc):
         branch[f:t, K_T] = kt
 
 
-def _add_ward_sc_z(net, ppc):
+def _add_ward_sc_z(net: pandapowerNet, ppc):
     for element in ("ward", "xward"):
         ward = net[element][net._is_elements_final[element]]
         if len(ward) == 0:
@@ -100,7 +101,7 @@ def _add_ward_sc_z(net, ppc):
         ppc["bus"][buses, BS] += bs
 
 
-def _add_sgen_sc_z(net, ppc):
+def _add_sgen_sc_z(net: pandapowerNet, ppc):
     # implement wind power station unit
     # implement doubly fed asynchronous generator
     # todo: what is this "_is_elements_final" thing?
@@ -148,7 +149,7 @@ def _add_sgen_sc_z(net, ppc):
         ppc["bus"][bus_idx, BS] = sgen_bs
 
 
-def _add_gen_sc_z_kg_ks(net, ppc):
+def _add_gen_sc_z_kg_ks(net: pandapowerNet, ppc):
     gen = net["gen"][net._is_elements_final["gen"]]
     if len(gen) == 0:
         return
@@ -292,7 +293,7 @@ def _add_gen_sc_z_kg_ks(net, ppc):
             ppc["bus"][ps_gen_buses_ppc[~ps_trafo_oltc_mask], K_G] = kg[~ps_trafo_oltc_mask]
 
 
-def _create_k_updated_ppci(net, ppci_orig, ppci_bus, zero_sequence=False):
+def _create_k_updated_ppci(net: pandapowerNet, ppci_orig, ppci_bus, zero_sequence=False):
     ppci = deepcopy(ppci_orig)
 
     non_ps_gen_bus = ppci_bus[np.isnan(ppci["bus"][ppci_bus, K_SG])]

@@ -9,6 +9,8 @@ __all__ = [
 
 from itertools import combinations
 
+from pandapower.network import pandapowerNet
+
 try:
     from html import escape
 except ImportError:
@@ -17,7 +19,9 @@ except ImportError:
 import json
 
 
-def to_html(net, filename, respect_switches=True, include_lines=True, include_trafos=True, show_tables=True):
+def to_html(
+    net: pandapowerNet, filename, respect_switches=True, include_lines=True, include_trafos=True, show_tables=True
+):
     """
     Saves a pandapower Network to an html file.
 
@@ -56,33 +60,29 @@ class Tag:
         return Raw(f"<{self.name}{attr.rstrip()}>{contents}</{self.name}>")
 
 
-def _net_to_graphjs(net, respect_switches=True, include_lines=True, include_trafos=True, images=None):
+def _net_to_graphjs(
+    net: pandapowerNet,
+    respect_switches: bool = True,
+    include_lines: bool = True,
+    include_trafos: bool = True,
+    images=None,
+):
     """
-    Converts a pandapower network into a graph for vis.js
-    which contains a simplified representation
-    of a network's topology, reduced to nodes and edges. Busses are being represented by nodes
-    (Note: only buses with in_service = 1 appear in the graph), edges represent physical
-    connections between buses (typically lines or trafos).
+    Converts a pandapower network into a graph for vis.js which contains a simplified representation of a network's
+    topology, reduced to nodes and edges. Busses are being represented by nodes (Note: only buses with in_service =
+    1 appear in the graph), edges represent physical connections between buses (typically lines or trafos).
 
-    INPUT:
-       **net** (pandapowerNet) - variable that contains a pandapower network
+    Parameters:
+        net: variable that contains a pandapower network
+        respect_switches: True: open line switches are being considered (no edge between nodes) False:
+            open line switches are being ignored
+        include_lines: determines, whether lines get converted to edges
+        include_trafos: determines, whether trafos get converted to edges
+        images:
 
-
-    OPTIONAL:
-       **respect_switches** (boolean, True) - True: open line switches are being considered
-                                                    (no edge between nodes)
-                                              False: open line switches are being ignored
-
-       **include_lines** (boolean, True) - determines, whether lines get converted to edges
-
-       **include_trafos** (boolean, True) - determines, whether trafos get converted to edges
-
-       **show_tables** (boolean, True) - shows pandapower element tables
-
-    EXAMPLE:
-
-        from pandapower.html import _net_to_graphjs
-        print _net_to_graph(net, respect_switches = False)
+    Example:
+        >>> from pandapower.plotting.to_html import _net_to_graphjs
+        >>> print(_net_to_graph(net, respect_switches = False))
     """
     nodes = [{"id": int(id), "label": str(id)} for id in net.bus[net.bus.in_service == 1].index]
     edges = []
@@ -168,36 +168,32 @@ def _net_to_graphjs(net, respect_switches=True, include_lines=True, include_traf
     return script
 
 
-def _net_to_html(net, respect_switches=True, include_lines=True, include_trafos=True, show_tables=True, images=None):
+def _net_to_html(
+    net: pandapowerNet,
+    respect_switches: bool = True,
+    include_lines: bool = True,
+    include_trafos: bool = True,
+    show_tables: bool = True,
+    images: dict | None = None,
+):
     """
-    Converts a pandapower network into an html page which contains a simplified representation
-    of a network's topology, reduced to nodes and edges. Busses are being represented by nodes
-    (Note: only buses with in_service = 1 appear in the graph), edges represent physical
-    connections between buses (typically lines or trafos).
+    Converts a pandapower network into an html page which contains a simplified representation of a network's
+    topology, reduced to nodes and edges. Busses are being represented by nodes (Note: only buses with in_service =
+    1 appear in the graph), edges represent physical connections between buses (typically lines or trafos).
 
-    INPUT:
-       **net** (pandapowerNet) - variable that contains a pandapower network
+    Parameters:
+        net: a pandapower network
+        respect_switches: True: open line switches are being considered (no edge between nodes) False:
+            open line switches are being ignored
+        include_lines: determines, whether lines get converted to edges
+        include_trafos: determines, whether trafos get converted to edges
+        show_tables: shows pandapower element tables
+        images: a dict of images to map a node id into an image
 
-
-    OPTIONAL:
-       **respect_switches** (boolean, True) - True: open line switches are being considered
-                                                    (no edge between nodes)
-                                              False: open line switches are being ignored
-
-       **include_lines** (boolean, True) - determines, whether lines get converted to edges
-
-       **include_trafos** (boolean, True) - determines, whether trafos get converted to edges
-
-       **show_tables** (boolean, True) - shows pandapower element tables
-
-       **images** (dict) - an optional dict of images to map a node id into an image
-
-    EXAMPLE:
-
-        from pandapower.html import to_html
-        html = to_html(net, respect_switches = False)
-        open('C:\\index.html', "w").write(html)
-
+    Example:
+        >>> from pandapower.plotting.to_html import _net_to_html
+        >>> html = _net_to_html(net, respect_switches = False)
+        >>> open('C:\\index.html', "w").write(html)
     """
 
     HTML, HEAD, STYLE, BODY, DIV = Tag("html"), Tag("head"), Tag("style"), Tag("body"), Tag("div")

@@ -1,7 +1,9 @@
 import pandas as pd
 
+from pandapower.network import pandapowerNet
 
-def _check_necessary_opf_parameters(net, logger):
+
+def _check_necessary_opf_parameters(net: pandapowerNet, logger):
     # Check if all necessary parameters are given:
     opf_col = {
         "ext_grid": pd.Series(["min_p_mw", "max_p_mw", "min_q_mvar", "max_q_mvar"]),

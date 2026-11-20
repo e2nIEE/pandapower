@@ -59,7 +59,7 @@ def net():
     return net
 
 
-def test_check_it(net):
+def test_check_it(net: pandapowerNet):
     runpp_3ph(net)
 
     line_pp = np.abs(

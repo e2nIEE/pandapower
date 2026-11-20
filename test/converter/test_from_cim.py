@@ -1893,5 +1893,17 @@ def test_sv_mapping():
     assert net.trafo.loc[net.trafo["origin_id"] == "_trafo1", "tap_pos"].item() == pytest.approx(12.0, abs=0.000001)
 
 
+def test_fullgrid_cgmes3_lines():
+    # issue #3322: ACLineSegments get Equipment.inService as cim:Equipment in the SSH profile
+    folder_path = os.path.join(test_path, "test_files", "example_cim")
+    cgmes_files = [os.path.join(folder_path, "CGMES_v3.0_FullGrid-Merged_v3.0.2.zip")]
+
+    net = from_cim(file_list=cgmes_files, cgmes_version="3.0")
+
+    assert len(net.line.index) == 11
+    assert net.line["in_service"].notna().all()
+    assert net.line["in_service"].all()
+
+
 if __name__ == "__main__":
     pytest.main([__file__, "-xs"])

@@ -39,6 +39,7 @@ from pandapower.grid_equivalents.ward_generation import (
     create_passive_external_net_for_ward_admittance,
 )
 from pandapower.groups import isin_group, set_group_reference_column
+from pandapower.network import pandapowerNet
 from pandapower.toolbox.data_modification import reindex_buses
 from pandapower.toolbox.grid_modification import (
     drop_buses,
@@ -477,7 +478,7 @@ def merge_internal_net_and_equivalent_external_net(
     return merged_net
 
 
-def drop_repeated_characteristic(net):
+def drop_repeated_characteristic(net: pandapowerNet):
     for characteristic in [
         "trafo_characteristic_table",
         "shunt_characteristic_table",
@@ -493,7 +494,7 @@ def drop_repeated_characteristic(net):
             net[characteristic] = net[characteristic].drop(repeated_idxs)
 
 
-def _determine_bus_groups(net, boundary_buses, internal_buses, show_computing_time=False):
+def _determine_bus_groups(net: pandapowerNet, boundary_buses, internal_buses, show_computing_time=False):
     """
     Defines bus groups according to the given boundary buses and internal buses.
 

@@ -821,7 +821,7 @@ def _replace_ext_area_by_impedances_and_shunts(
     runpp_fct(net_eq, calculate_voltage_angles=calc_volt_angles, tolerance=1e-6, max_iteration=100, **kwargs)
 
 
-def _integrate_power_elements_connected_with_switch_buses(net, net_external, all_external_buses):
+def _integrate_power_elements_connected_with_switch_buses(net: pandapowerNet, net_external, all_external_buses):
     _, bus_dict = get_connected_switch_buses_groups(net_external, all_external_buses)
     active_sgen = net.sgen[(net.sgen.in_service) & ~((net["sgen"].p_mw == 0) & (net["sgen"].q_mvar == 0))]
     active_load = net.load[(net.load.in_service) & ~((net["load"].p_mw == 0) & (net["load"].q_mvar == 0))]

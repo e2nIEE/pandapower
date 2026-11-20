@@ -37,7 +37,7 @@ import inspect
 import logging
 import re
 import sys
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from importlib.util import find_spec
 from itertools import combinations
 from typing import TYPE_CHECKING, Literal
@@ -177,7 +177,7 @@ def create_annotation_collection(texts, coords, size: float | list[float], prop=
         prop: FontProperties being passed to the TextPatches
 
     Keyword Arguments:
-        **kwargs: Will be passed to the PatchCollection.
+        Will be passed to the PatchCollection.
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
@@ -193,26 +193,24 @@ def create_annotation_collection(texts, coords, size: float | list[float], prop=
     return PatchCollection(tp, **kwargs)
 
 
-def add_cmap_to_collection(collection, cmap, norm, z, cbar_title, plot_colormap=True, clim=None):
+def add_cmap_to_collection(
+    collection, cmap, norm, z, cbar_title: str, plot_colormap: bool = True, clim: list[float] | None = None
+):
     """
     Adds a colormap to the given collection.
 
-    :param collection: collection for which to add colormap
-    :type collection: matplotlib.collections.collection
-    :param cmap: colormap which to use
-    :type cmap: any colormap from matplotlib.colors
-    :param norm: any norm which to use to translate values into colors
-    :type norm: any norm from matplotlib.colors
-    :param z: the array which to use in order to create the colors for the given collection
-    :type z: iterable
-    :param cbar_title: title of the colorbar
-    :type cbar_title: str
-    :param plot_colormap: flag whether the colormap is actually drawn (if False, is excluded in\
-        :func:`add_single_collection`)
-    :type plot_colormap: bool, default True
-    :param clim: color limit of the collection
-    :type clim: list(float), default None
-    :return: collection - the given collection with added colormap (no copy!)
+    Parameters:
+        collection (matplotlib.collections.collection): collection for which to add colormap
+        cmap (any colormap from matplotlib.colors): colormap which to use
+        norm (any norm from matplotlib.colors): any norm which to use to translate values into colors
+        z (iterable): the array which to use in order to create the colors for the given collection
+        cbar_title: title of the colorbar
+        plot_colormap: flag whether the colormap is actually drawn (if False, is excluded in
+            :func:`add_single_collection`)
+        clim: color limit of the collection
+
+    Returns:
+        the given collection with added colormap (no copy!)
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
@@ -226,32 +224,39 @@ def add_cmap_to_collection(collection, cmap, norm, z, cbar_title, plot_colormap=
     return collection
 
 
-def _create_node_collection(nodes, coords, size=5, patch_type="circle", color=None, picker=False, infos=None, **kwargs):
+def _create_node_collection(
+    nodes,
+    coords,
+    size: float = 5.0,
+    patch_type: str = "circle",
+    color=None,
+    picker: bool = False,
+    infos: list | None = None,
+    **kwargs,
+):
     """
-    Creates a collection with patches for the given nodes. Can be used generically for different \
-    types of nodes (bus in pandapower network, but also other nodes, e.g. in a networkx graph).
+    Creates a collection with patches for the given nodes. Can be used generically for different types of nodes (bus
+    in pandapower network, but also other nodes, e.g. in a networkx graph).
 
-    :param nodes: indices of the nodes to plot
-    :type nodes: iterable
-    :param coords: list of node coordinates (shape (2, N))
-    :type coords: iterable
-    :param size: size of the patches (handed over to patch creation function)
-    :type size: float
-    :param patch_type: type of patches that chall be created for the nodes - can be one of\
-        - "circle" for a circle\
-        - "rect" for a rectangle\
-        - "poly<n>" for a polygon with n edges
-    :type patch_type: str, default "circle"
-    :param color: colors or color of the node patches
-    :type color: iterable, float
-    :param picker: picker argument passed to the patch collection
-    :type picker: bool, default False
-    :param infos: list of infos belonging to each of the patches (can be displayed when hovering \
-        over the elements)
-    :type infos: list, default None
-    :param kwargs: keyword arguments are passed to the patch maker and patch collection
-    :type kwargs:
-    :return: pc - patch collection for the nodes
+    Parameters:
+        nodes (iterable): indices of the nodes to plot
+        coords (iterable): list of node coordinates (shape (2, N))
+        size: size of the patches (handed over to patch creation function)
+        patch_type: type of patches that chall be created for the nodes
+
+            - "circle" for a circle
+            - "rect" for a rectangle
+            - "poly<n>" for a polygon with n edges
+
+        color (iterable, float): colors or color of the node patches
+        picker: picker argument passed to the patch collection
+        infos: list of infos belonging to each of the patches (can be displayed when hovering over the elements)
+
+    Keyword Args:
+        keyword arguments are passed to the patch maker and patch collection
+
+    Returns:
+        patch collection for the nodes
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
@@ -261,116 +266,107 @@ def _create_node_collection(nodes, coords, size=5, patch_type="circle", color=No
     infos = list(infos) if infos is not None else []
     patches = node_patches(coords, size, patch_type, color, **kwargs)
     pc = PatchCollection(patches, match_original=True, picker=picker)
-    pc.node_indices = np.array(nodes)
+    pc.node_indices = np.array(nodes)  # type: ignore[attr-defined]
 
-    pc.patch_type = patch_type
-    pc.size = size
+    pc.patch_type = patch_type  # type: ignore[attr-defined]
+    pc.size = size  # type: ignore[attr-defined]
     if "orientation" in kwargs:
-        pc.orientation = kwargs["orientation"]
+        pc.orientation = kwargs["orientation"]  # type: ignore[attr-defined]
     if "zorder" in kwargs:
         pc.set_zorder(kwargs["zorder"])
-    pc.info = infos
-    pc.patch_type = patch_type
-    pc.size = size
+    pc.info = infos  # type: ignore[attr-defined]
+    pc.patch_type = patch_type  # type: ignore[attr-defined]
+    pc.size = size  # type: ignore[attr-defined]
     if "zorder" in kwargs:
         pc.set_zorder(kwargs["zorder"])
     if "orientation" in kwargs:
-        pc.orientation = kwargs["orientation"]
+        pc.orientation = kwargs["orientation"]  # type: ignore[attr-defined]
 
     return pc
 
 
-def _create_line2d_collection(coords, indices, infos=None, picker=False, **kwargs):
+def _create_line2d_collection(coords, indices, infos: list | None = None, picker: bool = False, **kwargs):
     """
     Generic function to create a LineCollection from coordinates.
 
-    :param coords: list of line coordinates (list should look like this: \
-        `[[(x11, y11), (x12, y12), (x13, y13), ...], [(x21, y21), (x22, x23), ...], ...]`)
-    :type coords: list or np.array
-    :param indices: list of node indices
-    :type indices: list or np.array
-    :param infos: list of infos belonging to each of the lines (can be displayed when hovering \
-        over them)
-    :type infos: list, default None
-    :param picker: picker argument passed to the line collection
-    :type picker: bool, default False
-    :param kwargs: keyword arguments are passed to the line collection
-    :type kwargs:
-    :return: lc - line collection for the given coordinates
+    Parameters:
+        coords (list or np.array): list of line coordinates (list should look like this: `[[(x11, y11), (x12, y12),
+            (x13, y13), ...], [(x21, y21), (x22, x23), ...], ...]`)
+        indices (list or np.array): list of node indices
+        infos: list of infos belonging to each of the lines (can be displayed when hovering over them)
+        picker: picker argument passed to the line collection
+
+    Keyword Args:
+        keyword arguments are passed to the line collection
+
+    Returns:
+        line collection for the given coordinates
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
     # This would be done anyway by matplotlib - doing it explicitly makes it clear and
     # prevents unexpected behavior when observing colors being "none"
     lc = LineCollection(coords, picker=picker, **kwargs)
-    lc.indices = np.array(indices)
-    lc.info = infos if infos is not None else []
+    lc.indices = np.array(indices)  # type: ignore[attr-defined]
+    lc.info = infos if infos is not None else []  # type: ignore[attr-defined]
     return lc
 
 
 def _create_node_element_collection(
     node_coords,
-    patch_maker,
-    size=1.0,
+    patch_maker: Callable,
+    size: float = 1.0,
     infos=None,
-    repeat_infos=(1, 1),
-    orientation=np.pi,
-    picker=False,
-    patch_facecolor="w",
-    patch_edgecolor="k",
-    line_color="k",
+    repeat_infos: tuple[int, int] = (1, 1),
+    orientation: float | list[float] = np.pi,
+    picker: bool = False,
+    patch_facecolor: str = "w",
+    patch_edgecolor: str = "k",
+    line_color: str = "k",
     patch_type=None,
     unique_angles=None,
     draw_by_type=None,
     **kwargs,
 ):
     """
-    Creates matplotlib collections of node elements. All node element collections usually consist of
-    one patch collection representing the element itself and a small line collection that connects
-    the element to the respective node.
+    Creates matplotlib collections of node elements. All node element collections usually consist of one patch
+    collection representing the element itself and a small line collection that connects the element to the
+    respective node.
 
-    :param node_coords: the coordinates (x, y) of the nodes with shape (N, 2)
-    :type node_coords: iterable[tuple[float, float]]
-    :param patch_maker: a function to generate the patches of which the collections consist (cf. \
-        the patch_maker module)
-    :type patch_maker: function
-    :param size: patch size
-    :type size: float, default 1
-    :param unique_angles: angles for patches
-    :type unique_angles: dict
-    :param infos: list of infos belonging to each of the elements (can be displayed when hovering \
-        over them)
-    :type infos: iterable, default None
-    :param repeat_infos: determines how many times the info shall be repeated to match the number \
-        of patches (first element) and lines (second element) returned by the patch maker
-    :type repeat_infos: tuple (length 2), default (1, 1)
-    :param orientation: orientation of load collection. pi is directed downwards, increasing values\
-        lead to clockwise direction changes.
-    :type orientation: float, default np.pi
-    :param picker: picker argument passed to the line collection
-    :type picker: bool, default False
-    :param patch_facecolor: color of the patch face (content)
-    :type patch_facecolor: matplotlib color, "w"
-    :param patch_edgecolor: color of the patch edges
-    :type patch_edgecolor: matplotlib color, "k"
-    :param line_color: color of the connecting lines
-    :type line_color: matplotlib color, "k"
-    :param kwargs: key word arguments are passed to the patch function
-    :type kwargs:
-    :return:
-        - patch collection representing the element\
+    Parameters:
+        node_coords (iterable[tuple[float, float]]): the coordinates (x, y) of the nodes with shape (N, 2)
+        patch_maker: a function to generate the patches of which the collections consist (cf. the patch_maker
+            module)
+        size: patch size
+        infos (iterable, None): list of infos belonging to each of the elements (can be displayed when hovering over
+            them)
+        repeat_infos: determines how many times the info shall be repeated to match
+            the number of patches (first element) and lines (second element) returned by the patch maker
+        orientation: orientation of load collection. pi is directed downwards, increasing values lead to
+            clockwise direction changes.
+        picker: picker argument passed to the line collection
+        patch_facecolor (matplotlib color, "w"): color of the patch face (content)
+        patch_edgecolor (matplotlib color, "k"): color of the patch edges
+        line_color (matplotlib color, "k"): color of the connecting lines
+        patch_type:
+        unique_angles (dict): angles for patches
+        draw_by_type:
+
+    Keyword Args:
+        keyword arguments are passed to the patch function
+
+    Returns:
+        - patch collection representing the element
         - connecting line collection
-    :rtype: tuple
-
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
     angles = orientation if hasattr(orientation, "__iter__") else [orientation] * len(node_coords)
-    if len(node_coords) != len(angles):
+    if len(node_coords) != len(angles):  # type: ignore[arg-type]
         raise AssertionError("The length of coordinates does not match the length of the orientation angles!")
     if infos is None:
-        infos_pc = []
-        infos_lc = []
+        infos_pc: list = []
+        infos_lc: list = []
     else:
         infos_pc = list(np.repeat(infos, repeat_infos[0]))
         infos_lc = list(np.repeat(infos, repeat_infos[1]))
@@ -395,64 +391,56 @@ def _create_node_element_collection(
     patch_coll = PatchCollection(polys, match_original=True, picker=picker, linewidth=linewidths, **kwargs)
     color = line_color if "color" not in kwargs else kwargs.pop("color", linewidths)
     line_coll = LineCollection(lines, color=color, picker=picker, linewidth=linewidths, **kwargs)
-    patch_coll.info = infos_pc
-    line_coll.info = infos_lc
+    patch_coll.info = infos_pc  # type: ignore[attr-defined]
+    line_coll.info = infos_lc  # type: ignore[attr-defined]
     return patch_coll, line_coll
 
 
 def _create_complex_branch_collection(
     coords,
-    patch_maker,
-    size=1,
+    patch_maker: Callable,
+    size: float = 1.0,
     infos=None,
-    repeat_infos=(2, 2),
-    picker=False,
-    patch_facecolor="w",
-    patch_edgecolor="k",
-    line_color="k",
-    linewidths=2.0,
+    repeat_infos: tuple[int, int] = (2, 2),
+    picker: bool = False,
+    patch_facecolor: str = "w",
+    patch_edgecolor: str = "k",
+    line_color: str = "k",
+    linewidths: float = 2.0,
     **kwargs,
 ):
     """
-    Creates a matplotlib line collection and a matplotlib patch collection representing a branch\
-    element that cannot be represented by just a line.
+    Creates a matplotlib line collection and a matplotlib patch collection representing a branch element that cannot
+    be represented by just a line.
 
-    :param coords: list of connecting node coordinates (usually should be \
-        `[((x11, y11), (x12, y12)), ((x21, y21), (x22, y22)), ...]`)
-    :type coords: (N, (2, 2)) shaped iterable
-    :param patch_maker: a function to generate the patches of which the collections consist (cf. \
-        the patch_maker module)
-    :type patch_maker: function
-    :param size: patch size
-    :type size: float, default 1
-    :param infos: list of infos belonging to each of the branches (can be displayed when hovering \
-        over them)
-    :type infos: iterable, default None
-    :param repeat_infos: determines how many times the info shall be repeated to match the number \
-        of patches (first element) and lines (second element) returned by the patch maker
-    :type repeat_infos: tuple (length 2), default (1, 1)
-    :param picker: picker argument passed to the line collection
-    :type picker: bool, default False
-    :param patch_facecolor: color or colors of the patch face (content)
-    :type patch_facecolor: matplotlib color or iterable, "w"
-    :param patch_edgecolor: color or colors of the patch edges
-    :type patch_edgecolor: matplotlib color or iterable, "k"
-    :param line_color: color or colors of the connecting lines
-    :type line_color: matplotlib color or iterable, "k"
-    :param linewidths: linewidths of the connecting lines and the patch edges
-    :type linewidths: float, default 2.
-    :param kwargs: key word arguments are passed to the patch maker and the patch and line \
-        collections
-    :type kwargs:
-    :return: Return values:\
-        - patch_coll - patch collection representing the branch element\
-        - line_coll - line collection connecting the patches with the nodes
+    Parameters:
+        coords ((N, (2, 2)) shaped iterable): list of connecting node coordinates (usually should be `[((x11, y11),
+            (x12, y12)), ((x21, y21), (x22, y22)), ...]`)
+        patch_maker: a function to generate the patches of which the collections consist (cf. the patch_maker
+            module)
+        size: patch size
+        infos (iterable, None): list of infos belonging to each of the branches (can be displayed when hovering over
+            them)
+        repeat_infos: determines how many times the info shall be repeated to match
+            the number of patches (first element) and lines (second element) returned by the patch maker
+        picker: picker argument passed to the line collection
+        patch_facecolor (matplotlib color or iterable, "w"): color or colors of the patch face (content)
+        patch_edgecolor (matplotlib color or iterable, "k"): color or colors of the patch edges
+        line_color (matplotlib color or iterable, "k"): color or colors of the connecting lines
+        linewidths: linewidths of the connecting lines and the patch edges
+
+    Keyword Args:
+        keyword arguments are passed to the patch maker and the patch and line collections
+
+    Returns:
+        Return values: - patch_coll - patch collection representing the branch element - line_coll - line collection
+            connecting the patches with the nodes
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
     if infos is None:
-        infos_pc = []
-        infos_lc = []
+        infos_pc: list = []
+        infos_lc: list = []
     else:
         infos_pc = list(np.repeat(infos, repeat_infos[0]))
         infos_lc = list(np.repeat(infos, repeat_infos[1]))
@@ -464,14 +452,14 @@ def _create_complex_branch_collection(
         kwargs.pop(kw)
     patch_coll = PatchCollection(patches, match_original=True, picker=picker, **kwargs)
     line_coll = LineCollection(lines, color=line_color, picker=picker, linewidths=linewidths, **kwargs)
-    patch_coll.info = infos_pc
-    line_coll.info = infos_lc
+    patch_coll.info = infos_pc  # type: ignore[attr-defined]
+    line_coll.info = infos_lc  # type: ignore[attr-defined]
     return patch_coll, line_coll
 
 
 def create_bus_collection(
     net: pandapowerNet,
-    buses: list | None = None,
+    buses: Iterable | None = None,
     size: float = 5.0,
     patch_type: str = "circle",
     color=None,
@@ -483,7 +471,7 @@ def create_bus_collection(
     bus_geodata: pd.DataFrame | None = None,
     bus_table: str = "bus",
     cbar_title: str = "Bus Voltage [pu]",
-    clim: tuple[float] | None = None,
+    clim: list[float] | None = None,
     plot_colormap: bool = True,
     **kwargs,
 ):
@@ -655,16 +643,16 @@ def create_line_collection(
 
 def create_dcline_collection(
     net,
-    dclines=None,
-    line_geodata=None,
-    infofunc=None,
+    dclines: list | None = None,
+    line_geodata: DataFrame | None = None,
+    infofunc: Callable | None = None,
     cmap=None,
     norm=None,
-    picker=False,
+    picker: bool = False,
     z=None,
-    cbar_title="HVDC-Line Loading [%]",
+    cbar_title: str = "HVDC-Line Loading [%]",
     clim=None,
-    plot_colormap=True,
+    plot_colormap: bool = True,
     **kwargs,
 ):
     """
@@ -672,25 +660,24 @@ def create_dcline_collection(
 
     Parameters:
         net (pandapowerNet): The pandapower network
-        dclines (list, None): The dclines for which the collections are created. If None,
-            all dclines in the network are considered.
-        line_geodata (DataFrame, None): coordinates in geo column to use for plotting If None, net.bus.geo is used
-        infofunc (function, None): infofunction for the patch element
+        dclines: The dclines for which the collections are created. If None, all dclines in the network are
+            considered.
+        line_geodata: coordinates in geo column to use for plotting If None, net.bus.geo is used
+        infofunc: infofunction for the patch element
         cmap: colormap for the patch colors
         norm (matplotlib norm object, None): matplotlib norm object
-        picker (bool, False): picker argument passed to the line collection
+        picker: picker argument passed to the line collection
         z (array, None): array of line loading magnitudes for colormap. Used in case of given cmap. If None
             net.res_line.loading_percent is used.
-        cbar_title (str, "Line Loading [%]"): colormap bar title in case of given cmap
+        cbar_title: colormap bar title in case of given cmap
         clim (tuple of floats, None): setting the norm limits for image scaling
-        plot_colormap (bool, True): flag whether the colormap is actually drawn
+        plot_colormap: flag whether the colormap is actually drawn
 
     Keyword Arguments:
         **kwargs: are passed to the patch function
 
     Returns:
         line collection
-        :param line_geodata:
     """
     if not MATPLOTLIB_INSTALLED:
         soft_dependency_error(str(sys._getframe().f_code.co_name) + "()", "matplotlib")
@@ -712,9 +699,9 @@ def create_dcline_collection(
 
         line_geodata = pd.DataFrame(pd.DataFrame(coords, columns=["geo"])["geo"].apply(_get_coords_from_geojson))
 
-    infos = [infofunc(line) for line in line_geodata.index] if infofunc else []
+    infos = [infofunc(line) for line in line_geodata.index] if infofunc else []  # type: ignore[union-attr]
 
-    lc = _create_line2d_collection(line_geodata["geo"], lines_with_geo, infos=infos, picker=picker, **kwargs)
+    lc = _create_line2d_collection(line_geodata["geo"], lines_with_geo, infos=infos, picker=picker, **kwargs)  # type: ignore[index]
 
     loading_percent = 100 * net.res_dcline[["p_from_mw", "p_to_mw"]].abs().max(axis=1) / net.dcline.p_mw.abs()
 
@@ -726,7 +713,9 @@ def create_dcline_collection(
     return lc
 
 
-def create_impedance_collection(net, impedances=None, bus_geodata=None, infofunc=None, picker=False, **kwargs):
+def create_impedance_collection(
+    net: pandapowerNet, impedances=None, bus_geodata=None, infofunc=None, picker=False, **kwargs
+):
     """
     Creates a matplotlib line collection of pandapower lines.
 
@@ -849,7 +838,7 @@ def create_trafo_connection_collection(
     return lc
 
 
-def create_trafo3w_connection_collection(net, trafos=None, bus_geodata=None, infofunc=None, **kwargs):
+def create_trafo3w_connection_collection(net: pandapowerNet, trafos=None, bus_geodata=None, infofunc=None, **kwargs):
     """
     Creates a matplotlib line collection of pandapower 3W-transformers.
     This function can be used to create line collections for voltage fall diagrams.
@@ -894,7 +883,7 @@ def create_trafo3w_connection_collection(net, trafos=None, bus_geodata=None, inf
     info = [infofunc(x) if infofunc is not None else [] for tr in [(t, t, t) for t in trafos] for x in tr]
 
     lc = LineCollection(tg, **kwargs)
-    lc.info = info
+    lc.info = info  # type: ignore[attr-defined]
 
     return lc
 
@@ -1076,9 +1065,9 @@ def create_trafo3w_collection(
     if len(circles) == 0:
         return None, None
     lc = LineCollection(lines, color=color, picker=picker, linewidths=linewidth, **kwargs)
-    lc.info = infos
+    lc.info = infos  # type: ignore[attr-defined]
     pc = PatchCollection(circles, match_original=True, picker=picker, linewidth=linewidth, **kwargs)
-    pc.info = infos
+    pc.info = infos  # type: ignore[attr-defined]
     if cmap is not None:
         z_duplicated = np.repeat(z.values, 3)
         lc.set_cmap(cmap)
@@ -1383,6 +1372,7 @@ def _create_gen_or_sgen_collection(
     infos = [infofunc(i) for i in indices] if infofunc is not None else []
     buses = df.loc[indices, "bus"]
     node_coords = net.bus.loc[buses, "geo"].apply(geojson.loads).apply(geojson.utils.coords).apply(next).to_list()
+    angles: list[float] | float
     if draw_by_type:
         if unique_angles is None:
             raise AttributeError(
@@ -1490,7 +1480,9 @@ def create_sgen_collection(
     )
 
 
-def create_storage_collection(net, storages=None, size=1.0, infofunc=None, orientation=np.pi, picker=False, **kwargs):
+def create_storage_collection(
+    net: pandapowerNet, storages=None, size=1.0, infofunc=None, orientation=np.pi, picker=False, **kwargs
+):
     """
     Creates a matplotlib patch collection of pandapower storage element.
 
@@ -1585,7 +1577,9 @@ def create_ext_grid_collection(
     return ext_grid_pc, ext_grid_lc
 
 
-def create_line_switch_collection(net, switches=None, size=1, distance_to_bus=3, use_line_geodata=False, **kwargs):
+def create_line_switch_collection(
+    net: pandapowerNet, switches=None, size=1, distance_to_bus=3, use_line_geodata=False, **kwargs
+):
     """
     Creates a matplotlib patch collection of pandapower line-bus switches.
 

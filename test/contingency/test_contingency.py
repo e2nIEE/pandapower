@@ -445,7 +445,7 @@ def test_cause_element_index():
         check_cause_index(net, nminus1_cases)
 
 
-def check_cause_index(net, nminus1_cases):
+def check_cause_index(net: pandapowerNet, nminus1_cases):
     """
     This is a not so efficient but very easy to understand auxiliary function to test the "cause element" feature
     that is otherwise complicated to test properly.
@@ -477,7 +477,7 @@ def check_cause_index(net, nminus1_cases):
             )
 
 
-def run_for_from_bus_loading(net, **kwargs):
+def run_for_from_bus_loading(net: pandapowerNet, **kwargs):
     runpp(net, **kwargs)
     net.res_line["loading_percent"] = net.res_line.i_from_ka / net.line.max_i_ka * 100
     if len(net.trafo) > 0:
@@ -485,7 +485,7 @@ def run_for_from_bus_loading(net, **kwargs):
         net.res_trafo["loading_percent"] = net.res_trafo.i_hv_ka / max_i_ka_limit * 100
 
 
-def setup_timeseries(net):
+def setup_timeseries(net: pandapowerNet):
     load_profiles = pd.DataFrame(
         net.load.p_mw.values * (np.random.random((4, len(net.load))) * 0.4 + 0.8),
         index=np.arange(4),
@@ -527,7 +527,7 @@ def setup_timeseries(net):
         ow.log_variable("res_trafo", "min_loading_percent")
 
 
-def _randomize_indices(net):
+def _randomize_indices(net: pandapowerNet):
     rng = np.random.default_rng()
     for element in ("line", "trafo", "trafo3w"):
         if len(net[element]) == 0:

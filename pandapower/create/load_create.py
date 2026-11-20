@@ -339,8 +339,7 @@ def create_asymmetric_load(
     return index
 
 
-# =============================================================================
-# def create_impedance_load(net, bus, r_A , r_B , r_C, x_A=0, x_B=0, x_C=0,
+# def create_impedance_load(net: pandapowerNet, bus, r_A , r_B , r_C, x_A=0, x_B=0, x_C=0,
 #                      sn_mva=nan, name=None, scaling=1.,
 #                     index = None, in_service=True, type=None,
 #                     ):

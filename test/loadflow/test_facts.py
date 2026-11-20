@@ -79,7 +79,7 @@ def compare_tcsc_impedance(net: pandapowerNet, net_ref: pandapowerNet, idx_tcsc,
     net_ref.res_bus.loc[net.ssc.bus.values, "q_mvar"] = backup_q
 
 
-def compare_ssc_impedance_gen(net, net_ref, element="ssc"):
+def compare_ssc_impedance_gen(net: pandapowerNet, net_ref, element="ssc"):
     backup_q = net_ref.res_bus.loc[net[element].bus.values, "q_mvar"].copy()
     ### comparing the original buses in net and net_ref(witout the auxilary buses)
     net_ref.res_bus.loc[net[element].bus.values, "q_mvar"] += net_ref.res_impedance.loc[
@@ -138,7 +138,7 @@ def compare_ssc_impedance_gen(net, net_ref, element="ssc"):
     net_ref.res_bus.loc[net[element].bus.values, "q_mvar"] = backup_q
 
 
-def copy_with_impedance(net):
+def copy_with_impedance(net: pandapowerNet):
     baseMVA = net.sn_mva  # MVA
     baseV = net.bus.vn_kv.values  # kV
     baseZ = baseV**2 / baseMVA

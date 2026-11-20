@@ -1,7 +1,6 @@
 import numpy as np
 import pytest
 
-from pandapower import pandapowerNet
 from pandapower.convert_format import convert_format
 from pandapower.create import (
     create_bus,
@@ -16,6 +15,7 @@ from pandapower.grid_equivalents.toolbox import (
     get_boundaries_by_bus_zone_with_boundary_branches,
     set_bus_zone_by_boundary_branches,
 )
+from pandapower.network import pandapowerNet
 from pandapower.networks.power_system_test_cases import case9
 from pandapower.run import runpp
 from pandapower.toolbox.grid_modification import merge_nets, replace_ext_grid_by_gen

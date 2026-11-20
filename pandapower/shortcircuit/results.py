@@ -4,6 +4,7 @@
 import numpy as np
 import pandas as pd
 
+from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_brch_sc import (
     IKSS_ANGLE_F,
     IKSS_ANGLE_T,
@@ -82,7 +83,7 @@ def _copy_result_to_ppci_orig(ppci_orig, ppci, ppci_bus, calc_options):
                 ppci_orig["branch"][:, branch_results_cols_add] = ppci["branch"][:, branch_results_cols_add]
 
 
-def _get_bus_ppc_idx_for_br_all_results(net, ppc, bus):
+def _get_bus_ppc_idx_for_br_all_results(net: pandapowerNet, ppc, bus):
     bus_lookup = net._pd2ppc_lookups["bus"]
     if bus is None:
         bus = net.bus.index
@@ -92,7 +93,7 @@ def _get_bus_ppc_idx_for_br_all_results(net, ppc, bus):
     return bus, ppc_index
 
 
-def _extract_results(net, ppc, ppc_0, bus):
+def _extract_results(net: pandapowerNet, ppc, ppc_0, bus):
     _get_bus_results(net, ppc, ppc_0, bus)
     if net._options["branch_results"]:
         if net._options["return_all_currents"]:
@@ -107,7 +108,7 @@ def _extract_results(net, ppc, ppc_0, bus):
             _get_switch_results(net, ppc)
 
 
-def _get_bus_results(net, ppc, ppc_0, bus):
+def _get_bus_results(net: pandapowerNet, ppc, ppc_0, bus):
     bus_lookup = net._pd2ppc_lookups["bus"]
     ppc_index = bus_lookup[net.bus.index]
 
@@ -139,7 +140,7 @@ def _get_bus_results(net, ppc, ppc_0, bus):
     net.res_bus_sc = net.res_bus_sc.loc[bus, :]
 
 
-def _get_line_results(net, ppc):
+def _get_line_results(net: pandapowerNet, ppc):
     branch_lookup = net._pd2ppc_lookups["branch"]
     case = net._options["case"]
     if "line" in branch_lookup:
@@ -170,7 +171,7 @@ def _get_line_results(net, ppc):
             net.res_line_sc["ith_ka"] = minmax(ppc["branch"][f:t, [ITH_F, ITH_T]].real, axis=1)
 
 
-def _get_switch_results(net, ppc):
+def _get_switch_results(net: pandapowerNet, ppc):
     if len(net.switch) == 0:
         return
     branch_lookup = net._pd2ppc_lookups["branch"]
@@ -196,7 +197,7 @@ def _get_branch_result_from_internal(variable, ppc, ppc_index, f, t):
         return np.full((t - f) * len(ppc_index), np.nan, dtype=np.float64)
 
 
-def _get_line_all_results(net, ppc, bus):
+def _get_line_all_results(net: pandapowerNet, ppc, bus):
     case = net._options["case"]
 
     bus, ppc_index = _get_bus_ppc_idx_for_br_all_results(net, ppc, bus)
@@ -251,7 +252,7 @@ def _get_line_all_results(net, ppc, bus):
             )
 
 
-def _get_switch_all_results(net, ppc, bus):
+def _get_switch_all_results(net: pandapowerNet, ppc, bus):
     case = net._options["case"]
 
     bus, ppc_index = _get_bus_ppc_idx_for_br_all_results(net, ppc, bus)
@@ -281,7 +282,7 @@ def _get_switch_all_results(net, ppc, bus):
             )
 
 
-def _get_trafo_results(net, ppc):
+def _get_trafo_results(net: pandapowerNet, ppc):
     branch_lookup = net._pd2ppc_lookups["branch"]
     if "trafo" in branch_lookup:
         f, t = branch_lookup["trafo"]
@@ -304,7 +305,7 @@ def _get_trafo_results(net, ppc):
         net.res_trafo_sc["va_lv_degree"] = ppc["branch"][f:t, VKSS_ANGLE_T].real
 
 
-def _get_trafo_all_results(net, ppc, bus):
+def _get_trafo_all_results(net: pandapowerNet, ppc, bus):
     bus, ppc_index = _get_bus_ppc_idx_for_br_all_results(net, ppc, bus)
     branch_lookup = net._pd2ppc_lookups["branch"]
 
@@ -322,7 +323,7 @@ def _get_trafo_all_results(net, ppc, bus):
         )
 
 
-def _get_trafo3w_results(net, ppc):
+def _get_trafo3w_results(net: pandapowerNet, ppc):
     branch_lookup = net._pd2ppc_lookups["branch"]
     if "trafo3w" in branch_lookup:
         f, t = net._pd2ppc_lookups["branch"]["trafo3w"]
@@ -334,7 +335,7 @@ def _get_trafo3w_results(net, ppc):
         net.res_trafo3w_sc["ikss_lv_ka"] = ppc["branch"][mv:lv, IKSS_T].real
 
 
-def _get_trafo3w_all_results(net, ppc, bus):
+def _get_trafo3w_all_results(net: pandapowerNet, ppc, bus):
     bus, ppc_index = _get_bus_ppc_idx_for_br_all_results(net, ppc, bus)
     branch_lookup = net._pd2ppc_lookups["branch"]
 

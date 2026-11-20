@@ -6,6 +6,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+from pandapower import pandapowerNet
 from pandapower.control.controller.trafo.continuous_tap_control import (
     ContinuousTapControl,
 )
@@ -16,6 +17,7 @@ from pandapower.create import (
     create_transformer,
     create_transformer3w,
 )
+from pandapower.network import pandapowerNet
 from pandapower.run import rundcpp, runpp
 from pandapower.timeseries.data_sources.frame_data import DFData
 from pandapower.timeseries.read_batch_results import (
@@ -42,7 +44,7 @@ def run_function(request):
     return request.param
 
 
-def add_const(net, ds, recycle, element="load", variable="p_mw", element_index=None, profile_name=None):
+def add_const(net: pandapowerNet, ds, recycle, element="load", variable="p_mw", element_index=None, profile_name=None):
     if element_index is None or profile_name is None:
         element_index = [0, 1, 2]
         profile_name = ["load1", "load2_mv_p", "load3_hv_p"]
@@ -145,7 +147,7 @@ def _v_var(run, full=True):
         return var
 
 
-def _run_recycle(net, run):
+def _run_recycle(net: pandapowerNet, run):
     # default log variables are res_bus.vm_pu, res_line.loading_percent
     log_variables = [
         ("res_bus", "vm_pu") if run.__name__ == "runpp" else ("res_bus", "va_degree"),
@@ -161,7 +163,7 @@ def _run_recycle(net, run):
     return vm_pu, ll
 
 
-def _run_normal(net, run, time_steps=time_steps):
+def _run_normal(net: pandapowerNet, run, time_steps=time_steps):
     log_variables = [
         ("res_bus", "vm_pu") if run.__name__ == "runpp" else ("res_bus", "va_degree"),
         ("res_line", "loading_percent"),
