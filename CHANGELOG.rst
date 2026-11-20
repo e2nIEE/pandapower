@@ -48,6 +48,8 @@ Change Log
 
 [upcoming release] - 2026-..-..
 -------------------------------
+- [FIXED] runpp with enforce_q_lims now reports a failed inner power flow instead of continuing with non-converged results (#3085).
+- [FIXED] runpp with enforce_q_lims=2 no longer crashes with an IndexError when the largest Q-limit violation is on the minimum side (#3085).
 - [FIXED] Ideal three-winding transformer taps at the star point now preserve their phase shift when moved to the equivalent transformer side (#2692).
 - [FIXED] initialized out-of-service short-circuit branch result padding to zero.
 - [CHANGED] PandaModels.jl interface: the network is sent in MATPOWER units (MW, MVAr, degrees, ``per_unit=False``) and converted to per unit by PandaModels.jl, which is now required in version >= 0.10. The new keyword ``pm_base_mva`` (default ``net.sn_mva``) sets the per unit base; Ipopt is much faster on a base fitting the grid (e.g. case118: 0.1 s at 100 MVA instead of 2.2 s at 1 MVA).
