@@ -283,7 +283,7 @@ def pips(
 
     # evaluate cost f(x0) and constraints g(x0), h(x0)
     x = x0
-    f, df = f_fcn(x)  # cost
+    f, df = f_fcn(x)[:2]  # cost
     f = f * opt["cost_mult"]
     df = df * opt["cost_mult"]
     if nonlinear:
@@ -454,7 +454,7 @@ def pips(
             gamma = sigma * dot(z, mu) / niq
 
         # evaluate cost, constraints, derivatives
-        f, df = f_fcn(x)  # cost
+        f, df, *_ = f_fcn(x)  # cost
         f = f * opt["cost_mult"]
         df = df * opt["cost_mult"]
         if nonlinear:

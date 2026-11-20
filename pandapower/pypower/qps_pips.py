@@ -163,9 +163,7 @@ def qps_pips(H, c, A, l, u, xmin=None, xmax=None, x0=None, opt=None):
     def qp_f(x, return_hessian=False):
         f = 0.5 * dot(x * p["H"], x) + dot(p["c"], x)
         df = p["H"] * x + p["c"]
-        if not return_hessian:
-            return f, df
-        d2f = p["H"]
+        d2f = p["H"] if return_hessian else None
         return f, df, d2f
 
     p["f_fcn"] = qp_f
