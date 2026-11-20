@@ -5,9 +5,13 @@ import os
 
 import numpy as np
 import pandas as pd
+import pandapower.networks as pn
+import pandapower.pf.run_newton_raphson_pf as nr_pf
+import pandapower.pf.runpf_pypower as pp_pf
 import pytest
 from numpy import isclose, isin, isnan
 
+from pandapower.auxiliary import LoadflowNotConverged
 from pandapower.create import (
     create_bus,
     create_ext_grid,
@@ -842,6 +846,84 @@ def test_enforce_q_lims(v_tol=1e-6, s_tol=5e-3):
     runpp(net, enforce_q_lims=True)
     assert abs(net.res_sgen.q_mvar.at[sgen] - net.sgen.q_mvar.at[sgen]) > s_tol
     assert abs(net.res_sgen.q_mvar.at[sgen] - net.sgen.max_q_mvar.at[sgen]) < s_tol
+
+
+@pytest.mark.parametrize("algorithm", ["nr", "fdbx"])
+def test_enforce_q_lims_min_only_qlim2(algorithm, s_tol=5e-3):
+    """enforce_q_lims=2 with a generator violating only its minimum Q limit.
+
+    With only min-side violations, the largest-violation selection must pick
+    the min-side generator. The selection compared the argmax index against
+    the number of max-side violations with `>` instead of `>=`, so the
+    min-side generator was looked up in the (empty) list of max-side
+    violators and the run crashed with an IndexError.
+    """
+    net = pandapowerNet(name="test_enforce_qlims_min_only")
+    net = add_test_enforce_qlims(net)
+    runpp(net, enforce_q_lims=2, algorithm=algorithm)
+    assert net.converged
+    buses = net.bus[net.bus.zone == "test_enforce_qlims"]
+    gens = [x for x in net.gen.index if net.gen.bus[x] in buses.index]
+    g1 = gens[0]
+    assert abs(net.res_gen.q_mvar.at[g1] - net.gen.min_q_mvar.at[g1]) < s_tol
+
+
+@pytest.mark.parametrize("algorithm", ["nr", "fdbx"])
+def test_enforce_q_lims_failed_inner_run(algorithm):
+    """A failed inner power flow must be reported, not papered over.
+
+    On a heavily loaded case39 with tight Q limits the first inner power
+    flow does not converge. The qlims loop used to keep iterating on the
+    non-converged results and crashed with an IndexError instead of
+    reporting the failure (see #3085). With enforce_q_lims=2 and the
+    Newton-Raphson solver the crash happened on the first round, so the
+    nr case fails without the fix; the fdbx case ended in
+    LoadflowNotConverged even before the fix, so it only pins the
+    behaviour. The enforce_q_lims=True mode is covered by the
+    deterministic test below instead (its pre-fix behaviour also ended
+    in LoadflowNotConverged, so a network test cannot tell the two
+    apart).
+    """
+    net = pn.case39()
+    for gen in net.gen.index:
+        if not net.gen.at[gen, "slack"]:
+            net.gen.at[gen, "max_q_mvar"] = 2.0
+            net.gen.at[gen, "min_q_mvar"] = -2.0
+    net.load["p_mw"] *= 2.0
+    net.load["q_mvar"] *= 2.0
+    with pytest.raises(LoadflowNotConverged):
+        runpp(net, enforce_q_lims=2, algorithm=algorithm)
+
+
+@pytest.mark.parametrize("algorithm", ["nr", "fdbx"])
+def test_enforce_q_lims_stops_at_first_failed_inner_run(algorithm, monkeypatch):
+    """The qlims loop must stop at the first failed inner power flow.
+
+    The inner solver is wrapped so that its first call reports failure
+    (the underlying power flow itself converges). The loop must then
+    report the failure without running a second inner power flow — this
+    pins the loop contract deterministically, where a network test alone
+    cannot distinguish "stopped at the first failure" from "ground
+    through all generators and failed at the end".
+    """
+    net = pandapowerNet(name="test_enforce_qlims_first_failure")
+    net = add_test_enforce_qlims(net)
+    module = nr_pf if algorithm == "nr" else pp_pf
+    original = module._run_ac_pf_without_qlims_enforced
+    calls = []
+
+    def failing_inner(*args, **kwargs):
+        result = original(*args, **kwargs)
+        calls.append(1)
+        # both implementations return (ppci, success, ...) — only the
+        # success flag is flipped
+        return result[:1] + (False,) + result[2:]
+
+    monkeypatch.setattr(
+        module, "_run_ac_pf_without_qlims_enforced", failing_inner)
+    with pytest.raises(LoadflowNotConverged):
+        runpp(net, enforce_q_lims=True, algorithm=algorithm)
+    assert len(calls) == 1
 
 
 def test_enforce_p_lims(s_tol=5e-3):
