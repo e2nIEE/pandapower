@@ -190,7 +190,7 @@ def calc_sc(
         raise ValueError(f"Invalid fault {fault}")
 
 
-def _calc_current(net, ppci_orig, bus):
+def _calc_current(net: pandapowerNet, ppci_orig, bus):
     # Select required ppci bus
     ppci_bus = _get_is_ppci_bus(net, bus)
 
@@ -236,7 +236,7 @@ def _calc_current(net, ppci_orig, bus):
         _copy_result_to_ppci_orig(ppci_orig, this_ppci, this_ppci_bus, calc_options=net._options)
 
 
-def _calc_sc(net, bus):
+def _calc_sc(net: pandapowerNet, bus):
     ppc, ppci = _init_ppc(net)
 
     _calc_current(net, ppci, bus)
@@ -250,7 +250,7 @@ def _calc_sc(net, bus):
         ppci["internal"].pop("ybus_fact")
 
 
-def _calc_sc_1ph(net, bus):
+def _calc_sc_1ph(net: pandapowerNet, bus):
     """
     calculation method for single phase to ground short-circuit currents
     """

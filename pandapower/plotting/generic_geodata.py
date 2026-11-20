@@ -20,6 +20,7 @@ import geojson
 import networkx
 import networkx as nx
 import numpy as np
+import numpy.typing as npt
 import pandas as pd
 
 from pandapower.auxiliary import pandapowerNet, soft_dependency_error
@@ -122,15 +123,15 @@ def _igraph_meshed(g):
     return False
 
 
-def _get_element_mask_from_nodes(net, element, node_elements, nodes=None):
-    mask = np.ones(len(net[element])).astype(bool)
+def _get_element_mask_from_nodes(net: pandapowerNet, element, node_elements, nodes=None):
+    mask: npt.NDArray = np.ones(len(net[element])).astype(bool)
     if nodes is not None:
         for node_element in node_elements:
             mask &= np.isin(net[element][node_element].values, nodes)
     return mask
 
 
-def _get_switch_mask(net, element, switch_element, open_switches):
+def _get_switch_mask(net: pandapowerNet, element, switch_element, open_switches):
     element_switches = net.switch.et.values == switch_element
     open_elements = net.switch.element.values[open_switches & element_switches]
     open_element_mask = np.isin(net[element].index, open_elements, invert=True)
@@ -149,7 +150,7 @@ def coords_from_igraph(
         meshed: determines if the graph has any meshes
         calculate_meshed: determines whether to calculate the meshed status
 
-    Return:
+    Returns:
         list of coordinates from the graph layout
     """
     if calculate_meshed:
@@ -174,8 +175,8 @@ def coords_from_nxgraph(mg: networkx.Graph | None = None, layout_engine: str = "
         mg: The networkx graph on which the coordinates shall be based
         layout_engine: GraphViz Layout Engine for layouting a network. See https://graphviz.org/docs/layouts/
 
-    Return:
-         list of coordinates from the graph layout
+    Returns:
+        list of coordinates from the graph layout
     """
     # workaround for bug in agraph
     for u, v in mg.edges(data=False):  # type: ignore[union-attr]
@@ -200,9 +201,9 @@ def create_generic_coordinates(
     switch_length_km: float = 0.001,
 ) -> pandapowerNet:
     """
-    This function will add arbitrary geo-coordinates for all buses based on an analysis of branches
-    and rings. It will remove out of service buses/lines from the net. The coordinates will be
-    created either by igraph or by using networkx library.
+    This function will add arbitrary geo-coordinates for all buses based on an analysis of branches and rings. It
+    will remove out of service buses/lines from the net. The coordinates will be created either by igraph or by
+    using networkx library.
 
     Parameters:
         net: pandapower network
@@ -214,9 +215,9 @@ def create_generic_coordinates(
         overwrite: overwrite existing geodata
         layout_engine: GraphViz Layout Engine for layouting a network. See https://graphviz.org/docs/layouts/
 
-    Return:
-         the pandapower network with added geo coordinates for the buses.
-         Does not copy the network, so the original network will be modified!
+    Returns:
+        the pandapower network with added geo coordinates for the buses. Does not copy the network, so the original
+            network will be modified!
 
     Example:
         >>> net = create_generic_coordinates(net)
@@ -277,7 +278,7 @@ def _prepare_geodata_table(
             raise UserWarning(f"Table {geodata_table} is not empty - use overwrite=True to overwrite existing geodata")
 
 
-def fuse_geodata(net):
+def fuse_geodata(net: pandapowerNet):
     mg = create_nxgraph(net, include_lines=False, include_impedances=False, respect_switches=False)
     geocoords = set(net.bus.dropna(subset=["geo"]).index)
     for area in connected_components(mg):

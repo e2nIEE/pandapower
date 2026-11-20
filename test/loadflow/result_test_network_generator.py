@@ -6,11 +6,10 @@ import copy
 from pandapower import create_buses
 from pandapower.auxiliary import get_free_id
 from pandapower.create import (
-    create_bus,
     create_ext_grid,
     create_gen,
     create_impedance,
-    create_line_from_parameters,
+    create_lines,
     create_load,
     create_sgen,
     create_shunt,
@@ -95,7 +94,7 @@ def result_test_network_generator_dcpp(sn_mva=1):
     yield add_test_shunt_split(net)
 
 
-def add_test_line(net):
+def add_test_line(net: pandapowerNet):
     b1, b2, l1 = add_grid_connection(net, zone="test_line")
     net.line.at[l1, "parallel"] = 2
     net.line.at[l1, "g_us_per_km"] = 1
@@ -108,7 +107,7 @@ def add_test_line(net):
     return net
 
 
-def add_test_ext_grid(net):
+def add_test_ext_grid(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_ext_grid")
     (b3,) = create_buses(net, 1, vn_kv=20.0, zone="test_ext_grid")
     create_test_line(net, b2, b3)
@@ -116,14 +115,10 @@ def add_test_ext_grid(net):
     return net
 
 
-def add_test_ext_grid_gen_switch(net):
+def add_test_ext_grid_gen_switch(net: pandapowerNet):
     zone = "test_ext_grid_gen_switch"
     vn_kv = 20.0
-    b1 = create_bus(net, vn_kv=vn_kv, zone=zone)
-    b2 = create_bus(net, vn_kv=vn_kv, zone=zone)
-    b3 = create_bus(net, vn_kv=vn_kv, zone=zone)
-    b4 = create_bus(net, vn_kv=vn_kv, zone=zone)
-    b5 = create_bus(net, vn_kv=vn_kv, zone=zone)
+    b1, b2, b3, b4, b5 = create_buses(net, 5, vn_kv=vn_kv, zone=zone)
 
     create_switch(net, bus=b1, element=b2, et="b")
     create_test_line(net, b2, b3)
@@ -135,7 +130,7 @@ def add_test_ext_grid_gen_switch(net):
     return net
 
 
-def add_test_load_sgen(net):
+def add_test_load_sgen(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_load_sgen")
     pl = 1.2
     ql = 1.1
@@ -151,7 +146,7 @@ def add_test_load_sgen(net):
     return net
 
 
-def add_test_load_sgen_split(net):
+def add_test_load_sgen_split(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_load_sgen_split")
     nr = 2
     pl = 1.2
@@ -165,7 +160,7 @@ def add_test_load_sgen_split(net):
     return net
 
 
-def add_test_trafo(net):
+def add_test_trafo(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_trafo")
     (b3,) = create_buses(net, 1, vn_kv=0.4, zone="test_trafo")
     create_transformer_from_parameters(  # TODO: missing tap_step_degree
@@ -237,7 +232,7 @@ def add_test_single_load_single_eg(net: pandapowerNet):
     return net
 
 
-def add_test_ward(net):
+def add_test_ward(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_ward")
 
     pz = 1.2
@@ -252,7 +247,7 @@ def add_test_ward(net):
     return net
 
 
-def add_test_ward_split(net):
+def add_test_ward_split(net: pandapowerNet):
     # splitting up the wards should not change results
     pz = 1.2
     qz = 1.1
@@ -265,7 +260,7 @@ def add_test_ward_split(net):
     return net
 
 
-def add_test_xward(net):
+def add_test_xward(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_xward")
     pz = 1.200
     qz = 1.100
@@ -294,7 +289,7 @@ def add_test_xward(net):
     return net
 
 
-def add_test_xward_combination(net):
+def add_test_xward_combination(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_xward_combination")
 
     pz = 1.200
@@ -316,16 +311,27 @@ def add_test_xward_combination(net):
     return net
 
 
-def add_test_gen(net):
+def add_test_gen(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_gen")
     pl = 1.200
     ql = 1.100
     ps = 0.500
     vm_set_pu = 1.0
 
-    b3 = create_bus(net, zone="test_gen", vn_kv=0.4)
-    create_line_from_parameters(
-        net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    (b3,) = create_buses(net, 1, zone="test_gen", vn_kv=0.4)
+    create_lines(
+        net,
+        b2,
+        b3,
+        12.2,
+        line_params={
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
 
     create_load(net, b3, p_mw=pl, q_mvar=ql)
@@ -337,7 +343,7 @@ def add_test_gen(net):
     return net
 
 
-def add_test_enforce_qlims(net):
+def add_test_enforce_qlims(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_enforce_qlims")
     pl = 1.200
     ql = 1.100
@@ -345,9 +351,20 @@ def add_test_enforce_qlims(net):
     qmin = -0.200
     vm_set_pu = 1.0
 
-    b3 = create_bus(net, zone="test_enforce_qlims", vn_kv=0.4)
-    create_line_from_parameters(
-        net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    (b3,) = create_buses(net, 1, zone="test_enforce_qlims", vn_kv=0.4)
+    create_lines(
+        net,
+        b2,
+        b3,
+        12.2,
+        line_params={
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
 
     create_load(net, b3, p_mw=pl, q_mvar=ql)
@@ -357,7 +374,7 @@ def add_test_enforce_qlims(net):
     return net
 
 
-def add_test_enforce_plims(net):
+def add_test_enforce_plims(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_enforce_plims")
     pl = 1.200
     ql = 1.100
@@ -365,9 +382,20 @@ def add_test_enforce_plims(net):
     pmin = 0.500
     vm_set_pu = 1.0
 
-    b3 = create_bus(net, zone="test_enforce_plims", vn_kv=0.4)
-    create_line_from_parameters(
-        net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    (b3,) = create_buses(net, 1, zone="test_enforce_plims", vn_kv=0.4)
+    create_lines(
+        net,
+        b2,
+        b3,
+        12.2,
+        line_params={
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
     create_load(net, b3, p_mw=pl, q_mvar=ql)
     create_gen(net, b3, p_mw=ps, vm_pu=vm_set_pu, min_p_mw=pmin)
@@ -376,7 +404,7 @@ def add_test_enforce_plims(net):
     return net
 
 
-def add_test_enforce_qlims_sgen(net):
+def add_test_enforce_qlims_sgen(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_enforce_qlims_sgen")
     pl = 1.200
     ql = 1.100
@@ -384,9 +412,20 @@ def add_test_enforce_qlims_sgen(net):
     qs = 0.500
     qmax = 0.200
 
-    b3 = create_bus(net, zone="test_enforce_qlims_sgen", vn_kv=0.4)
-    create_line_from_parameters(
-        net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    (b3,) = create_buses(net, 1, zone="test_enforce_qlims_sgen", vn_kv=0.4)
+    create_lines(
+        net,
+        b2,
+        b3,
+        12.2,
+        line_params={
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
     create_load(net, b3, p_mw=pl, q_mvar=ql)
     create_sgen(net, b3, p_mw=ps, q_mvar=qs, max_q_mvar=qmax)
@@ -395,7 +434,7 @@ def add_test_enforce_qlims_sgen(net):
     return net
 
 
-def add_test_enforce_plims_sgen(net):
+def add_test_enforce_plims_sgen(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_enforce_plims_sgen")
     pl = 1.200
     ql = 1.100
@@ -403,9 +442,20 @@ def add_test_enforce_plims_sgen(net):
     qs = 0.500
     pmax = 0.200
 
-    b3 = create_bus(net, zone="test_enforce_plims_sgen", vn_kv=0.4)
-    create_line_from_parameters(
-        net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    (b3,) = create_buses(net, 1, zone="test_enforce_plims_sgen", vn_kv=0.4)
+    create_lines(
+        net,
+        b2,
+        b3,
+        12.2,
+        line_params={
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
     create_load(net, b3, p_mw=pl, q_mvar=ql)
     create_sgen(net, b3, p_mw=ps, q_mvar=qs, max_p_mw=pmax)
@@ -414,11 +464,10 @@ def add_test_enforce_plims_sgen(net):
     return net
 
 
-def add_test_trafo3w(net):
+def add_test_trafo3w(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_trafo3w")
-    b3 = create_bus(net, vn_kv=0.6, zone="test_trafo3w")
+    b3, b4 = create_buses(net, 2, vn_kv=[0.6, 0.4], zone="test_trafo3w")
     create_load(net, b3, p_mw=0.2, q_mvar=0)
-    b4 = create_bus(net, vn_kv=0.4, zone="test_trafo3w")
     create_load(net, b4, p_mw=0.1, q_mvar=0)
 
     create_transformer3w_from_parameters(
@@ -478,9 +527,9 @@ def add_test_trafo3w(net):
     return net
 
 
-def add_test_impedance(net):
+def add_test_impedance(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_impedance")
-    b3 = create_bus(net, vn_kv=220.0, zone="test_impedance")
+    (b3,) = create_buses(net, 1, vn_kv=220.0, zone="test_impedance")
     rij = 0.02
     xij = 0.01
     rji = 0.03
@@ -510,9 +559,9 @@ def add_test_impedance(net):
     return net
 
 
-def add_test_bus_bus_switch(net):
+def add_test_bus_bus_switch(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_bus_bus_switch")
-    b3 = create_bus(net, vn_kv=20.0, zone="test_bus_bus_switch")
+    (b3,) = create_buses(net, 1, vn_kv=20.0, zone="test_bus_bus_switch")
     create_switch(net, b2, b3, et="b")
 
     pl = 1
@@ -555,7 +604,7 @@ def add_test_bus_bus_switch(net):
     return net
 
 
-def add_test_oos_bus_with_is_element(net):
+def add_test_oos_bus_with_is_element(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_oos_bus_with_is_element")
 
     pl = 1.200
@@ -572,18 +621,21 @@ def add_test_oos_bus_with_is_element(net):
     x_ohm = 70
 
     # OOS buses
-    b3 = create_bus(net, zone="test_oos_bus_with_is_element", vn_kv=0.4, in_service=False)
-    b4 = create_bus(net, zone="test_oos_bus_with_is_element", vn_kv=0.4, in_service=False)
-    b5 = create_bus(net, zone="test_oos_bus_with_is_element", vn_kv=0.4, in_service=False)
+    b3, b4, b5 = create_buses(net, 3, zone="test_oos_bus_with_is_element", vn_kv=0.4, in_service=False)
 
-    create_line_from_parameters(
-        net, b2, b3, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
-    )
-    create_line_from_parameters(
-        net, b2, b4, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
-    )
-    create_line_from_parameters(
-        net, b2, b5, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    create_lines(
+        net,
+        [b2, b2, b2],
+        [b3, b4, b5],
+        12.2,
+        line_params={
+            "r_ohm_per_km": 0.08,
+            "x_ohm_per_km": 0.12,
+            "c_nf_per_km": 300,
+            "max_i_ka": 0.2,
+            "g0_us_per_km": 0.0,
+        },
+        df=0.8,
     )
 
     # in service elements
@@ -608,7 +660,7 @@ def add_test_oos_bus_with_is_element(net):
     return net
 
 
-def add_test_shunt(net):
+def add_test_shunt(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_shunt")
     pz = 0.12
     qz = -1.2
@@ -620,7 +672,7 @@ def add_test_shunt(net):
     return net
 
 
-def add_test_shunt_split(net):
+def add_test_shunt_split(net: pandapowerNet):
     _, b2, _ = add_grid_connection(net, zone="test_shunt_split")
     pz = 0.120
     qz = -1.200
@@ -631,9 +683,9 @@ def add_test_shunt_split(net):
     return net
 
 
-def add_test_two_open_switches_on_deactive_line(net):
+def add_test_two_open_switches_on_deactive_line(net: pandapowerNet):
     b1, b2, _ = add_grid_connection(net, zone="two_open_switches_on_deactive_line")
-    b3 = create_bus(net, vn_kv=20.0, zone="two_open_switches_on_deactive_line")
+    (b3,) = create_buses(net, 1, vn_kv=20.0, zone="two_open_switches_on_deactive_line")
     l2 = create_test_line(net, b2, b3, in_service=False)
     create_test_line(net, b3, b1)
     create_switch(net, b2, l2, et="l", closed=False)

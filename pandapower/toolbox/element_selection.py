@@ -32,12 +32,13 @@ import pandas as pd
 from packaging.version import Version
 
 from pandapower._version import __version__
-from pandapower.auxiliary import ets_to_element_types, pandapowerNet
+from pandapower.auxiliary import ets_to_element_types
+from pandapower.network import ADict, pandapowerNet
 
 logger = logging.getLogger(__name__)
 
 
-def get_element_index(net, element_type, name, exact_match=True):
+def get_element_index(net: pandapowerNet, element_type, name, exact_match=True):
     """
     Returns the element(s) identified by a name or regex and its element-table.
 
@@ -144,7 +145,7 @@ def next_bus(
     return nb[0]
 
 
-def get_connected_elements(net, element_type, buses, respect_switches=True, respect_in_service=False):
+def get_connected_elements(net: ADict, element_type, buses, respect_switches=True, respect_in_service=False):
     """
     Returns elements connected to a given buses.
 
@@ -352,7 +353,7 @@ def get_connected_buses(
     return cb - set(buses)
 
 
-def get_connected_buses_at_element(net, element_index, element_type, respect_in_service=False):
+def get_connected_buses_at_element(net: pandapowerNet, element_index, element_type, respect_in_service=False):
     """
     Returns buses connected to a given branch element. In case of a bus switch, two buses will be returned, else one.
 
@@ -400,7 +401,7 @@ def get_connected_buses_at_element(net, element_index, element_type, respect_in_
     return cb
 
 
-def get_connected_buses_at_switches(net, switches):
+def get_connected_buses_at_switches(net: pandapowerNet, switches):
     """
     Returns a set of buses connected to given switches.
 
@@ -547,7 +548,7 @@ def get_connected_elements_dict(
     return connected
 
 
-def get_connecting_branches(net, buses1, buses2, branch_elements=None):
+def get_connecting_branches(net: pandapowerNet, buses1, buses2, branch_elements=None):
     """
     Gets/Drops branches that connects any bus of buses1 with any bus of buses2.
     """
@@ -557,7 +558,7 @@ def get_connecting_branches(net, buses1, buses2, branch_elements=None):
     if "switch" in branch_dict:
         branch_dict["switch"].append("element")
 
-    found = {et: set() for et in branch_dict}
+    found: dict[str, set[int]] = {et: set() for et in branch_dict}
     for et, bus_types in branch_dict.items():
         for bus1 in bus_types:
             for bus2 in bus_types:
@@ -587,15 +588,13 @@ def get_gc_objects_dict():
     return nums_by_types
 
 
-def false_elm_links(net, element_type, col, target_element_type):
+def false_elm_links(net: pandapowerNet, element_type, col, target_element_type):
     """
-    Returns which indices have links to elements of other element tables which does not exist in the
-    net.
+    Returns which indices have links to elements of other element tables which does not exist in the net.
 
-    Examples
-    --------
-    >>> false_elm_links(net, "line", "to_bus", "bus")  # exemplary input 1
-    >>> false_elm_links(net, "poly_cost", "element", net["poly_cost"]["et"])  # exemplary input 2
+    Example:
+        >>> false_elm_links(net, "line", "to_bus", "bus")  # exemplary input 1
+        >>> false_elm_links(net, "poly_cost", "element", net["poly_cost"]["et"])  # exemplary input 2
     """
     if isinstance(target_element_type, str):
         return net[element_type][col].index[~net[element_type][col].isin(net[target_element_type].index)]
@@ -614,7 +613,7 @@ def false_elm_links(net, element_type, col, target_element_type):
         return false_links
 
 
-def false_elm_links_loop(net, element_types=None):
+def false_elm_links_loop(net: pandapowerNet, element_types=None):
     """
     Returns a dict of elements which indices have links to elements of other element tables which
     does not exist in the net.
@@ -695,15 +694,14 @@ def branch_element_bus_dict(include_switch=False, sort=None):
 
 def element_bus_tuples(bus_elements: bool = True, branch_elements: bool = True, res_elements: bool = False):
     """
-    Utility function
-    Provides the tuples of elements and corresponding columns for buses they are connected to
+    Utility function Provides the tuples of elements and corresponding columns for buses they are connected to
 
     Parameters:
         bus_elements: whether tuples for bus elements e.g. load, sgen, ... are included
         branch_elements: whether branch elements e.g. line, trafo, ... are included
         res_elements: whether result table names e.g. res_sgen, res_line, ... are included
 
-    Return:
+    Returns:
         list of tuples with element names and column names
     """
     ebts = []
@@ -777,35 +775,26 @@ def count_elements(net: pandapowerNet, return_empties: bool = False, **kwargs) -
     )
 
 
-def get_all_elements(net, include_results=False):
+def get_all_elements(net: pandapowerNet, include_results: bool = False):
     """
-    Create a combined overview of all elements in a pandapower network
-    as a single DataFrame.
+    Create a combined overview of all elements in a pandapower network as a single DataFrame.
 
-    Parameters
-    ----------
-    net : pandapowerNet
-        The pandapower network object or a dict-like structure whose
-        values (partially) are pandas.DataFrames containing element data
-        (e.g. 'bus', 'line', 'trafo', 'load', ...).
-    include_results : bool, optional
-        If False (default), result tables whose keys start with
-        ``'res_'`` (e.g. ``'res_bus'``, ``'res_line'``) are ignored.
-        If True, these tables are also included in the overview.
+    Parameters:
+        net: The pandapower network object or a dict-like structure whose values (partially) are
+            pandas.DataFrames containing element data (e.g. 'bus', 'line', 'trafo', 'load', ...).
+        include_results: If False (default), result tables whose keys start with ``'res_'`` (e.g. ``'res_bus'``,
+            ``'res_line'``) are ignored. If True, these tables are also included in the overview.
 
-    Returns
-    -------
-    pandas.DataFrame
-        DataFrame with one row per element from all considered tables.
-        Contains at least the columns:
+    Returns:
+        DataFrame with one row per element from all considered tables. Contains at least the columns:
 
-        - ``'pp_type'`` : name of the original table (e.g. ``'bus'``,
+            - ``'pp_type'`` : name of the original table (e.g. ``'bus'``,
 
-          ``'line'``)
-        - ``'pp_idx'`` : original index of the element in that table
+              ``'line'``)
+            - ``'pp_idx'`` : original index of the element in that table
 
-        In addition, all columns from all original tables are included
-        (union of columns); missing values are filled with NaN.
+            In addition, all columns from all original tables are included (union of columns); missing values are filled
+            with NaN.
     """
     frames = []
 

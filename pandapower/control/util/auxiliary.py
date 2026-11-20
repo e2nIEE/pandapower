@@ -50,7 +50,7 @@ def asarray(val, dtype=np.float64):
     return np_val
 
 
-def get_controller_index_by_type(net, ctrl_type, idx=None):
+def get_controller_index_by_type(net: pandapowerNet, ctrl_type, idx=None):
     """
     Returns controller indices of a given type as list.
     """
@@ -61,7 +61,7 @@ def get_controller_index_by_type(net, ctrl_type, idx=None):
     return list(net.controller.index.values[net.controller.index.isin(idx) & is_of_type])
 
 
-def get_controller_index_by_typename(net, typename, idx=None, case_sensitive=False):
+def get_controller_index_by_typename(net: pandapowerNet, typename, idx=None, case_sensitive=False):
     """
     Returns controller indices of a given name of type as list.
     """
@@ -210,7 +210,7 @@ def plot_characteristic(characteristic, start, stop, num=20, xlabel=None, ylabel
         plt.ylabel(ylabel)
 
 
-def create_trafo_characteristic_object(net):
+def create_trafo_characteristic_object(net: pandapowerNet):
     # check if trafo_characteristic_spline table already exists & if so, delete & re-create
     if "trafo_characteristic_spline" in net:
         del net["trafo_characteristic_spline"]
@@ -293,7 +293,7 @@ def create_trafo_characteristic_object(net):
     del net["trafo_characteristic_spline_temp"]
 
 
-def _create_trafo_characteristics(net, trafotable, trafo_index, variable, x_points, y_points):
+def _create_trafo_characteristics(net: pandapowerNet, trafotable, trafo_index, variable, x_points, y_points):
     supported_columns = {
         "trafo": [
             "voltage_ratio_characteristic",
@@ -349,7 +349,7 @@ def _create_trafo_characteristics(net, trafotable, trafo_index, variable, x_poin
             net["trafo_characteristic_spline_temp"].at[idx, col] = s.index
 
 
-def create_shunt_characteristic_object(net):
+def create_shunt_characteristic_object(net: pandapowerNet):
     # check if shunt_characteristic_spline table already exists & if so, delete & re-create
     if "shunt_characteristic_spline" in net:
         del net["shunt_characteristic_spline"]
@@ -386,7 +386,7 @@ def create_shunt_characteristic_object(net):
     del net["shunt_characteristic_spline_temp"]
 
 
-def _create_shunt_characteristics(net, shunt_index, variable, x_points, y_points):
+def _create_shunt_characteristics(net: pandapowerNet, shunt_index, variable, x_points, y_points):
     supported_columns = ["q_mvar_characteristic", "p_mw_characteristic"]
 
     # create id_characteristic_spline column - same indices as id_characteristic_table
@@ -425,7 +425,7 @@ def _create_shunt_characteristics(net, shunt_index, variable, x_points, y_points
             net["shunt_characteristic_spline_temp"].at[idx, col] = s.index
 
 
-def _set_reactive_capability_curve_flag(net, element):
+def _set_reactive_capability_curve_flag(net: pandapowerNet, element):
     if element not in ["gen", "sgen"]:
         raise UserWarning(
             f"The given {element} type is not valid for setting curve dependency table flag. "
@@ -452,7 +452,7 @@ def _set_reactive_capability_curve_flag(net, element):
         ).astype(bool)
 
 
-def create_q_capability_characteristics_object(net):
+def create_q_capability_characteristics_object(net: pandapowerNet):
     # check if element_characteristic_spline table already exists & if so, delete & re-create
     if "q_capability_characteristic" in net:
         del net["q_capability_characteristic"]

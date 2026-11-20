@@ -139,11 +139,12 @@ def _get_ptdf_perturb(
     return ptdf
 
 
-def _get_dc_profile_with_ptdf(net, profiles, result_side=0, ptdf=None):
-    """Run a dc profile with the ptdf method, the ptdf is calculated if it is not given.
+def _get_dc_profile_with_ptdf(net: pandapowerNet, profiles, result_side=0, ptdf=None):
+    """
+    Run a dc profile with the ptdf method, the ptdf is calculated if it is not given.
 
-    :return: {branch_type ("line", "trafo", "impedance", "trafo3w_{hv,mv,lv}"):
-              DataFrame(data=p_side_mw, index=calc_ix, columns=branch_index)}
+    Returns:
+        DataFrame(data=p_side_mw, index=calc_ix, columns=branch_index)}
     """
     THIS_RES_BR_SIDE_MAPPING = BR_SIDE_MAPPING if result_side == 0 else BR_SIDE_MAPPING_1
     slack_df, _ = get_dist_slack(net, pf_required=True)
@@ -227,7 +228,7 @@ def _get_dc_profile_with_ptdf(net, profiles, result_side=0, ptdf=None):
 
 
 # Convert data in numpy array to pandas dataframe with pp index
-def _ptdf_pp_np_to_df(net, res_pp, source_bus=None, nan_to_num=True, branch_dict=None, reduced=False):
+def _ptdf_pp_np_to_df(net: pandapowerNet, res_pp, source_bus=None, nan_to_num=True, branch_dict=None, reduced=False):
     res = {}
     for br_type, data in res_pp.items():
         if nan_to_num:
@@ -254,7 +255,7 @@ def _ptdf_pp_np_to_df(net, res_pp, source_bus=None, nan_to_num=True, branch_dict
 
 
 # Init result numpy array filled with zeros
-def _init_ptdf_pp_np(net, num_source_bus):
+def _init_ptdf_pp_np(net: pandapowerNet, num_source_bus):
     ptdf_pp = {}
     for br_type in ("line", "dcline", "trafo", "impedance"):
         if not net[br_type].empty:
@@ -265,7 +266,7 @@ def _init_ptdf_pp_np(net, num_source_bus):
     return ptdf_pp
 
 
-def _make_ptdf_ppci(net, using_sparse_solver, result_side, branch_id=None, reduced=False):
+def _make_ptdf_ppci(net: pandapowerNet, using_sparse_solver, result_side, branch_id=None, reduced=False):
     # Select subnet areas
     slack_df, pp_area_bus_mapping = get_dist_slack(net)
     _, ppci = _pd2ppc(net)
@@ -294,7 +295,7 @@ def _make_ptdf_ppci(net, using_sparse_solver, result_side, branch_id=None, reduc
     return ptdf_ppci, ppci
 
 
-def _ptdf_ppci_to_pp(net, ptdf_ppci, result_side, branch_ppci_lookup=None):
+def _ptdf_ppci_to_pp(net: pandapowerNet, ptdf_ppci, result_side, branch_ppci_lookup=None):
     # Padding the sensitivity matrix for out-of-service elements
     ptdf_ppci_padding = np.pad(ptdf_ppci, ((0, 1), (0, 1)), mode="constant", constant_values=DISCONNECTED_PADDING_VALUE)
 
@@ -351,32 +352,34 @@ def run_ptdf(
     branch_dict: dict[str, list[int] | None] | None = None,
     reduced: bool = True,
 ):
-    """Calculate the PTDF (ratio without unit) of bus to a pp branch.
+    """
+    Calculate the PTDF (ratio without unit) of bus to a pp branch.
 
-    The PTDF is calculated with the matrix based internal calculation or with the perturb method.
-    The PTDF is defined as: (p_{side}_mw_new - p_{side}_mw_old) / delta_P_injection.
+    The PTDF is calculated with the matrix based internal calculation or with the perturb method. The PTDF is
+    defined as: (p_{side}_mw_new - p_{side}_mw_old) / delta_P_injection.
 
-    delta_P_injection is the injection or demand change at a bus
-    Side corresponds to the pandapower results definition (see result_side definition)
+    delta_P_injection is the injection or demand change at a bus Side corresponds to the pandapower results
+    definition (see result_side definition)
 
-    :param net: A pandapower network
-    :param source_bus: Select a subset of pp buses for the PTDF calculation, if None given then all buses are used
-    :param result_side: 0 means ("from", "hv") side, 1 means ("to", "lv") side of p_{side}_mw
-    :param distributed_slack: Only passed to the DC power flows of the perturb method, where it currently has no
-        effect, since rundcpp does not support a distributed slack: with several slack elements, all of them act as
-        fixed voltage angle references. The direct method ignores this parameter and always distributes the
-        additional injection over the in-service slack elements (ext_grid and gen with slack=True) according to
-        their slack_weight (equal shares if no weights are given). Therefore, the direct and the perturb method
-        only give the same result if there is a single slack element.
-    :param perturb: Set True to use the perturb version (brute-force) which is faster for calculating
-        only a few elements on large networks, if a lot of elements required, set to False
-    :param using_sparse_solver: Select whether sparse linear system should be used (more efficient for large network)
-    :param random_verify: Set to True to check the direct version against perturb version
-        with 3 randomly selected elements
-    :param: branch_dict: dictionary with keys "line", "trafo", "impedance", "trafo3w"; if not None the computation is
-        restricted to the branch indices given in the dict
-    :param reduced: if True, the output is reduced to the branches given in branch_dict
-    :return: {goal_branch_type ("line", "trafo", "impedance", "trafo3w_{hv,mv,lv}"):
+    Parameters:
+        net: A pandapower network
+        source_bus: Select a subset of pp buses for the PTDF calculation, if None given then all buses are used
+        result_side: 0 means ("from", "hv") side, 1 means ("to", "lv") side of p_{side}_mw
+        distributed_slack: Only passed to the DC power flows of the perturb method, where it currently has no effect,
+            since rundcpp does not support a distributed slack: with several slack elements, all of them act as fixed
+            voltage angle references. The direct method ignores this parameter and always distributes the additional
+            injection over the in-service slack elements (ext_grid and gen with slack=True) according to their
+            slack_weight (equal shares if no weights are given). Therefore, the direct and the perturb method only give
+            the same result if there is a single slack element.
+        perturb: Set True to use the perturb version (brute-force) which is faster for calculating only a few elements
+            on large networks, if a lot of elements required, set to False
+        using_sparse_solver: Select whether sparse linear system should be used (more efficient for large network)
+        random_verify: Set to True to check the direct version against perturb version with 3 randomly selected elements
+        branch_dict: dictionary with keys "line", "trafo", "impedance", "trafo3w"; if not None the computation is
+            restricted to the branch indices given in the dict
+        reduced: if True, the output is reduced to the branches given in branch_dict
+
+    Returns:
         DataFrame(data=ptdf, index=goal_branch_pp_index, columns=bus_pp_index)}
     """
     if perturb and source_bus is None:
@@ -439,7 +442,9 @@ def verify_ptdf(
     logger.info("All PTDF results verified with perturb method!")
 
 
-def make_ptdf_multi_area(net, ppci, pp_area_bus_mapping, ppci_slack_mask_with_prio, using_sparse_solver, result_side):
+def make_ptdf_multi_area(
+    net: pandapowerNet, ppci, pp_area_bus_mapping, ppci_slack_mask_with_prio, using_sparse_solver, result_side
+):
     """Select areas in the ppci network and calculate the ptdf of each area independently."""
     ptdf_ppci = np.zeros((ppci["branch"].shape[0], ppci["bus"].shape[0]), dtype=float)
     for this_bus in pp_area_bus_mapping.values():
@@ -463,7 +468,7 @@ def make_ptdf_multi_area(net, ppci, pp_area_bus_mapping, ppci_slack_mask_with_pr
 
         # Reindex bus_ix from 1-Nbus and create a lookup
         ppci_bus_ix = ppci_bus_this_area[:, BUS_I].astype(int).copy()
-        ppci_bus_old_new_lookup = np.ones(np.max(ppci_bus_ix) + 1, dtype=int) * -1
+        ppci_bus_old_new_lookup: npt.NDArray = np.ones(np.max(ppci_bus_ix) + 1, dtype=int) * -1
         ppci_bus_old_new_lookup[ppci_bus_this_area[:, BUS_I].astype(int)] = np.arange(this_ppci_bus_aux_bus.shape[0])
 
         # Update the area ppci bus indexing
@@ -491,24 +496,26 @@ def run_ptdf_dc_profile(
     result_side=0,
     ptdf: dict | None = None,
 ):
-    """Calculate the branch flows of a dc profile (time series) with the ptdf.
+    """
+    Calculate the branch flows of a dc profile (time series) with the ptdf.
 
-    The flow changes of all time steps are calculated with a single matrix product instead of one power flow per time
-    step.
-    The slacks balance the injection changes according to their slack_weight.
+    The flow changes of all time steps are calculated with a single matrix product instead of one power flow per
+    time step. The slacks balance the injection changes according to their slack_weight.
 
     For other results than branch flows or a dc power flow per time step, use run_timeseries with run=rundcpp.
 
-    :param net: A pandapower network
-    :param profiles: a dict of p profiles of pp elements as dataframe:
-        {(element ("load", "sgen", "gen", "storage"), "p_mw"):
-        pd.DataFrame(index=calculation_steps, columns=element_index, data=profile_data)}.
-        All the profiles must have the same index, the columns could be a subset of the element,
-        the default value of not selected elements in pandapower networks is used in profile simulation
-    :param result_side: 0 means ("from", "hv") side, 1 means ("to", "lv") side
-    :param ptdf: precalculated ptdf (result of run_ptdf with the same result_side) to accelerate the calculation,
-        if None it is calculated
-    :return: {(res_{branch_type}, p_{side}_mw):
+    Parameters:
+        net: A pandapower network
+        profiles: a dict of p profiles of pp elements as dataframe:
+            {(element ("load", "sgen", "gen", "storage"), "p_mw"):
+            pd.DataFrame(index=calculation_steps, columns=element_index, data=profile_data)}.
+            All the profiles must have the same index, the columns could be a subset of the element, the default value
+            of not selected elements in pandapower networks is used in profile simulation
+        result_side: 0 means ("from", "hv") side, 1 means ("to", "lv") side
+        ptdf: precalculated ptdf (result of run_ptdf with the same result_side) to accelerate the calculation, if None
+            it is calculated
+
+    Returns:
         DataFrame(data=p_side_mw, index=calc_ix, columns=branch_pp_index)}
     """
     res = _get_dc_profile_with_ptdf(net, profiles, result_side=result_side, ptdf=ptdf)
@@ -524,7 +531,7 @@ def run_ptdf_dc_profile(
     return res_renamed
 
 
-def _profile_pp_np_to_df(net, res_pp_np, num_calc):
+def _profile_pp_np_to_df(net: pandapowerNet, res_pp_np, num_calc):
     res = {}
     for br_type, data in res_pp_np.items():
         pp_br_type = "trafo3w" if br_type.startswith("trafo3w") else br_type

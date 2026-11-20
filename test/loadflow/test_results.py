@@ -35,7 +35,7 @@ from test.loadflow.result_test_network_generator import (
 # simple example grid for tap dependent impedance tests:
 
 
-def add_trafo_connection(net, hv_bus, trafotype="2W"):
+def add_trafo_connection(net: pandapowerNet, hv_bus, trafotype="2W"):
     cb = create_bus(net, vn_kv=0.4)
     create_load(net, cb, 0.2, 0.05)
 
@@ -584,7 +584,7 @@ def _ideal_trafo3w_net(tap_side, tap_at_star_point, tap_pos, tap_step_degree, ta
     return net, (hv_bus, mv_bus, lv_bus)
 
 
-def _bus_phasor(net, bus):
+def _bus_phasor(net: pandapowerNet, bus):
     result = net.res_bus.loc[bus]
     return result.vm_pu * np.exp(1j * np.deg2rad(result.va_degree))
 

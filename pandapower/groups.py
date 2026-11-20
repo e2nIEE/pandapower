@@ -52,7 +52,7 @@ from typing_extensions import deprecated
 
 from pandapower.auxiliary import ensure_iterability, log_to_level
 from pandapower.create import _check_elements_existence, _group_parameter_list, _set_multiple_entries, create_group
-from pandapower.network import pandapowerNet
+from pandapower.network import ADict, pandapowerNet
 from pandapower.pp_types import Int
 from pandapower.toolbox.element_selection import (
     branch_element_bus_dict,
@@ -98,7 +98,7 @@ def drop_group_and_elements(net: pandapowerNet, index: int) -> None:
 
 def attach_to_groups(
     net: pandapowerNet,
-    index: list[Int],
+    index: Collection[Int],
     element_types: str | list[str],
     element_indices: list[list[Int]] | list[Int],
     reference_columns: str | list[str] | None = None,
@@ -202,12 +202,12 @@ def attach_to_group(
 
 
 @deprecated("Use detach_from_groups instead")
-def detach_from_group(net, index, element_type, element_index):
+def detach_from_group(net: pandapowerNet, index, element_type, element_index):
     detach_from_groups(net, element_type, element_index, index=index)
 
 
 def detach_from_groups(
-    net: pandapowerNet, element_type: str, element_index: int | list[int], index: int | None = None
+    net: ADict, element_type: str, element_index: int | Collection[int], index: int | None = None
 ) -> None:
     """
     Detaches elements from the group with the given group index 'index'. No errors are raised if elements are passed to
@@ -673,7 +673,7 @@ def set_value_to_group(
             net[et].loc[ix, column] = value
 
 
-def _sum_powers(net, index, formula_character, unit):
+def _sum_powers(net: pandapowerNet, index, formula_character, unit):
     power = 0.0
     missing_res_idx = []
     no_power_column_found = []

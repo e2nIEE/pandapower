@@ -14,7 +14,7 @@ import numpy.typing as npt
 import pandas as pd
 
 import pandapower as pp
-from pandapower.auxiliary import pandapowerNet
+from pandapower.network import pandapowerNet
 
 logger = logging.getLogger(__name__)
 
@@ -142,15 +142,21 @@ def _get_trafo3w_lookup(net: pandapowerNet) -> dict | None:
 
 
 def branch_dict_to_ppci_branch_list(net: pandapowerNet, branch_dict: dict[str, list[int] | None]) -> tuple[list, dict]:
-    """Transform a dictionary with branches of a net into a list of the corresponding internal ppci indices.
+    """
+    Transform a dictionary with branches of a net into a list of the corresponding internal ppci indices.
 
     Also produces a lookup for the branch type intervals.
 
-    :param net: pp-net, on which a powerflow has been executed
-    :param branch_dict: dictionary should include branch types as keys 'line', 'trafo', 'trafo3, 'impedance' and
-                        for each key a list of indices.
-    :return: list of ppci branch indices, dict for branch type ppci lookup
-    :raises ValueError: if branch_dict selects branches that are out of service (they are not part of the ppci)
+    Parameters:
+        net: pp-net, on which a powerflow has been executed
+        branch_dict: dictionary should include branch types as keys 'line', 'trafo', 'trafo3, 'impedance' and for each
+            key a list of indices.
+
+    Returns:
+        list of ppci branch indices, dict for branch type ppci lookup
+
+    Raises:
+        ValueError: if branch_dict selects branches that are out of service (they are not part of the ppci)
     """
     branch_id_ppci = []
     ppci_branch_lookup = {}

@@ -39,7 +39,7 @@ def test_add_pm_gen_start_values_from_results():
 def test_runpm_wrappers_pass_init_pq_to_options(monkeypatch, run_function):
     captured_options = []
 
-    def fake_runpm(net, *args, **kwargs):
+    def fake_runpm(net: pandapowerNet, *args, **kwargs):
         captured_options.append(net._options.copy())
 
     monkeypatch.setitem(run_function.__globals__, "_runpm", fake_runpm)

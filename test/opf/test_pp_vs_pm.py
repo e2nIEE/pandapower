@@ -11,6 +11,7 @@ from numpy import array
 
 from pandapower.converter.pypower import from_ppc
 from pandapower.create import create_ext_grid
+from pandapower.network import pandapowerNet
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pypower.idx_brch import MU_ANGMIN
 from pandapower.pypower.idx_bus import BUS_I, BUS_TYPE, REF, VMAX, VMIN
@@ -164,7 +165,7 @@ def test_opf_ext_grid_controllable_pm():
     assert np.abs(net_new.res_cost - net_old.res_cost) / net_old.res_cost < 1e-2
 
 
-def _max_va_diff(net):
+def _max_va_diff(net: pandapowerNet):
     return float(np.abs(net.res_line.va_from_degree - net.res_line.va_to_degree).max())
 
 

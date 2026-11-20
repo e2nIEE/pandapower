@@ -25,9 +25,8 @@ class GraphToolInterface(Graph):
         """
         adds multiple nodes to graph
 
-        INPUT:
-        **nodes** (iterable or int) - list of nodes (example: bus.index) or single int
-
+        Parameters:
+            nodes (iterable or int): list of nodes (example: bus.index) or single int
         """
         self.add_vertex(nodes)
 
