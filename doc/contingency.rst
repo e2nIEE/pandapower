@@ -6,6 +6,8 @@ We can define N-1 cases to be analysed as contingencies. This means that indices
 
 A tutorial that introduces this feature with an example is available at `Contingency analysis <https://github.com/e2nIEE/pandapower/tree/develop/tutorials/contingency_analysis.ipynb>`_
 
+The tutorial `Contingency screening <https://github.com/e2nIEE/pandapower/tree/develop/tutorials/contingency_screening.ipynb>`_ ranks the outages from the base case before the AC analysis, for example with ``run_lodf``, and checks the ranking against the AC results.
+
 .. autofunction:: pandapower.contingency.run_contingency
 
 .. autofunction:: pandapower.contingency.run_contingency_ls2g
