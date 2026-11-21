@@ -5,12 +5,12 @@ import os
 
 import numpy as np
 import pandas as pd
-import pandapower.networks as pn
-import pandapower.pf.run_newton_raphson_pf as nr_pf
-import pandapower.pf.runpf_pypower as pp_pf
 import pytest
 from numpy import isclose, isin, isnan
 
+import pandapower.networks as pn
+import pandapower.pf.run_newton_raphson_pf as nr_pf
+import pandapower.pf.runpf_pypower as pp_pf
 from pandapower.auxiliary import LoadflowNotConverged
 from pandapower.create import (
     create_bus,
@@ -919,8 +919,7 @@ def test_enforce_q_lims_stops_at_first_failed_inner_run(algorithm, monkeypatch):
         # success flag is flipped
         return result[:1] + (False,) + result[2:]
 
-    monkeypatch.setattr(
-        module, "_run_ac_pf_without_qlims_enforced", failing_inner)
+    monkeypatch.setattr(module, "_run_ac_pf_without_qlims_enforced", failing_inner)
     with pytest.raises(LoadflowNotConverged):
         runpp(net, enforce_q_lims=True, algorithm=algorithm)
     assert len(calls) == 1
