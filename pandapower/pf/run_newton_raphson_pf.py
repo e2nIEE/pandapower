@@ -251,6 +251,13 @@ def _run_ac_pf_with_qlims_enforced(ppci, options):
         bus[:, PD] = bus_backup_p_q[:, 0]
         bus, gen, branch = ppci_to_pfsoln(ppci, options, limited)
 
+        if not success:
+            # A failed inner power flow must not be papered over by later
+            # iterations: Q-limit decisions taken from its non-converged
+            # results cannot be trusted, and the loop would otherwise keep
+            # iterating on garbage values. Report the failure (see #3085).
+            break
+
         # find gens with violated Q constraints
         gen_status = gen[:, GEN_STATUS] > 0
         qg_max_lim = gen[:, QG] > gen[:, QMAX]
@@ -263,7 +270,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, options):
             # one at a time?
             if qlim == 2:  # fix largest violation, ignore the rest
                 k = argmax(r_[gen[mx, QG] - gen[mx, QMAX], gen[mn, QMIN] - gen[mn, QG]])
-                if k > len(mx):
+                if k >= len(mx):  # worst violation is on the min side
                     mn = mn[k - len(mx)]
                     mx = []
                 else:
