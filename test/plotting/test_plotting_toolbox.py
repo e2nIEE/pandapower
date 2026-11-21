@@ -4,14 +4,48 @@
 from copy import deepcopy
 from importlib.util import find_spec
 
+import numpy as np
 import pandas as pd
 import pytest
 
 from pandapower.networks.power_system_test_cases import case9
-from pandapower.plotting.plotting_toolbox import set_line_geodata_from_bus_geodata
+from pandapower.plotting.collections import create_bus_collection
+from pandapower.plotting.plotting_toolbox import get_index_array, set_line_geodata_from_bus_geodata
 from pandapower.plotting.simple_plot import simple_plot
 
 MATPLOTLIB_INSTALLED = find_spec("matplotlib") is not None
+
+
+@pytest.mark.parametrize(
+    "indices",
+    [frozenset([0, 2]), {0: None, 2: None}.keys(), (i for i in [0, 2]), {0, 2}],
+)
+def test_get_index_array_non_sequence_iterables(indices):
+    result = get_index_array(indices, pd.Index([0, 1, 2]))
+    assert result.ndim == 1
+    assert set(result) == {0, 2}
+
+
+@pytest.mark.parametrize(
+    "indices",
+    [None, [2, 0], (2, 0), range(2), np.array([2, 0], dtype=np.int32), pd.Index([2, 0]), pd.Series([2, 0])],
+)
+def test_get_index_array_existing_inputs(indices):
+    table_indices = pd.Index([0, 1, 2])
+    expected = np.array(table_indices if indices is None else indices)
+    result = get_index_array(indices, table_indices)
+    np.testing.assert_array_equal(result, expected)
+    assert result.dtype == expected.dtype
+
+
+@pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason="requires matplotlib")
+@pytest.mark.parametrize("buses", [frozenset([0, 2]), frozenset()])
+def test_create_bus_collection_frozenset(buses):
+    collection = create_bus_collection(case9(), buses=buses)
+    if buses:
+        assert len(collection.get_paths()) == len(buses)
+    else:
+        assert collection is None
 
 
 @pytest.mark.skipif(not MATPLOTLIB_INSTALLED, reason="requires matplotlib")

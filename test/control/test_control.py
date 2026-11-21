@@ -12,6 +12,7 @@ from pandapower.control.controller.trafo.continuous_tap_control import Continuou
 from pandapower.control.controller.trafo_control import TrafoController
 from pandapower.control.run_control import get_controller_order
 from pandapower.create import create_sgen
+from pandapower.network import pandapowerNet
 from pandapower.networks import create_kerber_vorstadtnetz_kabel_1
 from pandapower.timeseries.output_writer import OutputWriter
 from pandapower.timeseries.run_time_series import run_timeseries
@@ -51,7 +52,7 @@ def net():
     return net
 
 
-def test_add_get_controller(net):
+def test_add_get_controller(net: pandapowerNet):
     # dummy controller
     class ControllerTester(Controller):
         def __init__(self, net, bus, p, q, name):
@@ -74,7 +75,7 @@ def test_add_get_controller(net):
     assert net.controller.object.at[my_controller.index] is my_controller
 
 
-def test_ctrl_unconverged(net):
+def test_ctrl_unconverged(net: pandapowerNet):
     output_writer = OutputWriter(net, time_steps=[0, 1])
 
     class DivergentController(Controller):
@@ -104,7 +105,7 @@ def test_ctrl_unconverged(net):
             assert out
 
 
-def test_conflicting_controllers(net):
+def test_conflicting_controllers(net: pandapowerNet):
     # several controllers for the same element, with different setpoints
     # this is wrong, ch.run_loadflow must fail in such situation!
     tol = 1e-6
@@ -119,7 +120,7 @@ def test_conflicting_controllers(net):
 @pytest.mark.xfail(
     reason="add_controller_to_net uses _preserve_dtypes now and in_service with these inputs is always True"
 )
-def test_in_service_bool(net):
+def test_in_service_bool(net: pandapowerNet):
     # make sure fails with something other than bool
     with pytest.raises(KeyError):
         cnet = copy.deepcopy(net)
@@ -135,7 +136,7 @@ def test_in_service_bool(net):
         runpp(cnet, run_control=True)
 
 
-def test_multiple_levels(net):
+def test_multiple_levels(net: pandapowerNet):
     TrafoController(net, 0, side="lv", element="trafo", level=1, tol=1e-6, in_service=True)
     Controller(net, level=[1, 2])
     Controller(net, level=[1, 2])
@@ -152,7 +153,7 @@ def test_multiple_levels(net):
     runpp(net, run_control=True)
 
 
-def test_level(net):
+def test_level(net: pandapowerNet):
     c1 = DummyController(net)
     c2 = DummyController(net, level=1)
     c3 = DummyController(net, level=2)
@@ -164,7 +165,7 @@ def test_level(net):
     assert c3.is_converged(net)
 
 
-def test_level_in_service(net):
+def test_level_in_service(net: pandapowerNet):
     c1 = DummyController(net)
     c2 = DummyController(net, level=1)
     c3 = DummyController(net, level=1, order=-1)
@@ -185,7 +186,7 @@ def test_level_in_service(net):
     assert order[1][0][0] == c3 and order[1][1][0] == c2
 
 
-def test_matching_params(net):
+def test_matching_params(net: pandapowerNet):
     DummyController(net)
     DummyController(net, order=1, drop_same_existing_ctrl=True)
     assert not len(net.controller.index.difference([0, 1]))

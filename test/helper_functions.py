@@ -111,7 +111,7 @@ def create_test_network2():
     return from_pickle(os.path.join(test_path, "loadflow", "testgrid.p"))
 
 
-def add_grid_connection(net, vn_kv=20.0, zone=None):
+def add_grid_connection(net: pandapowerNet, vn_kv=20.0, zone=None):
     """Creates a new grid connection for create_result_test_network()"""
     (b1,) = create_buses(net, 1, vn_kv=vn_kv, zone=zone)
     create_ext_grid(net, b1, vm_pu=1.01)
@@ -121,7 +121,7 @@ def add_grid_connection(net, vn_kv=20.0, zone=None):
     return b1, b2, l1
 
 
-def create_test_line(net, b1, b2, in_service=True):
+def create_test_line(net: pandapowerNet, b1, b2, in_service=True):
     return create_lines(
         net,
         b1,

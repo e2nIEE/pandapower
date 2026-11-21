@@ -91,8 +91,8 @@ class TestBusOptionalFields:
         net = pandapowerNet(name="test_valid_type_values")
         create_buses(net, 2, vn_kv=0.4)
 
-        net.bus["type"].at[0] = "x"
-        net.bus["type"].at[1] = pd.NA
+        net.bus.at[0, "type"] = "x"
+        net.bus.at[1, "type"] = pd.NA
 
         validate_network(net)
 

@@ -13,6 +13,7 @@ import pytest
 from pandapower.converter.powerfactory.pf_export_functions import run_load_flow as run_powerfactory_load_flow
 from pandapower.converter.powerfactory.validate import _get_pf_results_unbalanced, _set_pf_results_unbalanced
 from pandapower.file_io import from_json
+from pandapower.network import pandapowerNet
 from pandapower.pf.runpp_3ph import runpp_3ph
 from test import test_path
 
@@ -93,7 +94,7 @@ def analyse_3ph_loadtypes_and_vectorgroups(app, net, loadtype, vector_group):
         compare_3ph_pp_pf_results(net)
 
 
-def compare_3ph_pp_pf_results(net):
+def compare_3ph_pp_pf_results(net: pandapowerNet):
     vm_tol = 1e-3
     va_tol = 1e-1
 

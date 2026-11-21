@@ -16,7 +16,9 @@ import logging
 import os
 import pickle
 import sys
-from typing import TextIO
+from io import StringIO
+from os import PathLike
+from typing import BinaryIO, TextIO
 from typing import overload as function_overload
 from warnings import warn
 
@@ -46,14 +48,15 @@ openpyxl_INSTALLED = importlib.util.find_spec("openpyxl") is not None
 logger = logging.getLogger(__name__)
 
 
-def to_pickle(net, filename) -> None:
+def to_pickle(net: pandapowerNet, filename) -> None:
     """
     Saves a pandapower Network with the pickle library.
 
-    :param pandapowerNet net: The pandapower format network
-    :param str filename: The absolute or relative path to the output file or an writable file-like objects
+    Parameters:
+        net (pandapowerNet): The pandapower format network
+        filename (str): The absolute or relative path to the output file or an writable file-like objects
 
-    :example:
+    Example:
         >>> from pandapower.file_io import to_pickle
         >>> to_pickle(net, os.path.join("C:", "example_folder", "example1.p"))  # absolute path
         >>> to_pickle(net, "example2.p")  # relative path
@@ -69,16 +72,17 @@ def to_pickle(net, filename) -> None:
         pickle.dump(save_net, f, protocol=2)  # use protocol 2 for py2 / py3 compatibility
 
 
-def to_excel(net, filename, include_empty_tables=False, include_results=True):
+def to_excel(net: pandapowerNet, filename, include_empty_tables=False, include_results=True):
     """
     Saves a pandapower Network to an Excel file.
 
-    :param pandapowerNet net: The pandapower format network
-    :param str filename: The absolute or relative path to the output file
-    :param bool include_empty_tables: empty element tables are saved as Excel sheet, default False
-    :param bool include_results: results are included in the Excel sheet, default True
+    Parameters:
+        net (pandapowerNet): The pandapower format network
+        filename (str): The absolute or relative path to the output file
+        include_empty_tables (bool, False): empty element tables are saved as Excel sheet
+        include_results (bool, True): results are included in the Excel sheet
 
-    :example:
+    Example:
         >>> from pandapower.file_io import to_excel
         >>> to_excel(net, os.path.join("C:", "example_folder", "example1.xlsx"))  # absolute path
         >>> to_excel(net, "example2.xlsx")  # relative path
@@ -156,24 +160,31 @@ def to_json(
     return None
 
 
-def from_pickle(filename, convert=True, drop_invalid_geodata=False, ignore_version_conflicts=False):
+def from_pickle(
+    filename: str | PathLike | BinaryIO,
+    convert: bool = True,
+    drop_invalid_geodata: bool = False,
+    ignore_version_conflicts: bool = False,
+):
     """
     Load a pandapower format Network from pickle file
 
-    :param filename: The absolute or relative path to the input file or file-like object
-    :type filename: str or file
-    :param bool convert: If True, converts the format of the net loaded from pickle
-        from the older version of pandapower to the newer version format, default True
-    :param bool drop_invalid_geodata: If set to True, drop geodata entries with invalid coordinates
-        instead of raising an error, default True
-    :param bool ignore_version_conflicts: If set to True, ignore version conflicts between the net being
-        loaded and the pandapower version. This can lead to errors when loading nets saved in older
-        formats. Use with caution! default False
+    Parameters:
+        filename: The absolute or relative path to the input file or file-like object
+        convert: If True, converts the format of the net loaded from pickle from the older version of
+            pandapower to the newer version format. This can lead to errors when loading nets saved in older formats.
+            Use with caution!
+        drop_invalid_geodata: If set to True, drop geodata entries with invalid coordinates instead of
+            raising an error. Defaults to False, so callers must explicitly opt in to dropping invalid geodata during
+            conversion.
+        ignore_version_conflicts: If set to True, ignore version conflicts between the net being loaded and the
+            pandapower version. This can lead to errors when loading nets saved in older formats. Use with caution!
+            It has no effect if convert is set to False.
 
-    :return: The pandapower network
-    :rtype: pandapowerNet
+    Returns:
+        pandapowerNet: The pandapower network
 
-    :example:
+    Example:
         >>> from pandapower.file_io import from_pickle
         >>> net1 = from_pickle(os.path.join("C:", "example_folder", "example1.p")) #absolute path
         >>> net2 = from_pickle("example2.p") #relative path
@@ -188,27 +199,27 @@ def from_pickle(filename, convert=True, drop_invalid_geodata=False, ignore_versi
 
 
 def from_excel(
-    filename, convert=True, add_basic_std_types=True, drop_invalid_geodata=False, ignore_version_conflicts=False
+    filename: str | PathLike,
+    convert: bool = True,
+    add_basic_std_types: bool = True,
+    drop_invalid_geodata: bool = False,
+    ignore_version_conflicts: bool = False,
 ):
     """
     Load a pandapower network from an Excel file
 
-    :param str filename: The absolute or relative path to the input file.
-    :param bool convert: If True, converts the format of the net loaded from Excel from
-        the older version of pandapower to the newer version format, default True
-    :param bool add_basic_std_types: If True, Adds missing standard-types from pandapower
-        standard type library, default True.
-        the older version of pandapower to the newer version format, default True
-    :param bool drop_invalid_geodata: If set to True, drop geodata entries with invalid coordinates
-        instead of raising an error, default True
-    :param bool ignore_version_conflicts: If set to True, ignore version conflicts between the net
-        being loaded and the pandapower version. This can lead to errors when loading nets saved in older
-        formats. Use with caution! default False
+    Parameters:
+        filename: The absolute or relative path to the input file.
+        convert: convert the format of the net loaded from Excel from the older version to the newer version format
+        add_basic_std_types: Add missing standard-types from pandapower standard type library.
+        drop_invalid_geodata: Drop geodata entries with invalid coordinates instead of raising an error
+        ignore_version_conflicts: Ignore version conflicts between the net being loaded and the pandapower version.
+            This can lead to errors when loading nets saved in older formats. Use with caution!
 
-    :return: The pandapower network
-    :rtype: pandapowerNet
+    Returns:
+        pandapowerNet: The pandapower network
 
-    :example:
+    Example:
         >>> from pandapower.file_io import from_excel
         >>> net1 = from_excel(os.path.join("C:", "example_folder", "example1.xlsx"))
         >>> net2 = from_excel("example2.xlsx") #relative path
@@ -256,8 +267,8 @@ def _from_excel_old(xls, add_basic_std_types=True):
 
 
 def from_json(
-    filename_or_str,
-    convert=True,
+    filename_or_str: str | bytes | StringIO | PathLike,
+    convert: bool = True,
     encryption_key=None,
     elements_to_deserialize=None,
     keep_serialized_elements=True,
@@ -272,57 +283,53 @@ def from_json(
     skip_checks=False,
 ):
     """
-    Load a pandapower network from a JSON file.
-    The index of the returned network is not necessarily in the same order as the original network.
-    Index columns of all pandas DataFrames are sorted in ascending order.
+    Load a pandapower network from a JSON file. The index of the returned network is not necessarily in the same
+    order as the original network. Index columns of all pandas DataFrames are sorted in ascending order.
 
-    :param filename_or_str: The absolute or relative path to the input file or file-like object
-    :type filename_or_str: str or file
-    :param bool convert: If True, converts the format of the net loaded from json
-        from the older version of pandapower to the newer version format, default True
-    :param encryption_key: If given, key to decrypt an encrypted pandapower network, default None
-    :type encryption_key: str or None
-    :param elements_to_deserialize: Deserialize only certain pandapower elements. If None all elements are deserialized,
-        default None
-    :type elements_to_deserialize: list or None
-    :param bool keep_serialized_elements: Keep serialized elements if given. Default: Serialized elements are kept,
-        default True
-    :param bool add_basic_std_types: Add missing standard-types from pandapower standard type library, default False
-    :param replace_elements: Keys are replaced by values found in json string. Both key and value are supposed to be
-        strings, default None
-    :type replace_elements: dict or None
-    :param empty_dict_like_object: If None, the output of pandapowerNet() is used as an empty element
-        to be filled by the data of the json string. Give another dict-like object to start filling that alternative
-        object with the json data, default None
-    :type empty_dict_like_object: dict or pandapowerNet or None
-    :param bool ignore_unknown_objects: If set to True, ignore any objects that cannot be
-         deserialized instead of raising an error, default False
-    :param bool drop_invalid_geodata: If set to True, drop geodata entries with invalid
-        coordinates instead of raising an error, default False
-    :param omit_tables: List of tables to omit during deserialization, default None
-    :type omit_tables: list or None
-    :param omit_modules: List of modules to omit during deserialization, default None
-    :type omit_modules: list or None
-    :param bool ignore_version_conflicts: If set to True, ignore version conflicts between the net
-        being loaded and the pandapower version. This can lead to errors when loading nets saved in older
-        formats. Use with caution! default False
-    :param bool skip_checks: If set to True, no checks will be performed.
-        .. warning:: Only perform on trusted data sources / networks!
+    Parameters:
+        filename_or_str: The absolute or relative path to the input file or file-like object, or a JSON string,
+            or UTF-8 encoded JSON bytes
+        convert: If True, converts the format of the net loaded from json from the older version of
+            pandapower to the newer version format
+        encryption_key (str or None, None): If given, key to decrypt an encrypted pandapower network
+        elements_to_deserialize (list or None, None): Deserialize only certain pandapower elements. If None all elements
+            are deserialized
+        keep_serialized_elements (bool, True): Keep serialized elements if given. Default: Serialized elements are kept
+        add_basic_std_types (bool, False): Add missing standard-types from pandapower standard type library
+        replace_elements (dict or None, None): Keys are replaced by values found in json string. Both key and value are
+            supposed to be strings
+        empty_dict_like_object (dict or pandapowerNet or None, None): If None, the output of pandapowerNet() is used as
+            an empty element to be filled by the data of the json string. Give another dict-like object to start filling
+            that alternative object with the json data
+        ignore_unknown_objects (bool, False): If set to True, ignore any objects that cannot be deserialized instead of
+            raising an error
+        drop_invalid_geodata (bool, False): If set to True, drop geodata entries with invalid coordinates instead of
+            raising an error
+        omit_tables (list or None, None): List of tables to omit during deserialization
+        omit_modules (list or None, None): List of modules to omit during deserialization
+        ignore_version_conflicts (bool): If set to True, ignore version conflicts between the net being loaded and the
+            pandapower version. This can lead to errors when loading nets saved in older formats. Use with caution!
+            default False
+        skip_checks (bool): If set to True, no checks will be performed.
+            .. warning:: Only perform on trusted data sources / networks!
 
-    :return: The pandapower network
-    :rtype: pandapowerNet
+    Returns:
+        pandapowerNet: The pandapower network
 
-    :example:
+    Example:
         >>> from pandapower.file_io import from_json
         >>> net = from_json("example.json")
     """
+    json_string: str | bytes
     if hasattr(filename_or_str, "read"):
         json_string = filename_or_str.read()
     elif os.path.isfile(filename_or_str):
         with open(filename_or_str, "r") as fp:
             json_string = fp.read()
-    else:
+    elif isinstance(filename_or_str, (str, bytes)):
         json_string = filename_or_str
+    else:
+        raise TypeError(f"from_json could not read {filename_or_str=}")
     try:
         return from_json_string(
             json_string,
@@ -345,7 +352,7 @@ def from_json(
 
 
 def from_json_string(
-    json_string,
+    json_string: str | bytes,
     convert=False,
     encryption_key=None,
     elements_to_deserialize=None,
@@ -361,41 +368,34 @@ def from_json_string(
     skip_checks=False,
 ):
     """
-    Load a pandapower network from a JSON string.
-    The index of the returned network is not necessarily in the same order as the original network.
-    Index columns of all pandas DataFrames are sorted in ascending order.
+    Load a pandapower network from a JSON string. The index of the returned network is not necessarily in the same
+    order as the original network. Index columns of all pandas DataFrames are sorted in ascending order.
 
-    :param str json_string: The json string representation of the network
-    :param bool convert: If True, converts the format of the net loaded from json_string
-        from the older version of pandapower to the newer version format, default False
-    :param encryption_key: If given, key to decrypt an encrypted json_string, default None
-    :type encryption_key: str or None
-    :param elements_to_deserialize: Deserialize only certain pandapower elements. If None all elements are deserialized,
-        default None
-    :type elements_to_deserialize: list or None
-    :param bool keep_serialized_elements: Keep serialized elements if given. Default: Serialized elements are kept,
-        default True
-    :param bool add_basic_std_types: Add missing standard-types from pandapower standard type library, default False
-    :param replace_elements: Keys are replaced by values found in json string.
-        Both key and value are supposed to be strings, default None
-    :type replace_elements: dict or None
-    :param empty_dict_like_object: If None, the output of pandapower.create_empty_network() is used as an empty element
-        to be filled by the data of the json string. Give another dict-like object to start filling that alternative
-        object with the json data, default None
-    :type empty_dict_like_object: dict or pandapowerNet or None
-    :param bool ignore_unknown_objects: If set to True, ignore any objects that cannot be deserialized instead of
-        raising an error, default False
-    :param bool drop_invalid_geodata: If set to True, drop geodata entries with invalid coordinates
-        instead of raising an error, default False
-    :param omit_tables: List of tables to omit during deserialization, default None
-    :type omit_tables: list or None
-    :param omit_modules: List of modules to omit during deserialization, default None
-    :type omit_modules: list or None
-    :param bool ignore_version_conflicts: If set to True, ignore version conflicts between the net
-        being loaded and the pandapower version. This can lead to errors when loading nets saved in
-        older formats. Use with caution! default False
-    :param bool skip_checks: If set to True, skips all checks
-        .. warning:: Only perform on trusted data sources / networks!
+    Parameters:
+        json_string (str or bytes): The json string representation of the network, or its UTF-8 encoding
+        convert (bool, False): If True, converts the format of the net loaded from json_string from the older version of
+            pandapower to the newer version format
+        encryption_key (str or None, None): If given, key to decrypt an encrypted json_string
+        elements_to_deserialize (list or None, None): Deserialize only certain pandapower elements. If None all elements
+            are deserialized
+        keep_serialized_elements (bool, True): Keep serialized elements if given. Default: Serialized elements are kept
+        add_basic_std_types (bool, False): Add missing standard-types from pandapower standard type library
+        replace_elements (dict or None, None): Keys are replaced by values found in json string. Both key and value are
+            supposed to be strings
+        empty_dict_like_object (dict or pandapowerNet or None, None): If None, the output of
+            pandapower.create_empty_network() is used as an empty element to be filled by the data of the json string.
+            Give another dict-like object to start filling that alternative object with the json data
+        ignore_unknown_objects (bool, False): If set to True, ignore any objects that cannot be deserialized instead of
+            raising an error
+        drop_invalid_geodata (bool, False): If set to True, drop geodata entries with invalid coordinates instead of
+            raising an error
+        omit_tables (list or None, None): List of tables to omit during deserialization
+        omit_modules (list or None, None): List of modules to omit during deserialization
+        ignore_version_conflicts (bool): If set to True, ignore version conflicts between the net being loaded and the
+            pandapower version. This can lead to errors when loading nets saved in older formats. Use with caution!
+            default False
+        skip_checks (bool): If set to True, skips all checks
+            .. warning:: Only perform on trusted data sources / networks!
 
     Returns:
         The pandapower network
@@ -404,6 +404,9 @@ def from_json_string(
         >>> from pandapower.file_io import from_json_string
         >>> net = from_json_string("{…}")
     """
+    if isinstance(json_string, bytes):
+        json_string = json_string.decode("utf-8")
+
     if replace_elements is not None:
         for k, v in replace_elements.items():
             json_string = json_string.replace(k, v)
@@ -486,16 +489,17 @@ def from_json_string(
 
 def from_json_dict(json_dict):
     """
-    Load a pandapower network from a JSON string.
-    The index of the returned network is not necessarily in the same order as the original network.
-    Index columns of all pandas DataFrames are sorted in ascending order.
+    Load a pandapower network from a decoded JSON dictionary, e.g. the output of json.loads. The index of the
+    returned network is not necessarily in the same order as the original network. Index columns of all pandas
+    DataFrames are sorted in ascending order.
 
-    :param dict json_dict: The json object representation of the network
+    Parameters:
+        json_dict (dict): The json object representation of the network
 
-    :return: The pandapower network
-    :rtype: pandapowerNet
+    Returns:
+        pandapowerNet: The pandapower network
 
-    :example:
+    Example:
         >>> from pandapower.file_io import from_json_dict
         >>> net = from_json_dict(json.loads(json_str))
     """
@@ -520,8 +524,9 @@ def from_json_dict(json_dict):
             or key == "polynomial_cost"
             or (key.startswith("res_") and key[4:] in net and isinstance(net[key[4:]], pd.DataFrame))
         ):
-            net[key] = pd.DataFrame.from_dict(json_dict[key], orient="columns")
-            net[key].set_index(net[key].index.astype(numpy.int64), inplace=True)
+            table = pd.DataFrame.from_dict(json_dict[key], orient="columns")
+            table.set_index(table.index.astype(numpy.int64), inplace=True)
+            net[key] = table.sort_index()
         else:
             net[key] = json_dict[key]
     return net

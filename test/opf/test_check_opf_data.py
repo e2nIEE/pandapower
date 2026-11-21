@@ -62,7 +62,7 @@ def _opf_net():
     return net
 
 
-def _run_check(net):
+def _run_check(net: pandapowerNet):
     try:
         _check_necessary_opf_parameters(net, logger)
         return True

@@ -67,7 +67,7 @@ class LineParams(TypedDict):
     zero sequence dielectric conductance in micro Siemens per km.
     If not provided a default is used if column is present.
     """
-    endtemp_degree: NotRequired[float | Iterable[float]]
+    endtemp_degree: NotRequired[float | Iterable[float] | None]
 
 
 def create_lines(
@@ -577,7 +577,7 @@ def create_line_from_parameters(
     x0_ohm_per_km: float = nan,
     c0_nf_per_km: float = nan,
     g0_us_per_km: float = get_default_value("line", "g0_us_per_km"),
-    endtemp_degree: float = nan,
+    endtemp_degree: float | None = nan,
     **kwargs,
 ) -> Int:
     """

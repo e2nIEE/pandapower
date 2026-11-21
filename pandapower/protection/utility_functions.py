@@ -158,7 +158,9 @@ def create_sc_bus(net_copy, sc_line_id, sc_fraction):
     return net
 
 
-def calc_faults_at_full_line(net, line, location_step_size=0.01, start_location=0.01, end_location=1, sc_case="min"):
+def calc_faults_at_full_line(
+    net: pandapowerNet, line, location_step_size=0.01, start_location=0.01, end_location=1, sc_case="min"
+):
     # functon to create sc at full line
     i = 0
 
@@ -176,7 +178,7 @@ def calc_faults_at_full_line(net, line, location_step_size=0.01, start_location=
     return fault_currents
 
 
-def get_opposite_side_bus_from_switch(net, switch_id):
+def get_opposite_side_bus_from_switch(net: pandapowerNet, switch_id):
     # get the frm and to bus of switch
     line_idx = net.switch.element.at[switch_id]
     is_from_bus = get_from_bus_info_switch(net, switch_id)
@@ -189,7 +191,7 @@ def get_opposite_side_bus_from_switch(net, switch_id):
     return opp_bus_idx
 
 
-def get_opposite_side_bus_from_bus_line(net, bus_idx, line_idx):
+def get_opposite_side_bus_from_bus_line(net: pandapowerNet, bus_idx, line_idx):
     # get the from abd to bus of given line
     is_from_bus = get_from_bus_info_bus_line(net, bus_idx, line_idx)
 
@@ -201,7 +203,7 @@ def get_opposite_side_bus_from_bus_line(net, bus_idx, line_idx):
     return opp_bus_idx
 
 
-def get_from_bus_info_switch(net, switch_id):
+def get_from_bus_info_switch(net: pandapowerNet, switch_id):
     # get the from bus of given switch id
     bus_idx = net.switch.bus.at[switch_id]
     line_idx = net.switch.element.at[switch_id]
@@ -209,12 +211,12 @@ def get_from_bus_info_switch(net, switch_id):
     return bus_idx == net.line.from_bus.at[line_idx]
 
 
-def get_from_bus_info_bus_line(net, bus_idx, line_idx):
+def get_from_bus_info_bus_line(net: pandapowerNet, bus_idx, line_idx):
     # get bus nfo of given line
     return bus_idx == net.line.from_bus.at[line_idx]
 
 
-def get_line_impedance(net, line_idx):
+def get_line_impedance(net: pandapowerNet, line_idx):
     # get line impedence
     line_length = net.line.length_km.at[line_idx]
     line_r_per_km = net.line.r_ohm_per_km.at[line_idx]
@@ -246,7 +248,7 @@ def check_for_closed_bus_switches(net_copy):
     return net
 
 
-def fuse_bus_switches(net, bus_switches):
+def fuse_bus_switches(net: pandapowerNet, bus_switches):
     # get fused switches
     for bus_switch in bus_switches.index:
         bus1 = net.switch.bus.at[bus_switch]
@@ -291,7 +293,7 @@ def get_sc_location_annotation(
     return sc_annotate
 
 
-def plot_tripped_grid(net, trip_decisions, sc_location, bus_size=0.055, plot_annotations=True):
+def plot_tripped_grid(net: pandapowerNet, trip_decisions, sc_location, bus_size=0.055, plot_annotations=True):
     # plot the tripped grid of net_sc
     if MPLCURSORS_INSTALLED:
         mplcursors.cursor(hover=False)
@@ -326,9 +328,7 @@ def plot_tripped_grid(net, trip_decisions, sc_location, bus_size=0.055, plot_ann
         tripping_times.append(trip_time)
     tripping_times = [v for v in tripping_times if not isinf(v)]
     backup_tripping_times = copy.deepcopy(tripping_times)
-    backup_tripping_times.remove(min(backup_tripping_times)) and backup_tripping_times.remove(
-        heapq.nsmallest(2, backup_tripping_times)[-1]
-    )
+    backup_tripping_times.remove(min(backup_tripping_times))
 
     inst_trip_switches = []
     backup_trip_switches = []
@@ -512,9 +512,7 @@ def plot_tripped_grid_protection_device(
     if len(tripping_times) == 0:
         return
     backup_tripping_times = copy.deepcopy(tripping_times)
-    backup_tripping_times.remove(min(backup_tripping_times)) and backup_tripping_times.remove(
-        heapq.nsmallest(2, backup_tripping_times)[-1]
-    )
+    backup_tripping_times.remove(min(backup_tripping_times))
 
     inst_trip_switches = []
     backup_trip_switches = []
@@ -689,7 +687,7 @@ def calc_line_intersection(m1, b1, m2, b2):
 
 
 # get the connected bus listr from start to end bus
-def source_to_end_path(net, start_bus, bus_list, bus_order):
+def source_to_end_path(net: pandapowerNet, start_bus, bus_list, bus_order):
     connected_lines = get_connected_elements(net, "line", start_bus)
     flag = 0
     for line in connected_lines:
@@ -709,10 +707,10 @@ def source_to_end_path(net, start_bus, bus_list, bus_order):
     return bus_list
 
 
-def switch_geodatas(net, size, distance_to_bus):
+def switch_geodatas(net: pandapowerNet, size, distance_to_bus):
     """get the coordinates for switches at middle of the line"""
     switch_geo = []
-    switches = []
+    switches: list = []
 
     if len(switches) == 0:
         lbs_switches = net.switch.index[net.switch.et == "l"]
@@ -799,7 +797,7 @@ def create_I_t_plot(trip_decisions, switch_id):
         )
 
 
-def power_flow_end_points(net):
+def power_flow_end_points(net: pandapowerNet):
     """function calculate end point from meshed grid and the start point from the radial grid to ext grid"""
 
     pf_net = copy.deepcopy(net)
@@ -833,7 +831,7 @@ def power_flow_end_points(net):
     return pf_loop_end_buses, pf_radial_end_buses
 
 
-def bus_path_from_to_bus(net, radial_start_bus, loop_start_bus, end_bus):
+def bus_path_from_to_bus(net: pandapowerNet, radial_start_bus, loop_start_bus, end_bus):
     """function calculate the bus path from start and end buses"""
     from pandapower.topology.create_graph import create_nxgraph
 
@@ -847,7 +845,7 @@ def bus_path_from_to_bus(net, radial_start_bus, loop_start_bus, end_bus):
     return radial_path + loop_path
 
 
-def get_switches_in_path(net, paths):
+def get_switches_in_path(net: pandapowerNet, paths):
     """function calculate the switching times from the  bus path"""
 
     lines_in_path: list[list] = []
@@ -905,7 +903,7 @@ def get_vi_angle(net: pandapowerNet, switch_id: int, **kwargs) -> float:
     return vi_angle
 
 
-def bus_path_multiple_ext_bus(net):
+def bus_path_multiple_ext_bus(net: pandapowerNet):
     G = create_nxgraph(net)
     bus_path = []
     for line_id in net.line.index:
@@ -945,7 +943,7 @@ def bus_path_multiple_ext_bus(net):
 
 
 # get the line path from the given bus path
-def get_line_path(net, bus_path):  # type: ignore[no-redef]
+def get_line_path(net: pandapowerNet, bus_path):  # type: ignore[no-redef]
     """Function return the list of line path from the given bus path"""
     line_path = []
     for i in range(len(bus_path) - 1):
@@ -961,11 +959,11 @@ def get_line_path(net, bus_path):  # type: ignore[no-redef]
     return line_path
 
 
-def parallel_lines(net):
+def parallel_lines(net: pandapowerNet):
     """Function return the list of parallel lines in the network"""
 
     parallel = []
-    new_parallel = []
+    new_parallel: list[list] = []
 
     # parallel_lines
     for i in net.line.index:

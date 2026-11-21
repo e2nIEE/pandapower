@@ -50,7 +50,7 @@ def small_example_grid():
     return net
 
 
-def _get_xward_result(net):
+def _get_xward_result(net: pandapowerNet):
     # here I tried getting the xward power that is relevant for the balance
     p_results = np.array([])
     internal_results = np.array([])
@@ -88,7 +88,7 @@ def _get_xward_result(net):
     return p_results, internal_results
 
 
-def _get_losses(net):
+def _get_losses(net: pandapowerNet):
     pl_mw = 0
     for elm in ["line", "trafo", "trafo3w", "impedance"]:
         if elm in net and net[elm].shape[0] > 0:
@@ -96,7 +96,7 @@ def _get_losses(net):
     return pl_mw
 
 
-def _get_injection_consumption(net):
+def _get_injection_consumption(net: pandapowerNet):
     _, xward_internal = _get_xward_result(net)
     total_pl_mw = _get_losses(net)
     # xward is in the consumption reference system
@@ -113,7 +113,7 @@ def _get_injection_consumption(net):
     return injected_p_mw, consumed_p_mw, net.xward[net.xward.in_service].ps_mw.sum()
 
 
-def _get_slack_weights(net):
+def _get_slack_weights(net: pandapowerNet):
     slack_weights = np.r_[
         net.gen[net.gen.in_service].slack_weight if "slack_weight" in net.gen.columns else [],
         net.ext_grid[net.ext_grid.in_service].slack_weight if "slack_weight" in net.ext_grid.columns else [],
@@ -122,7 +122,7 @@ def _get_slack_weights(net):
     return slack_weights / sum(slack_weights)
 
 
-def _get_inputs_results(net):
+def _get_inputs_results(net: pandapowerNet):
     # distributed slack calculation only adjusts the pq part of the xward active power consumption
     # that is why we only consider the active power consumption by the PQ load of the xward here
     xward_pq_res, _ = _get_xward_result(net)
@@ -147,7 +147,7 @@ def _get_inputs_results(net):
     return inputs, results
 
 
-def assert_results_correct(net, tol=1e-8):
+def assert_results_correct(net: pandapowerNet, tol=1e-8):
     # first, collect slack_weights, injection and consumption, inputs and reults from net
     injected_p_mw, consumed_p_mw, consumed_xward_p_mw = _get_injection_consumption(net)
     input_p_mw, result_p_mw = _get_inputs_results(net)
@@ -164,12 +164,12 @@ def assert_results_correct(net, tol=1e-8):
     ), "distributed slack weights formula has a wrong result"
 
 
-def check_xward_results(net, tol=1e-9):
+def check_xward_results(net: pandapowerNet, tol=1e-9):
     xward_pq_res, xward_internal = _get_xward_result(net)
     assert np.allclose(xward_pq_res + xward_internal, net.res_xward.p_mw, atol=tol, rtol=0)
 
 
-def run_and_assert_numba(net, **kwargs):
+def run_and_assert_numba(net: pandapowerNet, **kwargs):
     if numba_installed:
         net_temp = copy.deepcopy(net)
         runpp(net_temp, distributed_slack=True, numba=False, **kwargs)

@@ -24,6 +24,8 @@ from datetime import datetime, timedelta
 import numpy as np
 import pandas as pd
 
+from pandapower.network import pandapowerNet
+
 logger = logging.getLogger(__name__)
 
 from importlib.util import find_spec
@@ -94,7 +96,7 @@ def _cooling_type(cooling_type: str | None) -> "CoolerType":
     return CoolerType.ONAF if normalised == "ONAF" else CoolerType.ONAN
 
 
-def specs_from_trafo(net, index) -> "UserTransformerSpecifications":
+def specs_from_trafo(net: pandapowerNet, index) -> "UserTransformerSpecifications":
     """Build the library specifications of a two winding transformer from its nameplate data.
 
     Mapping of the pandapower nameplate to the IEC 60076-7 inputs:
@@ -120,7 +122,7 @@ def specs_from_trafo(net, index) -> "UserTransformerSpecifications":
     )
 
 
-def specs_from_trafo3w(net, index) -> "UserThreeWindingTransformerSpecifications":
+def specs_from_trafo3w(net: pandapowerNet, index) -> "UserThreeWindingTransformerSpecifications":
     """Build the library specifications of a three winding transformer from its nameplate data.
 
     The ``vk*_*_percent`` columns of ``net.trafo3w`` are **pairwise** (delta) values, not star
@@ -217,7 +219,9 @@ def _current_a(i_ka, parallel=1.0) -> float:
     return abs(float(i_ka)) * 1e3 / parallel
 
 
-def calculate_transformer_temperatures(net, dt_minutes: float | None = None, initial_top_oil_temperature=None):
+def calculate_transformer_temperatures(
+    net: pandapowerNet, dt_minutes: float | None = None, initial_top_oil_temperature=None
+):
     """Calculate top-oil and hot-spot temperatures of all in-service transformers and write results.
 
     This is post-processing and is meant to be called after the power flow results were extracted, so
@@ -274,7 +278,7 @@ def calculate_transformer_temperatures(net, dt_minutes: float | None = None, ini
     return top_oil_temperatures
 
 
-def _calculate_trafo(net, indices, datetime_index, initial_top_oil_temperature) -> dict:
+def _calculate_trafo(net: pandapowerNet, indices, datetime_index, initial_top_oil_temperature) -> dict:
     """Two winding transformers."""
     res_trafo = net.res_trafo
 
@@ -314,7 +318,7 @@ def _calculate_trafo(net, indices, datetime_index, initial_top_oil_temperature) 
     return top_oil_temperatures
 
 
-def _calculate_trafo3w(net, indices, datetime_index, initial_top_oil_temperature) -> dict:
+def _calculate_trafo3w(net: pandapowerNet, indices, datetime_index, initial_top_oil_temperature) -> dict:
     """Three winding transformers."""
     res_trafo3w = net.res_trafo3w
 

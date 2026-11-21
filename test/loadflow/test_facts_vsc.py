@@ -56,7 +56,7 @@ def xtcsc(x, x_l, x_c):
     return np.pi * x_l / (2 * (np.pi - x) + np.sin(2 * x) + np.pi * x_l / x_c)
 
 
-def copy_with_impedance(net):
+def copy_with_impedance(net: pandapowerNet):
     baseMVA = net.sn_mva  # MVA
     baseV = net.bus.vn_kv.values  # kV
     baseZ = baseV**2 / baseMVA

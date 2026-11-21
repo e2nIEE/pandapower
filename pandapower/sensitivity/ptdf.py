@@ -139,7 +139,7 @@ def _get_ptdf_perturb(
     return ptdf
 
 
-def _get_dc_profile_with_ptdf(net, profiles, result_side=0, ptdf=None):
+def _get_dc_profile_with_ptdf(net: pandapowerNet, profiles, result_side=0, ptdf=None):
     """
     Run a dc profile with the ptdf method, the ptdf is calculated if it is not given.
 
@@ -228,7 +228,7 @@ def _get_dc_profile_with_ptdf(net, profiles, result_side=0, ptdf=None):
 
 
 # Convert data in numpy array to pandas dataframe with pp index
-def _ptdf_pp_np_to_df(net, res_pp, source_bus=None, nan_to_num=True, branch_dict=None, reduced=False):
+def _ptdf_pp_np_to_df(net: pandapowerNet, res_pp, source_bus=None, nan_to_num=True, branch_dict=None, reduced=False):
     res = {}
     for br_type, data in res_pp.items():
         if nan_to_num:
@@ -255,7 +255,7 @@ def _ptdf_pp_np_to_df(net, res_pp, source_bus=None, nan_to_num=True, branch_dict
 
 
 # Init result numpy array filled with zeros
-def _init_ptdf_pp_np(net, num_source_bus):
+def _init_ptdf_pp_np(net: pandapowerNet, num_source_bus):
     ptdf_pp = {}
     for br_type in ("line", "dcline", "trafo", "impedance"):
         if not net[br_type].empty:
@@ -266,7 +266,7 @@ def _init_ptdf_pp_np(net, num_source_bus):
     return ptdf_pp
 
 
-def _make_ptdf_ppci(net, using_sparse_solver, result_side, branch_id=None, reduced=False):
+def _make_ptdf_ppci(net: pandapowerNet, using_sparse_solver, result_side, branch_id=None, reduced=False):
     # Select subnet areas
     slack_df, pp_area_bus_mapping = get_dist_slack(net)
     _, ppci = _pd2ppc(net)
@@ -295,7 +295,7 @@ def _make_ptdf_ppci(net, using_sparse_solver, result_side, branch_id=None, reduc
     return ptdf_ppci, ppci
 
 
-def _ptdf_ppci_to_pp(net, ptdf_ppci, result_side, branch_ppci_lookup=None):
+def _ptdf_ppci_to_pp(net: pandapowerNet, ptdf_ppci, result_side, branch_ppci_lookup=None):
     # Padding the sensitivity matrix for out-of-service elements
     ptdf_ppci_padding = np.pad(ptdf_ppci, ((0, 1), (0, 1)), mode="constant", constant_values=DISCONNECTED_PADDING_VALUE)
 
@@ -442,7 +442,9 @@ def verify_ptdf(
     logger.info("All PTDF results verified with perturb method!")
 
 
-def make_ptdf_multi_area(net, ppci, pp_area_bus_mapping, ppci_slack_mask_with_prio, using_sparse_solver, result_side):
+def make_ptdf_multi_area(
+    net: pandapowerNet, ppci, pp_area_bus_mapping, ppci_slack_mask_with_prio, using_sparse_solver, result_side
+):
     """Select areas in the ppci network and calculate the ptdf of each area independently."""
     ptdf_ppci = np.zeros((ppci["branch"].shape[0], ppci["bus"].shape[0]), dtype=float)
     for this_bus in pp_area_bus_mapping.values():
@@ -466,7 +468,7 @@ def make_ptdf_multi_area(net, ppci, pp_area_bus_mapping, ppci_slack_mask_with_pr
 
         # Reindex bus_ix from 1-Nbus and create a lookup
         ppci_bus_ix = ppci_bus_this_area[:, BUS_I].astype(int).copy()
-        ppci_bus_old_new_lookup = np.ones(np.max(ppci_bus_ix) + 1, dtype=int) * -1
+        ppci_bus_old_new_lookup: npt.NDArray = np.ones(np.max(ppci_bus_ix) + 1, dtype=int) * -1
         ppci_bus_old_new_lookup[ppci_bus_this_area[:, BUS_I].astype(int)] = np.arange(this_ppci_bus_aux_bus.shape[0])
 
         # Update the area ppci bus indexing
@@ -529,7 +531,7 @@ def run_ptdf_dc_profile(
     return res_renamed
 
 
-def _profile_pp_np_to_df(net, res_pp_np, num_calc):
+def _profile_pp_np_to_df(net: pandapowerNet, res_pp_np, num_calc):
     res = {}
     for br_type, data in res_pp_np.items():
         pp_br_type = "trafo3w" if br_type.startswith("trafo3w") else br_type

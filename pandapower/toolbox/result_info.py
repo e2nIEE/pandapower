@@ -27,7 +27,7 @@ from pandapower.toolbox.element_selection import pp_elements
 logger = logging.getLogger(__name__)
 
 
-def lf_info(net, numv=1, numi=2):  # pragma: no cover
+def lf_info(net: pandapowerNet, numv=1, numi=2):  # pragma: no cover
     """
     Prints some basic information of the results in a net
     (max/min voltage, max trafo load, max line load).
@@ -51,7 +51,7 @@ def lf_info(net, numv=1, numi=2):  # pragma: no cover
         logger.info("  %s loading at line %s (%s)", r.loading_percent, r.name, net.line.name.at[r.name])
 
 
-def opf_task(net, delta_pq=1e-3, keep=False, log=True):
+def opf_task(net: pandapowerNet, delta_pq=1e-3, keep=False, log=True):
     """
     Collects some basic inforamtion of the optimal powerflow task und prints them.
     """
@@ -59,7 +59,11 @@ def opf_task(net, delta_pq=1e-3, keep=False, log=True):
         net = copy.deepcopy(net)
     _check_necessary_opf_parameters(net, logger)
 
-    opf_task_overview = {"flexibilities": {}, "network_constraints": {}, "flexibilities_without_costs": {}}
+    opf_task_overview: dict[str, dict] = {
+        "flexibilities": {},
+        "network_constraints": {},
+        "flexibilities_without_costs": {},
+    }
     _determine_flexibilities_dict(net, opf_task_overview["flexibilities"], delta_pq)
     _determine_network_constraints_dict(net, opf_task_overview["network_constraints"])
     _determine_costs_dict(net, opf_task_overview)
@@ -369,7 +373,7 @@ def _get_keys_and_elements_from_opf_task_dict(dict_):
     return keys, elms
 
 
-def switch_info(net, sidx):  # pragma: no cover
+def switch_info(net: pandapowerNet, sidx):  # pragma: no cover
     """
     Prints what buses and elements are connected by a certain switch.
     """
@@ -382,7 +386,7 @@ def switch_info(net, sidx):  # pragma: no cover
     logger.info(f"Switch {sidx:u} connects bus {bidx:u} ({bus_name}) with trafo {eidx:u} ({name})")
 
 
-def overloaded_lines(net, max_load=100):
+def overloaded_lines(net: pandapowerNet, max_load=100):
     """
     Returns the results for all lines with loading_percent > max_load or None, if
     there are none.
@@ -393,7 +397,7 @@ def overloaded_lines(net, max_load=100):
         raise UserWarning("The last loadflow terminated erratically, results are invalid!")
 
 
-def violated_buses(net, min_vm_pu, max_vm_pu):
+def violated_buses(net: pandapowerNet, min_vm_pu, max_vm_pu):
     """
     Returns all bus indices where vm_pu is not within min_vm_pu and max_vm_pu or returns None, if
     there are none of those buses.
@@ -404,7 +408,7 @@ def violated_buses(net, min_vm_pu, max_vm_pu):
         raise UserWarning("The last loadflow terminated erratically, results are invalid!")
 
 
-def clear_result_tables(net):
+def clear_result_tables(net: pandapowerNet):
     """
     Clears all ``res_`` DataFrames in net.
     """
@@ -413,7 +417,7 @@ def clear_result_tables(net):
             net[key] = net[key].drop(net[key].index)
 
 
-def compute_switch_flows(net):
+def compute_switch_flows(net: pandapowerNet):
     """
     Compute power flow through zero-impedance bus-bus switches via nodal balance.
 
@@ -468,8 +472,8 @@ def compute_switch_flows(net):
         return
 
     # Per-bus net local consumption: positive = power leaving the bus
-    bus_p = defaultdict(float)
-    bus_q = defaultdict(float)
+    bus_p: defaultdict[int, float] = defaultdict(float)
+    bus_q: defaultdict[int, float] = defaultdict(float)
 
     _bus_element_names = [
         ("load", 1.0),
@@ -556,7 +560,7 @@ def compute_switch_flows(net):
         if grp is not None and grp in multi_groups:
             sw_by_group[grp].append((sw_idx, a, b))
 
-    computed_switches = set()
+    computed_switches: set[int] = set()
 
     # For each fused group, build the coupler subgraph and compute flows
     for grp_id, grp_buses in multi_groups.items():
@@ -589,8 +593,8 @@ def compute_switch_flows(net):
         # DFS to build tree order
         root = next(iter(grp_buses))
         visited = set()
-        stack = [(root, None, None)]
-        order = []
+        stack: list[tuple[int, int | None, int | None]] = [(root, None, None)]
+        order: list[tuple[int, int | None, int | None]] = []
         while stack:
             bus, parent, parent_sw = stack.pop()
             if bus in visited:
@@ -602,8 +606,8 @@ def compute_switch_flows(net):
                     stack.append((nb, bus, sw_idx))
 
         # Accumulate subtree demand from leaves to root
-        subtree_p = {}
-        subtree_q = {}
+        subtree_p: dict[int, float] = {}
+        subtree_q: dict[int, float] = {}
         for bus, parent, parent_sw in reversed(order):
             sp = bus_p.get(bus, 0.0)
             sq = bus_q.get(bus, 0.0)

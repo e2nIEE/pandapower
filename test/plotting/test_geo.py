@@ -60,7 +60,7 @@ def test_network(request):
 
 
 @pytest.fixture
-def get_network_and_result(net, request):
+def get_network_and_result(net: pandapowerNet, request):
     """
     Fixture which yields the network, and its expected result based on running test.
     """
