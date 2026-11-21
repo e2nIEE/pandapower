@@ -159,7 +159,7 @@ def _run_ac_pf_with_qlims_enforced(ppci, recycle, makeYbus, ppopt):
             ## one at a time?
             if qlim == 2:  ## fix largest violation, ignore the rest
                 k = argmax(r_[gen[mx, QG] - gen[mx, QMAX], gen[mn, QMIN] - gen[mn, QG]])
-                if k >= len(mx):  ## worst violation is on the min side
+                if k >= len(mx):  # worst violation is on the min side
                     mn = mn[k - len(mx)]
                     mx = []
                 else:
