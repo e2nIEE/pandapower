@@ -191,14 +191,15 @@ def check_postgresql_catalogue_table(cursor, table_name, grid_id, grid_id_column
             raise UserWarning(f"found {found} duplicate entries in grid_catalogue where {grid_id_column}={grid_id}")
 
 
-def create_postgresql_catalogue_entry(conn, cursor, grid_id, grid_id_column, catalogue_table_name):
+def create_postgresql_catalogue_entry(conn, cursor, grid_id: str, grid_id_column, catalogue_table_name):
     # check if a grid with the provided ids was already added
     check_postgresql_catalogue_table(cursor, catalogue_table_name, grid_id, grid_id_column)
     # create a "catalogue" table to keep track of all grids available in the DB
+    query_str: psql.LiteralString
     if grid_id is None:
-        query_str: psql.LiteralString = "INSERT INTO {catalogue}({column}) VALUES(DEFAULT) RETURNING {column}"
+        query_str = "INSERT INTO {catalogue}({column}) VALUES(DEFAULT) RETURNING {column}"
     else:
-        query_str: psql.LiteralString = "INSERT INTO {catalogue}({column}) VALUES({value}) RETURNING {column}"
+        query_str = "INSERT INTO {catalogue}({column}) VALUES({value}) RETURNING {column}"
     query = psql.SQL(query_str).format(
         catalogue=to_sql_str(catalogue_table_name),
         column=to_sql_str(grid_id_column),
