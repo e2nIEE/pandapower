@@ -94,8 +94,7 @@ docs = [
     "sphinx-toolbox>=4.3.1",
     "sphinx-pyproject~=0.3",
     "sphinxcontrib-imagesvg~=0.1",
-    "pandapower[converter]",
-    "geopandas~=1.1",
+    "pandapower[converter,plotting]",
 ]
 typing = [
     "mypy~=2.1",
