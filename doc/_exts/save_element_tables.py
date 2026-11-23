@@ -69,7 +69,7 @@ def format_check(check) -> str | None:
     return None
 
 
-def get_checks(checks) -> str | pd.NA:
+def get_checks(checks) -> str | pd.api.typing.NAType:
     formatted = [formatted for check in checks if (formatted := format_check(check)) is not None]
     return ", ".join(formatted) if formatted else pd.NA
 

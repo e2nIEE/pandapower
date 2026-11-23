@@ -149,8 +149,8 @@ def create_lines(
 
     Example:
         >>> create_lines(
-        >>>   net, from_buses=[0,1], to_buses=[2,3], length_km=0.1, std_type="NAYY 4x50 SE", name=["line1", "line2"]
-        >>> )
+        ...   net, from_buses=[0,1], to_buses=[2,3], length_km=0.1, std_type="NAYY 4x50 SE", name=["line1", "line2"]
+        ... )
     """
     # std_type deprecated as of v4.0.0
     line_params, kwargs = warn_and_fix_parameter_renaming("std_type", "line_params", line_params, None, kwargs)
