@@ -191,7 +191,7 @@ def check_postgresql_catalogue_table(cursor, table_name, grid_id, grid_id_column
             raise UserWarning(f"found {found} duplicate entries in grid_catalogue where {grid_id_column}={grid_id}")
 
 
-def create_postgresql_catalogue_entry(conn, cursor, grid_id: str, grid_id_column, catalogue_table_name):
+def create_postgresql_catalogue_entry(conn, cursor, grid_id: str | None, grid_id_column, catalogue_table_name):
     # check if a grid with the provided ids was already added
     check_postgresql_catalogue_table(cursor, catalogue_table_name, grid_id, grid_id_column)
     # create a "catalogue" table to keep track of all grids available in the DB
