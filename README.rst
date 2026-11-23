@@ -12,7 +12,7 @@
    :target: https://pypi.python.org/pypi/pandapower
    :alt: versions
 
-.. image:: https://app.readthedocs.org/projects/pandapower/badge/
+.. image:: https://img.shields.io/readthedocs/pandapower
    :target: https://pandapower.readthedocs.io/
    :alt: docs
 
