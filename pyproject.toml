@@ -48,7 +48,7 @@ dependencies = [
     "deepdiff~=9.1",
     "geojson~=3.3",
     "typing_extensions~=4.16",
-    "pandera>=0.27.0,<=0.29.0"
+    "pandera>=0.27.0,<=0.29.0",
 ]
 keywords = [
     "power system", "network", "analysis", "optimization", "automation", "grid", "electricity", "energy", "engineering", "simulation", "pandapower"
@@ -91,6 +91,7 @@ docs = [
     "sphinx~=9.1; python_version > '3.11'",
     "sphinx~=8.1; python_version == '3.11'",
     "sphinx_rtd_theme~=3.1",
+    "sphinx-toolbox>=4.3.1",
     "sphinx-pyproject~=0.3",
     "sphinxcontrib-imagesvg~=0.1",
     "pandapower[converter]",
