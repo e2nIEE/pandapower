@@ -328,6 +328,8 @@ def from_dict_of_dfs(dodfs, net=None, add_basic_std_types=True):
             if item in ["bus", "line"] and "geo" in table.columns:
                 table.geo = table.geo.mask(table.geo == '"<NA>"', pd.NA)
                 table.geo = table.geo.apply(lambda x: geojson.loads(x, cls=PPJSONDecoder) if pd.notna(x) else x)
+                if item == "bus":
+                    _warn_non_point_bus_geo(table.geo)
         # set the index to be Int
         try:
             net[item] = net[item].set_index(net[item].index.astype(np.int64))
@@ -339,6 +341,31 @@ def from_dict_of_dfs(dodfs, net=None, add_basic_std_types=True):
     elif "dtypes" in net:
         restore_all_dtypes(net, net["dtypes"])
     return net
+
+
+def _geo_type(geo) -> str | None:
+    """Return the geojson type of a geodata entry, given as an object or as its string representation."""
+    if isinstance(geo, str):
+        try:
+            geo = json.loads(geo)
+        except ValueError:
+            return None
+    return geo.get("type") if isinstance(geo, dict) else None
+
+
+def _is_missing(value) -> bool:
+    """True for None, NaN and pd.NA. A list or another container is not a missing value."""
+    return value is None or (pd.api.types.is_scalar(value) and bool(pd.isna(value)))
+
+
+def _warn_non_point_bus_geo(geo: pd.Series) -> None:
+    """Log a warning for bus geodata that is not a geojson Point, as create_bus does for coords."""
+    not_point = [idx for idx, g in geo.items() if not _is_missing(g) and _geo_type(g) != "Point"]
+    if not_point:
+        logger.warning(
+            f"The geodata of the buses {not_point} is not a geojson Point. There is no support for other"
+            " geodata on a bus. Some functionality might not work as intended. Use at your own risk."
+        )
 
 
 def restore_all_dtypes(net: pandapowerNet, dtypes):
