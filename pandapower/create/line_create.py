@@ -68,6 +68,7 @@ class LineParams(TypedDict):
     If not provided a default is used if column is present.
     """
     endtemp_degree: NotRequired[float | Iterable[float] | None]
+    """end temperature in degrees Celsius"""
 
 
 def create_lines(
@@ -118,8 +119,10 @@ def create_lines(
         max_angle_degree: maximum voltage angle difference between from_bus and to_bus (va_from - va_to) in degree,
             considered in the OPF. NaN means unconstrained.
         alpha: temperature coefficient of resistance: R(T) = R(T_0) * (1 + alpha * (T - T_0))
+
             .. attention::
                 This column will only be filled from std_type if the column already exists in the line DataFrame
+
         temperature_degree_celsius: line temperature for which line resistance is adjusted
         skip_validation: if set to true validate_network will not be run after creating.
             (Only use this if performance is critical)
@@ -141,13 +144,13 @@ def create_lines(
         mc_joule_per_m_k (float): specific mass of the conductor multiplied by the specific thermal capacity of the
             material (TDPF, only for thermal inertia consideration with tdpf_delay_s parameter)
 
-        Returns:
-            The unique ID of the created lines
+    Returns:
+        The unique ID of the created lines
 
-        Example:
-            >>> create_lines(
-            >>>   net, from_buses=[0,1], to_buses=[2,3], length_km=0.1, std_type="NAYY 4x50 SE", name=["line1", "line2"]
-            >>> )
+    Example:
+        >>> create_lines(
+        >>>   net, from_buses=[0,1], to_buses=[2,3], length_km=0.1, std_type="NAYY 4x50 SE", name=["line1", "line2"]
+        >>> )
     """
     # std_type deprecated as of v4.0.0
     line_params, kwargs = warn_and_fix_parameter_renaming("std_type", "line_params", line_params, None, kwargs)
@@ -266,6 +269,8 @@ def create_line(
     Creates a line element in net["line"]
     The line parameters are defined through the standard type library.
 
+    .. deprecated:: 4.0.0 replaced by unified create_lines
+
     Parameters:
         net: The net within this line should be created
         from_bus: ID of the bus on one side which the line will be connected with
@@ -348,6 +353,8 @@ def create_line_dc(
     """
     Creates a line element in net["line_dc"]
     The line_dc parameters are defined through the standard type library.
+
+    .. deprecated:: 4.0.0 replaced by unified create_lines_dc
 
     Parameters:
         net: The net within this line should be created
@@ -583,6 +590,8 @@ def create_line_from_parameters(
     """
     Creates a line element in net["line"] from line parameters.
 
+    .. deprecated:: 4.0.0 replaced by unified create_lines
+
     Parameters:
         net: The net within this line should be created
         from_bus: ID of the bus on one side which the line will be connected with
@@ -690,6 +699,8 @@ def create_line_dc_from_parameters(
     """
     Creates a dc line element in net["line_dc"] from dc line parameters.
 
+    .. deprecated:: 4.0.0 replaced by unified create_lines_dc_from_parameters
+
     Parameters:
         net: The net within this dc line should be created
         from_bus_dc: ID of the dc bus on one side which the dc line will be connected with
@@ -789,6 +800,8 @@ def create_lines_from_parameters(
     Convenience function for creating many lines at once. Parameters 'from_buses' and 'to_buses'
     must be arrays of equal length. Other parameters may be either arrays of the same length or
     single or values.
+
+    .. deprecated:: 4.0.0 replaced by unified create_lines
 
     Parameters:
         net: The net within this line should be created
