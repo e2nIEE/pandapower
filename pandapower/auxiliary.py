@@ -1398,7 +1398,10 @@ def _check_lightsim2grid_compatibility(
         if lightsim2grid == "auto":
             return False
         raise NotImplementedError("option 'lightsim2grid' is True and voltage-dependent loads detected.")
-    if (len(net.ext_grid.query("in_service")) + len(net.gen.query("slack & in_service"))) > 1 and not distributed_slack:
+    n_slacks = int(net.ext_grid["in_service"].astype(bool).sum()) + int(
+        (net.gen["slack"].astype(bool) & net.gen["in_service"].astype(bool)).sum()
+    )
+    if n_slacks > 1 and not distributed_slack:
         # lightsim2grid implements distributed_slack similarly to pandapower, but does not accept multiple slacks
         # otherwise
         if lightsim2grid == "auto":
