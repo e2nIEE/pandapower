@@ -34,6 +34,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx.ext.mathjax",
     "sphinx.ext.napoleon",
+    "sphinx_toolbox.more_autodoc.autotypeddict",
     "sphinxcontrib.imagesvg",
     "numpydoc",
     # custom extensions:
@@ -45,6 +46,8 @@ extensions = [
 # Show type hints *inside* the description
 autodoc_typehints = "description"
 autodoc_preserve_defaults = True
+
+autodoc_use_legacy_class_based = True
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

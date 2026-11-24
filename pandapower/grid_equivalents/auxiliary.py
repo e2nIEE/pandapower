@@ -37,7 +37,7 @@ from pandapower.create import (
     create_load,
     create_transformer_from_parameters,
 )
-from pandapower.diagnostic import diagnostic
+from pandapower.diagnostic.diagnostic_helpers import diagnostic
 from pandapower.file_io import to_json
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
@@ -74,7 +74,7 @@ def _runpp_except_voltage_angles(net: pandapowerNet, **kwargs) -> pandapowerNet:
 
 
 def add_ext_grids_to_boundaries(
-    net,
+    net: pandapowerNet,
     boundary_buses,
     adapt_va_degree=False,
     runpp_fct=_runpp_except_voltage_angles,

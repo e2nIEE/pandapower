@@ -3,6 +3,7 @@ Change Log
 
 [upcoming 4.0.0] - 2026-..-..
 -------------------------------
+- [CHANGED] ``from_excel`` logs a warning when the geodata of a bus is not a geojson Point, as ``create_bus`` does for LineString ``coords`` (#2466)
 - [FIXED] ``res_shunt`` was ``NaN`` (or raised ``ZeroDivisionError``) for shunts at ``step`` 0 once any shunt used ``step_dependency_table``; the characteristic table values are now used directly instead of being divided and multiplied by the step (#3347)
 - [FIXED] cim2pp: ``from_cim`` with ``cgmes_version="3.0"`` failed with ``AttributeError: 'DataFrame' object has no attribute 'inService'`` for models with ACLineSegments or DCLineSegments, ``Equipment.inService`` of the lines is now read from the SSH profile (#3322)
 - [FIXED] restoring a table from json no longer raises pandas' deprecation warning about ``select_dtypes`` including ``str`` columns when ``object`` is requested; the same columns are converted as before
