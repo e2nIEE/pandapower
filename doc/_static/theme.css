@@ -103,6 +103,28 @@
     background: var(--fh-24) !important;
 }
 
+.deprecated:not(.versionmodified) {
+    background: var(--custom-10) !important;
+    padding: 12px;
+    margin-bottom: 6px;
+}
+.deprecated p {
+    margin: 0 !important;
+    padding: 0;
+}
+.deprecated .versionmodified::before {
+  font-family: FontAwesome;
+  display: inline-block;
+  font-style: normal;
+  font-weight: 400;
+  line-height: 1;
+  text-decoration: inherit;
+  content: "\f1f8"; /* Trashcan icon */
+  margin-right: 0.4em;
+  color: var(--fh-10);
+}
+
+
 .highlight {
     background: var(--fh-17);
 }
