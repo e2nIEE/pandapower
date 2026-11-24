@@ -13,9 +13,9 @@ from pandapower.control import (
 )
 from pandapower.control.util.diagnostic import shunt_characteristic_table_diagnostic
 from pandapower.create import (
-    create_bus,
+    create_buses,
     create_ext_grid,
-    create_line_from_parameters,
+    create_lines,
     create_load,
     create_shunt,
     create_transformer,
@@ -28,8 +28,7 @@ from pandapower.run import runpp
 
 def test_tap_dependent_impedance_control():
     net = pandapowerNet(name="test_tap_dependent_impedance_control")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
+    b1, b2 = create_buses(net, 2, [110, 20])
     create_ext_grid(net, b1)
     create_transformer_from_parameters(
         net, b1, b2, 40, 110, 21, 0.5, 12.3, 25, 0.11, 0, "hv", 10, 20, 0, 1.8, 180, 10, tap_changer_type="Ratio"
@@ -57,8 +56,7 @@ def test_tap_dependent_impedance_control():
 
 def test_tap_dependent_impedance_restore():
     net = pandapowerNet(name="test_tap_dependent_impedance_restore")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
+    b1, b2 = create_buses(net, 2, [110, 20])
     create_ext_grid(net, b1)
     create_load(net, b2, 20)
     create_transformer_from_parameters(
@@ -130,14 +128,17 @@ def test_characteristic():
 
 def test_trafo_characteristic_table_diagnostic():
     net = pandapowerNet(name="test_trafo_characteristic_table_diagnostic")
-    vn_kv = 20
-    b1 = create_bus(net, vn_kv=vn_kv)
+    b1, b2 = create_buses(net, 2, vn_kv=20)
     create_ext_grid(net, b1, vm_pu=1.01)
-    b2 = create_bus(net, vn_kv=vn_kv)
-    create_line_from_parameters(
-        net, b1, b2, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    create_lines(
+        net,
+        b1,
+        b2,
+        12.2,
+        line_params={"r_ohm_per_km": 0.08, "x_ohm_per_km": 0.12, "c_nf_per_km": 300, "max_i_ka": 0.2},
+        df=0.8,
     )
-    cb = create_bus(net, vn_kv=0.4)
+    (cb,) = create_buses(net, 1, vn_kv=0.4)
     create_load(net, cb, 0.2, 0.05)
     create_transformer(net, hv_bus=b2, lv_bus=cb, std_type="0.25 MVA 20/0.4 kV", tap_pos=2)
 
@@ -204,15 +205,18 @@ def test_trafo_characteristic_table_diagnostic():
 
 def test_shunt_characteristic_table_diagnostic():
     net = pandapowerNet(name="test_shunt_characteristic_table_diagnostic")
-    vn_kv = 20
-    b1 = create_bus(net, vn_kv=vn_kv)
+    b1, b2 = create_buses(net, 2, vn_kv=20)
     create_shunt(net, bus=b1, q_mvar=-50, p_mw=0, step=1, max_step=5)
     create_ext_grid(net, b1, vm_pu=1.01)
-    b2 = create_bus(net, vn_kv=vn_kv)
-    create_line_from_parameters(
-        net, b1, b2, 12.2, r_ohm_per_km=0.08, x_ohm_per_km=0.12, c_nf_per_km=300, max_i_ka=0.2, df=0.8
+    create_lines(
+        net,
+        b1,
+        b2,
+        12.2,
+        line_params={"r_ohm_per_km": 0.08, "x_ohm_per_km": 0.12, "c_nf_per_km": 300, "max_i_ka": 0.2},
+        df=0.8,
     )
-    cb = create_bus(net, vn_kv=0.4)
+    (cb,) = create_buses(net, 1, vn_kv=0.4)
     create_load(net, cb, 0.2, 0.05)
     create_transformer(net, hv_bus=b2, lv_bus=cb, std_type="0.25 MVA 20/0.4 kV", tap_pos=2)
 
