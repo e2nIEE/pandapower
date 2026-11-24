@@ -63,7 +63,7 @@ def test_from_jao_with_testfile():
     assert 6 < net1.trafo.vk_percent.iat[0] < 65
     assert 0.25 < net1.trafo.vkr_percent.iat[0] < 1.2
     assert 10 < net1.trafo.pfe_kw.iat[0] < 1000
-    assert net1.trafo.i0_percent.iat[0] < 0.1
+    assert net1.trafo.i0_percent.iat[0] == pytest.approx(11.07440227, rel=1e-6)
     assert np.isclose(net1.trafo.shift_degree.iat[0], 90)
     assert np.isclose(net1.trafo.tap_step_degree.iat[0], 1.794)
     assert net1.trafo.tap_min.iat[0] == -17
@@ -148,7 +148,17 @@ def test_from_jao_trafo_params_use_primary_winding_base(tmp_path):
     assert swapped.trafo.vk_percent.iat[0] == pytest.approx(original.trafo.vk_percent.iat[0] / swapped_primary_ratio)
     assert swapped.trafo.vkr_percent.iat[0] == pytest.approx(original.trafo.vkr_percent.iat[0] / swapped_primary_ratio)
     assert swapped.trafo.pfe_kw.iat[0] == pytest.approx(original.trafo.pfe_kw.iat[0] * swapped_primary_ratio**2)
-    assert swapped.trafo.i0_percent.iat[0] == pytest.approx(original.trafo.i0_percent.iat[0])
+    # with a fixed rated current and B/G, the no-load current in % of rated current scales with the primary voltage
+    assert swapped.trafo.i0_percent.iat[0] == pytest.approx(original.trafo.i0_percent.iat[0] * swapped_primary_ratio)
+
+
+def test_from_jao_trafo_i0_percent_independent_of_net_base():
+    testfile = os.path.join(test_path, "converter", "jao_testfiles", "testfile.xlsx")
+    # i0_percent is a transformer rating quantity; the net base must not rescale it
+    base_1 = from_jao(testfile, None, False, sn_mva=1.0)
+    base_100 = from_jao(testfile, None, False, sn_mva=100.0)
+
+    assert base_100.trafo.i0_percent.iat[0] == pytest.approx(base_1.trafo.i0_percent.iat[0])
 
 
 def test_from_jao_with_missing_trafo_location_names(tmp_path):
@@ -639,8 +649,17 @@ def test_find_trafo_locations_without_bus_locations():
 def test_find_trafo_locations_accepts_all_missing_location_column():
     # an all-NaN Location / Full Name column is read as float64, which .str cannot be used on
     resolved = _find_trafo_locations(pd.Series([np.nan, np.nan]), ["A"])
-
     assert resolved.isna().all()
+
+
+def test_find_trafo_locations_keeps_suffix_token_frames_aligned():
+    # one case-insensitive suffix split keeps both token frames aligned, so a noise token after a
+    # suffix is still dropped; uppercase suffixes like -A2 keep working
+    resolved = _find_trafo_locations(
+        pd.Series(["TR BYCZYNA-A2", "New York KV-A1", "TR BYCZYNA-td3"]), ["Byczyna", "New York"]
+    )
+
+    assert resolved.tolist() == ["Byczyna", "New York", "Byczyna"]
 
 
 def test_select_rated_current_a_prefers_fixed_then_max():
@@ -742,6 +761,43 @@ def test_allocate_trafos_reuses_buses_across_passes():
     assert len(net.bus) == 3
     assert len(a_220) == 1
     assert conn.hv_bus.iat[0] == conn.lv_bus.iat[1] == a_220[0]
+
+
+def test_allocate_trafos_reuses_fallback_buses_across_passes():
+    cols = pd.MultiIndex.from_tuples([("Location", "Full Name"), ("Location", "TSO")])
+    data = {"Transformers": pd.DataFrame([["Unknown Sub", "T1"], ["Unknown Sub", "T2"]], columns=cols)}
+    net = pandapowerNet(name="jao_trafos")
+    create_buses(net, 1, 380, name=["Existing"])
+
+    conn = _allocate_trafos_to_buses_and_create_buses(
+        net, data, _get_bus_idx(net), np.array([220.0, 380.0]), np.array([110.0, 220.0])
+    )
+
+    # the nonblank fallback name is the bus identity, so the second transformer's lv side reuses the
+    # Unknown Sub/220 bus created for the first one's hv side instead of duplicating it
+    unknown_220 = net.bus.index[(net.bus.name == "Unknown Sub") & (net.bus.vn_kv == 220)]
+    assert len(net.bus) == 4
+    assert len(unknown_220) == 1
+    assert conn.hv_bus.iat[0] == conn.lv_bus.iat[1] == unknown_220[0]
+
+
+def test_allocate_trafos_keeps_blank_locations_separate():
+    cols = pd.MultiIndex.from_tuples([("Location", "Full Name"), ("Location", "TSO")])
+    data = {"Transformers": pd.DataFrame([[np.nan, "A"], [np.nan, "B"]], columns=cols)}
+    net = pandapowerNet(name="jao_trafos")
+    create_buses(net, 1, 380, name=["Existing"])
+
+    conn = _allocate_trafos_to_buses_and_create_buses(
+        net, data, _get_bus_idx(net), np.array([380.0, 380.0]), np.array([380.0, 380.0])
+    )
+
+    # blank locations keep their own identity, so equal-voltage sides are not merged
+    assert len(net.bus) == 5
+    assert set(conn.hv_bus).isdisjoint(set(conn.lv_bus))
+    assert {net.bus.name.at[conn.hv_bus.iat[0]], net.bus.name.at[conn.hv_bus.iat[1]]} == {
+        "Transformer 0",
+        "Transformer 1",
+    }
 
 
 def test_create_transformers_and_buses_skips_empty_transformers_sheet():

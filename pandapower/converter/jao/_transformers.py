@@ -87,7 +87,8 @@ def _create_transformers_and_buses(net: pandapowerNet, data: dict[str, pd.DataFr
     vk_percent = np.sign(xk) * zk * 100
     vkr_percent = rk * 100
     pfe_kw = g0 * sn_mva * 1e3
-    i0_percent = 100 * np.sqrt(b0**2 + g0**2) * net.sn_mva / sn_mva
+    # i0_percent is relative to the transformer rating (like pfe_kw), not to the net base
+    i0_percent = 100 * np.sqrt(b0**2 + g0**2)
     taps = (
         data[key]
         .loc[:, ("Phase Shifting Properties", "Taps used for RAO")]
@@ -219,6 +220,14 @@ def _allocate_trafos_to_buses_and_create_buses(
     )
     trafo_connections[["hv_bus", "lv_bus"]] = trafo_connections[["hv_bus", "lv_bus"]].astype(np.int64)
 
+    fallback_names = pd.Series(trafo_bus_names.astype(str).str.strip().to_numpy(), index=trafo_connections.index)
+    # transformers without a location name must not share one deduplication identity
+    no_location = trafo_bus_names.isna().to_numpy() | (fallback_names == "").to_numpy()
+    fallback_names.loc[no_location] = [f"Transformer {i}" for i in fallback_names.index[no_location]]
+    # a nonblank fallback name is also the bus identity so that buses created in the hv pass can be
+    # found again by the refreshed bus_idx in the lv pass; blank locations stay separate
+    bus_identity = trafo_location_names.where(trafo_location_names.notna(), fallback_names.where(~no_location))
+
     for side in ["hv", "lv"]:
         bus_idx = _get_bus_idx(net)  # buses created in the previous pass must be reused
         bus_col, trafo_vn_col, next_col, rel_dev_col, has_dev_col = (
@@ -228,14 +237,14 @@ def _allocate_trafos_to_buses_and_create_buses(
             f"{side}_rel_deviation",
             f"trafo_{side}_to_bus_deviation",
         )
-        name_vn_series = pd.Series(tuple(zip(trafo_location_names, trafo_connections[trafo_vn_col])))
+        name_vn_series = pd.Series(tuple(zip(bus_identity, trafo_connections[trafo_vn_col])))
         isin = name_vn_series.isin(bus_idx.index).to_numpy()
         has_name = trafo_location_names.notna().to_numpy()
         trafo_connections[has_dev_col] = ~isin
         trafo_connections.loc[isin, bus_col] = bus_idx.loc[name_vn_series.loc[isin]].values
 
         # --- unresolved locations: a new bus at the trafo's rated voltage is created later
-        unresolved = ~has_name
+        unresolved = ~has_name & ~isin
         trafo_connections.loc[unresolved, next_col] = trafo_connections.loc[unresolved, trafo_vn_col].values
         trafo_connections.loc[unresolved, rel_dev_col] = np.inf
 
@@ -258,10 +267,6 @@ def _allocate_trafos_to_buses_and_create_buses(
 
         # --- create buses to avoid too large vn deviations between nodes and transformers
         need_bus_creation = trafo_connections[rel_dev_col] > rel_deviation_threshold_for_trafo_bus_creation
-        fallback_names = pd.Series(trafo_bus_names.astype(str).str.strip().to_numpy(), index=trafo_connections.index)
-        # transformers without a location name must not share one deduplication identity
-        no_location = trafo_bus_names.isna().to_numpy() | (fallback_names == "").to_numpy()
-        fallback_names.loc[no_location] = [f"Transformer {i}" for i in fallback_names.index[no_location]]
         new_bus_data = pd.DataFrame(
             {
                 "vn_kv": trafo_connections.loc[need_bus_creation, trafo_vn_col].values,
@@ -358,15 +363,9 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
 
     # --- split strings at " " separators to remove impeding parts for identifying the location
     # --- names
-    trafo_bus_names_expended = (
-        trafo_bus_names.str.split(r"[ ]+|-A[0-9]+|-TD[0-9]+|-PF[0-9]+", expand=True).fillna("").replace(" ", "")
-    )
-    trafo_bus_names_expended_lower = (
-        trafo_bus_names.str.lower()
-        .str.split(r"[ ]+|-A[0-9]+|-TD[0-9]+|-PF[0-9]+", expand=True)
-        .fillna("")
-        .replace(" ", "")
-    )
+    suffix_pattern = r"(?i)[ ]+|-A[0-9]+|-TD[0-9]+|-PF[0-9]+"
+    trafo_bus_names_expended = trafo_bus_names.str.split(suffix_pattern, expand=True).fillna("").replace(" ", "")
+    trafo_bus_names_expended_lower = trafo_bus_names_expended.map(str.lower)
 
     # --- identify impeding parts
     contains_number = trafo_bus_names_expended.map(lambda x: any(char.isdigit() for char in x))
