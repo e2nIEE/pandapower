@@ -10,8 +10,8 @@ from importlib.util import find_spec
 import numpy as np
 import pandas as pd
 import pytest
-import pandapower.auxiliary as pandapower_auxiliary
 
+import pandapower.auxiliary as pandapower_auxiliary
 from pandapower.auxiliary import (
     _add_ppc_options,
     _check_connectivity,
