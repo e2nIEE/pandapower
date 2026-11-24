@@ -22,10 +22,12 @@ from pandapower.converter.jao._grid_groups import (
     _invent_connections_between_grid_groups,
     _same_name_base_mask,
     drop_islanded_grid_groups,
+    get_grid_groups,
 )
 from pandapower.converter.jao._locnames import _normalize_locname
 from pandapower.converter.jao._transformers import (
     _allocate_trafos_to_buses_and_create_buses,
+    _create_transformers_and_buses,
     _find_trafo_locations,
     _get_transformer_voltages,
     _select_rated_current_a,
@@ -235,6 +237,76 @@ def test_repair_incomplete_line_data_counts_normalized_name_candidates():
     repaired = data["Lines"]
     assert _normalize_locname(repaired.at[3, s1]) == "krosno"
     assert pd.isna(repaired.at[4, s1])
+
+
+def test_repair_incomplete_line_data_matches_hyphenated_names():
+    cols = pd.MultiIndex.from_tuples(
+        [
+            (None, "NE_name"),
+            (None, "Voltage_level(kV)"),
+            ("Substation_1", "Full_name"),
+            ("Substation_2", "Full_name"),
+            ("Electrical Parameters", "Length_(km)"),
+            ("Electrical Parameters", "Resistance_R(Ω)"),
+            ("Electrical Parameters", "Reactance_X(Ω)"),
+            ("Electrical Parameters", "Susceptance_B(μS)"),
+        ]
+    )
+    lines = pd.DataFrame(
+        [
+            # complete rows make these spellings known
+            ["Else - Belle-Epine", 380.0, "Else", "Belle-Epine", 10.0, 0.1, 0.2, 5.0],
+            ["Else - Wuhlheide (Abzweig)", 380.0, "Else", "Wuhlheide (Abzweig)", 10.0, 0.1, 0.2, 5.0],
+            # hyphens and parentheses inside a name are not endpoint separators
+            ["Belle-Epine - Else", 380.0, None, "Else", 10.0, 0.1, 0.2, 5.0],
+            # the populated other endpoint is still excluded
+            ["Belle-Epine - Else", 380.0, "Belle-Epine", None, 10.0, 0.1, 0.2, 5.0],
+            ["Wuhlheide (Abzweig) - Else", 380.0, None, "Else", 10.0, 0.1, 0.2, 5.0],
+        ],
+        columns=cols,
+    )
+    data = {"Lines": lines, "Tielines": lines.iloc[0:0].copy()}
+
+    _repair_incomplete_line_data(data)
+
+    s1, s2 = ("Substation_1", "Full_name"), ("Substation_2", "Full_name")
+    repaired = data["Lines"]
+    assert repaired.at[2, s1] == "Belle-Epine"
+    assert repaired.at[3, s2] == "Else"
+    assert repaired.at[4, s1] == "Wuhlheide (Abzweig)"
+
+
+def test_repair_incomplete_line_data_assigns_into_all_missing_endpoint_column():
+    cols = pd.MultiIndex.from_tuples(
+        [
+            (None, "NE_name"),
+            (None, "Voltage_level(kV)"),
+            ("Substation_1", "Full_name"),
+            ("Substation_2", "Full_name"),
+            ("Electrical Parameters", "Length_(km)"),
+            ("Electrical Parameters", "Resistance_R(Ω)"),
+            ("Electrical Parameters", "Reactance_X(Ω)"),
+            ("Electrical Parameters", "Susceptance_B(μS)"),
+        ]
+    )
+    lines = pd.DataFrame([["A - B", 380.0, "A", "B", 10.0, 0.1, 0.2, 5.0]], columns=cols)
+    tielines = pd.DataFrame(
+        [
+            ["A - B", 380.0, None, "B", 10.0, 0.1, 0.2, 5.0],
+            ["X - C", 380.0, None, "C", 10.0, 0.1, 0.2, 5.0],
+        ],
+        columns=cols,
+    )
+    s1 = ("Substation_1", "Full_name")
+    # a sheet without any Substation_1 values reads that column as float
+    tielines[s1] = tielines[s1].astype(float)
+    data = {"Lines": lines, "Tielines": tielines}
+
+    _repair_incomplete_line_data(data)
+
+    repaired = data["Tielines"]
+    assert repaired.at[0, s1] == "A"
+    assert pd.isna(repaired.at[1, s1])
 
 
 def test_repair_incomplete_line_data_keeps_electrically_populated_rows():
@@ -499,6 +571,35 @@ def test_invent_connections_skips_buses_fused_earlier():
     assert sorted(net.bus.name) == ["DOUBLE", "Left", "Right"]
 
 
+def test_invent_connections_uses_other_voltage_levels_of_location():
+    def make_net(template_hv, template_lv):
+        net = pandapowerNet(name="jao_grid_groups")
+        a_380 = create_buses(net, 1, 380, name=["DUP"])[0]
+        a_220 = create_buses(net, 1, 220, name=["DUP"])[0]
+        b_110 = create_buses(net, 1, 110, name=["DUP"])[0]
+        t_h = create_buses(net, 1, template_hv, name=["T_H"])[0]
+        t_l = create_buses(net, 1, template_lv, name=["T_L"])[0]
+        create_lines_from_parameters(net, a_380, a_220, 1.0, 0.1, 0.1, 1.0, 1.0)
+        create_transformers_from_parameters(net, [t_h], [t_l], 1.0, template_hv, template_lv, 0, 1, 0, 0, 0)
+        net.bus["zone"] = "TSO"  # the transformer step requires net.bus.zone
+        return net, a_220, b_110, len(get_grid_groups(net))
+
+    # the representative pair 380/110 has no transformer template, but 220/110 does
+    net, a_220, b_110, n_groups = make_net(220, 110)
+    _invent_connections_between_grid_groups(net)
+    assert len(net.trafo) == 2
+    added = net.trafo.iloc[-1]
+    assert added.hv_bus == a_220
+    assert added.lv_bus == b_110
+    assert len(get_grid_groups(net)) == n_groups - 1
+
+    # no voltage pair of the location is supported by a transformer -> nothing is invented
+    net, _, _, n_groups = make_net(380, 220)
+    _invent_connections_between_grid_groups(net)
+    assert len(net.trafo) == 1
+    assert len(get_grid_groups(net)) == n_groups
+
+
 def test_normalize_locname_transliterates_polish_l():
     # "Ł"/"ł" do not decompose under NFKD and must be transliterated explicitly
     assert _normalize_locname("Łódź") == "lodz"
@@ -641,6 +742,30 @@ def test_allocate_trafos_reuses_buses_across_passes():
     assert len(net.bus) == 3
     assert len(a_220) == 1
     assert conn.hv_bus.iat[0] == conn.lv_bus.iat[1] == a_220[0]
+
+
+def test_create_transformers_and_buses_skips_empty_transformers_sheet():
+    cols = pd.MultiIndex.from_tuples(
+        [
+            ("Voltage_level(kV)", "Primary"),
+            ("Voltage_level(kV)", "Secondary"),
+            ("Maximum Current Imax (A) primary", "Fixed"),
+            ("Maximum Current Imax (A) primary", "Max"),
+            ("Location", "Full Name"),
+            ("Location", "TSO"),
+        ]
+    )
+    net = pandapowerNet(name="jao_line_only")
+    create_buses(net, 2, 380, name=["A", "B"])
+    create_lines_from_parameters(net, 0, 1, 1.0, 0.1, 0.1, 1.0, 1.0)
+
+    # a line-only workbook has the Transformers headers but no data rows; a completely blank
+    # sheet is read without any columns
+    for trafos in [pd.DataFrame(columns=cols), pd.DataFrame()]:
+        _create_transformers_and_buses(net, {"Transformers": trafos})
+
+    assert len(net.trafo) == 0
+    assert len(net.bus) == 2
 
 
 def _add_trafo(net, hv_bus, lv_bus):

@@ -120,8 +120,8 @@ def _invent_connections_between_grid_groups(
     for location_name in dupl_location_names:
         if minimal_trafo_invention and len(bus_grid_groups.unique()) <= 1:
             break  # break with regard to minimal_trafo_invention
-        grid_groups_at_location = bus_grid_groups.loc[bus_idx.loc[location_name].values]
-        grid_groups_at_location = grid_groups_at_location.drop_duplicates()
+        bus_indices = bus_idx.loc[location_name].values
+        grid_groups_at_location = bus_grid_groups.loc[bus_indices].drop_duplicates()
         if len(grid_groups_at_location) < 2:
             continue
         elif len(grid_groups_at_location) > 2:
@@ -130,15 +130,32 @@ def _invent_connections_between_grid_groups(
                 "between locations with more than two grid groups, i.e. "
                 "voltage levels."
             )
-        TSO = net.bus.zone.at[grid_groups_at_location.index[0]]
+        TSO = net.bus.zone.at[bus_indices[0]]
         vn_kvs = net.bus.vn_kv.loc[grid_groups_at_location.index].sort_values(ascending=False)
-        try:
-            trafos_connecting_same_voltage_levels = connected_vn_kvs_by_trafos.loc[tuple(vn_kvs)]
-        except KeyError:
+        # the pair of the first bus per grid group is preferred; other voltage levels at the
+        # same location may also be connected if a transformer template exists for them
+        bus_pairs = [(vn_kvs.index[0], vn_kvs.index[1])]
+        vn_kv_by_bus = net.bus.vn_kv.loc[bus_indices]
+        for hv_bus in bus_indices:
+            for lv_bus in bus_indices:
+                if vn_kv_by_bus.at[hv_bus] <= vn_kv_by_bus.at[lv_bus]:
+                    continue
+                if bus_grid_groups.at[hv_bus] == bus_grid_groups.at[lv_bus]:
+                    continue
+                if (hv_bus, lv_bus) not in bus_pairs:
+                    bus_pairs.append((hv_bus, lv_bus))
+        for hv_bus, lv_bus in bus_pairs:
+            try:
+                trafos_connecting_same_voltage_levels = connected_vn_kvs_by_trafos.loc[
+                    (net.bus.vn_kv.at[hv_bus], net.bus.vn_kv.at[lv_bus])
+                ]
+                break
+            except KeyError:
+                continue
+        else:
             logger.info(
                 f"For location {location_name}, no transformer data can be reused since "
-                f"no transformer connects {vn_kvs.sort_values(ascending=False).iat[0]} kV "
-                f"and {vn_kvs.sort_values(ascending=False).iat[1]} kV."
+                f"no transformer connects {vn_kvs.iat[0]} kV and {vn_kvs.iat[1]} kV."
             )
             continue
         trafos_of_same_TSO = trafos_connecting_same_voltage_levels.loc[
@@ -158,8 +175,8 @@ def _invent_connections_between_grid_groups(
         # copy transformer data
         duplicated_row = net.trafo.loc[[tr_to_be_copied]].copy()
         duplicated_row.index = [net.trafo.index.max() + 1]  # adjust index
-        duplicated_row.hv_bus = vn_kvs.index[0]  # type: ignore[attr-defined] # adjust hv_bus, lv_bus
-        duplicated_row.lv_bus = vn_kvs.index[1]  # type: ignore[attr-defined] # adjust hv_bus, lv_bus
+        duplicated_row.hv_bus = hv_bus  # type: ignore[attr-defined] # adjust hv_bus, lv_bus
+        duplicated_row.lv_bus = lv_bus  # type: ignore[attr-defined] # adjust hv_bus, lv_bus
         duplicated_row.name = "additional transformer to connect the grid"  # type: ignore[attr-defined]
         net.trafo = pd.concat([net.trafo, duplicated_row])
 

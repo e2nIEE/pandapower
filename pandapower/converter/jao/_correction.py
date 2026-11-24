@@ -163,6 +163,7 @@ def _repair_incomplete_line_data(data: dict[str, pd.DataFrame]) -> None:
             known_names |= set(pairs[subst].astype(str))
             for name, vn in pairs.itertuples(index=False):
                 name_vns.setdefault(_normalize_locname(name), set()).add(vn)
+    known_keys = {_normalize_locname(name): name for name in sorted(known_names)}
 
     for key in ("Lines", "Tielines"):
         df = data[key].copy()
@@ -175,16 +176,20 @@ def _repair_incomplete_line_data(data: dict[str, pd.DataFrame]) -> None:
         for idx in df.index[df[s1].isna() | df[s2].isna()]:
             missing = s1 if pd.isna(df.at[idx, s1]) else s2
             other = df.at[idx, s2] if missing == s1 else df.at[idx, s1]
-            tokens = [token.strip().upper() for token in re.sub(r"\s*\(.*?\)", "", str(df.at[idx, ne_col])).split("-")]
             other_location = _normalize_locname(other)
+            ne_key = _normalize_locname(df.at[idx, ne_col])
+            # match complete known names as whole words; hyphens and parentheses inside a name are not separators
             candidate_names = {
-                _normalize_locname(name): name
-                for name in sorted(known_names)
-                if _normalize_locname(name) != other_location
-                and any(token == name.upper() or token.startswith(name.upper() + " ") for token in tokens)
+                name_key: known_keys[name_key]
+                for name_key in known_keys
+                if name_key
+                and name_key != other_location
+                and re.search(rf"(?<!\S){re.escape(name_key)}(?!\S)", ne_key) is not None
             }
             if len(candidate_names) == 1:
                 candidate = next(iter(candidate_names.values()))
+                if not (is_object_dtype(df[missing]) or is_string_dtype(df[missing])):
+                    df[missing] = df[missing].astype(object)
                 df.at[idx, missing] = candidate
                 logger.warning(
                     f"{key} row {idx}: missing {missing[0]} name set to {candidate!r} "

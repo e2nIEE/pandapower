@@ -69,6 +69,8 @@ def _create_transformers_and_buses(net: pandapowerNet, data: dict[str, pd.DataFr
 
     # --- data preparations
     key = "Transformers"
+    if data[key].empty:
+        return
     bus_idx = _get_bus_idx(net)
     vn_hv_kv, vn_lv_kv, vn_primary_kv = _get_transformer_voltages(data, bus_idx)
     trafo_connections = _allocate_trafos_to_buses_and_create_buses(net, data, bus_idx, vn_hv_kv, vn_lv_kv, **kwargs)
