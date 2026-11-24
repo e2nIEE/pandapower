@@ -87,6 +87,9 @@ def create_bus(
 
     Buses are the nodes of the network that all other elements connect to.
 
+
+    .. deprecated:: 4.0.0 Use :func:`create_buses` instead.
+
     Parameters:
         net: The pandapower network in which the element is created
         vn_kv: The grid voltage level.
@@ -142,6 +145,8 @@ def create_bus_dc(
 ) -> Int:
     """
     Adds one dc bus in table net["bus_dc"].
+    
+    .. deprecated:: 4.0.0 Use :func:`create_buses_dc` instead.
 
     Buses are the nodes of the network that all other elements connect to.
 
