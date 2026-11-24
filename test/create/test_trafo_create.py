@@ -6,7 +6,6 @@ import pandas as pd
 import pytest
 
 from pandapower.create import (
-    create_bus,
     create_buses,
     create_transformer,
     create_transformer3w,
@@ -25,8 +24,7 @@ from pandapower.toolbox import dataframes_equal
 
 def test_tap_changer_type_default():
     net = pandapowerNet(name="test_tap_changer_type_default")
-    create_bus(net, 110)
-    create_bus(net, 20)
+    create_buses(net, 2, [110, 20])
     data = load_std_type(net, "25 MVA 110/20 kV", "trafo")
     if "tap_changer_type" in data:
         del data["tap_changer_type"]
@@ -42,8 +40,7 @@ def test_tap_changer_type_default():
 def test_create_transformer_from_parameters():
     # Test basic transformer creation from parameters
     net = pandapowerNet(name="test_create_transformer_from_parameters0")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
+    b1, b2 = create_buses(net, 2, [110, 20])
     t = create_transformer_from_parameters(
         net,
         hv_bus=b1,
@@ -72,8 +69,7 @@ def test_create_transformer_from_parameters():
 
     # Test with tap changer
     net = pandapowerNet(name="test_create_transformer_from_parameters1")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
+    b1, b2 = create_buses(net, 2, [110, 20])
     t = create_transformer_from_parameters(
         net,
         hv_bus=b1,
@@ -102,8 +98,7 @@ def test_create_transformer_from_parameters():
 
     # Test with zero sequence parameters
     net = pandapowerNet(name="test_create_transformer_from_parameters2")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
+    b1, b2 = create_buses(net, 2, [110, 20])
     t = create_transformer_from_parameters(
         net,
         hv_bus=b1,
@@ -130,8 +125,7 @@ def test_create_transformer_from_parameters():
 
     # Test with in_service=False
     net = pandapowerNet(name="test_create_transformer_from_parameters3")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
+    b1, b2 = create_buses(net, 2, [110, 20])
     t = create_transformer_from_parameters(
         net,
         hv_bus=b1,
@@ -153,8 +147,7 @@ def test_create_transformer_from_parameters():
 def test_create_transformers_from_parameters():
     # standard
     net = pandapowerNet(name="test_create_transformers_from_parameters0")
-    b1 = create_bus(net, 15)
-    b2 = create_bus(net, 0.4)
+    b1, b2 = create_buses(net, 2, [15, 0.4])
     index = create_transformers_from_parameters(
         net,
         [b1, b1],
@@ -195,8 +188,7 @@ def test_create_transformers_from_parameters():
 
     # setting params as single value
     net = pandapowerNet(name="test_create_transformers_from_parameters1")
-    b1 = create_bus(net, 15)
-    b2 = create_bus(net, 0.4)
+    b1, b2 = create_buses(net, 2, [15, 0.4])
     create_transformers_from_parameters(
         net,
         hv_buses=[b1, b1],
@@ -239,8 +231,7 @@ def test_create_transformers_from_parameters():
 
     # setting params as array
     net = pandapowerNet(name="test_create_transformers_from_parameters2")
-    b1 = create_bus(net, 10)
-    b2 = create_bus(net, 10)
+    b1, b2 = create_buses(net, 2, 10)
     create_transformers_from_parameters(
         net,
         hv_buses=[b1, b1],
@@ -279,8 +270,7 @@ def test_create_transformers_from_parameters():
 def test_create_transformers_raise_errorexcept():
     # standard
     net = pandapowerNet(name="test_create_transformers_raise_errorexcept")
-    b1 = create_bus(net, 10)
-    b2 = create_bus(net, 10)
+    b1, b2 = create_buses(net, 2, 10)
     create_transformers_from_parameters(
         net,
         [b1, b1],
@@ -314,8 +304,7 @@ def test_create_transformers_raise_errorexcept():
 
 def test_create_transformer_raises_errorexcept1():
     net = pandapowerNet(name="test_create_transformer_raises_errorexcept1")
-    b1 = create_bus(net, 10)
-    b2 = create_bus(net, 10)
+    b1, b2 = create_buses(net, 2, 10)
     create_transformers_from_parameters(
         net,
         [b1, b1],
@@ -363,8 +352,7 @@ def test_create_transformer_raises_errorexcept1():
 
 def test_trafo_2_tap_changers():
     net = pandapowerNet(name="test_trafo_2_tap_changers")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
+    b1, b2 = create_buses(net, 2, [110, 20])
     create_transformer(net, b1, b2, "40 MVA 110/20 kV")
 
     tap2_data = {
@@ -395,8 +383,7 @@ def test_trafo_2_tap_changers():
 
 def test_trafo_2_tap_changers_parameters():
     net = pandapowerNet(name="test_trafo_2_tap_changers_parameters")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
+    b1, b2 = create_buses(net, 2, [110, 20])
 
     std_type = load_std_type(net, "40 MVA 110/20 kV", "trafo")
     tap2_data = {
@@ -425,8 +412,7 @@ def test_trafo_2_tap_changers_parameters():
 
 def test_trafos_2_tap_changers_parameters():
     net = pandapowerNet(name="test_trafos_2_tap_changers_parameters")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
+    b1, b2 = create_buses(net, 2, [110, 20])
 
     std_type = load_std_type(net, "40 MVA 110/20 kV", "trafo")
     tap2_data = {
@@ -458,8 +444,7 @@ def test_trafos_2_tap_changers_parameters():
 def test_create_transformer():
     # Test basic transformer creation from std_type
     net = pandapowerNet(name="test_create_transformer0")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
+    b1, b2 = create_buses(net, 2, [110, 20])
     t = create_transformer(net, hv_bus=b1, lv_bus=b2, std_type="40 MVA 110/20 kV", name="test_trafo")
 
     assert len(net.trafo) == 1
@@ -476,37 +461,32 @@ def test_create_transformer():
 
     # Test with custom index
     net = pandapowerNet(name="test_create_transformer1")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
+    b1, b2 = create_buses(net, 2, [110, 20])
     t = create_transformer(net, hv_bus=b1, lv_bus=b2, std_type="40 MVA 110/20 kV", index=5)
     assert t == 5
     assert 5 in net.trafo.index
 
     # Test with in_service=False
     net = pandapowerNet(name="test_create_transformer2")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
+    b1, b2 = create_buses(net, 2, [110, 20])
     t = create_transformer(net, hv_bus=b1, lv_bus=b2, std_type="40 MVA 110/20 kV", in_service=False)
     assert not net.trafo.at[t, "in_service"]
 
     # Test with tap_pos
     net = pandapowerNet(name="test_create_transformer3")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
+    b1, b2 = create_buses(net, 2, [110, 20])
     t = create_transformer(net, hv_bus=b1, lv_bus=b2, std_type="40 MVA 110/20 kV", tap_pos=5)
     assert net.trafo.at[t, "tap_pos"] == 5
 
     # Test with max_loading_percent
     net = pandapowerNet(name="test_create_transformer4")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
+    b1, b2 = create_buses(net, 2, [110, 20])
     t = create_transformer(net, hv_bus=b1, lv_bus=b2, std_type="40 MVA 110/20 kV", max_loading_percent=80)
     assert net.trafo.at[t, "max_loading_percent"] == 80
 
     # Test error case - non-existent bus
     net = pandapowerNet(name="test_create_transformer5")
-    b1 = create_bus(net, 110)
-    create_bus(net, 20)
+    b1, _ = create_buses(net, 2, [110, 20])
     with pytest.raises(UserWarning, match=r"Trafo \d tries to attach to non-existing bus\(es\) \{\d\}"):
         create_transformer(net, hv_bus=b1, lv_bus=5, std_type="40 MVA 110/20 kV")
 
@@ -515,9 +495,7 @@ def test_create_transformer():
 
 def test_create_transformers():
     net = pandapowerNet(name="test_create_transformers")
-    b1 = create_bus(net, 10)
-    b2 = create_bus(net, 0.4)
-    b3 = create_bus(net, 0.4)
+    b1, b2, b3 = create_buses(net, 3, [10, 0.4, 0.4])
     create_transformers(
         net,
         hv_buses=[b1, b1],
@@ -564,8 +542,7 @@ def test_create_transformers():
 
 def test_create_transformers_for_single():
     net = pandapowerNet(name="test_create_transformers_for_single")
-    b1 = create_bus(net, 10)
-    b2 = create_bus(net, 0.4)
+    b1, b2 = create_buses(net, 2, [10, 0.4])
     create_transformers(
         net, hv_buses=[b1], lv_buses=[b2], std_type="0.4 MVA 10/0.4 kV", name="trafo1", test_kwargs="TestKW", sn_mva=0.4
     )
@@ -610,9 +587,7 @@ def test_create_transformers_for_single():
 def test_create_transformer3w():
     # Test basic 3-winding transformer creation from std_type
     net = pandapowerNet(name="test_create_transformer3w0")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
-    b3 = create_bus(net, 10)
+    b1, b2, b3 = create_buses(net, 3, [110, 20, 10])
     t = create_transformer3w(
         net,
         hv_bus=b1,
@@ -639,9 +614,7 @@ def test_create_transformer3w():
 
     # Test with custom index
     net = pandapowerNet(name="test_create_transformer3w1")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
-    b3 = create_bus(net, 10)
+    b1, b2, b3 = create_buses(net, 3, [110, 20, 10])
     t = create_transformer3w(
         net,
         hv_bus=b1,
@@ -655,9 +628,7 @@ def test_create_transformer3w():
 
     # Test with in_service=False
     net = pandapowerNet(name="test_create_transformer3w2")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
-    b3 = create_bus(net, 10)
+    b1, b2, b3 = create_buses(net, 3, [110, 20, 10])
     t = create_transformer3w(
         net,
         hv_bus=b1,
@@ -670,9 +641,7 @@ def test_create_transformer3w():
 
     # Test with tap_pos
     net = pandapowerNet(name="test_create_transformer3w3")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
-    b3 = create_bus(net, 10)
+    b1, b2, b3 = create_buses(net, 3, [110, 20, 10])
     t = create_transformer3w(
         net,
         hv_bus=b1,
@@ -685,9 +654,7 @@ def test_create_transformer3w():
 
     # Test with max_loading_percent
     net = pandapowerNet(name="test_create_transformer3w4")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
-    b3 = create_bus(net, 10)
+    b1, b2, b3 = create_buses(net, 3, [110, 20, 10])
     t = create_transformer3w(
         net,
         hv_bus=b1,
@@ -700,9 +667,7 @@ def test_create_transformer3w():
 
     # Test error case - non-existent bus
     net = pandapowerNet(name="test_create_transformer3w5")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
-    create_bus(net, 10)
+    b1, b2, _ = create_buses(net, 3, [110, 20, 10])
     with pytest.raises(UserWarning, match=r"Trafo tries to attach to bus 5"):
         create_transformer3w(
             net,
@@ -717,11 +682,7 @@ def test_create_transformer3w():
 
 def test_create_transformers3w():
     net = pandapowerNet(name="test_create_transformers3w")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
-    b3 = create_bus(net, 20)
-    b4 = create_bus(net, 10)
-    b5 = create_bus(net, 10)
+    b1, b2, b3, b4, b5 = create_buses(net, 5, [110, 20, 20, 10, 10])
     create_transformers3w(
         net=net,
         hv_buses=[b1, b1],
@@ -778,9 +739,7 @@ def test_create_transformers3w():
 
 def net_transformer3w_from_parameters(**kwargs):
     net = pandapowerNet(name="net_transformer3w_from_parameters")
-    b1 = create_bus(net, 15)
-    b2 = create_bus(net, 0.4)
-    b3 = create_bus(net, 0.9)
+    b1, b2, b3 = create_buses(net, 3, [15, 0.4, 0.9])
     create_transformers3w_from_parameters(
         net,
         hv_buses=[b1, b1],
@@ -811,9 +770,7 @@ def net_transformer3w_from_parameters(**kwargs):
 def test_create_transformer3w_from_parameters():
     # Test basic 3-winding transformer creation from parameters
     net = pandapowerNet(name="test_create_transformer3w_from_parameters0")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
-    b3 = create_bus(net, 10)
+    b1, b2, b3 = create_buses(net, 3, [110, 20, 10])
     t = create_transformer3w_from_parameters(
         net,
         hv_bus=b1,
@@ -858,9 +815,7 @@ def test_create_transformer3w_from_parameters():
 
     # Test with shift angles
     net = pandapowerNet(name="test_create_transformer3w_from_parameters1")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
-    b3 = create_bus(net, 10)
+    b1, b2, b3 = create_buses(net, 3, [110, 20, 10])
     t = create_transformer3w_from_parameters(
         net,
         hv_bus=b1,
@@ -889,9 +844,7 @@ def test_create_transformer3w_from_parameters():
 
     # Test with tap changer
     net = pandapowerNet(name="test_create_transformer3w_from_parameters2")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
-    b3 = create_bus(net, 10)
+    b1, b2, b3 = create_buses(net, 3, [110, 20, 10])
     t = create_transformer3w_from_parameters(
         net,
         hv_bus=b1,
@@ -928,9 +881,7 @@ def test_create_transformer3w_from_parameters():
 
     # Test with zero sequence parameters
     net = pandapowerNet(name="test_create_transformer3w_from_parameters3")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
-    b3 = create_bus(net, 10)
+    b1, b2, b3 = create_buses(net, 3, [110, 20, 10])
     t = create_transformer3w_from_parameters(
         net,
         hv_bus=b1,
@@ -969,9 +920,7 @@ def test_create_transformer3w_from_parameters():
 
     # Test with in_service=False
     net = pandapowerNet(name="test_create_transformer3w_from_parameters4")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
-    b3 = create_bus(net, 10)
+    b1, b2, b3 = create_buses(net, 3, [110, 20, 10])
     t = create_transformer3w_from_parameters(
         net,
         hv_bus=b1,
@@ -997,9 +946,7 @@ def test_create_transformer3w_from_parameters():
 
     # Test error case - non-existent bus
     net = pandapowerNet(name="test_create_transformer3w_from_parameters5")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
-    create_bus(net, 10)
+    b1, b2, _ = create_buses(net, 3, [110, 20, 10])
     with pytest.raises(UserWarning, match=r"Trafo tries to attach to non-existent bus 5"):
         create_transformer3w_from_parameters(
             net,
@@ -1052,9 +999,7 @@ def test_create_transformers3w_from_parameters():
 
     # setting params as array
     net = pandapowerNet(name="test_create_transformers3w_from_parameters")
-    b1 = create_bus(net, 10)
-    b2 = create_bus(net, 0.4)
-    b3 = create_bus(net, 0.9)
+    b1, b2, b3 = create_buses(net, 3, [10, 0.4, 0.9])
     create_transformers3w_from_parameters(
         net,
         hv_buses=[b1, b1],
@@ -1133,9 +1078,7 @@ def test_create_transformers3w_raise_errorexcept():
         )
     validate_network(net)
     net = pandapowerNet(name="test_create_transformers3w_raise_errorexcept")
-    b1 = create_bus(net, 15)
-    b2 = create_bus(net, 0.4)
-    b3 = create_bus(net, 0.9)
+    b1, b2, b3 = create_buses(net, 3, [15, 0.4, 0.9])
     with pytest.raises(UserWarning, match=r"Transformers trying to attach to non existing buses \{6\}"):
         create_transformers3w_from_parameters(
             net,

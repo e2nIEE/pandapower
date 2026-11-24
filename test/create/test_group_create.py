@@ -9,7 +9,7 @@ from pandapower.create import (
     create_gen,
     create_group,
     create_group_from_dict,
-    create_line,
+    create_lines,
     create_load,
 )
 from pandapower.network import pandapowerNet
@@ -26,7 +26,7 @@ def test_create_group():
     create_gen(net, bus=buses[1], p_mw=10, name="gen1")
     create_gen(net, bus=buses[2], p_mw=20, name="gen2")
     create_load(net, bus=buses[3], p_mw=5, q_mvar=2, name="load1")
-    create_line(net, from_bus=buses[0], to_bus=buses[1], length_km=1, std_type="NAYY 4x50 SE")
+    create_lines(net, from_buses=buses[0], to_buses=buses[1], length_km=1, line_params="NAYY 4x50 SE")
 
     # Test basic group creation
     idx = create_group(
@@ -148,7 +148,7 @@ def test_create_group_multiple_element_types():
     create_ext_grid(net, bus=buses[0])
     create_gen(net, bus=buses[1], p_mw=10)
     create_load(net, bus=buses[2], p_mw=5, q_mvar=2)
-    create_line(net, from_bus=buses[0], to_bus=buses[1], length_km=1, std_type="NAYY 4x50 SE")
+    create_lines(net, from_buses=buses[0], to_buses=buses[1], length_km=1, line_params="NAYY 4x50 SE")
 
     idx = create_group(
         net,

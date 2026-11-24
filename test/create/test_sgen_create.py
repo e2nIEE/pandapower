@@ -4,7 +4,7 @@
 import numpy as np
 import pytest
 
-from pandapower.create import create_asymmetric_sgen, create_bus, create_sgen, create_sgen_from_cosphi, create_sgens
+from pandapower.create import create_asymmetric_sgen, create_buses, create_sgen, create_sgen_from_cosphi, create_sgens
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
@@ -13,8 +13,7 @@ def test_create_sgen():
     net = pandapowerNet(name="test_create_sgen")
 
     # Basic sgen creation
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
+    b1, b2 = create_buses(net, 2, 110)
 
     # Test minimal parameters
     sgen_id = create_sgen(net, b1, p_mw=50)
@@ -79,7 +78,7 @@ def test_create_sgen():
     assert net.sgen.at[sgen_id2, "test_kwargs"] == "dummy_string"
 
     # Test generator_type="async"
-    b3 = create_bus(net, 110)
+    (b3,) = create_buses(net, 1, 110)
     sgen_async = create_sgen(
         net,
         bus=b3,
@@ -91,7 +90,7 @@ def test_create_sgen():
     assert np.isclose(net.sgen.at[sgen_async, "lrc_pu"], 0.6)
 
     # Test generator_type="async_doubly_fed"
-    b4 = create_bus(net, 110)
+    (b4,) = create_buses(net, 1, 110)
     sgen_dfig = create_sgen(
         net,
         bus=b4,
@@ -105,7 +104,7 @@ def test_create_sgen():
     assert np.isclose(net.sgen.at[sgen_dfig, "kappa"], 1.8)
 
     # Test with custom index
-    b5 = create_bus(net, 110)
+    (b5,) = create_buses(net, 1, 110)
     sgen_custom_idx = create_sgen(net, b5, p_mw=25, index=100)
     assert sgen_custom_idx == 100
     assert net.sgen.at[100, "bus"] == b5
@@ -117,9 +116,7 @@ def test_create_sgen():
 def test_create_sgens():
     net = pandapowerNet(name="test_create_sgens")
     # standard
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    b3 = create_bus(net, 110)
+    b1, b2, b3 = create_buses(net, 3, 110)
     create_sgens(
         net,
         buses=[b1, b2, b3],
@@ -168,7 +165,7 @@ def test_create_sgens():
 def test_create_sgen_controllable():
     net = pandapowerNet(name="test_create_sgen_controllable")
 
-    b1 = create_bus(net, 110)
+    (b1,) = create_buses(net, 1, 110)
     s1 = create_sgen(net, b1, 50)
     # controllable column should not exist
     assert "controllable" not in net.sgen.columns
@@ -181,7 +178,7 @@ def test_create_sgen_controllable():
 def test_create_sgens_controllable():
     net = pandapowerNet(name="test_create_sgens_controllable")
 
-    b1 = create_bus(net, 110)
+    (b1,) = create_buses(net, 1, 110)
     s1 = create_sgens(net, [b1], 50)[0]
     # controllable column should not exist
     assert "controllable" not in net.sgen.columns
@@ -196,9 +193,7 @@ def test_create_sgens_controllable():
 def test_create_sgens_raise_errorexcept():
     net = pandapowerNet(name="test_create_sgens_raise_errorexcept")
     # standard
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    b3 = create_bus(net, 110)
+    b1, b2, b3 = create_buses(net, 3, 110)
 
     with pytest.raises(UserWarning, match=r"Cannot attach to buses \{3, 4, 5\}, they do not exist"):
         create_sgens(
@@ -253,7 +248,7 @@ def test_create_asymmetric_sgen():
     net = pandapowerNet(name="test_create_asymmetric_sgen")
 
     # Basic asymmetric sgen creation
-    b1 = create_bus(net, 110)
+    (b1,) = create_buses(net, 1, 110)
 
     # Test with all parameters for all phases
     asym_sgen_id = create_asymmetric_sgen(
@@ -295,7 +290,7 @@ def test_create_asymmetric_sgen():
     assert net.asymmetric_sgen.at[asym_sgen_id, "test_kwargs"] == "dummy_string"
 
     # Test with only one phase specified (others default to 0)
-    b2 = create_bus(net, 110)
+    (b2,) = create_buses(net, 1, 110)
     asym_sgen_id2 = create_asymmetric_sgen(net, bus=b2, p_b_mw=-12)
 
     assert net.asymmetric_sgen.at[asym_sgen_id2, "p_a_mw"] == 0  # default
@@ -306,7 +301,7 @@ def test_create_asymmetric_sgen():
     assert net.asymmetric_sgen.at[asym_sgen_id2, "q_c_mvar"] == 0  # default
 
     # Test default values
-    b3 = create_bus(net, 110)
+    (b3,) = create_buses(net, 1, 110)
     asym_sgen_id3 = create_asymmetric_sgen(net, bus=b3)
 
     assert net.asymmetric_sgen.at[asym_sgen_id3, "bus"] == b3
@@ -320,7 +315,7 @@ def test_create_asymmetric_sgen():
     assert np.isclose(net.asymmetric_sgen.at[asym_sgen_id3, "scaling"], 1.0)  # default
 
     # Test with custom index
-    b4 = create_bus(net, 110)
+    (b4,) = create_buses(net, 1, 110)
     asym_sgen_id4 = create_asymmetric_sgen(net, bus=b4, p_a_mw=-5, index=50)
     assert asym_sgen_id4 == 50
 
@@ -329,7 +324,7 @@ def test_create_asymmetric_sgen():
 
 def test_create_sgen_from_cosphi():
     net = pandapowerNet(name="test_create_sgen_from_cosphi")
-    b1 = create_bus(net, 110)
+    (b1,) = create_buses(net, 1, 110)
 
     # Test overexcited mode (Q injection, positive q_mvar)
     sgen_over = create_sgen_from_cosphi(
@@ -347,7 +342,7 @@ def test_create_sgen_from_cosphi():
     assert net.sgen.at[sgen_over, "sn_mva"] == 10
 
     # Test underexcited mode (Q absorption)
-    b2 = create_bus(net, 110)
+    (b2,) = create_buses(net, 1, 110)
     sgen_under = create_sgen_from_cosphi(
         net,
         bus=b2,
@@ -363,7 +358,7 @@ def test_create_sgen_from_cosphi():
     assert net.sgen.at[sgen_under, "sn_mva"] == 5
 
     # Test with additional parameters passed through
-    b3 = create_bus(net, 110)
+    (b3,) = create_buses(net, 1, 110)
     sgen_with_kwargs = create_sgen_from_cosphi(
         net,
         bus=b3,

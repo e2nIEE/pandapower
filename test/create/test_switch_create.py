@@ -7,8 +7,8 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_bus,
-    create_line,
+    create_buses,
+    create_lines,
     create_switch,
     create_switches,
     create_transformer,
@@ -22,15 +22,10 @@ from pandapower.network_schema.tools.validation.network_validation import valida
 def _create_test_net():
     net = pandapowerNet(name="_create_test_net")
     # Create buses
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    b3 = create_bus(net, 15)
-    b4 = create_bus(net, 15)
-    b5 = create_bus(net, 0.9)
-    b6 = create_bus(net, 0.4)
+    b1, b2, b3, b4, b5, b6 = create_buses(net, 6, [110, 110, 15, 15, 0.9, 0.4])
 
     # Create elements (line, trafo, trafo3w)
-    l1 = create_line(net, b1, b2, length_km=1, std_type="48-AL1/8-ST1A 10.0")
+    (l1,) = create_lines(net, from_buses=b1, to_buses=b2, length_km=1, line_params="48-AL1/8-ST1A 10.0")
     t1 = create_transformer(net, b2, b3, std_type="160 MVA 380/110 kV")
     t3w1 = create_transformer3w_from_parameters(
         net,
@@ -107,11 +102,8 @@ def test_create_switch(_create_test_net):
 def test_create_switches():
     net = pandapowerNet(name="test_create_switches")
     # standard
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    b3 = create_bus(net, 15)
-    b4 = create_bus(net, 15)
-    l1 = create_line(net, b1, b2, length_km=1, std_type="48-AL1/8-ST1A 10.0")
+    b1, b2, b3, b4 = create_buses(net, 4, [110, 110, 15, 15])
+    (l1,) = create_lines(net, from_buses=b1, to_buses=b2, length_km=1, line_params="48-AL1/8-ST1A 10.0")
     t1 = create_transformer(net, b2, b3, std_type="160 MVA 380/110 kV")
 
     sw = create_switches(
