@@ -14,7 +14,7 @@ import numpy.typing as npt
 import pandas as pd
 
 import pandapower as pp
-from pandapower.auxiliary import pandapowerNet
+from pandapower.network import pandapowerNet
 
 logger = logging.getLogger(__name__)
 

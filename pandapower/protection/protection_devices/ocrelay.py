@@ -377,7 +377,7 @@ class OCRelay(ProtectionDevice):
         )
 
 
-def time_grading(net, time_settings):
+def time_grading(net: pandapowerNet, time_settings):
     # Automated time grading calculation
     if isinstance(time_settings, list):
         if len(time_settings) == 2:

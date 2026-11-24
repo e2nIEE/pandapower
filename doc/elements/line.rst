@@ -24,15 +24,17 @@ Lines can be either created from the standard type library (create_line) or with
 
     **Zero sequence parameters** (Added through std_type For Three phase load flow) :
 
-        -**r0_ohm_per_km** (float) - zero sequence line resistance in ohm per km
-
-        -**x0_ohm_per_km** (float) - zero sequence line reactance in ohm per km
-
-        -**c0_nf_per_km** (float)  - zero sequence line capacitance in nano Farad per km
+        - **r0_ohm_per_km** (float) - zero sequence line resistance in ohm per km
+        - **x0_ohm_per_km** (float) - zero sequence line reactance in ohm per km
+        - **c0_nf_per_km** (float)  - zero sequence line capacitance in nano Farad per km
 
 .. autofunction:: pandapower.create_line
 
 .. autofunction:: pandapower.create_line_from_parameters
+
+.. autotypeddict:: pandapower.create.line_create.LineParams
+
+.. autofunction:: pandapower.create.line_create.create_lines
 
 Table Structure
 =============================

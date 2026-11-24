@@ -15,6 +15,7 @@ from pandapower.converter.powerfactory.pp_import_functions import from_pf
 from pandapower.converter.powerfactory.validate import validate_pf_conversion
 from pandapower.diagnostic import diagnostic
 from pandapower.file_io import to_excel, to_json
+from pandapower.network import pandapowerNet
 from pandapower.toolbox.grid_modification import create_replacement_switch_for_branch, replace_xward_by_ward
 
 pandas.set_option("display.width", 1000)
@@ -66,7 +67,7 @@ def get_filename(entry_fname, save_as="JSON"):
     return filename
 
 
-def save_net(net, filepath, save_as):
+def save_net(net: pandapowerNet, filepath, save_as):
     if save_as == "JSON":
         to_json(net, filepath)
     elif save_as == "Excel":
@@ -134,7 +135,7 @@ def run_export(
     return net
 
 
-def run_verify(net, load_flow_params=None):
+def run_verify(net: pandapowerNet, load_flow_params=None):
     logger.info("Validating import...")
     if load_flow_params is None:
         load_flow_params = {

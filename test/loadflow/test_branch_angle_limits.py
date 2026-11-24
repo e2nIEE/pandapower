@@ -24,7 +24,7 @@ from pandapower.run import runopp, runpp
 LINE_PARAMS = {"r_ohm_per_km": 0.1, "x_ohm_per_km": 0.4, "c_nf_per_km": 0.0, "max_i_ka": 1.0}
 
 
-def _ppc_angle_limits(net):
+def _ppc_angle_limits(net: pandapowerNet):
     runpp(net)  # initialise net._options
     net["_options"]["mode"] = "opf"
     _, ppci = _pd2ppc(net)

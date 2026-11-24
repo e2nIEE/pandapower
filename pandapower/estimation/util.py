@@ -61,7 +61,7 @@ def estimate_voltage_vector(net: pandapowerNet):
     return res_bus
 
 
-def _get_bus_ppc_mapping(net, bus_to_be_fused):
+def _get_bus_ppc_mapping(net: pandapowerNet, bus_to_be_fused):
     bus_with_elements = (
         set(net.load.bus)
         .union(set(net.sgen.bus))
@@ -81,12 +81,13 @@ def _get_bus_ppc_mapping(net, bus_to_be_fused):
     existed_bus = bus_ppci[bus_ppci.index.isin(net.bus.index)]
     bus_ppci["vn_kv"] = net.bus.loc[existed_bus.index, "vn_kv"]
     ppci_bus_with_elements = bus_ppci.groupby("bus_ppci")["bus_with_elements"].sum()
-    bus_ppci.loc[:, "elements_in_cluster"] = ppci_bus_with_elements[bus_ppci["bus_ppci"].values].values
+    ppc_bus_idx = bus_ppci["bus_ppci"].to_numpy(dtype=np.int64)
+    bus_ppci.loc[:, "elements_in_cluster"] = ppci_bus_with_elements[ppc_bus_idx].values
     bus_ppci["bus_to_be_fused"] = False
     if bus_to_be_fused is not None:
         bus_ppci.loc[bus_to_be_fused, "bus_to_be_fused"] = True
         bus_cluster_to_be_fused_mask = bus_ppci.groupby("bus_ppci")["bus_to_be_fused"].any()
-        bus_ppci.loc[bus_cluster_to_be_fused_mask[bus_ppci["bus_ppci"].values].values, "bus_to_be_fused"] = True
+        bus_ppci.loc[bus_cluster_to_be_fused_mask[ppc_bus_idx].values, "bus_to_be_fused"] = True
     return bus_ppci
 
 
@@ -206,7 +207,7 @@ def add_virtual_meas_from_loadflow(
     )
 
 
-def remove_shunt_injection_from_meas(net, type):
+def remove_shunt_injection_from_meas(net: pandapowerNet, type):
     index = net[type].index.tolist()
     bus = net[type]["bus"].tolist()
     for k in range(len(index)):

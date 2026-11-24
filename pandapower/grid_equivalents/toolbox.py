@@ -246,7 +246,7 @@ def get_boundaries_by_bus_zone_with_boundary_branches(net: pandapowerNet):
     return boundary_buses, boundary_branches
 
 
-def get_connected_switch_buses_groups(net, buses):
+def get_connected_switch_buses_groups(net: pandapowerNet, buses):
     all_buses = set()
     bus_dict = []
     mg_sw = create_nxgraph(

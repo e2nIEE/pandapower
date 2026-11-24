@@ -33,12 +33,12 @@ from packaging.version import Version
 
 from pandapower._version import __version__
 from pandapower.auxiliary import ets_to_element_types
-from pandapower.network import pandapowerNet
+from pandapower.network import ADict, pandapowerNet
 
 logger = logging.getLogger(__name__)
 
 
-def get_element_index(net, element_type, name, exact_match=True):
+def get_element_index(net: pandapowerNet, element_type, name, exact_match=True):
     """
     Returns the element(s) identified by a name or regex and its element-table.
 
@@ -145,7 +145,7 @@ def next_bus(
     return nb[0]
 
 
-def get_connected_elements(net, element_type, buses, respect_switches=True, respect_in_service=False):
+def get_connected_elements(net: ADict, element_type, buses, respect_switches=True, respect_in_service=False):
     """
     Returns elements connected to a given buses.
 
@@ -353,7 +353,7 @@ def get_connected_buses(
     return cb - set(buses)
 
 
-def get_connected_buses_at_element(net, element_index, element_type, respect_in_service=False):
+def get_connected_buses_at_element(net: pandapowerNet, element_index, element_type, respect_in_service=False):
     """
     Returns buses connected to a given branch element. In case of a bus switch, two buses will be returned, else one.
 
@@ -401,7 +401,7 @@ def get_connected_buses_at_element(net, element_index, element_type, respect_in_
     return cb
 
 
-def get_connected_buses_at_switches(net, switches):
+def get_connected_buses_at_switches(net: pandapowerNet, switches):
     """
     Returns a set of buses connected to given switches.
 
@@ -548,7 +548,7 @@ def get_connected_elements_dict(
     return connected
 
 
-def get_connecting_branches(net, buses1, buses2, branch_elements=None):
+def get_connecting_branches(net: pandapowerNet, buses1, buses2, branch_elements=None):
     """
     Gets/Drops branches that connects any bus of buses1 with any bus of buses2.
     """
@@ -558,7 +558,7 @@ def get_connecting_branches(net, buses1, buses2, branch_elements=None):
     if "switch" in branch_dict:
         branch_dict["switch"].append("element")
 
-    found = {et: set() for et in branch_dict}
+    found: dict[str, set[int]] = {et: set() for et in branch_dict}
     for et, bus_types in branch_dict.items():
         for bus1 in bus_types:
             for bus2 in bus_types:
@@ -588,7 +588,7 @@ def get_gc_objects_dict():
     return nums_by_types
 
 
-def false_elm_links(net, element_type, col, target_element_type):
+def false_elm_links(net: pandapowerNet, element_type, col, target_element_type):
     """
     Returns which indices have links to elements of other element tables which does not exist in the net.
 
@@ -613,7 +613,7 @@ def false_elm_links(net, element_type, col, target_element_type):
         return false_links
 
 
-def false_elm_links_loop(net, element_types=None):
+def false_elm_links_loop(net: pandapowerNet, element_types=None):
     """
     Returns a dict of elements which indices have links to elements of other element tables which
     does not exist in the net.

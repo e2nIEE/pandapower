@@ -39,6 +39,7 @@ import os
 from pandapower.__init__ import pp_dir
 from pandapower.create import create_ext_grid, create_gen, create_sgen
 from pandapower.file_io import from_json
+from pandapower.network import pandapowerNet
 from pandapower.plotting.geo import convert_geodata_to_geojson
 from pandapower.toolbox.element_selection import pp_elements
 
@@ -50,7 +51,7 @@ def _get_cases_path(filename=None):
         return os.path.join(pp_dir, "networks", "power_system_test_case_jsons")
 
 
-def _change_ref_bus(net, ref_bus_idx, ext_grid_p=0):
+def _change_ref_bus(net: pandapowerNet, ref_bus_idx, ext_grid_p=0):
     """
     This function changes the current reference bus / buses, declared by net.ext_grid.bus towards the given
     'ref_bus_idx'. If ext_grid_p is a list, it must be in the same order as net.ext_grid.index.

@@ -6,10 +6,10 @@ import numpy as np
 import pandas as pd
 import pytest
 
-from pandapower import create_line_from_parameters
 from pandapower.create import (
     create_buses,
     create_ext_grid,
+    create_line_from_parameters,
     create_lines,
     create_load,
     create_sgen,
@@ -462,7 +462,7 @@ def test_branch_all_currents_trafo_simple():
     assert np.isclose(net.res_bus_sc.skss_mw, 100, atol=1e-6, rtol=0)
 
 
-def add_aux_trafo(net, trafo_idx):
+def add_aux_trafo(net: pandapowerNet, trafo_idx):
     hv_bus = net.trafo.at[trafo_idx, "hv_bus"]
     (aux_bus,) = create_buses(net, 1, net.trafo.at[trafo_idx, "vn_hv_kv"])
     net.trafo.at[trafo_idx, "hv_bus"] = aux_bus

@@ -56,7 +56,7 @@ def xtcsc(x, x_l, x_c):
     return np.pi * x_l / (2 * (np.pi - x) + np.sin(2 * x) + np.pi * x_l / x_c)
 
 
-def copy_with_impedance(net):
+def copy_with_impedance(net: pandapowerNet):
     baseMVA = net.sn_mva  # MVA
     baseV = net.bus.vn_kv.values  # kV
     baseZ = baseV**2 / baseMVA
@@ -1545,12 +1545,11 @@ def test_minimal_ac():
 def test_minimal_vsc_hvdc():
     net = pandapowerNet(name="test_minimal_vsc_hvdc")
     # AC part
-    create_bus(net, 110)
+    create_buses(net, 1, 110)
     create_ext_grid(net, 0)
 
     # DC part
-    create_bus_dc(net, 110, "A")
-    create_bus_dc(net, 110, "B")
+    create_buses_dc(net, 2, 110, name=["A", "B"])
 
     create_vsc(net, 0, 0, 0.1, 5, 0.15, control_mode_dc="vm_pu", control_value_dc=1.02)
 
@@ -1558,10 +1557,8 @@ def test_minimal_vsc_hvdc():
 
     assert np.isclose(net.res_bus.at[0, "vm_pu"], net.vsc.at[0, "control_value_ac"], rtol=0, atol=1e-6)
     assert np.isclose(net.res_bus_dc.at[0, "vm_pu"], net.vsc.at[0, "control_value_dc"], rtol=0, atol=1e-6)
-    # assert pd.isnull(net.res_bus_dc.at[1, 'vm_pu'])  #todo
-    # assert pd.isnull(net.res_bus_dc.at[1, 'p_mw'])   #todo
 
-    create_line_dc(net, 0, 1, 100, std_type="2400-CU")
+    create_lines_dc(net, 0, 1, 100, std_type="2400-CU")
 
     runpp_with_consistency_checks(net)
 
@@ -1571,10 +1568,6 @@ def test_minimal_vsc_hvdc():
     assert np.isclose(net.res_line_dc.at[0, "vm_from_pu"], net.vsc.at[0, "control_value_dc"], rtol=0, atol=1e-6)
     assert np.isclose(net.res_line_dc.at[0, "vm_to_pu"], net.vsc.at[0, "control_value_dc"], rtol=0, atol=1e-6)
     assert np.isclose(net.res_line_dc.at[0, "loading_percent"], 0, rtol=0, atol=1e-6)
-
-    # create_bus(net, 110)
-    # create_load(net, 2, 10)
-    # create_vsc(net, 1, 1, 0.1, 5, control_mode_ac="slack", control_value_ac=1.03, control_mode_dc="p_mw", control_value_dc=10)  #todo
 
 
 def test_simple_vsc_hvdc():

@@ -374,7 +374,7 @@ def test_oos_bus():
     assert runpp_with_consistency_checks(net)
 
 
-def get_isolated(net):
+def get_isolated(net: pandapowerNet):
     net._options = {}
     _add_ppc_options(
         net,
@@ -1421,7 +1421,7 @@ def test_init_results():
     assert_init_results(net)
 
 
-def assert_init_results(net):
+def assert_init_results(net: pandapowerNet):
     runpp(net, init="auto")
     assert net._ppc["iterations"] > 0
     runpp(net, init="results")

@@ -4,14 +4,14 @@
 import numpy as np
 import pytest
 
-from pandapower.create import create_bus_dc, create_source_dc
+from pandapower.create import create_buses_dc, create_source_dc
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
 
 def test_create_source_dc():
     net = pandapowerNet(name="test_create_source_dc")
-    b1 = create_bus_dc(net, 100)
+    (b1,) = create_buses_dc(net, 1, 100)
 
     # Test basic source_dc creation
     idx = create_source_dc(net, bus_dc=b1, vm_pu=1.0)
@@ -50,7 +50,7 @@ def test_create_source_dc():
 def test_create_source_dc_invalid_bus():
     """Test that creating source_dc with non-existent bus raises error"""
     net = pandapowerNet(name="test_create_source_dc_invalid_bus")
-    create_bus_dc(net, 100)  # creates bus with index 0
+    create_buses_dc(net, 1, 100)  # creates bus with index 0
 
     # Test with non-existent bus_dc
     with pytest.raises(UserWarning, match=r"bus_dc .* does not exist"):
@@ -60,7 +60,7 @@ def test_create_source_dc_invalid_bus():
 def test_create_source_dc_with_kwargs():
     """Test that additional kwargs are passed correctly to the table"""
     net = pandapowerNet(name="test_create_source_dc_with_kwargs")
-    b1 = create_bus_dc(net, 100)
+    (b1,) = create_buses_dc(net, 1, 100)
 
     # Test with additional kwargs
     idx = create_source_dc(
@@ -81,8 +81,7 @@ def test_create_source_dc_with_kwargs():
 def test_create_source_dc_multiple():
     """Test creating multiple source_dc elements"""
     net = pandapowerNet(name="test_create_source_dc_multiple")
-    b1 = create_bus_dc(net, 100)
-    b2 = create_bus_dc(net, 110)
+    b1, b2 = create_buses_dc(net, 2, [100, 110])
 
     # Create multiple sources
     idx1 = create_source_dc(net, bus_dc=b1, vm_pu=1.0, name="source_1")

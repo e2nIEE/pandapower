@@ -52,7 +52,7 @@ def init_default_outputwriter(net: pandapowerNet, time_steps: list, **kwargs):
         logger.info(ow)
 
 
-def init_output_writer(net, time_steps):
+def init_output_writer(net: pandapowerNet, time_steps):
     # init output writer before time series calculation
     output_writer = net.output_writer.iat[0, 0]
     output_writer.time_steps = time_steps
@@ -83,7 +83,7 @@ def finalize_step(controller_order, time_step):
             ctrl.finalize_step(net, time_step)
 
 
-def output_writer_routine(net, time_step, pf_converged, ctrl_converged, recycle_options):
+def output_writer_routine(net: pandapowerNet, time_step, pf_converged, ctrl_converged, recycle_options):
     output_writer = net["output_writer"].iat[0, 0]
     # update time step for output writer
     output_writer.time_step = time_step
@@ -93,7 +93,7 @@ def output_writer_routine(net, time_step, pf_converged, ctrl_converged, recycle_
     )
 
 
-def _call_output_writer(net, time_step, pf_converged, ctrl_converged, ts_variables):
+def _call_output_writer(net: pandapowerNet, time_step, pf_converged, ctrl_converged, ts_variables):
     output_writer_routine(net, time_step, pf_converged, ctrl_converged, ts_variables["recycle_options"])
 
 
@@ -140,7 +140,7 @@ def run_time_step(
     finalize_step(ts_variables["controller_order"], time_step)
 
 
-def _advance_transformer_thermal_tracker(net, ts_variables, pf_converged):
+def _advance_transformer_thermal_tracker(net: pandapowerNet, ts_variables, pf_converged):
     """Chain the transformer top-oil temperature from this time step into the next one.
 
     The thermal model inside ``runpp`` has no memory: it always starts from the cold start condition
@@ -167,7 +167,7 @@ def _create_transformer_thermal_tracker():
     return TransformerThermalTracker() if TRANSFORMER_THERMAL_AVAILABLE else None
 
 
-def _check_controller_recyclability(net):
+def _check_controller_recyclability(net: pandapowerNet):
     # if a parameter is set to True here, it will be recalculated during the time series simulation
     recycle = {"trafo": False, "gen": False, "bus_pq": False}
     if "controller" not in net:
@@ -189,7 +189,7 @@ def _check_controller_recyclability(net):
     return recycle
 
 
-def _tdpf_requested(net, **kwargs):
+def _tdpf_requested(net: pandapowerNet, **kwargs):
     """Whether the requested power flow configuration enables the temperature dependent power flow.
 
     The thermal model runs inside every solve, but the voltage-only recycle path returns before the
@@ -202,7 +202,7 @@ def _tdpf_requested(net, **kwargs):
     return bool(kwargs.get("tdpf", False) or user_options.get("tdpf", False))
 
 
-def _check_output_writer_recyclability(net, recycle, run, tdpf=False):
+def _check_output_writer_recyclability(net: pandapowerNet, recycle, run, tdpf=False):
     if "output_writer" not in net:
         raise ValueError("OutputWriter not defined")
     ow = net.output_writer.at[0, "object"]
@@ -276,7 +276,7 @@ def get_recycle_settings(net: pandapowerNet, **kwargs):
     return recycle
 
 
-def init_time_steps(net, time_steps, **kwargs):
+def init_time_steps(net: pandapowerNet, time_steps, **kwargs):
     # initializes time steps if as a range
     if not isinstance(time_steps, Iterable):
         if isinstance(time_steps, tuple):
@@ -352,7 +352,7 @@ def init_time_series(
     return ts_variables
 
 
-def cleanup(net, ts_variables):
+def cleanup(net: pandapowerNet, ts_variables):
     if isinstance(ts_variables["recycle_options"], dict):
         # Todo: delete internal variables and dumped results which are not needed
         net._ppc = None  # remove _ppc because if recycle == True and a new timeseries calculation is started with a
@@ -391,7 +391,9 @@ def run_loop(
         run_time_step(net, time_step, ts_variables, run_control_fct, output_writer_fct, **kwargs)
 
 
-def run_timeseries(net, time_steps=None, continue_on_divergence=False, verbose=True, check_controllers=True, **kwargs):
+def run_timeseries(
+    net: pandapowerNet, time_steps=None, continue_on_divergence=False, verbose=True, check_controllers=True, **kwargs
+):
     """
     Time Series main function
 

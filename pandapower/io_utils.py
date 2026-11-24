@@ -255,7 +255,7 @@ def dicts_to_pandas(json_dict):
     return pd_dict
 
 
-def df_to_coords(net, item, table):
+def df_to_coords(net: pandapowerNet, item, table):
     # converts dataframe to coords in net
     num_points = len(table.columns) // 2
     net[item] = pd.DataFrame(index=table.index, columns=net[item].columns)
@@ -328,6 +328,8 @@ def from_dict_of_dfs(dodfs, net=None, add_basic_std_types=True):
             if item in ["bus", "line"] and "geo" in table.columns:
                 table.geo = table.geo.mask(table.geo == '"<NA>"', pd.NA)
                 table.geo = table.geo.apply(lambda x: geojson.loads(x, cls=PPJSONDecoder) if pd.notna(x) else x)
+                if item == "bus":
+                    _warn_non_point_bus_geo(table.geo)
         # set the index to be Int
         try:
             net[item] = net[item].set_index(net[item].index.astype(np.int64))
@@ -341,7 +343,32 @@ def from_dict_of_dfs(dodfs, net=None, add_basic_std_types=True):
     return net
 
 
-def restore_all_dtypes(net, dtypes):
+def _geo_type(geo) -> str | None:
+    """Return the geojson type of a geodata entry, given as an object or as its string representation."""
+    if isinstance(geo, str):
+        try:
+            geo = json.loads(geo)
+        except ValueError:
+            return None
+    return geo.get("type") if isinstance(geo, dict) else None
+
+
+def _is_missing(value) -> bool:
+    """True for None, NaN and pd.NA. A list or another container is not a missing value."""
+    return value is None or (pd.api.types.is_scalar(value) and bool(pd.isna(value)))
+
+
+def _warn_non_point_bus_geo(geo: pd.Series) -> None:
+    """Log a warning for bus geodata that is not a geojson Point, as create_bus does for coords."""
+    not_point = [idx for idx, g in geo.items() if not _is_missing(g) and _geo_type(g) != "Point"]
+    if not_point:
+        logger.warning(
+            f"The geodata of the buses {not_point} is not a geojson Point. There is no support for other"
+            " geodata on a bus. Some functionality might not work as intended. Use at your own risk."
+        )
+
+
+def restore_all_dtypes(net: pandapowerNet, dtypes):
     for _, v in dtypes.iterrows():
         try:
             if v["dtype"] == "object":
@@ -354,7 +381,7 @@ def restore_all_dtypes(net, dtypes):
             logger.info(f"could not convert dtype in {v.element}: {v.column}")
 
 
-def to_dict_with_coord_transform(net, point_geo_columns, line_geo_columns):
+def to_dict_with_coord_transform(net: pandapowerNet, point_geo_columns, line_geo_columns):
     save_net = {}
     for key, item in net.items():
         if hasattr(item, "columns") and "geometry" in item.columns:
@@ -384,7 +411,7 @@ def get_raw_data_from_pickle(filename):
     return net
 
 
-def transform_net_with_df_and_geo(net, point_geo_columns, line_geo_columns):
+def transform_net_with_df_and_geo(net: pandapowerNet, point_geo_columns, line_geo_columns):
     try:
         epsg = net.gis_epsg_code
     except AttributeError:
@@ -679,8 +706,14 @@ class FromSerializableRegistry:
         if "geo" in df.columns:
             df["geo"] = df["geo"].dropna().apply(json.dumps).apply(geojson.loads)
 
-        df_obj = df.select_dtypes(include=["object"])
-        for col in df_obj:
+        # the columns select_dtypes(include="object") returns on pandas 3, without its deprecation warning:
+        # object columns and default "str" columns (NaN as missing value), not "string" columns (pd.NA)
+        obj_cols = [
+            col
+            for col, dtype in df.dtypes.items()
+            if dtype == object or (isinstance(dtype, pd.StringDtype) and dtype.na_value is not pd.NA)
+        ]
+        for col in obj_cols:
             df[col] = df[col].apply(
                 partial(
                     self.pp_hook,

@@ -86,7 +86,7 @@ BUS_MEAS_PPCI_IX = {
 }
 
 
-def _initialize_voltage(net, init):
+def _initialize_voltage(net: pandapowerNet, init):
     v_start, delta_start = None, None
     if init == "results":
         v_start, delta_start = "results", "results"
@@ -99,7 +99,7 @@ def _initialize_voltage(net, init):
     return v_start, delta_start
 
 
-def _init_ppc(net, v_start, delta_start, calculate_voltage_angles):
+def _init_ppc(net: pandapowerNet, v_start, delta_start, calculate_voltage_angles):
     # select elements in service and convert pandapower ppc to ppc
     _init_runse_options(
         net, v_start=v_start, delta_start=delta_start, calculate_voltage_angles=calculate_voltage_angles
@@ -391,7 +391,7 @@ def _add_measurements_to_bus(meas_bus, bus_append, map_bus):
         bus_append[merged_value.index, BUS_MEAS_PPCI_IX[meas_type]["IDX"]] = merged_value["index"]
 
 
-def _add_rated_power_information_af_wls(net, ppci):
+def _add_rated_power_information_af_wls(net: pandapowerNet, ppci):
     cluster_list_loads = net.load["type"].unique()
     cluster_list_gen = net.sgen["type"].unique()
     cluster_list_tot = np.concatenate((cluster_list_loads, cluster_list_gen), axis=0)
@@ -430,7 +430,7 @@ def _add_rated_power_information_af_wls(net, ppci):
             )  # std dev cluster variability hardcoded, think how to change it
 
 
-def _add_measurements_to_ppci(net, ppci, zero_injection, algorithm):
+def _add_measurements_to_ppci(net: pandapowerNet, ppci, zero_injection, algorithm):
     """
     Add measurement data from pandapower to the internal ppci structure.
     Extends ppci with additional columns for measurement values, standard deviations, and indices.
@@ -529,7 +529,7 @@ def _add_measurements_to_ppci(net, ppci, zero_injection, algorithm):
     return ppci
 
 
-def _add_zero_injection(net, ppci, bus_append, zero_injection):
+def _add_zero_injection(net: pandapowerNet, ppci, bus_append, zero_injection):
     """
     Add zero injection labels to the ppci structure and add virtual measurements to those buses
 

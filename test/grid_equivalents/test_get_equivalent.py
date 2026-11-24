@@ -118,7 +118,7 @@ def run_basic_usecases(eq_type, net=None):
     return eq_net1, eq_net2, eq_net3
 
 
-def check_elements_amount(net, elms_dict, check_all_pp_elements=True):
+def check_elements_amount(net: pandapowerNet, elms_dict, check_all_pp_elements=True):
     if check_all_pp_elements:
         elms_dict.update({elm: 0 for elm in pp_elements() if elm not in elms_dict})
     for key, val in elms_dict.items():

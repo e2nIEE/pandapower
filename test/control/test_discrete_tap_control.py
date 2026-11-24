@@ -10,10 +10,8 @@ import pytest
 
 from pandapower.control import DiscreteTapControl
 from pandapower.create import (
-    create_bus,
     create_buses,
     create_ext_grid,
-    create_line,
     create_lines,
     create_load,
     create_transformer,
@@ -27,7 +25,7 @@ from pandapower.run import runpp, set_user_pf_options
 logger = log.getLogger(__name__)
 
 
-def _vm_in_desired_area(net, lower_vm, higher_vm, side, idx=None, trafo_table="trafo"):
+def _vm_in_desired_area(net: pandapowerNet, lower_vm, higher_vm, side, idx=None, trafo_table="trafo"):
     if idx is None:
         idx = net[trafo_table].index
     return (lower_vm <= net.res_bus.vm_pu.loc[net[trafo_table].loc[idx, f"{side}_bus"].tolist()]) & (
@@ -415,11 +413,9 @@ def test_discrete_tap_control_vectorized_hv():
 def test_continuous_tap_control_side_mv():
     # --- load system and run power flow
     net = pandapowerNet(name="test_continuous_tap_control_side_mv")
-    create_buses(net, 2, 110)
-    create_buses(net, 1, 20)
-    create_bus(net, 10)
+    create_buses(net, 4, [110, 110, 20, 10])
     create_ext_grid(net, 0)
-    create_line(net, 0, 1, 10, "243-AL1/39-ST1A 110.0")
+    create_lines(net, 0, 1, 10, "243-AL1/39-ST1A 110.0")
     create_transformer3w(net, 1, 2, 3, "63/25/38 MVA 110/20/10 kV")
     create_load(net, 2, 5.0, 2.0)
     create_load(net, 3, 5.0, 2.0)

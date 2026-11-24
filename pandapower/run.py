@@ -23,6 +23,7 @@ from pandapower.auxiliary import (
     _internal_stored,
     warn_and_fix_parameter_renaming,
 )
+from pandapower.network import pandapowerNet
 from pandapower.opf.validate_opf_input import _check_necessary_opf_parameters
 from pandapower.optimal_powerflow import _optimal_powerflow
 from pandapower.powerflow import _powerflow, _recycled_powerflow
@@ -40,18 +41,20 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-def set_user_pf_options(net, overwrite=False, **kwargs):
+def set_user_pf_options(net: pandapowerNet, overwrite=False, **kwargs):
     """
-    This function sets the 'user_pf_options' dict for net. These options overrule
-    net.__internal_options once they are added to net. These options are used in configuration of
-    load flow calculation.
-    At the same time, user-defined arguments for pandapower.runpp() always have a higher priority.
-    To remove user_pf_options, set overwrite=True and provide no additional arguments
+    This function sets the 'user_pf_options' dict for net. These options overrule net.__internal_options once they
+    are added to net. These options are used in configuration of load flow calculation. At the same time,
+    user-defined arguments for pandapower.runpp() always have a higher priority. To remove user_pf_options, set
+    overwrite=True and provide no additional arguments
 
-    :param net: pandaPower network
-    :param overwrite: specifies whether the user_pf_options is removed before setting new options
-    :param kwargs: load flow options, e.g. tolerance = 1e-3
-    :return: None
+    Parameters:
+        net: pandaPower network
+        overwrite: specifies whether the user_pf_options is removed before setting new options
+        kwargs: load flow options, e.g. tolerance = 1e-3
+
+    Returns:
+        None
     """
     standard_parameters = [
         "calculate_voltage_angles",
@@ -309,7 +312,14 @@ def runpp(
         _powerflow(net, **kwargs)
 
 
-def runpp_pgm(net, algorithm="nr", max_iterations=20, error_tolerance_vm_pu=1e-8, symmetric=True, validate_input=False):
+def runpp_pgm(
+    net: pandapowerNet,
+    algorithm="nr",
+    max_iterations=20,
+    error_tolerance_vm_pu=1e-8,
+    symmetric=True,
+    validate_input=False,
+):
     """
     Runs powerflow using power-grid-model library
 
@@ -365,9 +375,8 @@ def runpp_pgm(net, algorithm="nr", max_iterations=20, error_tolerance_vm_pu=1e-8
         # each element in the input data.
         if validation_errors:
             for i, error in enumerate(validation_errors, start=1):
-                pp_obj = (pgm_converter.lookup_id(pgm_id) for pgm_id in error.ids)
-                pp_obj = (f"{obj['table']}-{obj['index']}" for obj in pp_obj)
-                pp_obj = ", ".join(pp_obj)
+                pgm_objs = (pgm_converter.lookup_id(pgm_id) for pgm_id in error.ids)
+                pp_obj = ", ".join(f"{obj['table']}-{obj['index']}" for obj in pgm_objs)
                 logger.error(f"{i}. Power Grid Model validation error: Check {pp_obj}")
                 logger.debug(f"{i}. Native Power Grid Model error: {error}")
 
@@ -656,10 +665,18 @@ def rundcopp(
 
 def _passed_runpp_parameters(local_parameters):
     """
-    Internal function to distinguish arguments for pandapower.runpp() that are explicitly passed by
-    the user.
-    :param local_parameters: locals() in the runpp() function
-    :return: dictionary of explicitly passed parameters
+    Internal function to distinguish arguments for pandapower.runpp() that are explicitly passed by the user.
+
+    Named arguments are only recognized as passed if their value differs from the default value defined in the
+    runpp() signature. Additional keyword arguments are taken from ``kwargs`` and are treated as passed as well.
+    Since omitted arguments and explicitly passed arguments that equal their signature default cannot be
+    distinguished inside runpp(), the latter are not included in the result.
+
+    Parameters:
+        local_parameters: locals() in the runpp() function
+
+    Returns:
+        dictionary of explicitly passed parameters, or None if no stored options are present in net.user_pf_options
     """
     net = local_parameters.pop("net")
     if "user_pf_options" not in net or len(net.user_pf_options) == 0:

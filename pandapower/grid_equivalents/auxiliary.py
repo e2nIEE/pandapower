@@ -37,7 +37,7 @@ from pandapower.create import (
     create_load,
     create_transformer_from_parameters,
 )
-from pandapower.diagnostic import diagnostic
+from pandapower.diagnostic.diagnostic_helpers import diagnostic
 from pandapower.file_io import to_json
 from pandapower.pd2ppc import _pd2ppc
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci
@@ -74,7 +74,7 @@ def _runpp_except_voltage_angles(net: pandapowerNet, **kwargs) -> pandapowerNet:
 
 
 def add_ext_grids_to_boundaries(
-    net,
+    net: pandapowerNet,
     boundary_buses,
     adapt_va_degree=False,
     runpp_fct=_runpp_except_voltage_angles,
@@ -175,7 +175,7 @@ def add_ext_grids_to_boundaries(
     return orig_slack_gens
 
 
-def drop_internal_branch_elements(net, internal_buses, branch_elements=None):
+def drop_internal_branch_elements(net: pandapowerNet, internal_buses, branch_elements=None):
     """
     This function drops all branch elements which have 'internal_buses' connected at all sides of
     the branch element (e.g. for lines at 'from_bus' and 'to_bus').
@@ -323,7 +323,7 @@ def calc_zpbn_parameters(
     return Z, S, v, limits
 
 
-def _ensure_unique_boundary_bus_names(net, boundary_buses):
+def _ensure_unique_boundary_bus_names(net: pandapowerNet, boundary_buses):
     """This function ad a unique name to each bounary bus. The original
     boundary bus names are retained.
     """
@@ -332,7 +332,7 @@ def _ensure_unique_boundary_bus_names(net, boundary_buses):
     net.bus.loc[boundary_buses, "name_equivalent"] = ["Boundary bus " + str(uuid.uuid1()) for _ in boundary_buses]
 
 
-def drop_assist_elms_by_creating_ext_net(net, elms=None):
+def drop_assist_elms_by_creating_ext_net(net: pandapowerNet, elms=None):
     """
     This function drops the assist elements by creating external nets.
     """
@@ -353,7 +353,7 @@ def drop_assist_elms_by_creating_ext_net(net, elms=None):
         net.bus = net.bus.drop(columns=["name_equivalent"])
 
 
-def build_ppc_and_Ybus(net):
+def build_ppc_and_Ybus(net: pandapowerNet):
     """This function build ppc and gets the Ybus of given network without
     runing power flow calculation
     """
@@ -385,7 +385,7 @@ def build_ppc_and_Ybus(net):
     net._ppc["internal"]["Ybus"] = Ybus
 
 
-def drop_measurements_and_controllers(net, buses):
+def drop_measurements_and_controllers(net: pandapowerNet, buses):
     """This function drops the measurements of the given buses.
     Also, the related controller parameters will be removed."""
     # --- dropping measurements
@@ -406,7 +406,7 @@ def drop_measurements_and_controllers(net, buses):
     drop_controllers_at_buses(net, buses)
 
 
-def ensure_origin_id(net, elms=None):
+def ensure_origin_id(net: pandapowerNet, elms=None):
     """
     Ensures completely filled column 'origin_id' in every pp element.
     """
@@ -420,7 +420,7 @@ def ensure_origin_id(net, elms=None):
         net[elm].loc[idxs, "origin_id"] = [f"{elm}_{idx}_{uuid.uuid4()!s}" for idx in idxs]
 
 
-def drop_and_edit_cost_functions(net, buses, drop_cost, add_origin_id):
+def drop_and_edit_cost_functions(net: pandapowerNet, buses, drop_cost, add_origin_id):
     """
     This function drops the ploy_cost/pwl_cost data
     related to the given buses.
@@ -455,7 +455,7 @@ def drop_and_edit_cost_functions(net, buses, drop_cost, add_origin_id):
                     net[cost_elm].loc[idx, "origin_seq"] = [cost_backup.index.tolist().index(t) for t in idx]
 
 
-def match_cost_functions_and_eq_net(net, boundary_buses, eq_type):
+def match_cost_functions_and_eq_net(net: pandapowerNet, boundary_buses, eq_type):
     """
     This function makes the element indices in poly_cost/pwl_cost and the
     new element indecies after merging to match.
@@ -471,7 +471,7 @@ def match_cost_functions_and_eq_net(net, boundary_buses, eq_type):
             net[cost_elm] = net[cost_elm].drop(columns=["bus", "et_origin_id", "origin_idx", "origin_seq"])
 
 
-def _check_network(net):
+def _check_network(net: pandapowerNet):
     """
     This function will perform some checks and modifications on the given grid model.
 
@@ -516,7 +516,7 @@ def get_boundary_vp(net_eq, bus_lookups):
     return v_boundary, p_boundary
 
 
-def adaptation_phase_shifter(net, v_boundary):
+def adaptation_phase_shifter(net: pandapowerNet, v_boundary):
     target_buses = list(v_boundary.bus.values)
     phase_errors = v_boundary.va_degree.values - net.res_bus.va_degree[target_buses].values
     vm_errors = v_boundary.vm_pu.values - net.res_bus.vm_pu[target_buses].values
@@ -571,7 +571,7 @@ def adaptation_phase_shifter(net, v_boundary):
     return net
 
 
-def replace_motor_by_load(net, all_external_buses):
+def replace_motor_by_load(net: pandapowerNet, all_external_buses):
     """
     replace the 'external' motors by loads. The name is modified.
     e.g., "equivalent_MotorName_3" ("equivalent"+"original name"+"original index")

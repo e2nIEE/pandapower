@@ -25,9 +25,9 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from pandapower.create import (
-    create_bus,
+    create_buses,
     create_ext_grid,
-    create_line_from_parameters,
+    create_lines,
     create_load,
     create_shunt,
     create_switch,
@@ -235,7 +235,7 @@ def from_opendss(path: str, solve: bool = True):
     return net
 
 
-def _add_buses(net, report):
+def _add_buses(net: pandapowerNet, report):
     bus_map = {}
     for name in dss.Circuit.AllBusNames():
         dss.Circuit.SetActiveBus(name)
@@ -249,7 +249,7 @@ def _add_buses(net, report):
                 "set 'VoltageBases' and call 'CalcVoltageBases' in the master"
             )
         report.bus_phases[name.lower()] = len([n for n in dss.Bus.Nodes() if n != 0])
-        bus_map[name.lower()] = create_bus(net, vn_kv=vn_kv, name=name)
+        bus_map[name.lower()] = create_buses(net, 1, vn_kv=vn_kv, name=name)[0]
     return bus_map
 
 
@@ -262,7 +262,7 @@ def _capture_voltages(report):
             report.vm_pu_opendss[name.lower()] = sum(mags) / len(mags)
 
 
-def _add_source(net, bus_map, report):
+def _add_source(net: pandapowerNet, bus_map, report):
     if not dss.Vsources.First():
         report.warn("no Vsource found; net has no ext_grid")
         return
@@ -274,7 +274,7 @@ def _add_source(net, bus_map, report):
     create_ext_grid(net, bus, vm_pu=dss.Vsources.PU(), va_degree=0.0, name=dss.Vsources.Name())
 
 
-def _add_lines(net, bus_map, report):
+def _add_lines(net: pandapowerNet, bus_map, report):
     i = dss.Lines.First()
     while i:
         name = dss.Lines.Name()
@@ -315,23 +315,26 @@ def _add_lines(net, bus_map, report):
 
         # The OpenDSS LineCode names the physical conductor; carry it through as
         # pandapower's std_type so the conductor identity survives the import.
-        create_line_from_parameters(
+        l1 = create_lines(
             net,
-            from_bus=f,
-            to_bus=t,
+            from_buses=f,
+            to_buses=t,
             length_km=length_km,
-            r_ohm_per_km=r1 / km,
-            x_ohm_per_km=x1 / km,
-            c_nf_per_km=c1 / km,
-            max_i_ka=dss.Lines.NormAmps() / 1000.0,
-            std_type=dss.Lines.LineCode() or None,
+            line_params={
+                "r_ohm_per_km": r1 / km,
+                "x_ohm_per_km": x1 / km,
+                "c_nf_per_km": c1 / km,
+                "max_i_ka": dss.Lines.NormAmps() / 1000.0,
+            },
             name=name,
         )
+        if dss.Lines.LineCode():
+            net.line.loc[l1, "std_type"] = dss.Lines.LineCode()
         report.n_lines += 1
         i = dss.Lines.Next()
 
 
-def _add_reactors(net, bus_map, report):
+def _add_reactors(net: pandapowerNet, bus_map, report):
     """Series (bus-to-bus) Reactor elements as a fixed-impedance pandapower line.
 
     Some feeder libraries (e.g. EPRI's Ckt5/Ckt7 test circuits) model the
@@ -359,29 +362,31 @@ def _add_reactors(net, bus_map, report):
             continue
 
         max_i_ka = dss.CktElement.NormalAmps() / 1000.0
-        create_line_from_parameters(
+        create_lines(
             net,
-            from_bus=f,
-            to_bus=t,
+            from_buses=f,
+            to_buses=t,
             length_km=1.0,
-            r_ohm_per_km=dss.Reactors.R(),
-            x_ohm_per_km=dss.Reactors.X(),
-            c_nf_per_km=0.0,
-            max_i_ka=max_i_ka if max_i_ka > 0 else 10.0,
+            line_params={
+                "r_ohm_per_km": dss.Reactors.R(),
+                "x_ohm_per_km": dss.Reactors.X(),
+                "c_nf_per_km": 0.0,
+                "max_i_ka": max_i_ka if max_i_ka > 0 else 10.0,
+            },
             name=name,
         )
         report.n_reactors += 1
         i = dss.Reactors.Next()
 
 
-def _add_transformers(net, bus_map, report):
+def _add_transformers(net: pandapowerNet, bus_map, report):
     i = dss.Transformers.First()
     while i:
         _add_one_transformer(net, bus_map, report)
         i = dss.Transformers.Next()
 
 
-def _add_one_transformer(net, bus_map, report):
+def _add_one_transformer(net: pandapowerNet, bus_map, report):
     name = dss.Transformers.Name()
     dss.Circuit.SetActiveElement("Transformer." + name)
     wbus = [_busname(b) for b in dss.CktElement.BusNames()]
@@ -461,7 +466,7 @@ def _add_one_transformer(net, bus_map, report):
         report.n_split_phase_transformers += 1
 
 
-def _add_loads(net, bus_map, report):
+def _add_loads(net: pandapowerNet, bus_map, report):
     i = dss.Loads.First()
     while i:
         name = dss.Loads.Name()
@@ -476,7 +481,7 @@ def _add_loads(net, bus_map, report):
         i = dss.Loads.Next()
 
 
-def _add_capacitors(net, bus_map, report):
+def _add_capacitors(net: pandapowerNet, bus_map, report):
     i = dss.Capacitors.First()
     while i:
         name = dss.Capacitors.Name()
