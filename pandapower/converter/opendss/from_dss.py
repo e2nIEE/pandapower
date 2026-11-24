@@ -320,13 +320,16 @@ def _add_lines(net: pandapowerNet, bus_map, report):
             from_buses=f,
             to_buses=t,
             length_km=length_km,
-            line_params=dss.Lines.LineCode() or None,
+            line_params={
+                "r_ohm_per_km": r1 / km,
+                "x_ohm_per_km": x1 / km,
+                "c_nf_per_km": c1 / km,
+                "max_i_ka": dss.Lines.NormAmps() / 1000.0,
+            },
             name=name,
         )
-        l1["r_ohm_per_km"] = (r1 / km,)
-        l1["x_ohm_per_km"] = (x1 / km,)
-        l1["c_nf_per_km"] = (c1 / km,)
-        l1["max_i_ka"] = (dss.Lines.NormAmps() / 1000.0,)
+        if dss.Lines.LineCode():
+            l1["std_type"] = dss.Lines.LineCode()
         report.n_lines += 1
         i = dss.Lines.Next()
 
