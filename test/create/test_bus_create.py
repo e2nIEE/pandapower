@@ -16,8 +16,7 @@ from pandapower.create import (
     create_ext_grid,
     create_gen,
     create_impedance,
-    create_line,
-    create_line_from_parameters,
+    create_lines,
     create_load,
     create_sgen,
     create_shunt,
@@ -56,24 +55,26 @@ def test_nonexistent_bus():
         partial(create_shunt, net=net, q_mvar=0, bus=0, index=0),
         partial(create_ext_grid, net=net, bus=1, index=0),
         partial(
-            create_line,
+            create_lines,
             net=net,
-            from_bus=0,
-            to_bus=1,
+            from_buses=0,
+            to_buses=1,
             length_km=1.0,
-            std_type="NAYY 4x50 SE",
+            line_params="NAYY 4x50 SE",
             index=0,
         ),
         partial(
-            create_line_from_parameters,
+            create_lines,
             net=net,
-            from_bus=0,
-            to_bus=1,
+            from_buses=0,
+            to_buses=1,
             length_km=1.0,
-            r_ohm_per_km=0.1,
-            x_ohm_per_km=0.1,
-            max_i_ka=0.4,
-            c_nf_per_km=10,
+            line_params={
+                "r_ohm_per_km": 0.1,
+                "x_ohm_per_km": 0.1,
+                "max_i_ka": 0.4,
+                "c_nf_per_km": 10,
+            },
             index=1,
         ),
         partial(
@@ -147,9 +148,7 @@ def test_nonexistent_bus():
         #  Trafo uses 'Trafo tries to attach to bus 0'
         with pytest.raises(UserWarning):  # exception has to be raised since bus doesn't exist
             func()
-    create_bus(net, 0.4)
-    create_bus(net, 0.4)
-    create_bus(net, 0.4)
+    create_buses(net, 3, 0.4)
     for func in create_functions:
         func()  # buses exist, element can be created
         # TODO: check that all functions raise same Exception

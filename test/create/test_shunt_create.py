@@ -5,8 +5,8 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_bus,
-    create_bus_dc,
+    create_buses,
+    create_buses_dc,
     create_shunt,
     create_shunt_as_capacitor,
     create_shunts,
@@ -22,8 +22,7 @@ from pandapower.network_schema.tools.validation.network_validation import valida
 
 def test_create_shunt():
     net = pandapowerNet(name="test_create_shunt")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
+    b1, b2 = create_buses(net, 2, 110)
 
     # Test basic shunt creation with required parameters
     idx = create_shunt(net, bus=b1, q_mvar=-20.0)
@@ -59,7 +58,7 @@ def test_create_shunt():
     assert net.shunt.at[idx2, "test_kwargs"] == "dummy_string"
 
     # Test that vn_kv defaults to bus voltage when not provided
-    b3 = create_bus(net, 20.0)
+    (b3,) = create_buses(net, 1, 20.0)
     idx3 = create_shunt(net, bus=b3, q_mvar=-5.0)
     assert np.isclose(net.shunt.at[idx3, "vn_kv"], 20.0)
 
@@ -73,9 +72,7 @@ def test_create_shunt():
 
 def test_create_shunts():
     net = pandapowerNet(name="test_create_shunts")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    b3 = create_bus(net, 20)
+    b1, b2, b3 = create_buses(net, 3, [110, 110, 20])
 
     # Test creating multiple shunts with scalar values
     indices = create_shunts(net, buses=[b1, b2], q_mvar=-20.0, p_mw=1.0)
@@ -120,8 +117,7 @@ def test_create_shunts():
 
 def test_create_shunt_as_capacitor():
     net = pandapowerNet(name="test_create_shunt_as_capacitor")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
+    b1, b2 = create_buses(net, 2, [110, 20])
 
     # Test basic capacitor bank creation
     # q_mvar should be negative for capacitor, p_mw = abs(q_mvar * loss_factor)
@@ -168,7 +164,7 @@ def test_create_shunt_as_capacitor():
 
 def test_create_shunt_nonexistent_bus():
     net = pandapowerNet(name="test_create_shunt_nonexistent_bus")
-    create_bus(net, 110)
+    create_buses(net, 1, 110)
 
     # Test that creating shunt on non-existent bus raises error
     with pytest.raises(UserWarning, match=r"Cannot attach to bus 5, 5 does not exist"):
@@ -177,7 +173,7 @@ def test_create_shunt_nonexistent_bus():
 
 def test_create_shunts_nonexistent_buses():
     net = pandapowerNet(name="test_create_shunts_nonexistent_buses")
-    b1 = create_bus(net, 110)
+    (b1,) = create_buses(net, 1, 110)
 
     # Test that creating shunts on non-existent buses raises error
     with pytest.raises(UserWarning, match=r"Cannot attach to buses {2, 3}, they do not exist"):
@@ -186,7 +182,7 @@ def test_create_shunts_nonexistent_buses():
 
 def test_create_shunt_index_conflict():
     net = pandapowerNet(name="test_create_shunt_index_conflict")
-    b1 = create_bus(net, 110)
+    (b1,) = create_buses(net, 1, 110)
 
     # Create first shunt
     idx1 = create_shunt(net, bus=b1, q_mvar=-10.0)
@@ -203,8 +199,7 @@ def test_create_shunt_index_conflict():
 
 def test_create_svc():
     net = pandapowerNet(name="test_create_svc")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
+    b1, b2 = create_buses(net, 2, 110)
 
     # Test basic SVC creation with required parameters
     idx = create_svc(net, bus=b1, x_l_ohm=10.0, x_cvar_ohm=-20.0, set_vm_pu=1.0, thyristor_firing_angle_degree=120.0)
@@ -242,7 +237,7 @@ def test_create_svc():
     assert net.svc.at[idx2, "test_kwargs"] == "dummy_string"
 
     # Test default values
-    b3 = create_bus(net, 20)
+    (b3,) = create_buses(net, 1, 20)
     idx3 = create_svc(net, bus=b3, x_l_ohm=2.0, x_cvar_ohm=-5.0, set_vm_pu=1.0, thyristor_firing_angle_degree=90.0)
     assert net.svc.at[idx3, "controllable"]  # default
     assert net.svc.at[idx3, "in_service"]  # default
@@ -260,8 +255,7 @@ def test_create_svc():
 
 def test_create_ssc():
     net = pandapowerNet(name="test_create_ssc")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
+    b1, b2 = create_buses(net, 2, [110, 20])
 
     # Test basic SSC creation with required parameters
     idx = create_ssc(net, bus=b1, r_ohm=1.0, x_ohm=-10.0)
@@ -295,7 +289,7 @@ def test_create_ssc():
     assert net.ssc.at[idx2, "test_kwargs"] == "dummy_string"
 
     # Test default values
-    b3 = create_bus(net, 110)
+    (b3,) = create_buses(net, 1, 110)
     idx3 = create_ssc(net, bus=b3, r_ohm=0.1, x_ohm=-2.0)
     assert np.isclose(net.ssc.at[idx3, "set_vm_pu"], 1.0)
     assert np.isclose(net.ssc.at[idx3, "vm_internal_pu"], 1.0)
@@ -312,7 +306,7 @@ def test_create_ssc():
 
 def test_create_svc_nonexistent_bus():
     net = pandapowerNet(name="test_create_svc_nonexistent_bus")
-    create_bus(net, 110)
+    create_buses(net, 1, 110)
 
     # Test that creating SVC on non-existent bus raises error
     with pytest.raises(UserWarning, match=r"Cannot attach to bus 5, 5 does not exist"):
@@ -321,7 +315,7 @@ def test_create_svc_nonexistent_bus():
 
 def test_create_ssc_nonexistent_bus():
     net = pandapowerNet(name="test_create_ssc_nonexistent_bus")
-    create_bus(net, 110)
+    create_buses(net, 1, 110)
 
     # Test that creating SSC on non-existent bus raises error
     with pytest.raises(UserWarning, match=r"Cannot attach to bus 5, 5 does not exist"):
@@ -330,7 +324,7 @@ def test_create_ssc_nonexistent_bus():
 
 def test_create_svc_index_conflict():
     net = pandapowerNet(name="test_create_svc_index_conflict")
-    b1 = create_bus(net, 110)
+    (b1,) = create_buses(net, 1, 110)
 
     # Create first SVC
     idx1 = create_svc(net, bus=b1, x_l_ohm=10.0, x_cvar_ohm=-20.0, set_vm_pu=1.0, thyristor_firing_angle_degree=120.0)
@@ -351,7 +345,7 @@ def test_create_svc_index_conflict():
 
 def test_create_ssc_index_conflict():
     net = pandapowerNet(name="test_create_ssc_index_conflict")
-    b1 = create_bus(net, 110)
+    (b1,) = create_buses(net, 1, 110)
 
     # Create first SSC
     idx1 = create_ssc(net, bus=b1, r_ohm=1.0, x_ohm=10.0)
@@ -368,10 +362,8 @@ def test_create_ssc_index_conflict():
 
 def test_create_vsc_stacked():
     net = pandapowerNet(name="test_create_vsc_stacked")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    b_dc_plus = create_bus_dc(net, 100)
-    b_dc_minus = create_bus_dc(net, 0.1)
+    b1, b2 = create_buses(net, 2, 110)
+    b_dc_plus, b_dc_minus = create_buses_dc(net, 2, [100, 0.1])
 
     # Test basic VSC stacked creation with required parameters
     idx = create_vsc_stacked(
@@ -418,7 +410,7 @@ def test_create_vsc_stacked():
     assert net.vsc_stacked.at[idx2, "test_kwargs"] == "dummy_string"
 
     # Test default values
-    b3 = create_bus(net, 20)
+    (b3,) = create_buses(net, 1, 20)
     idx3 = create_vsc_stacked(
         net, bus=b3, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus, r_ohm=0.1, x_ohm=2.0, r_dc_ohm=0.1
     )
@@ -444,10 +436,8 @@ def test_create_vsc_bipolar():
     Creation of bipolar VSC with the required, all optional and the default parameters.
     """
     net = pandapowerNet(name="test_create_vsc_bipolar")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
-    b_dc_plus = create_bus_dc(net, 100)
-    b_dc_minus = create_bus_dc(net, 0.1)
+    b1, b2 = create_buses(net, 2, [110, 20])
+    b_dc_plus, b_dc_minus = create_buses_dc(net, 2, [100, 0.1])
 
     # Test basic VSC bipolar creation with required parameters
     idx = create_vsc_bipolar(
@@ -494,7 +484,7 @@ def test_create_vsc_bipolar():
     assert net.vsc_bipolar.at[idx2, "test_kwargs"] == "dummy_string"
 
     # Test default values
-    b3 = create_bus(net, 110)
+    (b3,) = create_buses(net, 1, 110)
     idx3 = create_vsc_bipolar(
         net, bus=b3, bus_dc_plus=b_dc_plus, bus_dc_minus=b_dc_minus, r_ohm=0.1, x_ohm=2.0, r_dc_ohm=0.1
     )
@@ -517,9 +507,8 @@ def test_create_vsc_bipolar():
 
 def test_create_vsc():
     net = pandapowerNet(name="test_create_vsc")
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 20)
-    b_dc = create_bus_dc(net, 100)
+    b1, b2 = create_buses(net, 2, [110, 20])
+    (b_dc,) = create_buses_dc(net, 1, 100)
 
     # Test basic VSC creation with required parameters
     idx = create_vsc(net, bus=b1, bus_dc=b_dc, r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5)
@@ -565,7 +554,7 @@ def test_create_vsc():
     assert net.vsc.at[idx2, "test_kwargs"] == "dummy_string"
 
     # Test default values
-    b3 = create_bus(net, 110)
+    (b3,) = create_buses(net, 1, 110)
     idx3 = create_vsc(net, bus=b3, bus_dc=b_dc, r_ohm=0.1, x_ohm=2.0, r_dc_ohm=0.1)
     assert np.isclose(net.vsc.at[idx3, "pl_dc_mw"], 0.0)  # default
     assert net.vsc.at[idx3, "control_mode_ac"] == "vm_pu"  # default
@@ -584,9 +573,8 @@ def test_create_vsc():
 
 def test_create_vsc_stacked_nonexistent_bus():
     net = pandapowerNet(name="test_create_vsc_stacked_nonexistent_bus")
-    create_bus(net, 110)
-    b_dc_plus = create_bus_dc(net, 100)
-    b_dc_minus = create_bus_dc(net, -100)
+    create_buses(net, 1, 110)
+    b_dc_plus, b_dc_minus = create_buses_dc(net, 2, [100, -100])
 
     # Test that creating VSC on non-existent AC bus raises error
     with pytest.raises(UserWarning, match=r"Cannot attach to bus 5, 5 does not exist"):
@@ -597,7 +585,7 @@ def test_create_vsc_stacked_nonexistent_bus():
 
 def test_create_vsc_stacked_nonexistent_dc_buses():
     net = pandapowerNet(name="test_create_vsc_stacked_nonexistent_dc_buses")
-    b1 = create_bus(net, 110)
+    (b1,) = create_buses(net, 1, 110)
 
     # Test that creating VSC on non-existent DC buses raises error
     with pytest.raises(UserWarning, match=r"Cannot attach to bus_dc 5, 5 does not exist"):
@@ -606,9 +594,8 @@ def test_create_vsc_stacked_nonexistent_dc_buses():
 
 def test_create_vsc_bipolar_nonexistent_bus():
     net = pandapowerNet(name="test_create_vsc_bipolar_nonexistent_bus")
-    create_bus(net, 110)
-    b_dc_plus = create_bus_dc(net, 100)
-    b_dc_minus = create_bus_dc(net, -100)
+    create_buses(net, 1, 110)
+    b_dc_plus, b_dc_minus = create_buses_dc(net, 2, [100, -100])
 
     # Test that creating VSC bipolar on non-existent AC bus raises error
     with pytest.raises(UserWarning, match=r"Cannot attach to bus 5, 5 does not exist"):
@@ -619,7 +606,7 @@ def test_create_vsc_bipolar_nonexistent_bus():
 
 def test_create_vsc_bipolar_nonexistent_dc_buses():
     net = pandapowerNet(name="test_create_vsc_bipolar_nonexistent_dc_buses")
-    b1 = create_bus(net, 110)
+    (b1,) = create_buses(net, 1, 110)
 
     # Test that creating VSC bipolar on non-existent DC buses raises error
     with pytest.raises(UserWarning, match=r"Cannot attach to bus_dc 5, 5 does not exist"):
@@ -628,7 +615,7 @@ def test_create_vsc_bipolar_nonexistent_dc_buses():
 
 def test_create_vsc_nonexistent_bus():
     net = pandapowerNet(name="test_create_vsc_nonexistent_bus")
-    b_dc = create_bus_dc(net, 100)
+    (b_dc,) = create_buses_dc(net, 1, 100)
 
     # Test that creating VSC on non-existent AC bus raises error
     with pytest.raises(UserWarning, match=r"Cannot attach to bus 5, 5 does not exist"):
@@ -637,7 +624,7 @@ def test_create_vsc_nonexistent_bus():
 
 def test_create_vsc_nonexistent_dc_bus():
     net = pandapowerNet(name="test_create_vsc_nonexistent_dc_bus")
-    b1 = create_bus(net, 110)
+    (b1,) = create_buses(net, 1, 110)
 
     # Test that creating VSC on non-existent DC bus raises error
     with pytest.raises(UserWarning, match=r"Cannot attach to bus_dc 5, 5 does not exist"):
@@ -646,9 +633,8 @@ def test_create_vsc_nonexistent_dc_bus():
 
 def test_create_vsc_stacked_index_conflict():
     net = pandapowerNet(name="test_create_vsc_stacked_index_conflict")
-    b1 = create_bus(net, 110)
-    b_dc_plus = create_bus_dc(net, 100)
-    b_dc_minus = create_bus_dc(net, -100)
+    (b1,) = create_buses(net, 1, 110)
+    b_dc_plus, b_dc_minus = create_buses_dc(net, 2, [100, -100])
 
     # Create first VSC stacked
     idx1 = create_vsc_stacked(
@@ -674,9 +660,8 @@ def test_create_vsc_bipolar_legacy_control_kwargs():
     The former control parameters raise a TypeError, other additional keywords are still stored.
     """
     net = pandapowerNet(name="test_create_vsc_bipolar_legacy_control_kwargs")
-    b1 = create_bus(net, 110)
-    b_dc_plus = create_bus_dc(net, 100)
-    b_dc_minus = create_bus_dc(net, 100)
+    (b1,) = create_buses(net, 1, 110)
+    b_dc_plus, b_dc_minus = create_buses_dc(net, 2, [100, 100])
 
     for legacy in ({"control_mode": "Vac_phi"}, {"control_value_1": 1.0}, {"control_value_2": 5.0}):
         with pytest.raises(TypeError, match=next(iter(legacy))):
@@ -708,9 +693,8 @@ def test_create_vsc_bipolar_legacy_control_kwargs():
 
 def test_create_vsc_bipolar_index_conflict():
     net = pandapowerNet(name="test_create_vsc_bipolar_index_conflict")
-    b1 = create_bus(net, 110)
-    b_dc_plus = create_bus_dc(net, 100)
-    b_dc_minus = create_bus_dc(net, -100)
+    (b1,) = create_buses(net, 1, 110)
+    b_dc_plus, b_dc_minus = create_buses_dc(net, 2, [100, -100])
 
     # Create first VSC bipolar
     idx1 = create_vsc_bipolar(
@@ -733,8 +717,8 @@ def test_create_vsc_bipolar_index_conflict():
 
 def test_create_vsc_index_conflict():
     net = pandapowerNet(name="test_create_vsc_index_conflict")
-    b1 = create_bus(net, 110)
-    b_dc = create_bus_dc(net, 100)
+    (b1,) = create_buses(net, 1, 110)
+    (b_dc,) = create_buses_dc(net, 1, 100)
 
     # Create first VSC
     idx1 = create_vsc(net, bus=b1, bus_dc=b_dc, r_ohm=1.0, x_ohm=10.0, r_dc_ohm=0.5)
