@@ -6,9 +6,9 @@ import pandera as pa
 import pytest
 
 from pandapower.create import (
-    create_bus,
+    create_buses,
     create_ext_grid,
-    create_line_from_parameters,
+    create_lines,
     create_load,
     create_load_from_cosphi,
     create_series_reactor_as_impedance,
@@ -23,19 +23,19 @@ from pandapower.run import runpp
 
 def test_convenience_create_functions():
     net = pandapowerNet(name="test_convenience_create_functions")
-    b1 = create_bus(net, 110.0)
-    b2 = create_bus(net, 110.0)
-    b3 = create_bus(net, 20)
+    b1, b2, b3 = create_buses(net, 3, [110.0, 110.0, 20])
     create_ext_grid(net, b1)
-    create_line_from_parameters(
+    create_lines(
         net,
         b1,
         b2,
         length_km=20.0,
-        r_ohm_per_km=0.0487,
-        x_ohm_per_km=0.1382301,
-        c_nf_per_km=160.0,
-        max_i_ka=0.664,
+        line_params={
+            "r_ohm_per_km": 0.0487,
+            "x_ohm_per_km": 0.1382301,
+            "c_nf_per_km": 160.0,
+            "max_i_ka": 0.664,
+        },
     )
 
     l0 = create_load_from_cosphi(net, b2, 10, 0.95, "underexcited", name="load", test_kwargs="dummy_string")
@@ -111,7 +111,7 @@ def test_const_percent_values_deprecated_handling():
     # This test checks that passing const_z_percent and const_i_percent to create_load
     # sets all four percent columns and triggers the deprecation warning.
     net = pandapowerNet(name="test_const_percent_values_deprecated_handling")
-    b1 = create_bus(net, 20)
+    (b1,) = create_buses(net, 1, 20)
     with pytest.warns(DeprecationWarning, match="const_z_percent and const_i_percent will be deprecated"):
         idx = create_load(net, b1, p_mw=1.0, q_mvar=0.5, const_z_percent=11, const_i_percent=22)
     # Check that the values are set correctly

@@ -147,9 +147,7 @@ def test_nonexistent_bus():
         #  Trafo uses 'Trafo tries to attach to bus 0'
         with pytest.raises(UserWarning):  # exception has to be raised since bus doesn't exist
             func()
-    create_bus(net, 0.4)
-    create_bus(net, 0.4)
-    create_bus(net, 0.4)
+    create_buses(net, 3, 0.4)
     for func in create_functions:
         func()  # buses exist, element can be created
         # TODO: check that all functions raise same Exception

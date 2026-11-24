@@ -4,7 +4,7 @@
 import numpy as np
 import pytest
 
-from pandapower.create import create_bus, create_buses, create_gen, create_gens
+from pandapower.create import create_buses, create_gen, create_gens
 from pandapower.network import pandapowerNet
 from pandapower.network_schema.tools.validation.network_validation import validate_network
 
@@ -12,7 +12,7 @@ from pandapower.network_schema.tools.validation.network_validation import valida
 def test_create_gen():
     # Test basic generator creation with required parameters
     net = pandapowerNet(name="test_create_gen")
-    b1 = create_bus(net, 110.0)
+    (b1,) = create_buses(net, 1, 110.0)
 
     # Create generator with required parameters (bus, p_mw)
     gidx = create_gen(
@@ -35,7 +35,7 @@ def test_create_gen():
 def test_create_gen_with_optional_params():
     # Test generator creation with optional parameters
     net = pandapowerNet(name="test_create_gen_with_optional_params")
-    b1 = create_bus(net, 110.0)
+    (b1,) = create_buses(net, 1, 110.0)
 
     gidx = create_gen(
         net,
@@ -94,7 +94,7 @@ def test_create_gen_with_optional_params():
 def test_create_gen_out_of_service():
     # Test generator creation with in_service=False
     net = pandapowerNet(name="test_create_gen_out_of_service")
-    b1 = create_bus(net, 110.0)
+    (b1,) = create_buses(net, 1, 110.0)
 
     gidx = create_gen(
         net,
@@ -112,7 +112,7 @@ def test_create_gen_out_of_service():
 def test_create_gen_with_index():
     # Test generator creation with custom index
     net = pandapowerNet(name="test_create_gen_with_index")
-    b1 = create_bus(net, 110.0)
+    (b1,) = create_buses(net, 1, 110.0)
 
     gidx = create_gen(
         net,
@@ -142,9 +142,7 @@ def test_create_gen_nonexistent_bus():
 def test_create_gens():
     net = pandapowerNet(name="test_create_gens")
     # standard
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    b3 = create_bus(net, 110)
+    b1, b2, b3 = create_buses(net, 3, 110.0)
     create_gens(
         net,
         buses=[b1, b2, b3],
@@ -197,7 +195,7 @@ def test_create_gens():
 def test_create_gen_controllable():
     net = pandapowerNet(name="test_create_gen_controllable")
 
-    b1 = create_bus(net, 110)
+    (b1,) = create_buses(net, 1, 110.0)
     s1 = create_gen(net, b1, 50)
     # controllable column should not exist
     assert "controllable" not in net.gen.columns
@@ -210,7 +208,7 @@ def test_create_gen_controllable():
 def test_create_gens_controllable():
     net = pandapowerNet(name="test_create_gens_controllable")
 
-    b1 = create_bus(net, 110)
+    (b1,) = create_buses(net, 1, 110.0)
     s1 = create_gens(net, [b1], 50)[0]
     # controllable column should not exist
     assert "controllable" not in net.gen.columns
@@ -223,9 +221,7 @@ def test_create_gens_controllable():
 def test_create_gens_raise_errorexcept():
     net = pandapowerNet(name="test_create_gens_raise_errorexcept")
     # standard
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    b3 = create_bus(net, 110)
+    b1, b2, b3 = create_buses(net, 3, 110.0)
 
     with pytest.raises(UserWarning, match=r"Cannot attach to buses \{3, 4, 5\}, they do not exist"):
         create_gens(
@@ -288,7 +284,7 @@ def test_create_gens_raise_errorexcept():
 
 def test_create_gen_uses_bus_voltage_limits_as_defaults():
     net = pandapowerNet(name="test_create_gen_uses_bus_voltage_limits_as_defaults")
-    bus = create_bus(net, vn_kv=20.0, min_vm_pu=0.95, max_vm_pu=1.05)
+    (bus,) = create_buses(net, 1, vn_kv=20.0, min_vm_pu=0.95, max_vm_pu=1.05)
 
     gen = create_gen(net, bus=bus, p_mw=1.0)
 
@@ -298,7 +294,7 @@ def test_create_gen_uses_bus_voltage_limits_as_defaults():
 
 def test_create_gen_keeps_explicit_voltage_limits():
     net = pandapowerNet(name="test_create_gen_keeps_explicit_voltage_limits")
-    bus = create_bus(net, vn_kv=20.0, min_vm_pu=0.95, max_vm_pu=1.05)
+    (bus,) = create_buses(net, 1, vn_kv=20.0, min_vm_pu=0.95, max_vm_pu=1.05)
 
     gen = create_gen(
         net,
