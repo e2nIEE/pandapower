@@ -32,10 +32,14 @@ from pandapower.converter.jao._transformers import (
     _get_transformer_voltages,
     _select_rated_current_a,
 )
-from pandapower.create import create_buses, create_lines_from_parameters, create_transformers_from_parameters
+from pandapower.create import LineParams, create_buses, create_lines, create_transformers_from_parameters
 from pandapower.network import pandapowerNet
 from pandapower.toolbox.comparison import nets_equal
 from test import test_path
+
+
+def _line_params() -> LineParams:
+    return {"r_ohm_per_km": 0.1, "x_ohm_per_km": 0.1, "c_nf_per_km": 1.0, "max_i_ka": 1.0}
 
 
 def test_from_jao_with_testfile():
@@ -465,8 +469,8 @@ def test_add_bus_geo_uses_only_connected_endpoints():
     bus = create_buses(net, 1, 380, name=["SUB"])[0]
     bus_a = create_buses(net, 1, 380, name=["A"])[0]
     bus_b = create_buses(net, 1, 380, name=["B"])[0]
-    create_lines_from_parameters(net, bus, bus_a, 1.0, 0.1, 0.1, 1.0, 1.0, name=["L1"])  # bus is "from"
-    create_lines_from_parameters(net, bus_b, bus, 1.0, 0.1, 0.1, 1.0, 1.0, name=["L2"])  # bus is "to"
+    create_lines(net, bus, bus_a, 1.0, _line_params(), name=["L1"])  # bus is "from"
+    create_lines(net, bus_b, bus, 1.0, _line_params(), name=["L2"])  # bus is "to"
     net.line["EIC_Code"] = ["EIC1", "EIC2"]
     net.line["Tieline"] = [False, False]
 
@@ -497,7 +501,7 @@ def _make_disconnected_net(group_sizes):
         first_bus = len(net.bus)
         buses = create_buses(net, size, 380, name=[f"B{first_bus + i}" for i in range(size)])
         for from_bus, to_bus in itertools.pairwise(buses):
-            create_lines_from_parameters(net, from_bus, to_bus, 1.0, 0.1, 0.1, 1.0, 1.0)
+            create_lines(net, from_bus, to_bus, 1.0, _line_params())
         groups.append(set(buses))
     return net, groups
 
@@ -550,10 +554,10 @@ def test_invent_connections_keeps_own_grid_group():
     dup_x = create_buses(net, 1, 220, name=["DUP X"])[0]
     e_220 = create_buses(net, 1, 220, name=["E"])[0]
     e_380 = create_buses(net, 1, 380, name=["E"])[0]
-    create_lines_from_parameters(net, x, dup_x, 1.0, 0.1, 0.1, 1.0, 1.0)
-    create_lines_from_parameters(net, x_2, dup, 1.0, 0.1, 0.1, 1.0, 1.0)
-    create_lines_from_parameters(net, dup, e_220, 1.0, 0.1, 0.1, 1.0, 1.0)
-    create_lines_from_parameters(net, dup_x, e_380, 1.0, 0.1, 0.1, 1.0, 1.0)
+    create_lines(net, x, dup_x, 1.0, _line_params())
+    create_lines(net, x_2, dup, 1.0, _line_params())
+    create_lines(net, dup, e_220, 1.0, _line_params())
+    create_lines(net, dup_x, e_380, 1.0, _line_params())
     net.bus["zone"] = "TSO"  # the transformer step requires net.bus.zone
 
     _invent_connections_between_grid_groups(net)
@@ -570,7 +574,7 @@ def test_invent_connections_skips_buses_fused_earlier():
     create_buses(net, 1, 380, name=["Left"])
     create_buses(net, 1, 380, name=["DOUBLE"])
     create_buses(net, 1, 380, name=["Right"])
-    create_lines_from_parameters(net, [0, 2], [1, 3], 1.0, 0.1, 0.1, 1.0, 1.0)
+    create_lines(net, [0, 2], [1, 3], 1.0, _line_params())
     net.bus["zone"] = "TSO"  # the transformer step requires net.bus.zone
 
     _invent_connections_between_grid_groups(net)
@@ -589,7 +593,7 @@ def test_invent_connections_uses_other_voltage_levels_of_location():
         b_110 = create_buses(net, 1, 110, name=["DUP"])[0]
         t_h = create_buses(net, 1, template_hv, name=["T_H"])[0]
         t_l = create_buses(net, 1, template_lv, name=["T_L"])[0]
-        create_lines_from_parameters(net, a_380, a_220, 1.0, 0.1, 0.1, 1.0, 1.0)
+        create_lines(net, a_380, a_220, 1.0, _line_params())
         create_transformers_from_parameters(net, [t_h], [t_l], 1.0, template_hv, template_lv, 0, 1, 0, 0, 0)
         net.bus["zone"] = "TSO"  # the transformer step requires net.bus.zone
         return net, a_220, b_110, len(get_grid_groups(net))
@@ -813,7 +817,7 @@ def test_create_transformers_and_buses_skips_empty_transformers_sheet():
     )
     net = pandapowerNet(name="jao_line_only")
     create_buses(net, 2, 380, name=["A", "B"])
-    create_lines_from_parameters(net, 0, 1, 1.0, 0.1, 0.1, 1.0, 1.0)
+    create_lines(net, 0, 1, 1.0, _line_params())
 
     # a line-only workbook has the Transformers headers but no data rows; a completely blank
     # sheet is read without any columns
@@ -848,7 +852,7 @@ def test_fill_geo_propagates_through_transformers():
     bus0 = create_buses(net, 1, 380, name=["B0"])[0]
     bus1 = create_buses(net, 1, 380, name=["B1"])[0]
     bus2 = create_buses(net, 1, 110, name=["B2"])[0]
-    create_lines_from_parameters(net, bus0, bus1, 1.0, 0.1, 0.1, 1.0, 1.0, name=["L"])
+    create_lines(net, bus0, bus1, 1.0, _line_params(), name=["L"])
     _add_trafo(net, bus1, bus2)
     net.bus["geo"] = [geo, None, None]
 

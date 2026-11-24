@@ -10,7 +10,7 @@ import numpy as np
 import pandas as pd
 
 from pandapower.converter.jao._common import _drop_duplicates_and_join_TSO, _get_bus_idx, _raise_for_missing_buses
-from pandapower.create import create_buses, create_lines_from_parameters
+from pandapower.create import LineParams, create_buses, create_lines
 from pandapower.network import pandapowerNet
 
 logger = logging.getLogger(__name__)
@@ -74,15 +74,18 @@ def _create_lines(net: pandapowerNet, data: dict[str, pd.DataFrame], max_i_ka_fi
         keys_2 = list(zip(data[key].loc[:, ("Substation_2", "Full_name")].values, vn_kvs))  # type: ignore[arg-type]
         _raise_for_missing_buses(bus_idx, keys_1 + keys_2, key)
 
-        _ = create_lines_from_parameters(
+        line_params: LineParams = {
+            "r_ohm_per_km": data[key][("Electrical Parameters", "Resistance_R(Ω)")].values / length_km,  # type: ignore[operator]
+            "x_ohm_per_km": data[key][("Electrical Parameters", "Reactance_X(Ω)")].values / length_km,  # type: ignore[operator]
+            "c_nf_per_km": data[key][("Electrical Parameters", "Susceptance_B(μS)")].values / length_km,  # type: ignore[operator]
+            "max_i_ka": data[key][("Maximum Current Imax (A)", "Fixed")].fillna(max_i_ka_fillna * 1e3).values / 1e3,  # type: ignore[operator]
+        }
+        _ = create_lines(
             net,
             np.asarray(bus_idx.loc[keys_1], dtype=np.int64),
             np.asarray(bus_idx.loc[keys_2], dtype=np.int64),
             length_km,
-            data[key][("Electrical Parameters", "Resistance_R(Ω)")].values / length_km,  # type: ignore[operator]
-            data[key][("Electrical Parameters", "Reactance_X(Ω)")].values / length_km,  # type: ignore[operator]
-            data[key][("Electrical Parameters", "Susceptance_B(μS)")].values / length_km,  # type: ignore[operator]
-            data[key][("Maximum Current Imax (A)", "Fixed")].fillna(max_i_ka_fillna * 1e3).values / 1e3,  # type: ignore[operator]
+            line_params,
             name=data[key].xs("NE_name", level=1, axis=1).values[:, 0],  # type: ignore[call-overload]
             EIC_Code=data[key].xs("EIC_Code", level=1, axis=1).values[:, 0],  # type: ignore[call-overload]
             TSO=data[key].xs("TSO", level=1, axis=1).values[:, 0],  # type: ignore[call-overload]
