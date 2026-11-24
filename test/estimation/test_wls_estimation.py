@@ -8,10 +8,9 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_bus,
+    create_buses,
     create_ext_grid,
-    create_line,
-    create_line_from_parameters,
+    create_lines,
     create_load,
     create_measurement,
     create_sgen,
@@ -32,10 +31,9 @@ from test import test_path
 def test_2bus():
     # 1. Create network
     net = pandapowerNet(name="test_2bus")
-    create_bus(net, name="bus1", vn_kv=1.0)
-    create_bus(net, name="bus2", vn_kv=1.0)
+    create_buses(net, 2, 1.0, name=["bus1", "bus2"])
     create_ext_grid(net, 0)
-    create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=1, x_ohm_per_km=0.5, c_nf_per_km=0, max_i_ka=1)
+    create_lines(net, 0, 1, 1, line_params={"r_ohm_per_km": 1, "x_ohm_per_km": 0.5, "c_nf_per_km": 0, "max_i_ka": 1})
 
     create_measurement(net, "p", "line", 0.0111, 0.05, 0, "from")  # p12
     create_measurement(net, "q", "line", 0.06, 0.05, 0, "from")  # q12
@@ -62,13 +60,11 @@ def test_2bus():
 def test_3bus():
     # 1. Create network
     net = pandapowerNet(name="test_3bus")
-    create_bus(net, name="bus1", vn_kv=1.0)
-    create_bus(net, name="bus2", vn_kv=1.0)
-    create_bus(net, name="bus3", vn_kv=1.0)
+    create_buses(net, 3, 1.0, name=["bus1", "bus2", "bus3"])
     create_ext_grid(net, 0)
-    create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=0.7, x_ohm_per_km=0.2, c_nf_per_km=0, max_i_ka=1)
-    create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=0.8, x_ohm_per_km=0.8, c_nf_per_km=0, max_i_ka=1)
-    create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=1, x_ohm_per_km=0.6, c_nf_per_km=0, max_i_ka=1)
+    create_lines(net, 0, 1, 1, line_params={"r_ohm_per_km": 0.7, "x_ohm_per_km": 0.2, "c_nf_per_km": 0, "max_i_ka": 1})
+    create_lines(net, 0, 2, 1, line_params={"r_ohm_per_km": 0.8, "x_ohm_per_km": 0.8, "c_nf_per_km": 0, "max_i_ka": 1})
+    create_lines(net, 1, 2, 1, line_params={"r_ohm_per_km": 1, "x_ohm_per_km": 0.6, "c_nf_per_km": 0, "max_i_ka": 1})
 
     create_measurement(net, "p", "line", -0.0011, 0.01, 0, "from")  # p12
     create_measurement(net, "q", "line", 0.024, 0.01, 0, "from")  # q12
@@ -103,13 +99,11 @@ def test_3bus():
 
 def test_3bus_with_bad_data():
     net = pandapowerNet(name="test_3bus_with_bad_data")
-    create_bus(net, name="bus1", vn_kv=1.0)
-    create_bus(net, name="bus2", vn_kv=1.0)
-    create_bus(net, name="bus3", vn_kv=1.0)
+    create_buses(net, 3, 1.0, name=["bus1", "bus2", "bus3"])
     create_ext_grid(net, 0)
-    create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=0.7, x_ohm_per_km=0.2, c_nf_per_km=0, max_i_ka=1)
-    create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=0.8, x_ohm_per_km=0.8, c_nf_per_km=0, max_i_ka=1)
-    create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=1, x_ohm_per_km=0.6, c_nf_per_km=0, max_i_ka=1)
+    create_lines(net, 0, 1, 1, line_params={"r_ohm_per_km": 0.7, "x_ohm_per_km": 0.2, "c_nf_per_km": 0, "max_i_ka": 1})
+    create_lines(net, 0, 2, 1, line_params={"r_ohm_per_km": 0.8, "x_ohm_per_km": 0.8, "c_nf_per_km": 0, "max_i_ka": 1})
+    create_lines(net, 1, 2, 1, line_params={"r_ohm_per_km": 1, "x_ohm_per_km": 0.6, "c_nf_per_km": 0, "max_i_ka": 1})
 
     create_measurement(net, "p", "line", -0.0011, 0.01, 0, "from")  # p12
     create_measurement(net, "q", "line", 0.024, 0.01, 0, "from")  # q12
@@ -156,14 +150,19 @@ def test_3bus_with_out_of_service_bus():
 
     # 1. Create network
     net = pandapowerNet(name="test_3bus_with_out_of_service_bus")
-    create_bus(net, name="bus1", vn_kv=1.0)
-    create_bus(net, name="bus2", vn_kv=1.0)
-    create_bus(net, name="bus3", vn_kv=1.0)
-    create_bus(net, name="bus4", vn_kv=1.0, in_service=False)  # out-of-service bus test
+    create_buses(
+        net, 4, 1.0, name=["bus1", "bus2", "bus3", "bus4"], in_service=[True, True, True, False]
+    )  # out-of-service bus test
     create_ext_grid(net, 0)
-    create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=0.01, x_ohm_per_km=0.03, c_nf_per_km=0.0, max_i_ka=1)
-    create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=0.02, x_ohm_per_km=0.05, c_nf_per_km=0.0, max_i_ka=1)
-    create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=0.03, x_ohm_per_km=0.08, c_nf_per_km=0.0, max_i_ka=1)
+    create_lines(
+        net, 0, 1, 1, line_params={"r_ohm_per_km": 0.01, "x_ohm_per_km": 0.03, "c_nf_per_km": 0.0, "max_i_ka": 1}
+    )
+    create_lines(
+        net, 0, 2, 1, line_params={"r_ohm_per_km": 0.02, "x_ohm_per_km": 0.05, "c_nf_per_km": 0.0, "max_i_ka": 1}
+    )
+    create_lines(
+        net, 1, 2, 1, line_params={"r_ohm_per_km": 0.03, "x_ohm_per_km": 0.08, "c_nf_per_km": 0.0, "max_i_ka": 1}
+    )
 
     create_measurement(net, "v", "bus", 1.006, 0.004, 0)  # V at bus 1
     create_measurement(net, "v", "bus", 0.968, 0.004, 1)  # V at bus 2
@@ -197,14 +196,17 @@ def test_3bus_with_transformer():
 
     # 1. Create network
     net = pandapowerNet(name="test_3bus_with_transformer")
-    create_bus(net, name="bus1", vn_kv=10.0)
-    create_bus(net, name="bus2", vn_kv=10.0)
-    create_bus(net, name="bus3", vn_kv=10.0)
-    create_bus(net, name="bus4", vn_kv=110.0)
+    create_buses(net, 4, [10.0, 10.0, 10.0, 110.0], name=["bus1", "bus2", "bus3", "bus4"])
     create_ext_grid(net, bus=3, vm_pu=1.01)
-    create_line_from_parameters(net, 0, 1, 1, r_ohm_per_km=0.01, x_ohm_per_km=0.03, c_nf_per_km=0.0, max_i_ka=1)
-    create_line_from_parameters(net, 0, 2, 1, r_ohm_per_km=0.02, x_ohm_per_km=0.05, c_nf_per_km=0.0, max_i_ka=1)
-    create_line_from_parameters(net, 1, 2, 1, r_ohm_per_km=0.03, x_ohm_per_km=0.08, c_nf_per_km=0.0, max_i_ka=1)
+    create_lines(
+        net, 0, 1, 1, line_params={"r_ohm_per_km": 0.01, "x_ohm_per_km": 0.03, "c_nf_per_km": 0.0, "max_i_ka": 1}
+    )
+    create_lines(
+        net, 0, 2, 1, line_params={"r_ohm_per_km": 0.02, "x_ohm_per_km": 0.05, "c_nf_per_km": 0.0, "max_i_ka": 1}
+    )
+    create_lines(
+        net, 1, 2, 1, line_params={"r_ohm_per_km": 0.03, "x_ohm_per_km": 0.08, "c_nf_per_km": 0.0, "max_i_ka": 1}
+    )
 
     create_std_type(
         net,
@@ -285,13 +287,17 @@ def test_3bus_with_2_slacks():
     net = load_3bus_network()
     # add the same net with different slack (no galvanic connection)
     # skip bus index 4 as further stability test
-    create_bus(net, name="bus5", vn_kv=1.0, index=5)
-    create_bus(net, name="bus6", vn_kv=1.0, index=6)
-    create_bus(net, name="bus7", vn_kv=1.0, index=7)
+    create_buses(net, 3, 1.0, name=["bus5", "bus6", "bus7"], index=[5, 6, 7])
     create_ext_grid(net, 5)
-    create_line_from_parameters(net, 5, 6, 1, r_ohm_per_km=0.01, x_ohm_per_km=0.03, c_nf_per_km=0.0, max_i_ka=1)
-    create_line_from_parameters(net, 5, 7, 1, r_ohm_per_km=0.02, x_ohm_per_km=0.05, c_nf_per_km=0.0, max_i_ka=1)
-    create_line_from_parameters(net, 6, 7, 1, r_ohm_per_km=0.03, x_ohm_per_km=0.08, c_nf_per_km=0.0, max_i_ka=1)
+    create_lines(
+        net, 5, 6, 1, line_params={"r_ohm_per_km": 0.01, "x_ohm_per_km": 0.03, "c_nf_per_km": 0.0, "max_i_ka": 1}
+    )
+    create_lines(
+        net, 5, 7, 1, line_params={"r_ohm_per_km": 0.02, "x_ohm_per_km": 0.05, "c_nf_per_km": 0.0, "max_i_ka": 1}
+    )
+    create_lines(
+        net, 6, 7, 1, line_params={"r_ohm_per_km": 0.03, "x_ohm_per_km": 0.08, "c_nf_per_km": 0.0, "max_i_ka": 1}
+    )
 
     create_measurement(net, "v", "bus", 1.006, 0.004, element=5)  # V at bus 5
     create_measurement(net, "v", "bus", 0.968, 0.004, element=6)  # V at bus 6
@@ -568,14 +574,13 @@ def test_cigre_with_bad_data():
 def test_init_slack_with_multiple_transformers():
     np.random.seed(123)
     net = pandapowerNet(name="test_init_slack_with_multiple_transformers")
-    create_bus(net, 220, index=0)
-    create_bus(net, 110, index=1)
-    create_bus(net, 110, index=2)
-    create_bus(net, 110, index=3)
-    create_bus(net, 10, index=4)
-    create_bus(net, 10, index=5)
-    create_bus(net, 10, index=6)
-    create_bus(net, 10, index=7, in_service=False)
+    create_buses(
+        net,
+        8,
+        [220, 110, 110, 110, 10, 10, 10, 10],
+        index=[0, 1, 2, 3, 4, 5, 6, 7],
+        in_service=[True, True, True, True, True, True, True, False],
+    )
     create_std_type(
         net,
         {
@@ -602,10 +607,8 @@ def test_init_slack_with_multiple_transformers():
     create_transformer(net, 3, 7, std_type="63 MVA 110/10 kV v1.4.3 and older", in_service=False)
     create_transformer(net, 3, 4, std_type="63 MVA 110/10 kV v1.4.3 and older")
     create_transformer(net, 0, 1, std_type="100 MVA 220/110 kV")
-    create_line(net, 1, 2, 2.0, std_type="N2XS(FL)2Y 1x120 RM/35 64/110 kV")
-    create_line(net, 1, 3, 2.0, std_type="N2XS(FL)2Y 1x120 RM/35 64/110 kV")
-    create_line(net, 4, 5, 2.0, std_type="NA2XS2Y 1x95 RM/25 12/20 kV")
-    create_line(net, 5, 6, 2.0, std_type="NA2XS2Y 1x95 RM/25 12/20 kV")
+    create_lines(net, [1, 1], [2, 3], 2.0, line_params="N2XS(FL)2Y 1x120 RM/35 64/110 kV")
+    create_lines(net, [4, 5], [5, 6], 2.0, line_params="NA2XS2Y 1x95 RM/25 12/20 kV")
     create_load(net, 2, p_mw=5, q_mvar=3.3)
     create_load(net, 5, p_mw=0.9, q_mvar=0.5)
     create_load(net, bus=6, p_mw=0.7, q_mvar=0.3)
@@ -634,9 +637,8 @@ def test_init_slack_with_multiple_transformers():
 def test_check_existing_measurements():
     np.random.seed(2017)
     net = pandapowerNet(name="test_check_existing_measurements")
-    create_bus(net, 10.0)
-    create_bus(net, 10.0)
-    create_line(net, 0, 1, 0.5, std_type="149-AL1/24-ST1A 10.0")
+    create_buses(net, 2, 10.0)
+    create_lines(net, 0, 1, 0.5, line_params="149-AL1/24-ST1A 10.0")
     create_measurement(net, "v", "bus", 1.006, 0.004, 0)
     create_measurement(net, "v", "bus", 1.006, 0.004, 0)
 
@@ -662,18 +664,18 @@ def load_3bus_network():
 def test_network_with_trafo3w_pq():
     net = pandapowerNet(name="test_network_with_trafo3w_pq")
 
-    bus_slack = create_bus(net, vn_kv=110)
+    (bus_slack,) = create_buses(net, 1, vn_kv=110)
     create_ext_grid(net, bus=bus_slack)
 
-    bus_20_1 = create_bus(net, vn_kv=20, name="b")
+    (bus_20_1,) = create_buses(net, 1, vn_kv=20, name="b")
     create_sgen(net, bus=bus_20_1, p_mw=0.03, q_mvar=0.02)
 
-    bus_10_1 = create_bus(net, vn_kv=10)
+    (bus_10_1,) = create_buses(net, 1, vn_kv=10)
     create_sgen(net, bus=bus_10_1, p_mw=0.02, q_mvar=0.02)
 
-    bus_10_2 = create_bus(net, vn_kv=10)
+    (bus_10_2,) = create_buses(net, 1, vn_kv=10)
     create_load(net, bus=bus_10_2, p_mw=0.06, q_mvar=0.01)
-    create_line(net, from_bus=bus_10_1, to_bus=bus_10_2, std_type="149-AL1/24-ST1A 10.0", length_km=2)
+    create_lines(net, from_buses=bus_10_1, to_buses=bus_10_2, line_params="149-AL1/24-ST1A 10.0", length_km=2)
 
     create_transformer3w(net, bus_slack, bus_20_1, bus_10_1, std_type="63/25/38 MVA 110/20/10 kV")
 
@@ -711,19 +713,24 @@ def test_network_with_trafo3w_pq():
 def test_network_with_trafo3w_with_disabled_branch():
     net = pandapowerNet(name="test_network_with_trafo3w_with_disabled_branch")
 
-    bus_slack = create_bus(net, vn_kv=110)
+    (bus_slack,) = create_buses(net, 1, vn_kv=110)
     create_ext_grid(net, bus=bus_slack)
 
-    bus_20_1 = create_bus(net, vn_kv=20, name="b")
+    (bus_20_1,) = create_buses(net, 1, vn_kv=20, name="b")
     create_sgen(net, bus=bus_20_1, p_mw=0.03, q_mvar=0.02)
 
-    bus_10_1 = create_bus(net, vn_kv=10)
+    (bus_10_1,) = create_buses(net, 1, vn_kv=10)
     create_sgen(net, bus=bus_10_1, p_mw=0.02, q_mvar=0.02)
 
-    bus_10_2 = create_bus(net, vn_kv=10)
+    (bus_10_2,) = create_buses(net, 1, vn_kv=10)
     create_load(net, bus=bus_10_2, p_mw=0.06, q_mvar=0.01)
-    create_line(net, from_bus=bus_10_1, to_bus=bus_10_2, std_type="149-AL1/24-ST1A 10.0", length_km=2)
-    disabled_line = create_line(net, from_bus=bus_10_1, to_bus=bus_10_2, std_type="149-AL1/24-ST1A 10.0", length_km=2)
+    _, disabled_line = create_lines(
+        net,
+        from_buses=[bus_10_1, bus_10_1],
+        to_buses=[bus_10_2, bus_10_2],
+        line_params="149-AL1/24-ST1A 10.0",
+        length_km=2,
+    )
     net.line.at[disabled_line, "in_service"] = False
 
     create_transformer3w(net, bus_slack, bus_20_1, bus_10_1, std_type="63/25/38 MVA 110/20/10 kV")
@@ -755,13 +762,17 @@ def test_network_with_trafo3w_with_disabled_branch():
 
 def create_net_with_bb_switch():
     net = pandapowerNet(name="create_net_with_bb_switch")
-    bus1 = create_bus(net, name="bus1", vn_kv=10.0)
-    bus2 = create_bus(net, name="bus2", vn_kv=10.0)
-    bus3 = create_bus(net, name="bus3", vn_kv=10.0)
-    bus4 = create_bus(net, name="bus4", vn_kv=10.0)
-    bus5 = create_bus(net, name="bus5", vn_kv=110.0)
+    bus1, bus2, bus3, bus4, bus5 = create_buses(
+        net, 5, [10.0, 10.0, 10.0, 10.0, 110.0], name=["bus1", "bus2", "bus3", "bus4", "bus5"]
+    )
 
-    create_line_from_parameters(net, bus1, bus2, 10, r_ohm_per_km=0.59, x_ohm_per_km=0.35, c_nf_per_km=10.1, max_i_ka=1)
+    create_lines(
+        net,
+        bus1,
+        bus2,
+        10,
+        line_params={"r_ohm_per_km": 0.59, "x_ohm_per_km": 0.35, "c_nf_per_km": 10.1, "max_i_ka": 1},
+    )
     create_transformer(net, bus5, bus1, std_type="40 MVA 110/10 kV")
     create_ext_grid(net, bus=bus5, vm_pu=1.0)
     create_load(net, bus1, p_mw=0.350, q_mvar=0.100)
@@ -843,22 +854,46 @@ def test_net_with_bb_switch_fusing():
 def test_net_with_zero_injection():
     # @author: AndersLi
     net = pandapowerNet(name="test_net_with_zero_injection")
-    b1 = create_bus(net, name="Bus 1", vn_kv=220, index=1)
-    b2 = create_bus(net, name="Bus 2", vn_kv=220, index=2)
-    b3 = create_bus(net, name="Bus 3", vn_kv=220, index=3)
-    b4 = create_bus(net, name="Bus 4", vn_kv=220, index=4)
+    b1, b2, b3, b4 = create_buses(net, 4, 220, name=["Bus 1", "Bus 2", "Bus 3", "Bus 4"], index=[1, 2, 3, 4])
 
     create_ext_grid(net, b1)  # set the slack bus to bus 1
     factor = 48.4 * 2 * np.pi * 50 * 1e-9  # capacity factor
 
-    create_line_from_parameters(
-        net, 1, 2, 1, r_ohm_per_km=0.0221 * 48.4, x_ohm_per_km=0.1603 * 48.4, c_nf_per_km=0.00274 / factor, max_i_ka=1
+    create_lines(
+        net,
+        1,
+        2,
+        1,
+        line_params={
+            "r_ohm_per_km": 0.0221 * 48.4,
+            "x_ohm_per_km": 0.1603 * 48.4,
+            "c_nf_per_km": 0.00274 / factor,
+            "max_i_ka": 1,
+        },
     )
-    create_line_from_parameters(
-        net, 2, 3, 1, r_ohm_per_km=0.0428 * 48.4, x_ohm_per_km=0.242 * 48.4, c_nf_per_km=0.00384 / factor, max_i_ka=1
+    create_lines(
+        net,
+        2,
+        3,
+        1,
+        line_params={
+            "r_ohm_per_km": 0.0428 * 48.4,
+            "x_ohm_per_km": 0.242 * 48.4,
+            "c_nf_per_km": 0.00384 / factor,
+            "max_i_ka": 1,
+        },
     )
-    l3 = create_line_from_parameters(
-        net, 2, 4, 1, r_ohm_per_km=0.002 * 48.4, x_ohm_per_km=0.0111 * 48.4, c_nf_per_km=0.00018 / factor, max_i_ka=1
+    (l3,) = create_lines(
+        net,
+        2,
+        4,
+        1,
+        line_params={
+            "r_ohm_per_km": 0.002 * 48.4,
+            "x_ohm_per_km": 0.0111 * 48.4,
+            "c_nf_per_km": 0.00018 / factor,
+            "max_i_ka": 1,
+        },
     )
 
     create_measurement(net, "v", "bus", 1.063548, 0.001, b1)  # V at bus 1
@@ -888,13 +923,20 @@ def test_net_with_zero_injection():
 
 def test_zero_injection_aux_bus():
     net = pandapowerNet(name="test_zero_injection_aux_bus")
-    bus1 = create_bus(net, name="bus1", vn_kv=10.0)
-    bus2 = create_bus(net, name="bus2", vn_kv=10.0)
-    bus3 = create_bus(net, name="bus3", vn_kv=10.0)
-    bus4 = create_bus(net, name="bus4", vn_kv=110.0)
+    bus1, bus2, bus3, bus4 = create_buses(net, 4, [10.0, 10.0, 10.0, 110.0], name=["bus1", "bus2", "bus3", "bus4"])
 
-    create_line_from_parameters(net, bus1, bus2, 10, r_ohm_per_km=0.59, x_ohm_per_km=0.35, c_nf_per_km=10.1, max_i_ka=1)
-    create_line_from_parameters(net, bus2, bus3, 10, r_ohm_per_km=0.59, x_ohm_per_km=0.35, c_nf_per_km=10.1, max_i_ka=1)
+    create_lines(
+        net,
+        from_buses=[bus1, bus2],
+        to_buses=[bus2, bus3],
+        length_km=10,
+        line_params={
+            "r_ohm_per_km": 0.59,
+            "x_ohm_per_km": 0.35,
+            "c_nf_per_km": 10.1,
+            "max_i_ka": 1,
+        },
+    )
     create_transformer(net, bus4, bus1, std_type="40 MVA 110/10 kV")
     create_ext_grid(net, bus=bus4, vm_pu=1.0)
     create_load(net, bus1, p_mw=0.350, q_mvar=0.100)
@@ -945,13 +987,20 @@ def test_zero_injection_aux_bus():
 @pytest.mark.xfail
 def test_net_unobserved_island():
     net = pandapowerNet(name="test_net_unobserved_island")
-    bus1 = create_bus(net, name="bus1", vn_kv=10.0)
-    bus2 = create_bus(net, name="bus2", vn_kv=10.0)
-    bus3 = create_bus(net, name="bus3", vn_kv=10.0)
-    bus4 = create_bus(net, name="bus4", vn_kv=110.0)
+    bus1, bus2, bus3, bus4 = create_buses(net, 4, [10.0, 10.0, 10.0, 110.0], name=["bus1", "bus2", "bus3", "bus4"])
 
-    create_line_from_parameters(net, bus1, bus2, 10, r_ohm_per_km=0.59, x_ohm_per_km=0.35, c_nf_per_km=10.1, max_i_ka=1)
-    create_line_from_parameters(net, bus2, bus3, 10, r_ohm_per_km=0.59, x_ohm_per_km=0.35, c_nf_per_km=10.1, max_i_ka=1)
+    create_lines(
+        net,
+        from_buses=[bus1, bus2],
+        to_buses=[bus2, bus3],
+        length_km=10,
+        line_params={
+            "r_ohm_per_km": 0.59,
+            "x_ohm_per_km": 0.35,
+            "c_nf_per_km": 10.1,
+            "max_i_ka": 1,
+        },
+    )
     create_transformer(net, bus4, bus1, std_type="40 MVA 110/10 kV")
     create_ext_grid(net, bus=bus4, vm_pu=1.0)
     create_load(net, bus1, p_mw=0.350, q_mvar=0.100)
