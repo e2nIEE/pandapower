@@ -102,18 +102,15 @@ def _data_correction(data: dict[str, pd.DataFrame], html_str: str | None, max_i_
     data[key][loc_name] = _replace_substrings(data[key][loc_name], rename_locnames)
 
     # --- fix data in nonnull_taps
-    taps = (
-        data[key].loc[:, ("Phase Shifting Properties", "Taps used for RAO")].fillna("").astype(str).str.replace(" ", "")
-    )
-    nonnull = taps.apply(len).astype(bool)
-    nonnull_taps = taps.loc[nonnull]
-    surrounded = nonnull_taps.str.startswith("<") & nonnull_taps.str.endswith(">")
-    nonnull_taps.loc[surrounded] = nonnull_taps.loc[surrounded].str[1:-1]
-    slash_sep = (~nonnull_taps.str.contains(";")) & nonnull_taps.str.contains("/")
-    nonnull_taps.loc[slash_sep] = nonnull_taps.loc[slash_sep].str.replace("/", ";")
-    nonnull_taps.loc[nonnull_taps == "0"] = "0;0"
-    data[key].loc[nonnull, ("Phase Shifting Properties", "Taps used for RAO")] = nonnull_taps
-    data[key].loc[~nonnull, ("Phase Shifting Properties", "Taps used for RAO")] = "0;0"
+    taps_col = ("Phase Shifting Properties", "Taps used for RAO")
+    taps = data[key].loc[:, taps_col].fillna("").astype(str).str.replace(" ", "")
+    blank = taps == ""
+    surrounded = taps.str.startswith("<") & taps.str.endswith(">")
+    taps.loc[surrounded] = taps.loc[surrounded].str[1:-1]
+    slash_sep = (~taps.str.contains(";")) & taps.str.contains("/")
+    taps.loc[slash_sep] = taps.loc[slash_sep].str.replace("/", ";")
+    taps.loc[taps == "0"] = "0;0"
+    data[key][taps_col] = taps.mask(blank, "0;0")
 
     # --- phase shifter with double info
     cols = ["Phase Regulation δu (%)", "Angle Regulation δu (%)"]  # type: ignore[assignment]

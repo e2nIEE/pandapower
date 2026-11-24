@@ -231,6 +231,31 @@ def test_repair_incomplete_line_data_counts_normalized_name_candidates():
     assert pd.isna(repaired.at[4, s1])
 
 
+_JAO_LINE_COLUMNS = pd.MultiIndex.from_tuples(
+    [
+        ("Substation_1", "Full_name"),
+        ("Substation_2", "Full_name"),
+        ("Unnamed: 0", "NE_name"),
+        ("Unnamed: 1", "Voltage_level(kV)"),
+        ("Electrical Parameters", "Length_(km)"),
+        ("Electrical Parameters", "Resistance_R(Ω)"),
+        ("Electrical Parameters", "Reactance_X(Ω)"),
+        ("Electrical Parameters", "Susceptance_B(μS)"),
+        ("Maximum Current Imax (A)", "Fixed"),
+    ]
+)
+_JAO_TRAFO_COLUMNS = pd.MultiIndex.from_tuples(
+    [("Maximum Current Imax (A) primary", col) for col in ("Min", "Max", "Fixed")]
+    + [("Voltage_level(kV)", col) for col in ("Primary", "Secondary")]
+    + [
+        ("Location", "Full Name"),
+        ("Phase Shifting Properties", "Taps used for RAO"),
+        ("Phase Shifting Properties", "Phase Regulation δu (%)"),
+        ("Phase Shifting Properties", "Angle Regulation δu (%)"),
+    ]
+)
+
+
 @pytest.mark.parametrize(
     "fixed_values, expected",
     [(["1000", "\xa0"], [1000.0, 999000.0]), (["10,5", "-"], [10.5, 999000.0])],
@@ -238,45 +263,21 @@ def test_repair_incomplete_line_data_counts_normalized_name_candidates():
 def test_data_correction_imax_fixed_with_string_dtype(fixed_values, expected):
     # pandas 3 reads an all-string Imax column as the str dtype, which rejects assigning
     # parsed numbers via .loc; the values must be assigned by column key instead
-    line_columns = pd.MultiIndex.from_tuples(
-        [
-            ("Substation_1", "Full_name"),
-            ("Substation_2", "Full_name"),
-            ("Unnamed: 0", "NE_name"),
-            ("Unnamed: 1", "Voltage_level(kV)"),
-            ("Electrical Parameters", "Length_(km)"),
-            ("Electrical Parameters", "Resistance_R(Ω)"),
-            ("Electrical Parameters", "Reactance_X(Ω)"),
-            ("Electrical Parameters", "Susceptance_B(μS)"),
-            ("Maximum Current Imax (A)", "Fixed"),
-        ]
-    )
-
     def line_sheet():
         df = pd.DataFrame(
             [
                 ["A", "B", "A-B", 380, 1.0, 0.1, 0.2, 5.0, fixed_values[0]],
                 ["A", "C", "A-C", 380, 1.0, 0.1, 0.2, 5.0, fixed_values[1]],
             ],
-            columns=line_columns,
+            columns=_JAO_LINE_COLUMNS,
         )
         df[("Maximum Current Imax (A)", "Fixed")] = df[("Maximum Current Imax (A)", "Fixed")].astype("str")
         return df
 
-    trafo_columns = pd.MultiIndex.from_tuples(
-        [("Maximum Current Imax (A) primary", col) for col in ("Min", "Max", "Fixed")]
-        + [("Voltage_level(kV)", col) for col in ("Primary", "Secondary")]
-        + [
-            ("Location", "Full Name"),
-            ("Phase Shifting Properties", "Taps used for RAO"),
-            ("Phase Shifting Properties", "Phase Regulation δu (%)"),
-            ("Phase Shifting Properties", "Angle Regulation δu (%)"),
-        ]
-    )
     data = {
         "Lines": line_sheet(),
         "Tielines": line_sheet(),
-        "Transformers": pd.DataFrame(columns=trafo_columns),
+        "Transformers": pd.DataFrame(columns=_JAO_TRAFO_COLUMNS),
     }
 
     _data_correction(data, "", 999)
@@ -285,6 +286,41 @@ def test_data_correction_imax_fixed_with_string_dtype(fixed_values, expected):
         result = data[key][("Maximum Current Imax (A)", "Fixed")]
         assert result.tolist() == expected
         assert result.dtype == np.float64
+
+
+@pytest.mark.parametrize(
+    "taps_values, taps_dtype, expected",
+    [
+        ([0, 0], "int64", ["0;0", "0;0"]),
+        (["<-6;6>", "-5/5", None], "object", ["-6;6", "-5;5", "0;0"]),
+    ],
+)
+def test_data_correction_rao_taps_normalization(taps_values, taps_dtype, expected):
+    # the taps column may be read as an integer/float dtype, into which text cannot be assigned
+    # via .loc; the whole column must be replaced by the normalized text Series
+    count = len(taps_values)
+    data = {
+        "Lines": pd.DataFrame(columns=_JAO_LINE_COLUMNS),
+        "Tielines": pd.DataFrame(columns=_JAO_LINE_COLUMNS),
+        "Transformers": pd.DataFrame(
+            {
+                ("Maximum Current Imax (A) primary", "Min"): [np.nan] * count,
+                ("Maximum Current Imax (A) primary", "Max"): [np.nan] * count,
+                ("Maximum Current Imax (A) primary", "Fixed"): [1000.0] * count,
+                ("Voltage_level(kV)", "Primary"): [380.0] * count,
+                ("Voltage_level(kV)", "Secondary"): [220.0] * count,
+                ("Location", "Full Name"): [f"TR {idx}" for idx in range(count)],
+                ("Phase Shifting Properties", "Taps used for RAO"): pd.Series(taps_values, dtype=taps_dtype),
+                ("Phase Shifting Properties", "Phase Regulation δu (%)"): [0.0] * count,
+                ("Phase Shifting Properties", "Angle Regulation δu (%)"): [1.0] * count,
+            }
+        ),
+    }
+
+    _data_correction(data, "", 999)
+
+    result = data["Transformers"][("Phase Shifting Properties", "Taps used for RAO")]
+    assert result.tolist() == expected
 
 
 def test_parse_html_str_widget_id():
