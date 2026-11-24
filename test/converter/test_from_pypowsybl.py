@@ -296,7 +296,7 @@ def case_pp_custom_1(pandapower: Any) -> Any:
 
     net = pp.pandapowerNet(name="case_pp_custom_1")
 
-    mv_busbar, lv_busbar = pp.create_buses(net, 2, vn_kv=[10, 0.04], name=["10 kV", "0.4 kV"], type="b")
+    mv_busbar, lv_busbar = pp.create_buses(net, 2, vn_kv=[10, 0.4], name=["10 kV", "0.4 kV"], type="b")
 
     bus_low2, bus_low3, bus_low4, bus_low5, bus_low6 = pp.create_buses(
         net, 5, vn_kv=0.4, name=[f"low{i}" for i in range(1, 6)], type="n"
