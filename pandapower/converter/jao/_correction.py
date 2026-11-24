@@ -142,13 +142,17 @@ def _repair_incomplete_line_data(data: dict[str, pd.DataFrame]) -> None:
 
     Some JAO releases contain malformed rows, e.g. rows that only repeat an NE_name without any
     substation or electrical data, lines with one missing substation name, or lines with a missing
-    voltage level. Rows without any information are dropped, the other gaps are filled if the
-    information is unambiguous.
+    voltage level. Rows without any substation, voltage level or electrical data are dropped, the
+    other gaps are filled if the information is unambiguous.
 
     :param dict[str, pd.DataFrame] data: data provided by the excel file which will be corrected
     """
     s1, s2 = ("Substation_1", "Full_name"), ("Substation_2", "Full_name")
-    vn_col, len_col, ne_col = (None, "Voltage_level(kV)"), ("Electrical Parameters", "Length_(km)"), (None, "NE_name")
+    vn_col, ne_col = (None, "Voltage_level(kV)"), (None, "NE_name")
+    electrical_cols = [
+        ("Electrical Parameters", col)
+        for col in ("Length_(km)", "Resistance_R(Ω)", "Reactance_X(Ω)", "Susceptance_B(μS)")
+    ]
 
     # --- names and voltage levels that are known from complete rows of all sheets
     known_names: set[str] = set()
@@ -163,7 +167,7 @@ def _repair_incomplete_line_data(data: dict[str, pd.DataFrame]) -> None:
     for key in ("Lines", "Tielines"):
         df = data[key].copy()
 
-        empty = df[[s1, s2, vn_col, len_col]].isna().all(axis=1)
+        empty = df[[s1, s2, vn_col, *electrical_cols]].isna().all(axis=1)
         if empty.any():
             logger.warning(f"{key}: dropping {empty.sum()} row(s) without any data: {list(df.index[empty])}")
             df = df.drop(index=df.index[empty])

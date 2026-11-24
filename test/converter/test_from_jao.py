@@ -171,18 +171,21 @@ def test_repair_incomplete_line_data_matches_name_variants():
             ("Substation_1", "Full_name"),
             ("Substation_2", "Full_name"),
             ("Electrical Parameters", "Length_(km)"),
+            ("Electrical Parameters", "Resistance_R(Ω)"),
+            ("Electrical Parameters", "Reactance_X(Ω)"),
+            ("Electrical Parameters", "Susceptance_B(μS)"),
         ]
     )
     lines = pd.DataFrame(
         [
             # known voltage under the accent spelling of the substation name
-            ["X", 380.0, "Röhrsdorf", "Ambiguous", 10.0],
+            ["X", 380.0, "Röhrsdorf", "Ambiguous", 10.0, 0.1, 0.2, 5.0],
             # an accent/case variant of the same name must receive the same voltage
-            ["X", np.nan, "Rohrsdorf", "Ambiguous", 10.0],
+            ["X", np.nan, "Rohrsdorf", "Ambiguous", 10.0, 0.1, 0.2, 5.0],
             # makes "Ambiguous" unsuited as a source of a unique voltage
-            ["Y", 220.0, "Ambiguous", "Else", 10.0],
+            ["Y", 220.0, "Ambiguous", "Else", 10.0, 0.1, 0.2, 5.0],
             # no usable name -> voltage must remain unknown
-            ["Z", np.nan, None, "Ambiguous", 10.0],
+            ["Z", np.nan, None, "Ambiguous", 10.0, 0.1, 0.2, 5.0],
         ],
         columns=cols,
     )
@@ -206,18 +209,21 @@ def test_repair_incomplete_line_data_counts_normalized_name_candidates():
             ("Substation_1", "Full_name"),
             ("Substation_2", "Full_name"),
             ("Electrical Parameters", "Length_(km)"),
+            ("Electrical Parameters", "Resistance_R(Ω)"),
+            ("Electrical Parameters", "Reactance_X(Ω)"),
+            ("Electrical Parameters", "Susceptance_B(μS)"),
         ]
     )
     lines = pd.DataFrame(
         [
             # two spellings of the same substation, both matching the same NE_name token
-            ["X", 380.0, "KROSNO", "Else", 10.0],
-            ["X", 380.0, "Krosno", "Else", 10.0],
-            ["Y", 380.0, "Vierraden", "Else", 10.0],
+            ["X", 380.0, "KROSNO", "Else", 10.0, 0.1, 0.2, 5.0],
+            ["X", 380.0, "Krosno", "Else", 10.0, 0.1, 0.2, 5.0],
+            ["Y", 380.0, "Vierraden", "Else", 10.0, 0.1, 0.2, 5.0],
             # the two raw spellings are one location, so the name must be derived unambiguously
-            ["KROSNO - Missing", 380.0, None, "Other", 10.0],
+            ["KROSNO - Missing", 380.0, None, "Other", 10.0, 0.1, 0.2, 5.0],
             # the other endpoint is the same location, only spelled differently -> no candidate
-            ["VIERRADEN - Same", 380.0, None, "vierraden", 10.0],
+            ["VIERRADEN - Same", 380.0, None, "vierraden", 10.0, 0.1, 0.2, 5.0],
         ],
         columns=cols,
     )
@@ -229,6 +235,37 @@ def test_repair_incomplete_line_data_counts_normalized_name_candidates():
     repaired = data["Lines"]
     assert _normalize_locname(repaired.at[3, s1]) == "krosno"
     assert pd.isna(repaired.at[4, s1])
+
+
+def test_repair_incomplete_line_data_keeps_electrically_populated_rows():
+    cols = pd.MultiIndex.from_tuples(
+        [
+            (None, "NE_name"),
+            (None, "Voltage_level(kV)"),
+            ("Substation_1", "Full_name"),
+            ("Substation_2", "Full_name"),
+            ("Electrical Parameters", "Length_(km)"),
+            ("Electrical Parameters", "Resistance_R(Ω)"),
+            ("Electrical Parameters", "Reactance_X(Ω)"),
+            ("Electrical Parameters", "Susceptance_B(μS)"),
+            (None, "TSO"),
+        ]
+    )
+    lines = pd.DataFrame(
+        [
+            # metadata only, no substation, voltage or electrical data -> dropped
+            ["A-B", None, None, None, None, None, None, None, "TSO"],
+            # electrically populated rows without endpoints -> kept for downstream validation
+            ["A-B", None, None, None, None, 0.1, None, None, None],
+            ["A-B", None, None, None, None, None, None, 5.0, None],
+        ],
+        columns=cols,
+    )
+    data = {"Lines": lines, "Tielines": lines.iloc[0:0].copy()}
+
+    _repair_incomplete_line_data(data)
+
+    assert list(data["Lines"].index) == [1, 2]
 
 
 _JAO_LINE_COLUMNS = pd.MultiIndex.from_tuples(
