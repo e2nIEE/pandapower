@@ -342,7 +342,7 @@ def test_create_series_reactor_as_impedance():
     assert np.isclose(net.impedance.at[idx3, "xft0_pu"], expected_xft0_pu)
 
     # Test error case with different voltage levels
-    b7, b8 = create_buses(net, 2, 20)
+    b7, b8 = create_buses(net, 2, [110, 20])
 
     with pytest.raises(UserWarning, match="Unable to infer rated voltage"):
         create_series_reactor_as_impedance(
