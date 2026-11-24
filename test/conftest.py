@@ -46,7 +46,7 @@ def simple_network():
     (b1,) = create_buses(net, 1, name="bus1", vn_kv=10.0)
     create_ext_grid(net, b1)
     b2, b3 = create_buses(net, 2, name=["bus2", "bus3"], geodata=[(1, 2), (1, 3)], vn_kv=0.4)
-    (b4,) = create_buses(net, name="bus4", vn_kv=10.0)
+    (b4,) = create_buses(net, 1, name="bus4", vn_kv=10.0)
     create_transformer(net, b4, b2, std_type="0.25 MVA 10/0.4 kV", name=None, in_service=True, index=None)
     create_lines(net, b2, b3, 1, name="line1", line_params="NAYY 4x150 SE", geodata=np.array([[1, 2], [3, 4]]))
     create_lines(net, b1, b4, 1, name="line2", line_params="NAYY 4x150 SE")
