@@ -329,7 +329,7 @@ def _add_lines(net: pandapowerNet, bus_map, report):
             name=name,
         )
         if dss.Lines.LineCode():
-            l1["std_type"] = dss.Lines.LineCode()
+            net.line.loc[l1, "std_type"] = dss.Lines.LineCode()
         report.n_lines += 1
         i = dss.Lines.Next()
 
