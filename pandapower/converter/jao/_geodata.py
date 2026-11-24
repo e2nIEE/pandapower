@@ -11,13 +11,14 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
+from pandapower.converter.jao._locnames import _multi_str_repl
 from pandapower.network import pandapowerNet
 from pandapower.plotting import set_line_geodata_from_bus_geodata
 
 logger = logging.getLogger(__name__)
 
 
-def _parse_html_str(html_str: str) -> pd.DataFrame:
+def _parse_html_str(html_str: str, rename_locnames: list[tuple[str, str]] | None = None) -> pd.DataFrame:
     """
     Converts ths geodata from the html file (information hidden in the string), from Lines in
     particular, to a DataFrame that can be used later in _add_bus_geo()
@@ -73,6 +74,8 @@ def _parse_html_str(html_str: str) -> pd.DataFrame:
     # remove trailing whitespaces
     for col in ["EIC_Code", "name"]:
         line_geo_data[col] = line_geo_data[col].str.strip()
+    if rename_locnames:
+        line_geo_data["name"] = line_geo_data["name"].map(lambda name: _multi_str_repl(name, rename_locnames))
 
     return line_geo_data
 

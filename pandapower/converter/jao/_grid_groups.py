@@ -42,6 +42,8 @@ def drop_islanded_grid_groups(net: pandapowerNet, min_bus_number: int | str, **k
         return grid_groups.loc[grid_groups["n_buses"] < min_bus_number]
 
     grid_groups = get_grid_groups(net, **kwargs)
+    if grid_groups.empty:
+        return
 
     if min_bus_number == "unsupplied":
         slack_buses = set(net.ext_grid.loc[net.ext_grid.in_service, "bus"]) | set(
@@ -180,7 +182,8 @@ def _invent_connections_between_grid_groups(
         duplicated_row.name = "additional transformer to connect the grid"  # type: ignore[attr-defined]
         net.trafo = pd.concat([net.trafo, duplicated_row])
 
-        bus_grid_groups.loc[bus_grid_groups == grid_groups_at_location.iat[1]] = grid_groups_at_location.iat[0]
+        if duplicated_row["in_service"].iat[0]:
+            bus_grid_groups.loc[bus_grid_groups == grid_groups_at_location.iat[1]] = grid_groups_at_location.iat[0]
 
     # --- merge buses of same voltage level, different grid groups and equal name base
     bus_name_splits = net.bus.name.str.split(r"[ -/]+", expand=True)

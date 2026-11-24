@@ -11,7 +11,7 @@ import pytest
 from openpyxl import load_workbook
 
 from pandapower.converter.jao import from_jao
-from pandapower.converter.jao._common import _drop_duplicates_and_join_TSO, _get_bus_idx
+from pandapower.converter.jao._common import _drop_duplicates_and_join_TSO, _get_bus_idx, _get_float_column
 from pandapower.converter.jao._correction import _data_correction, _repair_incomplete_line_data
 from pandapower.converter.jao._geodata import (
     _add_bus_geo,
@@ -415,6 +415,7 @@ def test_data_correction_imax_fixed_with_string_dtype(fixed_values, expected):
     "taps_values, taps_dtype, expected",
     [
         ([0, 0], "int64", ["0;0", "0;0"]),
+        ([0.0, np.nan], "float64", ["0;0", "0;0"]),
         (["<-6;6>", "-5/5", None], "object", ["-6;6", "-5;5", "0;0"]),
     ],
 )
@@ -860,6 +861,242 @@ def test_fill_geo_propagates_through_transformers():
 
     assert net.bus.geo.at[bus1] == geo
     assert net.bus.geo.at[bus2] == geo
+
+
+def test_get_float_column_handles_string_dtype():
+    # a text dtype column rejects assigning the numeric fill via .loc; the non-breaking space
+    # must be replaced by a missing value before casting
+    df = pd.DataFrame({"c": pd.Series(["\xa0", "0", "1.5", np.nan], dtype="string")})
+    assert _get_float_column(df, "c").tolist() == [0.0, 0.0, 1.5, 0.0]
+
+
+def test_data_correction_keeps_rows_with_only_current_rating():
+    lines = pd.DataFrame(
+        [
+            ["A", "B", "A-B", 380, 10.0, 0.1, 0.2, 5.0, 1000.0],
+            # only the current rating is real data -> must be kept for endpoint validation
+            [None, None, "A-B current only", None, None, None, None, None, 1234.0],
+            # no real electrical data at all -> dropped even though a fallback would be filled later
+            [None, None, "A-B no data", None, None, None, None, None, np.nan],
+        ],
+        columns=_JAO_LINE_COLUMNS,
+    )
+    data = {
+        "Lines": lines,
+        "Tielines": lines.iloc[0:0].copy(),
+        "Transformers": pd.DataFrame(columns=_JAO_TRAFO_COLUMNS),
+    }
+
+    _data_correction(data, "", 999)
+
+    assert list(data["Lines"].index) == [0, 1]
+    assert data["Lines"].at[1, ("Maximum Current Imax (A)", "Fixed")] == 1234.0
+
+
+@pytest.mark.parametrize("trafos", [pd.DataFrame(), pd.DataFrame(columns=_JAO_TRAFO_COLUMNS)])
+def test_data_correction_returns_early_for_empty_transformers(trafos):
+    lines = pd.DataFrame([["A", "B", "A-B", 380, 10.0, 0.1, 0.2, 5.0, 1000.0]], columns=_JAO_LINE_COLUMNS)
+    data = {"Lines": lines, "Tielines": lines.iloc[0:0].copy(), "Transformers": trafos}
+
+    assert _data_correction(data, "html", 999) == "html"
+
+
+def test_parse_html_str_applies_locname_renames_to_decoded_names():
+    point = {"lng": [1.0, 2.0], "lat": [3.0, 4.0]}
+    args = [None] * 7
+    args[0] = [[[point]]]
+    args[6] = ["EIC Code:<b> KROSNOX</b><b>NE name: KROSNO - A: </b>"]
+    geo = {"x": {"calls": [{"method": "addPolylines", "args": args}]}}
+    html = f'<script type="application/json" data-for="htmlwidget-0123">{json.dumps(geo)}</script>'
+
+    line_geo_data = _parse_html_str(html, [("KROSNO", "Krosno")])
+
+    assert line_geo_data["name"].unique().tolist() == ["Krosno - A:"]
+    # the rename must not touch identifiers or other JSON content
+    assert line_geo_data["EIC_Code"].unique().tolist() == ["KROSNOX"]
+
+
+def test_data_correction_does_not_rewrite_html_document():
+    lines = pd.DataFrame(
+        [
+            ["KROSNO", "Else", "KROSNO - Else", 380, 10.0, 0.1, 0.2, 5.0, 1000.0],
+            ["Krosno", "Else", "Krosno - Else", 380, 10.0, 0.1, 0.2, 5.0, 1000.0],
+        ],
+        columns=_JAO_LINE_COLUMNS,
+    )
+    data = {
+        "Lines": lines,
+        "Tielines": lines.iloc[0:0].copy(),
+        "Transformers": pd.DataFrame(columns=_JAO_TRAFO_COLUMNS),
+    }
+    html = "<b>NE name: KROSNO - Else: </b>"
+
+    assert _data_correction(data, html, 999) == html
+
+
+def test_data_correction_normalizes_documented_header_variants():
+    cols = pd.MultiIndex.from_tuples(
+        [
+            ("Substation_1", "Full_name"),
+            ("Substation_2", "Full_name"),
+            ("Unnamed: 0", "NE_name"),
+            ("Unnamed: 1", "Voltage_level(kV)"),
+            ("Electrical Parameters", "Length_(km)"),
+            ("Electrical Parameters", "Resistance_R(ohm)"),
+            ("Electrical Parameters", "Reactance_X(ohm)"),
+            ("Electrical Parameters", "Susceptance_B(μS)"),
+            ("Maximum Current Imax (A)", "Fixed"),
+        ]
+    )
+    lines = pd.DataFrame([["A", "B", "A-B", 380, 10.0, "0,1", "0,2", 5.0, 1000.0]], columns=cols)
+    data = {
+        "Lines": lines,
+        "Tielines": lines.copy(),
+        "Transformers": pd.DataFrame(columns=_JAO_TRAFO_COLUMNS),
+    }
+
+    _data_correction(data, "", 999)
+
+    for key in ("Lines", "Tielines"):
+        assert ("Electrical Parameters", "Resistance_R(Ω)") in data[key].columns
+        assert ("Electrical Parameters", "Reactance_X(Ω)") in data[key].columns
+        assert data[key][("Electrical Parameters", "Resistance_R(Ω)")].iat[0] == pytest.approx(0.1)
+        assert data[key][("Electrical Parameters", "Reactance_X(Ω)")].iat[0] == pytest.approx(0.2)
+
+
+def test_data_correction_keeps_transformers_with_only_impedance_data():
+    cols = pd.MultiIndex.from_tuples(
+        list(_JAO_TRAFO_COLUMNS)
+        + [
+            ("Electrical Parameters (primary) at neutral tap", "Resistance_R(Ω)"),
+            ("Electrical Parameters (primary) at neutral tap", "Reactance_X(Ω)"),
+        ]
+    )
+    trafos = pd.DataFrame(
+        [[np.nan, np.nan, np.nan, np.nan, np.nan, "TR R only", np.nan, 0.0, 0.0, 0.1, 0.2]],
+        columns=cols,
+    )
+    data = {
+        "Lines": pd.DataFrame(columns=_JAO_LINE_COLUMNS),
+        "Tielines": pd.DataFrame(columns=_JAO_LINE_COLUMNS),
+        "Transformers": trafos,
+    }
+
+    _data_correction(data, "", 999)
+
+    # impedance data is electrical data -> keep the row so the winding voltage validator reports it
+    assert list(data["Transformers"].index) == [0]
+    bus_idx = pd.Series([0], index=pd.MultiIndex.from_arrays([["A"], [380.0]], names=["name", "vn_kv"]))
+    with pytest.raises(ValueError, match=r"\[0\]"):
+        _get_transformer_voltages(data, bus_idx)
+
+
+def test_repair_incomplete_line_data_excludes_other_endpoint_span():
+    cols = pd.MultiIndex.from_tuples(
+        [
+            (None, "NE_name"),
+            (None, "Voltage_level(kV)"),
+            ("Substation_1", "Full_name"),
+            ("Substation_2", "Full_name"),
+            ("Electrical Parameters", "Length_(km)"),
+            ("Electrical Parameters", "Resistance_R(Ω)"),
+            ("Electrical Parameters", "Reactance_X(Ω)"),
+            ("Electrical Parameters", "Susceptance_B(μS)"),
+        ]
+    )
+    lines = pd.DataFrame(
+        [
+            ["Belle - Else", 380.0, "Belle", "Else", 10.0, 0.1, 0.2, 5.0],
+            ["Belle-Epine - Else", 380.0, "Belle-Epine", "Else", 10.0, 0.1, 0.2, 5.0],
+            # "Belle" also matches inside the other endpoint's span and must not become a candidate
+            ["Belle-Epine - Else", 380.0, None, "Belle-Epine", 10.0, 0.1, 0.2, 5.0],
+        ],
+        columns=cols,
+    )
+    data = {"Lines": lines, "Tielines": lines.iloc[0:0].copy()}
+
+    _repair_incomplete_line_data(data)
+
+    assert data["Lines"].at[2, ("Substation_1", "Full_name")] == "Else"
+
+
+@pytest.mark.parametrize("min_bus_number", ["max", 6, "unsupplied"])
+def test_drop_islanded_grid_groups_empty_net(min_bus_number):
+    net = pandapowerNet(name="empty")
+
+    drop_islanded_grid_groups(net, min_bus_number)
+
+    assert len(net.bus) == 0
+
+
+def test_invent_connections_ignores_out_of_service_copies_for_group_cache():
+    net = pandapowerNet(name="jao_grid_groups")
+    net.bus["zone"] = "TSO"
+    d1h = create_buses(net, 1, 380, name=["DUP1"])[0]
+    d2h = create_buses(net, 1, 380, name=["DUP2"])[0]
+    d1l = create_buses(net, 1, 220, name=["DUP1"])[0]
+    d2l = create_buses(net, 1, 220, name=["DUP2"])[0]
+    create_lines(net, d1h, d2h, 1.0, _line_params())
+    create_lines(net, d1l, d2l, 1.0, _line_params())
+    t_h = create_buses(net, 1, 380, name=["T_H"])[0]
+    t_l = create_buses(net, 1, 220, name=["T_L"])[0]
+    create_transformers_from_parameters(net, [t_h], [t_l], 1.0, 380, 220, 0, 1, 0, 0, 0, in_service=False)
+
+    _invent_connections_between_grid_groups(net, minimal_trafo_invention=True)
+
+    # the out-of-service copies do not connect the groups, so both locations must be processed
+    assert len(net.trafo) == 3
+    assert not net.trafo.in_service.any()
+
+
+@pytest.mark.parametrize(
+    "du, dphi, expected_type, expected_percent",
+    [
+        (2.0, 0.0, "Ratio", 2.0),
+        (0.0, 0.0, None, 0.0),
+        (1e-12, 1.794, "Ideal", 0.0),
+    ],
+)
+def test_from_jao_sets_tap_changer_type_by_regulation(tmp_path, du, dphi, expected_type, expected_percent):
+    testfile = os.path.join(test_path, "converter", "jao_testfiles", "testfile.xlsx")
+    modified_testfile = tmp_path / f"testfile_tap_{du}_{dphi}.xlsx"
+    workbook = load_workbook(testfile)
+    sheet = workbook["Transformers"]
+    du_column = next(cell.column for cell in sheet[2] if "Phase Regulation" in str(cell.value))
+    dphi_column = next(cell.column for cell in sheet[2] if "Angle Regulation" in str(cell.value))
+    sheet.cell(row=3, column=du_column).value = du
+    sheet.cell(row=3, column=dphi_column).value = dphi
+    workbook.save(modified_testfile)
+
+    net = from_jao(str(modified_testfile), None, False)
+
+    if expected_type is None:
+        assert "tap_changer_type" not in net.trafo.columns or pd.isna(net.trafo.tap_changer_type.iat[0])
+    else:
+        assert net.trafo.tap_changer_type.iat[0] == expected_type
+    if expected_type == "Ideal":
+        assert net.trafo.tap_step_percent.iat[0] == 0
+    else:
+        assert net.trafo.tap_step_percent.iat[0] == pytest.approx(expected_percent)
+
+
+def test_find_trafo_locations_voltage_aware_uses_full_joined_base():
+    resolved = _find_trafo_locations(pd.Series(["TR New York 380 kV TR 404"]), ["New York 380"])
+
+    assert resolved.tolist() == ["New York 380"]
+
+
+def test_allocate_trafos_avoids_generated_name_collision():
+    cols = pd.MultiIndex.from_tuples([("Location", "Full Name"), ("Location", "TSO")])
+    data = {"Transformers": pd.DataFrame([[np.nan, "A"]], columns=cols)}
+    net = pandapowerNet(name="jao_trafos")
+    create_buses(net, 1, 220, name=["Transformer 0"])
+
+    _allocate_trafos_to_buses_and_create_buses(net, data, _get_bus_idx(net), np.array([380.0]), np.array([220.0]))
+
+    # the generated label must not collide with the explicit location name
+    assert list(net.bus.name).count("Transformer 0") == 1
+    assert "Transformer 0 (2)" in set(net.bus.name)
 
 
 if __name__ == "__main__":

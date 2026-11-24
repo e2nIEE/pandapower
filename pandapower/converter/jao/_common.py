@@ -3,6 +3,7 @@
 
 """Helpers shared by several parts of the JAO converter."""
 
+import numpy as np
 import pandas as pd
 
 from pandapower.network import pandapowerNet
@@ -32,8 +33,7 @@ def _drop_duplicates_and_join_TSO(bus_df: pd.DataFrame) -> pd.DataFrame:
 def _get_float_column(df, col_tuple, fill=0):
     """Returns a float column, replacing non-breaking spaces and missing values by ``fill``."""
     series = df.loc[:, col_tuple].copy()
-    series.loc[series == "\xa0"] = fill
-    return series.astype(float).fillna(fill)
+    return series.replace("\xa0", np.nan).astype(float).fillna(fill)
 
 
 def _raise_for_missing_buses(bus_idx: pd.Series, endpoints: list[tuple], sheet: str) -> None:

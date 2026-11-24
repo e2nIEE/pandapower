@@ -99,10 +99,11 @@ def _create_transformers_and_buses(net: pandapowerNet, data: dict[str, pd.DataFr
 
     du = _get_float_column(data[key], ("Phase Shifting Properties", "Phase Regulation δu (%)"))
     dphi = _get_float_column(data[key], ("Phase Shifting Properties", "Angle Regulation δu (%)"))
-    # ideal phase shifters have an angle step but no voltage step; the symmetrical/asymmetrical
-    # tap models need a non-zero voltage step to produce their angle shift, so they are not used
-    phase_shifter = np.isclose(du, 0) & (~np.isclose(dphi, 0))
-    tap_changer_type = np.where(phase_shifter, "Ideal", None).astype(object)
+    # a non-zero voltage step marks a ratio tap changer; an angle-only step an ideal phase shifter
+    voltage_step = ~np.isclose(du, 0)
+    phase_shifter = ~voltage_step & ~np.isclose(dphi, 0)
+    tap_changer_type = np.where(voltage_step, "Ratio", np.where(phase_shifter, "Ideal", None)).astype(object)
+    tap_step_percent = np.where(phase_shifter, 0, du)
 
     _ = create_transformers_from_parameters(
         net,
@@ -122,7 +123,7 @@ def _create_transformers_and_buses(net: pandapowerNet, data: dict[str, pd.DataFr
         tap_min=taps["tap_min"].values,
         tap_max=taps["tap_max"].values,
         tap_changer_type=tap_changer_type,
-        tap_step_percent=du,
+        tap_step_percent=tap_step_percent,
         tap_step_degree=dphi,
         name=_with_str_accessor(cast(pd.Series, data[key].loc[:, ("Location", "Full Name")])).str.strip().values,
         EIC_Code=data[key].xs("EIC_Code", level=1, axis=1).values[:, 0],  # type: ignore[call-overload]
@@ -223,10 +224,21 @@ def _allocate_trafos_to_buses_and_create_buses(
     fallback_names = pd.Series(trafo_bus_names.astype(str).str.strip().to_numpy(), index=trafo_connections.index)
     # transformers without a location name must not share one deduplication identity
     no_location = trafo_bus_names.isna().to_numpy() | (fallback_names == "").to_numpy()
-    fallback_names.loc[no_location] = [f"Transformer {i}" for i in fallback_names.index[no_location]]
-    # a nonblank fallback name is also the bus identity so that buses created in the hv pass can be
-    # found again by the refreshed bus_idx in the lv pass; blank locations stay separate
-    bus_identity = trafo_location_names.where(trafo_location_names.notna(), fallback_names.where(~no_location))
+    used_names = set(net.bus.name.dropna().astype(str)) | set(trafo_location_names.dropna().astype(str))
+    used_names |= set(fallback_names[~no_location])
+    generated_names = []
+    for idx in fallback_names.index[no_location]:
+        candidate = f"Transformer {idx}"
+        suffix = 2
+        while candidate in used_names:
+            candidate = f"Transformer {idx} ({suffix})"
+            suffix += 1
+        generated_names.append(candidate)
+        used_names.add(candidate)
+    fallback_names.loc[no_location] = generated_names
+    # nonblank fallback names keep the cross-pass reuse; blank locations get a private key
+    bus_identity = trafo_location_names.where(trafo_location_names.notna(), fallback_names)
+    bus_identity.loc[no_location] = [f"\x00{idx}" for idx in fallback_names.index[no_location]]
 
     for side in ["hv", "lv"]:
         bus_idx = _get_bus_idx(net)  # buses created in the previous pass must be reused
@@ -441,14 +453,19 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
             # --- voltage-aware matching: same name base, bus voltage equals the voltage in the name
             voltage = _parse_voltage_kv(raw_name)
             if voltage is not None:
-                base, _ = _split_name_voltage(search_key)
-                candidates = sorted({name for v, name in bus_by_base.get(base, []) if v == voltage})
-                if len(candidates) == 1:
-                    resolved_extra.at[idx] = candidates[0]
-                    logger.info(
-                        f"Transformer {raw_name!r} was matched to bus location {candidates[0]!r} "
-                        f"by name and voltage level ({voltage} kV)."
-                    )
+                for base_key in dict.fromkeys((joined_keys.at[idx], search_key)):
+                    base, _ = _split_name_voltage(base_key)
+                    if not base:
+                        continue
+                    candidates = sorted({name for v, name in bus_by_base.get(base, []) if v == voltage})
+                    if len(candidates) == 1:
+                        resolved_extra.at[idx] = candidates[0]
+                        logger.info(
+                            f"Transformer {raw_name!r} was matched to bus location {candidates[0]!r} "
+                            f"by name and voltage level ({voltage} kV)."
+                        )
+                        break
+                if resolved_extra.at[idx]:
                     continue
 
             unresolved_names.append(raw_name)

@@ -12,7 +12,6 @@ from pandas.api.types import is_object_dtype, is_string_dtype
 
 from pandapower.converter.jao._locnames import (
     _locname_display_names,
-    _multi_str_repl,
     _normalize_locname,
     _replace_locnames,
     _replace_substrings,
@@ -21,7 +20,27 @@ from pandapower.converter.jao._locnames import (
 logger = logging.getLogger(__name__)
 
 # documented second-level header variants (see doc/converter/jao-converter.csv) -> canonical label
-_vn_header_variants = {"Voltage_level (kV)": "Voltage_level(kV)", "Voltage_level [kV]": "Voltage_level(kV)"}
+_header_variants = {
+    "Voltage_level (kV)": "Voltage_level(kV)",
+    "Voltage_level [kV]": "Voltage_level(kV)",
+    "Resistance_R(ohm)": "Resistance_R(Ω)",
+    "Reactance_X(ohm)": "Reactance_X(Ω)",
+    "resistance r ohm": "Resistance_R(Ω)",
+    "reactance x ohm": "Reactance_X(Ω)",
+}
+
+
+def _rename_locnames_from_data(data: dict[str, pd.DataFrame]) -> list[tuple[str, str]]:
+    """Returns the (raw, display) location name replacements derived from the line sheets."""
+    bus_name_series = [
+        data[key][(subst, "Full_name")] for key in ["Lines", "Tielines"] for subst in ["Substation_1", "Substation_2"]
+    ]
+    locname_mapping = _locname_display_names(pd.concat(bus_name_series, ignore_index=True))
+    return sorted(
+        ((raw, disp) for raw, disp in locname_mapping.items() if raw != disp),
+        key=lambda x: len(x[0]),
+        reverse=True,
+    )
 
 
 def _data_correction(data: dict[str, pd.DataFrame], html_str: str | None, max_i_ka_fillna: float) -> str | None:
@@ -41,7 +60,7 @@ def _data_correction(data: dict[str, pd.DataFrame], html_str: str | None, max_i_
     for key in ["Lines", "Tielines"]:
         # --- correct column names
         cols = data[key].columns.to_frame().reset_index(drop=True)
-        cols[1] = cols[1].replace(_vn_header_variants)
+        cols[1] = cols[1].replace(_header_variants)
         cols.loc[cols[1] == "Voltage_level(kV)", 0] = None
         cols.loc[cols[1] == "Comment", 0] = None
         cols.loc[cols[0].str.startswith("Unnamed:").astype(bool), 0] = None
@@ -55,11 +74,13 @@ def _data_correction(data: dict[str, pd.DataFrame], html_str: str | None, max_i_
             for col_level1 in ["Length_(km)", "Resistance_R(Ω)", "Reactance_X(Ω)", "Susceptance_B(μS)", "Length_(km)"]
         ] + [("Maximum Current Imax (A)", "Fixed")]
         _float_col_comma_correction(data, key, col_names)
-        imax_col = ("Maximum Current Imax (A)", "Fixed")
-        data[key][imax_col] = data[key][imax_col].fillna(max_i_ka_fillna * 1e3)
 
     # --- repair incomplete line data
     _repair_incomplete_line_data(data)
+
+    imax_col = ("Maximum Current Imax (A)", "Fixed")
+    for key in ["Lines", "Tielines"]:
+        data[key][imax_col] = data[key][imax_col].fillna(max_i_ka_fillna * 1e3)
 
     # --- consolidate inconsistent location name spellings
     # Build the raw -> display name mapping from the bus names in the Lines and Tielines sheets.
@@ -79,10 +100,11 @@ def _data_correction(data: dict[str, pd.DataFrame], html_str: str | None, max_i_
         data[key][(None, "NE_name")] = _replace_substrings(data[key][(None, "NE_name")], rename_locnames)
         for loc_name in [("Substation_1", "Full_name"), ("Substation_2", "Full_name")]:
             data[key][loc_name] = _replace_locnames(data[key][loc_name], locname_mapping)
-    html_str = _multi_str_repl(html_str, rename_locnames)  # type: ignore[arg-type]
 
     # --- Transformer data --------------------------------
     key = "Transformers"
+    if data[key].empty:
+        return html_str
 
     # --- correct current data (some files hold non-breaking spaces) and drop rows without any
     # --- electrical data, which cannot be converted
@@ -91,6 +113,10 @@ def _data_correction(data: dict[str, pd.DataFrame], html_str: str | None, max_i_
         data[key][col] = pd.to_numeric(data[key][col].replace("\xa0", np.nan), errors="coerce")
     vn_cols = [("Voltage_level(kV)", "Primary"), ("Voltage_level(kV)", "Secondary")]
     no_data = data[key][vn_cols].isna().all(axis=1) & data[key][current_cols].isna().all(axis=1)
+    rx_cols = [col for col in data[key].columns if col[1] in ("Resistance_R(Ω)", "Reactance_X(Ω)")]
+    if rx_cols:
+        rx = data[key][rx_cols].apply(lambda s: pd.to_numeric(s.replace("\xa0", np.nan), errors="coerce"))
+        no_data &= rx.isna().all(axis=1)
     if no_data.any():
         logger.warning(
             f"Transformers: dropping {no_data.sum()} row(s) without electrical data: {list(data[key].index[no_data])}"
@@ -103,13 +129,15 @@ def _data_correction(data: dict[str, pd.DataFrame], html_str: str | None, max_i_
 
     # --- fix data in nonnull_taps
     taps_col = ("Phase Shifting Properties", "Taps used for RAO")
-    taps = data[key].loc[:, taps_col].fillna("").astype(str).str.replace(" ", "")
+    raw_taps = data[key].loc[:, taps_col]
+    numeric_zero = pd.to_numeric(raw_taps, errors="coerce").eq(0)  # type: ignore[call-overload]
+    taps = raw_taps.fillna("").astype(str).str.replace(" ", "")
     blank = taps == ""
     surrounded = taps.str.startswith("<") & taps.str.endswith(">")
     taps.loc[surrounded] = taps.loc[surrounded].str[1:-1]
     slash_sep = (~taps.str.contains(";")) & taps.str.contains("/")
     taps.loc[slash_sep] = taps.loc[slash_sep].str.replace("/", ";")
-    taps.loc[taps == "0"] = "0;0"
+    taps.loc[numeric_zero] = "0;0"
     data[key][taps_col] = taps.mask(blank, "0;0")
 
     # --- phase shifter with double info
@@ -168,7 +196,11 @@ def _repair_incomplete_line_data(data: dict[str, pd.DataFrame]) -> None:
     for key in ("Lines", "Tielines"):
         df = data[key].copy()
 
-        empty = df[[s1, s2, vn_col, *electrical_cols]].isna().all(axis=1)
+        core_cols = [s1, s2, vn_col, *electrical_cols]
+        imax_col = ("Maximum Current Imax (A)", "Fixed")
+        if imax_col in df.columns:
+            core_cols.append(imax_col)
+        empty = df[core_cols].isna().all(axis=1)
         if empty.any():
             logger.warning(f"{key}: dropping {empty.sum()} row(s) without any data: {list(df.index[empty])}")
             df = df.drop(index=df.index[empty])
@@ -178,13 +210,16 @@ def _repair_incomplete_line_data(data: dict[str, pd.DataFrame]) -> None:
             other = df.at[idx, s2] if missing == s1 else df.at[idx, s1]
             other_location = _normalize_locname(other)
             ne_key = _normalize_locname(df.at[idx, ne_col])
+            ne_key_without_other = (
+                re.sub(rf"(?<!\S){re.escape(other_location)}(?!\S)", " ", ne_key) if other_location else ne_key
+            )
             # match complete known names as whole words; hyphens and parentheses inside a name are not separators
             candidate_names = {
                 name_key: known_keys[name_key]
                 for name_key in known_keys
                 if name_key
                 and name_key != other_location
-                and re.search(rf"(?<!\S){re.escape(name_key)}(?!\S)", ne_key) is not None
+                and re.search(rf"(?<!\S){re.escape(name_key)}(?!\S)", ne_key_without_other) is not None
             }
             if len(candidate_names) == 1:
                 candidate = next(iter(candidate_names.values()))
