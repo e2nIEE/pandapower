@@ -3,13 +3,9 @@
 
 """Helpers shared by several parts of the JAO converter."""
 
-import logging
-
 import pandas as pd
 
 from pandapower.network import pandapowerNet
-
-logger = logging.getLogger(__name__)
 
 
 def _get_bus_idx(net: pandapowerNet) -> pd.Series:
@@ -18,11 +14,16 @@ def _get_bus_idx(net: pandapowerNet) -> pd.Series:
 
 
 def _drop_duplicates_and_join_TSO(bus_df: pd.DataFrame) -> pd.DataFrame:
-    """Keeps one row per (name, vn_kv) and joins the TSO strings of duplicated rows."""
+    """Keeps one row per (name, vn_kv) and joins the TSO strings of duplicated rows.
+
+    Missing TSO values are treated as absent, so a location without any TSO gets an empty zone.
+    """
     bus_df = bus_df.drop_duplicates(ignore_index=True)
     # just keep one bus per name and vn_kv. If there are multiple buses of different TSOs, join the
-    # TSO strings:
-    bus_df = bus_df.groupby(["name", "vn_kv"], as_index=False).agg({"TSO": lambda x: "/".join(x)})  # type: ignore[misc]
+    # non-empty TSO strings:
+    bus_df = bus_df.groupby(["name", "vn_kv"], as_index=False).agg(
+        {"TSO": lambda x: "/".join(str(v) for v in x.dropna() if str(v).strip())}  # type: ignore[misc]
+    )
     if bus_df.duplicated(["name", "vn_kv"]).any():
         raise AssertionError("bus_df contains duplicate names with identical vn_kv")
     return bus_df

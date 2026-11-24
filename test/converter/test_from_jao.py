@@ -11,8 +11,8 @@ import pytest
 from openpyxl import load_workbook
 
 from pandapower.converter.jao import from_jao
-from pandapower.converter.jao._common import _get_bus_idx
-from pandapower.converter.jao._correction import _repair_incomplete_line_data
+from pandapower.converter.jao._common import _drop_duplicates_and_join_TSO, _get_bus_idx
+from pandapower.converter.jao._correction import _data_correction, _repair_incomplete_line_data
 from pandapower.converter.jao._geodata import (
     _add_bus_geo,
     _fill_geo_at_one_sided_branches_without_geo_extent,
@@ -231,6 +231,62 @@ def test_repair_incomplete_line_data_counts_normalized_name_candidates():
     assert pd.isna(repaired.at[4, s1])
 
 
+@pytest.mark.parametrize(
+    "fixed_values, expected",
+    [(["1000", "\xa0"], [1000.0, 999000.0]), (["10,5", "-"], [10.5, 999000.0])],
+)
+def test_data_correction_imax_fixed_with_string_dtype(fixed_values, expected):
+    # pandas 3 reads an all-string Imax column as the str dtype, which rejects assigning
+    # parsed numbers via .loc; the values must be assigned by column key instead
+    line_columns = pd.MultiIndex.from_tuples(
+        [
+            ("Substation_1", "Full_name"),
+            ("Substation_2", "Full_name"),
+            ("Unnamed: 0", "NE_name"),
+            ("Unnamed: 1", "Voltage_level(kV)"),
+            ("Electrical Parameters", "Length_(km)"),
+            ("Electrical Parameters", "Resistance_R(Ω)"),
+            ("Electrical Parameters", "Reactance_X(Ω)"),
+            ("Electrical Parameters", "Susceptance_B(μS)"),
+            ("Maximum Current Imax (A)", "Fixed"),
+        ]
+    )
+
+    def line_sheet():
+        df = pd.DataFrame(
+            [
+                ["A", "B", "A-B", 380, 1.0, 0.1, 0.2, 5.0, fixed_values[0]],
+                ["A", "C", "A-C", 380, 1.0, 0.1, 0.2, 5.0, fixed_values[1]],
+            ],
+            columns=line_columns,
+        )
+        df[("Maximum Current Imax (A)", "Fixed")] = df[("Maximum Current Imax (A)", "Fixed")].astype("str")
+        return df
+
+    trafo_columns = pd.MultiIndex.from_tuples(
+        [("Maximum Current Imax (A) primary", col) for col in ("Min", "Max", "Fixed")]
+        + [("Voltage_level(kV)", col) for col in ("Primary", "Secondary")]
+        + [
+            ("Location", "Full Name"),
+            ("Phase Shifting Properties", "Taps used for RAO"),
+            ("Phase Shifting Properties", "Phase Regulation δu (%)"),
+            ("Phase Shifting Properties", "Angle Regulation δu (%)"),
+        ]
+    )
+    data = {
+        "Lines": line_sheet(),
+        "Tielines": line_sheet(),
+        "Transformers": pd.DataFrame(columns=trafo_columns),
+    }
+
+    _data_correction(data, "", 999)
+
+    for key in ("Lines", "Tielines"):
+        result = data[key][("Maximum Current Imax (A)", "Fixed")]
+        assert result.tolist() == expected
+        assert result.dtype == np.float64
+
+
 def test_parse_html_str_widget_id():
     point = {"lng": [1.0, 2.0], "lat": [3.0, 4.0]}
     args = [None] * 7
@@ -436,6 +492,31 @@ def test_select_rated_current_a_prefers_fixed_then_max():
     min_only = pd.DataFrame([[np.nan, np.nan, 600.0, "Min only"]], columns=cols)
     with pytest.raises(ValueError, match="Min only"):
         _select_rated_current_a(min_only)
+
+
+@pytest.mark.parametrize("dtype", [None, "string"])
+def test_drop_duplicates_and_join_ts_o_with_missing_values(dtype):
+    bus_df = pd.DataFrame(
+        [
+            ["A", 1.0, "AB"],
+            ["A", 1.0, None],
+            ["A", 1.0, "CD"],
+            ["B", 1.0, None],
+            ["B", 1.0, ""],
+        ],
+        columns=["name", "vn_kv", "TSO"],
+    )
+    if dtype is not None:
+        bus_df = bus_df.astype({"TSO": dtype})
+
+    joined = _drop_duplicates_and_join_TSO(bus_df)
+
+    # missing TSO values are ignored, non-empty ones keep the existing slash-join behavior and a
+    # location without any TSO gets an empty zone
+    assert joined.to_dict("records") == [
+        {"name": "A", "vn_kv": 1.0, "TSO": "AB/CD"},
+        {"name": "B", "vn_kv": 1.0, "TSO": ""},
+    ]
 
 
 def test_get_transformer_voltages_rejects_missing_voltage_level():

@@ -50,19 +50,13 @@ def _data_correction(data: dict[str, pd.DataFrame], html_str: str | None, max_i_
         data[key].columns = pd.MultiIndex.from_arrays(cols.values.T.tolist())
 
         # --- correct comma separation and cast to floats
-        data[key].loc[:, ("Maximum Current Imax (A)", "Fixed")] = (
-            data[key]
-            .loc[:, ("Maximum Current Imax (A)", "Fixed")]
-            .replace("\xa0", max_i_ka_fillna * 1e3)
-            .replace("-", max_i_ka_fillna * 1e3)
-            .replace(" ", max_i_ka_fillna * 1e3)
-            .infer_objects(copy=False)  # type: ignore[call-arg]
-        )
         col_names = [
             ("Electrical Parameters", col_level1)
             for col_level1 in ["Length_(km)", "Resistance_R(Ω)", "Reactance_X(Ω)", "Susceptance_B(μS)", "Length_(km)"]
         ] + [("Maximum Current Imax (A)", "Fixed")]
         _float_col_comma_correction(data, key, col_names)
+        imax_col = ("Maximum Current Imax (A)", "Fixed")
+        data[key][imax_col] = data[key][imax_col].fillna(max_i_ka_fillna * 1e3)
 
     # --- repair incomplete line data
     _repair_incomplete_line_data(data)

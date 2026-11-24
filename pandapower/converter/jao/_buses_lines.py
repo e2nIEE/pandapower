@@ -26,6 +26,13 @@ def _create_buses_from_line_data(net: pandapowerNet, data: dict[str, pd.DataFram
     bus_df_empty = pd.DataFrame({"name": "", "vn_kv": 0.0, "TSO": ""}, index=[])
     bus_df = deepcopy(bus_df_empty)
     for key in ["Lines", "Tielines"]:
+        tso = data[key][(None, "TSO")]
+        missing_tso = tso.fillna("").astype(str).str.strip().eq("")
+        if missing_tso.any():
+            logger.warning(
+                f"{key}: {missing_tso.sum()} row(s) have no TSO value and get an empty bus zone: "
+                f"{list(data[key].index[missing_tso])}"
+            )
         for subst in ["Substation_1", "Substation_2"]:
             data_col_tuples = [(subst, "Full_name"), (None, "Voltage_level(kV)"), (None, "TSO")]
             to_add = data[key].loc[:, data_col_tuples].set_axis(bus_df.columns, axis="columns")
