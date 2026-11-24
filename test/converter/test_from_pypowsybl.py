@@ -294,16 +294,13 @@ def case_custom_3(pyp: Any) -> Any:
 def case_pp_custom_1(pandapower: Any) -> Any:
     pp = pandapower
 
-    net = pp.create_empty_network()
+    net = pp.pandapowerNet(name="case_pp_custom_1")
 
-    mv_busbar = pp.create_bus(net, vn_kv=10, name="10 kV", type="b")
-    lv_busbar = pp.create_bus(net, vn_kv=0.4, name="0.4 kV", type="b")
+    mv_busbar, lv_busbar = pp.create_buses(net, 2, vn_kv=[10, 0.04], name=["10 kV", "0.4 kV"], type="b")
 
-    bus_low2 = pp.create_bus(net, vn_kv=0.4, name="low1", type="n")
-    bus_low3 = pp.create_bus(net, vn_kv=0.4, name="low2", type="n")
-    bus_low4 = pp.create_bus(net, vn_kv=0.4, name="low3", type="n")
-    bus_low5 = pp.create_bus(net, vn_kv=0.4, name="low4", type="n")
-    bus_low6 = pp.create_bus(net, vn_kv=0.4, name="low5", type="n")
+    bus_low2, bus_low3, bus_low4, bus_low5, bus_low6 = pp.create_buses(
+        net, 5, vn_kv=0.4, name=[f"low{i}" for i in range(1, 6)], type="n"
+    )
 
     pp.create_gen(
         net,

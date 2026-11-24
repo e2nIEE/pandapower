@@ -25,9 +25,9 @@ from dataclasses import dataclass, field
 import numpy as np
 
 from pandapower.create import (
-    create_bus,
+    create_buses,
     create_ext_grid,
-    create_line_from_parameters,
+    create_lines,
     create_load,
     create_shunt,
     create_switch,
@@ -249,7 +249,7 @@ def _add_buses(net: pandapowerNet, report):
                 "set 'VoltageBases' and call 'CalcVoltageBases' in the master"
             )
         report.bus_phases[name.lower()] = len([n for n in dss.Bus.Nodes() if n != 0])
-        bus_map[name.lower()] = create_bus(net, vn_kv=vn_kv, name=name)
+        bus_map[name.lower()] = create_buses(net, 1, vn_kv=vn_kv, name=name)[0]
     return bus_map
 
 
@@ -315,18 +315,18 @@ def _add_lines(net: pandapowerNet, bus_map, report):
 
         # The OpenDSS LineCode names the physical conductor; carry it through as
         # pandapower's std_type so the conductor identity survives the import.
-        create_line_from_parameters(
+        l1 = create_lines(
             net,
-            from_bus=f,
-            to_bus=t,
+            from_buses=f,
+            to_buses=t,
             length_km=length_km,
-            r_ohm_per_km=r1 / km,
-            x_ohm_per_km=x1 / km,
-            c_nf_per_km=c1 / km,
-            max_i_ka=dss.Lines.NormAmps() / 1000.0,
-            std_type=dss.Lines.LineCode() or None,
+            line_params=dss.Lines.LineCode() or None,
             name=name,
         )
+        l1["r_ohm_per_km"] = (r1 / km,)
+        l1["x_ohm_per_km"] = (x1 / km,)
+        l1["c_nf_per_km"] = (c1 / km,)
+        l1["max_i_ka"] = (dss.Lines.NormAmps() / 1000.0,)
         report.n_lines += 1
         i = dss.Lines.Next()
 
@@ -359,15 +359,17 @@ def _add_reactors(net: pandapowerNet, bus_map, report):
             continue
 
         max_i_ka = dss.CktElement.NormalAmps() / 1000.0
-        create_line_from_parameters(
+        create_lines(
             net,
-            from_bus=f,
-            to_bus=t,
+            from_buses=f,
+            to_buses=t,
             length_km=1.0,
-            r_ohm_per_km=dss.Reactors.R(),
-            x_ohm_per_km=dss.Reactors.X(),
-            c_nf_per_km=0.0,
-            max_i_ka=max_i_ka if max_i_ka > 0 else 10.0,
+            line_params={
+                "r_ohm_per_km": dss.Reactors.R(),
+                "x_ohm_per_km": dss.Reactors.X(),
+                "c_nf_per_km": 0.0,
+                "max_i_ka": max_i_ka if max_i_ka > 0 else 10.0,
+            },
             name=name,
         )
         report.n_reactors += 1

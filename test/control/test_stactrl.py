@@ -13,11 +13,10 @@ from pandas import DataFrame
 from pandapower.control.controller.station_control import BinarySearchControl, DroopControl
 from pandapower.control.util.auxiliary import create_q_capability_characteristics_object
 from pandapower.create import (
-    create_bus,
     create_buses,
     create_ext_grid,
     create_impedance,
-    create_line,
+    create_lines,
     create_load,
     create_sgen,
     create_transformer,
@@ -34,13 +33,12 @@ logger = logging.getLogger(__name__)
 @pytest.fixture
 def simple_test_net():
     net = pandapowerNet(name="simple_test_net")
-    create_bus(net, 110)
-    create_buses(net, 2, 20)
+    create_buses(net, 3, [110, 20, 20])
     create_ext_grid(net, 0)
     create_transformer(net, 0, 1, "63 MVA 110/20 kV")
     create_load(net, 1, 3, 0.1)
     create_sgen(net, 2, p_mw=2.0, sn_mva=10, name="sgen1")
-    create_line(net, 1, 2, length_km=0.1, std_type="NAYY 4x50 SE")
+    create_lines(net, 1, 2, length_km=0.1, line_params="NAYY 4x50 SE")
     return net
 
 
