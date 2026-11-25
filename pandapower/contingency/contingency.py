@@ -124,6 +124,7 @@ def run_contingency(
             flagging. Their observed N-1 loading extrema are still reported, for example in `net.res_line`.
             "cause_element": element ("line", "trafo", "trafo3w") that causes max. loading of this element
             "cause_index": index of the element ("line", "trafo", "trafo3w") that causes max. loading of this element
+            If no valid N-1 loading was observed, these are ``None`` and ``-1``, respectively.
         contingency_evaluation_function: function to use for power flow calculation, default runpp
 
     Returns:
@@ -155,7 +156,7 @@ def run_contingency(
             {
                 "causes_overloading": np.zeros_like(net[element].index.values, dtype=bool),
                 "cause_element": np.empty_like(net[element].index.values, dtype=object),
-                "cause_index": np.empty_like(net[element].index.values, dtype=np.int64),
+                "cause_index": np.full_like(net[element].index.values, -1, dtype=np.int64),
             }
         )
     result_variables = {
@@ -440,6 +441,7 @@ def _update_contingency_results(
                 continue
             val = res_table[var].values
             if nminus1:
+                valid = net[element]["in_service"].values & ~np.isnan(val)
                 if var == "loading_percent":
                     limit_column = (
                         "max_loading_percent_nminus1"
@@ -452,7 +454,8 @@ def _update_contingency_results(
                             contingency_results[cause_element]["causes_overloading"][
                                 contingency_results[cause_element]["index"] == cause_index
                             ] = True
-                    max_mask = val > contingency_results[element].get("max_loading_percent", np.full_like(val, -1))
+                    previous_max = contingency_results[element].get("max_loading_percent", np.nan)
+                    max_mask = valid & (np.isnan(previous_max) | (val > previous_max))
                     if np.any(max_mask):
                         contingency_results[element]["cause_index"][max_mask] = cause_index
                         contingency_results[element]["cause_element"][max_mask] = cause_element
@@ -462,7 +465,7 @@ def _update_contingency_results(
                         val,
                         contingency_results[element].setdefault(key, np.full_like(val, np.nan, dtype=np.float64)),
                         out=contingency_results[element][key],
-                        where=net[element]["in_service"].values & ~np.isnan(val),
+                        where=valid,
                     )
             else:
                 contingency_results[element][var] = val
