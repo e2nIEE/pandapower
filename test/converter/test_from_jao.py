@@ -781,6 +781,18 @@ def test_find_trafo_locations_falls_back_to_bare_name_without_qualified_bus():
     assert resolved.tolist() == ["Meeden"]
 
 
+def test_find_trafo_locations_keeps_full_name_over_partial_qualified_match():
+    # a full-name station match must not be overridden by a longest-token qualified match
+    resolved = _find_trafo_locations(
+        pd.Series(["TR New York 380kV", "TR New York 380kV TR 402"]), ["New York", "York 380"]
+    )
+    assert resolved.tolist() == ["New York", "New York"]
+
+    # the longest-token fallback still applies when the joined name is not a station
+    resolved = _find_trafo_locations(pd.Series(["TR New York 380kV"]), ["York", "York 380"])
+    assert resolved.tolist() == ["York 380"]
+
+
 def test_select_rated_current_a_prefers_fixed_then_max():
     cols = pd.MultiIndex.from_tuples(
         [
@@ -935,6 +947,25 @@ def test_allocate_trafos_keeps_other_side_at_bare_location():
     assert (net.bus.name.at[hv], net.bus.vn_kv.at[hv]) == ("Meeden 380", 380.0)
     assert (net.bus.name.at[lv], net.bus.vn_kv.at[lv]) == ("Meeden", 220.0)
     assert len(net.bus) == 3
+
+
+def test_allocate_trafos_keeps_other_side_at_qualified_location():
+    cols = pd.MultiIndex.from_tuples([("Location", "Full Name"), ("Location", "TSO")])
+    data = {"Transformers": pd.DataFrame([["TR Meeden 380kV TR 402", "TSO"]], columns=cols)}
+    net = pandapowerNet(name="jao_trafos")
+    create_buses(net, 2, vn_kv=[220.0, 380.0], name=["Meeden 220", "Meeden 380"])
+
+    conn = _allocate_trafos_to_buses_and_create_buses(
+        net, data, _get_bus_idx(net), np.array([380.0]), np.array([220.0])
+    )
+
+    hv = conn.hv_bus.iat[0]
+    lv = conn.lv_bus.iat[0]
+    # the explicit 380 kV name selects the qualified hv bus, while the 220 kV winding reuses the
+    # existing qualified station bus instead of creating a misnamed "Meeden 380" bus at 220 kV
+    assert (net.bus.name.at[hv], net.bus.vn_kv.at[hv]) == ("Meeden 380", 380.0)
+    assert (net.bus.name.at[lv], net.bus.vn_kv.at[lv]) == ("Meeden 220", 220.0)
+    assert len(net.bus) == 2
 
 
 def test_allocate_trafos_keeps_blank_locations_separate():

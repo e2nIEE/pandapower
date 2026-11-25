@@ -257,12 +257,13 @@ def _allocate_trafos_to_buses_and_create_buses(
             f"trafo_{side}_to_bus_deviation",
         )
         # a voltage-qualified identity must not force the other, farther side onto a bus with that
-        # qualified name; use the bare location there if it exists at the qualified voltage
-        bare_name_by_vn: dict[tuple[str, float], str] = {}
+        # qualified name; use the location bus at the winding voltage if it exists
+        bus_name_by_base_vn: dict[tuple[str, float], str] = {}
         for bus_name, bus_vn in bus_idx.index:
             bus_base, bus_qual = _split_name_voltage(_normalize_locname(bus_name))
-            if bus_qual is None:
-                bare_name_by_vn.setdefault((bus_base, bus_vn), bus_name)
+            if bus_qual is not None and not 60 <= bus_qual <= 800:
+                continue
+            bus_name_by_base_vn.setdefault((bus_base, bus_vn), bus_name)
         side_identity = bus_identity.copy()
         for idx, ident in bus_identity.items():
             if not isinstance(ident, str):
@@ -270,14 +271,14 @@ def _allocate_trafos_to_buses_and_create_buses(
             base_key, qual_vn = _split_name_voltage(_normalize_locname(ident))
             if qual_vn is None or not 60 <= qual_vn <= 800:
                 continue
-            ambiguous_bare = bare_name_by_vn.get((base_key, qual_vn))
-            if ambiguous_bare is None:
-                continue
             other = "lv" if side == "hv" else "hv"
             own_vn = float(cast(float, trafo_connections.at[idx, trafo_vn_col]))
             other_vn = float(cast(float, trafo_connections.at[idx, f"vn_{other}_kv"]))
-            if abs(own_vn - qual_vn) > abs(other_vn - qual_vn):
-                side_identity.at[idx] = ambiguous_bare
+            if abs(own_vn - qual_vn) <= abs(other_vn - qual_vn):
+                continue
+            location_bus = bus_name_by_base_vn.get((base_key, own_vn))
+            if location_bus is not None:
+                side_identity.at[idx] = location_bus
         side_display_names = side_identity.copy()
         side_display_names.loc[no_location] = fallback_names.loc[no_location]
         name_vn_series = pd.Series(tuple(zip(side_identity, trafo_connections[trafo_vn_col])))
@@ -439,9 +440,11 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
         voltage = _parse_voltage_kv(trafo_bus_names.at[idx])
         if voltage is None:
             continue
-        for base_key in dict.fromkeys(
-            (joined_keys.at[idx], longest_keys.at[idx] or _normalize_locname(trafo_bus_names.at[idx]))
-        ):
+        # a partial longest-token match must not override an existing full-name station match
+        base_keys = [joined_keys.at[idx]]
+        if not joined_in_buses.at[idx]:
+            base_keys.append(longest_keys.at[idx] or _normalize_locname(trafo_bus_names.at[idx]))
+        for base_key in dict.fromkeys(base_keys):
             base, _ = _split_name_voltage(base_key)
             if not base:
                 continue
