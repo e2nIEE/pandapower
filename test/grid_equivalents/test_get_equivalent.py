@@ -8,11 +8,10 @@ import pytest
 from pandapower.control import ConstControl
 from pandapower.control.util.auxiliary import create_trafo_characteristic_object
 from pandapower.create import (
-    create_bus,
     create_buses,
     create_ext_grid,
     create_group,
-    create_line,
+    create_lines,
     create_load,
     create_motor,
     create_poly_cost,
@@ -72,9 +71,14 @@ def create_test_net():
         create_load(net, load_bus, 1.2)
 
     # lines
-    for i in range(6):
-        create_line(net, i, i + 1, 1.1, "NA2XS2Y 1x185 RM/25 12/20 kV")
-    create_line(net, 0, 6, 3.2, "NA2XS2Y 1x185 RM/25 12/20 kV")
+    create_lines(
+        net,
+        from_buses=list(range(6)),
+        to_buses=list(range(1, 7)),
+        length_km=1.1,
+        line_params="NA2XS2Y 1x185 RM/25 12/20 kV",
+    )
+    create_lines(net, 0, 6, 3.2, line_params="NA2XS2Y 1x185 RM/25 12/20 kV")
 
     # runpp and return
     runpp(net, calculate_voltage_angles=True)
@@ -551,7 +555,7 @@ def test_retain_original_internal_indices():
 def test_switch_sgens():
     net = case9()
     replace_gen_by_sgen(net)
-    create_bus(net, 345)
+    create_buses(net, 1, 345)
     create_switch(net, 9, 1, "b")
     create_sgen(net, 9, 10, 10)
     runpp(net)
@@ -707,8 +711,7 @@ def test_sgen_bswitch():
 
     net = case9()
     replace_gen_by_sgen(net)
-    create_bus(net, 345)
-    create_bus(net, 345)
+    create_buses(net, 2, 345)
     create_sgen(net, 9, 10)
     create_sgen(net, 10, 5, in_service=False)
     create_switch(net, 1, 9, "b")
