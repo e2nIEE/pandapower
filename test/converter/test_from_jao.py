@@ -640,6 +640,45 @@ def test_invent_connections_excludes_generated_blank_location_labels():
     assert len(net.trafo) == n_trafos
 
 
+def test_invent_connections_does_not_fuse_generated_blank_location_labels():
+    net = pandapowerNet(name="jao_grid_groups")
+    # a single-token station whose name is also a token of the generated label below
+    station = create_buses(net, 1, 380, name=["Transformer"])[0]
+    left = create_buses(net, 1, 380, name=["Left"])[0]
+    create_lines(net, station, left, 1.0, _line_params())
+    blank_380 = create_buses(net, 1, 380, name=["Transformer 0"])[0]
+    blank_110 = create_buses(net, 1, 110, name=["Transformer 0"])[0]
+    create_transformers_from_parameters(net, [blank_380], [blank_110], 1.0, 380, 110, 0, 1, 0, 0, 0, name=[""])
+    right = create_buses(net, 1, 110, name=["Right"])[0]
+    create_lines(net, blank_110, right, 1.0, _line_params())
+    net.bus["zone"] = "TSO"
+
+    _invent_connections_between_grid_groups(net)
+
+    # the generated label is no station identity, so the blank bus must survive
+    assert len(net.bus) == 5
+    assert net.bus.name.at[blank_380] == "Transformer 0"
+
+
+def test_invent_connections_fuses_close_name_only_at_same_voltage():
+    net = pandapowerNet(name="jao_grid_groups")
+    caen = create_buses(net, 1, 380, name=["CAEN"])[0]
+    dr_hv = create_buses(net, 1, 380, name=["DRONNIERE (LA)"])[0]
+    dr_lv = create_buses(net, 1, 110, name=["DRONNIERE (LA)"])[0]
+    create_transformers_from_parameters(
+        net, [dr_hv], [dr_lv], 1.0, 380, 110, 0, 1, 0, 0, 0, name=["TR DRONNIERE (LA) 380/110 1"]
+    )
+    net.bus["zone"] = "TSO"
+
+    _invent_connections_between_grid_groups(net)
+
+    # only the 380 kV counterpart is fused into CAEN; the 110 kV bus keeps the transformer
+    assert len(net.bus) == 2
+    assert len(net.trafo) == 1
+    assert net.trafo.hv_bus.iat[0] == caen
+    assert net.trafo.lv_bus.iat[0] == dr_lv
+
+
 def test_invent_connections_keeps_suffix_normalization_for_known_stations():
     net = pandapowerNet(name="jao_grid_groups")
     dup = create_buses(net, 1, 380, name=["DUP"])[0]
@@ -702,6 +741,14 @@ def test_find_trafo_locations_accepts_all_missing_location_column():
     assert resolved.isna().all()
 
 
+def test_find_trafo_locations_accepts_numeric_only_names():
+    resolved = _find_trafo_locations(pd.Series([123.0, np.nan]), ["123.0", "456.0"])
+
+    # non-missing numbers are usable as names; the missing row stays unresolved
+    assert resolved.iat[0] == "123.0"
+    assert pd.isna(resolved.iat[1])
+
+
 def test_find_trafo_locations_keeps_suffix_token_frames_aligned():
     # one case-insensitive suffix split keeps both token frames aligned, so a noise token after a
     # suffix is still dropped; uppercase suffixes like -A2 keep working
@@ -710,6 +757,28 @@ def test_find_trafo_locations_keeps_suffix_token_frames_aligned():
     )
 
     assert resolved.tolist() == ["Byczyna", "New York", "Byczyna"]
+
+
+def test_find_trafo_locations_splits_unicode_whitespace():
+    resolved = _find_trafo_locations(
+        pd.Series(["TR\u00a0CHELM", "TR\tCHELM", "TR\u00a0BYCZYNA-td3"]), ["CHELM", "Byczyna"]
+    )
+
+    # non-breaking spaces and tabs separate the noise prefix without breaking suffix matching
+    assert resolved.tolist() == ["CHELM", "CHELM", "Byczyna"]
+
+
+def test_find_trafo_locations_prefers_unique_qualified_match():
+    # an explicit-voltage name must win over a bare bus name that also exists at that voltage
+    resolved = _find_trafo_locations(pd.Series(["TR Meeden 380kV TR 402"]), ["Meeden", "Meeden 220", "Meeden 380"])
+
+    assert resolved.tolist() == ["Meeden 380"]
+
+
+def test_find_trafo_locations_falls_back_to_bare_name_without_qualified_bus():
+    resolved = _find_trafo_locations(pd.Series(["TR Meeden 380kV TR 402"]), ["Meeden"])
+
+    assert resolved.tolist() == ["Meeden"]
 
 
 def test_select_rated_current_a_prefers_fixed_then_max():
@@ -829,6 +898,43 @@ def test_allocate_trafos_reuses_fallback_buses_across_passes():
     assert len(net.bus) == 4
     assert len(unknown_220) == 1
     assert conn.hv_bus.iat[0] == conn.lv_bus.iat[1] == unknown_220[0]
+
+
+def test_allocate_trafos_reuses_equivalent_fallback_spellings():
+    cols = pd.MultiIndex.from_tuples([("Location", "Full Name"), ("Location", "TSO")])
+    data = {"Transformers": pd.DataFrame([["Röhrsdorf", "T1"], ["Rohrsdorf", "T2"]], columns=cols)}
+    net = pandapowerNet(name="jao_trafos")
+    create_buses(net, 1, 380, name=["Existing"])
+
+    conn = _allocate_trafos_to_buses_and_create_buses(
+        net, data, _get_bus_idx(net), np.array([380.0, 220.0]), np.array([110.0, 380.0])
+    )
+
+    # equivalent spellings share one identity, so the second lv side reuses the first hv bus
+    created_names = set(net.bus.name) - {"Existing"}
+    assert len(net.bus) == 4
+    assert len(created_names) == 1
+    assert next(iter(created_names)) in {"Röhrsdorf", "Rohrsdorf"}
+    assert conn.hv_bus.iat[0] == conn.lv_bus.iat[1]
+
+
+def test_allocate_trafos_keeps_other_side_at_bare_location():
+    cols = pd.MultiIndex.from_tuples([("Location", "Full Name"), ("Location", "TSO")])
+    data = {"Transformers": pd.DataFrame([["TR Meeden 380kV TR 402", "TSO"]], columns=cols)}
+    net = pandapowerNet(name="jao_trafos")
+    create_buses(net, 3, vn_kv=[380.0, 220.0, 380.0], name=["Meeden", "Meeden", "Meeden 380"])
+
+    conn = _allocate_trafos_to_buses_and_create_buses(
+        net, data, _get_bus_idx(net), np.array([400.0]), np.array([220.0])
+    )
+
+    hv = conn.hv_bus.iat[0]
+    lv = conn.lv_bus.iat[0]
+    # the explicit 380 kV in the name selects the qualified hv bus, while the 220 kV side
+    # keeps the bare site bus instead of creating a misnamed "Meeden 380" bus at 220 kV
+    assert (net.bus.name.at[hv], net.bus.vn_kv.at[hv]) == ("Meeden 380", 380.0)
+    assert (net.bus.name.at[lv], net.bus.vn_kv.at[lv]) == ("Meeden", 220.0)
+    assert len(net.bus) == 3
 
 
 def test_allocate_trafos_keeps_blank_locations_separate():

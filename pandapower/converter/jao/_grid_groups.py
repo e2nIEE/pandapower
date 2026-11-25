@@ -102,7 +102,7 @@ def _invent_connections_between_grid_groups(
     # instead of their label, so their labels are never normalized onto a real station. Known
     # stations keep the " (n)" suffix normalization.
     location_names = pd.Series(bus_idx.index.get_level_values(0))
-    blank_location = pd.Series(False, index=location_names.index)
+    blank_location_buses: set[int] = set()
     if "name" in net.trafo.columns:
         trafo_location = net.trafo.name.astype(object)
         blank_location_buses = {
@@ -112,7 +112,7 @@ def _invent_connections_between_grid_groups(
             ].itertuples(index=False)
             for bus in (hv_bus, lv_bus)
         }
-        blank_location = pd.Series(bus_idx.values).isin(blank_location_buses)
+    blank_location = pd.Series(bus_idx.values).isin(blank_location_buses)
     normalized_names = location_names.str.replace(r"(.) \([0-9]+\)", r"\1", regex=True)
     location_names = location_names.where(blank_location, normalized_names)
     bus_idx.index = pd.MultiIndex.from_arrays(
@@ -211,7 +211,8 @@ def _invent_connections_between_grid_groups(
             continue
         other_group = bus_grid_groups.drop(idx) != bus_grid_groups.at[idx]
         same_vn = net.bus.drop(idx).vn_kv == net.bus.vn_kv.at[idx]
-        is_fuse_candidate = same_name_base & other_group & same_vn
+        is_blank_bus = same_name_base.index.isin(blank_location_buses)
+        is_fuse_candidate = same_name_base & other_group & same_vn & ~is_blank_bus
         if not any(is_fuse_candidate):
             continue
         to_fuse = bus_grid_groups.drop(idx).loc[is_fuse_candidate].drop_duplicates()
@@ -231,6 +232,8 @@ def _invent_connections_between_grid_groups(
     ]:
         b1 = net.bus.index[net.bus.name == name1]
         b2 = net.bus.index[net.bus.name == name2]
+        if len(b1) == 1:
+            b2 = b2[net.bus.vn_kv.loc[b2] == net.bus.vn_kv.at[b1[0]]]
         if len(b1) == 1 and len(b2) >= 1:
             fuse_buses(net, b1[0], set(b2))
             bus_grid_groups = bus_grid_groups.drop(b2)

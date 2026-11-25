@@ -18,6 +18,7 @@ from pandapower.converter.jao._common import (
     _get_float_column,
 )
 from pandapower.converter.jao._locnames import (
+    _locname_display_names,
     _normalize_locname,
     _parse_voltage_kv,
     _split_name_voltage,
@@ -29,14 +30,15 @@ logger = logging.getLogger(__name__)
 
 
 def _with_str_accessor(series: pd.Series) -> pd.Series:
-    """Returns the series as object dtype if its dtype does not support the .str accessor.
+    """Returns a string-valued series if its dtype does not support the .str accessor.
 
-    Missing values are preserved, so that a missing name stays distinguishable from the
-    string "nan". String-like dtypes are returned unchanged.
+    Non-missing values are converted with str(), so that numeric-only columns can use the
+    .str accessor. Missing values are preserved, so that a missing name stays distinguishable
+    from the string "nan". String-like dtypes are returned unchanged.
     """
     if is_string_dtype(series):
         return series
-    return series.astype(object)
+    return series.astype(str).where(series.notna())
 
 
 def _select_rated_current_a(trafos: pd.DataFrame) -> pd.Series:
@@ -224,6 +226,11 @@ def _allocate_trafos_to_buses_and_create_buses(
     fallback_names = pd.Series(trafo_bus_names.astype(str).str.strip().to_numpy(), index=trafo_connections.index)
     # transformers without a location name must not share one deduplication identity
     no_location = trafo_bus_names.isna().to_numpy() | (fallback_names == "").to_numpy()
+    # equivalent nonblank fallback spellings share one display spelling, so that the lookup and
+    # the bus creation use the same identity in both transformer passes
+    nonblank_fallbacks = fallback_names[~no_location]
+    fallback_display_names = _locname_display_names(nonblank_fallbacks)
+    fallback_names.loc[~no_location] = nonblank_fallbacks.map(fallback_display_names)
     used_names = set(net.bus.name.dropna().astype(str)) | set(trafo_location_names.dropna().astype(str))
     used_names |= set(fallback_names[~no_location])
     generated_names = []
@@ -249,7 +256,31 @@ def _allocate_trafos_to_buses_and_create_buses(
             f"{side}_rel_deviation",
             f"trafo_{side}_to_bus_deviation",
         )
-        name_vn_series = pd.Series(tuple(zip(bus_identity, trafo_connections[trafo_vn_col])))
+        # a voltage-qualified identity must not force the other, farther side onto a bus with that
+        # qualified name; use the bare location there if it exists at the qualified voltage
+        bare_name_by_vn: dict[tuple[str, float], str] = {}
+        for bus_name, bus_vn in bus_idx.index:
+            bus_base, bus_qual = _split_name_voltage(_normalize_locname(bus_name))
+            if bus_qual is None:
+                bare_name_by_vn.setdefault((bus_base, bus_vn), bus_name)
+        side_identity = bus_identity.copy()
+        for idx, ident in bus_identity.items():
+            if not isinstance(ident, str):
+                continue
+            base_key, qual_vn = _split_name_voltage(_normalize_locname(ident))
+            if qual_vn is None or not 60 <= qual_vn <= 800:
+                continue
+            ambiguous_bare = bare_name_by_vn.get((base_key, qual_vn))
+            if ambiguous_bare is None:
+                continue
+            other = "lv" if side == "hv" else "hv"
+            own_vn = float(cast(float, trafo_connections.at[idx, trafo_vn_col]))
+            other_vn = float(cast(float, trafo_connections.at[idx, f"vn_{other}_kv"]))
+            if abs(own_vn - qual_vn) > abs(other_vn - qual_vn):
+                side_identity.at[idx] = ambiguous_bare
+        side_display_names = side_identity.copy()
+        side_display_names.loc[no_location] = fallback_names.loc[no_location]
+        name_vn_series = pd.Series(tuple(zip(side_identity, trafo_connections[trafo_vn_col])))
         isin = name_vn_series.isin(bus_idx.index).to_numpy()
         has_name = trafo_location_names.notna().to_numpy()
         trafo_connections[has_dev_col] = ~isin
@@ -262,19 +293,18 @@ def _allocate_trafos_to_buses_and_create_buses(
 
         # --- resolved but no exact (name, vn) match: code to find bus locations with vn deviation
         need_nearest = ~isin & has_name
+        nearest_names = side_identity.loc[need_nearest]
         next_vn = np.array(
             [
-                bus_idx.loc[tln.name].index.values[
-                    (pd.Series(bus_idx.loc[tln.name].index) - getattr(tln, trafo_vn_col)).abs().idxmin()
-                ]
-                for tln in trafo_connections.loc[need_nearest, ["name", trafo_vn_col]].itertuples()
+                bus_idx.loc[name].index.values[(pd.Series(bus_idx.loc[name].index) - vn).abs().idxmin()]
+                for name, vn in zip(nearest_names, trafo_connections.loc[need_nearest, trafo_vn_col])
             ]
         )
         trafo_connections.loc[need_nearest, next_col] = next_vn
         rel_dev = np.abs(next_vn - trafo_connections.loc[need_nearest, trafo_vn_col].values) / next_vn
         trafo_connections.loc[need_nearest, rel_dev_col] = rel_dev
         trafo_connections.loc[need_nearest, bus_col] = bus_idx.loc[
-            list(zip(trafo_connections.loc[need_nearest, "name"], trafo_connections.loc[need_nearest, next_col]))
+            list(zip(nearest_names, trafo_connections.loc[need_nearest, next_col]))
         ].values
 
         # --- create buses to avoid too large vn deviations between nodes and transformers
@@ -282,7 +312,7 @@ def _allocate_trafos_to_buses_and_create_buses(
         new_bus_data = pd.DataFrame(
             {
                 "vn_kv": trafo_connections.loc[need_bus_creation, trafo_vn_col].values,
-                "name": trafo_connections.loc[need_bus_creation, "name"].fillna(fallback_names).values,
+                "name": side_display_names.loc[need_bus_creation].values,
                 "TSO": data[key].loc[need_bus_creation, ("Location", "TSO")].values,
             }
         )
@@ -373,9 +403,9 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
     for name in bus_location_names:
         bus_key_to_name.setdefault(_normalize_locname(name), name)
 
-    # --- split strings at " " separators to remove impeding parts for identifying the location
-    # --- names
-    suffix_pattern = r"(?i)[ ]+|-A[0-9]+|-TD[0-9]+|-PF[0-9]+"
+    # --- split strings at whitespace separators to remove impeding parts for identifying the
+    # --- location names
+    suffix_pattern = r"(?i)\s+|-A[0-9]+|-TD[0-9]+|-PF[0-9]+"
     trafo_bus_names_expended = trafo_bus_names.str.split(suffix_pattern, expand=True).fillna("").replace(" ", "")
     trafo_bus_names_expended_lower = trafo_bus_names_expended.map(str.lower)
 
@@ -403,12 +433,34 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
     joined_in_buses = joined_keys.isin(bus_key_to_name)
     longest_part_in_buses = longest_keys.isin(bus_key_to_name)
 
+    # --- explicit-voltage names prefer a uniquely matching voltage-qualified bus location
+    resolved_from_voltage = pd.Series("", index=trafo_bus_names_longest_part.index)
+    for idx in resolved_from_voltage.index:
+        voltage = _parse_voltage_kv(trafo_bus_names.at[idx])
+        if voltage is None:
+            continue
+        for base_key in dict.fromkeys(
+            (joined_keys.at[idx], longest_keys.at[idx] or _normalize_locname(trafo_bus_names.at[idx]))
+        ):
+            base, _ = _split_name_voltage(base_key)
+            if not base:
+                continue
+            qualified_key = f"{base} {voltage}"
+            if qualified_key in bus_key_to_name:
+                resolved_from_voltage.at[idx] = bus_key_to_name[qualified_key]
+                logger.info(
+                    f"Transformer {trafo_bus_names.at[idx]!r} was matched to bus location "
+                    f"{bus_key_to_name[qualified_key]!r} by name and voltage level ({voltage} kV)."
+                )
+                break
+    voltage_resolved = resolved_from_voltage.astype(bool)
+
     # --- resolve glued noise prefixes, e.g. "PSTMIKULOWA" -> "MIKULOWA"
     def _strip_glued_prefix(part: str) -> str:
         stripped = re.sub(r"^(?:PST|TR|TFO)(?=[A-Za-z]{3,})", "", part)
         return stripped if stripped != part else ""
 
-    unresolved = ~(joined_in_buses | longest_part_in_buses)
+    unresolved = ~(joined_in_buses | longest_part_in_buses | voltage_resolved)
     resolved_from_glued = pd.Series("", index=trafo_bus_names_longest_part.index)
     for idx in trafo_bus_names_longest_part.index[unresolved]:
         for part in [p for p in trafo_bus_names_expended.loc[idx] if p]:
@@ -419,7 +471,7 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
     glued_in_buses = resolved_from_glued.astype(bool)
 
     # --- further attempts for still unresolved names: fuzzy matching and voltage-aware matching
-    unresolved = ~(joined_in_buses | longest_part_in_buses | glued_in_buses)
+    unresolved = ~(joined_in_buses | longest_part_in_buses | glued_in_buses | voltage_resolved)
     bus_by_base: dict[str, list[tuple[int | None, str]]] = {}
     for bus_key, bus_name in bus_key_to_name.items():
         base, voltage = _split_name_voltage(bus_key)
@@ -482,5 +534,6 @@ def _find_trafo_locations(trafo_bus_names, bus_location_names):
     trafo_location_names = trafo_location_names.where(~joined_in_buses, joined_keys.map(bus_key_to_name))
     trafo_location_names = trafo_location_names.where(~glued_in_buses, resolved_from_glued)
     trafo_location_names = trafo_location_names.where(~resolved_extra.astype(bool), resolved_extra)
+    trafo_location_names = trafo_location_names.where(~voltage_resolved, resolved_from_voltage)
 
     return trafo_location_names
