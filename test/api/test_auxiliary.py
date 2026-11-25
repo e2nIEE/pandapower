@@ -679,9 +679,13 @@ def test_sum_by_group(shape):
     first_val = np.array([1.0, 2.0, 3.0, 10.0, 5.0]).reshape(shape)
     second_val = 10 * first_val
     buses, first_sum, second_sum = _sum_by_group(bus, first_val, second_val)
+    expected_first = np.array([7.0, 10.0, 4.0]).reshape(shape)
+    expected_second = np.array([70.0, 100.0, 40.0]).reshape(shape)
     assert np.array_equal(buses, [0, 1, 2])
-    assert np.allclose(first_sum, np.array([7.0, 10.0, 4.0]).reshape(shape))
-    assert np.allclose(second_sum, np.array([70.0, 100.0, 40.0]).reshape(shape))
+    assert first_sum.shape == expected_first.shape
+    assert second_sum.shape == expected_second.shape
+    assert np.allclose(first_sum, expected_first)
+    assert np.allclose(second_sum, expected_second)
 
 
 if __name__ == "__main__":
