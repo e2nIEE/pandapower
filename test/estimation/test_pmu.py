@@ -4,7 +4,14 @@
 import numpy as np
 import pytest
 
-from pandapower.create import create_bus, create_ext_grid, create_line, create_load, create_sgen, create_transformer3w
+from pandapower.create import (
+    create_buses,
+    create_ext_grid,
+    create_lines,
+    create_load,
+    create_sgen,
+    create_transformer3w,
+)
 from pandapower.estimation import estimate
 from pandapower.estimation.util import add_virtual_pmu_meas_from_loadflow
 from pandapower.network import pandapowerNet
@@ -32,18 +39,18 @@ def test_pmu_case14():
 def test_pmu_with_trafo3w():
     net = pandapowerNet(name="test_pmu_with_trafo3w")
 
-    bus_slack = create_bus(net, vn_kv=110)
+    (bus_slack,) = create_buses(net, 1, vn_kv=110)
     create_ext_grid(net, bus=bus_slack)
 
-    bus_20_1 = create_bus(net, vn_kv=20, name="b")
+    (bus_20_1,) = create_buses(net, 1, vn_kv=20, name="b")
     create_sgen(net, bus=bus_20_1, p_mw=0.03, q_mvar=0.02)
 
-    bus_10_1 = create_bus(net, vn_kv=10)
+    (bus_10_1,) = create_buses(net, 1, vn_kv=10)
     create_sgen(net, bus=bus_10_1, p_mw=0.02, q_mvar=0.02)
 
-    bus_10_2 = create_bus(net, vn_kv=10)
+    (bus_10_2,) = create_buses(net, 1, vn_kv=10)
     create_load(net, bus=bus_10_2, p_mw=0.06, q_mvar=0.01)
-    create_line(net, from_bus=bus_10_1, to_bus=bus_10_2, std_type="149-AL1/24-ST1A 10.0", length_km=2)
+    create_lines(net, from_buses=bus_10_1, to_buses=bus_10_2, line_params="149-AL1/24-ST1A 10.0", length_km=2)
 
     create_transformer3w(net, bus_slack, bus_20_1, bus_10_1, std_type="63/25/38 MVA 110/20/10 kV")
 
