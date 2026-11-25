@@ -115,7 +115,7 @@ def _data_correction(
 
     # --- fix Locations
     loc_name = ("Location", "Full Name")
-    data[key][loc_name] = _replace_substrings(data[key][loc_name], rename_locnames)
+    data[key][loc_name] = _replace_substrings(data[key][loc_name], rename_locnames, whole_tokens=True)
 
     # --- fix data in nonnull_taps
     taps_col = ("Phase Shifting Properties", "Taps used for RAO")

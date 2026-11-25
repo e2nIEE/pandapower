@@ -969,6 +969,31 @@ def test_data_correction_returns_post_repair_locname_mapping():
     assert line_geo_data["name"].unique().tolist() == ["Röhrsdorf - Else:"]
 
 
+def test_data_correction_does_not_replace_inside_longer_trafo_token():
+    lines = pd.DataFrame(
+        [
+            ["X", "X NORD", "X - X NORD", 380, 1.0, 0.1, 0.2, 5.0, 1000.0],
+            ["X.", "X NORD", "X. - X NORD", 380, 1.0, 0.1, 0.2, 5.0, 1000.0],
+        ],
+        columns=_JAO_LINE_COLUMNS,
+    )
+    trafos = pd.DataFrame(
+        [
+            [np.nan, np.nan, 1000.0, 380.0, 110.0, "TR X.NORD", "0;0", 0.0, 0.0],
+            [np.nan, np.nan, 1000.0, 380.0, 110.0, "TR X.", "0;0", 0.0, 0.0],
+        ],
+        columns=_JAO_TRAFO_COLUMNS,
+    )
+    data = {"Lines": lines, "Tielines": lines.iloc[0:0].copy(), "Transformers": trafos}
+
+    _, rename_locnames = _data_correction(data, "", 999)
+
+    assert ("X.", "X") in rename_locnames
+    locations = data["Transformers"][("Location", "Full Name")]
+    # the mapping may not rewrite the station token inside a longer transformer name
+    assert locations.tolist() == ["TR X.NORD", "TR X"]
+
+
 def test_data_correction_normalizes_documented_header_variants():
     cols = pd.MultiIndex.from_tuples(
         [

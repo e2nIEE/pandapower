@@ -84,13 +84,27 @@ def _replace_locnames(names: pd.Series, mapping: dict[str, str]) -> pd.Series:
     return stripped.map(lambda name: mapping.get(name, name) if isinstance(name, str) else name)
 
 
-def _replace_substrings(names: pd.Series, repl: list[tuple]) -> pd.Series:
-    """Strips and applies substring replacements to all non-missing string values of a Series."""
-    return names.map(lambda st: _multi_str_repl(st.strip(), repl) if isinstance(st, str) else st)
+def _replace_substrings(names: pd.Series, repl: list[tuple], whole_tokens: bool = False) -> pd.Series:
+    """Strips and applies substring replacements to all non-missing string values of a Series.
+
+    With ``whole_tokens``, a replacement whose old text starts or ends with a non-word character is
+    only applied at a word boundary, so that e.g. a mapping "X." -> "X" leaves "X.NORD" unchanged.
+    """
+    return names.map(lambda st: _multi_str_repl(st.strip(), repl, whole_tokens) if isinstance(st, str) else st)
 
 
-def _multi_str_repl(st: str, repl: list[tuple]) -> str:
+def _multi_str_repl(st: str, repl: list[tuple], whole_tokens: bool = False) -> str:
     """Applies a list of (old, new) substring replacements to a string."""
     for old, new in repl:
-        st = st.replace(old, new)
+        if not whole_tokens:
+            st = st.replace(old, new)
+            continue
+        if not old:
+            continue
+        left = r"(?<!\w)" if not re.match(r"\w", old[0]) else ""
+        right = r"(?!\w)" if not re.match(r"\w", old[-1]) else ""
+        if left or right:
+            st = re.sub(rf"{left}{re.escape(old)}{right}", new.replace("\\", "\\\\"), st)
+        else:
+            st = st.replace(old, new)
     return st
