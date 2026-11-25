@@ -410,10 +410,12 @@ def test_opf_sgen_voltage():
         [2, 3],
         1,
         name="line2",
-        r_ohm_per_km=0.876,
-        c_nf_per_km=260.0,
-        max_i_ka=0.123,
-        x_ohm_per_km=0.1159876,
+        line_params={
+            "r_ohm_per_km": 0.876,
+            "c_nf_per_km": 260.0,
+            "max_i_ka": 0.123,
+            "x_ohm_per_km": 0.1159876,
+        },
         max_loading_percent=1000000,
     )
 
@@ -595,7 +597,7 @@ def test_unconstrained_line():
 
     # create net
     net = pandapowerNet(name="test_unconstrained_line")
-    create_buses(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=[10.0, 0.4])
+    create_buses(net, 2, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=[10.0, 0.4])
     create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15, max_q_mvar=0.05, min_q_mvar=-0.05)
     create_ext_grid(net, 0)
     create_load(net, 1, p_mw=0.02, controllable=False)
@@ -763,17 +765,31 @@ def test_opf_varying_max_line_loading():
     create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=0.1)
     create_lines(
         net,
-        [1, 1],
-        [2, 3],
         1,
-        name=["line1", "line2"],
+        2,
+        1,
+        name="line1",
         line_params={
             "r_ohm_per_km": 0.876,
             "c_nf_per_km": 260.0,
             "max_i_ka": 0.200,
             "x_ohm_per_km": 0.1159876,
         },
-        max_loading_percent=[20, 10],
+        max_loading_percent=20,
+    )
+    create_lines(
+        net,
+        1,
+        3,
+        1,
+        name="line2",
+        line_params={
+            "r_ohm_per_km": 0.876,
+            "c_nf_per_km": 260.0,
+            "max_i_ka": 0.100,
+            "x_ohm_per_km": 0.1159876,
+        },
+        max_loading_percent=10,
     )
 
     # run OPF
