@@ -119,8 +119,9 @@ def run_contingency(
             `causes_overloading`, `cause_element`, `cause_index`, table `res_line` with columns
             `max_temperature_degree_celsius`, `min_temperature_degree_celsius` (if `tdpf` set to True)
             "causes_overloading": does this element, when defining the N-1 case, cause overloading of other elements?
-            the overloading is defined by net.line["max_loading_percent_nminus1"] (if set) or
-            net.line["max_loading_percent"]
+            Overload thresholds come from the element table, for example `net.line["max_loading_percent_nminus1"]`
+            when present or `net.line["max_loading_percent"]`. Elements without a threshold are skipped for overload
+            flagging. Their observed N-1 loading extrema are still reported, for example in `net.res_line`.
             "cause_element": element ("line", "trafo", "trafo3w") that causes max. loading of this element
             "cause_index": index of the element ("line", "trafo", "trafo3w") that causes max. loading of this element
         contingency_evaluation_function: function to use for power flow calculation, default runpp
@@ -440,18 +441,17 @@ def _update_contingency_results(
             val = res_table[var].values
             if nminus1:
                 if var == "loading_percent":
-                    s = (
+                    limit_column = (
                         "max_loading_percent_nminus1"
                         if "max_loading_percent_nminus1" in net[element].columns
                         else "max_loading_percent"
                     )
-                    # this part with cause_mask and max_mask is not very efficient nor orderly
-                    loading_limit = net[element].loc[contingency_results[element]["index"], s].values
-                    cause_mask = val > loading_limit
-                    if np.any(cause_mask):
-                        contingency_results[cause_element]["causes_overloading"][
-                            contingency_results[cause_element]["index"] == cause_index
-                        ] = True
+                    if limit_column in net[element].columns:
+                        loading_limit = net[element].loc[contingency_results[element]["index"], limit_column].values
+                        if np.any(val > loading_limit):
+                            contingency_results[cause_element]["causes_overloading"][
+                                contingency_results[cause_element]["index"] == cause_index
+                            ] = True
                     max_mask = val > contingency_results[element].get("max_loading_percent", np.full_like(val, -1))
                     if np.any(max_mask):
                         contingency_results[element]["cause_index"][max_mask] = cause_index

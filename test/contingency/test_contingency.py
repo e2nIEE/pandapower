@@ -66,6 +66,28 @@ def test_contingency():
     report_contingency_results(element_limits, res)
 
 
+@pytest.mark.parametrize("nminus1_limit", [None, 1.0])
+def test_contingency_without_base_loading_limit(nminus1_limit):
+    net = case9()
+    outage = net.line.index[1]
+    nminus1_cases = {"line": {"index": [outage]}}
+    net.line["max_loading_percent"] = np.nan
+    if nminus1_limit is not None:
+        net.line["max_loading_percent_nminus1"] = nminus1_limit
+
+    expected = run_contingency(net, nminus1_cases, numba=False, write_to_net=False, raise_errors=True)["line"]
+    net.line.drop(columns="max_loading_percent", inplace=True)
+    actual = run_contingency(net, nminus1_cases, numba=False, write_to_net=False, raise_errors=True)["line"]
+
+    for key in ("min_loading_percent", "max_loading_percent", "causes_overloading"):
+        np.testing.assert_array_equal(actual[key], expected[key])
+    observed = np.isfinite(actual["max_loading_percent"])
+    assert observed.any()
+    for key in ("cause_element", "cause_index"):
+        np.testing.assert_array_equal(actual[key][observed], expected[key][observed])
+    assert actual["causes_overloading"][actual["index"] == outage].item() == (nminus1_limit is not None)
+
+
 def test_contingency_parallel(get_net):
     net = copy.deepcopy(get_net)
     nminus1_cases = {"line": {"index": net.line.index.values}}
