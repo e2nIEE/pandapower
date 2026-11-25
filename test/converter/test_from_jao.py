@@ -1176,6 +1176,37 @@ def test_data_correction_does_not_replace_inside_longer_trafo_token():
     assert locations.tolist() == ["TR X.NORD", "TR X"]
 
 
+def test_data_correction_does_not_apply_reversed_mapping_inside_longer_trafo_token():
+    lines = pd.DataFrame(
+        [
+            ["X.", "X NORD", "X. - X NORD", 380, 1.0, 0.1, 0.2, 5.0, 1000.0],
+            ["X.", "XNORD", "X. - XNORD", 380, 1.0, 0.1, 0.2, 5.0, 1000.0],
+            ["X.", "X NORD", "X. - X NORD", 380, 1.0, 0.1, 0.2, 5.0, 1000.0],
+            ["X", "XNORD", "X - XNORD", 380, 1.0, 0.1, 0.2, 5.0, 1000.0],
+        ],
+        columns=_JAO_LINE_COLUMNS,
+    )
+    trafos = pd.DataFrame(
+        [
+            [np.nan, np.nan, 1000.0, 380.0, 110.0, "TR XNORD-A1", "0;0", 0.0, 0.0],
+            [np.nan, np.nan, 1000.0, 380.0, 110.0, "TR X", "0;0", 0.0, 0.0],
+        ],
+        columns=_JAO_TRAFO_COLUMNS,
+    )
+    data = {"Lines": lines, "Tielines": lines.iloc[0:0].copy(), "Transformers": trafos}
+
+    _, rename_locnames = _data_correction(data, "", 999)
+
+    # "X." is the more frequent spelling, so the mapping direction is X -> X.
+    assert ("X", "X.") in rename_locnames
+    locations = data["Transformers"][("Location", "Full Name")]
+    assert locations.tolist() == ["TR XNORD-A1", "TR X."]
+
+    # without the corruption, the transformer still resolves to XNORD, not to X NORD
+    bus_names = set(data["Lines"][("Substation_1", "Full_name")]) | set(data["Lines"][("Substation_2", "Full_name")])
+    assert _find_trafo_locations(locations, bus_names).tolist() == ["XNORD", "X."]
+
+
 def test_data_correction_normalizes_documented_header_variants():
     cols = pd.MultiIndex.from_tuples(
         [
