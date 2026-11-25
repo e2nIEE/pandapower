@@ -262,9 +262,10 @@ def _repair_incomplete_line_data(data: dict[str, pd.DataFrame]) -> None:
 
         for idx in df.index[df[vn_col].isna()]:
             lookup_keys = [_normalize_locname(name) for name in (df.at[idx, s1], df.at[idx, s2]) if not pd.isna(name)]
-            vns = {next(iter(name_vns[key])) for key in lookup_keys if len(name_vns.get(key, ())) == 1}
-            if len(vns) == 1:
-                df.at[idx, vn_col] = vns.pop()
+            observed_vns = [name_vns.get(lookup_key, set()) for lookup_key in lookup_keys]
+            shared_vns = set.intersection(*observed_vns) if observed_vns else set()
+            if len(shared_vns) == 1:
+                df.at[idx, vn_col] = shared_vns.pop()
                 logger.warning(f"{key} row {idx}: missing Voltage_level(kV) set to {df.at[idx, vn_col]}")
 
         data[key] = df

@@ -97,9 +97,24 @@ def _invent_connections_between_grid_groups(
         [pd.Series(group, index=buses) for group, buses in zip(grid_groups.index, grid_groups.buses)]
     ).sort_index()
 
-    # treat for example "Wuergau" equally as "Wuergau (2)":
+    # treat for example "Wuergau" equally as "Wuergau (2)". Transformers without a location name
+    # get generated bus labels. Exclude those buses by the blank source location (provenance)
+    # instead of their label, so their labels are never normalized onto a real station. Known
+    # stations keep the " (n)" suffix normalization.
     location_names = pd.Series(bus_idx.index.get_level_values(0))
-    location_names = location_names.str.replace(r"(.) \([0-9]+\)", r"\1", regex=True)
+    blank_location = pd.Series(False, index=location_names.index)
+    if "name" in net.trafo.columns:
+        trafo_location = net.trafo.name.astype(object)
+        blank_location_buses = {
+            bus
+            for hv_bus, lv_bus in net.trafo.loc[
+                trafo_location.isna() | trafo_location.eq(""), ["hv_bus", "lv_bus"]
+            ].itertuples(index=False)
+            for bus in (hv_bus, lv_bus)
+        }
+        blank_location = pd.Series(bus_idx.values).isin(blank_location_buses)
+    normalized_names = location_names.str.replace(r"(.) \([0-9]+\)", r"\1", regex=True)
+    location_names = location_names.where(blank_location, normalized_names)
     bus_idx.index = pd.MultiIndex.from_arrays(
         [location_names.values, bus_idx.index.get_level_values(1).to_numpy()], names=bus_idx.index.names
     )

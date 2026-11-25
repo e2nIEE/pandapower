@@ -615,6 +615,51 @@ def test_invent_connections_uses_other_voltage_levels_of_location():
     assert len(get_grid_groups(net)) == n_groups
 
 
+def test_invent_connections_excludes_generated_blank_location_labels():
+    net = pandapowerNet(name="jao_grid_groups")
+    # grid group A: a real station named like the generated label of a blank transformer
+    station = create_buses(net, 1, 380, name=["Transformer 0"])[0]
+    left = create_buses(net, 1, 380, name=["Left"])[0]
+    create_lines(net, station, left, 1.0, _line_params())
+    # grid group B: the blank-location transformer gets the colliding label "Transformer 0 (2)"
+    blank_380 = create_buses(net, 1, 380, name=["Transformer 0 (2)"])[0]
+    blank_110 = create_buses(net, 1, 110, name=["Transformer 0 (2)"])[0]
+    create_transformers_from_parameters(net, [blank_380], [blank_110], 1.0, 380, 110, 0, 1, 0, 0, 0, name=[""])
+    right = create_buses(net, 1, 110, name=["Right"])[0]
+    create_lines(net, blank_110, right, 1.0, _line_params())
+    # a template transformer that would allow an invented 380/110 connection
+    t_h = create_buses(net, 1, 380, name=["T_H"])[0]
+    t_l = create_buses(net, 1, 110, name=["T_L"])[0]
+    create_transformers_from_parameters(net, [t_h], [t_l], 1.0, 380, 110, 0, 1, 0, 0, 0, name=["template"])
+    net.bus["zone"] = "TSO"
+    n_trafos = len(net.trafo)
+
+    _invent_connections_between_grid_groups(net)
+
+    # the generated label must not be normalized onto the real station "Transformer 0"
+    assert len(net.trafo) == n_trafos
+
+
+def test_invent_connections_keeps_suffix_normalization_for_known_stations():
+    net = pandapowerNet(name="jao_grid_groups")
+    dup = create_buses(net, 1, 380, name=["DUP"])[0]
+    left = create_buses(net, 1, 380, name=["Left"])[0]
+    create_lines(net, dup, left, 1.0, _line_params())
+    dup_2 = create_buses(net, 1, 110, name=["DUP (2)"])[0]
+    right = create_buses(net, 1, 110, name=["Right"])[0]
+    create_lines(net, dup_2, right, 1.0, _line_params())
+    t_h = create_buses(net, 1, 380, name=["T_H"])[0]
+    t_l = create_buses(net, 1, 110, name=["T_L"])[0]
+    create_transformers_from_parameters(net, [t_h], [t_l], 1.0, 380, 110, 0, 1, 0, 0, 0, name=["template"])
+    net.bus["zone"] = "TSO"
+    n_trafos = len(net.trafo)
+
+    _invent_connections_between_grid_groups(net)
+
+    # both are known stations, so the " (2)" suffix is still normalized and they are connected
+    assert len(net.trafo) == n_trafos + 1
+
+
 def test_normalize_locname_transliterates_polish_l():
     # "Ł"/"ł" do not decompose under NFKD and must be transliterated explicitly
     assert _normalize_locname("Łódź") == "lodz"
@@ -1109,6 +1154,48 @@ def test_repair_incomplete_line_data_preserves_longer_station_span():
 
     # the longer station must win instead of the shorter fragment "Epine"
     assert data["Lines"].at[3, ("Substation_1", "Full_name")] == "Belle-Epine"
+
+
+def test_repair_incomplete_line_data_uses_shared_voltage_intersection():
+    cols = pd.MultiIndex.from_tuples(
+        [
+            ("Substation_1", "Full_name"),
+            ("Substation_2", "Full_name"),
+            (None, "NE_name"),
+            (None, "Voltage_level(kV)"),
+            *_JAO_LINE_COLUMNS[4:],
+        ]
+    )
+    lines = pd.DataFrame(
+        [
+            # observed voltage sets: A={380}, B={220,110}, C={380,220}, D={220,110}, E={380,220}
+            ["A", "Else", "A - Else", 380.0, 10.0, 0.1, 0.2, 5.0, 1000.0],
+            ["B", "Else", "B - Else", 220.0, 10.0, 0.1, 0.2, 5.0, 1000.0],
+            ["B", "Else", "B - Else", 110.0, 10.0, 0.1, 0.2, 5.0, 1000.0],
+            ["C", "Else", "C - Else", 380.0, 10.0, 0.1, 0.2, 5.0, 1000.0],
+            ["C", "Else", "C - Else", 220.0, 10.0, 0.1, 0.2, 5.0, 1000.0],
+            ["D", "Else", "D - Else", 220.0, 10.0, 0.1, 0.2, 5.0, 1000.0],
+            ["D", "Else", "D - Else", 110.0, 10.0, 0.1, 0.2, 5.0, 1000.0],
+            ["E", "Else", "E - Else", 380.0, 10.0, 0.1, 0.2, 5.0, 1000.0],
+            ["E", "Else", "E - Else", 220.0, 10.0, 0.1, 0.2, 5.0, 1000.0],
+            # A and B share no voltage -> must stay unresolved
+            ["A", "B", "A - B", np.nan, 10.0, 0.1, 0.2, 5.0, 1000.0],
+            # C and D share exactly 220 kV -> must be set to 220
+            ["C", "D", "C - D", np.nan, 10.0, 0.1, 0.2, 5.0, 1000.0],
+            # C and E share both 380 and 220 kV -> ambiguous, must stay unresolved
+            ["C", "E", "C - E", np.nan, 10.0, 0.1, 0.2, 5.0, 1000.0],
+        ],
+        columns=cols,
+    )
+    data = {"Lines": lines, "Tielines": lines.iloc[0:0].copy()}
+
+    _repair_incomplete_line_data(data)
+
+    vn_col = (None, "Voltage_level(kV)")
+    repaired = data["Lines"]
+    assert pd.isna(repaired.at[9, vn_col])
+    assert repaired.at[10, vn_col] == 220.0
+    assert pd.isna(repaired.at[11, vn_col])
 
 
 def test_repair_incomplete_line_data_leaves_ambiguous_fragment_unresolved():
