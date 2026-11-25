@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_bus,
     create_buses,
     create_ext_grid,
     create_impedance,
@@ -22,8 +21,7 @@ def test_create_impedance():
     net = pandapowerNet(name="test_create_impedance")
 
     # Create buses
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
+    b1, b2 = create_buses(net, 2, 110)
 
     # Test basic creation with required parameters only
     idx = create_impedance(net, from_bus=b1, to_bus=b2, rft_pu=0.1, xft_pu=0.1, sn_mva=100)
@@ -44,8 +42,7 @@ def test_create_impedance():
     assert net.impedance.at[idx, "in_service"]
 
     # Test creation with all optional parameters
-    b3 = create_bus(net, 110)
-    b4 = create_bus(net, 110)
+    b3, b4 = create_buses(net, 2, 110)
 
     idx2 = create_impedance(
         net,
@@ -212,8 +209,7 @@ def test_create_tcsc():
     net = pandapowerNet(name="test_create_tcsc")
 
     # Create buses
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
+    b1, b2 = create_buses(net, 2, 110)
     create_ext_grid(net, b1)
 
     # Test basic creation with required parameters
@@ -239,8 +235,7 @@ def test_create_tcsc():
     assert net.tcsc.at[idx, "controllable"]
 
     # Test creation with all optional parameters
-    b3 = create_bus(net, 110)
-    b4 = create_bus(net, 110)
+    b3, b4 = create_buses(net, 2, 110)
 
     idx2 = create_tcsc(
         net,
@@ -270,8 +265,7 @@ def test_create_series_reactor_as_impedance():
     net = pandapowerNet(name="test_create_series_reactor_as_impedance")
 
     # Create buses with same voltage level
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
+    b1, b2 = create_buses(net, 2, 110)
 
     # Test basic creation with required parameters
     idx = create_series_reactor_as_impedance(
@@ -302,8 +296,7 @@ def test_create_series_reactor_as_impedance():
     assert np.isclose(net.impedance.at[idx, "xft_pu"], expected_xft_pu)
 
     # Test with name and in_service parameters
-    b3 = create_bus(net, 20)
-    b4 = create_bus(net, 20)
+    b3, b4 = create_buses(net, 2, 20)
 
     idx2 = create_series_reactor_as_impedance(
         net,
@@ -328,8 +321,7 @@ def test_create_series_reactor_as_impedance():
     assert np.isclose(net.impedance.at[idx2, "xft_pu"], expected_xft_pu_20)
 
     # Test with zero-sequence parameters
-    b5 = create_bus(net, 110)
-    b6 = create_bus(net, 110)
+    b5, b6 = create_buses(net, 2, 110)
 
     idx3 = create_series_reactor_as_impedance(
         net,
@@ -350,8 +342,7 @@ def test_create_series_reactor_as_impedance():
     assert np.isclose(net.impedance.at[idx3, "xft0_pu"], expected_xft0_pu)
 
     # Test error case with different voltage levels
-    b7 = create_bus(net, 110)
-    b8 = create_bus(net, 20)
+    b7, b8 = create_buses(net, 2, [110, 20])
 
     with pytest.raises(UserWarning, match="Unable to infer rated voltage"):
         create_series_reactor_as_impedance(

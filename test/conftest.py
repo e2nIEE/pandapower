@@ -7,10 +7,10 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_bus,
+    create_buses,
     create_ext_grid,
     create_gen,
-    create_line,
+    create_lines,
     create_load,
     create_sgen,
     create_transformer,
@@ -43,14 +43,13 @@ def pytest_collection_modifyitems(config, items):
 @pytest.fixture(scope="session")
 def simple_network():
     net = pandapowerNet(name="simple_network")
-    b1 = create_bus(net, name="bus1", vn_kv=10.0)
+    (b1,) = create_buses(net, 1, name="bus1", vn_kv=10.0)
     create_ext_grid(net, b1)
-    b2 = create_bus(net, name="bus2", geodata=(1, 2), vn_kv=0.4)
-    b3 = create_bus(net, name="bus3", geodata=(1, 3), vn_kv=0.4)
-    b4 = create_bus(net, name="bus4", vn_kv=10.0)
+    b2, b3 = create_buses(net, 2, name=["bus2", "bus3"], geodata=[(1, 2), (1, 3)], vn_kv=0.4)
+    (b4,) = create_buses(net, 1, name="bus4", vn_kv=10.0)
     create_transformer(net, b4, b2, std_type="0.25 MVA 10/0.4 kV", name=None, in_service=True, index=None)
-    create_line(net, b2, b3, 1, name="line1", std_type="NAYY 4x150 SE", geodata=np.array([[1, 2], [3, 4]]))
-    create_line(net, b1, b4, 1, name="line2", std_type="NAYY 4x150 SE")
+    create_lines(net, b2, b3, 1, name="line1", line_params="NAYY 4x150 SE", geodata=np.array([[1, 2], [3, 4]]))
+    create_lines(net, b1, b4, 1, name="line2", line_params="NAYY 4x150 SE")
     create_load(net, b2, p_mw=0.01, q_mvar=0, name="load1")
     create_load(net, b3, p_mw=0.04, q_mvar=0.002, name="load2")
     create_gen(net, 3, q_mvar=0.020, vm_pu=1.0)

@@ -5,7 +5,7 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_bus,
+    create_buses,
     create_ext_grid,
     create_gen,
     create_load,
@@ -31,7 +31,7 @@ elements = [
 @pytest.mark.parametrize("element, create_func, create_kwargs, kwargs", elements)
 def test_create_pwl_cost(element, create_func, create_kwargs, kwargs):
     net = pandapowerNet(name="test_create_pwl_cost")
-    b1 = create_bus(net, 110)
+    (b1,) = create_buses(net, 1, 110)
     points = [[0.0, 0.3, 10.2], [0.3, 0.6, 20.4], [0.6, 1.0, 30.6], [1.0, 1.3, 40.8]]
     # create element
     e = create_func(net, b1, **create_kwargs)
@@ -46,7 +46,7 @@ def test_create_pwl_cost(element, create_func, create_kwargs, kwargs):
 
 def test_create_pwl_costs():
     net = pandapowerNet(name="test_create_pwl_costs")
-    b1 = create_bus(net, 110)
+    (b1,) = create_buses(net, 1, 110)
     points = [[0.0, 0.3, 10.2], [0.3, 0.6, 20.4], [0.6, 1.0, 30.6], [1.0, 1.3, 40.8]]
     elms = []
     ets = []
@@ -64,7 +64,7 @@ def test_create_pwl_costs():
 @pytest.mark.parametrize("element, create_func, create_kwargs, kwargs", elements)
 def test_create_poly_cost(element, create_func, create_kwargs, kwargs):
     net = pandapowerNet(name="test_create_poly_cost")
-    b1 = create_bus(net, 110)
+    (b1,) = create_buses(net, 1, 110)
     points = [[0.0, 0.3, 10.2], [0.3, 0.6, 20.4], [0.6, 1.0, 30.6], [1.0, 1.3, 40.8]]
     # create element
     e = create_func(net, b1, **create_kwargs)
@@ -79,7 +79,7 @@ def test_create_poly_cost(element, create_func, create_kwargs, kwargs):
 
 def test_create_poly_costs():
     net = pandapowerNet(name="test_create_poly_costs")
-    b1 = create_bus(net, 110)
+    (b1,) = create_buses(net, 1, 110)
     elms = []
     ets = []
     elm_count = len(elements)

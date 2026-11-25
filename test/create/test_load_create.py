@@ -6,8 +6,8 @@ import pytest
 
 from pandapower.create import (
     create_asymmetric_load,
-    create_bus,
-    create_bus_dc,
+    create_buses,
+    create_buses_dc,
     create_load,
     create_load_dc,
     create_load_from_cosphi,
@@ -19,7 +19,7 @@ from pandapower.network_schema.tools.validation.network_validation import valida
 
 def test_create_load():
     net = pandapowerNet(name="test_create_load")
-    b1 = create_bus(net, 110)
+    (b1,) = create_buses(net, 1, 110)
 
     # Test basic load creation
     idx = create_load(net, bus=b1, p_mw=10.0, q_mvar=2.0)
@@ -77,9 +77,7 @@ def test_create_load():
 def test_create_loads():
     net = pandapowerNet(name="test_create_loads")
     # standard
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    b3 = create_bus(net, 110)
+    b1, b2, b3 = create_buses(net, 3, 110)
     create_loads(
         net,
         buses=[b1, b2, b3],
@@ -118,9 +116,7 @@ def test_create_loads():
 def test_create_loads_raise_errorexcept():
     net = pandapowerNet(name="test_create_loads_raise_errorexcept")
     # standard
-    b1 = create_bus(net, 110)
-    b2 = create_bus(net, 110)
-    b3 = create_bus(net, 110)
+    b1, b2, b3 = create_buses(net, 3, 110)
 
     with pytest.raises(UserWarning, match=r"Cannot attach to buses {3, 4, 5}, they do not exist"):
         create_loads(
@@ -164,7 +160,7 @@ def test_create_loads_raise_errorexcept():
 
 def test_create_asymmetric_load():
     net = pandapowerNet(name="test_create_asymmetric_load")
-    b1 = create_bus(net, 110)
+    (b1,) = create_buses(net, 1, 110)
 
     # Test basic asymmetric load creation
     idx = create_asymmetric_load(
@@ -215,7 +211,7 @@ def test_create_asymmetric_load():
 
 def test_create_load_from_cosphi():
     net = pandapowerNet(name="test_create_load_from_cosphi")
-    b1 = create_bus(net, 110)
+    (b1,) = create_buses(net, 1, 110)
 
     # Test underexcited (inductive)
     idx1 = create_load_from_cosphi(net, bus=b1, sn_mva=10.0, cos_phi=0.9, mode="underexcited")
@@ -241,7 +237,7 @@ def test_create_load_from_cosphi():
 
 def test_create_load_dc():
     net = pandapowerNet(name="test_create_load_dc")
-    b1 = create_bus_dc(net, 100)
+    (b1,) = create_buses_dc(net, 1, 100)
 
     # Test basic DC load creation
     idx = create_load_dc(net, bus_dc=b1, p_dc_mw=5.0)

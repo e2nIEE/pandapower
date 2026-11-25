@@ -264,16 +264,20 @@ def reindex_elements(net: pandapowerNet, element_type, new_indices=None, old_ind
             group indices do not need to be unique.
 
     Example:
+        >>> from pandapower.create import create_buses
+        >>> from pandapower.network import pandapowerNet
+        >>> from pandapower.toolbox.data_modification import reindex_elements
+        >>>
         >>> net = pandapowerNet(name='Example')
-        >>> idx0 = create_bus(net, 110)
+        >>> (idx0,) = create_buses(net, 1, 110)
         >>> idx1 = 4
         >>> idx2 = 7
         >>> # Reindex using 'new_indices':
-        >>> pp.reindex_elements(net, "bus", [idx1])  # passing old_indices=[idx0] is optional
+        >>> reindex_elements(net, "bus", [idx1])  # passing old_indices=[idx0] is optional
         >>> net.bus.index
         Int64Index([4], dtype='int64')
         >>> # Reindex using 'lookup':
-        >>> pp.reindex_elements(net, "bus", lookup={idx1: idx2})
+        >>> reindex_elements(net, "bus", lookup={idx1: idx2})
         Int64Index([7], dtype='int64')
     """
     if not net[element_type].shape[0]:

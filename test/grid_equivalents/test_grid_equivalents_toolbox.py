@@ -3,9 +3,9 @@ import pytest
 
 from pandapower.convert_format import convert_format
 from pandapower.create import (
-    create_bus,
+    create_buses,
     create_impedance,
-    create_line_from_parameters,
+    create_lines,
     create_switch,
     create_transformer3w_from_parameters,
     create_transformer_from_parameters,
@@ -52,14 +52,18 @@ def case9_ab_merged() -> tuple[pandapowerNet, dict, dict]:
     net2.ext_grid["p_disp_mw"] = 71.9547
     replace_ext_grid_by_gen(net2)
     net = merge_nets(net1, net2, merge_results=False, validate=False, net2_reindex_log_level=None)
-    new_bus = create_bus(net, 345, zone="b")
+    (new_bus,) = create_buses(net, 1, 345, zone="b")
 
     # expected_bbr
     expected_bbr = {
         "line": {
-            create_line_from_parameters(
-                net, net.bus.index[net.bus.name == "9"][0], net.bus.index[net.bus.name == "9"][1], 1, 0, 65, 0, 0.41
-            )
+            create_lines(
+                net,
+                net.bus.index[net.bus.name == "9"][0],
+                net.bus.index[net.bus.name == "9"][1],
+                1,
+                line_params={"r_ohm_per_km": 0, "x_ohm_per_km": 65, "c_nf_per_km": 0, "max_i_ka": 0.41},
+            )[0]
         },
         "impedance": {
             create_impedance(
