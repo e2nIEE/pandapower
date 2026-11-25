@@ -12,11 +12,10 @@ import pandapower.pypower.pipsopf_solver as pipsopf_solver_module
 from pandapower.auxiliary import OPFNotConverged
 from pandapower.convert_format import convert_format
 from pandapower.create import (
-    create_bus,
+    create_buses,
     create_ext_grid,
     create_gen,
-    create_line,
-    create_line_from_parameters,
+    create_lines,
     create_load,
     create_poly_cost,
     create_pwl_cost,
@@ -43,21 +42,22 @@ def simplest_grid():
 
     # create net
     net = pandapowerNet(name="simplest_grid")
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.0)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
+    create_buses(net, 2, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=[10.0, 0.4])
     create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15, max_q_mvar=0.005, min_q_mvar=-0.005)
     create_ext_grid(net, 0)
     create_load(net, 1, p_mw=0.02, controllable=False)
-    create_line_from_parameters(
+    create_lines(
         net,
         0,
         1,
         50,
         name="line2",
-        r_ohm_per_km=0.876,
-        c_nf_per_km=260.0,
-        max_i_ka=0.123,
-        x_ohm_per_km=0.1159876,
+        line_params={
+            "r_ohm_per_km": 0.876,
+            "c_nf_per_km": 260.0,
+            "max_i_ka": 0.123,
+            "x_ohm_per_km": 0.1159876,
+        },
         max_loading_percent=100,
     )
     create_poly_cost(net, 0, "gen", cp1_eur_per_mw=0.1)
@@ -100,13 +100,10 @@ def net_3w_trafo_opf():
     net = pandapowerNet(name="net_3w_trafo_opf")
 
     # create buses
-    bus1 = create_bus(net, vn_kv=220.0)
-    bus2 = create_bus(net, vn_kv=110.0)
-    bus3 = create_bus(net, vn_kv=110.0)
-    bus4 = create_bus(net, vn_kv=110.0)
-    bus5 = create_bus(net, vn_kv=110.0)
+    (bus1,) = create_buses(net, 1, vn_kv=220.0)
+    bus2, bus3, bus4, bus5 = create_buses(net, 4, vn_kv=110.0)
 
-    create_bus(net, vn_kv=110.0, in_service=False)
+    create_buses(net, 1, vn_kv=110.0, in_service=False)
 
     # create 220/110 kV transformer
     create_transformer3w_from_parameters(
@@ -133,10 +130,13 @@ def net_3w_trafo_opf():
     )
 
     # create 110 kV lines
-    create_line(net, bus2, bus3, length_km=70.0, std_type="149-AL1/24-ST1A 110.0")
-    create_line(net, bus3, bus4, length_km=50.0, std_type="149-AL1/24-ST1A 110.0")
-    create_line(net, bus4, bus2, length_km=40.0, std_type="149-AL1/24-ST1A 110.0")
-    create_line(net, bus4, bus5, length_km=30.0, std_type="149-AL1/24-ST1A 110.0")
+    create_lines(
+        net,
+        [bus2, bus3, bus4, bus4],
+        [bus3, bus4, bus2, bus5],
+        length_km=[70.0, 50.0, 40.0, 30.0],
+        std_type="149-AL1/24-ST1A 110.0",
+    )
 
     # create loads
     create_load(net, bus2, p_mw=60, controllable=False)
@@ -154,21 +154,22 @@ def net_3w_trafo_opf():
 @pytest.fixture(scope="module")
 def simple_opf_test_net():
     net = pandapowerNet(name="simple_opf_test_net")
-    create_bus(net, vn_kv=10.0)
-    create_bus(net, vn_kv=0.4)
+    create_buses(net, 2, vn_kv=[10.0, 0.4])
     create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15, max_q_mvar=0.05, min_q_mvar=-0.005)
     create_ext_grid(net, 0)
     create_load(net, 1, p_mw=0.020, controllable=False)
-    create_line_from_parameters(
+    create_lines(
         net,
         0,
         1,
         50,
         name="line2",
-        r_ohm_per_km=0.876,
-        c_nf_per_km=260.0,
-        max_i_ka=0.123,
-        x_ohm_per_km=0.1159876,
+        line_params={
+            "r_ohm_per_km": 0.876,
+            "c_nf_per_km": 260.0,
+            "max_i_ka": 0.123,
+            "x_ohm_per_km": 0.1159876,
+        },
         max_loading_percent=100,
     )
     return net
@@ -184,22 +185,23 @@ def test_convert_format():
 
     # create net
     net = pandapowerNet(name="test_convert_format")
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.0)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
+    create_buses(net, 2, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=[10.0, 0.4])
     create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15, max_q_mvar=0.05, min_q_mvar=-0.005)
     net.gen["cost_per_mw"] = 100
     create_ext_grid(net, 0)
     create_load(net, 1, p_mw=0.02, controllable=False)
-    create_line_from_parameters(
+    create_lines(
         net,
         0,
         1,
         50,
         name="line2",
-        r_ohm_per_km=0.876,
-        c_nf_per_km=260.0,
-        max_i_ka=0.123,
-        x_ohm_per_km=0.1159876,
+        line_params={
+            "r_ohm_per_km": 0.876,
+            "c_nf_per_km": 260.0,
+            "max_i_ka": 0.123,
+            "x_ohm_per_km": 0.1159876,
+        },
         max_loading_percent=100 * 690,
     )
     # run OPF
@@ -262,23 +264,24 @@ def test_simplest_dispatch():
 
     # create net
     net = pandapowerNet(name="test_simplest_dispatch")
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.0)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
+    create_buses(net, 2, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=[10.0, 0.4])
     create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.150, max_q_mvar=0.05, min_q_mvar=-0.05)
     create_poly_cost(net, 0, "gen", cp1_eur_per_mw=100)
     create_ext_grid(net, 0)
     create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=101)
     create_load(net, 1, p_mw=0.02, controllable=False)
-    create_line_from_parameters(
+    create_lines(
         net,
         0,
         1,
         50,
         name="line2",
-        r_ohm_per_km=0.876,
-        c_nf_per_km=260.0,
-        max_i_ka=0.123,
-        x_ohm_per_km=0.1159876,
+        line_params={
+            "r_ohm_per_km": 0.876,
+            "c_nf_per_km": 260.0,
+            "max_i_ka": 0.123,
+            "x_ohm_per_km": 0.1159876,
+        },
         max_loading_percent=100 * 690,
     )
     # run OPF
@@ -305,10 +308,7 @@ def test_opf_gen_voltage():
 
     # ceate net
     net = pandapowerNet(name="test_opf_gen_voltage")
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.0)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
+    create_buses(net, 4, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=[10.0, 0.4, 0.4, 0.4])
     create_transformer_from_parameters(
         net,
         0,
@@ -336,28 +336,18 @@ def test_opf_gen_voltage():
     create_gen(net, 3, p_mw=0.01, controllable=True, min_p_mw=0, max_p_mw=0.025, max_q_mvar=0.5, min_q_mvar=-0.5)
     create_poly_cost(net, 0, "gen", cp1_eur_per_mw=10)
     create_ext_grid(net, 0)
-    create_line_from_parameters(
+    create_lines(
         net,
-        1,
-        2,
+        [1, 2],
+        [2, 3],
         1,
         name="line2",
-        r_ohm_per_km=0.876,
-        c_nf_per_km=260.0,
-        max_i_ka=0.123,
-        x_ohm_per_km=0.1159876,
-        max_loading_percent=100000,
-    )
-    create_line_from_parameters(
-        net,
-        2,
-        3,
-        1,
-        name="line2",
-        r_ohm_per_km=0.876,
-        c_nf_per_km=260.0,
-        max_i_ka=0.123,
-        x_ohm_per_km=0.1159876,
+        line_params={
+            "r_ohm_per_km": 0.876,
+            "c_nf_per_km": 260.0,
+            "max_i_ka": 0.123,
+            "x_ohm_per_km": 0.1159876,
+        },
         max_loading_percent=100000,
     )
 
@@ -384,10 +374,7 @@ def test_opf_sgen_voltage():
 
     # create net
     net = pandapowerNet(name="test_opf_sgen_voltage")
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.0)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
+    create_buses(net, 4, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=[10.0, 0.4, 0.4, 0.4])
     create_transformer_from_parameters(
         net,
         0,
@@ -417,22 +404,10 @@ def test_opf_sgen_voltage():
     )
     create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=0.1)
     create_ext_grid(net, 0)
-    create_line_from_parameters(
+    create_lines(
         net,
-        1,
-        2,
-        1,
-        name="line2",
-        r_ohm_per_km=0.876,
-        c_nf_per_km=260.0,
-        max_i_ka=0.123,
-        x_ohm_per_km=0.1159876,
-        max_loading_percent=1000000,
-    )
-    create_line_from_parameters(
-        net,
-        2,
-        3,
+        [1, 2],
+        [2, 3],
         1,
         name="line2",
         r_ohm_per_km=0.876,
@@ -466,10 +441,7 @@ def test_opf_gen_loading():
 
     # create net
     net = pandapowerNet(name="test_opf_gen_loading")
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.0)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
+    create_buses(net, 4, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=[10.0, 0.4, 0.4, 0.4])
     create_transformer_from_parameters(
         net,
         0,
@@ -498,28 +470,18 @@ def test_opf_gen_loading():
     create_poly_cost(net, 0, "gen", cp1_eur_per_mw=-10)
     create_ext_grid(net, 0)
     create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=0.1)
-    create_line_from_parameters(
+    create_lines(
         net,
-        1,
-        2,
+        [1, 2],
+        [2, 3],
         1,
         name="line2",
-        r_ohm_per_km=0.876,
-        c_nf_per_km=260.0,
-        max_i_ka=0.123,
-        x_ohm_per_km=0.1159876,
-        max_loading_percent=max_line_loading,
-    )
-    create_line_from_parameters(
-        net,
-        2,
-        3,
-        1,
-        name="line2",
-        r_ohm_per_km=0.876,
-        c_nf_per_km=260.0,
-        max_i_ka=0.123,
-        x_ohm_per_km=0.1159876,
+        line_params={
+            "r_ohm_per_km": 0.876,
+            "c_nf_per_km": 260.0,
+            "max_i_ka": 0.123,
+            "x_ohm_per_km": 0.1159876,
+        },
         max_loading_percent=max_line_loading,
     )
 
@@ -559,10 +521,7 @@ def test_opf_sgen_loading():
 
     # create net
     net = pandapowerNet(name="test_opf_sgen_loading")
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.0)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
+    create_buses(net, 4, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=[10.0, 0.4, 0.4, 0.4])
     create_transformer_from_parameters(
         net,
         0,
@@ -593,28 +552,18 @@ def test_opf_sgen_loading():
     create_poly_cost(net, 0, "sgen", cp1_eur_per_mw=-10)
     create_ext_grid(net, 0)
     create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=0.1)
-    create_line_from_parameters(
+    create_lines(
         net,
-        1,
-        2,
+        [1, 2],
+        [2, 3],
         1,
         name="line2",
-        r_ohm_per_km=0.876,
-        c_nf_per_km=260.0,
-        max_i_ka=0.123,
-        x_ohm_per_km=0.1159876,
-        max_loading_percent=max_line_loading,
-    )
-    create_line_from_parameters(
-        net,
-        2,
-        3,
-        1,
-        name="line2",
-        r_ohm_per_km=0.876,
-        c_nf_per_km=260.0,
-        max_i_ka=0.123,
-        x_ohm_per_km=0.1159876,
+        line_params={
+            "r_ohm_per_km": 0.876,
+            "c_nf_per_km": 260.0,
+            "max_i_ka": 0.123,
+            "x_ohm_per_km": 0.1159876,
+        },
         max_loading_percent=max_line_loading,
     )
 
@@ -646,13 +595,17 @@ def test_unconstrained_line():
 
     # create net
     net = pandapowerNet(name="test_unconstrained_line")
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.0)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
+    create_buses(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=[10.0, 0.4])
     create_gen(net, 1, p_mw=0.1, controllable=True, min_p_mw=0.005, max_p_mw=0.15, max_q_mvar=0.05, min_q_mvar=-0.05)
     create_ext_grid(net, 0)
     create_load(net, 1, p_mw=0.02, controllable=False)
-    create_line_from_parameters(
-        net, 0, 1, 50, name="line2", r_ohm_per_km=0.876, c_nf_per_km=260.0, max_i_ka=0.123, x_ohm_per_km=0.1159876
+    create_lines(
+        net,
+        0,
+        1,
+        50,
+        name="line2",
+        line_params={"r_ohm_per_km": 0.876, "c_nf_per_km": 260.0, "max_i_ka": 0.123, "x_ohm_per_km": 0.1159876},
     )
     create_poly_cost(net, 0, "gen", cp1_eur_per_mw=1)
     # run OPF
@@ -672,8 +625,7 @@ def test_unconstrained_line():
 def test_trafo3w_loading():
     net = pandapowerNet(name="test_trafo3w_loading")
     _, b2, _ = add_grid_connection(net, vn_kv=110.0)
-    b3 = create_bus(net, vn_kv=20.0)
-    b4 = create_bus(net, vn_kv=10.0)
+    b3, b4 = create_buses(net, 2, vn_kv=[20.0, 10.0])
     tidx = create_transformer3w(net, b2, b3, b4, std_type="63/25/38 MVA 110/20/10 kV", max_loading_percent=120)
     create_load(net, b3, p_mw=5, controllable=False)
     load_id = create_load(net, b4, p_mw=5, controllable=True, max_p_mw=50, min_p_mw=0, min_q_mvar=-1e6, max_q_mvar=1e6)
@@ -777,10 +729,7 @@ def test_opf_varying_max_line_loading():
 
     # create net
     net = pandapowerNet(name="test_opf_varying_max_line_loading")
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=10.0)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
-    create_bus(net, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=0.4)
+    create_buses(net, 4, max_vm_pu=vm_max, min_vm_pu=vm_min, vn_kv=[10.0, 0.4, 0.4, 0.4])
     create_transformer_from_parameters(
         net,
         0,
@@ -812,29 +761,19 @@ def test_opf_varying_max_line_loading():
     create_poly_cost(net, 1, "sgen", cp1_eur_per_mw=10)
     create_ext_grid(net, 0)
     create_poly_cost(net, 0, "ext_grid", cp1_eur_per_mw=0.1)
-    create_line_from_parameters(
+    create_lines(
         net,
+        [1, 1],
+        [2, 3],
         1,
-        2,
-        1,
-        name="line1",
-        r_ohm_per_km=0.876,
-        c_nf_per_km=260.0,
-        max_i_ka=0.200,
-        x_ohm_per_km=0.1159876,
-        max_loading_percent=20,
-    )
-    create_line_from_parameters(
-        net,
-        1,
-        3,
-        1,
-        name="line2",
-        r_ohm_per_km=0.876,
-        c_nf_per_km=260.0,
-        max_i_ka=0.100,
-        x_ohm_per_km=0.1159876,
-        max_loading_percent=10,
+        name=["line1", "line2"],
+        line_params={
+            "r_ohm_per_km": 0.876,
+            "c_nf_per_km": 260.0,
+            "max_i_ka": 0.200,
+            "x_ohm_per_km": 0.1159876,
+        },
+        max_loading_percent=[20, 10],
     )
 
     # run OPF
@@ -864,10 +803,9 @@ def test_storage_opf():
     # create network
     net = pandapowerNet(name="test_storage_opf")
 
-    b1 = create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
-    b2 = create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
+    b1, b2 = create_buses(net, 2, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
 
-    create_line(net, b1, b2, length_km=5, std_type="NAYY 4x50 SE", max_loading_percent=max_line_loading_percent)
+    create_lines(net, b1, b2, length_km=5, line_params="NAYY 4x50 SE", max_loading_percent=max_line_loading_percent)
 
     # test elements static
     create_ext_grid(net, b2)
@@ -976,10 +914,9 @@ def test_in_service_controllables():
 
     # create network
     net = pandapowerNet(name="test_in_service_controllables")
-    b1 = create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
-    b2 = create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
+    b1, b2 = create_buses(net, 2, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
 
-    create_line(net, b1, b2, length_km=5, std_type="NAYY 4x50 SE", max_loading_percent=max_line_loading_percent)
+    create_lines(net, b1, b2, length_km=5, line_params="NAYY 4x50 SE", max_loading_percent=max_line_loading_percent)
 
     # test elements static
     create_ext_grid(net, b2)
@@ -1037,10 +974,9 @@ def test_opf_no_controllables_vs_pf():
     # create network
     net = pandapowerNet(name="test_opf_no_controllables_vs_pf")
 
-    b1 = create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
-    b2 = create_bus(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
+    b1, b2 = create_buses(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
 
-    create_line(net, b1, b2, length_km=5, std_type="NAYY 4x50 SE", max_loading_percent=max_line_loading_percent)
+    create_lines(net, b1, b2, length_km=5, line_params="NAYY 4x50 SE", max_loading_percent=max_line_loading_percent)
 
     # test elements static
     create_ext_grid(net, b2)

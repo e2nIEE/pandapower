@@ -5,7 +5,6 @@ import numpy as np
 import pytest
 
 from pandapower.create import (
-    create_bus,
     create_buses,
     create_ext_grid,
     create_gen,
@@ -484,7 +483,7 @@ class TestComputeSwitchFlowsNonDefaultIndex:
         """
         net, b0, _, _ = _make_two_bus_coupler_net()
         net.switch.index = [coupler_idx]
-        b3 = create_bus(net, vn_kv=20.0)
+        (b3,) = create_buses(net, 1, vn_kv=20.0)
         create_switch(net, bus=b0, element=b3, et="b", z_ohm=0.01, index=impedance_idx)
         create_load(net, b3, p_mw=2.0)
 
