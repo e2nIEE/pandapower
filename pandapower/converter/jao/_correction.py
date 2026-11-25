@@ -30,20 +30,9 @@ _header_variants = {
 }
 
 
-def _rename_locnames_from_data(data: dict[str, pd.DataFrame]) -> list[tuple[str, str]]:
-    """Returns the (raw, display) location name replacements derived from the line sheets."""
-    bus_name_series = [
-        data[key][(subst, "Full_name")] for key in ["Lines", "Tielines"] for subst in ["Substation_1", "Substation_2"]
-    ]
-    locname_mapping = _locname_display_names(pd.concat(bus_name_series, ignore_index=True))
-    return sorted(
-        ((raw, disp) for raw, disp in locname_mapping.items() if raw != disp),
-        key=lambda x: len(x[0]),
-        reverse=True,
-    )
-
-
-def _data_correction(data: dict[str, pd.DataFrame], html_str: str | None, max_i_ka_fillna: float) -> str | None:
+def _data_correction(
+    data: dict[str, pd.DataFrame], html_str: str | None, max_i_ka_fillna: float
+) -> tuple[str | None, list[tuple[str, str]]]:
     """
     Corrects input data in particular with regard to obvious weaknesses in the data provided,
     such as inconsistent spellings and missing necessary information
@@ -53,8 +42,9 @@ def _data_correction(data: dict[str, pd.DataFrame], html_str: str | None, max_i_
     :param float|int max_i_ka_fillna: value to fill missing values or data of false type in max_i_ka of lines and transformers.
         If no value should be set, you can also pass np.nan.
 
-    :return: corrected html_str
-    :rtype: str
+    :return: corrected html_str and the (raw, display) location name replacements derived after the
+        endpoint repair, so that they can be reused for the decoded HTML labels
+    :rtype: tuple[str|None, list[tuple[str, str]]]
     """
     # --- Line and Tieline data ---------------------------
     for key in ["Lines", "Tielines"]:
@@ -104,7 +94,7 @@ def _data_correction(data: dict[str, pd.DataFrame], html_str: str | None, max_i_
     # --- Transformer data --------------------------------
     key = "Transformers"
     if data[key].empty:
-        return html_str
+        return html_str, rename_locnames
 
     # --- correct current data (some files hold non-breaking spaces) and drop rows without any
     # --- electrical data, which cannot be converted
@@ -155,7 +145,7 @@ def _data_correction(data: dict[str, pd.DataFrame], html_str: str | None, max_i_
                 corrected.loc[tr_double] = second_info.str.replace(",", ".").astype(float).values
                 data[key].isetitem(data[key].columns.get_loc(col_key), corrected)  # type: ignore[arg-type]
 
-    return html_str
+    return html_str, rename_locnames
 
 
 def _float_col_comma_correction(data: dict[str, pd.DataFrame], key: str, col_names: list):
@@ -210,17 +200,56 @@ def _repair_incomplete_line_data(data: dict[str, pd.DataFrame]) -> None:
             other = df.at[idx, s2] if missing == s1 else df.at[idx, s1]
             other_location = _normalize_locname(other)
             ne_key = _normalize_locname(df.at[idx, ne_col])
-            ne_key_without_other = (
-                re.sub(rf"(?<!\S){re.escape(other_location)}(?!\S)", " ", ne_key) if other_location else ne_key
+
+            # --- exclude only the span of the populated endpoint, but keep tokens that are part of
+            # --- a longer known station name (e.g. "Belle" inside "Belle-Epine")
+            other_pattern = rf"(?<!\S){re.escape(other_location)}(?!\S)" if other_location else None
+            occurrences = list(re.finditer(other_pattern, ne_key)) if other_pattern else []
+            protected_spans = (
+                [
+                    (match.start(), match.end())
+                    for name_key in known_keys
+                    if name_key and name_key != other_location and re.search(other_pattern, name_key) is not None
+                    for match in re.finditer(rf"(?<!\S){re.escape(name_key)}(?!\S)", ne_key)
+                ]
+                if other_pattern
+                else []
             )
+            standalone = [
+                match
+                for match in occurrences
+                if not any(start <= match.start() and match.end() <= end for start, end in protected_spans)
+            ]
+            if occurrences and len(standalone) != 1:
+                # the populated endpoint cannot be located unambiguously -> leave the row unresolved
+                continue
+            if standalone:
+                match = standalone[0]
+                ne_key_without_other = f"{ne_key[: match.start()]} {ne_key[match.end() :]}"
+            else:
+                ne_key_without_other = ne_key
+
             # match complete known names as whole words; hyphens and parentheses inside a name are not separators
-            candidate_names = {
-                name_key: known_keys[name_key]
+            known_spans = [
+                (match.start(), match.end(), name_key)
                 for name_key in known_keys
                 if name_key
-                and name_key != other_location
-                and re.search(rf"(?<!\S){re.escape(name_key)}(?!\S)", ne_key_without_other) is not None
-            }
+                for match in re.finditer(rf"(?<!\S){re.escape(name_key)}(?!\S)", ne_key_without_other)
+            ]
+            candidate_names = {}
+            for name_key, name in known_keys.items():
+                if not name_key or name_key == other_location:
+                    continue
+                for start, end, span_key in known_spans:
+                    if span_key != name_key:
+                        continue
+                    # only use a match which is not merely a fragment of a longer station name
+                    if not any(
+                        long_start <= start and end <= long_end and (long_end - long_start) > (end - start)
+                        for long_start, long_end, _ in known_spans
+                    ):
+                        candidate_names[name_key] = name
+                        break
             if len(candidate_names) == 1:
                 candidate = next(iter(candidate_names.values()))
                 if not (is_object_dtype(df[missing]) or is_string_dtype(df[missing])):

@@ -10,7 +10,7 @@ import os
 import pandas as pd
 
 from pandapower.converter.jao._buses_lines import _create_buses_from_line_data, _create_lines
-from pandapower.converter.jao._correction import _data_correction, _rename_locnames_from_data
+from pandapower.converter.jao._correction import _data_correction
 from pandapower.converter.jao._geodata import _add_bus_geo, _parse_html_str
 from pandapower.converter.jao._grid_groups import _invent_connections_between_grid_groups, drop_islanded_grid_groups
 from pandapower.converter.jao._transformers import _create_transformers_and_buses
@@ -106,9 +106,9 @@ def from_jao(
         html_str = ""
 
     # --- manipulate data / data corrections
-    rename_locnames: list[tuple[str, str]] = _rename_locnames_from_data(data) if apply_data_correction else []
+    rename_locnames: list[tuple[str, str]] = []
     if apply_data_correction:
-        html_str = _data_correction(data, html_str, max_i_ka_fillna)  # type: ignore[assignment]
+        html_str, rename_locnames = _data_correction(data, html_str, max_i_ka_fillna)
 
     # --- parse html_str to line_geo_data
     line_geo_data = None

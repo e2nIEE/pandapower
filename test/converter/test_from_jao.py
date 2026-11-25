@@ -898,7 +898,7 @@ def test_data_correction_returns_early_for_empty_transformers(trafos):
     lines = pd.DataFrame([["A", "B", "A-B", 380, 10.0, 0.1, 0.2, 5.0, 1000.0]], columns=_JAO_LINE_COLUMNS)
     data = {"Lines": lines, "Tielines": lines.iloc[0:0].copy(), "Transformers": trafos}
 
-    assert _data_correction(data, "html", 999) == "html"
+    assert _data_correction(data, "html", 999)[0] == "html"
 
 
 def test_parse_html_str_applies_locname_renames_to_decoded_names():
@@ -931,7 +931,42 @@ def test_data_correction_does_not_rewrite_html_document():
     }
     html = "<b>NE name: KROSNO - Else: </b>"
 
-    assert _data_correction(data, html, 999) == html
+    assert _data_correction(data, html, 999)[0] == html
+
+
+def test_data_correction_returns_post_repair_locname_mapping():
+    lines = pd.DataFrame(
+        [
+            ["Röhrsdorf", "Else", "Röhrsdorf - Else", 380.0, 10.0, 0.1, 0.2, 5.0, 1000.0],
+            ["Rohrsdorf", "Else", "Rohrsdorf - Else", 380.0, 10.0, 0.1, 0.2, 5.0, 1000.0],
+            # the repair adds another "Röhrsdorf" occurrence, which changes the most frequent spelling
+            [None, "Else", "Röhrsdorf - Else", 380.0, 10.0, 0.1, 0.2, 5.0, 1000.0],
+        ],
+        columns=_JAO_LINE_COLUMNS,
+    )
+    data = {
+        "Lines": lines,
+        "Tielines": lines.iloc[0:0].copy(),
+        "Transformers": pd.DataFrame(columns=_JAO_TRAFO_COLUMNS),
+    }
+
+    _, rename_locnames = _data_correction(data, "", 999)
+
+    # the mapping must be derived after the endpoint repair and match the consolidated workbook names
+    assert rename_locnames == [("Rohrsdorf", "Röhrsdorf")]
+    assert set(data["Lines"][("Substation_1", "Full_name")]) == {"Röhrsdorf"}
+
+    # the same mapping is reused for the decoded HTML labels
+    point = {"lng": [1.0, 2.0], "lat": [3.0, 4.0]}
+    args = [None] * 7
+    args[0] = [[[point]]]
+    args[6] = ["EIC Code:<b> EIC1</b><b>NE name: Rohrsdorf - Else: </b>"]
+    geo = {"x": {"calls": [{"method": "addPolylines", "args": args}]}}
+    html = f'<script type="application/json" data-for="htmlwidget-0123">{json.dumps(geo)}</script>'
+
+    line_geo_data = _parse_html_str(html, rename_locnames)
+
+    assert line_geo_data["name"].unique().tolist() == ["Röhrsdorf - Else:"]
 
 
 def test_data_correction_normalizes_documented_header_variants():
@@ -1018,6 +1053,67 @@ def test_repair_incomplete_line_data_excludes_other_endpoint_span():
     _repair_incomplete_line_data(data)
 
     assert data["Lines"].at[2, ("Substation_1", "Full_name")] == "Else"
+
+
+def test_repair_incomplete_line_data_preserves_longer_station_span():
+    cols = pd.MultiIndex.from_tuples(
+        [
+            (None, "NE_name"),
+            (None, "Voltage_level(kV)"),
+            ("Substation_1", "Full_name"),
+            ("Substation_2", "Full_name"),
+            ("Electrical Parameters", "Length_(km)"),
+            ("Electrical Parameters", "Resistance_R(Ω)"),
+            ("Electrical Parameters", "Reactance_X(Ω)"),
+            ("Electrical Parameters", "Susceptance_B(μS)"),
+        ]
+    )
+    lines = pd.DataFrame(
+        [
+            ["Belle - Else", 380.0, "Belle", "Else", 10.0, 0.1, 0.2, 5.0],
+            ["Belle-Epine - Else", 380.0, "Belle-Epine", "Else", 10.0, 0.1, 0.2, 5.0],
+            ["Epine - X", 380.0, "Epine", "X", 10.0, 0.1, 0.2, 5.0],
+            # "Belle" is a station on its own here, so the "Belle" inside "Belle-Epine" must be kept
+            ["Belle - Belle-Epine", 380.0, None, "Belle", 10.0, 0.1, 0.2, 5.0],
+        ],
+        columns=cols,
+    )
+    data = {"Lines": lines, "Tielines": lines.iloc[0:0].copy()}
+
+    _repair_incomplete_line_data(data)
+
+    # the longer station must win instead of the shorter fragment "Epine"
+    assert data["Lines"].at[3, ("Substation_1", "Full_name")] == "Belle-Epine"
+
+
+def test_repair_incomplete_line_data_leaves_ambiguous_fragment_unresolved():
+    cols = pd.MultiIndex.from_tuples(
+        [
+            (None, "NE_name"),
+            (None, "Voltage_level(kV)"),
+            ("Substation_1", "Full_name"),
+            ("Substation_2", "Full_name"),
+            ("Electrical Parameters", "Length_(km)"),
+            ("Electrical Parameters", "Resistance_R(Ω)"),
+            ("Electrical Parameters", "Reactance_X(Ω)"),
+            ("Electrical Parameters", "Susceptance_B(μS)"),
+        ]
+    )
+    lines = pd.DataFrame(
+        [
+            ["Belle - Else", 380.0, "Belle", "Else", 10.0, 0.1, 0.2, 5.0],
+            ["Epine - Else", 380.0, "Epine", "Else", 10.0, 0.1, 0.2, 5.0],
+            # "Belle-Epine" is not a known location, so the populated "Belle" cannot be located
+            # unambiguously and must not be resolved to the shorter "Epine"
+            ["Belle - Belle-Epine", 380.0, None, "Belle", 10.0, 0.1, 0.2, 5.0],
+        ],
+        columns=cols,
+    )
+    data = {"Lines": lines, "Tielines": lines.iloc[0:0].copy()}
+
+    _repair_incomplete_line_data(data)
+
+    assert pd.isna(data["Lines"].at[2, ("Substation_1", "Full_name")])
 
 
 @pytest.mark.parametrize("min_bus_number", ["max", 6, "unsupplied"])
