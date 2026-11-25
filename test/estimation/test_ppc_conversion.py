@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from pandapower.create import create_bus, create_ext_grid, create_measurement, create_transformer3w
+from pandapower.create import create_buses, create_ext_grid, create_measurement, create_transformer3w
 from pandapower.estimation.idx_brch import P_TO, P_TO_STD
 from pandapower.estimation.ppc_conversion import pp2eppci
 from pandapower.network import pandapowerNet
@@ -13,13 +13,9 @@ def test_duplicate_measurements_at_trafo3w():
     net = pandapowerNet(name="test_duplicate_measurements_at_trafo3w")
 
     # Create buses for two three-winding transformers (HV, MV, LV each)
-    hv_bus1 = create_bus(net, vn_kv=110, name="HV Bus 1")
-    mv_bus1 = create_bus(net, vn_kv=20, name="MV Bus 1")
-    lv_bus1 = create_bus(net, vn_kv=10, name="LV Bus 1")
+    hv_bus1, mv_bus1, lv_bus1 = create_buses(net, 3, [110, 20, 10], name=["HV Bus 1", "MV Bus 1", "LV Bus 1"])
 
-    hv_bus2 = create_bus(net, vn_kv=110, name="HV Bus 2")
-    mv_bus2 = create_bus(net, vn_kv=20, name="MV Bus 2")
-    lv_bus2 = create_bus(net, vn_kv=10, name="LV Bus 2")
+    hv_bus2, mv_bus2, lv_bus2 = create_buses(net, 3, [110, 20, 10], name=["HV Bus 2", "MV Bus 2", "LV Bus 2"])
 
     # Create external grids for slack reference at HV sides
     create_ext_grid(net, bus=hv_bus1, vm_pu=1.02, name="Grid Slack 1")
