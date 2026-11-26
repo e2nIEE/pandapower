@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 from numpy.typing import NDArray
 
-from pandapower.converter.jao._locnames import _multi_str_repl
+from pandapower.converter.jao.locnames import _multi_str_repl
 from pandapower.network import pandapowerNet
 from pandapower.plotting import set_line_geodata_from_bus_geodata
 

@@ -9,7 +9,7 @@ from functools import reduce
 
 import pandas as pd
 
-from pandapower.converter.jao._common import _get_bus_idx
+from pandapower.converter.jao.common import _get_bus_idx
 from pandapower.network import pandapowerNet
 from pandapower.toolbox.grid_modification import drop_buses, fuse_buses
 from pandapower.topology import connected_components, create_nxgraph

@@ -11,21 +11,21 @@ import pytest
 from openpyxl import load_workbook
 
 from pandapower.converter.jao import from_jao
-from pandapower.converter.jao._common import _drop_duplicates_and_join_TSO, _get_bus_idx, _get_float_column
-from pandapower.converter.jao._correction import _data_correction, _repair_incomplete_line_data
-from pandapower.converter.jao._geodata import (
+from pandapower.converter.jao.common import _drop_duplicates_and_join_TSO, _get_bus_idx, _get_float_column
+from pandapower.converter.jao.correction import _data_correction, _repair_incomplete_line_data
+from pandapower.converter.jao.geodata import (
     _add_bus_geo,
     _fill_geo_at_one_sided_branches_without_geo_extent,
     _parse_html_str,
 )
-from pandapower.converter.jao._grid_groups import (
+from pandapower.converter.jao.grid_groups import (
     _invent_connections_between_grid_groups,
     _same_name_base_mask,
     drop_islanded_grid_groups,
     get_grid_groups,
 )
-from pandapower.converter.jao._locnames import _normalize_locname
-from pandapower.converter.jao._transformers import (
+from pandapower.converter.jao.locnames import _normalize_locname
+from pandapower.converter.jao.transformers import (
     _allocate_trafos_to_buses_and_create_buses,
     _create_transformers_and_buses,
     _find_trafo_locations,

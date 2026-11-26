@@ -9,7 +9,7 @@ from copy import deepcopy
 import numpy as np
 import pandas as pd
 
-from pandapower.converter.jao._common import _drop_duplicates_and_join_TSO, _get_bus_idx, _raise_for_missing_buses
+from pandapower.converter.jao.common import _drop_duplicates_and_join_TSO, _get_bus_idx, _raise_for_missing_buses
 from pandapower.create import LineParams, create_buses, create_lines
 from pandapower.network import pandapowerNet
 

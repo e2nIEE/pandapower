@@ -9,11 +9,11 @@ import os
 
 import pandas as pd
 
-from pandapower.converter.jao._buses_lines import _create_buses_from_line_data, _create_lines
-from pandapower.converter.jao._correction import _data_correction
-from pandapower.converter.jao._geodata import _add_bus_geo, _parse_html_str
-from pandapower.converter.jao._grid_groups import _invent_connections_between_grid_groups, drop_islanded_grid_groups
-from pandapower.converter.jao._transformers import _create_transformers_and_buses
+from pandapower.converter.jao.buses_lines import _create_buses_from_line_data, _create_lines
+from pandapower.converter.jao.correction import _data_correction
+from pandapower.converter.jao.geodata import _add_bus_geo, _parse_html_str
+from pandapower.converter.jao.grid_groups import _invent_connections_between_grid_groups, drop_islanded_grid_groups
+from pandapower.converter.jao.transformers import _create_transformers_and_buses
 from pandapower.network import pandapowerNet
 from pandapower.plotting import set_line_geodata_from_bus_geodata
 
@@ -89,7 +89,6 @@ def from_jao(
         >>> from pathlib import Path
         >>> import os
         >>> from pandapower.converter.jao.from_jao import from_jao
-        >>> net = from_jao()
         >>> home = str(Path.home())
         >>> # assume that the files are located at your desktop:
         >>> excel_file_path = os.path.join(home, "desktop", "202409_Core Static Grid Mode_6th release")
@@ -138,40 +137,3 @@ def from_jao(
         set_line_geodata_from_bus_geodata(net)
 
     return net
-
-
-if __name__ == "__main__":
-    from pathlib import Path
-
-    from pandapower.converter.jao._geodata import _fill_geo_at_one_sided_branches_without_geo_extent
-    from pandapower.converter.jao._grid_groups import get_grid_groups
-    from pandapower.file_io import from_json, to_json
-
-    home = str(Path.home())
-    jao_data_folder = os.path.join(home, "Documents", "JAO Static Grid Model")
-
-    release5 = os.path.join(jao_data_folder, "20240329_Core Static Grid Model – 5th release")
-    excel_file_path = os.path.join(release5, "20240329_Core Static Grid Model_public.xlsx")
-    html_file_path = os.path.join(
-        release5, "20240329_Core Static Grid Model Map_public", "2024-03-18_Core_SGM_publication.html"
-    )
-
-    release6 = os.path.join(jao_data_folder, "202409_Core Static Grid Mode_6th release")
-    excel_file_path = os.path.join(release6, "20240916_Core Static Grid Model_for publication.xlsx")
-    html_file_path = os.path.join(
-        release6, "2024-09-13_Core_SGM_publication_files", "2024-09-13_Core_SGM_publication.html"
-    )
-
-    pp_net_json_file = os.path.join(home, "desktop", "jao_grid.json")
-
-    if 1:  # read from original data
-        net = from_jao(excel_file_path, html_file_path, True, drop_grid_groups_islands=True)
-        to_json(net, pp_net_json_file)
-    else:  # load net from already converted and stored net
-        net = from_json(pp_net_json_file)
-
-    print(net)
-    grid_groups = get_grid_groups(net)
-    print(grid_groups)
-
-    _fill_geo_at_one_sided_branches_without_geo_extent(net)

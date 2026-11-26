@@ -12,12 +12,12 @@ import numpy as np
 import pandas as pd
 from pandas.api.types import is_integer_dtype, is_string_dtype
 
-from pandapower.converter.jao._common import (
+from pandapower.converter.jao.common import (
     _drop_duplicates_and_join_TSO,
     _get_bus_idx,
     _get_float_column,
 )
-from pandapower.converter.jao._locnames import (
+from pandapower.converter.jao.locnames import (
     _locname_display_names,
     _normalize_locname,
     _parse_voltage_kv,
