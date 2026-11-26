@@ -138,7 +138,7 @@ def test_voltage_very_simple():
     net = pandapowerNet(name="test_voltage_very_simple", sn_mva=12)
     b1, b2 = create_buses(net, 2, 110)
     create_ext_grid(net, b1, s_sc_max_mva=100.0, s_sc_min_mva=80.0, rx_min=0.4, rx_max=0.4)
-    create_lines(net, b1, b2, std_type="305-AL1/39-ST1A 110.0", length_km=20.0)
+    create_lines(net, b1, b2, line_params="305-AL1/39-ST1A 110.0", length_km=20.0)
     calc_sc(net, case="max", ip=True, ith=True, branch_results=True, bus=1)
 
     assert np.isclose(net.res_bus_sc.at[1, "ikss_ka"], 0.49593, atol=1e-6, rtol=0)
