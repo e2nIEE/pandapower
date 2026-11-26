@@ -31,7 +31,7 @@ Here are a few examples of what you can do:
     names = [f"line {i}" for i in range(6)]
     from_buses = list(range(1, 7))
     to_buses = from_buses[1:] + [1]
-    create_lines(net, name=names, from_buses=from_buses, to_buses=to_buses, length_km=1, std_type="NAYY 4x150 SE")
+    create_lines(net, name=names, from_buses=from_buses, to_buses=to_buses, length_km=1, line_params="NAYY 4x150 SE")
 
     create_transformer_from_parameters(net, hv_bus=0, lv_bus=1, i0_percent=0.038, pfe_kw=11.6,
         vkr_percent=0.322, sn_mva=40, vn_lv_kv=22.0, vn_hv_kv=110.0, vk_percent=17.8)
@@ -215,12 +215,14 @@ This is a small extension for the example network:
 
 .. code:: python
 
-    pp.create_buses(net, 2, name = ["bus 7", "bus 8"], vn_kv = 20, type = 'b')
+    from pandapower.create import create_buses, create_lines, create_load
 
-    pp.create_lines(net, name=["line 6", "line 7"], from_buses=[6, 7], to_buses=[7, 8], length_km=1, std_type="NAYY 4x150 SE")
+    create_buses(net, 2, name = ["bus 7", "bus 8"], vn_kv = 20, type = 'b')
 
-    pp.create_load(net, 7, p_mw = 1, q_mvar = 0.2, name = "load 5")
-    pp.create_load(net, 8, p_mw = 1, q_mvar = 0.2, name = "load 6")
+    create_lines(net, name=["line 6", "line 7"], from_buses=[6, 7], to_buses=[7, 8], length_km=1, line_params="NAYY 4x150 SE")
+
+    create_load(net, 7, p_mw = 1, q_mvar = 0.2, name = "load 5")
+    create_load(net, 8, p_mw = 1, q_mvar = 0.2, name = "load 6")
 
 
 .. code:: python
@@ -261,5 +263,3 @@ This is a small extension for the example network:
     :width: 42em
     :alt: alternate Text
     :align: center
-
-
