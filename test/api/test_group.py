@@ -473,7 +473,7 @@ def test_elements_connected_to_group():
     # test net
     net = pandapowerNet(name="test_elements_connected_to_group")
     buses = create_buses(net, 12, 20)
-    create_lines(net, [buses[0]] * 6, list(range(1, 7)), length_km=0.5, std_type="48-AL1/8-ST1A 20.0")
+    create_lines(net, [buses[0]] * 6, list(range(1, 7)), length_km=0.5, line_params="48-AL1/8-ST1A 20.0")
     create_ext_grid(net, 0)
     create_loads(net, buses, 0.3)
     create_switches(net, [0, 0, 6], [0, 1, net.line.index[-1]], "l", closed=[True, False, False])
