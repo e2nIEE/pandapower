@@ -13,8 +13,8 @@ import numpy as np
 import numpy.typing as npt
 import pandas as pd
 
-import pandapower as pp
 from pandapower.network import pandapowerNet
+from pandapower.run import rundcpp
 
 logger = logging.getLogger(__name__)
 
@@ -86,7 +86,7 @@ def _ensure_pd2ppc_lookups(net: pandapowerNet) -> None:
         or net.get("_is_elements") is None
     ):
         logger.info("No pd2ppc lookups found, running a DC power flow to create them.")
-        pp.rundcpp(net)
+        rundcpp(net)
 
 
 def _get_bus_lookup(net: pandapowerNet) -> npt.NDArray:
@@ -212,7 +212,7 @@ def get_dist_slack(net: pandapowerNet, pf_required: bool = True) -> tuple[pd.Dat
             A dict to area_bus_mapping
     """
     if pf_required:
-        pp.rundcpp(net)
+        rundcpp(net)
 
     slack_df = pd.DataFrame(columns=["ele_type", "ele_id", "bus_id", "priority", "new_ele_type", "new_ele_id"])
 
@@ -302,7 +302,7 @@ def _check_multi_area(net: pandapowerNet, slack_df: pd.DataFrame) -> dict:
     for ix, slack in slack_df.iterrows():
         if not updated_slack_mask[ix]:
             net[slack.ele_type].at[slack.ele_id, "in_service"] = True
-            pp.rundcpp(net)
+            rundcpp(net)
             net[slack.ele_type].at[slack.ele_id, "in_service"] = False
 
             bus_this_area = net.bus.index.to_numpy()[~np.isnan(net.res_bus.va_degree)]
@@ -315,7 +315,7 @@ def _check_multi_area(net: pandapowerNet, slack_df: pd.DataFrame) -> dict:
     # Restore all active slacks to in-service
     for ix, slack in slack_df.iterrows():
         net[slack.ele_type].at[slack.ele_id, "in_service"] = True
-    pp.rundcpp(net)
+    rundcpp(net)
 
     # Update slack priority in area
     sum_priority_in_area = slack_df.groupby("area")["priority"].sum()

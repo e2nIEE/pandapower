@@ -217,8 +217,8 @@ def _draw_colored_bus_groups_plotly(
 
 
 if __name__ == "__main__":
-    from pandapower import runpp
     from pandapower.networks import mv_oberrhein  # type: ignore[no-redef]
+    from pandapower.run import runpp
 
     net = mv_oberrhein()  # type: ignore[operator]
     vlevel_plotly(net)
