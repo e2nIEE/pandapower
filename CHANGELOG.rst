@@ -3,6 +3,7 @@ Change Log
 
 [upcoming 4.0.0] - 2026-..-..
 -------------------------------
+- [FIXED] ``_sum_by_group`` raised ``ValueError: provided out is the wrong size for the accumulation`` with numpy 2.5 for values given as column vectors, as for static generators in ``calc_sc`` with ``use_pre_fault_voltage=True``. The cumulative sums now run along the first axis, with the same results for earlier numpy versions (#3342)
 - [CHANGED] ``from_excel`` logs a warning when the geodata of a bus is not a geojson Point, as ``create_bus`` does for LineString ``coords`` (#2466)
 - [FIXED] cim2pp: ``from_cim`` with ``cgmes_version="3.0"`` failed with ``AttributeError: 'DataFrame' object has no attribute 'inService'`` for models with ACLineSegments or DCLineSegments, ``Equipment.inService`` of the lines is now read from the SSH profile (#3322)
 - [FIXED] restoring a table from json no longer raises pandas' deprecation warning about ``select_dtypes`` including ``str`` columns when ``object`` is requested; the same columns are converted as before
