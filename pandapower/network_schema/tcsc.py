@@ -82,6 +82,12 @@ res_tcsc_schema = pa.DataFrameSchema(
         "va_from_degree": pa.Column(float, nullable=True, description="voltage angle at the from bus [degree]"),
         "vm_to_pu": pa.Column(float, nullable=True, description="voltage magnitude at the to bus [pu]"),
         "va_to_degree": pa.Column(float, nullable=True, description="voltage angle at the to bus [degree]"),
+        "at_limit": pa.Column(
+            bool,
+            nullable=True,
+            description="whether the loadflow held the firing angle at min_angle_degree or max_angle_degree "
+            "(only with enforce_facts_limits=True)",
+        ),
     },
     name="res_tcsc",
     strict=False,

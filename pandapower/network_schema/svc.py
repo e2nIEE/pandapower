@@ -63,6 +63,12 @@ res_svc_schema = pa.DataFrameSchema(
         "q_mvar": pa.Column(float, nullable=True, description="shunt reactive power consumption of svc [MVAr]"),
         "vm_pu": pa.Column(float, nullable=True, description="voltage magnitude at svc bus [pu]"),
         "va_degree": pa.Column(float, nullable=True, description="voltage angle at svc bus [degree]"),
+        "at_limit": pa.Column(
+            bool,
+            nullable=True,
+            description="whether the loadflow held the firing angle at min_angle_degree or max_angle_degree "
+            "(only with enforce_facts_limits=True)",
+        ),
     },
     name="res_svc",
     strict=False,

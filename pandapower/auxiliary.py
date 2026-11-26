@@ -1934,6 +1934,22 @@ def _replace_nans_with_default_limits(net: pandapowerNet, ppc: PyPowerNetwork) -
         ppc[matrix][:, [column]] = limits
 
 
+def _facts_at_limit(net: pandapowerNet, element: str, angle_degree) -> np.ndarray:
+    """
+    Returns for each row of net[element] ("svc" or "tcsc") whether the power flow held the device at a firing
+    angle limit, i.e. whether enforce_facts_limits was set and the resulting firing angle equals
+    min_angle_degree or max_angle_degree of a controllable, in-service device.
+    """
+    table = net[element]
+    if not net._options.get("enforce_facts_limits", False):
+        return np.zeros(len(table), dtype=bool)
+    angle_degree = np.asarray(angle_degree, dtype=float)
+    lo = table["min_angle_degree"].values if "min_angle_degree" in table.columns else np.full(len(table), 90.0)
+    hi = table["max_angle_degree"].values if "max_angle_degree" in table.columns else np.full(len(table), 180.0)
+    at_limit = np.isclose(angle_degree, lo, rtol=0, atol=1e-6) | np.isclose(angle_degree, hi, rtol=0, atol=1e-6)
+    return table["controllable"].values.astype(bool) & table["in_service"].values.astype(bool) & at_limit
+
+
 def _init_runpp_options(
     net: pandapowerNet,
     algorithm: Literal["nr", "iwamoto_nr", "bfsw", "gs", "fdxb", "fdbx", "helm"],
@@ -1979,6 +1995,7 @@ def _init_runpp_options(
     use_umfpack = kwargs.get("use_umfpack", True)
     permc_spec = kwargs.get("permc_spec", None)
     lightsim2grid = kwargs.get("lightsim2grid", "auto")
+    enforce_facts_limits = kwargs.get("enforce_facts_limits", False)
 
     # for all the parameters from 'overrule_options' we need to collect them
     # if they are used for any of the checks below:
@@ -2140,6 +2157,7 @@ def _init_runpp_options(
         use_umfpack=use_umfpack,
         permc_spec=permc_spec,
         lightsim2grid=lightsim2grid,
+        enforce_facts_limits=enforce_facts_limits,
     )
     net._options.update(overrule_options)
 

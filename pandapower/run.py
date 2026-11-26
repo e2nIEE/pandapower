@@ -237,6 +237,12 @@ def runpp(
             model an ideal bus. Closed bus-bus switches, whose impedance z_ohm is not zero, are modelled
             as branches with resistance and reactance according to net.switch.z_ohm and switch_rx_ratio.
         delta_q: Reactive power tolerance for option "enforce_q_lims" in kvar - helps convergence in some cases.
+        enforce_facts_limits (bool, False): respect the firing angle limits of SVCs and TCSCs
+            If True, an SVC or TCSC whose thyristor firing angle leaves [min_angle_degree, max_angle_degree] is
+            held at the limit and stops controlling its setpoint, and it is released again if it can control
+            its setpoint within its limits. This is done in the same outer loop as enforce_q_lims, one device
+            per loadflow, so the runtime increases when limits are reached. Column at_limit of res_svc and
+            res_tcsc shows which devices are held. Only works with algorithm="nr".
         trafo3w_losses: defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
         v_debug (bool, False): if True, voltage values in each newton-raphson iteration are logged in the ppc
         init_vm_pu (string/float/array/Series, None): Allows to define initialization specifically for voltage

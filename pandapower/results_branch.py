@@ -4,7 +4,13 @@
 
 import numpy as np
 
-from pandapower.auxiliary import I_from_SV_elementwise, S_from_VI_elementwise, _sum_by_group, sequence_to_phase
+from pandapower.auxiliary import (
+    I_from_SV_elementwise,
+    S_from_VI_elementwise,
+    _facts_at_limit,
+    _sum_by_group,
+    sequence_to_phase,
+)
 from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_brch import BR_R, F_BUS, PF, PT, QF, QT, T_BUS
 from pandapower.pypower.idx_brch_dc import DC_BR_R, DC_F_BUS, DC_IF, DC_IT, DC_PF, DC_PT, DC_T_BUS, DC_TDPF
@@ -630,6 +636,7 @@ def _get_tcsc_results(net: pandapowerNet, ppc, suffix=None):
 
     res_tcsc_df.loc[:, "thyristor_firing_angle_degree"] = np.rad2deg(ppc["tcsc"][f:t, TCSC_THYRISTOR_FIRING_ANGLE].real)
     res_tcsc_df.loc[:, "x_ohm"] = ppc["tcsc"][f:t, TCSC_X_PU].real * baseZ
+    res_tcsc_df["at_limit"] = _facts_at_limit(net, "tcsc", res_tcsc_df["thyristor_firing_angle_degree"])
     res_tcsc_df.loc[:, "p_from_mw"] = p_from_mw
     res_tcsc_df.loc[:, "q_from_mvar"] = q_from_mvar
     res_tcsc_df.loc[:, "p_to_mw"] = p_to_mw
