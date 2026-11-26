@@ -990,7 +990,7 @@ def test_opf_no_controllables_vs_pf():
     # create network
     net = pandapowerNet(name="test_opf_no_controllables_vs_pf")
 
-    b1, b2 = create_buses(net, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
+    b1, b2 = create_buses(net, 2, vn_kv=0.4, max_vm_pu=vm_max, min_vm_pu=vm_min)
 
     create_lines(net, b1, b2, length_km=5, line_params="NAYY 4x50 SE", max_loading_percent=max_line_loading_percent)
 
