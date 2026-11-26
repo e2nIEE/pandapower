@@ -3,6 +3,9 @@ Change Log
 
 [upcoming 4.0.0] - 2026-..-..
 -------------------------------
+- [CHANGED] from_jao: converter now uses fuzzy matching (difflib) to match buses and table columns when names are inconsistent; added JAO to pandapower mapping table to jao.rst
+- [FIXED] from_jao: tolerate malformed rows in the ``Lines``, ``Tielines`` and ``Transformers`` sheets of newer JAO releases (missing substation names or voltage levels, non-breaking spaces in the current columns, empty rows). Empty rows are dropped, missing substation names and voltage levels are filled if unambiguous, and remaining inconsistencies raise a descriptive ``ValueError`` instead of a bare ``KeyError``
+- [FIXED] from_jao: phase shifters set the supported ``tap_changer_type`` "Ideal" instead of the deprecated and ignored ``tap_phase_shifter`` flag, so that their tap angle step takes effect in the load flow
 - [CHANGED] ``from_excel`` logs a warning when the geodata of a bus is not a geojson Point, as ``create_bus`` does for LineString ``coords`` (#2466)
 - [FIXED] cim2pp: ``from_cim`` with ``cgmes_version="3.0"`` failed with ``AttributeError: 'DataFrame' object has no attribute 'inService'`` for models with ACLineSegments or DCLineSegments, ``Equipment.inService`` of the lines is now read from the SSH profile (#3322)
 - [FIXED] restoring a table from json no longer raises pandas' deprecation warning about ``select_dtypes`` including ``str`` columns when ``object`` is requested; the same columns are converted as before
