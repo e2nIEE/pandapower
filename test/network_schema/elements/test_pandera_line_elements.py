@@ -71,7 +71,7 @@ class TestLineRequiredFields:
         create_buses(net, 2, 0.4)
         create_buses(net, 1, 0.4, index=42)  # ensure FK-positive for 42
 
-        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, line_params=STD_TYPE)
 
         net.line[parameter] = valid_value
         validate_network(net)
@@ -99,7 +99,7 @@ class TestLineRequiredFields:
         net = pandapowerNet(name="test_invalid_required_values")
         create_buses(net, 2, 0.4)
 
-        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, line_params=STD_TYPE)
 
         net.line[parameter] = invalid_value
         with pytest.raises(pa.errors.SchemaError):
@@ -114,7 +114,7 @@ class TestLineOptionalFields:
         net = pandapowerNet(name="test_all_optional_fields_valid")
         create_buses(net, 2, 0.4)
 
-        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, line_params=STD_TYPE)
 
         # Optional text fields
         net.line["name"] = pd.Series(["Line A"], dtype=pd.StringDtype())
@@ -230,7 +230,7 @@ class TestLineOptionalFields:
         net = pandapowerNet(name="test_valid_optional_values")
         create_buses(net, 2, 0.4)
 
-        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, line_params=STD_TYPE)
 
         # Satisfy tdpf group to avoid dependency failures when setting tdpf-related columns
         net.line["tdpf"] = pd.Series([True], dtype="boolean")
@@ -317,7 +317,7 @@ class TestLineOptionalFields:
         net = pandapowerNet(name="test_invalid_optional_values")
         create_buses(net, 2, 0.4)
 
-        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, line_params=STD_TYPE)
 
         # Provide complete tdpf group so only the target parameter triggers failure
         net.line["tdpf"] = pd.Series([True], dtype=pd.BooleanDtype())
@@ -346,7 +346,7 @@ class TestLineForeignKey:
         net = pandapowerNet(name="test_invalid_bus_index")
         create_buses(net, 2, 0.4)
 
-        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, line_params=STD_TYPE)
 
         net.line["from_bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
@@ -357,7 +357,7 @@ class TestLineForeignKey:
         net = pandapowerNet(name="test_invalid_to_bus_index")
         create_buses(net, 2, 0.4)
 
-        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, line_params=STD_TYPE)
 
         net.line["to_bus"] = 9999
         with pytest.raises(pa.errors.SchemaError):
@@ -387,7 +387,7 @@ class TestLineAngleLimits:
     def _net():
         net = pandapowerNet(name="test_line_angle_limits")
         create_buses(net, 2, 0.4)
-        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, std_type=STD_TYPE)
+        create_lines(net, from_buses=0, to_buses=1, length_km=1.0, in_service=True, line_params=STD_TYPE)
         return net
 
     def test_min_less_equal_max_passes(self):
