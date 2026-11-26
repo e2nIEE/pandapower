@@ -4,12 +4,11 @@ import pytest
 from numpy import nan
 
 from pandapower.create import (
-    create_bus,
     create_buses,
     create_dcline,
     create_ext_grid,
     create_gen,
-    create_line,
+    create_lines,
     create_load,
     create_sgen,
     create_transformer,
@@ -22,10 +21,10 @@ logger = logging.getLogger(__name__)
 
 def _opf_net():
     net = pandapowerNet(name="_opf_net")
-    create_bus(net, 20, min_vm_pu=0.85, max_vm_pu=1.15)
+    create_buses(net, 1, 20, min_vm_pu=0.85, max_vm_pu=1.15)
     create_buses(net, 3, 0.4, min_vm_pu=0.85, max_vm_pu=1.15)
     create_transformer(net, 0, 1, "0.25 MVA 20/0.4 kV")
-    create_line(net, 1, 2, 1, "48-AL1/8-ST1A 0.4")
+    create_lines(net, 1, 2, 1, "48-AL1/8-ST1A 0.4")
     create_ext_grid(net, 0)
     create_dcline(
         net,
