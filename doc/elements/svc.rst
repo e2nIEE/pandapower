@@ -28,11 +28,20 @@ In real application, the operation of the device in the resonance region is proh
 range for the thyristor firing angle around the resonance point. We did not implement this in our software - this
 should be considered for future work.
 
-The device operates in the value range of the thyristor firing angle between 90° and 180°. Any results for the
-thyristor firing angle outside of this range are invalid (we have not observed a converged result with values outside
-of the valid range in the test cases). Even though we include the values of min_angle_degree and max_angle_degree in
-the create function, they are not considered during the power flow calculation. For future work, the functionality
-similar to "enforce_q_lims" should be implemented.
+The device operates with a thyristor firing angle between 90° and 180°.
+By default, ``runpp`` does not enforce ``min_angle_degree`` and ``max_angle_degree``.
+Pass ``enforce_facts_limits=True`` to enforce these limits for controllable, in-service SVCs and TCSCs.
+The limits must satisfy ``90 <= min_angle_degree <= max_angle_degree <= 180``.
+A device that reaches a bound temporarily stops controlling its setpoint and acts as a fixed impedance;
+its voltage or power target may therefore be missed. It can resume control if a later trial solution
+keeps its angle within the bounds.
+
+Firing angle limits and generator Q limits share one outer loop. Each round fixes the largest violation
+relative to the device's adjustable range. Generators fixed at a Q limit are not released.
+Repeated control states or an outer iteration limit cause a warning and return the last solved state;
+this does not guarantee that all setpoints or firing angle limits are satisfied.
+The boolean result column ``at_limit`` identifies controllable, in-service devices at an angle bound
+when enforcement is enabled, and is False otherwise.
 
 We demonstrate the use-case of this device in the
 pandapower tutorial: `FACTS <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/FACTS.ipynb>`_.

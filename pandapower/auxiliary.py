@@ -1936,7 +1936,7 @@ def _replace_nans_with_default_limits(net: pandapowerNet, ppc: PyPowerNetwork) -
 
 def _facts_at_limit(net: pandapowerNet, element: str, angle_degree) -> np.ndarray:
     """
-    Returns for each row of net[element] ("svc" or "tcsc") whether the power flow held the device at a firing
+    Returns for each row of net[element] ("svc" or "tcsc") whether a controllable device is at a firing
     angle limit, i.e. whether enforce_facts_limits was set and the resulting firing angle equals
     min_angle_degree or max_angle_degree of a controllable, in-service device.
     """

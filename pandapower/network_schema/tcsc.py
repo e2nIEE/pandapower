@@ -85,7 +85,7 @@ res_tcsc_schema = pa.DataFrameSchema(
         "at_limit": pa.Column(
             bool,
             nullable=True,
-            description="whether the loadflow held the firing angle at min_angle_degree or max_angle_degree "
+            description="whether a controllable in-service device is at min_angle_degree or max_angle_degree "
             "(only with enforce_facts_limits=True)",
         ),
     },

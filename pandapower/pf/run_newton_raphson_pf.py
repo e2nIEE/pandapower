@@ -3,6 +3,7 @@
 
 
 import logging
+from copy import deepcopy
 from time import perf_counter
 
 from numpy import (
@@ -12,6 +13,8 @@ from numpy import (
     inf,
     int32,
     int64,
+    isfinite,
+    pi,
     r_,
     setdiff1d,
     union1d,
@@ -20,8 +23,10 @@ from numpy import (
 from numpy import (
     flatnonzero as find,
 )
+from numpy.linalg import LinAlgError
 
 from pandapower.auxiliary import version_check
+from pandapower.pf.make_y_bus_facts import calc_y_svc_pu
 from pandapower.pf.ppci_variables import _get_pf_variables_from_ppci, _store_results_from_pf_in_ppci
 from pandapower.pf.run_dc_pf import _run_dc_pf
 from pandapower.pypower.bustypes import bustypes
@@ -41,6 +46,8 @@ from pandapower.pypower.idx_tcsc import (
     TCSC_MIN_FIRING_ANGLE,
     TCSC_STATUS,
     TCSC_THYRISTOR_FIRING_ANGLE,
+    TCSC_X_CVAR,
+    TCSC_X_L,
 )
 from pandapower.pypower.make_s_bus import makeSbus
 from pandapower.pypower.make_y_bus import makeYbus as makeYbus_pypower
@@ -270,7 +277,23 @@ def _facts_devices(ppci):
         status = SVC_STATUS if table == "svc" else TCSC_STATUS
         rows = find((ppci[table][:, status].real > 0) & (ppci[table][:, ctrl].real > 0))
         devices += [(table, int(row)) for row in rows]
-    return devices
+    for device in devices:
+        _, lo, hi = _facts_angle_and_limits(ppci, device)
+        if not (isfinite(lo) and isfinite(hi) and pi / 2 <= lo <= hi <= pi):
+            raise ValueError("Controllable SVC/TCSC firing angle limits must satisfy 90 <= min <= max <= 180 degrees")
+        table, row = device
+        if table == "tcsc":
+            x_l, x_c = ppci[table][row, [TCSC_X_L, TCSC_X_CVAR]].real
+            if calc_y_svc_pu(lo, x_l, x_c) * calc_y_svc_pu(hi, x_l, x_c) <= 0:
+                raise ValueError("Controllable TCSC firing angle limits must not include its resonance angle")
+    return sorted(devices, key=lambda device: _facts_sort_key(ppci, device))
+
+
+def _facts_sort_key(ppci, device):
+    # Use physical properties for ties and release order, independent of table row order.
+    table, row = device
+    angle_column = _FACTS_COLUMNS[table][0]
+    return table, tuple(ppci[table][row, :angle_column].real), _facts_angle_and_limits(ppci, device)[1:]
 
 
 def _set_facts_control(ppci, device, controllable, angle=None):
@@ -302,24 +325,23 @@ def _largest_facts_violation(ppci, devices, held):
             relative = excess / (hi - lo) if hi > lo else inf
             if largest is None or relative > largest[0]:
                 largest = (relative, device, hi if angle > hi else lo)
-    return None if largest is None else largest[1:]
+    return largest
 
 
-def _release_facts_device(ppci, options, held):
-    """
-    Lets each device that is held at a firing angle limit control its setpoint again, one at a time. The first
-    device whose firing angle stays within its limits is released and returned. All other devices are held at
-    their limits again. Returns None if no device can be released.
-    """
-    for device in sorted(held):
-        _set_facts_control(ppci, device, True)
-        ppci, success, _ = _run_ac_pf_without_qlims_enforced(ppci, options)
-        angle, lo, hi = _facts_angle_and_limits(ppci, device)
+def _release_facts_device(ppci, held, solve):
+    """Try releasing one held device without changing the accepted solution on failed trials."""
+    for device in sorted(held, key=lambda device: _facts_sort_key(ppci, device)):
+        trial = deepcopy(ppci)
+        _set_facts_control(trial, device, True)
+        try:
+            trial, success, _, _, _, _ = solve(trial)
+        except (FloatingPointError, LinAlgError):
+            continue
+        angle, lo, hi = _facts_angle_and_limits(trial, device)
         if success and lo - _FACTS_ANGLE_TOL <= angle <= hi + _FACTS_ANGLE_TOL:
             del held[device]
-            return device
-        _set_facts_control(ppci, device, False, held[device])
-    return None
+            return trial, device
+    return ppci, None
 
 
 def _run_ac_pf_with_qlims_enforced(ppci, options):
@@ -344,28 +366,58 @@ def _run_ac_pf_with_qlims_enforced(ppci, options):
     limited = []  # list of indices of gens @ Q lims
     fixedQg = zeros(gen.shape[0])  # Qg of gens at Q limits
 
-    facts = _facts_devices(ppci) if options.get("enforce_facts_limits", False) else []
+    enforce_facts = options.get("enforce_facts_limits", False)
+    facts = _facts_devices(ppci) if enforce_facts else []
     held = {}  # FACTS device -> firing angle limit at which it is held
     seen = set()  # combinations of limited gens and held devices that have been solved
-    release_checked = set()  # combinations for which no held device could be released
     max_rounds = 10 * (len(facts) + gen.shape[0]) + 10
     rounds = 0
-    stop = False
+    # Limit enforcement changes generator injections even if the caller did not.
+    # Recompute Sbus instead of recycling it across different control states.
+    solve_options = dict(options, recycle=None) if enforce_facts else options
+
+    def solve(case):
+        # Each extra FACTS solve must start from the same loads. In particular, do not
+        # repeatedly subtract the injections of generators already fixed at a Q limit.
+        case_bus, case_gen = case["bus"], case["gen"]
+        if enforce_facts:
+            case_bus[:, [PD, QD]] = bus_backup_p_q
+            case_gen[:, PG] = gen_backup_p
+            case_gen[limited, QG] = fixedQg[limited]
+            for index in limited:
+                bi = int(case_gen[index, GEN_BUS])
+                case_bus[bi, [PD, QD]] -= case_gen[index, [PG, QG]]
+        case, success, iterations = _run_ac_pf_without_qlims_enforced(case, solve_options)
+        case_gen[:, PG] = gen_backup_p
+        case_bus[:, PD] = bus_backup_p_q[:, 0]
+        case_bus, case_gen, case_branch = ppci_to_pfsoln(case, options, limited)
+        if enforce_facts:
+            case_bus[:, [PD, QD]] = bus_backup_p_q
+        return case, success, iterations, case_bus, case_gen, case_branch
 
     while True:
-        ppci, success, iterations = _run_ac_pf_without_qlims_enforced(ppci, options)
-        gen[:, PG] = gen_backup_p
-        bus[:, PD] = bus_backup_p_q[:, 0]
-        bus, gen, branch = ppci_to_pfsoln(ppci, options, limited)
+        ppci, success, iterations, bus, gen, branch = solve(ppci)
         rounds += 1
-        if stop:
-            break
-        if rounds > max_rounds:
-            logger.warning(
-                "The reactive power and firing angle limits were not settled after %d power flows; "
-                "the result may violate some limits." % max_rounds
-            )
-            break
+        if enforce_facts:
+            state = (tuple(sorted(limited)), tuple(sorted(held.items())))
+            if success and state in seen:
+                logger.warning(
+                    "Some SVCs or TCSCs keep switching between their firing angle limits and controlling "
+                    "their setpoints. The power flow stops with %d SVC(s) and %d TCSC(s) held at their "
+                    "firing angle limits (see column at_limit of res_svc and res_tcsc); their setpoints "
+                    "or other firing angle limits may not be met.",
+                    *(sum(1 for d in held if d[0] == table) for table in ("svc", "tcsc")),
+                )
+                break
+            if success:
+                seen.add(state)
+            if rounds >= max_rounds:
+                logger.warning(
+                    "The reactive power and firing angle limits were not settled after %d power flows; "
+                    "the result may violate some limits.",
+                    max_rounds,
+                )
+                break
 
         # find gens with violated Q constraints
         if qlim:
@@ -378,9 +430,39 @@ def _run_ac_pf_with_qlims_enforced(ppci, options):
         else:
             mx = mn = array([], dtype=int64)
 
+        if enforce_facts:
+            # Compare unlike constraints by their adjustable ranges, fixing only one
+            # device per round. Preserve the existing Q-only algorithm when opted out.
+            violation = _largest_facts_violation(ppci, facts, held)
+            if len(mx) or len(mn):
+                indices = r_[mx, mn].astype(int64)
+                excess = r_[gen[mx, QG] - gen[mx, QMAX], gen[mn, QMIN] - gen[mn, QG]]
+                widths = gen[indices, QMAX] - gen[indices, QMIN]
+                relative = array([value / width if width > 0 else inf for value, width in zip(excess, widths)])
+                k = int(argmax(relative))
+                if violation is None or relative[k] >= violation[0]:
+                    if k >= len(mx):
+                        mn, mx = array([mn[k - len(mx)]]), array([], dtype=int64)
+                    else:
+                        mx, mn = array([mx[k]]), array([], dtype=int64)
+                else:
+                    mx = mn = array([], dtype=int64)
+            if not (len(mx) or len(mn)):
+                if violation is not None:
+                    _, device, limit = violation
+                    held[device] = limit
+                    _set_facts_control(ppci, device, False, limit)
+                    continue
+                if not success:
+                    break
+                ppci, released = _release_facts_device(ppci, held, solve)
+                if released is None:
+                    break
+                continue
+
         if len(mx) > 0 or len(mn) > 0:  # we have some Q limit violations
             # one at a time?
-            if qlim == 2:  # fix largest violation, ignore the rest
+            if qlim == 2 and not enforce_facts:  # fix largest violation, ignore the rest
                 k = argmax(r_[gen[mx, QG] - gen[mx, QMAX], gen[mn, QMIN] - gen[mn, QG]])
                 if k >= len(mx):
                     mn = mn[k - len(mx)]
@@ -409,33 +491,11 @@ def _run_ac_pf_with_qlims_enforced(ppci, options):
 
             limited = r_[limited, mx].astype(int64)
 
-            for i in range(len(limited)):  # [one at a time, since they may be at same bus]
-                gen[limited[i], GEN_STATUS] = 0  # temporarily turn off gen,
-                bi = gen[limited[i], GEN_BUS].astype(int64)  # adjust load accordingly,
-                bus[bi, [PD, QD]] = bus[bi, [PD, QD]] - gen[limited[i], [PG, QG]]
-        elif facts:
-            state = (tuple(sorted(limited)), tuple(sorted(held)))
-            seen.add(state)
-            violation = _largest_facts_violation(ppci, facts, held)
-            if violation is not None:
-                device, limit = violation
-                held[device] = limit
-                _set_facts_control(ppci, device, False, limit)
-                if (tuple(sorted(limited)), tuple(sorted(held))) in seen:
-                    logger.warning(
-                        "Some SVCs or TCSCs keep switching between their firing angle limits and controlling "
-                        "their setpoints. The power flow stops with %d SVC(s) and %d TCSC(s) held at their "
-                        "firing angle limits (see column at_limit of res_svc and res_tcsc); their setpoints "
-                        "may not be met." % tuple(sum(1 for d in held if d[0] == t) for t in ("svc", "tcsc"))
-                    )
-                    stop = True  # solve once more for the current combination, then stop
-            elif state in release_checked:
-                break  # no limit violated and no held device can be released
-            else:
-                release_checked.add(state)
-                # A released device controls its setpoint within its limits in the solution just found. If no
-                # device is released, the next round solves again with all held devices at their limits.
-                _release_facts_device(ppci, options, held)
+            for i in limited:  # one at a time, since generators may be at the same bus
+                gen[i, GEN_STATUS] = 0
+                if not enforce_facts:
+                    bi = int(gen[i, GEN_BUS])
+                    bus[bi, [PD, QD]] -= gen[i, [PG, QG]]
         else:
             break  # no more generator Q limits violated
 
@@ -444,7 +504,8 @@ def _run_ac_pf_with_qlims_enforced(ppci, options):
 
     if len(limited) > 0:
         # restore injections from limited gens [those at Q limits]
-        bus[setdiff1d(changed_gens, ref), BUS_TYPE] = PV  # & set bus type back to PV
+        restore_gens = gen[limited, GEN_BUS].astype(int64) if enforce_facts else changed_gens
+        bus[setdiff1d(restore_gens, ref), BUS_TYPE] = PV  # restore PV buses
         gen[limited, QG] = fixedQg[limited]  # restore Qg value,
         gen[limited, GEN_STATUS] = 1  # turn gens back on
         bus[:, [PD, QD]] = bus_backup_p_q

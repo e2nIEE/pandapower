@@ -242,7 +242,10 @@ def runpp(
             held at the limit and stops controlling its setpoint, and it is released again if it can control
             its setpoint within its limits. This is done in the same outer loop as enforce_q_lims, one device
             per loadflow, so the runtime increases when limits are reached. Column at_limit of res_svc and
-            res_tcsc shows which devices are held. Only works with algorithm="nr".
+            res_tcsc shows controllable, in-service devices at a bound (False when the option is off).
+            Bounds must satisfy 90 <= min <= max <= 180 degrees. A TCSC range must not include its resonance
+            angle. Repeated control states or an outer iteration limit cause a warning and return the last
+            solved state, which may not satisfy all setpoints or limits. Only works with algorithm="nr".
         trafo3w_losses: defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
         v_debug (bool, False): if True, voltage values in each newton-raphson iteration are logged in the ppc
         init_vm_pu (string/float/array/Series, None): Allows to define initialization specifically for voltage
