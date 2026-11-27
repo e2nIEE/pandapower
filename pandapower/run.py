@@ -237,6 +237,17 @@ def runpp(
             model an ideal bus. Closed bus-bus switches, whose impedance z_ohm is not zero, are modelled
             as branches with resistance and reactance according to net.switch.z_ohm and switch_rx_ratio.
         delta_q: Reactive power tolerance for option "enforce_q_lims" in kvar - helps convergence in some cases.
+        enforce_facts_limits (bool, False): respect the firing angle limits of SVCs and TCSCs
+            If True, an SVC or TCSC whose thyristor firing angle leaves [min_angle_degree, max_angle_degree] is
+            held at the limit and stops controlling its setpoint, and it is released again if it can control
+            its setpoint within its limits. This is done in the same outer loop as enforce_q_lims, one device
+            per loadflow, so the runtime increases when limits are reached. Column at_limit of res_svc and
+            res_tcsc shows controllable, in-service devices at a bound (False when the option is off).
+            Bounds must satisfy 90 <= min <= max <= 180 degrees. A TCSC range must not include its resonance
+            angle. Repeated control states or an outer iteration limit cause a warning and return the last
+            solved state, which may not satisfy all setpoints or limits. Only works with algorithm="nr".
+            Recycled calls retain the stored value when this keyword is omitted. An explicitly changed value
+            rebuilds the case instead of reusing the previous control state.
         trafo3w_losses: defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
         v_debug (bool, False): if True, voltage values in each newton-raphson iteration are logged in the ppc
         init_vm_pu (string/float/array/Series, None): Allows to define initialization specifically for voltage
@@ -275,8 +286,12 @@ def runpp(
     # if dict 'user_pf_options' is present in net, these options overrule the net._options
     # except for parameters that are passed by user
     if isinstance(kwargs.get("recycle", None), dict) and _internal_stored(net):
-        _recycled_powerflow(net, **kwargs)
-        return
+        stored_facts_limits = net["_options"].get("enforce_facts_limits", False)
+        if kwargs.get("enforce_facts_limits", stored_facts_limits) == stored_facts_limits:
+            _recycled_powerflow(net, **kwargs)
+            return
+        # Changing the control mode invalidates the stored case and admittance matrices.
+        kwargs["recycle"] = None
 
     if run_control and net.controller.in_service.any():
         from pandapower.control import run_control

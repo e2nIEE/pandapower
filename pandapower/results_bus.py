@@ -9,7 +9,7 @@ import numpy.typing as npt
 import pandas as pd
 from numpy import complex128
 
-from pandapower.auxiliary import _sum_by_group, _sum_by_group_nvals, sequence_to_phase
+from pandapower.auxiliary import _facts_at_limit, _sum_by_group, _sum_by_group_nvals, sequence_to_phase
 from pandapower.build_bus import _get_motor_pq, _get_symmetric_pq_of_unsymetric_element
 from pandapower.network import pandapowerNet
 from pandapower.pypower.idx_bus import BASE_KV, BUS_I, BUS_TYPE, LAM_P, LAM_Q, NONE, PD, QD, VA, VM
@@ -687,6 +687,7 @@ def _get_shunt_results(net: pandapowerNet, ppc, bus_lookup_aranged, bus_pq):
         net["res_svc"].loc[svc_is, "thyristor_firing_angle_degree"] = np.rad2deg(
             ppc["svc"][svc_is, SVC_THYRISTOR_FIRING_ANGLE]
         )
+        net["res_svc"]["at_limit"] = _facts_at_limit(net, "svc", net["res_svc"]["thyristor_firing_angle_degree"])
         p = np.hstack([p, np.zeros_like(svc["bus"].values)])
         if ac:
             net["res_svc"].loc[svc_is, "vm_pu"] = ppc["bus"][svcidx[svc_is], VM]

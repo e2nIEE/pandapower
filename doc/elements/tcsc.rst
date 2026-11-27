@@ -25,6 +25,12 @@ be advised to read the documentation for the SVC elements:
 We demonstrate the use-case of this device in the
 pandapower tutorial: `FACTS <https://github.com/e2nIEE/pandapower/blob/develop/tutorials/FACTS.ipynb>`_.
 
+Firing angle bounds can be enforced with ``runpp(enforce_facts_limits=True)`` as described for
+:ref:`SVCs <svc>`. The option is off by default. The allowed TCSC range must stay entirely on one
+side of the resonance angle, where its equivalent reactance is infinite. An enabled range that includes
+resonance is rejected; no automatic exclusion margin is added. Choose the lower and upper angles
+for the intended capacitive or inductive operating region.
+
 Create Function
 =====================
 
