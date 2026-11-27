@@ -66,6 +66,47 @@ def test_contingency():
     report_contingency_results(element_limits, res)
 
 
+@pytest.mark.parametrize("nminus1_limit", [None, 1.0])
+def test_contingency_without_base_loading_limit(nminus1_limit):
+    net = case9()
+    outage = net.line.index[1]
+    nminus1_cases = {"line": {"index": [outage]}}
+    net.line["max_loading_percent"] = np.nan
+    if nminus1_limit is not None:
+        net.line["max_loading_percent_nminus1"] = nminus1_limit
+
+    expected = run_contingency(net, nminus1_cases, numba=False, write_to_net=False, raise_errors=True)["line"]
+    net.line.drop(columns="max_loading_percent", inplace=True)
+    actual = run_contingency(net, nminus1_cases, numba=False, write_to_net=False, raise_errors=True)["line"]
+
+    for key in ("min_loading_percent", "max_loading_percent", "causes_overloading"):
+        np.testing.assert_array_equal(actual[key], expected[key])
+    observed = np.isfinite(actual["max_loading_percent"])
+    assert observed.any()
+    for key in ("cause_element", "cause_index"):
+        np.testing.assert_array_equal(actual[key][observed], expected[key][observed])
+    outaged_line = actual["index"] == outage
+    assert actual["causes_overloading"][outaged_line].item() == (nminus1_limit is not None)
+    assert np.isnan(actual["max_loading_percent"][outaged_line]).item()
+    assert actual["cause_index"][outaged_line].item() == -1
+    assert actual["cause_element"][outaged_line].item() is None
+
+
+def test_contingency_attributes_first_valid_loading():
+    net = case9()
+    first, second = net.line.index[1:3]
+    net.line.drop(columns="max_loading_percent", inplace=True)
+    results = run_contingency(
+        net, {"line": {"index": [first, second]}}, numba=False, write_to_net=False, raise_errors=True
+    )["line"]
+
+    # The first line is out of service in the first case and observed only in the second.
+    first_line = results["index"] == first
+    assert np.isfinite(results["max_loading_percent"][first_line]).item()
+    assert results["cause_element"][first_line].item() == "line"
+    assert results["cause_index"][first_line].item() == second
+
+
 def test_contingency_parallel(get_net):
     net = copy.deepcopy(get_net)
     nminus1_cases = {"line": {"index": net.line.index.values}}
