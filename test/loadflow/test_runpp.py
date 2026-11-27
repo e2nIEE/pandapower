@@ -11,6 +11,7 @@ import numpy as np
 import pandas as pd
 import pytest
 
+import pandapower.auxiliary as pandapower_auxiliary
 from pandapower.auxiliary import (
     _add_ppc_options,
     _check_connectivity,
@@ -1755,6 +1756,28 @@ def test_shunt_step_dependency_warning():
 
     with pytest.raises(UserWarning):
         runpp(net)
+
+
+def test_lightsim2grid_compatibility_check_does_not_query(monkeypatch):
+    # runpp runs this check on every call with the default lightsim2grid="auto"; DataFrame.query costs
+    # milliseconds per call, which is a large share of runpp on small networks
+    monkeypatch.setattr(pandapower_auxiliary, "lightsim2grid_available", True)
+    from pandapower.networks import case9
+
+    net = case9()
+    create_gen(net, bus=3, p_mw=10, vm_pu=1.0, slack=True)
+
+    def fail(*args, **kwargs):
+        raise AssertionError("DataFrame.query must not be used by the lightsim2grid compatibility check")
+
+    monkeypatch.setattr(pd.DataFrame, "query", fail)
+    check = pandapower_auxiliary._check_lightsim2grid_compatibility
+    assert check(net, "auto", False, "nr", False, False) is False  # two slacks without distributed_slack
+    assert check(net, "auto", False, "nr", True, False) is True
+    with pytest.raises(NotImplementedError, match="multiple ext_grids are found"):
+        check(net, True, False, "nr", False, False)
+    net.gen["in_service"] = False
+    assert check(net, "auto", False, "nr", False, False) is True
 
 
 @pytest.mark.skipif(not lightsim2grid_available, reason="lightsim2grid is not installed")
