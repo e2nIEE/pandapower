@@ -11,8 +11,8 @@ import numpy as np
 import numpy.typing as npt
 from scipy.io import savemat
 
-from pandapower import pandapowerNet
 from pandapower.converter.pypower import to_ppc
+from pandapower.network import pandapowerNet
 
 logger = logging.getLogger(__name__)
 

@@ -1,4 +1,8 @@
-from pandapower import load_std_type, std_type_exists
+import numpy as np
+
+from pandapower.control.util.characteristic import LogSplineCharacteristic
+from pandapower.protection.basic_protection_device import ProtectionDevice
+from pandapower.std_types import load_std_type, std_type_exists
 
 try:
     import matplotlib.pyplot as plt
@@ -6,11 +10,6 @@ try:
     MATPLOTLIB_INSTALLED = True
 except ImportError:
     MATPLOTLIB_INSTALLED = False
-
-import numpy as np
-
-from pandapower.control.util.characteristic import LogSplineCharacteristic
-from pandapower.protection.basic_protection_device import ProtectionDevice
 
 
 class Fuse(ProtectionDevice):

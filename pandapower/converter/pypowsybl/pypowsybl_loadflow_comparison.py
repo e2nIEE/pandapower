@@ -10,11 +10,11 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from pandapower import runpp
 from pandapower.auxiliary import soft_dependency_error
 from pandapower.converter.pypowsybl.pypowsybl_comparison_utils import (
     PyPowSyBlComparisonUtilsMixin,
 )
+from pandapower.run import runpp
 
 logger = logging.getLogger(__name__)
 
@@ -229,6 +229,7 @@ class PyPowSyBlLoadflowComparisonMixin(PyPowSyBlComparisonUtilsMixin):
             Dictionary containing a success flag and a readable convergence message.
 
         """
+        self.pandapower_loadflow_result: dict[str, bool] | None
         try:
             runpp(
                 self.pandap_net,
