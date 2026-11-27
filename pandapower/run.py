@@ -246,6 +246,8 @@ def runpp(
             Bounds must satisfy 90 <= min <= max <= 180 degrees. A TCSC range must not include its resonance
             angle. Repeated control states or an outer iteration limit cause a warning and return the last
             solved state, which may not satisfy all setpoints or limits. Only works with algorithm="nr".
+            Recycled calls retain the stored value when this keyword is omitted. An explicitly changed value
+            rebuilds the case instead of reusing the previous control state.
         trafo3w_losses: defines where open loop losses of three-winding transformers are considered. Valid options are "hv", "mv", "lv" for HV/MV/LV side or "star" for the star point.
         v_debug (bool, False): if True, voltage values in each newton-raphson iteration are logged in the ppc
         init_vm_pu (string/float/array/Series, None): Allows to define initialization specifically for voltage
@@ -284,8 +286,12 @@ def runpp(
     # if dict 'user_pf_options' is present in net, these options overrule the net._options
     # except for parameters that are passed by user
     if isinstance(kwargs.get("recycle", None), dict) and _internal_stored(net):
-        _recycled_powerflow(net, **kwargs)
-        return
+        stored_facts_limits = net["_options"].get("enforce_facts_limits", False)
+        if kwargs.get("enforce_facts_limits", stored_facts_limits) == stored_facts_limits:
+            _recycled_powerflow(net, **kwargs)
+            return
+        # Changing the control mode invalidates the stored case and admittance matrices.
+        kwargs["recycle"] = None
 
     if run_control and net.controller.in_service.any():
         from pandapower.control import run_control
