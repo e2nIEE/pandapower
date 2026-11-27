@@ -312,8 +312,9 @@ def _facts_angle_and_limits(ppci, device):
 
 def _largest_facts_violation(ppci, devices, held):
     """
-    Returns the device whose firing angle is furthest outside its limits, relative to the width of its
-    range, and the limit it crossed, or None if no device that is still controlling violates its limits.
+    Return the largest firing-angle violation relative to the device's adjustable range.
+
+    Include the device and the crossed limit, or return None if no controlling device violates its limits.
     """
     largest = None
     for device in devices:
