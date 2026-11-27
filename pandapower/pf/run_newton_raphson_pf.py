@@ -347,8 +347,9 @@ def _release_facts_device(ppci, held, solve):
 
 def _run_ac_pf_with_qlims_enforced(ppci, options):
     """
-    Runs the Newton-Raphson power flow in an outer loop that enforces the reactive power limits of generators
-    (option enforce_q_lims) and the firing angle limits of SVCs and TCSCs (option enforce_facts_limits).
+    Run Newton-Raphson with generator Q limits and SVC/TCSC firing-angle limits.
+
+    The options enforce_q_lims and enforce_facts_limits enable the respective limits in one outer loop.
 
     Generators that violate their reactive power limits are fixed at the limit and are never released.
 
