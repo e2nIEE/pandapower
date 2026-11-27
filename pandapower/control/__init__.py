@@ -7,11 +7,14 @@ __all__ = [
     "CharacteristicControl",
     "ConstControl",
     "ContinuousTapControl",
+    "ContinuousTapControlLDC",
     "DERController",
     "DiscreteShuntController",
     "DiscreteTapControl",
+    "DiscreteTapControlLDC",
     "DmrControl",
     "DroopControl",
+    "LineDropCompensation",
     "PQController",
     "SplineCharacteristic",
     "TapDependentImpedance",
@@ -44,6 +47,11 @@ from pandapower.control.controller.shunt_control import DiscreteShuntController
 from pandapower.control.controller.station_control import BinarySearchControl, DroopControl, VDroopControl_local
 from pandapower.control.controller.trafo.continuous_tap_control import ContinuousTapControl
 from pandapower.control.controller.trafo.discrete_tap_control import DiscreteTapControl
+from pandapower.control.controller.trafo.line_drop_compensation import (
+    ContinuousTapControlLDC,
+    DiscreteTapControlLDC,
+    LineDropCompensation,
+)
 from pandapower.control.controller.trafo.tap_dependent_impedance import TapDependentImpedance
 from pandapower.control.controller.trafo.vm_set_tap_control import VmSetTapControl
 from pandapower.control.controller.trafo_control import TrafoController
