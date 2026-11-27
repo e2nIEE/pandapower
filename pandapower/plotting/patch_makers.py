@@ -358,7 +358,7 @@ def polygon_patches(node_coords, radius: float, num_edges: int, color=None, **kw
     return patches
 
 
-def load_patches(node_coords, size: float, angles, **kwargs) -> tuple[list, list[RegularPolygon], set[str]]:
+def load_patches(node_coords, size: float, angles, **kwargs) -> "tuple[list, list[RegularPolygon], set[str]]":
     """
     Creation function of patches for loads.
 
@@ -725,7 +725,7 @@ def ward_patches(node_coords, size: float, angles, **kwargs):
     return lines, polys, {"offset", "patch_edgecolor", "patch_facecolor"}
 
 
-def xward_patches(node_coords, size: float, angles, **kwargs) -> tuple[list, list[PathPatch | Rectangle], set[str]]:
+def xward_patches(node_coords, size: float, angles, **kwargs) -> "tuple[list, list[PathPatch | Rectangle], set[str]]":
     """
     Creation function of patches for xwards.
 
