@@ -542,6 +542,22 @@ def _get_p_dc_results(net: pandapowerNet, ppc, bus_lookup_aranged):
     return bus_p_dc
 
 
+def _delta_phase_powers(net, s_branch, bus):
+    """
+    Phase powers drawn by balanced delta elements, with the complex power s_branch in each delta branch.
+
+    The phase currents are the differences of the delta branch currents, as in the 3ph power flow, so the
+    phase powers differ from s_branch if the bus voltages are unbalanced.
+    """
+    res_bus = net["res_bus_3ph"].loc[bus]
+    v_a, v_b, v_c = (
+        res_bus[f"vm_{ph}_pu"].to_numpy() * np.exp(1j * np.deg2rad(res_bus[f"va_{ph}_degree"].to_numpy()))
+        for ph in "abc"
+    )
+    i_ab, i_bc, i_ca = (np.conj(s_branch / (v1 - v2)) for v1, v2 in ((v_a, v_b), (v_b, v_c), (v_c, v_a)))
+    return v_a * np.conj(i_ab - i_ca), v_b * np.conj(i_bc - i_ab), v_c * np.conj(i_ca - i_bc)
+
+
 def _get_p_q_results_3ph(net: pandapowerNet, bus_lookup_aranged):
     # results to be filled (bus, p in kw, q in kvar)
     bus_pq: npt.NDArray = np.zeros(shape=(len(net["bus"].index), 6), dtype=float)
@@ -564,12 +580,17 @@ def _get_p_q_results_3ph(net: pandapowerNet, bus_lookup_aranged):
         if len(net[element]):
             write_pq_results_to_element(net, net._ppc1, element, suffix="3ph")
             p_el, q_el, bus_el = get_p_q_b(net, element, suffix="3ph")
-            pA = np.hstack([pA, sign * p_el / 3])
-            pB = np.hstack([pB, sign * p_el / 3])
-            pC = np.hstack([pC, sign * p_el / 3])
-            qA = np.hstack([qA, sign * q_el / 3 if ac else np.zeros(len(p_el / 3))])
-            qB = np.hstack([qB, sign * q_el / 3 if ac else np.zeros(len(p_el / 3))])
-            qC = np.hstack([qC, sign * q_el / 3 if ac else np.zeros(len(p_el / 3))])
+            s_el = sign * (np.asarray(p_el, dtype=float) + 1j * np.asarray(q_el, dtype=float)) / 3
+            s_a, s_b, s_c = s_el.copy(), s_el.copy(), s_el.copy()
+            if ac and "type" in net[element]:
+                is_delta = (net[element]["type"] == "delta").fillna(False).to_numpy(dtype=bool)
+                is_delta &= net["_is_elements"][element].astype(bool)
+                if np.any(is_delta):
+                    s_a[is_delta], s_b[is_delta], s_c[is_delta] = _delta_phase_powers(
+                        net, s_el[is_delta], bus_el[is_delta]
+                    )
+            pA, pB, pC = (np.hstack([p, s.real]) for p, s in ((pA, s_a), (pB, s_b), (pC, s_c)))
+            qA, qB, qC = (np.hstack([q, s.imag]) for q, s in ((qA, s_a), (qB, s_b), (qC, s_c)))
             b = np.hstack([b, bus_el])
     for element in elements_3ph:
         sign = -1 if element in ["sgen", "asymmetric_sgen"] else 1
@@ -583,6 +604,14 @@ def _get_p_q_results_3ph(net: pandapowerNet, bus_lookup_aranged):
             qB = np.hstack([qB, sign * q_el_B if ac else np.zeros(len(p_el_B))])
             qC = np.hstack([qC, sign * q_el_C if ac else np.zeros(len(p_el_C))])
             b = np.hstack([b, bus_el])
+    if len(net["ward"]):
+        # constant power part of the wards, there is no res_ward_3ph table
+        ward_is = net["_is_elements"]["ward"]
+        p_ward = net["ward"]["ps_mw"].values * ward_is / 3
+        q_ward = net["ward"]["qs_mvar"].values * ward_is / 3 if ac else np.zeros(len(p_ward))
+        pA, pB, pC = (np.hstack([p, p_ward]) for p in (pA, pB, pC))
+        qA, qB, qC = (np.hstack([q, q_ward]) for q in (qA, qB, qC))
+        b = np.hstack([b, net["ward"]["bus"].values])
 
     # sum pq results from every element to be written to net['bus'] later on
     b_pp, vp_A, vq_A, vp_B, vq_B, vp_C, vq_C = _sum_by_group_nvals(b.astype(np.int64), pA, qA, pB, qB, pC, qC)
