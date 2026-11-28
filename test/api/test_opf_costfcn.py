@@ -65,6 +65,19 @@ def test_opf_costfcn_generalized_cost_hessian():
     )
 
 
+def test_opf_costfcn_without_hessian_returns_consistent_tuple():
+    om = SimpleOPFCostModel()
+    x = array([1.0, 0.5])
+
+    result = opf_costfcn(x, om)
+
+    assert len(result) == 3
+    f, df, d2f = result
+    assert d2f is None
+    assert_allclose(f, 1114.0)
+    assert_allclose(df, array([2111.0, 22.0]))
+
+
 def test_opf_costfcn_generalized_cost_hessian_with_none_H():
     om = SimpleOPFCostModel()
     om.cost_params["H"] = None

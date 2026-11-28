@@ -215,8 +215,8 @@ def opf_hessfcn(x, lmbda, om, Ybus, Yf, Yt, ppopt, il=None, cost_mult=1.0):
             xp[i] = x[i] + step / 2
             xm[i] = x[i] - step / 2
             # evaluate cost & gradients
-            _, dfp = opf_costfcn(xp, om)
-            _, dfm = opf_costfcn(xm, om)
+            _, dfp, _ = opf_costfcn(xp, om)
+            _, dfm, _ = opf_costfcn(xm, om)
             # evaluate constraints & gradients
             _, _, dHp, dGp = opf_consfcn(xp, om, Ybus, Yf, Yt, ppopt, il)
             _, _, dHm, dGm = opf_consfcn(xm, om, Ybus, Yf, Yt, ppopt, il)
