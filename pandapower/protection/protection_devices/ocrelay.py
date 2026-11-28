@@ -42,18 +42,18 @@ def _hash_float(v, ndigits=12):
 
 def _make_hashable(obj):
     if isinstance(obj, dict):
-        return tuple(sorted((k, _make_hashable(v)) for k, v in obj.items()))
+        return "dict", tuple(sorted((k, _make_hashable(v)) for k, v in obj.items()))
     if isinstance(obj, (list, tuple)):
-        return tuple(_make_hashable(v) for v in obj)
+        return "sequence", tuple(_make_hashable(v) for v in obj)
     if isinstance(obj, np.ndarray):
-        return ("ndarray", obj.dtype.str, obj.shape, tuple(obj.tolist()))
+        return "ndarray", (obj.dtype.str, obj.shape, tuple(obj.tolist()))
     if isinstance(obj, pd.DataFrame):
-        return ("DataFrame", tuple(obj.columns), tuple(tuple(row) for row in obj.itertuples(index=False, name=None)))
+        return "dataframe", (tuple(obj.columns), tuple(tuple(r) for r in obj.itertuples(index=False, name=None)))
     if isinstance(obj, pd.Series):
-        return ("Series", obj.name, tuple(obj.items()))
-    if isinstance(obj, float):
-        return _hash_float(obj)
-    return obj
+        return "series", (obj.name, tuple(obj.items()))
+    if isinstance(obj, (bool, int, float, np.integer, np.floating)):
+        return "number", _hash_float(obj) if isinstance(obj, float) else obj
+    return "value", obj
 
 
 class OCRelay(ProtectionDevice):

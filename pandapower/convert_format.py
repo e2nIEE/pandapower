@@ -74,7 +74,7 @@ def convert_format(net: pandapowerNet, elements_to_deserialize=None, drop_invali
                 add_column_to_df(net, "load", col)
 
         # drop empty res_ tables and _empty_res_ tables
-        for key in list(net.keys()):  # conversion to list required because of dict modification while iteration
+        for key in list(net):  # conversion to list required because of dict modification while iteration
             if key.startswith("_empty_res_") or (key.startswith("res_") and len(net[key]) == 0):
                 del net[key]
 
@@ -704,8 +704,8 @@ def _convert_to_mw(net: pandapowerNet):
                 net[element] = net[element].rename(columns=diff)
                 if len(net[element]) == 0:
                     continue
-                for old, new in diff.items():
-                    net[element][new] *= 1e-3
+                for new_col in diff.values():
+                    net[element][new_col] *= 1e-3
 
     for element, std_types in net.std_types.items():
         for parameters in cast(dict[str, dict[str, Any]], std_types).values():
